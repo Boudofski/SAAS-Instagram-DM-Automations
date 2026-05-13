@@ -11,6 +11,7 @@ import {
   deleteKeywordsQuery,
   findAutomation,
   getAutomation,
+  getAutomationAnalytics,
   updateAutomation,
 } from "./queries";
 
@@ -190,5 +191,16 @@ export const activateAutomation = async (id: string, status: boolean) => {
     return { status: 404, data: "Failed to activate automation" };
   } catch (error) {
     return { status: 500, data: "Failed to activate automation" };
+  }
+};
+
+export const getAutomationStats = async (automationId: string) => {
+  await onCurrentUser();
+
+  try {
+    const stats = await getAutomationAnalytics(automationId);
+    return { status: 200, data: stats };
+  } catch (error) {
+    return { status: 500, data: null };
   }
 };
