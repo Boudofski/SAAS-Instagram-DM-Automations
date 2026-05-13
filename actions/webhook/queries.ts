@@ -9,6 +9,7 @@ import type {
   EVENT_TYPE,
   MESSAGE_TYPE,
   SEND_STATUS,
+  Prisma,
 } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -203,7 +204,7 @@ export const createAutomationEvent = async (data: {
   mediaId?: string;
   commentId?: string;
   keyword?: string;
-  meta?: Record<string, unknown>;
+  meta?: Prisma.InputJsonObject;
 }) => {
   return await client.automationEvent.create({ data });
 };

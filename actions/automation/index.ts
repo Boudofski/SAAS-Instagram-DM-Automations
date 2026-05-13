@@ -79,12 +79,13 @@ export const saveListener = async (
   automationId: string,
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
-  reply?: string
+  reply?: string,
+  ctaLink?: string
 ) => {
   await onCurrentUser();
 
   try {
-    const create = await addListener(automationId, listener, prompt, reply);
+    const create = await addListener(automationId, listener, prompt, reply, ctaLink);
 
     if (create) return { status: 200, data: "Listener created" };
     return { status: 404, data: "Failed to create listener" };

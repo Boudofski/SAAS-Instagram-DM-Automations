@@ -78,7 +78,8 @@ export const addListener = async (
   automationId: string,
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
-  reply?: string
+  reply?: string,
+  ctaLink?: string
 ) => {
   return await client.automation.update({
     where: {
@@ -90,6 +91,7 @@ export const addListener = async (
           listener,
           prompt,
           commentReply: reply,
+          ctaLink,
         },
       },
     },
@@ -97,7 +99,6 @@ export const addListener = async (
 };
 
 export const addTrigger = async (automationId: string, trigger: string[]) => {
-  console.log("🚀 ~ addTrigger ~ automationId:", automationId);
   if (trigger.length === 2) {
     return await client.automation.update({
       where: {
@@ -143,11 +144,8 @@ export const addKeyWords = async (automationId: string, keywords: string) => {
 };
 
 export const deleteKeywordsQuery = async (automationId: string) => {
-  // console.log("🚀 ~ deleteKeywordsQuery ~ automationId:", automationId);
-  return await client.keyword.delete({
-    where: {
-      id: automationId,
-    },
+  return await client.keyword.deleteMany({
+    where: { automationId },
   });
 };
 
@@ -172,4 +170,41 @@ export const addPosts = async (
       },
     },
   });
+};
+
+export const getAutomationAnalytics = async (automationId: string) => {
+  const [
+    dmsSent,
+    dmsFailed,
+    repliesSent,
+    repliesFailed,
+    leadsCount,
+    commentsReceived,
+  ] = await Promise.all([
+    client.messageLog.count({
+      where: { automationId, messageType: "DM", status: "SENT" },
+    }),
+    client.messageLog.count({
+      where: { automationId, messageType: "DM", status: "FAILED" },
+    }),
+    client.messageLog.count({
+      where: { automationId, messageType: "COMMENT_REPLY", status: "SENT" },
+    }),
+    client.messageLog.count({
+      where: { automationId, messageType: "COMMENT_REPLY", status: "FAILED" },
+    }),
+    client.lead.count({ where: { automationId } }),
+    client.automationEvent.count({
+      where: { automationId, eventType: "COMMENT_RECEIVED" },
+    }),
+  ]);
+
+  return {
+    commentsReceived,
+    dmsSent,
+    dmsFailed,
+    repliesSent,
+    repliesFailed,
+    leadsCollected: leadsCount,
+  };
 };
