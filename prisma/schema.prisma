@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -47,17 +44,21 @@ model Integrations {
 }
 
 model Automation {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String    @default("Untitled")
-  createdAt DateTime  @default(now())
-  active    Boolean   @default(false)
-  trigger   Trigger[]
-  listener  Listener?
-  posts     Post[]
-  dms       Dms[]
-  User      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String?   @db.Uuid
-  keywords  Keyword[]
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String            @default("Untitled")
+  createdAt    DateTime          @default(now())
+  active       Boolean           @default(false)
+  matchingMode MATCHING_MODE     @default(EXACT)
+  trigger      Trigger[]
+  listener     Listener?
+  posts        Post[]
+  dms          Dms[]
+  User         User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?           @db.Uuid
+  keywords     Keyword[]
+  leads        Lead[]
+  events       AutomationEvent[]
+  messageLogs  MessageLog[]
 }
 
 model Dms {
@@ -87,6 +88,7 @@ model Listener {
   listener     LISTENERS  @default(MESSAGE)
   prompt       String
   commentReply String?
+  ctaLink      String?
   dmCount      Int        @default(0)
   commentCount Int        @default(0)
 }
@@ -104,8 +106,52 @@ model Keyword {
   Automation   Automation? @relation(fields: [automationId], references: [id], onDelete: Cascade)
   automationId String?     @db.Uuid
 
-  @@unique([automationId, word]) //this constraints ensure user cant use the same keyword on multiple automations
+  @@unique([automationId, word])
 }
+
+model Lead {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId String     @db.Uuid
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  igUserId     String
+  igUsername   String?
+  commentText  String?
+  mediaId      String?
+  createdAt    DateTime   @default(now())
+
+  @@unique([automationId, igUserId])
+}
+
+model AutomationEvent {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId String     @db.Uuid
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  eventType    EVENT_TYPE
+  igUserId     String?
+  mediaId      String?
+  commentId    String?
+  keyword      String?
+  meta         Json?
+  createdAt    DateTime   @default(now())
+}
+
+model MessageLog {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId  String       @db.Uuid
+  automation    Automation   @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  recipientIgId String
+  mediaId       String?
+  commentId     String?
+  messageType   MESSAGE_TYPE
+  status        SEND_STATUS
+  errorMessage  String?
+  sentAt        DateTime?
+  createdAt     DateTime     @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
 
 enum SUBSCRIPTION_PLAN {
   PRO
@@ -125,4 +171,31 @@ enum MEDIATYPE {
 enum LISTENERS {
   SMARTAI
   MESSAGE
+}
+
+enum MATCHING_MODE {
+  EXACT
+  CONTAINS
+  SMART_AI
+}
+
+enum EVENT_TYPE {
+  COMMENT_RECEIVED
+  DM_SENT
+  PUBLIC_REPLY_SENT
+  DM_FAILED
+  PUBLIC_REPLY_FAILED
+  DUPLICATE_SKIPPED
+  NO_MATCH
+}
+
+enum MESSAGE_TYPE {
+  DM
+  COMMENT_REPLY
+}
+
+enum SEND_STATUS {
+  SENT
+  FAILED
+  SKIPPED
 }
