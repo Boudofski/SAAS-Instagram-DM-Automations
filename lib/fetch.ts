@@ -13,16 +13,11 @@ export const sendDm = async (
   prompt: string,
   token: string
 ) => {
-  console.log("sending Message");
   return await axios.post(
     `${process.env.INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
     {
-      recipient: {
-        id: receiverId,
-      },
-      message: {
-        text: prompt,
-      },
+      recipient: { id: receiverId },
+      message: { text: prompt },
     },
     {
       headers: {
@@ -35,21 +30,38 @@ export const sendDm = async (
 
 export const sendPrivateMessage = async (
   userId: string,
-  receiverId: string,
-  prompt: string,
+  commentId: string,
+  message: string,
   token: string
 ) => {
-  console.log("sending Message");
   return await axios.post(
-    `${process.env.INSTAGRAM_BASE_URL}/${userId}/messages`,
+    `${process.env.INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
     {
-      recipient: {
-        comment_id: receiverId,
-      },
-      message: {
-        text: prompt,
-      },
+      recipient: { comment_id: commentId },
+      message: { text: message },
     },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
+/**
+ * Posts a visible public reply under a comment.
+ * Uses the Facebook Graph API — this endpoint lives on graph.facebook.com
+ * for all Business/Creator accounts.
+ */
+export const sendCommentReply = async (
+  commentId: string,
+  message: string,
+  token: string
+) => {
+  return await axios.post(
+    `https://graph.facebook.com/v21.0/${commentId}/replies`,
+    { message },
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -62,11 +74,7 @@ export const sendPrivateMessage = async (
 export const generateToken = async (code: string) => {
   const insta_form = new FormData();
   insta_form.append("client_id", process.env.INSTAGRAM_CLIENT_ID as string);
-
-  insta_form.append(
-    "client_secret",
-    process.env.INSTAGRAM_CLIENT_SECRET as string
-  );
+  insta_form.append("client_secret", process.env.INSTAGRAM_CLIENT_SECRET as string);
   insta_form.append("grant_type", "authorization_code");
   insta_form.append(
     "redirect_uri",
@@ -81,11 +89,9 @@ export const generateToken = async (code: string) => {
 
   const token = await shortTokenRes.json();
   if (token.permissions.length > 0) {
-    console.log("🚀 ~ generateToken ~ token:", token);
     const long_token = await axios.get(
       `${process.env.INSTAGRAM_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_CLIENT_SECRET}&access_token=${token.access_token}`
     );
-
     return long_token.data;
   }
 };
