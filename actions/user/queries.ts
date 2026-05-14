@@ -44,6 +44,13 @@ export const createUser = async (
   });
 };
 
+export const findUserByCustomerId = async (customerId: string) => {
+  return await client.user.findFirst({
+    where: { subscription: { customerId } },
+    select: { clerkId: true },
+  });
+};
+
 export const updateSubscription = async (
   clerkId: string,
   props: { customerId?: string; plan?: "PRO" | "FREE" }
