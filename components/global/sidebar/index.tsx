@@ -6,6 +6,7 @@ import { usePath } from "@/hooks/user-nav";
 import SubscriptionPlan from "../subscription-plan";
 import AP3kLogo from "../ap3k-logo";
 import { Home, Link2, Megaphone, Settings } from "lucide-react";
+import { useQueryUser } from "@/hooks/user-queries";
 
 const NAV = [
   { icon: Home, label: "Home",         segment: "" },
@@ -18,13 +19,44 @@ type Props = { slug: string };
 
 export default function Sidebar({ slug }: Props) {
   const { page } = usePath();
+  const { data } = useQueryUser();
+  const instagram = data?.data?.integrations?.[0];
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 z-40 hidden w-[236px] flex-col border-r border-white/10
-                      bg-rf-bg/76 py-0 shadow-[18px_0_60px_rgba(0,0,0,0.28)] backdrop-blur-2xl lg:flex">
+    <aside className="fixed left-0 top-0 bottom-0 z-40 hidden w-[260px] flex-col border-r border-slate-200
+                      bg-white/92 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:flex">
       {/* Logo */}
-      <div className="border-b border-white/10 px-5 py-5">
-        <AP3kLogo className="text-sm" />
+      <div className="border-b border-slate-200 px-5 py-5">
+        <AP3kLogo className="text-sm text-slate-950" />
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            Instagram account
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            {instagram?.profilePictureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={instagram.profilePictureUrl}
+                alt={instagram.instagramUsername ?? "Instagram account"}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-ap3k-gradient text-xs font-black text-white">
+                IG
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-slate-950">
+                {instagram?.instagramUsername
+                  ? `@${instagram.instagramUsername}`
+                  : "Not connected"}
+              </p>
+              <p className="truncate text-xs text-slate-500">
+                {instagram ? "Official Meta connection" : "Connect to start"}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Nav */}
@@ -41,10 +73,10 @@ export default function Sidebar({ slug }: Props) {
               key={item.segment}
               href={href}
               className={cn(
-                "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-bold transition-all",
                 isActive
-                  ? "border border-rf-pink/25 bg-ap3k-gradient-soft text-rf-text shadow-[0_10px_30px_rgba(221,42,123,0.12)]"
-                  : "text-rf-muted hover:text-rf-text hover:bg-white/5"
+                  ? "border border-pink-200 bg-gradient-to-r from-orange-50 via-pink-50 to-indigo-50 text-slate-950 shadow-[0_10px_30px_rgba(221,42,123,0.10)]"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-950"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -56,11 +88,11 @@ export default function Sidebar({ slug }: Props) {
 
       {/* Upgrade card — Free tier only */}
       <SubscriptionPlan type="FREE">
-          <div className="px-3 pb-4">
-          <div className="relative overflow-hidden rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 shadow-ap3k-card">
+        <div className="px-3 pb-4">
+          <div className="relative overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4">
             <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
-            <p className="relative text-xs font-black text-rf-text mb-1">Upgrade to Creator</p>
-            <p className="text-[11px] text-rf-muted mb-3 leading-snug">
+            <p className="relative text-xs font-black text-slate-950 mb-1">Upgrade to Creator</p>
+            <p className="text-[11px] text-slate-500 mb-3 leading-snug">
               Unlock AI replies &amp; unlimited campaigns
             </p>
             <Link

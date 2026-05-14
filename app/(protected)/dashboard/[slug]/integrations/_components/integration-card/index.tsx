@@ -45,13 +45,13 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
   };
 
   return (
-    <div className="ap3k-card ap3k-card-hover flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 sm:flex-row sm:items-center sm:justify-between">
       {icon}
       <div className="flex flex-col flex-1">
         <h3 className="text-xl font-black">{title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-rf-muted">{description}</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">{description}</p>
         {integrated?.instagramId && (
-          <div className="mt-3 flex items-center gap-3 rounded-xl border border-rf-green/15 bg-rf-green/10 p-3">
+          <div className="mt-3 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
             {integrated.profilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -70,7 +70,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
                   ? `@${integrated.instagramUsername}`
                   : "Instagram connected"}
               </p>
-              <p className="truncate text-[11px] text-rf-muted">
+              <p className="truncate text-[11px] text-slate-500">
                 Account ID: {integrated.instagramId}
               </p>
             </div>

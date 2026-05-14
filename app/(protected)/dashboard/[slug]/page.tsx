@@ -35,9 +35,10 @@ export default async function DashboardPage({ params }: Props) {
     redirect("/onboarding");
   }
 
-  const automations = automationsResult.status === 200
-    ? (automationsResult.data as any[])
-    : [];
+  const automations =
+    automationsResult.status === 200 && Array.isArray(automationsResult.data)
+      ? (automationsResult.data as any[])
+      : [];
 
   const totalDms = automations.reduce(
     (sum: number, a: any) => sum + (a.listener?.dmCount ?? 0), 0
@@ -64,20 +65,20 @@ export default async function DashboardPage({ params }: Props) {
   ];
 
   return (
-    <div className="relative flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-ap3k-radial opacity-80" />
+    <div className="relative flex flex-col gap-6 p-4 text-slate-950 sm:p-6 lg:p-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 rounded-b-[3rem] bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50" />
 
       <div className="flex flex-col gap-2">
         <p className="ap3k-kicker">Creator command center</p>
-        <h1 className="text-2xl font-black tracking-tight text-rf-text sm:text-3xl">
+        <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
           Instagram comments into <span className="ap3k-gradient-text">DM revenue</span>
         </h1>
-        <p className="max-w-2xl text-sm text-rf-muted">
+        <p className="max-w-2xl text-sm text-slate-600">
           Monitor campaign momentum, capture leads, and launch new comment-to-DM flows without leaving AP3k.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/10 p-4">
+      <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
         <p className="text-xs font-black uppercase tracking-wider text-rf-blue">
           Meta review test mode
         </p>
@@ -90,12 +91,12 @@ export default async function DashboardPage({ params }: Props) {
             <Link
               key={item.label}
               href={item.href}
-              className="rounded-xl border border-white/10 bg-rf-surface/70 p-3 text-sm transition-colors hover:border-rf-pink/30"
+              className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm transition-colors hover:border-rf-pink/30 hover:bg-white"
             >
               <span className="text-[11px] font-bold uppercase tracking-wider text-rf-muted">
                 Step {index + 1}
               </span>
-              <span className="mt-1 flex items-center justify-between font-bold text-rf-text">
+              <span className="mt-1 flex items-center justify-between font-bold text-slate-950">
                 {item.label}
                 <span className={item.done ? "text-rf-green" : "text-rf-muted"}>
                   {item.done ? "Done" : "Open"}
@@ -108,8 +109,8 @@ export default async function DashboardPage({ params }: Props) {
 
       {instagram && (
         <div className={[
-          "flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between",
-          tokenExpired ? "border-red-500/20 bg-red-500/10" : "border-rf-green/15 bg-rf-green/10",
+          "flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between",
+          tokenExpired ? "border-red-200" : "border-emerald-100",
         ].join(" ")}>
           <div className="flex items-center gap-3">
             {instagram.profilePictureUrl ? (
@@ -125,10 +126,10 @@ export default async function DashboardPage({ params }: Props) {
               </div>
             )}
             <div>
-              <p className="text-sm font-black text-rf-text">
+              <p className="text-sm font-black text-slate-950">
                 {instagram.instagramUsername ? `@${instagram.instagramUsername}` : "Instagram connected"}
               </p>
-              <p className="text-xs text-rf-muted">
+              <p className="text-xs text-slate-500">
                 {tokenExpired
                   ? "Token expired. Reconnect Instagram before testing comments."
                   : "Ready for official comment-to-DM testing."}
@@ -153,7 +154,7 @@ export default async function DashboardPage({ params }: Props) {
       </div>
 
       {/* Quick create */}
-      <div className="ap3k-card relative overflow-hidden rounded-3xl p-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="relative flex flex-col items-start justify-between gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-rf-pink/18 blur-3xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rf-orange/60 to-transparent" />
         <div className="flex items-center gap-4">
@@ -162,8 +163,8 @@ export default async function DashboardPage({ params }: Props) {
             🚀
           </div>
           <div>
-            <h3 className="font-black text-rf-text">Launch a new campaign</h3>
-            <p className="text-xs text-rf-muted">
+            <h3 className="font-black text-slate-950">Launch a new campaign</h3>
+            <p className="text-xs text-slate-500">
               Pick a post, add keywords, write your DM — live in 60 seconds.
             </p>
           </div>
@@ -182,7 +183,7 @@ export default async function DashboardPage({ params }: Props) {
         {/* Campaigns */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-black text-rf-text">Active campaigns</h2>
+            <h2 className="font-black text-slate-950">Active campaigns</h2>
             <Link
               href={`/dashboard/${params.slug}/automation`}
               className="text-xs font-bold text-rf-pink hover:text-rf-purple"
@@ -220,23 +221,23 @@ export default async function DashboardPage({ params }: Props) {
         {/* Right panel */}
         <div className="flex flex-col gap-4">
           <OnboardingChecklist items={checklistItems} />
-          <div className="ap3k-card rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-black text-rf-text">Activity feed</h2>
+              <h2 className="text-sm font-black text-slate-950">Activity feed</h2>
               <span className="text-[11px] font-bold uppercase tracking-wider text-rf-muted">
                 Live
               </span>
             </div>
             {recentActivity.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-rf-border bg-rf-surface2/60 p-4 text-xs leading-relaxed text-rf-muted">
+              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-500">
                 No webhook activity yet. Create a campaign, then comment a keyword from another Instagram account.
               </p>
             ) : (
               <div className="flex flex-col gap-3">
                 {recentActivity.map((item) => (
-                  <div key={`${item.source}-${item.id}`} className="rounded-xl border border-rf-border bg-rf-surface2/70 p-3">
+                  <div key={`${item.source}-${item.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-xs font-bold text-rf-text">
+                      <p className="truncate text-xs font-bold text-slate-950">
                         {formatActivity(item.type)}
                       </p>
                       <span className={[
@@ -248,8 +249,8 @@ export default async function DashboardPage({ params }: Props) {
                           : "bg-rf-blue",
                       ].join(" ")} />
                     </div>
-                    <p className="mt-1 truncate text-[11px] text-rf-muted">
-                      {item.campaign} · {new Date(item.createdAt).toLocaleTimeString()}
+                    <p className="mt-1 truncate text-[11px] text-slate-500">
+                      {item.campaign} · {formatActivityTime(item.createdAt)}
                     </p>
                     {item.errorMessage && (
                       <p className="mt-2 text-[11px] text-red-200">{item.errorMessage}</p>
@@ -271,4 +272,10 @@ function formatActivity(type: string) {
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatActivityTime(value: unknown) {
+  const date = value ? new Date(value as string | number | Date) : null;
+  if (!date || Number.isNaN(date.getTime())) return "time unavailable";
+  return date.toLocaleTimeString();
 }

@@ -33,9 +33,9 @@ async function Layout({ children, params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(query)}>
-      <div className="min-h-screen p-3 text-rf-text">
+      <div className="min-h-screen bg-slate-50 p-3 text-slate-950">
         <Sidebar slug={params.slug} />
-        <div className="relative z-10 flex flex-col overflow-auto lg:ml-[236px] lg:pl-8 lg:py-5">
+        <div className="relative z-10 flex flex-col overflow-auto lg:ml-[260px] lg:pl-8 lg:py-5">
           <NavBar slug={params.slug} />
           {children}
         </div>

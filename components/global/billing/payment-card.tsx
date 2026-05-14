@@ -53,8 +53,8 @@ function PaymentCard({ label, current }: Props) {
   return (
     <div
       className={cn(
-        "ap3k-card flex h-full flex-col rounded-3xl p-6",
-        isActive && "border-rf-pink/35 bg-ap3k-gradient-soft"
+        "flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm",
+        isActive && "border-rf-pink/35 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50"
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -65,14 +65,14 @@ function PaymentCard({ label, current }: Props) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-rf-muted">{plan.description}</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
         <span className="text-4xl font-black tracking-tight">{plan.price}</span>
         <span className="text-sm text-rf-muted">{plan.period}</span>
       </div>
       <div className="mt-5 flex flex-1 flex-col gap-2.5">
         {plan.features.map((feature) => (
-          <p key={feature} className="flex gap-2 text-sm text-rf-muted">
+          <p key={feature} className="flex gap-2 text-sm text-slate-600">
             <CircleCheck className="h-4 w-4 flex-shrink-0 text-rf-green" />
             {feature}
           </p>

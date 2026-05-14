@@ -22,19 +22,19 @@ function Page({ searchParams }: PageProps) {
   const error = searchParams?.integration_error;
 
   return (
-    <div className="flex justify-center p-4 sm:p-6 lg:p-8">
+    <div className="flex justify-center p-4 text-slate-950 sm:p-6 lg:p-8">
       <div className="flex w-full max-w-3xl flex-col gap-y-5">
         {error && (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm leading-relaxed text-red-200">
             {ERROR_COPY[error] ?? ERROR_COPY.oauth_failed}
           </div>
         )}
-        <div className="rounded-3xl border border-white/10 bg-ap3k-gradient-soft p-6">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="ap3k-kicker">Official Meta connection</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-rf-text">
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
             Connect Instagram
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-rf-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
             AP3k uses Meta&apos;s official Instagram APIs to listen for comments on your selected posts and send private replies only to people who interact with your account.
           </p>
         </div>
