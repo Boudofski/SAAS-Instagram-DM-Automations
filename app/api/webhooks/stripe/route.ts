@@ -27,6 +27,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  console.log(`[stripe-webhook] event: ${event.type}`);
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {

@@ -13,6 +13,7 @@ export const onOathInstagram = async (strategy: "INSTAGRAM" | "CRM") => {
 };
 
 export const onIntegrate = async (code: string) => {
+  console.log(`[oauth] code received length=${code?.length ?? 0}`);
   const user = await onCurrentUser();
 
   try {
@@ -20,13 +21,13 @@ export const onIntegrate = async (code: string) => {
 
     if (integration && integration.integrations.length === 0) {
       const token = await generateToken(code);
-      console.log("🚀 ~ onIntegrate ~ token:", token);
 
       if (token) {
         const insts_id = await axios.get(
           `${process.env.INSTAGRAM_BASE_URL}/me?fields=user_id&access_token=${token.access_token}`
         );
 
+        console.log(`[oauth] token exchange succeeded igUserId=${insts_id.data.user_id}`);
         const today = new Date();
         const expire_date = today.setDate(today.getDate() + 60);
         const create = await createIntegration(
@@ -37,11 +38,14 @@ export const onIntegrate = async (code: string) => {
         );
         return { status: 200, data: create };
       }
+      console.log("[oauth] token exchange failed: generateToken returned null");
       return { status: 401 };
     }
 
+    console.log("[oauth] integration already exists for user");
     return { status: 404 };
   } catch (error) {
+    console.error("[oauth] onIntegrate error:", error instanceof Error ? error.message : String(error));
     return { status: 500 };
   }
 };

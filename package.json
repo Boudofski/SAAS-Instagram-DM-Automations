@@ -9,7 +9,11 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed": "npx tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.8.0",

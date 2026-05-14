@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("hub.verify_token");
   const challenge = req.nextUrl.searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === process.env.META_VERIFY_TOKEN) {
+  const tokenMatch = token === process.env.META_VERIFY_TOKEN;
+  console.log(`[webhook] GET verify: mode=${mode} token_match=${tokenMatch}`);
+
+  if (mode === "subscribe" && tokenMatch) {
     return new NextResponse(challenge, { status: 200 });
   }
   return new NextResponse("Forbidden", { status: 403 });
@@ -43,6 +46,9 @@ export async function POST(req: NextRequest) {
 
     const igAccountId: string = entry.id;
 
+    const field = entry.changes?.[0]?.field ?? (entry.messaging ? "messaging" : "unknown");
+    console.log(`[webhook] POST field=${field} igAccountId=${igAccountId}`);
+
     // -----------------------------------------------------------------------
     // COMMENT EVENT
     // -----------------------------------------------------------------------
@@ -58,7 +64,10 @@ export async function POST(req: NextRequest) {
 
       // 1. Find active automation for this post
       const automation = await findAutomationForComment(mediaId, igAccountId);
-      if (!automation?.listener) return ok();
+      if (!automation?.listener) {
+        console.log(`[webhook] automation match: none (mediaId=${mediaId})`);
+        return ok();
+      }
 
       // 2. Match keyword using this automation's matching mode
       const matchedKeyword = matchKeywordWithMode(
@@ -68,6 +77,7 @@ export async function POST(req: NextRequest) {
       );
 
       if (!matchedKeyword) {
+        console.log(`[webhook] automation match: none (automationId=${automation.id} mode=${automation.matchingMode})`);
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "NO_MATCH",
@@ -78,6 +88,8 @@ export async function POST(req: NextRequest) {
         });
         return ok();
       }
+
+      console.log(`[webhook] automation match: ${automation.id} keyword="${matchedKeyword}"`);
 
       // 3. Log comment received
       await createAutomationEvent({
@@ -191,6 +203,7 @@ export async function POST(req: NextRequest) {
           token
         );
         const sent = dmResult.status === 200;
+        console.log(`[webhook] ${sent ? "DM_SENT" : "DM_FAILED"} recipientId=${commenterId} automationId=${automation.id}`);
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -253,6 +266,7 @@ export async function POST(req: NextRequest) {
       const result = await findAutomationForDM(dmText, igAccountId);
 
       if (!result) {
+        console.log(`[webhook] DM no-match senderId=${senderId} — checking SMARTAI conversation`);
         // No keyword match — check for an ongoing SMARTAI conversation
         try {
           const chatHistory = await getChatHistory(igAccountId, senderId);
@@ -294,6 +308,7 @@ export async function POST(req: NextRequest) {
       }
 
       const { automation, matchedKeyword } = result;
+      console.log(`[webhook] DM match: automationId=${automation.id} keyword="${matchedKeyword}"`);
 
       // 2. Duplicate check
       if (await isDuplicate(automation.id, senderId)) {
