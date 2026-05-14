@@ -3,9 +3,13 @@
 import { refreshToken } from "@/lib/fetch";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { updateIntegration } from "../integration/queries";
 import { createUser, findUser, updateSubscription } from "./queries";
+
+const onboardingSkippedCookie = (clerkId: string) =>
+  `ap3k_onboarding_skipped_${clerkId}`;
 
 export const onCurrentUser = async () => {
   const user = await currentUser();
@@ -80,6 +84,20 @@ export const onUserInfo = async () => {
   } catch (error: any) {
     return { status: 500 };
   }
+};
+
+export const skipOnboarding = async () => {
+  const user = await onCurrentUser();
+
+  cookies().set(onboardingSkippedCookie(user.id), "true", {
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 365,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+
+  redirect("/dashboard");
 };
 
 export const onSubscribe = async (session_id: string) => {

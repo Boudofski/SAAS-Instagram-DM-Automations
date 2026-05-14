@@ -1,6 +1,10 @@
-import { onUserInfo } from "@/actions/user";
+import { onUserInfo, skipOnboarding } from "@/actions/user";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+const onboardingSkippedCookie = (clerkId: string) =>
+  `ap3k_onboarding_skipped_${clerkId}`;
 
 export default async function OnboardingWelcomePage() {
   const user = await onUserInfo();
@@ -9,7 +13,19 @@ export default async function OnboardingWelcomePage() {
     redirect("/onboarding/complete");
   }
 
+  if (
+    user.status === 200 &&
+    user.data?.clerkId &&
+    cookies().get(onboardingSkippedCookie(user.data.clerkId))?.value === "true"
+  ) {
+    redirect("/dashboard");
+  }
+
   const firstName = user.data?.firstname ?? "there";
+  const slug =
+    `${user.data?.firstname ?? ""}${user.data?.lastname ?? ""}` ||
+    user.data?.clerkId ||
+    "";
 
   return (
     <div className="text-center">
@@ -48,7 +64,7 @@ export default async function OnboardingWelcomePage() {
       </div>
 
       <Link
-        href="/onboarding/connect"
+        href={`/dashboard/${slug}/integrations`}
         className="block w-full bg-rf-blue hover:bg-rf-blue/90 text-white font-bold
                    py-3.5 rounded-xl text-sm transition-colors
                    shadow-[0_4px_20px_rgba(59,130,246,0.35)]"
@@ -56,12 +72,14 @@ export default async function OnboardingWelcomePage() {
         Let&apos;s connect your Instagram →
       </Link>
 
-      <Link
-        href="/dashboard"
-        className="block mt-3 text-xs text-rf-muted hover:text-rf-text transition-colors"
-      >
-        I&apos;ll explore first
-      </Link>
+      <form action={skipOnboarding}>
+        <button
+          type="submit"
+          className="block w-full mt-3 text-xs text-rf-muted hover:text-rf-text transition-colors"
+        >
+          I&apos;ll explore first
+        </button>
+      </form>
     </div>
   );
 }

@@ -5,9 +5,13 @@ import StatCard from "@/components/global/stat-card";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 type Props = { params: { slug: string } };
+
+const onboardingSkippedCookie = (clerkId: string) =>
+  `ap3k_onboarding_skipped_${clerkId}`;
 
 export default async function DashboardPage({ params }: Props) {
   const [userResult, automationsResult] = await Promise.all([
@@ -15,10 +19,17 @@ export default async function DashboardPage({ params }: Props) {
     getAllAutomation(),
   ]);
 
-  // Redirect to onboarding if no Instagram connected
+  const onboardingSkipped =
+    userResult.status === 200 &&
+    userResult.data?.clerkId &&
+    cookies().get(onboardingSkippedCookie(userResult.data.clerkId))?.value ===
+      "true";
+
+  // Redirect to onboarding if no Instagram connected and the user has not skipped it.
   if (
     userResult.status === 200 &&
-    userResult.data?.integrations?.length === 0
+    userResult.data?.integrations?.length === 0 &&
+    !onboardingSkipped
   ) {
     redirect("/onboarding");
   }
@@ -41,7 +52,7 @@ export default async function DashboardPage({ params }: Props) {
   const isEmpty = automations.length === 0;
 
   const checklistItems = [
-    { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0 },
+    { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
     { label: "Launch your first campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
     { label: "Upgrade to Creator — unlock AI", done: userResult.data?.subscription?.plan === "PRO", href: "/payment" },
   ];
