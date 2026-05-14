@@ -34,10 +34,13 @@ Walk through this flow end-to-end with real credentials before launch:
 ## Meta Integration
 
 - [ ] Meta app has Instagram product added
-- [ ] OAuth redirect URI registered: `<HOST>/callback/instagram`
-- [ ] Webhook callback URL registered: `<HOST>/api/webhooks/meta`
+- [ ] OAuth redirect URI registered: `https://ap3k.com/callback/instagram`
+- [ ] Webhook callback URL registered: `https://ap3k.com/api/webhooks/meta`
 - [ ] Webhook verify token matches `META_VERIFY_TOKEN` in env
 - [ ] `comments` and `messages` webhook fields subscribed
+- [ ] OAuth scopes include `instagram_basic`, `instagram_manage_comments`, `instagram_manage_messages`, `pages_show_list`, `pages_read_engagement`
+- [ ] Connected account is an Instagram Business or Creator account
+- [ ] Facebook Page connection is configured if the selected Meta app flow requires page-linked IG discovery
 - [ ] Webhook GET verification passes (Meta sends a challenge)
 - [ ] Webhook POST events received and processed (check server logs)
 - [ ] Test Instagram account added as Test User in Meta app
@@ -67,7 +70,7 @@ Walk through this flow end-to-end with real credentials before launch:
 - [ ] All environment variables set in Vercel project settings
 - [ ] `NEXT_PUBLIC_HOST_URL` = `https://ap3k.com` (no trailing slash)
 - [ ] `META_REDIRECT_URI` = `https://ap3k.com/callback/instagram`
-- [ ] `INSTAGRAM_EMBEDDED_OAUTH_URL` updated with production redirect URI
+- [ ] `INSTAGRAM_EMBEDDED_OAUTH_URL` updated with production redirect URI and required scopes
 - [ ] First deployment completes without build errors
 - [ ] Database migrations applied against production DB (`prisma migrate deploy`)
 - [ ] Stripe webhook updated to production URL
@@ -89,7 +92,7 @@ Required before real (non-test) Instagram accounts can use the app:
 ## Known TODOs (Post-Launch)
 
 - [ ] Enforce FREE plan limit (3 automations) in `activate` server action
-- [ ] Implement Instagram token refresh (tokens expire after 60 days)
+- [ ] Add proactive background Instagram token refresh monitoring
 - [ ] Add story reply trigger support in the automation wizard
 - [ ] Add error UI when Smart AI matching fails (currently silent)
 - [ ] Rate-limit webhook handler to prevent abuse

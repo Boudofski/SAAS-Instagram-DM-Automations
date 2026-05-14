@@ -15,7 +15,7 @@ Quick-reference for common integration failures. Work through each section in or
 4. Confirm ngrok is running and the forwarding URL has not changed (free ngrok URLs regenerate each restart).
 5. Check the app terminal for the log line:
    ```
-   [webhook] GET verify: mode=subscribe token_match=false
+   [webhook] GET verify { mode: 'subscribe', token_match: false, challenge_exists: true }
    ```
    If `token_match=false`, the tokens do not match.
 6. Verify the route exists: `GET /api/webhooks/meta` — confirm the file is at `app/api/webhooks/meta/route.ts`.
@@ -27,7 +27,7 @@ Quick-reference for common integration failures. Work through each section in or
 **Symptom:** Instagram OAuth returns `redirect_uri_mismatch` or browser lands on a 404.
 
 **Check:**
-1. The `META_REDIRECT_URI` in `.env.local` must match **exactly** what is registered in Meta app → Instagram Basic Display → Valid OAuth Redirect URIs. No trailing slash differences.
+1. The `META_REDIRECT_URI` in `.env.local` must match **exactly** what is registered in Meta app → Instagram Login / Business Login → Valid OAuth Redirect URIs. No trailing slash differences.
 2. The `INSTAGRAM_EMBEDDED_OAUTH_URL` `redirect_uri` parameter must match the same string.
 3. Your ngrok URL changes every restart (free tier). Update all three places when it changes:
    - `.env.local` → `META_REDIRECT_URI`
@@ -47,9 +47,9 @@ Quick-reference for common integration failures. Work through each section in or
 **Symptom:** OAuth completes but no Instagram account appears in the Integrations page.
 
 **Check:**
-1. Check the app terminal for `[oauth] code received` — if absent, the redirect did not reach the callback.
+1. Check the app terminal for `[oauth] callback received` — if absent, the redirect did not reach the callback.
 2. Check `[oauth] token exchange failed` — this means the code→token exchange with Meta's API failed. Common causes:
-   - `INSTAGRAM_CLIENT_ID` / `INSTAGRAM_CLIENT_SECRET` are wrong or mismatched.
+   - `META_APP_ID` / `META_APP_SECRET` or `INSTAGRAM_CLIENT_ID` / `INSTAGRAM_CLIENT_SECRET` are wrong or mismatched.
    - The code has already been used (codes are one-time use).
 3. Verify the Integrations row in the database:
    ```bash
@@ -57,7 +57,7 @@ Quick-reference for common integration failures. Work through each section in or
    ```
 4. If `token` exists but the UI still shows "Not connected", check that the `userId` foreign key links to the correct `User.id` — not the `clerkId`.
 5. Check that the Instagram account is added as a **Test User** in the Meta app (required in development mode). Go to Meta app → Roles → Instagram Test Users.
-6. If `getIntegrations` returns `integration.integrations.length > 0`, the connect flow silently returns 404 (already integrated). Delete the existing row and try again.
+6. Reconnecting now updates the existing integration row. If reconnect still fails, inspect only `instagramId` and `expiresAt`; do not print tokens.
 
 ---
 
@@ -191,6 +191,7 @@ Production endpoint reference:
 ```text
 NEXT_PUBLIC_HOST_URL=https://ap3k.com
 META_REDIRECT_URI=https://ap3k.com/callback/instagram
+INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://ap3k.com/callback/instagram&scope=instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement&response_type=code
 STRIPE_WEBHOOK_URL=https://ap3k.com/api/webhooks/stripe
 META_WEBHOOK_URL=https://ap3k.com/api/webhooks/meta
 ```

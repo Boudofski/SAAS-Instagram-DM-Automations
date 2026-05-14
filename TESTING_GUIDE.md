@@ -43,8 +43,8 @@ Open `.env.local` and set:
 | `META_APP_ID` | Meta for Developers → your app → Settings → Basic |
 | `META_APP_SECRET` | Meta for Developers → your app → Settings → Basic |
 | `META_VERIFY_TOKEN` | Any random secret you choose (e.g. `my-local-verify-secret`) |
-| `META_REDIRECT_URI` | Local/ngrok callback URL, e.g. `http://localhost:3000/callback/instagram` |
-| `INSTAGRAM_CLIENT_ID` | Same as `META_APP_ID` for Instagram Basic Display |
+| `META_REDIRECT_URI` | Production: `https://ap3k.com/callback/instagram`; local/ngrok: `https://abc123.ngrok-free.app/callback/instagram` |
+| `INSTAGRAM_CLIENT_ID` | Same as `META_APP_ID` if used |
 | `INSTAGRAM_CLIENT_SECRET` | Same as `META_APP_SECRET` |
 | `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL whose `redirect_uri` exactly matches `META_REDIRECT_URI` |
 | `OPENAI_API_KEY` | platform.openai.com → API keys (only needed for SMARTAI mode) |
@@ -170,7 +170,7 @@ Copy the HTTPS forwarding URL (e.g. `https://abc123.ngrok-free.app`).
 ```
 NEXT_PUBLIC_HOST_URL=https://abc123.ngrok-free.app
 META_REDIRECT_URI=https://abc123.ngrok-free.app/callback/instagram
-INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://abc123.ngrok-free.app/callback/instagram&scope=user_profile,user_media,instagram_manage_messages,instagram_manage_comments&response_type=code
+INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://abc123.ngrok-free.app/callback/instagram&scope=instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement&response_type=code
 ```
 
 Restart `npm run dev` after changing env vars.
@@ -178,7 +178,7 @@ Restart `npm run dev` after changing env vars.
 ### 5c. Configure Meta app
 
 1. Go to [developers.facebook.com](https://developers.facebook.com) → your app.
-2. **Instagram Basic Display** → Add Platform → Website → Site URL = your ngrok URL.
+2. **Instagram Login / Business Login** → Add Platform → Website → Site URL = your ngrok URL.
 3. **Valid OAuth Redirect URIs** → add: `https://abc123.ngrok-free.app/callback/instagram`
 4. **Instagram Test Users** → add yourself as a tester.
 5. Accept the tester invite from your Instagram account settings.
@@ -209,6 +209,11 @@ Restart `npm run dev` after changing env vars.
 Check the app terminal for:
 ```
 [webhook] GET verify: mode=subscribe token_match=true
+```
+
+Current safe log shape:
+```
+[webhook] GET verify { mode: 'subscribe', token_match: true, challenge_exists: true }
 ```
 
 ### 6b. Subscribe to your Instagram account
@@ -280,6 +285,8 @@ psql -U postgres -d replyflow -c "
 
 **Instagram:** the commenter should receive a DM within seconds.
 
+If the post list is empty in Step 1, use the manual media ID fallback. Paste the Instagram media ID shown by the Graph API. A post URL can be saved as a reference, but webhook matching is most reliable with the Meta media ID because comment webhooks identify the media by ID.
+
 ### 8c. Test DM trigger (instead of comment)
 
 Send a DM directly to your connected business Instagram account from a different account, using your configured keyword. The app should auto-reply.
@@ -337,6 +344,7 @@ Production endpoint reference:
 ```text
 NEXT_PUBLIC_HOST_URL=https://ap3k.com
 META_REDIRECT_URI=https://ap3k.com/callback/instagram
+INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://ap3k.com/callback/instagram&scope=instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement&response_type=code
 STRIPE_WEBHOOK_URL=https://ap3k.com/api/webhooks/stripe
 META_WEBHOOK_URL=https://ap3k.com/api/webhooks/meta
 ```

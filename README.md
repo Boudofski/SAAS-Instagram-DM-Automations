@@ -85,12 +85,18 @@ The app runs at `http://localhost:3000`.
 
 ### Configure OAuth
 
-1. Under **Instagram → Basic Display**, add an OAuth redirect URI:
+1. Under **Instagram Login / Business Login**, add an OAuth redirect URI:
    ```
-   http://localhost:3000/callback/instagram
+   https://ap3k.com/callback/instagram
    ```
 2. Copy your **App ID** → `INSTAGRAM_CLIENT_ID` and `META_APP_ID`
 3. Copy your **App Secret** → `INSTAGRAM_CLIENT_SECRET` and `META_APP_SECRET`
+4. Request the comment-to-DM permissions used by AP3k:
+   - `instagram_basic`
+   - `instagram_manage_comments`
+   - `instagram_manage_messages`
+   - `pages_show_list`
+   - `pages_read_engagement`
 
 ### Configure the Webhook
 
@@ -104,7 +110,7 @@ ngrok http 3000
 Copy the `https://xxxx.ngrok.io` URL.
 
 1. Under **Instagram → Webhooks**, add a new subscription:
-   - **Callback URL:** `https://xxxx.ngrok.io/api/webhooks/meta`
+   - **Callback URL:** `https://ap3k.com/api/webhooks/meta`
    - **Verify Token:** the value you set in `META_VERIFY_TOKEN`
 2. Subscribe to `comments` and `messages` fields
 
@@ -177,6 +183,9 @@ In Vercel → Project → Settings → Environment Variables, add every variable
 | Variable | Production value |
 |---|---|
 | `NEXT_PUBLIC_HOST_URL` | `https://ap3k.com` |
+| `META_APP_ID` | Meta app ID |
+| `META_APP_SECRET` | Meta app secret |
+| `META_VERIFY_TOKEN` | Same value entered in Meta webhook config |
 | `META_REDIRECT_URI` | `https://ap3k.com/callback/instagram` |
 | `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL with `redirect_uri=https://ap3k.com/callback/instagram` |
 | `STRIPE_SECRET_KEY` | Live or test secret key from Stripe |
@@ -201,6 +210,12 @@ https://ap3k.com/api/webhooks/meta
 ```
 
 Use the same verify token value that is stored in `META_VERIFY_TOKEN`.
+
+Subscribe the Instagram webhook to:
+- `comments`
+- `messages`
+
+AP3k only sends a private reply/DM to users who commented or messaged the connected Instagram account. It does not scrape Instagram, log in with passwords, or send unsolicited DMs.
 
 ---
 
@@ -229,5 +244,5 @@ prisma/               # Schema + migrations
 
 - **Plan enforcement** — FREE plan limit (3 automations) is tracked in the DB schema but not yet enforced on the backend. Activation is not blocked for FREE users. Marked as TODO.
 - **Story reply automations** — the DB schema supports story reply triggers but the wizard UI does not expose them.
-- **Token refresh** — Instagram long-lived tokens expire after 60 days. Automatic refresh is not implemented; users will need to reconnect when the token expires.
+- **Token refresh** — Instagram long-lived tokens expire after 60 days. AP3k refreshes near expiry when the user profile is loaded, but users may need to reconnect if Meta revokes a token or permissions change.
 - **Smart AI matching** — requires a valid `OPENAI_API_KEY`. If missing or the call fails, the automation silently skips the DM.
