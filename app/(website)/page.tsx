@@ -1,6 +1,7 @@
-import AP3kLogo from "@/components/global/ap3k-logo";
 import { FadeIn, HoverLift } from "@/components/global/motion/fade-in";
 import PricingCard from "@/components/global/pricing-card";
+import WebsiteFooter from "@/components/global/website-footer";
+import WebsiteNav from "@/components/global/website-nav";
 import { ArrowRight, Bot, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
@@ -73,21 +74,7 @@ export default function LandingPage() {
     <div className="relative min-h-screen overflow-hidden text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
 
-      <nav className="sticky top-0 z-50 border-b border-white/10 bg-rf-bg/72 px-4 py-4 backdrop-blur-2xl sm:px-8 lg:px-16">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href="/">
-            <AP3kLogo className="text-base" />
-          </Link>
-          <ul className="hidden items-center gap-8 text-sm text-rf-muted md:flex">
-            <li><a href="#features" className="transition-colors hover:text-rf-text">Features</a></li>
-            <li><a href="#pricing" className="transition-colors hover:text-rf-text">Pricing</a></li>
-            <li><Link href="/dashboard" className="transition-colors hover:text-rf-text">Login</Link></li>
-          </ul>
-          <Link href="/sign-up" className="ap3k-gradient-button px-5 py-2 text-sm">
-            Start free
-          </Link>
-        </div>
-      </nav>
+      <WebsiteNav current="home" />
 
       <main className="relative z-10">
         <section className="px-4 pb-16 pt-16 sm:px-8 sm:pt-20 lg:px-16 lg:pb-24">
@@ -254,17 +241,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-white/10 px-4 py-8 sm:px-8 lg:px-16">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 text-xs text-rf-muted sm:flex-row sm:items-center sm:justify-between">
-          <AP3kLogo className="text-sm text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
-          <div className="flex gap-6">
-            {["Privacy", "Terms", "Docs", "Status"].map((l) => (
-              <a key={l} href="#" className="transition-colors hover:text-rf-text">{l}</a>
-            ))}
-          </div>
-          <p>© 2026 AP3k</p>
-        </div>
-      </footer>
+      <WebsiteFooter />
     </div>
   );
 }

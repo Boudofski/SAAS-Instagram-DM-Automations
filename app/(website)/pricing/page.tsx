@@ -1,7 +1,7 @@
 import PricingCard from "@/components/global/pricing-card";
-import AP3kLogo from "@/components/global/ap3k-logo";
 import { FadeIn } from "@/components/global/motion/fade-in";
-import Link from "next/link";
+import WebsiteFooter from "@/components/global/website-footer";
+import WebsiteNav from "@/components/global/website-nav";
 
 const PLANS = [
   {
@@ -61,16 +61,7 @@ export default function PricingPage() {
   return (
     <div className="relative min-h-screen overflow-hidden text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
-      {/* Nav */}
-      <nav className="relative z-10 flex items-center justify-between border-b border-white/10 bg-rf-bg/72 px-4 py-4 backdrop-blur-2xl sm:px-8 lg:px-16">
-        <Link href="/">
-          <AP3kLogo className="text-sm" />
-        </Link>
-        <Link href="/sign-up"
-              className="ap3k-gradient-button px-5 py-2 text-sm">
-          Start free
-        </Link>
-      </nav>
+      <WebsiteNav current="pricing" />
 
       {/* Header */}
       <section className="relative z-10 px-4 py-20 text-center sm:px-8 lg:px-16">
@@ -111,6 +102,7 @@ export default function PricingPage() {
           ))}
         </div>
       </section>
+      <WebsiteFooter />
     </div>
   );
 }
