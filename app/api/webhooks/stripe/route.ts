@@ -6,6 +6,22 @@ function ok() {
   return NextResponse.json({ received: true }, { status: 200 });
 }
 
+async function syncSubscriptionFromStripeSubscription(sub: Stripe.Subscription) {
+  const customerId = sub.customer as string;
+  const plan = sub.status === "active" || sub.status === "trialing" ? "PRO" : "FREE";
+  const clerkId = sub.metadata?.clerkId;
+
+  if (clerkId) {
+    await updateSubscription(clerkId, { customerId, plan });
+    return;
+  }
+
+  const user = await findUserByCustomerId(customerId);
+  if (user) {
+    await updateSubscription(user.clerkId, { customerId, plan });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
@@ -41,14 +57,15 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      case "customer.subscription.created": {
+        const sub = event.data.object as Stripe.Subscription;
+        await syncSubscriptionFromStripeSubscription(sub);
+        break;
+      }
+
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
-        const customerId = sub.customer as string;
-        const user = await findUserByCustomerId(customerId);
-        if (user) {
-          const plan = sub.status === "active" ? "PRO" : "FREE";
-          await updateSubscription(user.clerkId, { plan });
-        }
+        await syncSubscriptionFromStripeSubscription(sub);
         break;
       }
 

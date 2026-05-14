@@ -61,8 +61,11 @@ export const updateSubscription = async (
     },
     data: {
       subscription: {
-        update: {
-          data: {
+        upsert: {
+          create: {
+            ...props,
+          },
+          update: {
             ...props,
           },
         },
