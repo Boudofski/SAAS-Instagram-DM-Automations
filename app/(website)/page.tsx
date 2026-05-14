@@ -39,7 +39,7 @@ const PLANS = [
     price: "$79",
     description: "For teams managing multiple accounts",
     ctaLabel: "Contact sales",
-    ctaHref: "mailto:hello@replyflow.ai",
+    ctaHref: "mailto:hello@ap3k.com",
     featured: false,
     features: [
       { text: "Everything in Creator", included: true },
@@ -76,10 +76,10 @@ export default function LandingPage() {
                       border-b border-rf-border bg-rf-bg/80 backdrop-blur-xl">
         <div className="flex items-center gap-2.5 font-bold text-base">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-white text-xs font-black">
-            RF
+                          flex items-center justify-center text-white text-[8px] font-black">
+            AP3K
           </div>
-          ReplyFlow
+          AP3k
         </div>
         <ul className="hidden md:flex items-center gap-8 text-sm text-rf-muted">
           <li><a href="#features" className="hover:text-rf-text transition-colors">Features</a></li>
@@ -122,8 +122,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg text-rf-muted leading-relaxed mb-8 max-w-md">
-              Ask your audience to comment a keyword. ReplyFlow AI sends the right DM, link,
-              guide, or offer instantly.
+              AP3k turns Instagram comments into automated DMs, leads, and sales.
             </p>
 
             <div className="flex items-center gap-3 mb-10">
@@ -172,7 +171,7 @@ export default function LandingPage() {
                 </div>
                 <span className="ml-auto text-[10px] font-bold text-rf-green bg-rf-green/10
                                  border border-rf-green/25 px-2 py-0.5 rounded-full">
-                  🔗 ReplyFlow active
+                  🔗 AP3k active
                 </span>
               </div>
               <div className="h-28 bg-gradient-to-br from-slate-800 to-slate-900
@@ -318,17 +317,17 @@ export default function LandingPage() {
       <footer className="px-16 py-8 border-t border-rf-border flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-bold text-rf-muted">
           <div className="w-6 h-6 rounded-md bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-white text-[10px] font-black">
-            RF
+                          flex items-center justify-center text-white text-[7px] font-black">
+            AP3K
           </div>
-          ReplyFlow
+          AP3k
         </div>
         <div className="flex gap-6 text-xs text-rf-muted">
           {["Privacy","Terms","Docs","Status"].map((l) => (
             <a key={l} href="#" className="hover:text-rf-text transition-colors">{l}</a>
           ))}
         </div>
-        <p className="text-xs text-rf-subtle">© 2026 ReplyFlow AI</p>
+        <p className="text-xs text-rf-subtle">© 2026 AP3k</p>
       </footer>
 
     </div>

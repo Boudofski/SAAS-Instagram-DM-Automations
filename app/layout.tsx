@@ -9,9 +9,23 @@ import "./globals.css";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ReplyFlow AI — Instagram DM Automation",
+  title: "AP3k — Instagram DM Automation",
   description:
-    "Turn Instagram comments into leads automatically. ReplyFlow AI sends personalised DMs the moment someone comments a keyword on your post.",
+    "AP3k turns Instagram comments into automated DMs, leads, and sales.",
+  openGraph: {
+    title: "AP3k — Instagram DM Automation",
+    description:
+      "AP3k turns Instagram comments into automated DMs, leads, and sales.",
+    url: "https://ap3k.com",
+    siteName: "AP3k",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AP3k — Instagram DM Automation",
+    description:
+      "AP3k turns Instagram comments into automated DMs, leads, and sales.",
+  },
 };
 
 export default function RootLayout({

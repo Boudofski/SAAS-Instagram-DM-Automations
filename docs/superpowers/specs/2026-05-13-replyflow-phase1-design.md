@@ -1,4 +1,4 @@
-# ReplyFlow AI — Phase 1 Design Spec
+# AP3k — Phase 1 Design Spec
 **Date:** 2026-05-13  
 **Scope:** Core reliability — webhook hardening, schema additions, duplicate prevention, keyword matching, template variables, analytics foundation  
 **Out of scope:** Landing page redesign, dashboard UI overhaul, 3-tier billing, automation wizard

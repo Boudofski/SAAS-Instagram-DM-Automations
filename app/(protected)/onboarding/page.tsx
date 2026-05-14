@@ -15,11 +15,11 @@ export default async function OnboardingWelcomePage() {
     <div className="text-center">
       <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rf-blue to-rf-purple
                       flex items-center justify-center text-white text-2xl font-black mx-auto mb-6">
-        RF
+        AP3K
       </div>
 
       <h1 className="text-3xl font-extrabold tracking-tight mb-3">
-        Welcome to ReplyFlow, {firstName} 👋
+        Welcome to AP3k, {firstName} 👋
       </h1>
       <p className="text-rf-muted mb-10 leading-relaxed">
         It takes 60 seconds to set up your first campaign.<br />

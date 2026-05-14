@@ -13,7 +13,7 @@ import { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Dashboard — ReplyFlow AI",
+  title: "Dashboard — AP3k",
   description: "Manage your Instagram DM automations",
 };
 

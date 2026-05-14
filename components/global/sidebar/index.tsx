@@ -23,10 +23,10 @@ export default function Sidebar({ slug }: Props) {
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b border-rf-border">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                        flex items-center justify-center text-white text-xs font-black flex-shrink-0">
-          RF
+                        flex items-center justify-center text-white text-[8px] font-black flex-shrink-0">
+          AP3K
         </div>
-        <span className="font-bold text-rf-text text-sm">ReplyFlow</span>
+        <span className="font-bold text-rf-text text-sm">AP3k</span>
       </div>
 
       {/* Nav */}

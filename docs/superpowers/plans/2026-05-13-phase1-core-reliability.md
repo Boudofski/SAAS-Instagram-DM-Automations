@@ -1,4 +1,4 @@
-# ReplyFlow AI — Phase 1 Core Reliability Implementation Plan
+# AP3k — Phase 1 Core Reliability Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -1613,7 +1613,7 @@ npm run dev
 ```
 
 ### Phase 2 items (not in this plan)
-- Premium landing page (ReplyFlow AI brand, dark theme, Linear/Stripe-inspired)
+- Premium landing page (AP3k brand, dark theme, Linear/Stripe-inspired)
 - Automation wizard UI (step-by-step create flow)
 - 3-tier pricing (Free / Creator / Agency) with Stripe
 - Dashboard analytics UI using `getAutomationAnalytics`

@@ -1,4 +1,4 @@
-# ReplyFlow AI — Phase 2 UX Design Spec
+# AP3k — Phase 2 UX Design Spec
 
 **Date:** 2026-05-13  
 **Status:** Approved  
@@ -9,8 +9,8 @@
 ## 1. Design Direction
 
 ### Brand
-- **Product name:** ReplyFlow AI (not "Slide")
-- **Logo mark:** RF (gradient: #3B82F6 → #6366F1, 28–30 px rounded square)
+- **Product name:** AP3k (not "Slide")
+- **Logo mark:** AP3K (gradient: #3B82F6 → #6366F1, 28–30 px rounded square)
 - **Voice:** Creator-focused. No enterprise language. Use: campaigns, keywords, DMs, leads, replies, automations.
 
 ### Design tokens
@@ -77,7 +77,7 @@ The wizard at `/automation/new` replaces it for campaign creation. The `[id]` pa
 **Goal:** User understands the product in ≤ 15 seconds and clicks "Start free."
 
 **Headline:** "Turn Instagram Comments Into Leads Automatically"  
-**Subheadline:** "Ask your audience to comment a keyword. ReplyFlow AI sends the right DM, link, guide, or offer instantly."
+**Subheadline:** "Ask your audience to comment a keyword. AP3k sends the right DM, link, guide, or offer instantly."
 
 **Hero layout:** Two columns above the fold.
 - Left: headline + subheadline + 2 CTAs ("Launch your first campaign →", "See how it works")
@@ -247,7 +247,7 @@ Stats cards show `—` (not 0) when empty to avoid "0 leads" anxiety.
 **Trigger:** First sign-up with no Instagram connected.
 
 **Step 1 — Welcome:**
-- "Welcome to ReplyFlow, [first_name] 👋"
+- "Welcome to AP3k, [first_name] 👋"
 - Single visual showing Comment → DM → Lead
 - Sub-copy: "It takes 60 seconds to set up your first campaign."
 - CTA: "Let's connect your Instagram →"
@@ -297,7 +297,7 @@ Add custom colours: `rf-bg`, `rf-surface`, `rf-surface2`, `rf-border`, `rf-blue`
 
 ### `app/layout.tsx`
 - Add `dark` class to `<html>`
-- Update metadata: title "ReplyFlow AI", description, favicon (RF gradient square)
+- Update metadata: title "AP3k", description, favicon (AP3K gradient square)
 
 ---
 

@@ -1,6 +1,6 @@
-# ReplyFlow AI
+# AP3k
 
-Turn Instagram comments into leads automatically. ReplyFlow AI sends personalised DMs the moment someone comments a keyword on your post — no manual work required.
+AP3k turns Instagram comments into automated DMs, leads, and sales.
 
 ---
 

@@ -28,7 +28,7 @@ const PLANS = [
   },
   {
     tier: "Agency", price: "$79", description: "For teams managing multiple accounts",
-    ctaLabel: "Contact sales", ctaHref: "mailto:hello@replyflow.ai", featured: false,
+    ctaLabel: "Contact sales", ctaHref: "mailto:hello@ap3k.com", featured: false,
     features: [
       { text: "Everything in Creator", included: true },
       { text: "Up to 10 Instagram accounts", included: true },
@@ -43,7 +43,7 @@ const PLANS = [
 const FAQ = [
   {
     q: "Is it safe for my Instagram account?",
-    a: "Yes. ReplyFlow uses the official Instagram Graph API. We never store your password and built-in duplicate prevention ensures nobody receives the same DM twice.",
+    a: "Yes. AP3k uses the official Instagram Graph API. We never store your password and built-in duplicate prevention ensures nobody receives the same DM twice.",
   },
   {
     q: "Can I cancel any time?",
@@ -62,10 +62,10 @@ export default function PricingPage() {
       <nav className="flex items-center justify-between px-16 py-4 border-b border-rf-border">
         <Link href="/" className="flex items-center gap-2 font-bold text-sm">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-white text-xs font-black">
-            RF
+                          flex items-center justify-center text-white text-[8px] font-black">
+            AP3K
           </div>
-          ReplyFlow
+          AP3k
         </Link>
         <Link href="/sign-up"
               className="bg-rf-blue hover:bg-rf-blue/90 text-white text-sm font-bold
