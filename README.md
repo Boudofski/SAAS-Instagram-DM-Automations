@@ -216,6 +216,11 @@ Subscribe the Instagram webhook to:
 - `comments`
 - `messages`
 
+Webhook POST requests are verified with Meta's `x-hub-signature-256` header
+using `META_APP_SECRET`. Comment and messaging receipts are stored in
+`WebhookEvent`, matched campaign activity is stored in `AutomationEvent`, and
+send attempts are stored in `MessageLog`.
+
 AP3k only sends a private reply/DM to users who commented or messaged the connected Instagram account. It does not scrape Instagram, log in with passwords, or send unsolicited DMs.
 
 ---

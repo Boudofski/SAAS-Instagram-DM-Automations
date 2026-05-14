@@ -61,10 +61,14 @@ The app logs verification safely:
 
 ## 6. Required Webhook Fields / Events
 
-Subscribe to:
+In Meta Developers, subscribe the Instagram product/webhooks to these fields:
 
 - `comments`
 - `messages`
+
+AP3k verifies every POST with `x-hub-signature-256` using `META_APP_SECRET`. If the
+signature is missing or invalid, the webhook returns `401` and stores a safe
+`SIGNATURE_VERIFICATION_FAILED` receipt without logging secrets or payload tokens.
 
 Use Meta's test event sender first, then test a real comment from another Instagram account.
 
@@ -117,16 +121,22 @@ Some Meta app setups require the Instagram Business/Creator account to be connec
    - Public reply appears if configured.
    - Database rows exist:
      ```sql
+     SELECT * FROM "WebhookEvent" ORDER BY "createdAt" DESC LIMIT 10;
      SELECT * FROM "Lead" ORDER BY "createdAt" DESC LIMIT 5;
      SELECT * FROM "AutomationEvent" ORDER BY "createdAt" DESC LIMIT 10;
      SELECT * FROM "MessageLog" ORDER BY "createdAt" DESC LIMIT 10;
      ```
+   - The campaign detail page shows:
+     - Webhook Received
+     - Keyword Matched
+     - Dm Sent or Dm Failed
 
 ## 11. Debugging Table
 
 | Symptom | Likely Cause | Check |
 |---|---|---|
 | Webhook verification returns 403 | Verify token mismatch | Compare Meta Verify Token with `META_VERIFY_TOKEN`; check `token_match` log |
+| Webhook POST returns 401 | Meta signature missing/invalid or wrong app secret | Confirm `META_APP_SECRET` belongs to the same Meta app sending webhooks |
 | OAuth redirect mismatch | Registered URI differs | Meta redirect URI and `META_REDIRECT_URI` must both equal `https://ap3k.com/callback/instagram` |
 | Connect succeeds but no posts | Missing media permission or token issue | Check `instagram_business_basic` scope and `[instagram-media]` safe logs |
 | Comment webhook arrives but no automation matches | Wrong media ID or inactive campaign | Confirm `Post.postid` equals webhook `media.id` and `Automation.active=true` |
@@ -134,6 +144,7 @@ Some Meta app setups require the Instagram Business/Creator account to be connec
 | Private reply fails | Missing messaging permission or DM restriction | Inspect `MessageLog.errorMessage`; no tokens are logged |
 | Public reply fails but DM sends | Comment reply permission or deleted comment | Inspect `MessageLog` for `COMMENT_REPLY` failures |
 | Duplicate skipped | Same automation/commenter/comment already sent | Inspect `MessageLog` for previous `DM` `SENT` row |
+| WebhookEvent exists but no AutomationEvent | Event was unsupported, incomplete, unmatched, or tied to a different media ID | Inspect `WebhookEvent.status` and `WebhookEvent.errorMessage` |
 
 ## Live Safety Rules
 

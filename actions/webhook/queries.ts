@@ -216,6 +216,42 @@ export const createAutomationEvent = async (data: {
   return await client.automationEvent.create({ data });
 };
 
+export const createWebhookEvent = async (data: {
+  automationId?: string;
+  eventType: string;
+  field?: string;
+  igAccountId?: string;
+  igUserId?: string;
+  mediaId?: string;
+  commentId?: string;
+  status?: string;
+  errorMessage?: string;
+  payload?: Prisma.InputJsonObject;
+}) => {
+  return await client.webhookEvent.create({
+    data: {
+      provider: "meta",
+      status: "RECEIVED",
+      ...data,
+    },
+  });
+};
+
+export const updateWebhookEvent = async (
+  id: string,
+  data: {
+    automationId?: string;
+    status?: string;
+    errorMessage?: string;
+    processedAt?: Date;
+  }
+) => {
+  return await client.webhookEvent.update({
+    where: { id },
+    data,
+  });
+};
+
 // ---------------------------------------------------------------------------
 // Counter tracking — fast path increments on Listener
 // ---------------------------------------------------------------------------

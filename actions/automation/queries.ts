@@ -205,3 +205,39 @@ export const getAutomationAnalytics = async (automationId: string) => {
     leadsCollected: leadsCount,
   };
 };
+
+export const getAutomationActivity = async (automationId: string) => {
+  const [events, messageLogs, webhookEvents] = await Promise.all([
+    client.automationEvent.findMany({
+      where: { automationId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    client.messageLog.findMany({
+      where: { automationId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    client.webhookEvent.findMany({
+      where: { automationId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+  ]);
+
+  return [...events, ...messageLogs, ...webhookEvents]
+    .map((item: any) => ({
+      id: item.id,
+      createdAt: item.createdAt,
+      type: item.eventType ?? `${item.messageType}_${item.status}`,
+      status: item.status ?? undefined,
+      igUserId: item.igUserId ?? item.recipientIgId ?? undefined,
+      mediaId: item.mediaId ?? undefined,
+      commentId: item.commentId ?? undefined,
+      keyword: item.keyword ?? undefined,
+      errorMessage: item.errorMessage ?? undefined,
+      source: item.messageType ? "message" : item.provider ? "webhook" : "event",
+    }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 30);
+};

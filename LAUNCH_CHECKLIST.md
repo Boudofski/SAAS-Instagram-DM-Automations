@@ -39,6 +39,7 @@ Walk through this flow end-to-end with real credentials before launch:
 - [ ] Webhook callback URL registered: `https://ap3k.com/api/webhooks/meta`
 - [ ] Webhook verify token matches `META_VERIFY_TOKEN` in env
 - [ ] `comments` and `messages` webhook fields subscribed
+- [ ] Webhook POST signatures verify with `META_APP_SECRET`
 - [ ] OAuth scopes include `instagram_business_basic`, `instagram_business_manage_comments`, `instagram_business_manage_messages`
 - [ ] Connected account is an Instagram Business or Creator account
 - [ ] Facebook Page connection is configured if the selected Meta app flow requires page-linked IG discovery
@@ -62,6 +63,7 @@ Walk through this flow end-to-end with real credentials before launch:
 - [ ] `STRIPE_SECRET_KEY` is not exposed in client-side code
 - [ ] `META_APP_SECRET` is not exposed in client-side code
 - [ ] Meta webhook verifies `META_VERIFY_TOKEN` on GET requests
+- [ ] Meta webhook verifies `x-hub-signature-256` on POST requests
 - [ ] Stripe webhook verifies `stripe-signature` header
 - [ ] No `.env.local` or `.env` committed to git (check `.gitignore`)
 - [ ] `DATABASE_URL` not hardcoded anywhere in source
@@ -96,4 +98,4 @@ Required before real (non-test) Instagram accounts can use the app:
 - [ ] Add proactive background Instagram token refresh monitoring
 - [ ] Add story reply trigger support in the automation wizard
 - [ ] Add error UI when Smart AI matching fails (currently silent)
-- [ ] Rate-limit webhook handler to prevent abuse
+- [x] Rate-limit webhook handler to prevent abuse

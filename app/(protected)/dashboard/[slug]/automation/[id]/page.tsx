@@ -1,4 +1,4 @@
-import { getAutomationInfo, getAutomationStats } from "@/actions/automation";
+import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/actions/automation";
 import ActiveAutomationButton from "@/components/global/active-automation-button";
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,8 @@ export default async function CampaignDetailPage({ params }: Props) {
 
   const automation = automationResult.data as any;
   const stats = statsResult.status === 200 ? statsResult.data : null;
+  const logsResult = await getAutomationLogs(params.id);
+  const activity = logsResult.status === 200 ? (logsResult.data as any[]) : [];
 
   const replyRate =
     stats && stats.commentsReceived > 0
@@ -185,6 +187,80 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
 
       </div>
+
+      <div className="mt-6 rounded-2xl border border-rf-border bg-rf-surface p-6">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-rf-text">Live automation log</h2>
+            <p className="mt-1 text-xs text-rf-muted">
+              Webhook receipts, keyword matches, DM sends, and failures from Meta.
+            </p>
+          </div>
+          <span className="rounded-full border border-rf-border bg-rf-surface2 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-rf-muted">
+            Latest 30
+          </span>
+        </div>
+
+        {activity.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-rf-border bg-rf-surface2/60 p-5 text-sm text-rf-muted">
+            No webhook activity yet. Comment a campaign keyword from another Instagram account to test the live pipeline.
+          </div>
+        ) : (
+          <div className="divide-y divide-rf-border">
+            {activity.map((item) => (
+              <div key={`${item.source}-${item.id}`} className="flex gap-3 py-4">
+                <span
+                  className={[
+                    "mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full",
+                    getActivityTone(item.type, item.status),
+                  ].join(" ")}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-rf-text">
+                      {formatActivityType(item.type)}
+                    </p>
+                    {item.keyword && (
+                      <span className="rounded-full bg-rf-blue/10 px-2 py-0.5 text-[11px] font-semibold text-rf-blue">
+                        {item.keyword}
+                      </span>
+                    )}
+                    {item.status && (
+                      <span className="rounded-full bg-rf-surface2 px-2 py-0.5 text-[11px] font-semibold uppercase text-rf-muted">
+                        {item.status}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-rf-muted">
+                    {new Date(item.createdAt).toLocaleString()}
+                    {item.igUserId ? ` · IG user ${item.igUserId}` : ""}
+                    {item.commentId ? ` · comment ${item.commentId}` : ""}
+                  </p>
+                  {item.errorMessage && (
+                    <p className="mt-2 rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                      {item.errorMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function formatActivityType(type: string) {
+  return type
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getActivityTone(type: string, status?: string) {
+  if (type.includes("FAILED") || status === "FAILED") return "bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.6)]";
+  if (type.includes("SENT") || type.includes("MATCHED") || status === "PROCESSED") return "bg-rf-green shadow-[0_0_16px_rgba(34,197,94,0.45)]";
+  if (type.includes("WEBHOOK") || status === "PROCESSING" || status === "RECEIVED") return "bg-rf-blue shadow-[0_0_16px_rgba(96,165,250,0.45)]";
+  return "bg-rf-muted";
 }

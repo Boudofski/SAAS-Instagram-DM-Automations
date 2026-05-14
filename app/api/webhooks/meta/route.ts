@@ -7,10 +7,13 @@ import {
   createMessageLog,
   upsertLead,
   createAutomationEvent,
+  createWebhookEvent,
+  updateWebhookEvent,
   createChatHistory,
   getChatHistory,
   trackResponse,
 } from "@/actions/webhook/queries";
+import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeywordWithMode } from "@/lib/matching";
 import {
   formatSafeMetaError,
@@ -21,6 +24,11 @@ import {
 } from "@/lib/fetch";
 import { resolveTemplate } from "@/lib/template";
 import { openai } from "@/lib/openai";
+
+const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
+const WEBHOOK_RATE_LIMIT_MAX = 120;
+const SEND_RETRY_ATTEMPTS = 2;
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 
 // ---------------------------------------------------------------------------
 // GET — Meta webhook verification challenge
@@ -50,8 +58,38 @@ export async function GET(req: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
+  const rateKey = getRateLimitKey(req);
+  if (isRateLimited(rateKey)) {
+    console.warn("[webhook] request rate limited", { rateKey });
+    return NextResponse.json({ received: true, rate_limited: true }, { status: 200 });
+  }
+
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const signature = req.headers.get("x-hub-signature-256");
+    const signatureResult = verifyMetaSignature(rawBody, signature);
+    console.log("[webhook] signature verification", signatureResult);
+
+    if (!signatureResult.verified) {
+      try {
+        await createWebhookEvent({
+          eventType: "SIGNATURE_VERIFICATION_FAILED",
+          status: "FAILED",
+          errorMessage: signatureResult.reason,
+          payload: {
+            hasSignature: Boolean(signature),
+            hasAppSecret: Boolean(process.env.META_APP_SECRET),
+          },
+        });
+      } catch (error) {
+        console.error("[webhook] failed to store signature failure", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody);
     const entries = Array.isArray(body.entry) ? body.entry : [];
     if (entries.length === 0) return ok();
 
@@ -88,14 +126,54 @@ async function processEntry(entry: any) {
       const commenterUsername: string | undefined = change.from?.username;
       const commentText: string = change.text ?? "";
 
-      if (!mediaId || !commentId || !commenterId || !commentText) continue;
+      const webhookEvent = await createWebhookEvent({
+        eventType: "COMMENT_WEBHOOK_RECEIVED",
+        field: changeItem.field,
+        igAccountId,
+        igUserId: commenterId,
+        mediaId,
+        commentId,
+        payload: {
+          hasMediaId: Boolean(mediaId),
+          hasCommentId: Boolean(commentId),
+          hasCommenterId: Boolean(commenterId),
+          hasText: Boolean(commentText),
+        },
+      });
+
+      if (!mediaId || !commentId || !commenterId || !commentText) {
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "IGNORED",
+          errorMessage: "missing_required_comment_fields",
+          processedAt: new Date(),
+        });
+        continue;
+      }
 
       // 1. Find active automation for this post
       const automation = await findAutomationForComment(mediaId, igAccountId);
       if (!automation?.listener) {
         console.log(`[webhook] automation match: none (mediaId=${mediaId})`);
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "IGNORED",
+          errorMessage: "no_active_automation_for_media",
+          processedAt: new Date(),
+        });
         continue;
       }
+
+      await updateWebhookEvent(webhookEvent.id, {
+        automationId: automation.id,
+        status: "PROCESSING",
+      });
+
+      await createAutomationEvent({
+        automationId: automation.id,
+        eventType: "WEBHOOK_RECEIVED",
+        igUserId: commenterId,
+        mediaId,
+        commentId,
+      });
 
       // 2. Match keyword using this automation's matching mode
       const matchedKeyword = matchKeywordWithMode(
@@ -114,10 +192,25 @@ async function processEntry(entry: any) {
           commentId,
           keyword: commentText.slice(0, 100),
         });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "PROCESSED",
+          errorMessage: "keyword_not_matched",
+          processedAt: new Date(),
+        });
         continue;
       }
 
       console.log(`[webhook] automation match: ${automation.id} keyword="${matchedKeyword}"`);
+
+      await createAutomationEvent({
+        automationId: automation.id,
+        eventType: "KEYWORD_MATCHED",
+        igUserId: commenterId,
+        mediaId,
+        commentId,
+        keyword: matchedKeyword,
+      });
 
       // 3. Log comment received
       await createAutomationEvent({
@@ -140,12 +233,24 @@ async function processEntry(entry: any) {
           commentId,
           keyword: matchedKeyword,
         });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "PROCESSED",
+          errorMessage: "duplicate_skipped",
+          processedAt: new Date(),
+        });
         continue;
       }
 
       const token = automation.User?.integrations?.[0]?.token;
       if (!token) {
         console.warn("[webhook] automation token missing", { automationId: automation.id });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "FAILED",
+          errorMessage: "connected_instagram_token_missing",
+          processedAt: new Date(),
+        });
         continue;
       }
 
@@ -162,7 +267,7 @@ async function processEntry(entry: any) {
       if (listener.commentReply) {
         const replyText = resolveTemplate(listener.commentReply, templateVars);
         try {
-          const replyResult = await sendCommentReply(commentId, replyText, token);
+          const replyResult = await withRetry(() => sendCommentReply(commentId, replyText, token));
           const sent = replyResult.status === 200;
           await createMessageLog({
             automationId: automation.id,
@@ -231,11 +336,8 @@ async function processEntry(entry: any) {
 
       // 7. Send private DM (referenced to the comment)
       try {
-        const dmResult = await sendPrivateMessage(
-          igAccountId,
-          commentId,
-          dmMessageText,
-          token
+        const dmResult = await withRetry(() =>
+          sendPrivateMessage(igAccountId, commentId, dmMessageText, token)
         );
         const sent = dmResult.status === 200;
         console.log(`[webhook] ${sent ? "DM_SENT" : "DM_FAILED"} recipientId=${commenterId} automationId=${automation.id}`);
@@ -265,6 +367,12 @@ async function processEntry(entry: any) {
           });
           await trackResponse(automation.id, "DM");
         }
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: sent ? "PROCESSED" : "FAILED",
+          errorMessage: sent ? undefined : "private_reply_not_accepted",
+          processedAt: new Date(),
+        });
       } catch (err) {
         const safeError = formatSafeMetaError(err);
         console.warn("[webhook] private reply failed", getSafeMetaError(err));
@@ -286,6 +394,12 @@ async function processEntry(entry: any) {
           keyword: matchedKeyword,
           meta: { error: safeError },
         });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "FAILED",
+          errorMessage: safeError,
+          processedAt: new Date(),
+        });
       }
       continue;
     } else {
@@ -302,7 +416,25 @@ async function processEntry(entry: any) {
       const senderId: string | undefined = messagingItem.sender?.id;
       const dmText: string = messagingItem.message?.text ?? "";
 
-      if (!senderId || !dmText) continue;
+      const webhookEvent = await createWebhookEvent({
+        eventType: "DM_WEBHOOK_RECEIVED",
+        field: "messaging",
+        igAccountId,
+        igUserId: senderId,
+        payload: {
+          hasSenderId: Boolean(senderId),
+          hasText: Boolean(dmText),
+        },
+      });
+
+      if (!senderId || !dmText) {
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "IGNORED",
+          errorMessage: "missing_required_dm_fields",
+          processedAt: new Date(),
+        });
+        continue;
+      }
 
       // 1. Try to match an automation by keyword
       const result = await findAutomationForDM(dmText, igAccountId);
@@ -338,7 +470,7 @@ async function processEntry(entry: any) {
                     createChatHistory(automation.id, igAccountId, dmText, senderId),
                     createChatHistory(automation.id, igAccountId, aiText, senderId),
                   ]);
-                  await sendDm(igAccountId, senderId, aiText, token);
+                  await withRetry(() => sendDm(igAccountId, senderId, aiText, token));
                 }
               }
             }
@@ -346,11 +478,20 @@ async function processEntry(entry: any) {
         } catch {
           // Continuation path is non-critical — swallow errors
         }
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "PROCESSED",
+          errorMessage: "keyword_not_matched",
+          processedAt: new Date(),
+        });
         continue;
       }
 
       const { automation, matchedKeyword } = result;
       console.log(`[webhook] DM match: automationId=${automation.id} keyword="${matchedKeyword}"`);
+      await updateWebhookEvent(webhookEvent.id, {
+        automationId: automation.id,
+        status: "PROCESSING",
+      });
 
       // 2. Duplicate check
       if (await isDuplicate(automation.id, senderId)) {
@@ -359,6 +500,12 @@ async function processEntry(entry: any) {
           eventType: "DUPLICATE_SKIPPED",
           igUserId: senderId,
           keyword: matchedKeyword,
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "PROCESSED",
+          errorMessage: "duplicate_skipped",
+          processedAt: new Date(),
         });
         continue;
       }
@@ -369,6 +516,12 @@ async function processEntry(entry: any) {
           automationId: automation.id,
           hasToken: Boolean(token),
           hasListener: Boolean(automation.listener),
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "FAILED",
+          errorMessage: "token_or_listener_missing",
+          processedAt: new Date(),
         });
         continue;
       }
@@ -407,7 +560,7 @@ async function processEntry(entry: any) {
       }
 
       try {
-        const dmResult = await sendDm(igAccountId, senderId, dmMessageText, token);
+        const dmResult = await withRetry(() => sendDm(igAccountId, senderId, dmMessageText, token));
         const sent = dmResult.status === 200;
         await createMessageLog({
           automationId: automation.id,
@@ -422,6 +575,12 @@ async function processEntry(entry: any) {
           keyword: matchedKeyword,
         });
         if (sent) await trackResponse(automation.id, "DM");
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: sent ? "PROCESSED" : "FAILED",
+          errorMessage: sent ? undefined : "dm_send_not_accepted",
+          processedAt: new Date(),
+        });
       } catch (err) {
         const safeError = formatSafeMetaError(err);
         console.warn("[webhook] DM send failed", getSafeMetaError(err));
@@ -439,6 +598,12 @@ async function processEntry(entry: any) {
           keyword: matchedKeyword,
           meta: { error: safeError },
         });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "FAILED",
+          errorMessage: safeError,
+          processedAt: new Date(),
+        });
       }
     }
   }
@@ -450,4 +615,73 @@ async function processEntry(entry: any) {
 
 function ok() {
   return NextResponse.json({ received: true }, { status: 200 });
+}
+
+function verifyMetaSignature(rawBody: string, signature: string | null) {
+  const appSecret = process.env.META_APP_SECRET;
+  if (!appSecret) {
+    return { verified: false, reason: "missing_app_secret" };
+  }
+  if (!signature?.startsWith("sha256=")) {
+    return { verified: false, reason: "missing_or_invalid_signature_header" };
+  }
+
+  const expected = `sha256=${createHmac("sha256", appSecret)
+    .update(rawBody, "utf8")
+    .digest("hex")}`;
+
+  const actualBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (actualBuffer.length !== expectedBuffer.length) {
+    return { verified: false, reason: "signature_length_mismatch" };
+  }
+
+  const verified = timingSafeEqual(actualBuffer, expectedBuffer);
+  return {
+    verified,
+    reason: verified ? "verified" : "signature_mismatch",
+  };
+}
+
+function getRateLimitKey(req: NextRequest) {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+function isRateLimited(key: string) {
+  const now = Date.now();
+  const existing = rateLimitBuckets.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    rateLimitBuckets.set(key, {
+      count: 1,
+      resetAt: now + WEBHOOK_RATE_LIMIT_WINDOW_MS,
+    });
+    return false;
+  }
+
+  existing.count += 1;
+  return existing.count > WEBHOOK_RATE_LIMIT_MAX;
+}
+
+async function withRetry<T>(operation: () => Promise<T>, attempts = SEND_RETRY_ATTEMPTS): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      const status = getSafeMetaError(error).status;
+      const shouldRetry = status === 429 || (typeof status === "number" && status >= 500);
+      if (!shouldRetry || attempt === attempts) break;
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+  }
+
+  throw lastError;
 }
