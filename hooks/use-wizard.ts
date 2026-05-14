@@ -23,22 +23,26 @@ type SelectedPost = {
 
 export type WizardData = {
   post: SelectedPost | null;
+  campaignName: string;
   keywords: string[];
   matchingMode: "EXACT" | "CONTAINS" | "SMART_AI";
   dmMessage: string;
   ctaLink: string;
   publicReply: string;
   aiMode: boolean;
+  active: boolean;
 };
 
 const INITIAL: WizardData = {
   post: null,
+  campaignName: "",
   keywords: [],
   matchingMode: "CONTAINS",
   dmMessage: "",
   ctaLink: "",
   publicReply: "",
   aiMode: false,
+  active: true,
 };
 
 export function useWizard(slug: string) {
@@ -80,6 +84,13 @@ export function useWizard(slug: string) {
       if (all.status !== 200 || !all.data.length) throw new Error("Automation not found");
       const automationId = all.data[all.data.length - 1].id;
 
+      if (data.campaignName.trim()) {
+        const { updateAutomationName } = await import("@/actions/automation");
+        await updateAutomationName(automationId, {
+          name: data.campaignName.trim(),
+        });
+      }
+
       await savePosts(automationId, [data.post]);
 
       for (const kw of data.keywords) {
@@ -98,7 +109,7 @@ export function useWizard(slug: string) {
 
       await saveMatchingMode(automationId, data.matchingMode);
 
-      await activateAutomation(automationId, true);
+      await activateAutomation(automationId, data.active);
 
       router.push(`/dashboard/${slug}/automation/${automationId}`);
     } catch (err) {

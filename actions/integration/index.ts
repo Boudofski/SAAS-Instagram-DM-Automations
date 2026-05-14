@@ -129,7 +129,7 @@ export const onIntegrate = async (code: string) => {
     const instagramBaseUrl =
       process.env.INSTAGRAM_BASE_URL ?? "https://graph.instagram.com";
     const insts_id = await axios.get(
-      `${instagramBaseUrl}/me?fields=user_id,username`,
+      `${instagramBaseUrl}/me?fields=user_id,username,profile_picture_url`,
       {
         headers: { Authorization: `Bearer ${token.access_token}` },
       }
@@ -149,7 +149,9 @@ export const onIntegrate = async (code: string) => {
         token.access_token,
         new Date(expire_date),
         existing.id,
-        insts_id.data.user_id
+        insts_id.data.user_id,
+        insts_id.data.username,
+        insts_id.data.profile_picture_url
       );
       console.log("[oauth] integration save result", {
         integrationSaved: Boolean(update),
@@ -171,7 +173,9 @@ export const onIntegrate = async (code: string) => {
       user.id,
       token.access_token,
       new Date(expire_date),
-      insts_id.data.user_id
+      insts_id.data.user_id,
+      insts_id.data.username,
+      insts_id.data.profile_picture_url
     );
     console.log("[oauth] integration save result", {
       integrationSaved: Boolean(create),

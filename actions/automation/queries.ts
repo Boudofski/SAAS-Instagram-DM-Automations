@@ -241,3 +241,52 @@ export const getAutomationActivity = async (automationId: string) => {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 30);
 };
+
+export const getDashboardActivity = async (clerkId: string) => {
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: {
+      automations: {
+        select: { id: true },
+      },
+    },
+  });
+
+  const automationIds = user?.automations.map((automation) => automation.id) ?? [];
+  if (automationIds.length === 0) return [];
+
+  const [events, messageLogs, webhookEvents] = await Promise.all([
+    client.automationEvent.findMany({
+      where: { automationId: { in: automationIds } },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: { automation: { select: { name: true } } },
+    }),
+    client.messageLog.findMany({
+      where: { automationId: { in: automationIds } },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: { automation: { select: { name: true } } },
+    }),
+    client.webhookEvent.findMany({
+      where: { automationId: { in: automationIds } },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: { automation: { select: { name: true } } },
+    }),
+  ]);
+
+  return [...events, ...messageLogs, ...webhookEvents]
+    .map((item: any) => ({
+      id: item.id,
+      campaign: item.automation?.name ?? "Campaign",
+      createdAt: item.createdAt,
+      type: item.eventType ?? `${item.messageType}_${item.status}`,
+      status: item.status ?? undefined,
+      keyword: item.keyword ?? undefined,
+      errorMessage: item.errorMessage ?? undefined,
+      source: item.messageType ? "message" : item.provider ? "webhook" : "event",
+    }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 12);
+};

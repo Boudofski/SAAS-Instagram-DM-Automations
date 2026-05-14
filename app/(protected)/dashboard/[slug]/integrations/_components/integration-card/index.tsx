@@ -51,9 +51,30 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
         <h3 className="text-xl font-black">{title}</h3>
         <p className="mt-1 text-sm leading-relaxed text-rf-muted">{description}</p>
         {integrated?.instagramId && (
-          <p className="mt-2 text-xs font-semibold text-rf-green">
-            Connected account ID: {integrated.instagramId}
-          </p>
+          <div className="mt-3 flex items-center gap-3 rounded-xl border border-rf-green/15 bg-rf-green/10 p-3">
+            {integrated.profilePictureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={integrated.profilePictureUrl}
+                alt={integrated.instagramUsername ?? "Connected Instagram account"}
+                className="h-9 w-9 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-ap3k-gradient text-xs font-black text-white">
+                IG
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-rf-green">
+                {integrated.instagramUsername
+                  ? `@${integrated.instagramUsername}`
+                  : "Instagram connected"}
+              </p>
+              <p className="truncate text-[11px] text-rf-muted">
+                Account ID: {integrated.instagramId}
+              </p>
+            </div>
+          </div>
         )}
       </div>
       <Button

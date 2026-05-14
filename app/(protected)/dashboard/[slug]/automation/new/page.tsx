@@ -98,11 +98,22 @@ export default function WizardPage({ params }: Props) {
               📸 Step 1 of 6
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              Choose a post or Reel
+              Name it and choose a post or Reel
             </h2>
             <p className="text-rf-muted text-sm mb-6">
               Which post do you want to run this campaign on?
             </p>
+            <div className="mb-6">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-rf-muted">
+                Campaign name
+              </label>
+              <input
+                value={data.campaignName}
+                onChange={(event) => update({ campaignName: event.target.value })}
+                placeholder="Example: May launch guide"
+                className="w-full rounded-xl border border-white/10 bg-rf-surface px-4 py-3 text-sm text-rf-text outline-none transition-colors placeholder:text-rf-subtle focus:border-rf-pink/50"
+              />
+            </div>
             {postsLoading ? (
               <div className="flex justify-center py-16">
                 <Loader2 className="animate-spin text-rf-muted" />
@@ -302,11 +313,13 @@ export default function WizardPage({ params }: Props) {
 
             <div className="flex flex-col gap-2 mb-6">
               {[
+                { label: "Name",         value: data.campaignName || "Untitled campaign",            step: 1 as const },
                 { label: "Post",         value: data.post?.caption?.slice(0, 60) ?? "Selected post", step: 1 as const },
                 { label: "Keywords",     value: data.keywords.join(", ") || "None",                  step: 2 as const },
                 { label: "DM message",   value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""), step: 3 as const },
                 { label: "Public reply", value: data.publicReply || "Skipped",                       step: 4 as const },
                 { label: "AI mode",      value: data.aiMode ? "Smart AI enabled" : "Standard mode",  step: 5 as const },
+                { label: "Status",       value: data.active ? "Activate immediately" : "Save paused", step: 6 as const },
               ].map((row) => (
                 <div key={row.label}
                      className="flex items-center justify-between gap-3 px-4 py-3
@@ -330,6 +343,37 @@ export default function WizardPage({ params }: Props) {
                 {error}
               </p>
             )}
+
+            <button
+              type="button"
+              onClick={() => update({ active: !data.active })}
+              className={[
+                "mb-6 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
+                data.active
+                  ? "border-rf-green/25 bg-rf-green/10"
+                  : "border-rf-border bg-rf-surface",
+              ].join(" ")}
+            >
+              <span>
+                <span className="block text-sm font-bold text-rf-text">Active campaign</span>
+                <span className="mt-1 block text-xs text-rf-muted">
+                  When enabled, AP3k listens for matching comments and sends the configured DM.
+                </span>
+              </span>
+              <span
+                className={[
+                  "relative h-6 w-11 rounded-full transition-colors",
+                  data.active ? "bg-rf-green" : "bg-rf-subtle",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "absolute top-1 h-4 w-4 rounded-full bg-white transition-all",
+                    data.active ? "left-6" : "left-1",
+                  ].join(" ")}
+                />
+              </span>
+            </button>
           </div>
         )}
 

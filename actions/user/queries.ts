@@ -16,6 +16,8 @@ export const findUser = async (clerkId: string) => {
           expiresAt: true,
           name: true,
           instagramId: true,
+          instagramUsername: true,
+          profilePictureUrl: true,
         },
       },
     },

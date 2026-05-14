@@ -41,6 +41,8 @@ model Integrations {
   token       String       @unique
   expiresAt   DateTime?
   instagramId String?      @unique
+  instagramUsername String?
+  profilePictureUrl String?
 }
 
 model Automation {

@@ -2,7 +2,7 @@ import CampaignCard from "@/components/global/campaign-card";
 import EmptyState from "@/components/global/empty-state";
 import OnboardingChecklist from "@/components/global/onboarding-checklist";
 import StatCard from "@/components/global/stat-card";
-import { getAllAutomation } from "@/actions/automation";
+import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -14,9 +14,10 @@ const onboardingSkippedCookie = (clerkId: string) =>
   `ap3k_onboarding_skipped_${clerkId}`;
 
 export default async function DashboardPage({ params }: Props) {
-  const [userResult, automationsResult] = await Promise.all([
+  const [userResult, automationsResult, activityResult] = await Promise.all([
     onUserInfo(),
     getAllAutomation(),
+    getRecentAutomationActivity(),
   ]);
 
   const onboardingSkipped =
@@ -50,6 +51,11 @@ export default async function DashboardPage({ params }: Props) {
     : 0;
 
   const isEmpty = automations.length === 0;
+  const recentActivity =
+    activityResult.status === 200 ? ((activityResult.data as any[]) ?? []) : [];
+  const instagram = userResult.data?.integrations?.[0];
+  const tokenExpired =
+    instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now();
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
@@ -70,6 +76,73 @@ export default async function DashboardPage({ params }: Props) {
           Monitor campaign momentum, capture leads, and launch new comment-to-DM flows without leaving AP3k.
         </p>
       </div>
+
+      <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/10 p-4">
+        <p className="text-xs font-black uppercase tracking-wider text-rf-blue">
+          Meta review test mode
+        </p>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {[
+            { label: "Connect Instagram", done: Boolean(instagram), href: `/dashboard/${params.slug}/integrations` },
+            { label: "Create Campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
+            { label: "Test Comment", done: recentActivity.some((item) => item.type === "DM_SENT"), href: automations[0]?.id ? `/dashboard/${params.slug}/automation/${automations[0].id}` : `/dashboard/${params.slug}/automation/new` },
+          ].map((item, index) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="rounded-xl border border-white/10 bg-rf-surface/70 p-3 text-sm transition-colors hover:border-rf-pink/30"
+            >
+              <span className="text-[11px] font-bold uppercase tracking-wider text-rf-muted">
+                Step {index + 1}
+              </span>
+              <span className="mt-1 flex items-center justify-between font-bold text-rf-text">
+                {item.label}
+                <span className={item.done ? "text-rf-green" : "text-rf-muted"}>
+                  {item.done ? "Done" : "Open"}
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {instagram && (
+        <div className={[
+          "flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between",
+          tokenExpired ? "border-red-500/20 bg-red-500/10" : "border-rf-green/15 bg-rf-green/10",
+        ].join(" ")}>
+          <div className="flex items-center gap-3">
+            {instagram.profilePictureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={instagram.profilePictureUrl}
+                alt={instagram.instagramUsername ?? "Connected Instagram account"}
+                className="h-11 w-11 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ap3k-gradient text-sm font-black text-white">
+                IG
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-black text-rf-text">
+                {instagram.instagramUsername ? `@${instagram.instagramUsername}` : "Instagram connected"}
+              </p>
+              <p className="text-xs text-rf-muted">
+                {tokenExpired
+                  ? "Token expired. Reconnect Instagram before testing comments."
+                  : "Ready for official comment-to-DM testing."}
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/dashboard/${params.slug}/integrations`}
+            className="text-xs font-bold text-rf-pink hover:text-rf-purple"
+          >
+            {tokenExpired ? "Reconnect Instagram" : "Manage connection"}
+          </Link>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,9 +220,55 @@ export default async function DashboardPage({ params }: Props) {
         {/* Right panel */}
         <div className="flex flex-col gap-4">
           <OnboardingChecklist items={checklistItems} />
+          <div className="ap3k-card rounded-2xl p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-black text-rf-text">Activity feed</h2>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-rf-muted">
+                Live
+              </span>
+            </div>
+            {recentActivity.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-rf-border bg-rf-surface2/60 p-4 text-xs leading-relaxed text-rf-muted">
+                No webhook activity yet. Create a campaign, then comment a keyword from another Instagram account.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {recentActivity.map((item) => (
+                  <div key={`${item.source}-${item.id}`} className="rounded-xl border border-rf-border bg-rf-surface2/70 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-bold text-rf-text">
+                        {formatActivity(item.type)}
+                      </p>
+                      <span className={[
+                        "h-2 w-2 rounded-full",
+                        item.type.includes("FAILED") || item.status === "FAILED"
+                          ? "bg-red-400"
+                          : item.type.includes("SENT") || item.type.includes("MATCHED")
+                          ? "bg-rf-green"
+                          : "bg-rf-blue",
+                      ].join(" ")} />
+                    </div>
+                    <p className="mt-1 truncate text-[11px] text-rf-muted">
+                      {item.campaign} · {new Date(item.createdAt).toLocaleTimeString()}
+                    </p>
+                    {item.errorMessage && (
+                      <p className="mt-2 text-[11px] text-red-200">{item.errorMessage}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
     </div>
   );
+}
+
+function formatActivity(type: string) {
+  return type
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }

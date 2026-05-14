@@ -13,6 +13,7 @@ import {
   getAutomation,
   getAutomationAnalytics,
   getAutomationActivity,
+  getDashboardActivity,
   updateAutomation,
 } from "./queries";
 
@@ -225,6 +226,17 @@ export const getAutomationLogs = async (automationId: string) => {
 
   try {
     const activity = await getAutomationActivity(automationId);
+    return { status: 200, data: activity };
+  } catch (error) {
+    return { status: 500, data: [] };
+  }
+};
+
+export const getRecentAutomationActivity = async () => {
+  const user = await onCurrentUser();
+
+  try {
+    const activity = await getDashboardActivity(user.id);
     return { status: 200, data: activity };
   } catch (error) {
     return { status: 500, data: [] };

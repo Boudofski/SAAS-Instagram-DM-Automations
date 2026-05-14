@@ -6,7 +6,9 @@ export const updateIntegration = async (
   token: string,
   expire: Date,
   id: string,
-  instagramId?: string
+  instagramId?: string,
+  instagramUsername?: string,
+  profilePictureUrl?: string
 ) => {
   return await client.integrations.update({
     where: { id },
@@ -14,6 +16,8 @@ export const updateIntegration = async (
       token,
       expiresAt: expire,
       instagramId,
+      instagramUsername,
+      profilePictureUrl,
     },
   });
 };
@@ -37,7 +41,9 @@ export const createIntegration = async (
   clerkId: string,
   token: string,
   expire: Date,
-  insts_id: string
+  insts_id: string,
+  instagramUsername?: string,
+  profilePictureUrl?: string
 ) => {
   return await client.user.update({
     where: {
@@ -49,6 +55,8 @@ export const createIntegration = async (
           token,
           expiresAt: expire,
           instagramId: insts_id,
+          instagramUsername,
+          profilePictureUrl,
         },
       },
     },
