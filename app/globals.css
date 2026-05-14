@@ -48,23 +48,23 @@
 
   .dark {
     /* AP3k palette */
-    --background: 220 35% 7%;       /* #0B0F19 */
+    --background: 224 49% 8%;       /* #0B1020 */
     --foreground: 210 40% 98%;      /* #F9FAFB */
-    --card: 222 29% 11%;            /* #111827 */
+    --card: 222 47% 11%;            /* #0F172A */
     --card-foreground: 210 40% 98%;
     --popover: 222 29% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;         /* #3B82F6 */
+    --primary: 213 94% 68%;         /* #60A5FA */
     --primary-foreground: 210 40% 98%;
-    --secondary: 222 22% 16%;       /* #1a2235 */
+    --secondary: 221 39% 11%;       /* #111827 */
     --secondary-foreground: 210 40% 98%;
     --muted: 222 22% 16%;
     --muted-foreground: 217 11% 65%; /* #9CA3AF */
-    --accent: 238 84% 67%;          /* #6366F1 */
+    --accent: 258 90% 74%;          /* #A78BFA */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 32% 19%;          /* #1e2d45 */
+    --border: 219 32% 22%;          /* #26324A */
     --input: 220 32% 19%;
     --ring: 217 91% 60%;
     --chart-1: 217 91% 60%;
@@ -80,7 +80,7 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 220 32% 19%;
     --sidebar-ring: 217 91% 60%;
-    --page-background: #0B0F19;
+    --page-background: #0B1020;
   }
 }
 
@@ -89,7 +89,64 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 12% -10%, rgba(245, 133, 41, 0.12), transparent 34rem),
+      radial-gradient(circle at 78% 0%, rgba(221, 42, 123, 0.14), transparent 32rem),
+      radial-gradient(circle at 45% 42%, rgba(81, 91, 212, 0.08), transparent 38rem),
+      linear-gradient(180deg, #0b1020 0%, #0f172a 56%, #0b1020 100%);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.18;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
+  }
+}
+
+@layer components {
+  .ap3k-card {
+    @apply border border-white/10 bg-rf-surface/75 shadow-ap3k-card backdrop-blur-xl;
+  }
+
+  .ap3k-card-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-rf-surface/90 hover:shadow-ap3k-glow;
+  }
+
+  .ap3k-gradient-text {
+    @apply bg-ap3k-gradient bg-[length:180%_180%] bg-clip-text text-transparent;
+  }
+
+  .ap3k-gradient-button {
+    @apply relative overflow-hidden rounded-xl bg-ap3k-gradient bg-[length:180%_180%] font-bold text-white shadow-ap3k-glow transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_58px_rgba(221,42,123,0.34)] active:translate-y-0;
+  }
+
+  .ap3k-gradient-button::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 48%);
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .ap3k-outline-button {
+    @apply rounded-xl border border-white/10 bg-white/[0.03] font-bold text-rf-muted backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-white/[0.06] hover:text-rf-text;
+  }
+
+  .ap3k-kicker {
+    @apply text-xs font-black uppercase tracking-[0.2em] text-rf-pink;
   }
 }
 
