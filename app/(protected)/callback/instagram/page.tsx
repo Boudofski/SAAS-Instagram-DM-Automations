@@ -9,18 +9,20 @@ type Props = {
 
 async function Page({ searchParams: { code } }: Props) {
   if (code) {
-    console.log("🚀 ~ Page ~ code:", code);
-
     const user = await onIntegrate(code.split("#_")[0]);
 
     if (user.status === 200) {
+      const slug =
+        `${user.data?.firstname ?? ""}${user.data?.lastname ?? ""}` ||
+        user.data?.clerkId ||
+        "";
       return redirect(
-        `/dashboard/${user.data?.firstname}${user.data?.lastname}/integrations`
+        slug ? `/dashboard/${slug}/integrations` : "/dashboard"
       );
     }
   }
 
-  return redirect("/sign-up");
+  return redirect("/dashboard");
 }
 
 export default Page;

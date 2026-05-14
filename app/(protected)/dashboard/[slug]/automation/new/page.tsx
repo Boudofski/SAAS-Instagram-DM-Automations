@@ -10,7 +10,7 @@ import { useQueryAutomationPosts, useQueryUser } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { use } from "react";
+import { use, useState } from "react";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -36,6 +36,7 @@ export default function WizardPage({ params }: Props) {
   const { slug } = use(params);
   const { data: posts, isLoading: postsLoading } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
+  const [manualMedia, setManualMedia] = useState("");
 
   const isProUser = user?.data?.subscription?.plan === "PRO";
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } =
@@ -47,6 +48,21 @@ export default function WizardPage({ params }: Props) {
   }));
 
   const postList: any[] = posts?.data?.data ?? [];
+  const hasInstagramConnection = (user?.data?.integrations?.length ?? 0) > 0;
+
+  const selectManualMedia = () => {
+    const value = manualMedia.trim();
+    if (!value) return;
+
+    update({
+      post: {
+        postid: value,
+        caption: value.startsWith("http") ? "Manual Instagram post URL" : `Manual media ID ${value}`,
+        media: value,
+        mediaType: "IMAGE",
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-rf-bg flex flex-col">
@@ -91,31 +107,47 @@ export default function WizardPage({ params }: Props) {
               <div className="flex justify-center py-16">
                 <Loader2 className="animate-spin text-rf-muted" />
               </div>
-            ) : postList.length === 0 ? (
+            ) : !hasInstagramConnection ? (
               <EmptyState
-                icon="📷"
-                title="No posts found"
-                description="Make sure your Instagram account is connected and has published posts."
+                icon="🔗"
+                title="Connect Instagram first"
+                description="AP3k needs an official Instagram connection before it can listen for comments or send private replies."
                 ctaLabel="Connect Instagram"
                 ctaHref={`/dashboard/${slug}/integrations`}
               />
-            ) : (
-              <PostPicker
-                posts={postList}
+            ) : postList.length === 0 ? (
+              <ManualMediaFallback
+                value={manualMedia}
                 selected={data.post?.postid ?? null}
-                onSelect={(p) =>
-                  update({
-                    post: {
-                      postid: p.id,
-                      caption: p.caption,
-                      media: p.media_url,
-                      mediaType: p.media_type === "VIDEO" ? "VIDEO"
-                        : p.media_type === "CAROUSEL_ALBUM" ? "CAROSEL_ALBUM"
-                        : "IMAGE",
-                    },
-                  })
-                }
+                onChange={setManualMedia}
+                onSelect={selectManualMedia}
               />
+            ) : (
+              <div className="flex flex-col gap-6">
+                <PostPicker
+                  posts={postList}
+                  selected={data.post?.postid ?? null}
+                  onSelect={(p) =>
+                    update({
+                      post: {
+                        postid: p.id,
+                        caption: p.caption,
+                        media: p.media_url,
+                        mediaType: p.media_type === "VIDEO" ? "VIDEO"
+                          : p.media_type === "CAROUSEL_ALBUM" ? "CAROSEL_ALBUM"
+                          : "IMAGE",
+                      },
+                    })
+                  }
+                />
+                <ManualMediaFallback
+                  value={manualMedia}
+                  selected={data.post?.postid ?? null}
+                  onChange={setManualMedia}
+                  onSelect={selectManualMedia}
+                  compact
+                />
+              </div>
             )}
           </div>
         )}
@@ -350,6 +382,51 @@ export default function WizardPage({ params }: Props) {
         </div>
       </div>
 
+    </div>
+  );
+}
+
+function ManualMediaFallback({
+  value,
+  selected,
+  onChange,
+  onSelect,
+  compact,
+}: {
+  value: string;
+  selected: string | null;
+  onChange: (value: string) => void;
+  onSelect: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-rf-border bg-rf-surface/60 p-5">
+      <h3 className="text-sm font-black text-rf-text">
+        {compact ? "Use a media ID manually" : "No posts found. Add a media ID manually."}
+      </h3>
+      <p className="mt-2 text-xs leading-relaxed text-rf-muted">
+        Paste the Instagram media ID for the post or Reel. A post URL can be saved as a reference,
+        but webhook matching is most reliable with the Meta media ID returned by Instagram.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Instagram media ID or post URL"
+          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-rf-bg/70 px-4 py-3 text-sm text-rf-text outline-none transition-colors placeholder:text-rf-subtle focus:border-rf-pink/50"
+        />
+        <button
+          type="button"
+          onClick={onSelect}
+          disabled={!value.trim()}
+          className="ap3k-gradient-button px-5 py-3 text-sm disabled:opacity-40"
+        >
+          Use this post
+        </button>
+      </div>
+      {selected && selected === value.trim() && (
+        <p className="mt-3 text-xs font-semibold text-rf-green">Manual post selected.</p>
+      )}
     </div>
   );
 }

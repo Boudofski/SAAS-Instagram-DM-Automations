@@ -5,13 +5,15 @@ import { client } from "@/lib/prisma";
 export const updateIntegration = async (
   token: string,
   expire: Date,
-  id: string
+  id: string,
+  instagramId?: string
 ) => {
   return await client.integrations.update({
     where: { id },
     data: {
       token,
       expiresAt: expire,
+      instagramId,
     },
   });
 };
@@ -53,6 +55,7 @@ export const createIntegration = async (
     select: {
       firstname: true,
       lastname: true,
+      clerkId: true,
     },
   });
 };

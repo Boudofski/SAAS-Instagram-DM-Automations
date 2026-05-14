@@ -140,17 +140,31 @@ export const getProfilePosts = async () => {
 
   try {
     const profile = await findUser(user.id);
+    const integration = profile?.integrations[0];
+    if (!integration?.token) {
+      console.log("[instagram-media] fetch skipped: no connected Instagram token");
+      return { status: 200, data: { data: [] } };
+    }
+
     const posts = await fetch(
-      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${profile?.integrations[0].token}`
+      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10`,
+      {
+        headers: { Authorization: `Bearer ${integration.token}` },
+      }
     );
 
     const parsed = await posts.json();
 
-    if (parsed) return { status: 200, data: parsed };
-    console.log("🚀 ~ getProfilePosts ~ error");
+    if (posts.ok && parsed) return { status: 200, data: parsed };
+    console.log("[instagram-media] fetch failed", {
+      status: posts.status,
+      message: parsed?.error?.message ?? "unknown error",
+    });
     return { status: 404 };
   } catch (error: any) {
-    console.log("🚀 ~ getProfilePosts ~ error:", error.message);
+    console.log("[instagram-media] fetch error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
 
     return { status: 500 };
   }

@@ -140,7 +140,9 @@ export const findAutomationById = async (id: string) => {
  */
 export const isDuplicate = async (
   automationId: string,
-  recipientIgId: string
+  recipientIgId: string,
+  mediaId?: string,
+  commentId?: string
 ): Promise<boolean> => {
   const existing = await client.messageLog.findFirst({
     where: {
@@ -148,6 +150,11 @@ export const isDuplicate = async (
       recipientIgId,
       messageType: "DM",
       status: "SENT",
+      ...(commentId
+        ? { commentId }
+        : mediaId
+        ? { mediaId }
+        : {}),
     },
   });
   return !!existing;

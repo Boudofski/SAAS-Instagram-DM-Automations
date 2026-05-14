@@ -12,7 +12,13 @@ import {
   trackResponse,
 } from "@/actions/webhook/queries";
 import { matchKeywordWithMode } from "@/lib/matching";
-import { sendDm, sendPrivateMessage, sendCommentReply } from "@/lib/fetch";
+import {
+  formatSafeMetaError,
+  getSafeMetaError,
+  sendDm,
+  sendPrivateMessage,
+  sendCommentReply,
+} from "@/lib/fetch";
 import { resolveTemplate } from "@/lib/template";
 import { openai } from "@/lib/openai";
 
@@ -26,12 +32,16 @@ export async function GET(req: NextRequest) {
   const challenge = req.nextUrl.searchParams.get("hub.challenge");
 
   const tokenMatch = token === process.env.META_VERIFY_TOKEN;
-  console.log(`[webhook] GET verify: mode=${mode} token_match=${tokenMatch}`);
+  console.log("[webhook] GET verify", {
+    mode,
+    token_match: tokenMatch,
+    challenge_exists: Boolean(challenge),
+  });
 
-  if (mode === "subscribe" && tokenMatch) {
+  if (mode === "subscribe" && tokenMatch && challenge) {
     return new NextResponse(challenge, { status: 200 });
   }
-  return new NextResponse("Forbidden", { status: 403 });
+  return NextResponse.json({ error: "webhook_verification_failed" }, { status: 403 });
 }
 
 // ---------------------------------------------------------------------------
@@ -41,32 +51,49 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const entry = body.entry?.[0];
-    if (!entry) return ok();
+    const entries = Array.isArray(body.entry) ? body.entry : [];
+    if (entries.length === 0) return ok();
 
-    const igAccountId: string = entry.id;
+    await Promise.all(entries.map(processEntry));
 
-    const field = entry.changes?.[0]?.field ?? (entry.messaging ? "messaging" : "unknown");
-    console.log(`[webhook] POST field=${field} igAccountId=${igAccountId}`);
+    return ok();
+  } catch (error) {
+    // Never return 5xx to Meta — always acknowledge receipt
+    console.error("[webhook] unhandled error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return ok();
+  }
+}
+
+async function processEntry(entry: any) {
+  const igAccountId: string = entry.id;
+  const changes = Array.isArray(entry.changes) ? entry.changes : [];
+  const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
+
+  const field = changes[0]?.field ?? (messaging.length ? "messaging" : "unknown");
+  console.log(`[webhook] POST field=${field} igAccountId=${igAccountId}`);
+
+  for (const changeItem of changes) {
 
     // -----------------------------------------------------------------------
     // COMMENT EVENT
     // -----------------------------------------------------------------------
-    if (entry.changes?.[0]?.field === "comments") {
-      const change = entry.changes[0].value;
+    if (changeItem.field === "comments") {
+      const change = changeItem.value;
       const mediaId: string | undefined = change.media?.id;
       const commentId: string | undefined = change.id;
       const commenterId: string | undefined = change.from?.id;
       const commenterUsername: string | undefined = change.from?.username;
       const commentText: string = change.text ?? "";
 
-      if (!mediaId || !commentId || !commenterId || !commentText) return ok();
+      if (!mediaId || !commentId || !commenterId || !commentText) continue;
 
       // 1. Find active automation for this post
       const automation = await findAutomationForComment(mediaId, igAccountId);
       if (!automation?.listener) {
         console.log(`[webhook] automation match: none (mediaId=${mediaId})`);
-        return ok();
+        continue;
       }
 
       // 2. Match keyword using this automation's matching mode
@@ -86,7 +113,7 @@ export async function POST(req: NextRequest) {
           commentId,
           keyword: commentText.slice(0, 100),
         });
-        return ok();
+        continue;
       }
 
       console.log(`[webhook] automation match: ${automation.id} keyword="${matchedKeyword}"`);
@@ -100,9 +127,10 @@ export async function POST(req: NextRequest) {
         commentId,
         keyword: matchedKeyword,
       });
+      await trackResponse(automation.id, "COMMENT");
 
       // 4. Duplicate check — skip if we already DM'd this person for this automation
-      if (await isDuplicate(automation.id, commenterId)) {
+      if (await isDuplicate(automation.id, commenterId, mediaId, commentId)) {
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DUPLICATE_SKIPPED",
@@ -111,11 +139,14 @@ export async function POST(req: NextRequest) {
           commentId,
           keyword: matchedKeyword,
         });
-        return ok();
+        continue;
       }
 
       const token = automation.User?.integrations?.[0]?.token;
-      if (!token) return ok();
+      if (!token) {
+        console.warn("[webhook] automation token missing", { automationId: automation.id });
+        continue;
+      }
 
       const listener = automation.listener;
 
@@ -149,6 +180,8 @@ export async function POST(req: NextRequest) {
             keyword: matchedKeyword,
           });
         } catch (err) {
+          const safeError = formatSafeMetaError(err);
+          console.warn("[webhook] public reply failed", getSafeMetaError(err));
           await createMessageLog({
             automationId: automation.id,
             recipientIgId: commenterId,
@@ -156,15 +189,16 @@ export async function POST(req: NextRequest) {
             commentId,
             messageType: "COMMENT_REPLY",
             status: "FAILED",
-            errorMessage: String(err),
+            errorMessage: safeError,
           });
           await createAutomationEvent({
             automationId: automation.id,
             eventType: "PUBLIC_REPLY_FAILED",
             igUserId: commenterId,
             mediaId,
+            commentId,
             keyword: matchedKeyword,
-            meta: { error: String(err) },
+            meta: { error: safeError },
           });
         }
       }
@@ -228,9 +262,11 @@ export async function POST(req: NextRequest) {
             commentText,
             mediaId,
           });
-          await trackResponse(automation.id, "COMMENT");
+          await trackResponse(automation.id, "DM");
         }
       } catch (err) {
+        const safeError = formatSafeMetaError(err);
+        console.warn("[webhook] private reply failed", getSafeMetaError(err));
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -238,29 +274,34 @@ export async function POST(req: NextRequest) {
           commentId,
           messageType: "DM",
           status: "FAILED",
-          errorMessage: String(err),
+          errorMessage: safeError,
         });
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DM_FAILED",
           igUserId: commenterId,
+          mediaId,
+          commentId,
           keyword: matchedKeyword,
-          meta: { error: String(err) },
+          meta: { error: safeError },
         });
       }
-
-      return ok();
+      continue;
+    } else {
+      console.log("[webhook] unsupported change ignored", { field: changeItem.field });
+      continue;
     }
+  }
 
+  for (const messagingItem of messaging) {
     // -----------------------------------------------------------------------
     // DM EVENT
     // -----------------------------------------------------------------------
-    if (entry.messaging?.[0]) {
-      const messaging = entry.messaging[0];
-      const senderId: string | undefined = messaging.sender?.id;
-      const dmText: string = messaging.message?.text ?? "";
+    if (messagingItem) {
+      const senderId: string | undefined = messagingItem.sender?.id;
+      const dmText: string = messagingItem.message?.text ?? "";
 
-      if (!senderId || !dmText) return ok();
+      if (!senderId || !dmText) continue;
 
       // 1. Try to match an automation by keyword
       const result = await findAutomationForDM(dmText, igAccountId);
@@ -304,7 +345,7 @@ export async function POST(req: NextRequest) {
         } catch {
           // Continuation path is non-critical — swallow errors
         }
-        return ok();
+        continue;
       }
 
       const { automation, matchedKeyword } = result;
@@ -318,11 +359,18 @@ export async function POST(req: NextRequest) {
           igUserId: senderId,
           keyword: matchedKeyword,
         });
-        return ok();
+        continue;
       }
 
       const token = automation.User?.integrations?.[0]?.token;
-      if (!token || !automation.listener) return ok();
+      if (!token || !automation.listener) {
+        console.warn("[webhook] DM automation token or listener missing", {
+          automationId: automation.id,
+          hasToken: Boolean(token),
+          hasListener: Boolean(automation.listener),
+        });
+        continue;
+      }
 
       const templateVars = {
         username: "",
@@ -374,30 +422,24 @@ export async function POST(req: NextRequest) {
         });
         if (sent) await trackResponse(automation.id, "DM");
       } catch (err) {
+        const safeError = formatSafeMetaError(err);
+        console.warn("[webhook] DM send failed", getSafeMetaError(err));
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: senderId,
           messageType: "DM",
           status: "FAILED",
-          errorMessage: String(err),
+          errorMessage: safeError,
         });
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DM_FAILED",
           igUserId: senderId,
           keyword: matchedKeyword,
-          meta: { error: String(err) },
+          meta: { error: safeError },
         });
       }
-
-      return ok();
     }
-
-    return ok();
-  } catch (error) {
-    // Never return 5xx to Meta — always acknowledge receipt
-    console.error("[Webhook] Unhandled error:", error);
-    return ok();
   }
 }
 

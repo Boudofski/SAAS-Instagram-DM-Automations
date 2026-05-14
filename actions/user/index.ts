@@ -11,6 +11,11 @@ import { createUser, findUser, updateSubscription } from "./queries";
 const onboardingSkippedCookie = (clerkId: string) =>
   `ap3k_onboarding_skipped_${clerkId}`;
 
+const publicUserProfile = <T extends { integrations?: any[] }>(profile: T) => ({
+  ...profile,
+  integrations: profile.integrations?.map(({ token: _token, ...integration }) => integration) ?? [],
+});
+
 export const onCurrentUser = async () => {
   const user = await currentUser();
   if (!user) return redirect("/sign-in");
@@ -78,7 +83,7 @@ export const onUserInfo = async () => {
 
   try {
     const profile = await findUser(user.id);
-    if (profile) return { status: 200, data: profile };
+    if (profile) return { status: 200, data: publicUserProfile(profile) };
 
     return { status: 404 };
   } catch (error: any) {
