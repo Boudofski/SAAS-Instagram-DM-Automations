@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
     mode,
     token_match: tokenMatch,
     challenge_exists: Boolean(challenge),
+    has_env_token: Boolean(process.env.META_VERIFY_TOKEN),
   });
 
   if (mode === "subscribe" && tokenMatch && challenge) {
