@@ -39,7 +39,7 @@ const INITIAL: WizardData = {
   active: true,
 };
 
-export function useWizard(slug: string) {
+export function useWizard(slug: string, automationId?: string) {
   const router = useRouter();
   const [step, setStep] = useState<WizardStep>(1);
   const [data, setData] = useState<WizardData>(INITIAL);
@@ -82,7 +82,7 @@ export function useWizard(slug: string) {
           commentReply: data.publicReply || undefined,
           ctaLink: data.ctaLink || undefined,
         },
-      });
+      }, automationId);
 
       const savedData = saved.data;
       const campaignId =

@@ -7,12 +7,16 @@ import PostPicker from "@/components/global/post-picker";
 import WizardStepper from "@/components/global/wizard-stepper";
 import type { StepStatus } from "@/components/global/wizard-stepper";
 import { useQueryAutomationPosts, useQueryUser } from "@/hooks/user-queries";
+import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ edit?: string }>;
+};
 
 const STEP_LABELS = [
   "Choose post",
@@ -32,15 +36,19 @@ const STEP_TIPS = [
   "Review everything. You can pause or edit this campaign at any time.",
 ];
 
-export default function WizardPage({ params }: Props) {
+export default function WizardPage({ params, searchParams }: Props) {
   const { slug } = use(params);
+  const query = searchParams ? use(searchParams) : {};
+  const editId = query.edit;
   const { data: posts, isLoading: postsLoading } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
+  const { data: editing } = useQueryAutomations(editId ?? "", Boolean(editId));
   const [manualMedia, setManualMedia] = useState("");
+  const [loadedEdit, setLoadedEdit] = useState(false);
 
   const isProUser = user?.data?.subscription?.plan === "PRO";
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } =
-    useWizard(slug);
+    useWizard(slug, editId);
 
   const steps = STEP_LABELS.map((label, i) => ({
     label,
@@ -49,6 +57,33 @@ export default function WizardPage({ params }: Props) {
 
   const postList: any[] = posts?.data?.data ?? [];
   const hasInstagramConnection = (user?.data?.integrations?.length ?? 0) > 0;
+
+  useEffect(() => {
+    if (!editId || loadedEdit || editing?.status !== 200 || !editing.data) return;
+    const automation: any = editing.data;
+    const post = automation.posts?.[0];
+    update({
+      campaignName: automation.name ?? "",
+      active: Boolean(automation.active),
+      matchingMode: automation.matchingMode ?? "CONTAINS",
+      keywords: Array.isArray(automation.keywords)
+        ? automation.keywords.map((keyword: any) => keyword.word).filter(Boolean)
+        : [],
+      dmMessage: automation.listener?.prompt ?? "",
+      publicReply: automation.listener?.commentReply ?? "",
+      ctaLink: automation.listener?.ctaLink ?? "",
+      aiMode: automation.listener?.listener === "SMARTAI",
+      post: post
+        ? {
+            postid: post.postid,
+            caption: post.caption ?? undefined,
+            media: post.media,
+            mediaType: post.mediaType,
+          }
+        : null,
+    });
+    setLoadedEdit(true);
+  }, [editId, editing, loadedEdit, update]);
 
   const selectManualMedia = () => {
     const value = manualMedia.trim();
@@ -75,8 +110,12 @@ export default function WizardPage({ params }: Props) {
           ← Back
         </Link>
         <div className="text-center">
-          <p className="text-sm font-bold text-rf-text">New Campaign</p>
-          <p className="text-xs text-rf-muted">Launch in 60 seconds</p>
+          <p className="text-sm font-bold text-rf-text">
+            {editId ? "Edit Campaign" : "New Campaign"}
+          </p>
+          <p className="text-xs text-rf-muted">
+            {editId ? "Update your automation flow" : "Launch in 60 seconds"}
+          </p>
         </div>
         <span className="text-xs text-rf-muted flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-rf-green" /> Auto-saved
@@ -419,7 +458,7 @@ export default function WizardPage({ params }: Props) {
               {isSubmitting ? (
                 <><Loader2 size={14} className="animate-spin" /> Activating…</>
               ) : (
-                "🚀 Activate Campaign"
+                editId ? "Save Campaign" : "🚀 Activate Campaign"
               )}
             </button>
           )}

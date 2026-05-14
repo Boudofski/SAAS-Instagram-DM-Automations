@@ -60,7 +60,7 @@ export default async function AutomationsPage({ params }: Props) {
               />
               <div className="flex flex-wrap items-center gap-2 px-2 pb-2 lg:flex-col lg:items-stretch lg:justify-center lg:p-2">
                 <Link
-                  href={`/dashboard/${params.slug}/automation/${a.id}`}
+                  href={`/dashboard/${params.slug}/automation/new?edit=${a.id}`}
                   className="rounded-lg border border-rf-border px-3 py-2 text-xs font-bold text-rf-muted transition-colors hover:border-rf-pink/40 hover:text-rf-text"
                 >
                   Edit

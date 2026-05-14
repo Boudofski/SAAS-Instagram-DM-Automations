@@ -72,6 +72,79 @@ export default async function CampaignDetailPage({ params }: Props) {
         <ActiveAutomationButton id={params.id} />
       </div>
 
+      <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                Visual automation builder
+              </p>
+              <h2 className="mt-1 text-xl font-black">Comment to DM flow</h2>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+              Preview mode
+            </span>
+          </div>
+
+          <div className="grid gap-4">
+            <FlowNode
+              label="Trigger"
+              title="Post Comments"
+              body={
+                automation.posts?.[0]
+                  ? `When someone comments on media ${automation.posts[0].postid}`
+                  : "Add a post or media ID before activating."
+              }
+              tone="orange"
+            />
+            <FlowConnector />
+            <FlowNode
+              label="Condition"
+              title="Keyword Matched"
+              body={
+                automation.keywords?.length
+                  ? automation.keywords.map((keyword: any) => keyword.word).join(", ")
+                  : "No keywords configured."
+              }
+              tone="pink"
+            />
+            <FlowConnector />
+            <div className="grid gap-4 md:grid-cols-2">
+              <FlowNode
+                label="Action"
+                title="Reply to Comment"
+                body={automation.listener?.commentReply || "Public reply is disabled."}
+                tone="purple"
+              />
+              <FlowNode
+                label="Action"
+                title="Send Message"
+                body={automation.listener?.prompt || "No private DM configured."}
+                tone="blue"
+              />
+            </div>
+          </div>
+        </div>
+
+        <aside className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+            Settings
+          </p>
+          <div className="mt-5 space-y-4">
+            <SettingsRow label="Status" value={automation.active ? "Live" : "Paused"} />
+            <SettingsRow label="Matching" value={automation.matchingMode ?? "CONTAINS"} />
+            <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />
+            <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />
+          </div>
+          <Link
+            href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`}
+            className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm"
+          >
+            Edit Flow
+          </Link>
+        </aside>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
@@ -247,6 +320,50 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function FlowNode({
+  label,
+  title,
+  body,
+  tone,
+}: {
+  label: string;
+  title: string;
+  body: string;
+  tone: "orange" | "pink" | "purple" | "blue";
+}) {
+  const tones = {
+    orange: "from-orange-50 border-orange-200 text-orange-600",
+    pink: "from-pink-50 border-pink-200 text-pink-600",
+    purple: "from-purple-50 border-purple-200 text-purple-600",
+    blue: "from-blue-50 border-blue-200 text-blue-600",
+  };
+
+  return (
+    <div className={`rounded-2xl border bg-gradient-to-br to-white p-5 ${tones[tone]}`}>
+      <p className="text-[11px] font-black uppercase tracking-[0.18em]">{label}</p>
+      <h3 className="mt-2 text-lg font-black text-slate-950">{title}</h3>
+      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{body}</p>
+    </div>
+  );
+}
+
+function FlowConnector() {
+  return (
+    <div className="mx-auto h-8 w-px bg-gradient-to-b from-slate-200 via-rf-pink to-slate-200" />
+  );
+}
+
+function SettingsRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
     </div>
   );
 }
