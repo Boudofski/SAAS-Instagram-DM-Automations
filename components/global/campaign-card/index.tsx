@@ -7,12 +7,12 @@ import Link from "next/link";
 type Keyword = { id: string; word: string };
 
 type Props = {
-  id: string;
+  id?: string | null;
   slug: string;
-  name: string;
-  active: boolean;
-  keywords: Keyword[];
-  dmCount: number;
+  name?: string | null;
+  active?: boolean | null;
+  keywords?: Keyword[] | null;
+  dmCount?: number | null;
   leadCount?: number;
   listenerType?: "SMARTAI" | "MESSAGE" | null;
 };
@@ -27,9 +27,15 @@ const KW_COLOURS = [
 export default function CampaignCard({
   id, slug, name, active, keywords, dmCount, leadCount, listenerType,
 }: Props) {
+  const safeKeywords = Array.isArray(keywords) ? keywords : [];
+  const safeId = id ?? "";
+  const safeName = name?.trim() || "Untitled campaign";
+  const isActive = Boolean(active);
+  const safeDmCount = typeof dmCount === "number" ? dmCount : 0;
+
   return (
     <Link
-      href={`/dashboard/${slug}/automation/${id}`}
+      href={safeId ? `/dashboard/${slug}/automation/${safeId}` : `/dashboard/${slug}/automation`}
       className="ap3k-card ap3k-card-hover group relative overflow-hidden rounded-2xl p-4
                  flex flex-col gap-4 sm:flex-row sm:items-center"
     >
@@ -38,22 +44,22 @@ export default function CampaignCard({
       <span
         className={cn(
           "absolute right-4 top-4 h-2.5 w-2.5 rounded-full sm:static sm:flex-shrink-0",
-          active ? "bg-rf-green shadow-[0_0_14px_rgba(16,185,129,0.85)]" : "bg-rf-amber"
+          isActive ? "bg-rf-green shadow-[0_0_14px_rgba(16,185,129,0.85)]" : "bg-rf-amber"
         )}
       />
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-rf-text truncate mb-2">{name}</p>
+        <p className="text-sm font-bold text-rf-text truncate mb-2">{safeName}</p>
         <div className="flex gap-1.5 flex-wrap">
-          {keywords.length === 0 ? (
+          {safeKeywords.length === 0 ? (
             <span className="text-xs text-rf-muted border border-dashed border-rf-border rounded-full px-2 py-0.5">
               No keywords
             </span>
           ) : (
-            keywords.slice(0, 4).map((kw, i) => (
+            safeKeywords.slice(0, 4).map((kw, i) => (
               <span
-                key={kw.id}
+                key={kw.id ?? `${kw.word}-${i}`}
                 className={cn(
                   "text-xs font-bold px-2.5 py-1 rounded-full border bg-white/[0.03]",
                   KW_COLOURS[i % KW_COLOURS.length]
@@ -69,7 +75,7 @@ export default function CampaignCard({
       {/* Stats */}
       <div className="flex gap-4 flex-shrink-0 text-left sm:text-right">
         <div>
-          <p className="text-base font-black text-rf-text">{dmCount}</p>
+          <p className="text-base font-black text-rf-text">{safeDmCount}</p>
           <p className="text-[10px] uppercase tracking-[0.16em] text-rf-muted">DMs</p>
         </div>
         {leadCount !== undefined && (
@@ -86,13 +92,13 @@ export default function CampaignCard({
           "w-fit text-xs font-bold flex-shrink-0 rounded-full",
           listenerType === "SMARTAI"
             ? "bg-rf-purple/10 text-rf-purple border-rf-purple/25"
-            : active
+            : isActive
             ? "bg-rf-green/10 text-rf-green border-rf-green/25"
             : "bg-rf-amber/10 text-rf-amber border-rf-amber/25"
         )}
         variant="outline"
       >
-        {listenerType === "SMARTAI" ? "Smart AI" : active ? "Live" : "Paused"}
+        {listenerType === "SMARTAI" ? "Smart AI" : isActive ? "Live" : "Paused"}
       </Badge>
     </Link>
   );

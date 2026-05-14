@@ -7,7 +7,10 @@ type Props = { params: { slug: string } };
 
 export default async function AutomationsPage({ params }: Props) {
   const result = await getAllAutomation();
-  const automations = result.status === 200 ? (result.data as any[]) : [];
+  const automations =
+    result.status === 200 && Array.isArray(result.data)
+      ? result.data
+      : [];
 
   return (
     <div className="relative p-4 sm:p-6 lg:p-8">
@@ -43,11 +46,11 @@ export default async function AutomationsPage({ params }: Props) {
               key={a.id}
               id={a.id}
               slug={params.slug}
-              name={a.name}
-              active={a.active}
-              keywords={a.keywords ?? []}
-              dmCount={a.listener?.dmCount ?? 0}
-              listenerType={a.listener?.listener}
+              name={typeof a.name === "string" ? a.name : "Untitled campaign"}
+              active={Boolean(a.active)}
+              keywords={Array.isArray(a.keywords) ? a.keywords : []}
+              dmCount={typeof a.listener?.dmCount === "number" ? a.listener.dmCount : 0}
+              listenerType={a.listener?.listener ?? null}
             />
           ))}
         </div>
