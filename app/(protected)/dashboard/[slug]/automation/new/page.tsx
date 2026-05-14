@@ -15,7 +15,7 @@ import { use, useEffect, useState } from "react";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ edit?: string }>;
+  searchParams?: { edit?: string };
 };
 
 const STEP_LABELS = [
@@ -38,8 +38,7 @@ const STEP_TIPS = [
 
 export default function WizardPage({ params, searchParams }: Props) {
   const { slug } = use(params);
-  const query = searchParams ? use(searchParams) : {};
-  const editId = query.edit;
+  const editId = searchParams?.edit;
   const { data: posts, isLoading: postsLoading } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
   const { data: editing } = useQueryAutomations(editId ?? "", Boolean(editId));
