@@ -58,7 +58,18 @@ export default async function DashboardPage({ params }: Props) {
   ];
 
   return (
-    <div className="flex flex-col gap-6 p-8">
+    <div className="relative flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-ap3k-radial opacity-80" />
+
+      <div className="flex flex-col gap-2">
+        <p className="ap3k-kicker">Creator command center</p>
+        <h1 className="text-2xl font-black tracking-tight text-rf-text sm:text-3xl">
+          Instagram comments into <span className="ap3k-gradient-text">DM revenue</span>
+        </h1>
+        <p className="max-w-2xl text-sm text-rf-muted">
+          Monitor campaign momentum, capture leads, and launch new comment-to-DM flows without leaving AP3k.
+        </p>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -69,15 +80,16 @@ export default async function DashboardPage({ params }: Props) {
       </div>
 
       {/* Quick create */}
-      <div className="bg-gradient-to-r from-rf-blue/8 to-rf-purple/8 border border-rf-blue/20
-                      rounded-2xl p-6 flex items-center justify-between gap-4">
+      <div className="ap3k-card relative overflow-hidden rounded-3xl p-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-rf-pink/18 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rf-orange/60 to-transparent" />
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-2xl flex-shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-ap3k-gradient
+                          flex items-center justify-center text-2xl flex-shrink-0 shadow-ap3k-glow">
             🚀
           </div>
           <div>
-            <h3 className="font-bold text-rf-text">Launch a new campaign</h3>
+            <h3 className="font-black text-rf-text">Launch a new campaign</h3>
             <p className="text-xs text-rf-muted">
               Pick a post, add keywords, write your DM — live in 60 seconds.
             </p>
@@ -85,9 +97,7 @@ export default async function DashboardPage({ params }: Props) {
         </div>
         <Link
           href={`/dashboard/${params.slug}/automation/new`}
-          className="flex-shrink-0 bg-rf-blue hover:bg-rf-blue/90 text-white font-bold
-                     text-sm px-5 py-2.5 rounded-xl transition-colors
-                     shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
+          className="ap3k-gradient-button flex-shrink-0 px-5 py-2.5 text-sm"
         >
           + New Campaign
         </Link>
@@ -99,10 +109,10 @@ export default async function DashboardPage({ params }: Props) {
         {/* Campaigns */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-rf-text">Active campaigns</h2>
+            <h2 className="font-black text-rf-text">Active campaigns</h2>
             <Link
               href={`/dashboard/${params.slug}/automation`}
-              className="text-xs text-rf-blue hover:underline"
+              className="text-xs font-bold text-rf-pink hover:text-rf-purple"
             >
               View all →
             </Link>

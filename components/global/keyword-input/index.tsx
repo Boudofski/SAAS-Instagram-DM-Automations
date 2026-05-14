@@ -15,10 +15,10 @@ type Props = {
 };
 
 const KW_COLOURS = [
-  "bg-rf-blue/10 text-rf-blue border-rf-blue/25",
+  "bg-rf-pink/10 text-rf-pink border-rf-pink/25",
   "bg-rf-purple/10 text-rf-purple border-rf-purple/25",
+  "bg-rf-blue/10 text-rf-blue border-rf-blue/25",
   "bg-rf-green/10 text-rf-green border-rf-green/25",
-  "bg-rf-amber/10 text-rf-amber border-rf-amber/25",
 ];
 
 const MODES: { value: MatchingMode; label: string; desc: string; pro?: boolean }[] = [
@@ -49,7 +49,7 @@ export default function KeywordInput({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder='Type a keyword (e.g. "link", "guide", "yes")'
-          className="flex-1 bg-rf-surface border border-rf-border rounded-lg px-4 py-3 text-sm
+          className="flex-1 bg-rf-surface/80 border border-white/10 rounded-xl px-4 py-3 text-sm
                      text-rf-text placeholder:text-rf-subtle outline-none focus:border-rf-blue
                      transition-colors"
         />
@@ -57,8 +57,7 @@ export default function KeywordInput({
           type="button"
           onClick={handleAdd}
           disabled={!value.trim()}
-          className="bg-rf-blue hover:bg-rf-blue/90 disabled:opacity-40 text-white font-bold
-                     text-sm px-5 rounded-lg transition-colors"
+          className="ap3k-gradient-button disabled:opacity-40 text-sm px-5"
         >
           + Add
         </button>
@@ -89,7 +88,7 @@ export default function KeywordInput({
       )}
 
       {/* Matching mode */}
-      <div className="flex gap-2 bg-rf-surface border border-rf-border rounded-xl p-3">
+      <div className="flex gap-2 bg-rf-surface/80 border border-white/10 rounded-2xl p-3">
         {MODES.map((m) => (
           <button
             key={m.value}
@@ -99,7 +98,7 @@ export default function KeywordInput({
             className={cn(
               "flex-1 rounded-lg px-3 py-2.5 text-center transition-all border",
               matchingMode === m.value
-                ? "bg-rf-blue/10 border-rf-blue/30 text-rf-text"
+                ? "bg-ap3k-gradient-soft border-rf-pink/30 text-rf-text"
                 : "border-transparent hover:bg-white/5 text-rf-muted",
               m.pro && !isProUser && "opacity-50 cursor-not-allowed"
             )}
@@ -107,7 +106,7 @@ export default function KeywordInput({
             <div className="text-xs font-bold flex items-center justify-center gap-1.5">
               {m.label}
               {m.pro && (
-                <span className="bg-gradient-to-r from-rf-blue to-rf-purple text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                <span className="bg-ap3k-gradient text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
                   PRO
                 </span>
               )}

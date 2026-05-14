@@ -6,11 +6,11 @@ type Props = {};
 
 function Search({}: Props) {
   return (
-    <div className="flex overflow-hidden gap-x-2 border-[1px] border-[#3352CC] rounded-full px-4 py-1 items-center flex-1">
-      <SearchIcon color="#3352CC" />
+    <div className="flex flex-1 items-center gap-x-2 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] px-4 py-1 backdrop-blur">
+      <SearchIcon className="h-4 w-4 text-rf-pink" />
       <Input
         placeholder="Search by name, email or status"
-        className="border-none outline-none ring-0 focus:ring-0 flex-1"
+        className="flex-1 border-none bg-transparent outline-none ring-0 focus:ring-0"
       />
     </div>
   );

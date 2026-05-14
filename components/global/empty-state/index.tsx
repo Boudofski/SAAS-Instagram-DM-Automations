@@ -12,13 +12,15 @@ type Props = {
 export default function EmptyState({ icon, title, description, ctaLabel, ctaHref }: Props) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-      <div className="text-5xl">{icon}</div>
+      <div className="grid h-16 w-16 place-items-center rounded-2xl border border-white/10 bg-ap3k-gradient-soft text-4xl shadow-ap3k-glow">
+        {icon}
+      </div>
       <div>
-        <h3 className="text-lg font-bold text-rf-text mb-1">{title}</h3>
+        <h3 className="text-lg font-black text-rf-text mb-1">{title}</h3>
         <p className="text-sm text-rf-muted max-w-sm leading-relaxed">{description}</p>
       </div>
       {ctaLabel && ctaHref && (
-        <Button asChild className="bg-rf-blue hover:bg-rf-blue/90 text-white font-bold mt-2">
+        <Button asChild className="ap3k-gradient-button mt-2 px-5">
           <Link href={ctaHref}>{ctaLabel}</Link>
         </Button>
       )}

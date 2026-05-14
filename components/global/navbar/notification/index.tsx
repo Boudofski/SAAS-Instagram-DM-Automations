@@ -6,8 +6,8 @@ type Props = {};
 
 function Notification({}: Props) {
   return (
-    <Button className="bg-white rounded-full py-6">
-      <Bell color="#3352CC" fill="#3352CC" />
+    <Button className="rounded-xl border border-white/10 bg-white/[0.04] py-6 text-rf-pink hover:bg-white/[0.07]">
+      <Bell className="h-4 w-4" />
     </Button>
   );
 }

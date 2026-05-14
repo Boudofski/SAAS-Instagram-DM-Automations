@@ -31,7 +31,7 @@ function CreateAutomation({}: Props) {
         })
       }
       disabled={isPending}
-      className="lg:px-10 py-6 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#3352CC] font-medium to-[#1C2D70]"
+      className="ap3k-gradient-button rounded-xl py-6 text-white lg:px-8"
     >
       <Loader state={false} />
       <AutomationDuoToneWhite />

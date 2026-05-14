@@ -304,8 +304,8 @@ export default function WizardPage({ params }: Props) {
       </div>
 
       {/* Sticky footer */}
-      <div className="sticky bottom-0 bg-rf-surface border-t border-rf-border px-10 py-4
-                      flex items-center justify-between">
+      <div className="sticky bottom-0 border-t border-white/10 bg-rf-surface/85 px-4 py-4
+                      flex items-center justify-between backdrop-blur-xl sm:px-10">
         <p className="text-xs text-rf-muted hidden sm:block">
           💡 {STEP_TIPS[step - 1]}
         </p>
@@ -326,8 +326,8 @@ export default function WizardPage({ params }: Props) {
               type="button"
               onClick={next}
               disabled={!canAdvance()}
-              className="bg-rf-blue hover:bg-rf-blue/90 disabled:opacity-40 text-white font-bold
-                         text-sm px-7 py-2.5 rounded-xl transition-colors"
+              className="ap3k-gradient-button disabled:opacity-40
+                         text-sm px-7 py-2.5"
             >
               {step === 4 || step === 5 ? "Skip →" : "Next →"}
             </button>
@@ -336,9 +336,8 @@ export default function WizardPage({ params }: Props) {
               type="button"
               onClick={activate}
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-rf-blue to-rf-purple text-white font-extrabold
+              className="ap3k-gradient-button
                          text-sm px-8 py-2.5 rounded-xl flex items-center gap-2
-                         shadow-[0_4px_20px_rgba(59,130,246,0.4)] hover:opacity-90 transition-opacity
                          disabled:opacity-50"
             >
               {isSubmitting ? (

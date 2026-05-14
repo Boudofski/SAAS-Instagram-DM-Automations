@@ -15,16 +15,16 @@ export default function OnboardingChecklist({ items }: Props) {
   if (doneCount === items.length) return null;
 
   return (
-    <div className="bg-rf-surface border border-rf-border rounded-xl p-5">
+    <div className="ap3k-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-rf-text">Getting started</h3>
+        <h3 className="text-sm font-black text-rf-text">Getting started</h3>
         <span className="text-xs text-rf-muted">{doneCount} of {items.length} done</span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-rf-border rounded-full mb-4 overflow-hidden">
+      <div className="h-1.5 bg-white/[0.08] rounded-full mb-4 overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-rf-blue to-rf-purple transition-all duration-500"
+          className="h-full rounded-full bg-ap3k-gradient transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -36,14 +36,14 @@ export default function OnboardingChecklist({ items }: Props) {
               className={cn(
                 "w-5 h-5 rounded-[5px] flex items-center justify-center flex-shrink-0 text-[10px] font-bold",
                 item.done
-                  ? "bg-rf-green text-white"
-                  : "border-2 border-rf-subtle text-rf-subtle"
+                  ? "bg-rf-green text-white shadow-[0_0_18px_rgba(16,185,129,0.24)]"
+                  : "border border-white/15 bg-white/[0.03] text-rf-subtle"
               )}
             >
               {item.done ? "✓" : ""}
             </span>
             {item.href && !item.done ? (
-              <a href={item.href} className="text-rf-blue font-semibold hover:underline">
+              <a href={item.href} className="font-semibold text-rf-pink hover:text-rf-purple">
                 {item.label}
               </a>
             ) : (

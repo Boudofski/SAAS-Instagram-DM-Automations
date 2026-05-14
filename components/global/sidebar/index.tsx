@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePath } from "@/hooks/user-nav";
 import SubscriptionPlan from "../subscription-plan";
+import AP3kLogo from "../ap3k-logo";
+import { Home, Link2, Megaphone, Settings } from "lucide-react";
 
 const NAV = [
-  { icon: "⚡", label: "Home",         segment: "" },
-  { icon: "📣", label: "Campaigns",    segment: "automation" },
-  { icon: "🔗", label: "Integrations", segment: "integrations" },
-  { icon: "⚙️", label: "Settings",    segment: "settings" },
+  { icon: Home, label: "Home",         segment: "" },
+  { icon: Megaphone, label: "Campaigns",    segment: "automation" },
+  { icon: Link2, label: "Integrations", segment: "integrations" },
+  { icon: Settings, label: "Settings",    segment: "settings" },
 ] as const;
 
 type Props = { slug: string };
@@ -18,20 +20,17 @@ export default function Sidebar({ slug }: Props) {
   const { page } = usePath();
 
   return (
-    <aside className="w-[220px] fixed left-0 top-0 bottom-0 bg-rf-surface border-r border-rf-border
-                      hidden lg:flex flex-col py-0 z-40">
+    <aside className="fixed left-0 top-0 bottom-0 z-40 hidden w-[236px] flex-col border-r border-white/10
+                      bg-rf-bg/76 py-0 shadow-[18px_0_60px_rgba(0,0,0,0.28)] backdrop-blur-2xl lg:flex">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-rf-border">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                        flex items-center justify-center text-white text-[8px] font-black flex-shrink-0">
-          AP3K
-        </div>
-        <span className="font-bold text-rf-text text-sm">AP3k</span>
+      <div className="border-b border-white/10 px-5 py-5">
+        <AP3kLogo className="text-sm" />
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
         {NAV.map((item) => {
+          const Icon = item.icon;
           const href = `/dashboard/${slug}${item.segment ? `/${item.segment}` : ""}`;
           const isActive =
             item.segment === ""
@@ -44,11 +43,11 @@ export default function Sidebar({ slug }: Props) {
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                 isActive
-                  ? "bg-rf-blue/10 text-rf-text border border-rf-blue/20"
+                  ? "border border-rf-pink/25 bg-ap3k-gradient-soft text-rf-text shadow-[0_10px_30px_rgba(221,42,123,0.12)]"
                   : "text-rf-muted hover:text-rf-text hover:bg-white/5"
               )}
             >
-              <span className="text-base">{item.icon}</span>
+              <Icon className="h-4 w-4" />
               {item.label}
             </Link>
           );
@@ -57,17 +56,16 @@ export default function Sidebar({ slug }: Props) {
 
       {/* Upgrade card — Free tier only */}
       <SubscriptionPlan type="FREE">
-        <div className="px-3 pb-4">
-          <div className="bg-gradient-to-br from-rf-blue/12 to-rf-purple/12 border border-rf-blue/20
-                          rounded-xl p-4">
-            <p className="text-xs font-bold text-rf-text mb-1">Upgrade to Creator</p>
+          <div className="px-3 pb-4">
+          <div className="relative overflow-hidden rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 shadow-ap3k-card">
+            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
+            <p className="relative text-xs font-black text-rf-text mb-1">Upgrade to Creator</p>
             <p className="text-[11px] text-rf-muted mb-3 leading-snug">
               Unlock AI replies &amp; unlimited campaigns
             </p>
             <Link
               href="/payment"
-              className="block text-center bg-rf-blue hover:bg-rf-blue/90 text-white
-                         text-xs font-bold py-2 rounded-lg transition-colors"
+              className="ap3k-gradient-button block py-2 text-center text-xs"
             >
               Upgrade — $29/mo
             </Link>

@@ -5,14 +5,15 @@ type Props = {};
 
 function UpgradeCard({}: Props) {
   return (
-    <div className="bg-[#252525] p-3 rounded-xl flex flex-col gap-y-3">
-      <span className="text-sm text-[#9B9CA0]">
+    <div className="relative overflow-hidden rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 shadow-ap3k-card flex flex-col gap-y-3">
+      <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
+      <span className="relative text-sm text-rf-muted">
         Upgrade to {""}
-        <span className="bg-gradient-to-r from-[#CC3BD4] to-[#D064AC] font-bold bg-clip-text text-transparent">
+        <span className="ap3k-gradient-text font-black">
           Smart AI
         </span>
       </span>
-      <p className="text-[#9B9CA0] font-light text-sm">
+      <p className="relative text-rf-muted text-sm">
         Unlock all features <br /> including AI and more
       </p>
       <PaymentButton />

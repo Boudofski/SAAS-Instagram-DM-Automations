@@ -10,18 +10,19 @@ export default async function AutomationsPage({ params }: Props) {
   const automations = result.status === 200 ? (result.data as any[]) : [];
 
   return (
-    <div className="p-8">
+    <div className="relative p-4 sm:p-6 lg:p-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-64 bg-ap3k-radial opacity-70" />
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-rf-text">Campaigns</h1>
+          <p className="ap3k-kicker mb-2">Automations</p>
+          <h1 className="text-2xl font-black tracking-tight text-rf-text">Campaigns</h1>
           <p className="text-sm text-rf-muted mt-1">
             {automations.length} campaign{automations.length !== 1 ? "s" : ""}
           </p>
         </div>
         <Link
           href={`/dashboard/${params.slug}/automation/new`}
-          className="bg-rf-blue hover:bg-rf-blue/90 text-white font-bold text-sm
-                     px-5 py-2.5 rounded-xl transition-colors"
+          className="ap3k-gradient-button px-5 py-2.5 text-sm"
         >
           + New Campaign
         </Link>
