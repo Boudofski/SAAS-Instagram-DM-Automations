@@ -55,18 +55,34 @@ async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
     );
   }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    client_reference_id: user.id,
-    metadata: { clerkId: user.id, plan: selectedPlan },
-    subscription_data: {
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      client_reference_id: user.id,
       metadata: { clerkId: user.id, plan: selectedPlan },
-    },
-    customer_email: user.emailAddresses[0]?.emailAddress,
-    success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${hostUrl}/payment?cancel=true`,
-  });
+      subscription_data: {
+        metadata: { clerkId: user.id, plan: selectedPlan },
+      },
+      customer_email: user.emailAddresses[0]?.emailAddress,
+      success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${hostUrl}/payment?cancel=true`,
+    });
+  } catch (err) {
+    console.error("[stripe-checkout] failed to create checkout session", {
+      plan: selectedPlan,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return (
+      <div className="flex flex-col justify-center items-center h-screen w-full gap-3 text-center">
+        <h4 className="text-3xl font-bold">Checkout unavailable</h4>
+        <p className="text-muted-foreground">
+          Stripe checkout could not be started. Please try again later.
+        </p>
+      </div>
+    );
+  }
 
   if (session.url) redirect(session.url);
 

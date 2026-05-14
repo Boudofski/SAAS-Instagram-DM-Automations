@@ -107,6 +107,13 @@ export const onSubscribe = async (session_id: string) => {
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (session) {
+      if (session.metadata?.clerkId && session.metadata.clerkId !== user.id) {
+        console.warn("[stripe-checkout] session user mismatch", {
+          sessionId: session.id,
+        });
+        return { status: 403 };
+      }
+
       const subscript = await updateSubscription(user.id, {
         customerId: session.customer as string,
         plan: "PRO",
