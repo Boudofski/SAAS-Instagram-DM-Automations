@@ -107,25 +107,66 @@ export const onSubscribe = async (session_id: string) => {
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (session) {
-      if (session.metadata?.clerkId && session.metadata.clerkId !== user.id) {
+      const sessionOwner = session.metadata?.clerkId ?? session.client_reference_id;
+      if (!sessionOwner) {
+        console.warn("[stripe-checkout] session owner missing", {
+          sessionId: session.id,
+        });
+        return { status: 400, error: "missing_owner" };
+      }
+
+      if (sessionOwner !== user.id) {
         console.warn("[stripe-checkout] session user mismatch", {
           sessionId: session.id,
         });
-        return { status: 403 };
+        return { status: 403, error: "user_mismatch" };
+      }
+
+      if (session.status !== "complete") {
+        console.warn("[stripe-checkout] session is not complete", {
+          sessionId: session.id,
+          status: session.status,
+        });
+        return { status: 400, error: "session_incomplete" };
+      }
+
+      if (typeof session.customer !== "string") {
+        console.warn("[stripe-checkout] session customer missing", {
+          sessionId: session.id,
+        });
+        return { status: 400, error: "missing_customer" };
       }
 
       const subscript = await updateSubscription(user.id, {
-        customerId: session.customer as string,
+        customerId: session.customer,
         plan: "PRO",
       });
 
-      if (subscript) return { status: 200 };
+      if (subscript) {
+        const profile = await findUser(user.id);
+        const slug =
+          `${profile?.firstname ?? ""}${profile?.lastname ?? ""}` ||
+          profile?.clerkId ||
+          "";
+        return {
+          status: 200,
+          dashboardPath: slug ? `/dashboard/${slug}` : "/dashboard",
+        };
+      }
 
-      return { status: 401 };
+      console.warn("[stripe-checkout] subscription update returned empty", {
+        sessionId: session.id,
+      });
+      return { status: 401, error: "update_failed" };
     }
 
-    return { status: 404 };
+    console.warn("[stripe-checkout] session not found", { sessionId: session_id });
+    return { status: 404, error: "session_not_found" };
   } catch (error) {
-    return { status: 500 };
+    console.error("[stripe-checkout] session verification failed", {
+      sessionId: session_id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return { status: 500, error: "verification_failed" };
   }
 };

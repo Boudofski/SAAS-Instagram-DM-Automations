@@ -13,19 +13,28 @@ type Props = {
   };
 };
 
+function PaymentVerificationFailed() {
+  return (
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-3 px-6 text-center">
+      <h1 className="text-3xl font-bold">Payment verification failed</h1>
+      <p className="max-w-md text-sm text-muted-foreground">
+        We could not verify this checkout session. Your card may still have
+        completed successfully, so please refresh your dashboard before trying
+        again.
+      </p>
+    </div>
+  );
+}
+
 async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
   if (session_id) {
-    const customer = await onSubscribe(session_id);
+    const subscription = await onSubscribe(session_id);
 
-    if (customer.status === 200) {
-      return redirect("/dashboard");
+    if (subscription.status === 200 && subscription.dashboardPath) {
+      return redirect(subscription.dashboardPath);
     }
-    return (
-      <div className="flex flex-col justify-center items-center h-screen w-full">
-        <h4 className="text-5xl font-bold">404</h4>
-        <p className="text-xl font-bold">Oppose! Something went wrong</p>
-      </div>
-    );
+
+    return <PaymentVerificationFailed />;
   }
 
   if (cancel) {
