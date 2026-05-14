@@ -36,9 +36,10 @@ Open `.env.local` and set:
 | `DATABASE_URL` | Your local Postgres: `postgresql://postgres:password@localhost:5432/replyflow` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Dashboard → API Keys |
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API Keys |
-| `STRIPE_CLIENT_SECRET` | Stripe Dashboard → Developers → API keys → Secret key |
+| `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys → Secret key |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard → API keys → Publishable key |
-| `STRIPE_SUBSCRIPTION_PRICE_ID` | Stripe Dashboard → Products → your plan → Price ID |
+| `STRIPE_PRICE_ID_CREATOR` | Stripe Dashboard → Products → AP3k Creator → Price ID |
+| `STRIPE_PRICE_ID_AGENCY` | Stripe Dashboard → Products → AP3k Agency → Price ID |
 | `META_APP_ID` | Meta for Developers → your app → Settings → Basic |
 | `META_APP_SECRET` | Meta for Developers → your app → Settings → Basic |
 | `META_VERIFY_TOKEN` | Any random secret you choose (e.g. `my-local-verify-secret`) |

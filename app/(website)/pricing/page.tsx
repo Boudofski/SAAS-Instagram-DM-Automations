@@ -16,7 +16,7 @@ const PLANS = [
   },
   {
     tier: "Creator", price: "$29", description: "For serious creators and coaches",
-    ctaLabel: "Start Creator plan", ctaHref: "/payment", featured: true,
+    ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
     features: [
       { text: "Unlimited campaigns", included: true },
       { text: "Unlimited DMs", included: true },
@@ -28,7 +28,7 @@ const PLANS = [
   },
   {
     tier: "Agency", price: "$79", description: "For teams managing multiple accounts",
-    ctaLabel: "Contact sales", ctaHref: "mailto:hello@ap3k.com", featured: false,
+    ctaLabel: "Start Agency plan", ctaHref: "/payment?plan=agency", featured: false,
     features: [
       { text: "Everything in Creator", included: true },
       { text: "Up to 10 Instagram accounts", included: true },

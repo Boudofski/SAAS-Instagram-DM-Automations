@@ -84,7 +84,7 @@ function PaymentCard({ label, current, landing }: Props) {
           <Button
             className="rounded-full mt-5 bg-background-80 text-white hover:text-background-80"
             disabled={label === current || isProcessing}
-            onClick={onSubscription}
+            onClick={() => onSubscription("creator")}
           >
             {label === current
               ? "Active"

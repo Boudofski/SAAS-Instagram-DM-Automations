@@ -44,8 +44,9 @@ Walk through this flow end-to-end with real credentials before launch:
 
 ## Stripe Integration
 
-- [ ] `STRIPE_CLIENT_SECRET` is set (test or live)
-- [ ] `STRIPE_SUBSCRIPTION_PRICE_ID` points to a valid recurring price
+- [ ] `STRIPE_SECRET_KEY` is set (test or live)
+- [ ] `STRIPE_PRICE_ID_CREATOR` points to a valid recurring price
+- [ ] `STRIPE_PRICE_ID_AGENCY` points to a valid recurring price
 - [ ] `STRIPE_WEBHOOK_SECRET` matches the registered webhook endpoint
 - [ ] Webhook endpoint registered for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
 - [ ] Test payment upgrades user plan to PRO (verify in DB)
@@ -54,7 +55,7 @@ Walk through this flow end-to-end with real credentials before launch:
 ## Security
 
 - [ ] `CLERK_SECRET_KEY` is not exposed in client-side code
-- [ ] `STRIPE_CLIENT_SECRET` is not exposed in client-side code
+- [ ] `STRIPE_SECRET_KEY` is not exposed in client-side code
 - [ ] `META_APP_SECRET` is not exposed in client-side code
 - [ ] Meta webhook verifies `META_VERIFY_TOKEN` on GET requests
 - [ ] Stripe webhook verifies `stripe-signature` header

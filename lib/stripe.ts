@@ -1,11 +1,12 @@
 import Stripe from "stripe";
+import { getStripeSecretKey } from "./stripe-config";
 
 let _instance: Stripe | null = null;
 
 function getInstance(): Stripe {
   if (!_instance) {
-    const key = process.env.STRIPE_CLIENT_SECRET;
-    if (!key) throw new Error("STRIPE_CLIENT_SECRET is not configured");
+    const key = getStripeSecretKey();
+    if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
     _instance = new Stripe(key);
   }
   return _instance;

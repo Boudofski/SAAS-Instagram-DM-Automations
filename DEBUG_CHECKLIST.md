@@ -97,7 +97,7 @@ Quick-reference for common integration failures. Work through each section in or
 2. Check `STRIPE_WEBHOOK_SECRET` in `.env.local` matches the secret printed by `stripe listen` (starts with `whsec_`). The Dashboard webhook secret is **different** from the CLI secret.
 3. Check the Stripe CLI output — the event should show `→ POST ... [200]`. If it shows `[400]` or `[500]`:
    - `[400] Invalid signature` → wrong `STRIPE_WEBHOOK_SECRET`
-   - `[400] Missing Stripe configuration` → `STRIPE_CLIENT_SECRET` or `STRIPE_WEBHOOK_SECRET` not set
+   - `[400] Missing Stripe configuration` → `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` not set
 4. Verify the `checkout.session.metadata.clerkId` is set — the payment route must include it when creating the session.
 5. Verify the `subscription.metadata.clerkId` is set — the payment route should pass the same metadata via `subscription_data`.
 6. Check `User.subscription` row exists. If the `Subscription` row was never created (e.g. the user signed up before that code was deployed), the `updateSubscription` upsert should still create it.

@@ -1,4 +1,5 @@
 import { findUserByCustomerId, updateSubscription } from "@/actions/user/queries";
+import { getStripeSecretKey } from "@/lib/stripe-config";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  const stripeKey = process.env.STRIPE_CLIENT_SECRET;
+  const stripeKey = getStripeSecretKey();
 
   if (!sig || !webhookSecret || !stripeKey) {
     return NextResponse.json(

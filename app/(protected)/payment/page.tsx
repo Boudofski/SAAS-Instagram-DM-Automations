@@ -1,4 +1,5 @@
 import { onSubscribe } from "@/actions/user";
+import { getStripePriceId, parseStripePlan } from "@/lib/stripe-config";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -8,10 +9,11 @@ type Props = {
   searchParams: {
     session_id?: string;
     cancel?: boolean;
+    plan?: string;
   };
 };
 
-async function Page({ searchParams: { cancel, session_id } }: Props) {
+async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
   if (session_id) {
     const customer = await onSubscribe(session_id);
 
@@ -38,7 +40,8 @@ async function Page({ searchParams: { cancel, session_id } }: Props) {
   const user = await currentUser();
   if (!user) return redirect("/sign-in");
 
-  const priceId = process.env.STRIPE_SUBSCRIPTION_PRICE_ID;
+  const selectedPlan = parseStripePlan(plan);
+  const priceId = getStripePriceId(selectedPlan);
   const hostUrl = process.env.NEXT_PUBLIC_HOST_URL;
 
   if (!priceId || !hostUrl) {
@@ -56,9 +59,9 @@ async function Page({ searchParams: { cancel, session_id } }: Props) {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     client_reference_id: user.id,
-    metadata: { clerkId: user.id },
+    metadata: { clerkId: user.id, plan: selectedPlan },
     subscription_data: {
-      metadata: { clerkId: user.id },
+      metadata: { clerkId: user.id, plan: selectedPlan },
     },
     customer_email: user.emailAddresses[0]?.emailAddress,
     success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,

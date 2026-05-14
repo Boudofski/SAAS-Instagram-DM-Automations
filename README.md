@@ -121,13 +121,15 @@ During development, add your personal Instagram account as a **Test User** in th
 ### Test Mode Keys
 
 1. Go to [dashboard.stripe.com](https://dashboard.stripe.com) → **Developers → API Keys**
-2. Copy the **Secret key** (`sk_test_...`) → `STRIPE_CLIENT_SECRET`
+2. Copy the **Secret key** (`sk_test_...`) → `STRIPE_SECRET_KEY`
 3. Copy the **Publishable key** (`pk_test_...`) → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
-### Create a Price
+### Create Prices
 
-1. Go to **Products → Add Product** → create a recurring monthly product
-2. Copy the **Price ID** (`price_...`) → `STRIPE_SUBSCRIPTION_PRICE_ID`
+1. Go to **Products → Add Product** → create `AP3k Creator` as a recurring monthly product
+2. Copy the Creator **Price ID** (`price_...`) → `STRIPE_PRICE_ID_CREATOR`
+3. Create `AP3k Agency` as a recurring monthly product
+4. Copy the Agency **Price ID** (`price_...`) → `STRIPE_PRICE_ID_AGENCY`
 
 ### Stripe Webhook (Local)
 
@@ -177,6 +179,10 @@ In Vercel → Project → Settings → Environment Variables, add every variable
 | `NEXT_PUBLIC_HOST_URL` | `https://ap3k.com` |
 | `META_REDIRECT_URI` | `https://ap3k.com/callback/instagram` |
 | `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL with `redirect_uri=https://ap3k.com/callback/instagram` |
+| `STRIPE_SECRET_KEY` | Live or test secret key from Stripe |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Matching live or test publishable key from Stripe |
+| `STRIPE_PRICE_ID_CREATOR` | Creator recurring price ID |
+| `STRIPE_PRICE_ID_AGENCY` | Agency recurring price ID |
 | `STRIPE_WEBHOOK_SECRET` | Secret from Vercel webhook endpoint (see below) |
 
 ### 4. Stripe Webhook (Production)

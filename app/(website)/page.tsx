@@ -23,7 +23,7 @@ const PLANS = [
     price: "$29",
     description: "For serious creators and coaches",
     ctaLabel: "Start Creator plan",
-    ctaHref: "/payment",
+    ctaHref: "/payment?plan=creator",
     featured: true,
     features: [
       { text: "Unlimited campaigns", included: true },
@@ -38,8 +38,8 @@ const PLANS = [
     tier: "Agency",
     price: "$79",
     description: "For teams managing multiple accounts",
-    ctaLabel: "Contact sales",
-    ctaHref: "mailto:hello@ap3k.com",
+    ctaLabel: "Start Agency plan",
+    ctaHref: "/payment?plan=agency",
     featured: false,
     features: [
       { text: "Everything in Creator", included: true },
