@@ -1,45 +1,56 @@
-import AutomationList from "@/components/global/automation-list";
-import CreateAutomation from "@/components/global/create-automation";
-import { Check } from "lucide-react";
+import CampaignCard from "@/components/global/campaign-card";
+import EmptyState from "@/components/global/empty-state";
+import { getAllAutomation } from "@/actions/automation";
+import Link from "next/link";
 
-type Props = {};
+type Props = { params: { slug: string } };
 
-function Page({}: Props) {
+export default async function AutomationsPage({ params }: Props) {
+  const result = await getAllAutomation();
+  const automations = result.status === 200 ? (result.data as any[]) : [];
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-6 gap-5">
-      <div className="lg:col-span-4">
-        <AutomationList />
-      </div>
-      <div className="lg:col-span-2">
-        <div className="flex flex-col rounded-xl bg-background-80 gap-y-6 p-5 border-[1px] overflow-hidden border-in-active">
-          <div>
-            <h2 className="text-xl">Automation</h2>
-            <p className="text-text-secondary">
-              All live automation will show here.
-            </p>
-          </div>
-          <div className="flex flex-col gap-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-start justify-between">
-                <div className="flex flex-col">
-                  <h3 className="font-medium">
-                    Direct traffic towards website
-                  </h3>
-                  <p className="text-text-secondary text-sm">
-                    October 5th 2024
-                  </p>
-                </div>
-                <Check />
-              </div>
-            ))}
-          </div>
-          <CreateAutomation />
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-rf-text">Campaigns</h1>
+          <p className="text-sm text-rf-muted mt-1">
+            {automations.length} campaign{automations.length !== 1 ? "s" : ""}
+          </p>
         </div>
+        <Link
+          href={`/dashboard/${params.slug}/automation/new`}
+          className="bg-rf-blue hover:bg-rf-blue/90 text-white font-bold text-sm
+                     px-5 py-2.5 rounded-xl transition-colors"
+        >
+          + New Campaign
+        </Link>
       </div>
+
+      {automations.length === 0 ? (
+        <EmptyState
+          icon="📣"
+          title="No campaigns yet"
+          description="Launch your first comment-to-DM funnel in 60 seconds. Pick a post, add keywords, write your DM."
+          ctaLabel="Launch first campaign →"
+          ctaHref={`/dashboard/${params.slug}/automation/new`}
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {automations.map((a: any) => (
+            <CampaignCard
+              key={a.id}
+              id={a.id}
+              slug={params.slug}
+              name={a.name}
+              active={a.active}
+              keywords={a.keywords ?? []}
+              dmCount={a.listener?.dmCount ?? 0}
+              listenerType={a.listener?.listener}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
-export default Page;
-
-//04.06
