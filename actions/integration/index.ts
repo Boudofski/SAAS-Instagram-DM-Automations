@@ -1,9 +1,9 @@
 "use server";
 
 import { generateToken } from "@/lib/fetch";
+import { currentUser } from "@clerk/nextjs/server";
 import axios from "axios";
 import { redirect } from "next/navigation";
-import { onCurrentUser } from "../user";
 import { createIntegration, getIntegrations, updateIntegration } from "./queries";
 
 const REQUIRED_IG_SCOPES = [
@@ -89,8 +89,20 @@ export const getInstagramConnectUrl = async () => {
 };
 
 export const onIntegrate = async (code: string) => {
-  console.log("[oauth] callback received", { hasCode: Boolean(code) });
-  const user = await onCurrentUser();
+  const user = await currentUser();
+  console.log("[oauth] callback received", {
+    hasCode: Boolean(code),
+    hasCurrentUser: Boolean(user),
+  });
+
+  if (!user) {
+    console.warn("[oauth] callback cannot save integration", {
+      hasCode: Boolean(code),
+      hasCurrentUser: false,
+      integrationSaved: false,
+    });
+    return { status: 401, error: "auth_missing" };
+  }
 
   try {
     const integration = await getIntegrations(user.id);
@@ -98,18 +110,33 @@ export const onIntegrate = async (code: string) => {
     const token = await generateToken(code);
 
     if (!token) {
-      console.log("[oauth] token exchange failed: generateToken returned null");
-      return { status: 401 };
+      console.log("[oauth] integration save skipped", {
+        tokenExchangeStatus: "failed",
+        hasAccessToken: false,
+        integrationSaved: false,
+      });
+      return {
+        status: 401,
+        error: "token_exchange_failed",
+        data: {
+          firstname: user.firstName,
+          lastname: user.lastName,
+          clerkId: user.id,
+        },
+      };
     }
 
+    const instagramBaseUrl =
+      process.env.INSTAGRAM_BASE_URL ?? "https://graph.instagram.com";
     const insts_id = await axios.get(
-      `${process.env.INSTAGRAM_BASE_URL}/me?fields=user_id`,
+      `${instagramBaseUrl}/me?fields=user_id,username`,
       {
         headers: { Authorization: `Bearer ${token.access_token}` },
       }
     );
 
-    console.log("[oauth] token exchange succeeded", {
+    console.log("[oauth] account fetch result", {
+      accountFetchStatus: insts_id.status,
       hasInstagramUserId: Boolean(insts_id.data.user_id),
       updatingExistingIntegration: Boolean(existing),
     });
@@ -124,6 +151,11 @@ export const onIntegrate = async (code: string) => {
         existing.id,
         insts_id.data.user_id
       );
+      console.log("[oauth] integration save result", {
+        integrationSaved: Boolean(update),
+        updatingExistingIntegration: true,
+        hasInstagramUserId: Boolean(insts_id.data.user_id),
+      });
       return {
         status: 200,
         data: {
@@ -141,9 +173,25 @@ export const onIntegrate = async (code: string) => {
       new Date(expire_date),
       insts_id.data.user_id
     );
+    console.log("[oauth] integration save result", {
+      integrationSaved: Boolean(create),
+      updatingExistingIntegration: false,
+      hasInstagramUserId: Boolean(insts_id.data.user_id),
+    });
     return { status: 200, data: create };
   } catch (error) {
-    console.error("[oauth] onIntegrate error:", error instanceof Error ? error.message : String(error));
-    return { status: 500 };
+    console.error("[oauth] onIntegrate error", {
+      message: error instanceof Error ? error.message : String(error),
+      integrationSaved: false,
+    });
+    return {
+      status: 500,
+      error: "integration_save_failed",
+      data: {
+        firstname: user.firstName,
+        lastname: user.lastName,
+        clerkId: user.id,
+      },
+    };
   }
 };

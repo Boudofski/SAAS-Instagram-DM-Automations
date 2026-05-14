@@ -1,5 +1,10 @@
 import axios from "axios";
 
+const INSTAGRAM_BASE_URL =
+  process.env.INSTAGRAM_BASE_URL ?? "https://graph.instagram.com";
+const INSTAGRAM_TOKEN_URL =
+  process.env.INSTAGRAM_TOKEN_URL ?? "https://api.instagram.com/oauth/access_token";
+
 export function getSafeMetaError(error: unknown) {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
@@ -35,7 +40,7 @@ export function formatSafeMetaError(error: unknown) {
 
 export const refreshToken = async (token: string) => {
   const refresh_token = await axios.get(
-    `${process.env.INSTAGRAM_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
+    `${INSTAGRAM_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
   );
   return refresh_token.data;
 };
@@ -47,7 +52,7 @@ export const sendDm = async (
   token: string
 ) => {
   return await axios.post(
-    `${process.env.INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
+    `${INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
     {
       recipient: { id: receiverId },
       message: { text: prompt },
@@ -68,7 +73,7 @@ export const sendPrivateMessage = async (
   token: string
 ) => {
   return await axios.post(
-    `${process.env.INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
+    `${INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
     {
       recipient: { comment_id: commentId },
       message: { text: message },
@@ -93,7 +98,7 @@ export const sendCommentReply = async (
   token: string
 ) => {
   return await axios.post(
-    `${process.env.INSTAGRAM_BASE_URL}/v21.0/${commentId}/replies`,
+    `${INSTAGRAM_BASE_URL}/v21.0/${commentId}/replies`,
     { message },
     {
       headers: {
@@ -134,15 +139,20 @@ export const generateToken = async (code: string) => {
   insta_form.append("redirect_uri", redirectUri);
   insta_form.append("code", code);
 
-  const shortTokenRes = await fetch(process.env.INSTAGRAM_TOKEN_URL as string, {
+  const shortTokenRes = await fetch(INSTAGRAM_TOKEN_URL, {
     method: "POST",
     body: insta_form,
   });
 
   const token = await shortTokenRes.json();
+  console.log("[oauth] token exchange result", {
+    tokenExchangeStatus: shortTokenRes.status,
+    hasAccessToken: Boolean(token.access_token),
+  });
+
   if (shortTokenRes.ok && token.access_token) {
     const long_token = await axios.get(
-      `${process.env.INSTAGRAM_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${token.access_token}`
+      `${INSTAGRAM_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${token.access_token}`
     );
     return long_token.data;
   }
