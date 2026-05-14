@@ -7,14 +7,20 @@ import {
   addListener,
   addPosts,
   addTrigger,
+  CampaignPayload,
   createAutomation,
+  createCompleteAutomation,
+  deleteAutomationQuery,
   deleteKeywordsQuery,
+  duplicateAutomationQuery,
   findAutomation,
+  findAutomationForUser,
   getAutomation,
   getAutomationAnalytics,
   getAutomationActivity,
   getDashboardActivity,
   updateAutomation,
+  updateCompleteAutomation,
 } from "./queries";
 
 export const createAutomations = async (id?: string) => {
@@ -27,6 +33,48 @@ export const createAutomations = async (id?: string) => {
     return { status: 404, data: "Failed to create automation" };
   } catch (error: any) {
     return { status: 500, data: error.message };
+  }
+};
+
+export const saveCampaign = async (payload: CampaignPayload, automationId?: string) => {
+  const user = await onCurrentUser();
+
+  try {
+    const cleanPayload: CampaignPayload = {
+      ...payload,
+      name: payload.name.trim() || "Untitled campaign",
+      keywords: Array.from(
+        new Set(
+          payload.keywords
+            .map((keyword) => keyword.trim())
+            .filter(Boolean)
+        )
+      ),
+      listener: {
+        ...payload.listener,
+        prompt: payload.listener.prompt.trim(),
+        commentReply: payload.listener.commentReply?.trim() || undefined,
+        ctaLink: payload.listener.ctaLink?.trim() || undefined,
+      },
+    };
+
+    if (!cleanPayload.post.postid || !cleanPayload.listener.prompt || cleanPayload.keywords.length === 0) {
+      return { status: 400, data: "Campaign needs a post, keyword, and DM message" };
+    }
+
+    const saved = automationId
+      ? await updateCompleteAutomation(automationId, user.id, cleanPayload)
+      : await createCompleteAutomation(user.id, cleanPayload);
+
+    const savedResult = saved as
+      | { automations?: { id: string }[]; id?: string }
+      | null;
+    const id = automationId || savedResult?.automations?.[0]?.id || savedResult?.id;
+    if (saved && id) return { status: 200, data: { id } };
+
+    return { status: 404, data: "Campaign not found" };
+  } catch (error) {
+    return { status: 500, data: "Failed to save campaign" };
   }
 };
 
@@ -45,16 +93,40 @@ export const getAllAutomation = async () => {
 };
 
 export const getAutomationInfo = async (id: string) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const automation = await findAutomation(id);
+    const automation = await findAutomationForUser(id, user.id);
 
     if (automation) return { status: 200, data: automation };
 
     return { status: 404 };
   } catch (error) {
     return { status: 500 };
+  }
+};
+
+export const duplicateAutomation = async (id: string) => {
+  const user = await onCurrentUser();
+
+  try {
+    const duplicated = await duplicateAutomationQuery(id, user.id);
+    if (duplicated) return { status: 200, data: "Campaign duplicated" };
+    return { status: 404, data: "Campaign cannot be duplicated until it has a post and DM" };
+  } catch {
+    return { status: 500, data: "Failed to duplicate campaign" };
+  }
+};
+
+export const deleteAutomation = async (id: string) => {
+  const user = await onCurrentUser();
+
+  try {
+    const deleted = await deleteAutomationQuery(id, user.id);
+    if (deleted.count > 0) return { status: 200, data: "Campaign deleted" };
+    return { status: 404, data: "Campaign not found" };
+  } catch {
+    return { status: 500, data: "Failed to delete campaign" };
   }
 };
 

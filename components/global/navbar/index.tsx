@@ -62,7 +62,7 @@ function NavBar({ slug }: Props) {
             </Sheet>
           </span>
           <Search />
-          <CreateAutomation />
+          <CreateAutomation slug={slug} />
           <Notification />
         </div>
         <MainBreadCrumbs page={page === slug ? "Home" : page} slug={slug} />

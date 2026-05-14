@@ -1,41 +1,25 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useCreateAutomation } from "@/hooks/use-automation";
 import { AutomationDuoToneWhite } from "@/icons";
-import React, { useMemo } from "react";
-import { v4 } from "uuid";
-import Loader from "../loader";
+import Link from "next/link";
 
-type Props = {};
+type Props = {
+  slug?: string;
+};
 
-function CreateAutomation({}: Props) {
-  const mutationId = useMemo(
-    () => v4(),
-    [
-      /* v4() */
-    ]
-  );
-  //console.log("🚀 ~ CreateAutomation ~ mutationId:", mutationId);
-
-  const { isPending, mutate } = useCreateAutomation(mutationId);
+function CreateAutomation({ slug }: Props) {
+  const href = slug ? `/dashboard/${slug}/automation/new` : "/dashboard";
 
   return (
     <Button
-      onClick={() =>
-        mutate({
-          name: "Untitled",
-          id: mutationId,
-          createdAt: new Date(),
-          keywords: [],
-        })
-      }
-      disabled={isPending}
+      asChild
       className="ap3k-gradient-button rounded-xl py-6 text-white lg:px-8"
     >
-      <Loader state={false} />
-      <AutomationDuoToneWhite />
-      <p className="lg:inline hidden">Create Automation</p>
+      <Link href={href}>
+        <AutomationDuoToneWhite />
+        <p className="lg:inline hidden">Create Campaign</p>
+      </Link>
     </Button>
   );
 }

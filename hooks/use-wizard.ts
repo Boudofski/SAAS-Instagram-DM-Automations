@@ -1,13 +1,7 @@
 "use client";
 
 import {
-  activateAutomation,
-  createAutomations,
-  saveKeywords,
-  saveListener,
-  saveMatchingMode,
-  savePosts,
-  saveTrigger,
+  saveCampaign,
 } from "@/actions/automation";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -76,42 +70,31 @@ export function useWizard(slug: string) {
     setError(null);
 
     try {
-      const created = await createAutomations();
-      if (created.status !== 200) throw new Error("Failed to create automation");
+      const saved = await saveCampaign({
+        name: data.campaignName,
+        active: data.active,
+        matchingMode: data.matchingMode,
+        post: data.post,
+        keywords: data.keywords,
+        listener: {
+          listener: data.aiMode ? "SMARTAI" : "MESSAGE",
+          prompt: data.dmMessage,
+          commentReply: data.publicReply || undefined,
+          ctaLink: data.ctaLink || undefined,
+        },
+      });
 
-      const { getAllAutomation } = await import("@/actions/automation");
-      const all = await getAllAutomation();
-      if (all.status !== 200 || !all.data.length) throw new Error("Automation not found");
-      const automationId = all.data[all.data.length - 1].id;
+      const savedData = saved.data;
+      const campaignId =
+        typeof savedData === "object" && savedData !== null && "id" in savedData
+          ? String(savedData.id)
+          : null;
 
-      if (data.campaignName.trim()) {
-        const { updateAutomationName } = await import("@/actions/automation");
-        await updateAutomationName(automationId, {
-          name: data.campaignName.trim(),
-        });
+      if (saved.status !== 200 || !campaignId) {
+        throw new Error(typeof saved.data === "string" ? saved.data : "Failed to save campaign");
       }
 
-      await savePosts(automationId, [data.post]);
-
-      for (const kw of data.keywords) {
-        await saveKeywords(automationId, kw);
-      }
-
-      await saveTrigger(automationId, ["COMMENT"]);
-
-      await saveListener(
-        automationId,
-        data.aiMode ? "SMARTAI" : "MESSAGE",
-        data.dmMessage,
-        data.publicReply || undefined,
-        data.ctaLink || undefined
-      );
-
-      await saveMatchingMode(automationId, data.matchingMode);
-
-      await activateAutomation(automationId, data.active);
-
-      router.push(`/dashboard/${slug}/automation/${automationId}`);
+      router.push(`/dashboard/${slug}/automation/${campaignId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setIsSubmitting(false);
