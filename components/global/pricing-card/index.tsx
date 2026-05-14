@@ -9,7 +9,7 @@ type Props = {
   price: string;
   period?: string;
   description: string;
-  features: Feature[];
+  features: readonly Feature[];
   ctaLabel: string;
   ctaHref: string;
   featured?: boolean;

@@ -1,293 +1,336 @@
-import { footerGroups, socialIcons } from "@/components/home/data/footerGroups";
-import FooterLinkGroup from "@/components/home/FooterLinkGroup";
-import ImageCard from "@/components/home/ImageCard";
-import NewsletterForm from "@/components/home/NewsletterForm";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { CheckCircle } from "lucide-react";
+import PricingCard from "@/components/global/pricing-card";
 import Link from "next/link";
 
-const imageData = [
+const PLANS = [
   {
-    src: "https://marketplace.canva.com/EAFkR3HM3rE/1/0/1600w/canva-black-and-beige-photo-new-post-instagram-post-NU-nLixJ0nM.jpg",
-    aspectRatio: "0.94",
-  },
-  {
-    src: "https://marketplace.canva.com/EAE2pXyqyx0/1/0/1600w/canva-simple-instagram-frame-template-instagram-post-ObQSn5BL2ZQ.jpg",
-    aspectRatio: "0.94",
-    marginTop: "mt-4",
-  },
-  /*   {
-    src: "https://marketplace.canva.com/EAE2pXyqyx0/1/0/1600w/canva-simple-instagram-frame-template-instagram-post-ObQSn5BL2ZQ.jpg",
-    aspectRatio: "1.7",
-    marginTop: "mt-4",
-  }, */
-];
-
-const imageData2 = [
-  {
-    src: "https://marketplace.canva.com/EAF-43gIi8Q/1/0/1600w/canva-brown-photo-collage-instagram-post-IYa0cBCMyH8.jpg",
-    aspectRatio: "1.7",
-  },
-  {
-    src: "https://www.tribegroup.co/hs-fs/hubfs/Blog%20Assets/00%20-%202021/0321%20-%20How%20to%20Promote%20on%20Instagram%20Costs,%20Tips%20and%20Tricks/insta-promote.png?width=550&name=insta-promote.png",
-    aspectRatio: "0.94",
-    marginTop: "mt-4",
-  },
-  {
-    src: "https://marketplace.canva.com/EAFNZ0mRedU/1/0/1600w/canva-lSVdGGDAJIA.jpg",
-    aspectRatio: "0.94",
-    marginTop: "mt-4",
-  },
-];
-
-const plans = [
-  {
-    name: "Free Plan",
-    description: "Perfect for getting started",
+    tier: "Free",
     price: "$0",
+    description: "Perfect for getting started",
+    ctaLabel: "Get started free",
+    ctaHref: "/sign-up",
+    featured: false,
     features: [
-      "Boost engagement with target responses",
-      "Automate comment replies to enhance audience interaction",
-      "Turn followers into customers with targeted messaging",
+      { text: "1 active campaign", included: true },
+      { text: "Up to 50 DMs/month", included: true },
+      { text: "Keyword triggers", included: true },
+      { text: "Basic analytics", included: true },
+      { text: "Smart AI replies", included: false },
+      { text: "Unlimited DMs", included: false },
     ],
-    cta: "Get Started",
   },
   {
-    name: "Smart AI Plan",
-    description: "Advanced features for power users",
-    price: "$99",
+    tier: "Creator",
+    price: "$29",
+    description: "For serious creators and coaches",
+    ctaLabel: "Start Creator plan",
+    ctaHref: "/payment",
+    featured: true,
     features: [
-      "All features from Free Plan",
-      "AI-powered response generation",
-      "Advanced analytics and insights",
-      "Priority customer support",
-      "Custom branding options",
+      { text: "Unlimited campaigns", included: true },
+      { text: "Unlimited DMs", included: true },
+      { text: "Smart AI replies", included: true },
+      { text: "Full analytics + leads export", included: true },
+      { text: "{{variable}} personalisation", included: true },
+      { text: "Priority support", included: true },
     ],
-    cta: "Upgrade Now",
   },
-];
+  {
+    tier: "Agency",
+    price: "$79",
+    description: "For teams managing multiple accounts",
+    ctaLabel: "Contact sales",
+    ctaHref: "mailto:hello@replyflow.ai",
+    featured: false,
+    features: [
+      { text: "Everything in Creator", included: true },
+      { text: "Up to 10 Instagram accounts", included: true },
+      { text: "Team access", included: true },
+      { text: "Dedicated onboarding", included: true },
+      { text: "Custom integrations", included: true },
+      { text: "SLA support", included: true },
+    ],
+  },
+] as const;
 
-export default function Home() {
+const FEATURES = [
+  { icon: "🏷️", title: "Keyword triggers", desc: "When someone comments 'link', 'info', or any word you choose — your DM fires instantly." },
+  { icon: "✉️", title: "Personalised DMs", desc: "Use {{first_name}}, {{keyword}}, and {{link}} to make every DM feel human and targeted." },
+  { icon: "🤖", title: "Smart AI replies", desc: "Let AI handle follow-up conversations — answers questions, nurtures leads, closes sales. 24/7." },
+  { icon: "📊", title: "Real analytics", desc: "Track DMs sent, leads captured, and reply rate per campaign. Know exactly what's working." },
+  { icon: "💬", title: "Public comment replies", desc: "Reply publicly before sending the DM — boosts engagement and warms up the lead." },
+  { icon: "🛡️", title: "Safe by design", desc: "Built-in duplicate prevention. Nobody gets the same DM twice. No spam, no bans." },
+] as const;
+
+const EXAMPLES = [
+  { comment: "GUIDE", action: "Free PDF guide sent via DM",    color: "text-rf-blue" },
+  { comment: "PRICE", action: "Pricing page link sent via DM", color: "text-rf-purple" },
+  { comment: "BOOK",  action: "Booking page sent via DM",      color: "text-rf-green" },
+] as const;
+
+export default function LandingPage() {
   return (
-    <main>
-      <section className="relative bg-gradient-to-b from-slate-900 via-blue-900 to-bg">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
-        <div className="relative">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col w-full max-md:ml-0 max-md:w-full">
-              <div className="flex overflow-hidden flex-col w-full max-md:mt-10 max-md:max-w-full">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 mt-4">
-                    <div className="h-8 w-8 rounded-lg bg-white text-black flex items-center justify-center font-bold">
-                      li
-                    </div>
-                    <span className="text-xl font-semibold text-blue-200">
-                      Slide
-                    </span>
-                  </div>
-                  <nav className="hidden space-x-6 text-sm text-blue-200 md:block">
-                    <Link href="#features">Features</Link>
-                    <Link href="#pricing">Pricing</Link>
-                    <Link href="#about">About</Link>
-                  </nav>
+    <div className="min-h-screen bg-rf-bg text-rf-text font-sans">
 
-                  <Link href="/dashboard">
-                    <Button className="bg-white text-black px-7 font-semibold">
-                      Login
-                    </Button>
-                  </Link>
-                </div>
-                {/* Rest of the component implementation follows with the extracted components */}
-                {/* Features section */}
+      {/* NAV */}
+      <nav className="sticky top-0 z-50 flex items-center justify-between px-16 py-4
+                      border-b border-rf-border bg-rf-bg/80 backdrop-blur-xl">
+        <div className="flex items-center gap-2.5 font-bold text-base">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
+                          flex items-center justify-center text-white text-xs font-black">
+            RF
+          </div>
+          ReplyFlow
+        </div>
+        <ul className="hidden md:flex items-center gap-8 text-sm text-rf-muted">
+          <li><a href="#features" className="hover:text-rf-text transition-colors">Features</a></li>
+          <li><a href="#pricing" className="hover:text-rf-text transition-colors">Pricing</a></li>
+          <li><Link href="/dashboard" className="hover:text-rf-text transition-colors">Login</Link></li>
+        </ul>
+        <Link
+          href="/sign-up"
+          className="bg-rf-blue hover:bg-rf-blue/90 text-white text-sm font-bold
+                     px-5 py-2 rounded-lg transition-colors"
+        >
+          Start free →
+        </Link>
+      </nav>
 
-                <div className="flex overflow-hidden flex-col px-16 mt-28 w-full min-h-[900px] max-md:px-5 max-md:max-w-full">
-                  <div className="flex flex-wrap flex-1 size-full max-md:max-w-full">
-                    <div className="flex flex-col flex-1 shrink justify-center pr-20 basis-0 min-w-[240px] max-md:max-w-full">
-                      <div className="flex flex-col w-full text-white max-md:max-w-full">
-                        <h1 className="text-4xl font-bold leading-tight tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl">
-                          Transform Your Instagram Engagement with Automation
-                        </h1>
-                        <p className="mt-6 text-lg text-blue-200">
-                          Streamline your communication and connect with your
-                          audience effortlessly. Our DM automation tool saves
-                          you time while enhancing your engagement.
-                        </p>
-                      </div>
-                      <div className="flex gap-4 items-start self-start mt-8 text-base">
-                        <Link href="/dashboard">
-                          <Button
-                            size="lg"
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                          >
-                            Get Started
-                          </Button>
-                        </Link>
-                        <Link href="/dashboard">
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            className="border-blue-400  hover:bg-blue-900/50"
-                          >
-                            Learn More
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                    <div className="flex relative flex-1 shrink gap-4 items-start my-auto basis-20 min-h-[900px] min-w-[240px] max-md:max-w-full">
-                      <div className="flex absolute right-0 bottom-0 z-0 flex-col h-[800px] left-[550px] min-w-[240px] w-[360px]">
-                        {imageData.map((image, index) => (
-                          <ImageCard
-                            key={`right-${index}`}
-                            src={image.src}
-                            aspectRatio={image.aspectRatio}
-                            marginTop={image.marginTop}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex absolute bottom-0 left-[100px] z-0 flex-col h-[1000px] right-[337px] w-[370px]">
-                        {imageData2.map((image, index) => (
-                          <ImageCard
-                            key={`left-${index}`}
-                            src={image.src}
-                            aspectRatio={image.aspectRatio}
-                            marginTop={image.marginTop}
-                          />
-                        ))}
-                      </div>
-                    </div>
+      {/* HERO */}
+      <section className="relative px-16 pt-24 pb-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[400px] rounded-full
+                          bg-rf-blue/6 blur-[100px]" />
+          <div className="absolute top-20 right-1/4 w-[400px] h-[300px] rounded-full
+                          bg-rf-purple/5 blur-[80px]" />
+        </div>
+
+        <div className="relative max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2
+                        gap-16 items-center">
+          {/* Left */}
+          <div>
+            <div className="inline-flex items-center gap-2 bg-rf-blue/10 border border-rf-blue/25
+                            rounded-full px-3 py-1.5 text-xs font-semibold text-rf-blue mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-rf-blue animate-pulse" />
+              Instagram DM Automation
+            </div>
+
+            <h1 className="text-5xl lg:text-6xl font-extrabold leading-[1.06] tracking-[-0.04em] mb-5">
+              Turn Instagram Comments<br />
+              <span className="bg-gradient-to-r from-rf-blue to-rf-purple bg-clip-text text-transparent">
+                Into Leads Automatically
+              </span>
+            </h1>
+
+            <p className="text-lg text-rf-muted leading-relaxed mb-8 max-w-md">
+              Ask your audience to comment a keyword. ReplyFlow AI sends the right DM, link,
+              guide, or offer instantly.
+            </p>
+
+            <div className="flex items-center gap-3 mb-10">
+              <Link
+                href="/sign-up"
+                className="bg-rf-blue hover:bg-rf-blue/90 text-white font-bold px-7 py-3.5
+                           rounded-xl text-sm transition-colors shadow-[0_4px_20px_rgba(59,130,246,0.35)]"
+              >
+                Launch your first campaign →
+              </Link>
+              <a
+                href="#features"
+                className="border border-rf-border hover:border-rf-subtle text-rf-muted
+                           hover:text-rf-text font-bold px-7 py-3.5 rounded-xl text-sm transition-colors"
+              >
+                See how it works
+              </a>
+            </div>
+
+            <div className="flex items-center gap-2.5 text-xs text-rf-muted">
+              <div className="flex -space-x-2">
+                {["A","M","J","S"].map((l) => (
+                  <div key={l} className="w-6 h-6 rounded-full border-2 border-rf-bg
+                                          bg-gradient-to-br from-rf-blue to-rf-purple
+                                          flex items-center justify-center text-white text-[9px] font-bold">
+                    {l}
                   </div>
+                ))}
+              </div>
+              Trusted by <strong className="text-rf-text ml-1">2,400+ creators</strong>
+            </div>
+          </div>
+
+          {/* Right — Comment → DM → Lead flow */}
+          <div className="flex flex-col gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rf-muted mb-1">
+              How it works
+            </p>
+
+            <div className="bg-rf-surface border border-rf-border rounded-2xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-4 py-3 border-b border-rf-border">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
+                <div>
+                  <p className="text-xs font-semibold">@yourhandle</p>
+                  <p className="text-[10px] text-rf-muted">Reel · 2h ago</p>
                 </div>
+                <span className="ml-auto text-[10px] font-bold text-rf-green bg-rf-green/10
+                                 border border-rf-green/25 px-2 py-0.5 rounded-full">
+                  🔗 ReplyFlow active
+                </span>
+              </div>
+              <div className="h-28 bg-gradient-to-br from-slate-800 to-slate-900
+                              flex items-center justify-center text-rf-muted text-sm">
+                🎬 Your Reel
+              </div>
+              <div className="px-4 py-2 flex gap-4 text-[11px] text-rf-muted border-t border-rf-border">
+                <span>❤️ 2.4k</span><span>💬 318 comments</span>
+              </div>
+            </div>
+
+            <div className="bg-rf-surface border border-rf-border rounded-xl px-4 py-3 relative">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-rf-purple to-rf-blue" />
+                <span className="text-xs font-semibold">@sarah.creates</span>
+              </div>
+              <p className="text-sm">
+                This is amazing!{" "}
+                <span className="bg-rf-blue/15 border border-rf-blue/30 text-rf-blue
+                                 font-semibold px-1.5 py-0.5 rounded text-xs">
+                  send link
+                </span>{" "}
+                please 🙏
+              </p>
+              <span className="absolute top-2.5 right-3 text-[10px] font-bold text-rf-green
+                               bg-rf-green/10 border border-rf-green/25 px-2 py-0.5 rounded-full">
+                ⚡ Keyword matched
+              </span>
+            </div>
+
+            <div className="bg-rf-blue/8 border border-rf-blue/20 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
+                                flex items-center justify-center text-white text-xs">
+                  ✉️
+                </div>
+                <span className="text-xs font-bold text-rf-blue">DM sent instantly</span>
+              </div>
+              <p className="text-sm text-rf-text leading-relaxed">
+                Hey <span className="text-rf-purple font-semibold">@sarah.creates</span>! Here&apos;s
+                exactly what you asked for 👇<br />
+                <span className="text-rf-blue">→ yoursite.com/resource</span>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 bg-rf-green/6 border border-rf-green/20
+                            rounded-xl px-4 py-3">
+              <span className="text-xl">🎯</span>
+              <div>
+                <p className="text-xs font-bold text-rf-green">Lead captured — sarah.creates</p>
+                <p className="text-[11px] text-rf-muted">Added to your leads · &lt;1s response</p>
               </div>
             </div>
           </div>
         </div>
       </section>
-      {/*      <div className="flex overflow-hidden flex-col px-16 py-28 w-full text-white bg-background max-md:px-5 max-md:py-24 max-md:max-w-full">
-        <div className="flex flex-wrap gap-10 items-start w-full max-md:max-w-full">
-          <div className="flex overflow-hidden flex-col flex-1 shrink basis-0 min-w-[240px] max-md:max-w-full">
-            <div className="self-start text-base font-semibold whitespace-nowrap">
-              Features
-            </div>
-            <div className="mt-4 text-5xl font-bold leading-[58px] max-md:max-w-full max-md:text-4xl max-md:leading-[54px]">
-              Unlock the Power of DM Automation
-            </div>
-          </div>
-          <div className="flex-1 shrink text-lg leading-7 basis-0 max-md:max-w-full">
-            Transform your Instagram engagement with our cutting-edge DM
-            automation tools. Save precious time while connecting with your
-            audience more effectively. Experience seamless communication that
-            drives results.
-          </div>
-        </div>
-        <div className="flex flex-col mt-20 w-full max-md:mt-10 max-md:max-w-full">
-          <div className="flex flex-wrap gap-10 items-start w-full max-md:max-w-full">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-6 items-center self-start mt-20 text-base text-black max-md:mt-10">
-          <Button variant="outline">Learn More</Button>
-          <Button>
-            Get Started
-            <img
-              loading="lazy"
-              src="https://cdn.builder.io/api/v1/image/assets/TEMP/ed280c87b2ec3f60ba5a8a4415e94110f00bb81de0a2a1bd58708615b7c7a97f?placeholderIfAbsent=true&apiKey=43878df868e64cbca1f97201b9573941"
-              alt=""
-              className="object-contain shrink-0 self-stretch my-auto w-6 aspect-square"
-            />
-          </Button>
-        </div>
-      </div> */}
 
-      {/* Pricing section */}
-      <section className="container w-full py-12 md:py-24 lg:py-32 bg-background">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-              Choose Your Plan
+      {/* EXAMPLES STRIP */}
+      <section className="px-16 py-10 border-y border-rf-border bg-rf-surface/40">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+          {EXAMPLES.map((ex) => (
+            <div key={ex.comment}
+                 className="bg-rf-surface border border-rf-border rounded-xl p-5
+                            flex items-center gap-4">
+              <span className={`text-sm font-bold font-mono px-3 py-1.5 rounded-lg
+                               bg-rf-surface2 border border-rf-border ${ex.color}`}>
+                &ldquo;{ex.comment}&rdquo;
+              </span>
+              <span className="text-rf-muted text-xs">→</span>
+              <span className="text-rf-text text-xs font-medium leading-snug">{ex.action}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* TRUST BAR */}
+      <section className="px-16 py-8 border-b border-rf-border">
+        <div className="max-w-4xl mx-auto flex flex-wrap gap-10 items-center justify-center">
+          {[
+            { num: "1.2M",  label: "DMs sent" },
+            { num: "340K",  label: "Leads captured" },
+            { num: "98.4%", label: "Delivery rate" },
+            { num: "2,400+",label: "Active creators" },
+            { num: "<1s",   label: "Response time" },
+          ].map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-2xl font-extrabold tracking-tight text-rf-text">{s.num}</div>
+              <div className="text-xs text-rf-muted">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section id="features" className="px-16 py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-3">
+              Everything you need
+            </p>
+            <h2 className="text-4xl font-extrabold tracking-tight mb-3">
+              Set up in 60 seconds.<br />Run on autopilot.
             </h2>
-            <p className="max-w-[900px] text-muted-foreground">
-              Select the perfect plan to boost your Instagram engagement
+            <p className="text-rf-muted max-w-md mx-auto">
+              Pick your post, add keywords, write your DM. Done.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-6 mt-8 md:grid-cols-2 md:gap-8">
-            {plans.map((plan, index) => (
-              <Card key={index} className="flex flex-col justify-between">
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="text-4xl font-bold">
-                    {plan.price}
-                    <span className="text-lg font-normal text-muted-foreground">
-                      /month
-                    </span>
-                  </div>
-                  <ul className="space-y-2">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-primary" />
-                        <span className="text-sm text-muted-foreground">
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">{plan.cta}</Button>
-                </CardFooter>
-              </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {FEATURES.map((f) => (
+              <div key={f.title}
+                   className="bg-rf-surface border border-rf-border rounded-2xl p-6
+                              hover:border-rf-blue/30 transition-colors">
+                <div className="text-3xl mb-4">{f.icon}</div>
+                <h3 className="font-bold text-rf-text mb-2">{f.title}</h3>
+                <p className="text-sm text-rf-muted leading-relaxed">{f.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer section */}
-      <footer className="flex overflow-hidden flex-col px-16 py-20 w-full max-md:px-5 max-md:max-w-full">
-        <div className="flex flex-wrap gap-10 items-start w-full min-h-[248px] max-md:max-w-full">
-          {footerGroups.map((group, index) => (
-            <FooterLinkGroup key={index} {...group} />
-          ))}
-          <div className="flex flex-col min-w-[240px] w-[400px]">
-            <div className="flex flex-col w-full text-base text-white">
-              <div className="font-semibold">Join</div>
-              <div className="mt-4 leading-6">
-                Subscribe to our newsletter for the latest updates and insights.
-              </div>
-            </div>
-            <NewsletterForm />
+      {/* PRICING */}
+      <section id="pricing" className="px-16 py-20 bg-rf-blue/3">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-3">
+              Simple pricing
+            </p>
+            <h2 className="text-4xl font-extrabold tracking-tight mb-3">
+              Start free. Scale when you&apos;re ready.
+            </h2>
+            <p className="text-rf-muted">No hidden fees. Cancel any time.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {PLANS.map((p) => (
+              <PricingCard key={p.tier} {...p} />
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* Social Icons */}
-        <div className="flex gap-3 items-start mt-8">
-          {socialIcons.map((icon, index) => (
-            <img
-              key={index}
-              loading="lazy"
-              src={icon.src}
-              alt={icon.alt}
-              className="object-contain shrink-0 w-6 aspect-square"
-            />
+      {/* FOOTER */}
+      <footer className="px-16 py-8 border-t border-rf-border flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-bold text-rf-muted">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-rf-blue to-rf-purple
+                          flex items-center justify-center text-white text-[10px] font-black">
+            RF
+          </div>
+          ReplyFlow
+        </div>
+        <div className="flex gap-6 text-xs text-rf-muted">
+          {["Privacy","Terms","Docs","Status"].map((l) => (
+            <a key={l} href="#" className="hover:text-rf-text transition-colors">{l}</a>
           ))}
         </div>
+        <p className="text-xs text-rf-subtle">© 2026 ReplyFlow AI</p>
       </footer>
-    </main>
+
+    </div>
   );
 }
