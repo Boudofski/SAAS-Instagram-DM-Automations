@@ -15,13 +15,19 @@ type Props = {
 
 function PaymentVerificationFailed() {
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <h1 className="text-3xl font-bold">Payment verification failed</h1>
-      <p className="max-w-md text-sm text-muted-foreground">
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
+      <div className="ap3k-card relative z-10 flex max-w-lg flex-col items-center gap-3 rounded-3xl p-8">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-2xl text-red-300">
+        !
+      </div>
+      <h1 className="text-3xl font-black">Payment verification failed</h1>
+      <p className="max-w-md text-sm leading-relaxed text-rf-muted">
         We could not verify this checkout session. Your card may still have
         completed successfully, so please refresh your dashboard before trying
         again.
       </p>
+      </div>
     </div>
   );
 }
@@ -39,9 +45,12 @@ async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
 
   if (cancel) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen w-full gap-3 text-center">
-        <h4 className="text-3xl font-bold">Checkout canceled</h4>
-        <p className="text-muted-foreground">Your subscription was not changed.</p>
+      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
+        <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
+        <div className="ap3k-card relative z-10 rounded-3xl p-8">
+        <h4 className="text-3xl font-black">Checkout canceled</h4>
+        <p className="mt-3 text-rf-muted">Your subscription was not changed.</p>
+        </div>
       </div>
     );
   }
@@ -55,11 +64,14 @@ async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
 
   if (!priceId || !hostUrl) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen w-full gap-3 text-center">
-        <h4 className="text-3xl font-bold">Checkout unavailable</h4>
-        <p className="text-muted-foreground">
+      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
+        <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
+        <div className="ap3k-card relative z-10 rounded-3xl p-8">
+        <h4 className="text-3xl font-black">Checkout unavailable</h4>
+        <p className="mt-3 text-rf-muted">
           Stripe checkout is not configured for this environment.
         </p>
+        </div>
       </div>
     );
   }
@@ -84,11 +96,14 @@ async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
       message: err instanceof Error ? err.message : String(err),
     });
     return (
-      <div className="flex flex-col justify-center items-center h-screen w-full gap-3 text-center">
-        <h4 className="text-3xl font-bold">Checkout unavailable</h4>
-        <p className="text-muted-foreground">
+      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
+        <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
+        <div className="ap3k-card relative z-10 rounded-3xl p-8">
+        <h4 className="text-3xl font-black">Checkout unavailable</h4>
+        <p className="mt-3 text-rf-muted">
           Stripe checkout could not be started. Please try again later.
         </p>
+        </div>
       </div>
     );
   }
@@ -96,9 +111,12 @@ async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
   if (session.url) redirect(session.url);
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen w-full gap-3 text-center">
-      <h4 className="text-3xl font-bold">Checkout unavailable</h4>
-      <p className="text-muted-foreground">Stripe did not return a checkout URL.</p>
+    <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
+      <div className="ap3k-card relative z-10 rounded-3xl p-8">
+      <h4 className="text-3xl font-black">Checkout unavailable</h4>
+      <p className="mt-3 text-rf-muted">Stripe did not return a checkout URL.</p>
+      </div>
     </div>
   );
 }

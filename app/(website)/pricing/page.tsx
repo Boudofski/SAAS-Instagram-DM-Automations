@@ -1,4 +1,6 @@
 import PricingCard from "@/components/global/pricing-card";
+import AP3kLogo from "@/components/global/ap3k-logo";
+import { FadeIn } from "@/components/global/motion/fade-in";
 import Link from "next/link";
 
 const PLANS = [
@@ -57,51 +59,53 @@ const FAQ = [
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-rf-bg text-rf-text">
+    <div className="relative min-h-screen overflow-hidden text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
       {/* Nav */}
-      <nav className="flex items-center justify-between px-16 py-4 border-b border-rf-border">
-        <Link href="/" className="flex items-center gap-2 font-bold text-sm">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-white text-[8px] font-black">
-            AP3K
-          </div>
-          AP3k
+      <nav className="relative z-10 flex items-center justify-between border-b border-white/10 bg-rf-bg/72 px-4 py-4 backdrop-blur-2xl sm:px-8 lg:px-16">
+        <Link href="/">
+          <AP3kLogo className="text-sm" />
         </Link>
         <Link href="/sign-up"
-              className="bg-rf-blue hover:bg-rf-blue/90 text-white text-sm font-bold
-                         px-5 py-2 rounded-lg transition-colors">
-          Start free →
+              className="ap3k-gradient-button px-5 py-2 text-sm">
+          Start free
         </Link>
       </nav>
 
       {/* Header */}
-      <section className="text-center px-16 py-20">
-        <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-4">Pricing</p>
-        <h1 className="text-5xl font-extrabold tracking-tight mb-4">
+      <section className="relative z-10 px-4 py-20 text-center sm:px-8 lg:px-16">
+        <FadeIn>
+        <p className="ap3k-kicker mb-4">Pricing</p>
+        <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
           Start free.<br />
-          <span className="bg-gradient-to-r from-rf-blue to-rf-purple bg-clip-text text-transparent">
+          <span className="ap3k-gradient-text">
             Scale when you&apos;re ready.
           </span>
         </h1>
-        <p className="text-rf-muted text-lg max-w-md mx-auto">
+        <p className="mx-auto mt-5 max-w-md text-lg leading-8 text-rf-muted">
           No hidden fees. No contracts. Cancel any time.
         </p>
+        </FadeIn>
       </section>
 
       {/* Plans */}
-      <section className="px-16 pb-20 max-w-4xl mx-auto">
+      <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20 sm:px-8 lg:px-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PLANS.map((p) => <PricingCard key={p.tier} {...p} />)}
+          {PLANS.map((p, index) => (
+            <FadeIn key={p.tier} delay={index * 0.05}>
+              <PricingCard {...p} />
+            </FadeIn>
+          ))}
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="px-16 pb-20 max-w-2xl mx-auto">
-        <h2 className="text-xl font-bold text-center mb-8">Common questions</h2>
+      <section className="relative z-10 mx-auto max-w-2xl px-4 pb-20 sm:px-8 lg:px-0">
+        <h2 className="mb-8 text-center text-xl font-black">Common questions</h2>
         <div className="flex flex-col gap-4">
           {FAQ.map((f) => (
-            <div key={f.q} className="bg-rf-surface border border-rf-border rounded-xl p-5">
-              <h3 className="text-sm font-bold text-rf-text mb-2">{f.q}</h3>
+            <div key={f.q} className="ap3k-card rounded-2xl p-5">
+              <h3 className="text-sm font-black text-rf-text mb-2">{f.q}</h3>
               <p className="text-sm text-rf-muted leading-relaxed">{f.a}</p>
             </div>
           ))}

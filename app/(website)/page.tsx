@@ -1,4 +1,7 @@
+import AP3kLogo from "@/components/global/ap3k-logo";
+import { FadeIn, HoverLift } from "@/components/global/motion/fade-in";
 import PricingCard from "@/components/global/pricing-card";
+import { ArrowRight, Bot, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 const PLANS = [
@@ -53,283 +56,215 @@ const PLANS = [
 ] as const;
 
 const FEATURES = [
-  { icon: "🏷️", title: "Keyword triggers", desc: "When someone comments 'link', 'info', or any word you choose — your DM fires instantly." },
-  { icon: "✉️", title: "Personalised DMs", desc: "Use {{first_name}}, {{keyword}}, and {{link}} to make every DM feel human and targeted." },
-  { icon: "🤖", title: "Smart AI replies", desc: "Let AI handle follow-up conversations — answers questions, nurtures leads, closes sales. 24/7." },
-  { icon: "📊", title: "Real analytics", desc: "Track DMs sent, leads captured, and reply rate per campaign. Know exactly what's working." },
-  { icon: "💬", title: "Public comment replies", desc: "Reply publicly before sending the DM — boosts engagement and warms up the lead." },
-  { icon: "🛡️", title: "Safe by design", desc: "Built-in duplicate prevention. Nobody gets the same DM twice. No spam, no bans." },
+  { icon: MessageCircle, title: "Keyword triggers", desc: "When someone comments 'link', 'info', or any word you choose, your DM fires instantly." },
+  { icon: Sparkles, title: "Personalised DMs", desc: "Use {{first_name}}, {{keyword}}, and {{link}} to make every DM feel human and targeted." },
+  { icon: Bot, title: "Smart AI replies", desc: "Let AI handle follow-up conversations, answer questions, nurture leads, and close sales." },
+  { icon: TrendingUp, title: "Real analytics", desc: "Track DMs sent, leads captured, and reply rate per campaign. Know exactly what's working." },
 ] as const;
 
 const EXAMPLES = [
-  { comment: "GUIDE", action: "Free PDF guide sent via DM",    color: "text-rf-blue" },
+  { comment: "GUIDE", action: "Free PDF guide sent via DM", color: "text-rf-pink" },
   { comment: "PRICE", action: "Pricing page link sent via DM", color: "text-rf-purple" },
-  { comment: "BOOK",  action: "Booking page sent via DM",      color: "text-rf-green" },
+  { comment: "BOOK", action: "Booking page sent via DM", color: "text-rf-blue" },
 ] as const;
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-rf-bg text-rf-text font-sans">
+    <div className="relative min-h-screen overflow-hidden text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
 
-      {/* NAV */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between px-16 py-4
-                      border-b border-rf-border bg-rf-bg/80 backdrop-blur-xl">
-        <div className="flex items-center gap-2.5 font-bold text-base">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-white text-[8px] font-black">
-            AP3K
-          </div>
-          AP3k
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-rf-bg/72 px-4 py-4 backdrop-blur-2xl sm:px-8 lg:px-16">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <Link href="/">
+            <AP3kLogo className="text-base" />
+          </Link>
+          <ul className="hidden items-center gap-8 text-sm text-rf-muted md:flex">
+            <li><a href="#features" className="transition-colors hover:text-rf-text">Features</a></li>
+            <li><a href="#pricing" className="transition-colors hover:text-rf-text">Pricing</a></li>
+            <li><Link href="/dashboard" className="transition-colors hover:text-rf-text">Login</Link></li>
+          </ul>
+          <Link href="/sign-up" className="ap3k-gradient-button px-5 py-2 text-sm">
+            Start free
+          </Link>
         </div>
-        <ul className="hidden md:flex items-center gap-8 text-sm text-rf-muted">
-          <li><a href="#features" className="hover:text-rf-text transition-colors">Features</a></li>
-          <li><a href="#pricing" className="hover:text-rf-text transition-colors">Pricing</a></li>
-          <li><Link href="/dashboard" className="hover:text-rf-text transition-colors">Login</Link></li>
-        </ul>
-        <Link
-          href="/sign-up"
-          className="bg-rf-blue hover:bg-rf-blue/90 text-white text-sm font-bold
-                     px-5 py-2 rounded-lg transition-colors"
-        >
-          Start free →
-        </Link>
       </nav>
 
-      {/* HERO */}
-      <section className="relative px-16 pt-24 pb-20 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[400px] rounded-full
-                          bg-rf-blue/6 blur-[100px]" />
-          <div className="absolute top-20 right-1/4 w-[400px] h-[300px] rounded-full
-                          bg-rf-purple/5 blur-[80px]" />
-        </div>
+      <main className="relative z-10">
+        <section className="px-4 pb-16 pt-16 sm:px-8 sm:pt-20 lg:px-16 lg:pb-24">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 lg:grid-cols-[1.02fr_0.98fr]">
+            <FadeIn>
+              <div className="inline-flex items-center gap-2 rounded-full border border-rf-pink/25 bg-rf-pink/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-rf-pink">
+                <span className="h-1.5 w-1.5 rounded-full bg-rf-pink shadow-[0_0_16px_rgba(244,114,182,0.8)]" />
+                Instagram-native automation
+              </div>
 
-        <div className="relative max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2
-                        gap-16 items-center">
-          {/* Left */}
-          <div>
-            <div className="inline-flex items-center gap-2 bg-rf-blue/10 border border-rf-blue/25
-                            rounded-full px-3 py-1.5 text-xs font-semibold text-rf-blue mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-rf-blue animate-pulse" />
-              Instagram DM Automation
-            </div>
+              <h1 className="mt-6 max-w-4xl text-5xl font-black leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
+                Comments become DMs.
+                <span className="ap3k-gradient-text block animate-gradient-pan bg-[length:220%_220%]">
+                  DMs become sales.
+                </span>
+              </h1>
 
-            <h1 className="text-5xl lg:text-6xl font-extrabold leading-[1.06] tracking-[-0.04em] mb-5">
-              Turn Instagram Comments<br />
-              <span className="bg-gradient-to-r from-rf-blue to-rf-purple bg-clip-text text-transparent">
-                Into Leads Automatically
-              </span>
-            </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-rf-muted">
+                AP3k turns Instagram comments into automated DMs, leads, and sales.
+              </p>
 
-            <p className="text-lg text-rf-muted leading-relaxed mb-8 max-w-md">
-              AP3k turns Instagram comments into automated DMs, leads, and sales.
-            </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/sign-up" className="ap3k-gradient-button inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm">
+                  Launch your first campaign <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a href="#features" className="ap3k-outline-button inline-flex items-center justify-center px-7 py-3.5 text-sm">
+                  See how it works
+                </a>
+              </div>
 
-            <div className="flex items-center gap-3 mb-10">
-              <Link
-                href="/sign-up"
-                className="bg-rf-blue hover:bg-rf-blue/90 text-white font-bold px-7 py-3.5
-                           rounded-xl text-sm transition-colors shadow-[0_4px_20px_rgba(59,130,246,0.35)]"
-              >
-                Launch your first campaign →
-              </Link>
-              <a
-                href="#features"
-                className="border border-rf-border hover:border-rf-subtle text-rf-muted
-                           hover:text-rf-text font-bold px-7 py-3.5 rounded-xl text-sm transition-colors"
-              >
-                See how it works
-              </a>
-            </div>
-
-            <div className="flex items-center gap-2.5 text-xs text-rf-muted">
-              <div className="flex -space-x-2">
-                {["A","M","J","S"].map((l) => (
-                  <div key={l} className="w-6 h-6 rounded-full border-2 border-rf-bg
-                                          bg-gradient-to-br from-rf-blue to-rf-purple
-                                          flex items-center justify-center text-white text-[9px] font-bold">
-                    {l}
+              <div className="mt-10 grid max-w-lg grid-cols-3 gap-3">
+                {[
+                  ["1.2M", "DMs sent"],
+                  ["340K", "Leads"],
+                  ["<1s", "Response"],
+                ].map(([num, label]) => (
+                  <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 backdrop-blur">
+                    <div className="text-2xl font-black tracking-tight">{num}</div>
+                    <div className="text-xs text-rf-muted">{label}</div>
                   </div>
                 ))}
               </div>
-              Trusted by <strong className="text-rf-text ml-1">2,400+ creators</strong>
-            </div>
-          </div>
+            </FadeIn>
 
-          {/* Right — Comment → DM → Lead flow */}
-          <div className="flex flex-col gap-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rf-muted mb-1">
-              How it works
-            </p>
+            <FadeIn delay={0.12} className="relative">
+              <div className="absolute -inset-8 rounded-[2rem] bg-ap3k-gradient opacity-20 blur-3xl" />
+              <div className="relative animate-float-slow overflow-hidden rounded-[2rem] border border-white/[0.12] bg-rf-surface/80 p-4 shadow-ap3k-card backdrop-blur-2xl">
+                <div className="rounded-[1.5rem] border border-white/10 bg-[#111827] p-4">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="h-11 w-11 rounded-full bg-ap3k-gradient shadow-ap3k-glow" />
+                    <div>
+                      <p className="text-sm font-black">@yourhandle</p>
+                      <p className="text-xs text-rf-muted">Reel automation live</p>
+                    </div>
+                    <span className="ml-auto rounded-full border border-rf-green/25 bg-rf-green/10 px-2.5 py-1 text-[10px] font-black text-rf-green">
+                      Live
+                    </span>
+                  </div>
 
-            <div className="bg-rf-surface border border-rf-border rounded-2xl overflow-hidden">
-              <div className="flex items-center gap-2.5 px-4 py-3 border-b border-rf-border">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
-                <div>
-                  <p className="text-xs font-semibold">@yourhandle</p>
-                  <p className="text-[10px] text-rf-muted">Reel · 2h ago</p>
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#182033] via-[#111827] to-[#0B1020]">
+                    <div className="flex h-52 items-center justify-center bg-ap3k-radial">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-center backdrop-blur">
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-rf-pink">Creator drop</p>
+                        <p className="mt-1 text-2xl font-black">New guide is live</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 border-t border-white/10 px-4 py-3 text-xs text-rf-muted">
+                      <span>2.4k likes</span>
+                      <span>318 comments</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                      <p className="text-xs text-rf-muted">@sarah.creates commented</p>
+                      <p className="mt-1 text-sm">
+                        This is exactly what I need. <span className="rounded-lg border border-rf-pink/25 bg-rf-pink/10 px-2 py-1 text-xs font-black text-rf-pink">GUIDE</span>
+                      </p>
+                    </div>
+                    <div className="ml-8 rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-pink">
+                        <MessageCircle className="h-4 w-4" /> DM sent by AP3k
+                      </div>
+                      <p className="text-sm leading-relaxed">
+                        Hey Sarah, here is the guide you asked for. I also saved your spot for the next drop.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-2xl border border-rf-green/20 bg-rf-green/10 p-4">
+                      <div className="grid h-9 w-9 place-items-center rounded-xl bg-rf-green/15 text-rf-green">✓</div>
+                      <div>
+                        <p className="text-sm font-black text-rf-green">Lead captured</p>
+                        <p className="text-xs text-rf-muted">Added to your launch funnel</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span className="ml-auto text-[10px] font-bold text-rf-green bg-rf-green/10
-                                 border border-rf-green/25 px-2 py-0.5 rounded-full">
-                  🔗 AP3k active
-                </span>
               </div>
-              <div className="h-28 bg-gradient-to-br from-slate-800 to-slate-900
-                              flex items-center justify-center text-rf-muted text-sm">
-                🎬 Your Reel
-              </div>
-              <div className="px-4 py-2 flex gap-4 text-[11px] text-rf-muted border-t border-rf-border">
-                <span>❤️ 2.4k</span><span>💬 318 comments</span>
-              </div>
-            </div>
+            </FadeIn>
+          </div>
+        </section>
 
-            <div className="bg-rf-surface border border-rf-border rounded-xl px-4 py-3 relative">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-rf-purple to-rf-blue" />
-                <span className="text-xs font-semibold">@sarah.creates</span>
-              </div>
-              <p className="text-sm">
-                This is amazing!{" "}
-                <span className="bg-rf-blue/15 border border-rf-blue/30 text-rf-blue
-                                 font-semibold px-1.5 py-0.5 rounded text-xs">
-                  send link
-                </span>{" "}
-                please 🙏
-              </p>
-              <span className="absolute top-2.5 right-3 text-[10px] font-bold text-rf-green
-                               bg-rf-green/10 border border-rf-green/25 px-2 py-0.5 rounded-full">
-                ⚡ Keyword matched
-              </span>
-            </div>
-
-            <div className="bg-rf-blue/8 border border-rf-blue/20 rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-rf-blue to-rf-purple
-                                flex items-center justify-center text-white text-xs">
-                  ✉️
+        <section className="border-y border-white/10 bg-rf-surface/40 px-4 py-8 backdrop-blur sm:px-8 lg:px-16">
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
+            {EXAMPLES.map((ex) => (
+              <HoverLift key={ex.comment}>
+                <div className="ap3k-card rounded-2xl p-5">
+                  <span className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-sm font-black ${ex.color}`}>
+                    &ldquo;{ex.comment}&rdquo;
+                  </span>
+                  <p className="mt-4 text-sm font-semibold leading-relaxed text-rf-text">{ex.action}</p>
                 </div>
-                <span className="text-xs font-bold text-rf-blue">DM sent instantly</span>
-              </div>
-              <p className="text-sm text-rf-text leading-relaxed">
-                Hey <span className="text-rf-purple font-semibold">@sarah.creates</span>! Here&apos;s
-                exactly what you asked for 👇<br />
-                <span className="text-rf-blue">→ yoursite.com/resource</span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 bg-rf-green/6 border border-rf-green/20
-                            rounded-xl px-4 py-3">
-              <span className="text-xl">🎯</span>
-              <div>
-                <p className="text-xs font-bold text-rf-green">Lead captured — sarah.creates</p>
-                <p className="text-[11px] text-rf-muted">Added to your leads · &lt;1s response</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* EXAMPLES STRIP */}
-      <section className="px-16 py-10 border-y border-rf-border bg-rf-surface/40">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          {EXAMPLES.map((ex) => (
-            <div key={ex.comment}
-                 className="bg-rf-surface border border-rf-border rounded-xl p-5
-                            flex items-center gap-4">
-              <span className={`text-sm font-bold font-mono px-3 py-1.5 rounded-lg
-                               bg-rf-surface2 border border-rf-border ${ex.color}`}>
-                &ldquo;{ex.comment}&rdquo;
-              </span>
-              <span className="text-rf-muted text-xs">→</span>
-              <span className="text-rf-text text-xs font-medium leading-snug">{ex.action}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* TRUST BAR */}
-      <section className="px-16 py-8 border-b border-rf-border">
-        <div className="max-w-4xl mx-auto flex flex-wrap gap-10 items-center justify-center">
-          {[
-            { num: "1.2M",  label: "DMs sent" },
-            { num: "340K",  label: "Leads captured" },
-            { num: "98.4%", label: "Delivery rate" },
-            { num: "2,400+",label: "Active creators" },
-            { num: "<1s",   label: "Response time" },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="text-2xl font-extrabold tracking-tight text-rf-text">{s.num}</div>
-              <div className="text-xs text-rf-muted">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section id="features" className="px-16 py-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-3">
-              Everything you need
-            </p>
-            <h2 className="text-4xl font-extrabold tracking-tight mb-3">
-              Set up in 60 seconds.<br />Run on autopilot.
-            </h2>
-            <p className="text-rf-muted max-w-md mx-auto">
-              Pick your post, add keywords, write your DM. Done.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {FEATURES.map((f) => (
-              <div key={f.title}
-                   className="bg-rf-surface border border-rf-border rounded-2xl p-6
-                              hover:border-rf-blue/30 transition-colors">
-                <div className="text-3xl mb-4">{f.icon}</div>
-                <h3 className="font-bold text-rf-text mb-2">{f.title}</h3>
-                <p className="text-sm text-rf-muted leading-relaxed">{f.desc}</p>
-              </div>
+              </HoverLift>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* PRICING */}
-      <section id="pricing" className="px-16 py-20 bg-rf-blue/3">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-3">
-              Simple pricing
-            </p>
-            <h2 className="text-4xl font-extrabold tracking-tight mb-3">
-              Start free. Scale when you&apos;re ready.
-            </h2>
-            <p className="text-rf-muted">No hidden fees. Cancel any time.</p>
+        <section id="features" className="px-4 py-20 sm:px-8 lg:px-16">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="mb-12 text-center">
+              <p className="ap3k-kicker">Everything you need</p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
+                Smooth automation for creators who move fast.
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-rf-muted">
+                Pick your post, add keywords, write your DM. AP3k keeps the follow-up moving while you create.
+              </p>
+            </FadeIn>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f, index) => {
+                const Icon = f.icon;
+                return (
+                  <FadeIn key={f.title} delay={index * 0.04}>
+                    <div className="ap3k-card ap3k-card-hover h-full rounded-3xl p-6">
+                      <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft text-rf-pink">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="font-black text-rf-text">{f.title}</h3>
+                      <p className="mt-3 text-sm leading-relaxed text-rf-muted">{f.desc}</p>
+                    </div>
+                  </FadeIn>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {PLANS.map((p) => (
-              <PricingCard key={p.tier} {...p} />
+        </section>
+
+        <section id="pricing" className="px-4 py-20 sm:px-8 lg:px-16">
+          <div className="mx-auto max-w-5xl">
+            <FadeIn className="mb-12 text-center">
+              <p className="ap3k-kicker">Simple pricing</p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
+                Start free. Scale when your DMs do.
+              </h2>
+              <p className="mt-4 text-rf-muted">No hidden fees. Cancel any time.</p>
+            </FadeIn>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {PLANS.map((p, index) => (
+                <FadeIn key={p.tier} delay={index * 0.05}>
+                  <PricingCard {...p} />
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="relative z-10 border-t border-white/10 px-4 py-8 sm:px-8 lg:px-16">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 text-xs text-rf-muted sm:flex-row sm:items-center sm:justify-between">
+          <AP3kLogo className="text-sm text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
+          <div className="flex gap-6">
+            {["Privacy", "Terms", "Docs", "Status"].map((l) => (
+              <a key={l} href="#" className="transition-colors hover:text-rf-text">{l}</a>
             ))}
           </div>
+          <p>© 2026 AP3k</p>
         </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="px-16 py-8 border-t border-rf-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-bold text-rf-muted">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-rf-blue to-rf-purple
-                          flex items-center justify-center text-white text-[7px] font-black">
-            AP3K
-          </div>
-          AP3k
-        </div>
-        <div className="flex gap-6 text-xs text-rf-muted">
-          {["Privacy","Terms","Docs","Status"].map((l) => (
-            <a key={l} href="#" className="hover:text-rf-text transition-colors">{l}</a>
-          ))}
-        </div>
-        <p className="text-xs text-rf-subtle">© 2026 AP3k</p>
       </footer>
-
     </div>
   );
 }

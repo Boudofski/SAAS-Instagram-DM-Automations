@@ -2,6 +2,7 @@ import { onUserInfo, skipOnboarding } from "@/actions/user";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import AP3kLogo from "@/components/global/ap3k-logo";
 
 const onboardingSkippedCookie = (clerkId: string) =>
   `ap3k_onboarding_skipped_${clerkId}`;
@@ -29,13 +30,10 @@ export default async function OnboardingWelcomePage() {
 
   return (
     <div className="text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rf-blue to-rf-purple
-                      flex items-center justify-center text-white text-2xl font-black mx-auto mb-6">
-        AP3K
-      </div>
+      <AP3kLogo showText={false} markClassName="mx-auto mb-6 h-16 w-16 rounded-2xl text-sm" />
 
-      <h1 className="text-3xl font-extrabold tracking-tight mb-3">
-        Welcome to AP3k, {firstName} 👋
+      <h1 className="text-3xl font-black tracking-tight mb-3">
+        Welcome to AP3k, {firstName}
       </h1>
       <p className="text-rf-muted mb-10 leading-relaxed">
         It takes 60 seconds to set up your first campaign.<br />
@@ -52,7 +50,7 @@ export default async function OnboardingWelcomePage() {
           { icon: "🎯", label: "Lead captured" },
         ].map((item, i) => item.label ? (
           <div key={i} className="flex flex-col items-center gap-1">
-            <div className="w-12 h-12 rounded-xl bg-rf-surface border border-rf-border
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10
                             flex items-center justify-center text-xl">
               {item.icon}
             </div>
@@ -65,9 +63,7 @@ export default async function OnboardingWelcomePage() {
 
       <Link
         href={`/dashboard/${slug}/integrations`}
-        className="block w-full bg-rf-blue hover:bg-rf-blue/90 text-white font-bold
-                   py-3.5 rounded-xl text-sm transition-colors
-                   shadow-[0_4px_20px_rgba(59,130,246,0.35)]"
+        className="ap3k-gradient-button block w-full py-3.5 text-sm"
       >
         Let&apos;s connect your Instagram →
       </Link>
