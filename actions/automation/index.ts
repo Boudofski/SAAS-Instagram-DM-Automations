@@ -204,3 +204,17 @@ export const getAutomationStats = async (automationId: string) => {
     return { status: 500, data: null };
   }
 };
+
+export const saveMatchingMode = async (
+  automationId: string,
+  mode: "EXACT" | "CONTAINS" | "SMART_AI"
+) => {
+  await onCurrentUser();
+  try {
+    const update = await updateAutomation(automationId, { matchingMode: mode as any });
+    if (update) return { status: 200, data: "Matching mode saved" };
+    return { status: 404, data: "Failed to save matching mode" };
+  } catch (error) {
+    return { status: 500, data: "Failed to save matching mode" };
+  }
+};

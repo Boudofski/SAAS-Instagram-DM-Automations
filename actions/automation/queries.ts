@@ -1,6 +1,7 @@
 "use server";
 
 import { client } from "@/lib/prisma";
+import type { MATCHING_MODE } from "@prisma/client";
 
 export const createAutomation = async (clerkId: string, id?: string) => {
   return await client.user.update({
@@ -58,18 +59,14 @@ export const findAutomation = async (id: string) => {
 
 export const updateAutomation = async (
   automationId: string,
-  update: {
-    name?: string;
-    active?: boolean;
-  }
+  update: { name?: string; active?: boolean; matchingMode?: MATCHING_MODE }
 ) => {
   return await client.automation.update({
-    where: {
-      id: automationId,
-    },
+    where: { id: automationId },
     data: {
       name: update.name,
       active: update.active,
+      matchingMode: update.matchingMode,
     },
   });
 };
