@@ -37,6 +37,16 @@ export default async function AutomationsPage({ params }: Props) {
         </Link>
       </div>
 
+      <div className="mb-6 rounded-2xl border border-blue-100 bg-white p-4 text-slate-950 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-blue">
+          Meta review flow
+        </p>
+        <p className="mt-2 text-sm text-slate-600">
+          Create a campaign, comment a keyword from another Instagram account,
+          then open the campaign to show webhook activity, keyword match, and DM send logs.
+        </p>
+      </div>
+
       {automations.length === 0 ? (
         <EmptyState
           icon="📣"

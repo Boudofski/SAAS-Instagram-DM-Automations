@@ -119,6 +119,8 @@ Some Meta app setups require the Instagram Business/Creator account to be connec
 8. Confirm:
    - The commenter receives the private reply/DM.
    - Public reply appears if configured.
+   - Dashboard Meta review flow marks View Logs after activity arrives.
+   - Campaign detail shows the visual flow and live automation log.
    - Database rows exist:
      ```sql
      SELECT * FROM "WebhookEvent" ORDER BY "createdAt" DESC LIMIT 10;

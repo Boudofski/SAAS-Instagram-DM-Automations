@@ -145,6 +145,18 @@ export default async function CampaignDetailPage({ params }: Props) {
         </aside>
       </div>
 
+      <div className="mb-8 rounded-2xl border border-blue-100 bg-white p-4 text-slate-950 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-blue">
+          Reviewer test script
+        </p>
+        <p className="mt-2 text-sm text-slate-600">
+          This campaign listens for comments on the selected Instagram media,
+          matches the configured keyword, replies publicly if enabled, then sends
+          the private DM through Meta&apos;s official API. The log below shows
+          each step when a real test comment is received.
+        </p>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard

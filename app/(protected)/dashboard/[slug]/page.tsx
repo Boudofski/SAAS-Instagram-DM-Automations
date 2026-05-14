@@ -82,11 +82,12 @@ export default async function DashboardPage({ params }: Props) {
         <p className="text-xs font-black uppercase tracking-wider text-rf-blue">
           Meta review test mode
         </p>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="mt-3 grid gap-3 md:grid-cols-4">
           {[
             { label: "Connect Instagram", done: Boolean(instagram), href: `/dashboard/${params.slug}/integrations` },
             { label: "Create Campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
             { label: "Test Comment", done: recentActivity.some((item) => item.type === "DM_SENT"), href: automations[0]?.id ? `/dashboard/${params.slug}/automation/${automations[0].id}` : `/dashboard/${params.slug}/automation/new` },
+            { label: "View Logs", done: recentActivity.length > 0, href: automations[0]?.id ? `/dashboard/${params.slug}/automation/${automations[0].id}` : `/dashboard/${params.slug}/automation` },
           ].map((item, index) => (
             <Link
               key={item.label}
