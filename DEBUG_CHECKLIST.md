@@ -35,6 +35,10 @@ Quick-reference for common integration failures. Work through each section in or
    - Meta Developer Console → Valid OAuth Redirect URIs
 4. Restart `npm run dev` after updating env vars.
 5. In Meta app → App Review → make sure `instagram_manage_messages` and `instagram_manage_comments` permissions are added (even for test users in development mode).
+6. In production, the expected redirect is:
+   ```text
+   https://ap3k.com/callback/instagram
+   ```
 
 ---
 
@@ -95,8 +99,9 @@ Quick-reference for common integration failures. Work through each section in or
    - `[400] Invalid signature` → wrong `STRIPE_WEBHOOK_SECRET`
    - `[400] Missing Stripe configuration` → `STRIPE_CLIENT_SECRET` or `STRIPE_WEBHOOK_SECRET` not set
 4. Verify the `checkout.session.metadata.clerkId` is set — the payment route must include it when creating the session.
-5. Check `User.subscription` row exists. If the `Subscription` row was never created (e.g. the user signed up before that code was deployed), the `updateSubscription` upsert should still create it.
-6. Check app terminal for `[stripe-webhook] handler error:` lines.
+5. Verify the `subscription.metadata.clerkId` is set — the payment route should pass the same metadata via `subscription_data`.
+6. Check `User.subscription` row exists. If the `Subscription` row was never created (e.g. the user signed up before that code was deployed), the `updateSubscription` upsert should still create it.
+7. Check app terminal for `[stripe-webhook] handler error:` lines.
 
 ---
 
@@ -179,4 +184,13 @@ psql -U postgres -d replyflow -c "SELECT \"instagramId\", \"expiresAt\" FROM \"I
 # Test meta webhook verification manually
 curl -s "http://localhost:3000/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
 # Should return: test123
+```
+
+Production endpoint reference:
+
+```text
+NEXT_PUBLIC_HOST_URL=https://ap3k.com
+META_REDIRECT_URI=https://ap3k.com/callback/instagram
+STRIPE_WEBHOOK_URL=https://ap3k.com/api/webhooks/stripe
+META_WEBHOOK_URL=https://ap3k.com/api/webhooks/meta
 ```

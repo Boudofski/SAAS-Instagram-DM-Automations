@@ -140,6 +140,7 @@ Copy the **webhook signing secret** it prints → `STRIPE_WEBHOOK_SECRET`
 
 Events handled:
 - `checkout.session.completed` — upgrades user to PRO
+- `customer.subscription.created` — syncs a new subscription if it arrives before/after checkout completion
 - `customer.subscription.updated` — syncs plan status
 - `customer.subscription.deleted` — downgrades to FREE
 
@@ -173,20 +174,27 @@ In Vercel → Project → Settings → Environment Variables, add every variable
 
 | Variable | Production value |
 |---|---|
-| `NEXT_PUBLIC_HOST_URL` | `https://your-domain.vercel.app` |
-| `META_REDIRECT_URI` | `https://your-domain.vercel.app/callback/instagram` |
+| `NEXT_PUBLIC_HOST_URL` | `https://ap3k.com` |
+| `META_REDIRECT_URI` | `https://ap3k.com/callback/instagram` |
+| `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL with `redirect_uri=https://ap3k.com/callback/instagram` |
 | `STRIPE_WEBHOOK_SECRET` | Secret from Vercel webhook endpoint (see below) |
 
 ### 4. Stripe Webhook (Production)
 
 1. Go to Stripe → **Developers → Webhooks → Add endpoint**
-2. URL: `https://your-domain.vercel.app/api/webhooks/stripe`
-3. Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+2. URL: `https://ap3k.com/api/webhooks/stripe`
+3. Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
 4. Copy the signing secret → `STRIPE_WEBHOOK_SECRET` in Vercel env vars
 
 ### 5. Meta Webhook (Production)
 
-Update the webhook callback URL in Meta Developer Console to your production domain.
+Update the webhook callback URL in Meta Developer Console:
+
+```text
+https://ap3k.com/api/webhooks/meta
+```
+
+Use the same verify token value that is stored in `META_VERIFY_TOKEN`.
 
 ---
 

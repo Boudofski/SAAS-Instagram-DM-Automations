@@ -47,7 +47,7 @@ Walk through this flow end-to-end with real credentials before launch:
 - [ ] `STRIPE_CLIENT_SECRET` is set (test or live)
 - [ ] `STRIPE_SUBSCRIPTION_PRICE_ID` points to a valid recurring price
 - [ ] `STRIPE_WEBHOOK_SECRET` matches the registered webhook endpoint
-- [ ] Webhook endpoint registered for: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [ ] Webhook endpoint registered for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
 - [ ] Test payment upgrades user plan to PRO (verify in DB)
 - [ ] Subscription cancellation downgrades user plan to FREE (verify in DB)
 
@@ -64,8 +64,8 @@ Walk through this flow end-to-end with real credentials before launch:
 ## Production Deployment (Vercel)
 
 - [ ] All environment variables set in Vercel project settings
-- [ ] `NEXT_PUBLIC_HOST_URL` = production domain (no trailing slash)
-- [ ] `META_REDIRECT_URI` = `https://<domain>/callback/instagram`
+- [ ] `NEXT_PUBLIC_HOST_URL` = `https://ap3k.com` (no trailing slash)
+- [ ] `META_REDIRECT_URI` = `https://ap3k.com/callback/instagram`
 - [ ] `INSTAGRAM_EMBEDDED_OAUTH_URL` updated with production redirect URI
 - [ ] First deployment completes without build errors
 - [ ] Database migrations applied against production DB (`prisma migrate deploy`)

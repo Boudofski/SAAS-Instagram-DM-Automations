@@ -42,8 +42,10 @@ Open `.env.local` and set:
 | `META_APP_ID` | Meta for Developers → your app → Settings → Basic |
 | `META_APP_SECRET` | Meta for Developers → your app → Settings → Basic |
 | `META_VERIFY_TOKEN` | Any random secret you choose (e.g. `my-local-verify-secret`) |
+| `META_REDIRECT_URI` | Local/ngrok callback URL, e.g. `http://localhost:3000/callback/instagram` |
 | `INSTAGRAM_CLIENT_ID` | Same as `META_APP_ID` for Instagram Basic Display |
 | `INSTAGRAM_CLIENT_SECRET` | Same as `META_APP_SECRET` |
+| `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL whose `redirect_uri` exactly matches `META_REDIRECT_URI` |
 | `OPENAI_API_KEY` | platform.openai.com → API keys (only needed for SMARTAI mode) |
 
 `NEXT_PUBLIC_HOST_URL` stays as `http://localhost:3000` for local testing.
@@ -320,7 +322,20 @@ vercel --prod
 ```
 
 Update the following in production:
-- Clerk → **Allowed callback URLs** → add your Vercel domain
-- Meta app → **Valid OAuth Redirect URIs** → add `https://yourdomain.com/callback/instagram`
-- Meta Webhooks → update Callback URL to `https://yourdomain.com/api/webhooks/meta`
-- Stripe Dashboard → Webhooks → add `https://yourdomain.com/api/webhooks/stripe`
+- Vercel env → `NEXT_PUBLIC_HOST_URL=https://ap3k.com`
+- Vercel env → `META_REDIRECT_URI=https://ap3k.com/callback/instagram`
+- Vercel env → `INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?...&redirect_uri=https://ap3k.com/callback/instagram&...`
+- Clerk → **Allowed callback URLs** → add `https://ap3k.com`
+- Meta app → **Valid OAuth Redirect URIs** → add `https://ap3k.com/callback/instagram`
+- Meta Webhooks → update Callback URL to `https://ap3k.com/api/webhooks/meta`
+- Stripe Dashboard → Webhooks → add `https://ap3k.com/api/webhooks/stripe`
+- Stripe Dashboard → Webhooks → subscribe to `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+
+Production endpoint reference:
+
+```text
+NEXT_PUBLIC_HOST_URL=https://ap3k.com
+META_REDIRECT_URI=https://ap3k.com/callback/instagram
+STRIPE_WEBHOOK_URL=https://ap3k.com/api/webhooks/stripe
+META_WEBHOOK_URL=https://ap3k.com/api/webhooks/meta
+```
