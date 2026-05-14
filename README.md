@@ -89,8 +89,9 @@ The app runs at `http://localhost:3000`.
    ```
    https://ap3k.com/callback/instagram
    ```
-2. Copy your **App ID** → `INSTAGRAM_CLIENT_ID` and `META_APP_ID`
-3. Copy your **App Secret** → `INSTAGRAM_CLIENT_SECRET` and `META_APP_SECRET`
+2. Copy the parent Meta **App ID** → `META_APP_ID`
+3. Copy the Instagram API setup **Instagram App ID** → `INSTAGRAM_APP_ID`
+4. Copy the matching app secret → `INSTAGRAM_APP_SECRET` if Meta shows a separate Instagram app secret; otherwise `META_APP_SECRET` is used.
 4. Request the comment-to-DM permissions used by AP3k:
    - `instagram_business_basic`
    - `instagram_business_manage_comments`
@@ -183,6 +184,8 @@ In Vercel → Project → Settings → Environment Variables, add every variable
 | `NEXT_PUBLIC_HOST_URL` | `https://ap3k.com` |
 | `META_APP_ID` | Meta app ID |
 | `META_APP_SECRET` | Meta app secret |
+| `INSTAGRAM_APP_ID` | Instagram app ID from Instagram API setup; used as OAuth `client_id` |
+| `INSTAGRAM_APP_SECRET` | Optional Instagram app secret if different from Meta app secret |
 | `META_VERIFY_TOKEN` | Same value entered in Meta webhook config |
 | `META_REDIRECT_URI` | `https://ap3k.com/callback/instagram` |
 | `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL with `redirect_uri=https://ap3k.com/callback/instagram` |

@@ -49,7 +49,8 @@ Quick-reference for common integration failures. Work through each section in or
 **Check:**
 1. Check the app terminal for `[oauth] callback received` — if absent, the redirect did not reach the callback.
 2. Check `[oauth] token exchange failed` — this means the code→token exchange with Meta's API failed. Common causes:
-   - `META_APP_ID` / `META_APP_SECRET` or `INSTAGRAM_CLIENT_ID` / `INSTAGRAM_CLIENT_SECRET` are wrong or mismatched.
+   - `INSTAGRAM_APP_ID` is missing or not the Instagram app ID shown in Instagram API setup.
+   - `META_APP_ID` / `META_APP_SECRET` or legacy `INSTAGRAM_CLIENT_ID` / `INSTAGRAM_CLIENT_SECRET` are wrong or mismatched.
    - The code has already been used (codes are one-time use).
 3. Verify the Integrations row in the database:
    ```bash

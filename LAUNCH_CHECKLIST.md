@@ -34,6 +34,7 @@ Walk through this flow end-to-end with real credentials before launch:
 ## Meta Integration
 
 - [ ] Meta app has Instagram product added
+- [ ] `INSTAGRAM_APP_ID` is set to the Instagram app ID from Instagram API setup, not the parent Meta app ID
 - [ ] OAuth redirect URI registered: `https://ap3k.com/callback/instagram`
 - [ ] Webhook callback URL registered: `https://ap3k.com/api/webhooks/meta`
 - [ ] Webhook verify token matches `META_VERIFY_TOKEN` in env

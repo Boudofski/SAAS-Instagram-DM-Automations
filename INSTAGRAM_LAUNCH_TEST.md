@@ -89,6 +89,7 @@ Some Meta app setups require the Instagram Business/Creator account to be connec
 1. In Vercel Production env, set:
    ```text
    META_APP_ID=
+   INSTAGRAM_APP_ID=
    META_APP_SECRET=
    META_VERIFY_TOKEN=
    META_REDIRECT_URI=https://ap3k.com/callback/instagram

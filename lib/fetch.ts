@@ -115,8 +115,12 @@ export const generateToken = async (code: string) => {
     throw new Error("META_REDIRECT_URI is not configured");
   }
 
-  const clientId = process.env.INSTAGRAM_CLIENT_ID ?? process.env.META_APP_ID;
+  const clientId =
+    process.env.INSTAGRAM_APP_ID ??
+    process.env.INSTAGRAM_CLIENT_ID ??
+    process.env.META_APP_ID;
   const clientSecret =
+    process.env.INSTAGRAM_APP_SECRET ??
     process.env.INSTAGRAM_CLIENT_SECRET ?? process.env.META_APP_SECRET;
 
   if (!clientId || !clientSecret) {

@@ -42,9 +42,11 @@ Open `.env.local` and set:
 | `STRIPE_PRICE_ID_AGENCY` | Stripe Dashboard → Products → AP3k Agency → Price ID |
 | `META_APP_ID` | Meta for Developers → your app → Settings → Basic |
 | `META_APP_SECRET` | Meta for Developers → your app → Settings → Basic |
+| `INSTAGRAM_APP_ID` | Instagram API setup → Instagram App ID; AP3k uses this as OAuth `client_id` |
+| `INSTAGRAM_APP_SECRET` | Optional Instagram app secret if shown separately; otherwise `META_APP_SECRET` is used |
 | `META_VERIFY_TOKEN` | Any random secret you choose (e.g. `my-local-verify-secret`) |
 | `META_REDIRECT_URI` | Production: `https://ap3k.com/callback/instagram`; local/ngrok: `https://abc123.ngrok-free.app/callback/instagram` |
-| `INSTAGRAM_CLIENT_ID` | Same as `META_APP_ID` if used |
+| `INSTAGRAM_CLIENT_ID` | Legacy fallback; prefer `INSTAGRAM_APP_ID` |
 | `INSTAGRAM_CLIENT_SECRET` | Same as `META_APP_SECRET` |
 | `INSTAGRAM_EMBEDDED_OAUTH_URL` | Full Instagram OAuth URL whose `redirect_uri` exactly matches `META_REDIRECT_URI` |
 | `OPENAI_API_KEY` | platform.openai.com → API keys (only needed for SMARTAI mode) |

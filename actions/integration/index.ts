@@ -14,6 +14,22 @@ const REQUIRED_IG_SCOPES = [
 
 const INSTAGRAM_BUSINESS_OAUTH_URL = "https://www.instagram.com/oauth/authorize";
 
+function getOAuthClientId() {
+  if (process.env.INSTAGRAM_APP_ID) {
+    return { clientId: process.env.INSTAGRAM_APP_ID, source: "INSTAGRAM_APP_ID" as const };
+  }
+
+  if (process.env.INSTAGRAM_CLIENT_ID) {
+    return { clientId: process.env.INSTAGRAM_CLIENT_ID, source: "INSTAGRAM_CLIENT_ID" as const };
+  }
+
+  if (process.env.META_APP_ID) {
+    return { clientId: process.env.META_APP_ID, source: "META_APP_ID" as const };
+  }
+
+  return { clientId: undefined, source: "missing" as const };
+}
+
 export async function getInstagramOAuthUrl() {
   const redirectUri =
     process.env.META_REDIRECT_URI ??
@@ -23,9 +39,9 @@ export async function getInstagramOAuthUrl() {
 
   if (!redirectUri) throw new Error("META_REDIRECT_URI is not configured");
 
-  const clientId = process.env.INSTAGRAM_CLIENT_ID ?? process.env.META_APP_ID;
+  const { clientId } = getOAuthClientId();
 
-  if (!clientId) throw new Error("META_APP_ID or INSTAGRAM_CLIENT_ID is not configured");
+  if (!clientId) throw new Error("INSTAGRAM_APP_ID, INSTAGRAM_CLIENT_ID, or META_APP_ID is not configured");
 
   const url = new URL(INSTAGRAM_BUSINESS_OAUTH_URL);
   url.searchParams.set("client_id", clientId);
@@ -46,7 +62,10 @@ export const onOathInstagram = async (strategy: "INSTAGRAM" | "CRM") => {
 export const getInstagramConnectUrl = async () => {
   try {
     const url = await getInstagramOAuthUrl();
+    const { source } = getOAuthClientId();
     console.log("[oauth] connect URL generated", {
+      oauth_client_id_source: source,
+      hasInstagramAppId: Boolean(process.env.INSTAGRAM_APP_ID),
       hasMetaAppId: Boolean(process.env.META_APP_ID),
       hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
@@ -56,8 +75,11 @@ export const getInstagramConnectUrl = async () => {
     });
     return { status: 200, url };
   } catch (error) {
+    const { source } = getOAuthClientId();
     console.error("[oauth] failed to generate connect URL", {
       message: error instanceof Error ? error.message : String(error),
+      oauth_client_id_source: source,
+      hasInstagramAppId: Boolean(process.env.INSTAGRAM_APP_ID),
       hasMetaAppId: Boolean(process.env.META_APP_ID),
       hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
