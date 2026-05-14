@@ -34,7 +34,7 @@ Quick-reference for common integration failures. Work through each section in or
    - `.env.local` → `INSTAGRAM_EMBEDDED_OAUTH_URL` (the `redirect_uri=` parameter)
    - Meta Developer Console → Valid OAuth Redirect URIs
 4. Restart `npm run dev` after updating env vars.
-5. In Meta app → App Review → make sure `instagram_manage_messages` and `instagram_manage_comments` permissions are added (even for test users in development mode).
+5. In Meta app → App Review → make sure `instagram_business_manage_messages` and `instagram_business_manage_comments` permissions are added (even for test users in development mode).
 6. In production, the expected redirect is:
    ```text
    https://ap3k.com/callback/instagram
@@ -76,7 +76,7 @@ Quick-reference for common integration failures. Work through each section in or
    "
    ```
 3. Common `errorMessage` values:
-   - `(#100) …` — permission missing. Ensure `instagram_manage_messages` is approved.
+   - `(#100) …` — permission missing. Ensure `instagram_business_manage_messages` is approved.
    - `(#10) …` — account not authorized for private replies. Account must be a Business or Creator account.
    - `(#551) …` — the commenter has DMs disabled or blocked the account.
 4. Check that the stored `token` has not expired (60-day expiry). `Integrations.expiresAt` should be in the future.
@@ -191,7 +191,7 @@ Production endpoint reference:
 ```text
 NEXT_PUBLIC_HOST_URL=https://ap3k.com
 META_REDIRECT_URI=https://ap3k.com/callback/instagram
-INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://ap3k.com/callback/instagram&scope=instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement&response_type=code
+INSTAGRAM_EMBEDDED_OAUTH_URL=https://www.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://ap3k.com/callback/instagram&scope=instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages&response_type=code
 STRIPE_WEBHOOK_URL=https://ap3k.com/api/webhooks/stripe
 META_WEBHOOK_URL=https://ap3k.com/api/webhooks/meta
 ```

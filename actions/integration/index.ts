@@ -7,12 +7,12 @@ import { onCurrentUser } from "../user";
 import { createIntegration, getIntegrations, updateIntegration } from "./queries";
 
 const REQUIRED_IG_SCOPES = [
-  "instagram_basic",
-  "instagram_manage_comments",
-  "instagram_manage_messages",
-  "pages_show_list",
-  "pages_read_engagement",
+  "instagram_business_basic",
+  "instagram_business_manage_comments",
+  "instagram_business_manage_messages",
 ];
+
+const INSTAGRAM_BUSINESS_OAUTH_URL = "https://www.instagram.com/oauth/authorize";
 
 export async function getInstagramOAuthUrl() {
   const redirectUri =
@@ -23,30 +23,17 @@ export async function getInstagramOAuthUrl() {
 
   if (!redirectUri) throw new Error("META_REDIRECT_URI is not configured");
 
-  const configured = process.env.INSTAGRAM_EMBEDDED_OAUTH_URL;
   const clientId = process.env.INSTAGRAM_CLIENT_ID ?? process.env.META_APP_ID;
-
-  if (configured) {
-    const url = new URL(configured);
-    url.searchParams.set("redirect_uri", redirectUri);
-    const scopes = new Set(
-      (url.searchParams.get("scope") ?? "")
-        .split(",")
-        .map((scope) => scope.trim())
-        .filter(Boolean)
-    );
-    REQUIRED_IG_SCOPES.forEach((scope) => scopes.add(scope));
-    url.searchParams.set("scope", Array.from(scopes).join(","));
-    return url.toString();
-  }
 
   if (!clientId) throw new Error("META_APP_ID or INSTAGRAM_CLIENT_ID is not configured");
 
-  const url = new URL("https://api.instagram.com/oauth/authorize");
+  const url = new URL(INSTAGRAM_BUSINESS_OAUTH_URL);
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("scope", REQUIRED_IG_SCOPES.join(","));
   url.searchParams.set("response_type", "code");
+  url.searchParams.set("enable_fb_login", "0");
+  url.searchParams.set("force_authentication", "1");
   return url.toString();
 }
 
@@ -63,6 +50,9 @@ export const getInstagramConnectUrl = async () => {
       hasMetaAppId: Boolean(process.env.META_APP_ID),
       hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
+      endpoint: INSTAGRAM_BUSINESS_OAUTH_URL,
+      scopeCount: REQUIRED_IG_SCOPES.length,
+      redirectIsProduction: process.env.META_REDIRECT_URI === "https://ap3k.com/callback/instagram",
     });
     return { status: 200, url };
   } catch (error) {

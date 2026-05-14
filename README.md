@@ -92,11 +92,9 @@ The app runs at `http://localhost:3000`.
 2. Copy your **App ID** → `INSTAGRAM_CLIENT_ID` and `META_APP_ID`
 3. Copy your **App Secret** → `INSTAGRAM_CLIENT_SECRET` and `META_APP_SECRET`
 4. Request the comment-to-DM permissions used by AP3k:
-   - `instagram_basic`
-   - `instagram_manage_comments`
-   - `instagram_manage_messages`
-   - `pages_show_list`
-   - `pages_read_engagement`
+   - `instagram_business_basic`
+   - `instagram_business_manage_comments`
+   - `instagram_business_manage_messages`
 
 ### Configure the Webhook
 

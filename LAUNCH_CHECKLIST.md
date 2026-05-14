@@ -38,7 +38,7 @@ Walk through this flow end-to-end with real credentials before launch:
 - [ ] Webhook callback URL registered: `https://ap3k.com/api/webhooks/meta`
 - [ ] Webhook verify token matches `META_VERIFY_TOKEN` in env
 - [ ] `comments` and `messages` webhook fields subscribed
-- [ ] OAuth scopes include `instagram_basic`, `instagram_manage_comments`, `instagram_manage_messages`, `pages_show_list`, `pages_read_engagement`
+- [ ] OAuth scopes include `instagram_business_basic`, `instagram_business_manage_comments`, `instagram_business_manage_messages`
 - [ ] Connected account is an Instagram Business or Creator account
 - [ ] Facebook Page connection is configured if the selected Meta app flow requires page-linked IG discovery
 - [ ] Webhook GET verification passes (Meta sends a challenge)
@@ -82,8 +82,8 @@ Walk through this flow end-to-end with real credentials before launch:
 Required before real (non-test) Instagram accounts can use the app:
 
 - [ ] App is in **Live** mode (not Development)
-- [ ] `instagram_manage_messages` permission submitted for review
-- [ ] `instagram_manage_comments` permission submitted for review
+- [ ] `instagram_business_manage_messages` permission submitted for review
+- [ ] `instagram_business_manage_comments` permission submitted for review
 - [ ] Screencast demo of the automation flow prepared for review submission
 - [ ] Privacy policy URL set in Meta app settings
 - [ ] Terms of service URL set in Meta app settings

@@ -170,7 +170,7 @@ Copy the HTTPS forwarding URL (e.g. `https://abc123.ngrok-free.app`).
 ```
 NEXT_PUBLIC_HOST_URL=https://abc123.ngrok-free.app
 META_REDIRECT_URI=https://abc123.ngrok-free.app/callback/instagram
-INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://abc123.ngrok-free.app/callback/instagram&scope=instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement&response_type=code
+INSTAGRAM_EMBEDDED_OAUTH_URL=https://www.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://abc123.ngrok-free.app/callback/instagram&scope=instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages&response_type=code
 ```
 
 Restart `npm run dev` after changing env vars.
@@ -332,7 +332,7 @@ vercel --prod
 Update the following in production:
 - Vercel env → `NEXT_PUBLIC_HOST_URL=https://ap3k.com`
 - Vercel env → `META_REDIRECT_URI=https://ap3k.com/callback/instagram`
-- Vercel env → `INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?...&redirect_uri=https://ap3k.com/callback/instagram&...`
+- Vercel env → `INSTAGRAM_EMBEDDED_OAUTH_URL=https://www.instagram.com/oauth/authorize?...&redirect_uri=https://ap3k.com/callback/instagram&...`
 - Clerk → **Allowed callback URLs** → add `https://ap3k.com`
 - Meta app → **Valid OAuth Redirect URIs** → add `https://ap3k.com/callback/instagram`
 - Meta Webhooks → update Callback URL to `https://ap3k.com/api/webhooks/meta`
@@ -344,7 +344,7 @@ Production endpoint reference:
 ```text
 NEXT_PUBLIC_HOST_URL=https://ap3k.com
 META_REDIRECT_URI=https://ap3k.com/callback/instagram
-INSTAGRAM_EMBEDDED_OAUTH_URL=https://api.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://ap3k.com/callback/instagram&scope=instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement&response_type=code
+INSTAGRAM_EMBEDDED_OAUTH_URL=https://www.instagram.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https://ap3k.com/callback/instagram&scope=instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages&response_type=code
 STRIPE_WEBHOOK_URL=https://ap3k.com/api/webhooks/stripe
 META_WEBHOOK_URL=https://ap3k.com/api/webhooks/meta
 ```

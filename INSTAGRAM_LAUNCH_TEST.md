@@ -127,7 +127,7 @@ Some Meta app setups require the Instagram Business/Creator account to be connec
 |---|---|---|
 | Webhook verification returns 403 | Verify token mismatch | Compare Meta Verify Token with `META_VERIFY_TOKEN`; check `token_match` log |
 | OAuth redirect mismatch | Registered URI differs | Meta redirect URI and `META_REDIRECT_URI` must both equal `https://ap3k.com/callback/instagram` |
-| Connect succeeds but no posts | Missing media permission or token issue | Check `instagram_basic` scope and `[instagram-media]` safe logs |
+| Connect succeeds but no posts | Missing media permission or token issue | Check `instagram_business_basic` scope and `[instagram-media]` safe logs |
 | Comment webhook arrives but no automation matches | Wrong media ID or inactive campaign | Confirm `Post.postid` equals webhook `media.id` and `Automation.active=true` |
 | Keyword does not match | Matching mode or keyword mismatch | Use `CONTAINS` and comment a phrase containing the keyword |
 | Private reply fails | Missing messaging permission or DM restriction | Inspect `MessageLog.errorMessage`; no tokens are logged |
