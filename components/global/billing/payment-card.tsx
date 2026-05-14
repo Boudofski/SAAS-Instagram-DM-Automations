@@ -1,99 +1,95 @@
 import { Button } from "@/components/ui/button";
-import { PLANS } from "@/constants/pages";
-import { useSubscription } from "@/hooks/use-subscription";
 import { cn } from "@/lib/utils";
 import { CircleCheck } from "lucide-react";
+import Link from "next/link";
+
+type PlanLabel = "FREE" | "PRO" | "AGENCY";
 
 type Props = {
-  label: string;
+  label: PlanLabel;
   current: "PRO" | "FREE";
-  landing?: boolean;
 };
 
-function PaymentCard({ label, current, landing }: Props) {
-  const { isProcessing, onSubscription } = useSubscription();
+const PLAN_COPY = {
+  FREE: {
+    name: "Free",
+    price: "$0",
+    period: "/month",
+    description: "For validating your first Instagram comment-to-DM campaign.",
+    features: ["1 active campaign", "Up to 50 DMs/month", "Keyword triggers", "Basic analytics"],
+    href: "/pricing",
+  },
+  PRO: {
+    name: "Creator",
+    price: "$29",
+    period: "/month",
+    description: "For creators running active comment-to-DM funnels.",
+    features: ["Unlimited campaigns", "Unlimited DMs", "Smart AI replies", "Lead export"],
+    href: "/payment?plan=creator",
+  },
+  AGENCY: {
+    name: "Agency",
+    price: "$79",
+    period: "/month",
+    description: "For teams managing multiple creator accounts.",
+    features: ["Everything in Creator", "Up to 10 Instagram accounts", "Team workflows", "Priority onboarding"],
+    href: "/payment?plan=agency",
+  },
+} as const;
+
+function PaymentCard({ label, current }: Props) {
+  const plan = PLAN_COPY[label];
+  const isActive = label === current;
+  const isAgency = label === "AGENCY";
+  const isIncludedFree = label === "FREE" && current === "PRO";
+  const ctaLabel = isActive
+    ? "Current plan"
+    : isIncludedFree
+    ? "Included"
+    : isAgency
+    ? "Upgrade to Agency"
+    : "Upgrade to Creator";
 
   return (
     <div
       className={cn(
-        label !== current
-          ? "bg-in-active"
-          : "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
-        "p-[2px] rounded-xl overflow-hidden"
+        "ap3k-card flex h-full flex-col rounded-3xl p-6",
+        isActive && "border-rf-pink/35 bg-ap3k-gradient-soft"
       )}
     >
-      <div
-        className={cn(
-          landing && "radial--gradient--pink",
-          "flex flex-col rounded-xl pl-5 py-5 pr-10 bg-background-90 h-full"
-        )}
-      >
-        {landing ? (
-          <h2 className="text-2xl">
-            {label === "PRO" && "Premium Plan"}
-            {label === "FREE" && "Standard"}
-          </h2>
-        ) : (
-          <h2 className="text-2xl">
-            {label === current
-              ? "Your Current Plan"
-              : current === "PRO"
-              ? "Downgrade"
-              : "Upgrade"}
-          </h2>
-        )}
-        <p className="text-text-secondary text-sm mb-2">
-          This is what your plan covers for automation and Ai features
-        </p>
-        {label === "PRO" ? (
-          <span className="bg-gradient-to-r text-3xl from-indigo-500 via-purple-500 font-bold to-pink-500 bg-clip-text text-transparent">
-            Smart AI
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-black">{plan.name}</h2>
+        {isActive && (
+          <span className="rounded-full border border-rf-green/25 bg-rf-green/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-rf-green">
+            Active
           </span>
-        ) : (
-          <p className="font-bold mt-2 text-text-secondary">Standard</p>
-        )}
-        {label === "PRO" ? (
-          <p className="mb-2">
-            <b className="text-xl">$99</b>/month
-          </p>
-        ) : (
-          <p className="text-xl mb-2">Free</p>
-        )}
-        {PLANS[label === "PRO" ? 1 : 0].features.map((i) => (
-          <p key={i} className="mt-2 text-muted-foreground flex gap-2 ">
-            <CircleCheck className="text-indigo-500" />
-            {i}
-          </p>
-        ))}
-        {landing ? (
-          <Button
-            className={cn(
-              "rounded-full mt-5",
-              label === "PRO"
-                ? "bg-gradient-to-r from-indigo-500 text-white via-purple-500 to-pink-500"
-                : "bg-background-80 text-white hover:text-background-80"
-            )}
-          >
-            {label === current
-              ? "Get Started"
-              : current === "PRO"
-              ? "Free"
-              : "Get Started"}
-          </Button>
-        ) : (
-          <Button
-            className="rounded-full mt-5 bg-background-80 text-white hover:text-background-80"
-            disabled={label === current || isProcessing}
-            onClick={() => onSubscription("creator")}
-          >
-            {label === current
-              ? "Active"
-              : current === "PRO"
-              ? "Downgrade"
-              : "Upgrade"}
-          </Button>
         )}
       </div>
+      <p className="mt-2 text-sm leading-relaxed text-rf-muted">{plan.description}</p>
+      <div className="mt-5 flex items-baseline gap-1">
+        <span className="text-4xl font-black tracking-tight">{plan.price}</span>
+        <span className="text-sm text-rf-muted">{plan.period}</span>
+      </div>
+      <div className="mt-5 flex flex-1 flex-col gap-2.5">
+        {plan.features.map((feature) => (
+          <p key={feature} className="flex gap-2 text-sm text-rf-muted">
+            <CircleCheck className="h-4 w-4 flex-shrink-0 text-rf-green" />
+            {feature}
+          </p>
+        ))}
+      </div>
+      <Button
+        asChild
+        disabled={isActive || isIncludedFree}
+        className={cn(
+          "mt-6 rounded-xl font-bold",
+          isActive || isIncludedFree ? "bg-white/10 text-rf-muted" : "ap3k-gradient-button"
+        )}
+      >
+        <Link href={isActive || isIncludedFree ? "/dashboard" : plan.href}>
+          {ctaLabel}
+        </Link>
+      </Button>
     </div>
   );
 }

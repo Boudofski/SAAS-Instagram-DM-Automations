@@ -14,7 +14,7 @@ const REQUIRED_IG_SCOPES = [
   "pages_read_engagement",
 ];
 
-function getInstagramOAuthUrl() {
+export async function getInstagramOAuthUrl() {
   const redirectUri =
     process.env.META_REDIRECT_URI ??
     (process.env.NEXT_PUBLIC_HOST_URL
@@ -52,7 +52,27 @@ function getInstagramOAuthUrl() {
 
 export const onOathInstagram = async (strategy: "INSTAGRAM" | "CRM") => {
   if (strategy === "INSTAGRAM") {
-    return redirect(getInstagramOAuthUrl());
+    return redirect(await getInstagramOAuthUrl());
+  }
+};
+
+export const getInstagramConnectUrl = async () => {
+  try {
+    const url = await getInstagramOAuthUrl();
+    console.log("[oauth] connect URL generated", {
+      hasMetaAppId: Boolean(process.env.META_APP_ID),
+      hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
+      hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
+    });
+    return { status: 200, url };
+  } catch (error) {
+    console.error("[oauth] failed to generate connect URL", {
+      message: error instanceof Error ? error.message : String(error),
+      hasMetaAppId: Boolean(process.env.META_APP_ID),
+      hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
+      hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
+    });
+    return { status: 500, error: "oauth_url_unavailable" };
   }
 };
 
