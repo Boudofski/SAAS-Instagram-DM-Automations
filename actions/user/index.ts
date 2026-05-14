@@ -107,6 +107,14 @@ export const onSubscribe = async (session_id: string) => {
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (session) {
+      console.log("[stripe-checkout] session verification context", {
+        hasMetadataClerkId: Boolean(session.metadata?.clerkId),
+        hasClientReferenceId: Boolean(session.client_reference_id),
+        hasCustomer: Boolean(session.customer),
+        sessionStatus: session.status,
+        currentUserIdExists: Boolean(user.id),
+      });
+
       const sessionOwner = session.metadata?.clerkId ?? session.client_reference_id;
       if (!sessionOwner) {
         console.warn("[stripe-checkout] session owner missing", {
@@ -137,13 +145,31 @@ export const onSubscribe = async (session_id: string) => {
         return { status: 400, error: "missing_customer" };
       }
 
+      let profile = await findUser(user.id);
+      if (!profile) {
+        const email = user.emailAddresses[0]?.emailAddress;
+        if (!email) {
+          console.warn("[stripe-checkout] current user email missing", {
+            sessionId: session.id,
+          });
+          return { status: 400, error: "missing_user_email" };
+        }
+
+        await createUser(
+          user.id,
+          user.firstName ?? "",
+          user.lastName ?? "",
+          email
+        );
+        profile = await findUser(user.id);
+      }
+
       const subscript = await updateSubscription(user.id, {
         customerId: session.customer,
         plan: "PRO",
       });
 
       if (subscript) {
-        const profile = await findUser(user.id);
         const slug =
           `${profile?.firstname ?? ""}${profile?.lastname ?? ""}` ||
           profile?.clerkId ||
