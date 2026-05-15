@@ -25,6 +25,25 @@ type AutomationWithRelations = Automation & {
   } | null;
 };
 
+export function normalizeInstagramMediaId(value?: string | null) {
+  if (!value) return "";
+  const trimmed = String(value).trim();
+  if (!trimmed) return "";
+  if (trimmed === "ANY") return "ANY";
+
+  try {
+    const parsed = new URL(trimmed);
+    const lastSegment = parsed.pathname
+      .split("/")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .at(-1);
+    return lastSegment ?? trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Automation lookup — COMMENT trigger
 // ---------------------------------------------------------------------------
@@ -49,6 +68,7 @@ export const findAutomationForComment = async (
       },
     },
     include: {
+      posts: true,
       keywords: true,
       listener: true,
       User: {
@@ -62,6 +82,149 @@ export const findAutomationForComment = async (
       },
     },
   });
+};
+
+export const findAutomationForCommentWithReason = async (
+  mediaId: string,
+  igAccountId: string
+): Promise<{
+  automation: AutomationWithRelations | null;
+  failureReason?: "no_matching_integration" | "no_active_automation_for_media";
+  diagnostics: Prisma.InputJsonObject;
+}> => {
+  const normalizedIncomingMediaId = normalizeInstagramMediaId(mediaId);
+  const activeIntegrations = await client.integrations.findMany({
+    where: {
+      User: {
+        automations: { some: { active: true } },
+      },
+    },
+    select: {
+      id: true,
+      instagramId: true,
+      webhookAccountId: true,
+      pageId: true,
+      businessId: true,
+    },
+  });
+  const integration = await client.integrations.findFirst({
+    where: {
+      OR: [
+        { instagramId: igAccountId },
+        { webhookAccountId: igAccountId },
+        { pageId: igAccountId },
+        { businessId: igAccountId },
+      ],
+    },
+    select: {
+      id: true,
+      userId: true,
+      instagramId: true,
+      webhookAccountId: true,
+      pageId: true,
+      businessId: true,
+    },
+  });
+
+  if (!integration?.userId) {
+    return {
+      automation: null,
+      failureReason: "no_matching_integration",
+      diagnostics: {
+        incomingMediaId: mediaId,
+        normalizedIncomingMediaId,
+        incomingIgAccountId: igAccountId,
+        allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
+        allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
+        matchingIntegrationFound: false,
+        matchedAutomationIds: [],
+        storedPostIds: [],
+        comparisons: [],
+      },
+    };
+  }
+
+  if (!integration.webhookAccountId || integration.webhookAccountId !== igAccountId) {
+    await client.integrations.update({
+      where: { id: integration.id },
+      data: { webhookAccountId: igAccountId },
+    });
+  }
+
+  const accountAutomations = await client.automation.findMany({
+    where: {
+      userId: integration.userId,
+      trigger: { some: { type: "COMMENT" } },
+    },
+    include: {
+      posts: true,
+      keywords: true,
+      listener: true,
+      User: {
+        select: {
+          subscription: { select: { plan: true } },
+          integrations: {
+            select: { token: true },
+            where: { instagramId: igAccountId },
+          },
+        },
+      },
+    },
+  });
+
+  const activeAutomations = accountAutomations.filter((automation) => automation.active);
+  const comparisons = accountAutomations.flatMap((automation) =>
+    automation.posts.map((post) => {
+      const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
+      return {
+        automationId: automation.id,
+        automationActive: automation.active,
+        storedPostId: post.postid,
+        normalizedStoredPostId,
+        incomingMediaId: mediaId,
+        normalizedIncomingMediaId,
+        isAnyPost: post.postid === "ANY",
+        normalizedMatch:
+          post.postid === "ANY" ||
+          normalizedStoredPostId === normalizedIncomingMediaId,
+      };
+    })
+  );
+
+  const diagnostics = {
+    incomingMediaId: mediaId,
+    normalizedIncomingMediaId,
+    incomingIgAccountId: igAccountId,
+    allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
+    allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
+    matchingIntegrationFound: true,
+    matchedIntegrationId: integration.id,
+    matchedIntegrationInstagramId: integration.instagramId,
+    matchedIntegrationWebhookAccountId: integration.webhookAccountId,
+    matchedAutomationIds: comparisons
+      .filter((item) => item.automationActive && item.normalizedMatch)
+      .map((item) => item.automationId),
+    storedPostIds: comparisons.map((item) => item.storedPostId),
+    comparisons,
+  };
+
+  if (activeAutomations.length === 0) {
+    return { automation: null, failureReason: "no_active_automation_for_media", diagnostics };
+  }
+
+  const automation = activeAutomations.find((item) =>
+    item.posts.some(
+      (post) =>
+        post.postid === "ANY" ||
+        normalizeInstagramMediaId(post.postid) === normalizedIncomingMediaId
+    )
+  );
+
+  if (!automation) {
+    return { automation: null, failureReason: "no_active_automation_for_media", diagnostics };
+  }
+
+  return { automation, diagnostics };
 };
 
 // ---------------------------------------------------------------------------
@@ -249,6 +412,31 @@ export const updateWebhookEvent = async (
   return await client.webhookEvent.update({
     where: { id },
     data,
+  });
+};
+
+export const mergeWebhookEventPayload = async (
+  id: string,
+  payload: Prisma.InputJsonObject
+) => {
+  const existing = await client.webhookEvent.findUnique({
+    where: { id },
+    select: { payload: true },
+  });
+
+  const existingPayload =
+    existing?.payload && typeof existing.payload === "object" && !Array.isArray(existing.payload)
+      ? (existing.payload as Prisma.InputJsonObject)
+      : {};
+
+  return await client.webhookEvent.update({
+    where: { id },
+    data: {
+      payload: {
+        ...existingPayload,
+        ...payload,
+      },
+    },
   });
 };
 

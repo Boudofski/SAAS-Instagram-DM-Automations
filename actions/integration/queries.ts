@@ -8,7 +8,13 @@ export const updateIntegration = async (
   id: string,
   instagramId?: string,
   instagramUsername?: string,
-  profilePictureUrl?: string
+  profilePictureUrl?: string,
+  subscription?: {
+    statusCode?: number;
+    subscribed: boolean;
+    error?: string;
+    attemptedAt: Date;
+  }
 ) => {
   return await client.integrations.update({
     where: { id },
@@ -16,8 +22,13 @@ export const updateIntegration = async (
       token,
       expiresAt: expire,
       instagramId,
+      webhookAccountId: instagramId,
       instagramUsername,
       profilePictureUrl,
+      webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
+      webhookSubscriptionStatusCode: subscription?.statusCode,
+      webhookSubscriptionSubscribed: subscription?.subscribed,
+      webhookSubscriptionError: subscription?.error,
     },
   });
 };
@@ -43,7 +54,13 @@ export const createIntegration = async (
   expire: Date,
   insts_id: string,
   instagramUsername?: string,
-  profilePictureUrl?: string
+  profilePictureUrl?: string,
+  subscription?: {
+    statusCode?: number;
+    subscribed: boolean;
+    error?: string;
+    attemptedAt: Date;
+  }
 ) => {
   return await client.user.update({
     where: {
@@ -55,8 +72,13 @@ export const createIntegration = async (
           token,
           expiresAt: expire,
           instagramId: insts_id,
+          webhookAccountId: insts_id,
           instagramUsername,
           profilePictureUrl,
+          webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
+          webhookSubscriptionStatusCode: subscription?.statusCode,
+          webhookSubscriptionSubscribed: subscription?.subscribed,
+          webhookSubscriptionError: subscription?.error,
         },
       },
     },
@@ -75,7 +97,13 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
       integrations: {
         where: { name: "INSTAGRAM" },
         take: 1,
-        select: { instagramId: true },
+        select: {
+          instagramId: true,
+          webhookSubscriptionLastAttemptedAt: true,
+          webhookSubscriptionStatusCode: true,
+          webhookSubscriptionSubscribed: true,
+          webhookSubscriptionError: true,
+        },
       },
     },
   });
@@ -102,7 +130,10 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
       },
     }),
     client.webhookEvent.findFirst({
-      where: { igAccountId, eventType: "COMMENT_WEBHOOK_RECEIVED" },
+      where: {
+        igAccountId,
+        eventType: { in: ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] },
+      },
       orderBy: { createdAt: "desc" },
       select: {
         eventType: true,
@@ -117,7 +148,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
         igAccountId,
         OR: [
           { status: "FAILED" },
-          { eventType: "SIGNATURE_VERIFICATION_FAILED" },
+          { eventType: { in: ["SIGNATURE_FAILED", "SIGNATURE_VERIFICATION_FAILED"] } },
           { errorMessage: { not: null } },
         ],
       },
@@ -132,5 +163,15 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     }),
   ]);
 
-  return { lastWebhook, lastCommentWebhook, lastFailure };
+  return {
+    lastWebhook,
+    lastCommentWebhook,
+    lastFailure,
+    subscription: {
+      lastAttemptedAt: user.integrations[0]?.webhookSubscriptionLastAttemptedAt ?? null,
+      statusCode: user.integrations[0]?.webhookSubscriptionStatusCode ?? null,
+      subscribed: user.integrations[0]?.webhookSubscriptionSubscribed ?? null,
+      error: user.integrations[0]?.webhookSubscriptionError ?? null,
+    },
+  };
 };

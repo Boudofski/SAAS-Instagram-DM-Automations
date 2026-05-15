@@ -131,6 +131,26 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <HealthItem
+              label="Subscription attempted"
+              value={
+                health?.data?.subscription?.lastAttemptedAt
+                  ? new Date(health.data.subscription.lastAttemptedAt).toLocaleString()
+                  : "Never"
+              }
+            />
+            <HealthItem
+              label="Subscription result"
+              value={
+                health?.data?.subscription
+                  ? `${health.data.subscription.subscribed ? "success" : "failure"}${
+                      health.data.subscription.statusCode
+                        ? ` · ${health.data.subscription.statusCode}`
+                        : ""
+                    }`
+                  : "Unknown"
+              }
+            />
+            <HealthItem
               label="Last webhook"
               value={formatHealth(health?.data?.lastWebhook)}
             />
@@ -141,9 +161,10 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             <HealthItem
               label="Last failure"
               value={
-                health?.data?.lastFailure
+                health?.data?.subscription?.error ??
+                (health?.data?.lastFailure
                   ? health.data.lastFailure.errorMessage ?? health.data.lastFailure.eventType
-                  : "No failures"
+                  : "No failures")
               }
             />
           </div>

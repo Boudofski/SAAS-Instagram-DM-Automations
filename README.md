@@ -239,7 +239,7 @@ For real comment delivery while the app is still in Development mode, verify:
 
 The dashboard Integrations page includes **Resubscribe webhooks** and webhook
 health cards. Do not mark delivery fixed until a real comment creates
-`WebhookEvent.eventType = COMMENT_WEBHOOK_RECEIVED`.
+`WebhookEvent.eventType = REAL_COMMENT_EVENT`.
 
 ### Owner Admin
 

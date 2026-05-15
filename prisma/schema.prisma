@@ -41,8 +41,15 @@ model Integrations {
   token       String       @unique
   expiresAt   DateTime?
   instagramId String?      @unique
+  webhookAccountId String?
+  pageId      String?
+  businessId  String?
   instagramUsername String?
   profilePictureUrl String?
+  webhookSubscriptionLastAttemptedAt DateTime?
+  webhookSubscriptionStatusCode Int?
+  webhookSubscriptionSubscribed Boolean?
+  webhookSubscriptionError String?
 }
 
 model Automation {

@@ -1,10 +1,49 @@
 "use server";
 
-import { formatSafeMetaError, generateToken, getSafeMetaError, subscribeInstagramWebhooks } from "@/lib/fetch";
+import {
+  INSTAGRAM_GRAPH_BASE_URL,
+  formatSafeMetaError,
+  generateToken,
+  getSafeMetaError,
+  subscribeInstagramWebhooks,
+} from "@/lib/fetch";
 import { currentUser } from "@clerk/nextjs/server";
 import axios from "axios";
 import { redirect } from "next/navigation";
 import { createIntegration, getIntegrations, getWebhookHealthForUser, updateIntegration } from "./queries";
+
+async function attemptWebhookSubscription(igAccountId: string, token: string) {
+  const attemptedAt = new Date();
+  try {
+    const subscription = await subscribeInstagramWebhooks(igAccountId, token);
+    const subscribed = subscription.status >= 200 && subscription.status < 300;
+    console.log("[oauth] webhook subscription result", {
+      endpointFamily: "meta_graph",
+      igAccountIdPresent: Boolean(igAccountId),
+      subscribed,
+      status: subscription.status,
+    });
+    return {
+      statusCode: subscription.status,
+      subscribed,
+      attemptedAt,
+    };
+  } catch (error) {
+    const safe = formatSafeMetaError(error);
+    console.warn("[oauth] webhook subscription failed", {
+      endpointFamily: "meta_graph",
+      igAccountIdPresent: Boolean(igAccountId),
+      subscribed: false,
+      error: getSafeMetaError(error),
+    });
+    return {
+      statusCode: getSafeMetaError(error).status,
+      subscribed: false,
+      error: safe || "subscribed_apps_failed",
+      attemptedAt,
+    };
+  }
+}
 
 const REQUIRED_IG_SCOPES = [
   "instagram_business_basic",
@@ -126,10 +165,8 @@ export const onIntegrate = async (code: string) => {
       };
     }
 
-    const instagramBaseUrl =
-      process.env.INSTAGRAM_BASE_URL ?? "https://graph.instagram.com";
     const insts_id = await axios.get(
-      `${instagramBaseUrl}/me?fields=user_id,username,profile_picture_url`,
+      `${INSTAGRAM_GRAPH_BASE_URL}/me?fields=user_id,username,profile_picture_url`,
       {
         headers: { Authorization: `Bearer ${token.access_token}` },
       }
@@ -141,26 +178,10 @@ export const onIntegrate = async (code: string) => {
       updatingExistingIntegration: Boolean(existing),
     });
 
-    // Subscribe this IG account to comment + message webhook events.
-    // Required so Meta routes real activity to our webhook endpoint.
-    // Non-blocking — OAuth still succeeds if this fails.
-    try {
-      const subscription = await subscribeInstagramWebhooks(
-        insts_id.data.user_id,
-        token.access_token
-      );
-      console.log("[oauth] webhook subscription result", {
-        igAccountIdPresent: Boolean(insts_id.data.user_id),
-        subscribed: true,
-        status: subscription.status,
-      });
-    } catch (subErr) {
-      console.warn("[oauth] webhook subscription failed (non-fatal)", {
-        igAccountIdPresent: Boolean(insts_id.data.user_id),
-        subscribed: false,
-        error: getSafeMetaError(subErr),
-      });
-    }
+    const subscriptionAttempt = await attemptWebhookSubscription(
+      insts_id.data.user_id,
+      token.access_token
+    );
 
     const today = new Date();
     const expire_date = today.setDate(today.getDate() + 60);
@@ -172,7 +193,8 @@ export const onIntegrate = async (code: string) => {
         existing.id,
         insts_id.data.user_id,
         insts_id.data.username,
-        insts_id.data.profile_picture_url
+        insts_id.data.profile_picture_url,
+        subscriptionAttempt
       );
       console.log("[oauth] integration save result", {
         integrationSaved: Boolean(update),
@@ -196,7 +218,8 @@ export const onIntegrate = async (code: string) => {
       new Date(expire_date),
       insts_id.data.user_id,
       insts_id.data.username,
-      insts_id.data.profile_picture_url
+      insts_id.data.profile_picture_url,
+      subscriptionAttempt
     );
     console.log("[oauth] integration save result", {
       integrationSaved: Boolean(create),
@@ -237,10 +260,26 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       instagram.instagramId,
       instagram.token
     );
+    const subscribed = result.status >= 200 && result.status < 300;
+
+    await updateIntegration(
+      instagram.token,
+      instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      instagram.id,
+      instagram.instagramId,
+      instagram.instagramUsername ?? undefined,
+      instagram.profilePictureUrl ?? undefined,
+      {
+        statusCode: result.status,
+        subscribed,
+        attemptedAt: new Date(),
+      }
+    );
 
     console.log("[webhook-subscription] manual resubscribe result", {
+      endpointFamily: "meta_graph",
       igAccountIdPresent: true,
-      subscribed: result.status >= 200 && result.status < 300,
+      subscribed,
       status: result.status,
     });
 
@@ -250,6 +289,24 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
     };
   } catch (error) {
     const safe = formatSafeMetaError(error);
+    const integration = await getIntegrations(user.id);
+    const instagram = integration?.integrations[0];
+    if (instagram?.id && instagram.token) {
+      await updateIntegration(
+        instagram.token,
+        instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        instagram.id,
+        instagram.instagramId ?? undefined,
+        instagram.instagramUsername ?? undefined,
+        instagram.profilePictureUrl ?? undefined,
+        {
+          statusCode: getSafeMetaError(error).status,
+          subscribed: false,
+          error: safe || "subscribed_apps_failed",
+          attemptedAt: new Date(),
+        }
+      );
+    }
     console.warn("[webhook-subscription] manual resubscribe failed", {
       error: getSafeMetaError(error),
     });

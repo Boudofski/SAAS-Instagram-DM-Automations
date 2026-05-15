@@ -1,4 +1,6 @@
+import { simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
 import { requireOwnerAdmin, maskSecret } from "@/lib/admin";
+import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -37,6 +39,7 @@ export default async function AdminPage({
     automationEvents,
     messageLogs,
     leads,
+    metaDiagnostics,
   ] = await Promise.all([
     client.user.count(),
     client.integrations.count(),
@@ -44,12 +47,14 @@ export default async function AdminPage({
     client.automation.count(),
     client.automation.count({ where: { active: true } }),
     client.webhookEvent.count(),
-    client.webhookEvent.count({ where: { eventType: "COMMENT_WEBHOOK_RECEIVED" } }),
+    client.webhookEvent.count({
+      where: { eventType: { in: ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] } },
+    }),
     client.webhookEvent.count({
       where: {
         OR: [
           { status: "FAILED" },
-          { eventType: "SIGNATURE_VERIFICATION_FAILED" },
+          { eventType: { in: ["SIGNATURE_FAILED", "SIGNATURE_VERIFICATION_FAILED"] } },
           { errorMessage: { not: null } },
         ],
       },
@@ -147,6 +152,7 @@ export default async function AdminPage({
       take: 25,
       include: { automation: { select: { name: true } } },
     }),
+    getMetaAdminDiagnostics(),
   ]);
 
   return (
@@ -198,6 +204,74 @@ export default async function AdminPage({
           ))}
         </section>
 
+        <AdminSection title="Meta Delivery Diagnostics">
+          <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
+            <HealthCell label="Connected account" value={
+              metaDiagnostics.integration?.instagramUsername
+                ? `@${metaDiagnostics.integration.instagramUsername}`
+                : "Not connected"
+            } />
+            <HealthCell label="Integration IG ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
+            <HealthCell label="Webhook account ID" value={metaDiagnostics.integration?.webhookAccountId ?? "same as integration"} />
+            <HealthCell label="Token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
+            <HealthCell label="subscribed_apps active" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
+            <HealthCell label="comments subscribed" value={metaDiagnostics.commentsSubscribed ? "yes" : "no"} tone={metaDiagnostics.commentsSubscribed ? "green" : "red"} />
+            <HealthCell label="messages subscribed" value={metaDiagnostics.messagesSubscribed ? "yes" : "no"} tone={metaDiagnostics.messagesSubscribed ? "green" : "red"} />
+            <HealthCell label="Token expires at" value={metaDiagnostics.integration?.expiresAt ? new Date(metaDiagnostics.integration.expiresAt).toLocaleString() : "unknown"} />
+            <HealthCell label="Webhook subscription last attempted" value={metaDiagnostics.integration?.webhookSubscriptionLastAttemptedAt ? new Date(metaDiagnostics.integration.webhookSubscriptionLastAttemptedAt).toLocaleString() : "never"} />
+            <HealthCell label="Webhook subscription stored result" value={
+              metaDiagnostics.integration?.webhookSubscriptionSubscribed === null ||
+              metaDiagnostics.integration?.webhookSubscriptionSubscribed === undefined
+                ? "unknown"
+                : `${metaDiagnostics.integration.webhookSubscriptionSubscribed ? "success" : "failure"}${
+                    metaDiagnostics.integration.webhookSubscriptionStatusCode
+                      ? ` · ${metaDiagnostics.integration.webhookSubscriptionStatusCode}`
+                      : ""
+                  }${metaDiagnostics.integration.webhookSubscriptionError ? ` · ${metaDiagnostics.integration.webhookSubscriptionError}` : ""}`
+            } />
+            <HealthCell label="Token scopes" value={metaDiagnostics.tokenScopes.length ? metaDiagnostics.tokenScopes.join(", ") : metaDiagnostics.tokenScopesStatus} />
+            <HealthCell label="App mode" value={`${metaDiagnostics.appMode}${metaDiagnostics.appModeNote ? " - verify in Meta dashboard" : ""}`} />
+            <HealthCell label="Last real webhook" value={metaDiagnostics.lastRealWebhookAt ? new Date(metaDiagnostics.lastRealWebhookAt).toLocaleString() : "none yet"} tone={metaDiagnostics.lastRealWebhookAt ? "green" : "amber"} />
+            <HealthCell label="Last failure" value={metaDiagnostics.lastFailureReason ?? "none"} />
+            <HealthCell label="Subscription status" value={metaDiagnostics.subscribedAppsStatus ?? "unknown"} />
+          </div>
+        </AdminSection>
+
+        <AdminSection title="Simulate Comment Webhook">
+          <form action={simulateCommentWebhook} className="grid gap-3 p-4 text-sm md:grid-cols-5">
+            <input
+              name="igAccountId"
+              defaultValue={metaDiagnostics.integration?.webhookAccountId ?? metaDiagnostics.integration?.instagramId ?? ""}
+              placeholder="IG account ID"
+              className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
+            />
+            <input
+              name="mediaId"
+              defaultValue="ANY_TEST_MEDIA"
+              placeholder="Media ID"
+              className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
+            />
+            <input
+              name="commenterId"
+              defaultValue="simulated_commenter"
+              placeholder="Commenter ID"
+              className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
+            />
+            <input
+              name="text"
+              defaultValue="ai"
+              placeholder="Comment text"
+              className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
+            />
+            <button className="rounded-xl bg-slate-950 px-4 py-2 font-bold text-white">
+              Simulate
+            </button>
+            <p className="md:col-span-5 text-xs text-slate-500">
+              Owner-only. Uses the same matching path after signature/classification and records a simulated DM failure without sending to Meta.
+            </p>
+          </form>
+        </AdminSection>
+
         <AdminSection title="Users">
           {users.map((user) => (
             <AdminRow key={user.id}>
@@ -237,11 +311,14 @@ export default async function AdminPage({
         <AdminSection title="WebhookEvents">
           {webhookEvents.map((event) => (
             <AdminRow key={event.id}>
-              <span>{event.eventType}</span>
-              <span>{event.status}</span>
+              <span><EventBadge eventType={event.eventType} /></span>
+              <span><StatusBadge status={event.status} /></span>
               <span>{event.igAccountId ?? "No IG account"}</span>
               <span>{event.commentId ?? event.mediaId ?? "No object ID"}</span>
-              <span>{event.errorMessage ?? new Date(event.createdAt).toLocaleString()}</span>
+              <span>
+                {event.errorMessage ?? new Date(event.createdAt).toLocaleString()}
+                <PayloadSummary payload={event.payload} />
+              </span>
             </AdminRow>
           ))}
         </AdminSection>
@@ -317,6 +394,105 @@ function AdminRow({ children }: { children: ReactNode }) {
   return (
     <div className="grid gap-2 px-4 py-3 text-sm md:grid-cols-5">
       {children}
+    </div>
+  );
+}
+
+function EventBadge({ eventType }: { eventType: string }) {
+  const className =
+    eventType === "REAL_COMMENT_EVENT" || eventType === "REAL_MESSAGE_EVENT"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : eventType === "META_TEST_EVENT"
+      ? "border-blue-200 bg-blue-50 text-blue-700"
+      : eventType === "SIGNATURE_FAILED" || eventType === "PAYLOAD_INVALID"
+      ? "border-red-200 bg-red-50 text-red-700"
+      : "border-slate-200 bg-slate-50 text-slate-700";
+
+  return (
+    <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-black ${className}`}>
+      {eventType}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const className =
+    status === "PROCESSED"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : status === "FAILED"
+      ? "border-red-200 bg-red-50 text-red-700"
+      : status === "IGNORED"
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : "border-slate-200 bg-slate-50 text-slate-700";
+
+  return (
+    <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-black ${className}`}>
+      {status}
+    </span>
+  );
+}
+
+function PayloadSummary({ payload }: { payload: unknown }) {
+  if (!payload || typeof payload !== "object") return null;
+  const item = payload as Record<string, unknown>;
+  const bits = [
+    item.object ? `object=${item.object}` : null,
+    item.field ? `field=${item.field}` : null,
+    item.entryCount !== undefined ? `entries=${item.entryCount}` : null,
+    item.changesCount !== undefined ? `changes=${item.changesCount}` : null,
+    item.appearsSynthetic !== undefined ? `synthetic=${item.appearsSynthetic}` : null,
+    item.hasCommentText !== undefined ? `text=${item.hasCommentText}` : null,
+  ].filter(Boolean);
+  const mediaMatching =
+    item.mediaMatching && typeof item.mediaMatching === "object"
+      ? (item.mediaMatching as Record<string, unknown>)
+      : null;
+
+  if (bits.length === 0 && !mediaMatching) return null;
+
+  return (
+    <div className="mt-1 space-y-1 break-words font-mono text-[11px] text-slate-500">
+      {bits.length > 0 && <p>{bits.join(" · ")}</p>}
+      {mediaMatching && (
+        <p>
+          mediaMatch: incoming={String(mediaMatching.incomingMediaId ?? "none")} ·
+          normalized={String(mediaMatching.normalizedIncomingMediaId ?? "none")} ·
+          matched={Array.isArray(mediaMatching.matchedAutomationIds)
+            ? mediaMatching.matchedAutomationIds.join(",") || "none"
+            : "none"} ·
+          stored={Array.isArray(mediaMatching.storedPostIds)
+            ? mediaMatching.storedPostIds.join(",") || "none"
+            : "none"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function HealthCell({
+  label,
+  value,
+  tone = "slate",
+}: {
+  label: string;
+  value: string;
+  tone?: "slate" | "green" | "red" | "amber";
+}) {
+  const toneClass =
+    tone === "green"
+      ? "border-emerald-200 bg-emerald-50"
+      : tone === "red"
+      ? "border-red-200 bg-red-50"
+      : tone === "amber"
+      ? "border-amber-200 bg-amber-50"
+      : "border-slate-200 bg-slate-50";
+
+  return (
+    <div className={`rounded-xl border p-3 ${toneClass}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 break-words font-bold text-slate-900">{value}</p>
     </div>
   );
 }

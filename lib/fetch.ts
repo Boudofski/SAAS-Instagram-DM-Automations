@@ -1,7 +1,11 @@
 import axios from "axios";
 
-const INSTAGRAM_BASE_URL =
-  process.env.INSTAGRAM_BASE_URL ?? "https://graph.instagram.com";
+export const INSTAGRAM_GRAPH_BASE_URL =
+  process.env.INSTAGRAM_GRAPH_BASE_URL ??
+  process.env.INSTAGRAM_BASE_URL ??
+  "https://graph.instagram.com";
+export const META_GRAPH_BASE_URL =
+  process.env.META_GRAPH_BASE_URL ?? "https://graph.facebook.com";
 const INSTAGRAM_TOKEN_URL =
   process.env.INSTAGRAM_TOKEN_URL ?? "https://api.instagram.com/oauth/access_token";
 
@@ -39,8 +43,11 @@ export function formatSafeMetaError(error: unknown) {
 }
 
 export const refreshToken = async (token: string) => {
+  console.log("[meta-api] refresh token request", {
+    endpointFamily: "instagram_graph",
+  });
   const refresh_token = await axios.get(
-    `${INSTAGRAM_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
+    `${INSTAGRAM_GRAPH_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
   );
   return refresh_token.data;
 };
@@ -51,8 +58,13 @@ export const sendDm = async (
   prompt: string,
   token: string
 ) => {
+  console.log("[meta-api] send DM request", {
+    endpointFamily: "meta_graph",
+    hasUserId: Boolean(userId),
+    hasReceiverId: Boolean(receiverId),
+  });
   return await axios.post(
-    `${INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
+    `${META_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
     {
       recipient: { id: receiverId },
       message: { text: prompt },
@@ -72,8 +84,13 @@ export const sendPrivateMessage = async (
   message: string,
   token: string
 ) => {
+  console.log("[meta-api] send private reply request", {
+    endpointFamily: "meta_graph",
+    hasUserId: Boolean(userId),
+    hasCommentId: Boolean(commentId),
+  });
   return await axios.post(
-    `${INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
+    `${META_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
     {
       recipient: { comment_id: commentId },
       message: { text: message },
@@ -97,8 +114,12 @@ export const sendCommentReply = async (
   message: string,
   token: string
 ) => {
+  console.log("[meta-api] send comment reply request", {
+    endpointFamily: "meta_graph",
+    hasCommentId: Boolean(commentId),
+  });
   return await axios.post(
-    `${INSTAGRAM_BASE_URL}/v21.0/${commentId}/replies`,
+    `${META_GRAPH_BASE_URL}/v21.0/${commentId}/replies`,
     { message },
     {
       headers: {
@@ -113,8 +134,12 @@ export const subscribeInstagramWebhooks = async (
   igAccountId: string,
   token: string
 ) => {
+  console.log("[meta-api] subscribed_apps request", {
+    endpointFamily: "meta_graph",
+    hasIgAccountId: Boolean(igAccountId),
+  });
   return await axios.post(
-    `${INSTAGRAM_BASE_URL}/v21.0/${igAccountId}/subscribed_apps`,
+    `${META_GRAPH_BASE_URL}/v21.0/${igAccountId}/subscribed_apps`,
     null,
     {
       params: {
@@ -168,7 +193,7 @@ export const generateToken = async (code: string) => {
 
   if (shortTokenRes.ok && token.access_token) {
     const long_token = await axios.get(
-      `${INSTAGRAM_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${token.access_token}`
+      `${INSTAGRAM_GRAPH_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${token.access_token}`
     );
     return long_token.data;
   }

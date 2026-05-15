@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  findAutomationForComment,
+  findAutomationForCommentWithReason,
   findAutomationForDM,
   findAutomationById,
   isDuplicate,
@@ -9,6 +9,7 @@ import {
   createAutomationEvent,
   createWebhookEvent,
   updateWebhookEvent,
+  mergeWebhookEventPayload,
   createChatHistory,
   getChatHistory,
   trackResponse,
@@ -87,15 +88,28 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text();
     const signature = req.headers.get("x-hub-signature-256");
     const signatureResult = verifyMetaSignature(rawBody, signature);
-    console.log("[webhook] signature verification", signatureResult);
+    const requestMeta = getRequestMetadata(req, signature, signatureResult.verified);
+    const parsedBody = parseJsonSafely(rawBody);
+    console.log("[webhook] POST received", {
+      ...requestMeta,
+      signatureReason: signatureResult.reason,
+      payloadObject: parsedBody.ok ? parsedBody.body?.object : undefined,
+    });
 
     if (!signatureResult.verified) {
       try {
         await createWebhookEvent({
-          eventType: "SIGNATURE_VERIFICATION_FAILED",
+          eventType: "SIGNATURE_FAILED",
           status: "FAILED",
           errorMessage: signatureResult.reason,
           payload: {
+            ...safeWebhookMetadata(
+              parsedBody.ok ? parsedBody.body : undefined,
+              false,
+              undefined,
+              undefined,
+              requestMeta
+            ),
             hasSignature: Boolean(signature),
             hasAppSecret: Boolean(
               process.env.INSTAGRAM_APP_SECRET ??
@@ -116,24 +130,43 @@ export async function POST(req: NextRequest) {
           message: error instanceof Error ? error.message : String(error),
         });
       }
-      return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
+      return ok();
     }
 
-    const body = JSON.parse(rawBody);
+    if (!parsedBody.ok) {
+      await createWebhookEvent({
+        eventType: "PAYLOAD_INVALID",
+        status: "FAILED",
+        errorMessage: "invalid_json_payload",
+        payload: {
+          ...safeWebhookMetadata(undefined, true, undefined, undefined, requestMeta),
+          parseError: parsedBody.error,
+        },
+      });
+      return ok();
+    }
+
+    const body = parsedBody.body;
     const entries = Array.isArray(body.entry) ? body.entry : [];
     if (entries.length === 0) {
       await createWebhookEvent({
         eventType: classifyWebhookEnvelope(body),
         status: "IGNORED",
         field: "none",
-        payload: safeWebhookMetadata(body, signatureResult.verified),
+        payload: safeWebhookMetadata(
+          body,
+          signatureResult.verified,
+          undefined,
+          undefined,
+          requestMeta
+        ),
       });
       return ok();
     }
 
     await Promise.all(
       entries.map((entry: any) =>
-        processEntry(entry, body, signatureResult.verified)
+        processEntry(entry, body, signatureResult.verified, requestMeta)
       )
     );
 
@@ -147,13 +180,36 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function processEntry(entry: any, envelope: any, signatureValid: boolean) {
+async function processEntry(
+  entry: any,
+  envelope: any,
+  signatureValid: boolean,
+  requestMeta: ReturnType<typeof getRequestMetadata>
+) {
   const igAccountId: string = entry.id;
   const changes = Array.isArray(entry.changes) ? entry.changes : [];
   const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
 
   const field = changes[0]?.field ?? (messaging.length ? "messaging" : "unknown");
   console.log(`[webhook] POST field=${field} igAccountId=${igAccountId}`);
+
+  if (changes.length === 0 && messaging.length === 0) {
+    await createWebhookEvent({
+      eventType: "PAYLOAD_INVALID",
+      field,
+      igAccountId,
+      status: "IGNORED",
+      errorMessage: "entry_without_changes_or_messaging",
+      payload: safeWebhookMetadata(
+        envelope,
+        signatureValid,
+        entry,
+        undefined,
+        requestMeta
+      ),
+    });
+    return;
+  }
 
   for (const changeItem of changes) {
 
@@ -176,11 +232,12 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         mediaId,
         commentId,
         payload: {
-          ...safeWebhookMetadata(envelope, signatureValid, entry, changeItem),
+          ...safeWebhookMetadata(envelope, signatureValid, entry, changeItem, requestMeta),
           hasMediaId: Boolean(mediaId),
           hasCommentId: Boolean(commentId),
           hasCommenterId: Boolean(commenterId),
-          hasText: Boolean(commentText),
+          hasCommentText: Boolean(commentText),
+          appearsSynthetic: isSyntheticWebhook(envelope, entry, changeItem),
         },
       });
 
@@ -194,12 +251,21 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
       }
 
       // 1. Find active automation for this post
-      const automation = await findAutomationForComment(mediaId, igAccountId);
+      const match = await findAutomationForCommentWithReason(mediaId, igAccountId);
+      const automation = match.automation;
+      await mergeWebhookEventPayload(webhookEvent.id, {
+        mediaMatching: match.diagnostics,
+      });
       if (!automation?.listener) {
-        console.log(`[webhook] automation match: none (mediaId=${mediaId})`);
+        const failureReason = match.failureReason ?? "no_active_automation_for_media";
+        console.log("[webhook] automation match failed", {
+          mediaId,
+          igAccountId,
+          failureReason,
+        });
         await updateWebhookEvent(webhookEvent.id, {
           status: "IGNORED",
-          errorMessage: "no_active_automation_for_media",
+          errorMessage: failureReason,
           processedAt: new Date(),
         });
         continue;
@@ -238,7 +304,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
-          errorMessage: "keyword_not_matched",
+          errorMessage: "no_keyword_match",
           processedAt: new Date(),
         });
         continue;
@@ -285,13 +351,30 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         continue;
       }
 
+      await upsertLead({
+        automationId: automation.id,
+        igUserId: commenterId,
+        igUsername: commenterUsername,
+        commentText,
+        mediaId,
+      });
+
       const token = automation.User?.integrations?.[0]?.token;
       if (!token) {
         console.warn("[webhook] automation token missing", { automationId: automation.id });
+        await createMessageLog({
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          mediaId,
+          commentId,
+          messageType: "DM",
+          status: "FAILED",
+          errorMessage: "token_missing",
+        });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: "connected_instagram_token_missing",
+          errorMessage: "token_missing",
           processedAt: new Date(),
         });
         continue;
@@ -411,19 +494,12 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
           keyword: matchedKeyword,
         });
         if (sent) {
-          await upsertLead({
-            automationId: automation.id,
-            igUserId: commenterId,
-            igUsername: commenterUsername,
-            commentText,
-            mediaId,
-          });
           await trackResponse(automation.id, "DM");
         }
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: sent ? "PROCESSED" : "FAILED",
-          errorMessage: sent ? undefined : "private_reply_not_accepted",
+          errorMessage: sent ? "dm_sent" : "dm_failed",
           processedAt: new Date(),
         });
       } catch (err) {
@@ -450,7 +526,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: safeError,
+          errorMessage: `dm_failed: ${safeError}`,
           processedAt: new Date(),
         });
       }
@@ -462,7 +538,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         field: changeItem.field,
         igAccountId,
         status: "IGNORED",
-        payload: safeWebhookMetadata(envelope, signatureValid, entry, changeItem),
+        payload: safeWebhookMetadata(envelope, signatureValid, entry, changeItem, requestMeta),
       });
       continue;
     }
@@ -477,14 +553,14 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
       const dmText: string = messagingItem.message?.text ?? "";
 
       const webhookEvent = await createWebhookEvent({
-        eventType: "MESSAGE_WEBHOOK_RECEIVED",
+        eventType: "REAL_MESSAGE_EVENT",
         field: "messaging",
         igAccountId,
         igUserId: senderId,
         payload: {
-          ...safeWebhookMetadata(envelope, signatureValid, entry),
+          ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
           hasSenderId: Boolean(senderId),
-          hasText: Boolean(dmText),
+          hasMessageText: Boolean(dmText),
         },
       });
 
@@ -541,7 +617,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         }
         await updateWebhookEvent(webhookEvent.id, {
           status: "PROCESSED",
-          errorMessage: "keyword_not_matched",
+          errorMessage: "no_keyword_match",
           processedAt: new Date(),
         });
         continue;
@@ -581,7 +657,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: "token_or_listener_missing",
+          errorMessage: "token_missing",
           processedAt: new Date(),
         });
         continue;
@@ -639,7 +715,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: sent ? "PROCESSED" : "FAILED",
-          errorMessage: sent ? undefined : "dm_send_not_accepted",
+          errorMessage: sent ? "dm_sent" : "dm_failed",
           processedAt: new Date(),
         });
       } catch (err) {
@@ -662,7 +738,7 @@ async function processEntry(entry: any, envelope: any, signatureValid: boolean) 
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: safeError,
+          errorMessage: `dm_failed: ${safeError}`,
           processedAt: new Date(),
         });
       }
@@ -710,48 +786,93 @@ function verifyMetaSignature(rawBody: string, signature: string | null) {
 
 function classifyWebhookEnvelope(body: any) {
   if (body?.object === "instagram" && body?.entry?.[0]?.id === "0") {
-    return "WEBHOOK_TEST";
+    return "META_TEST_EVENT";
   }
 
   if (body?.object && !Array.isArray(body?.entry)) {
-    return "UNHANDLED_WEBHOOK";
+    return "PAYLOAD_INVALID";
   }
 
-  return "UNHANDLED_WEBHOOK";
+  return "PAYLOAD_INVALID";
 }
 
 function classifyCommentWebhook(envelope: any, entry: any, changeItem: any) {
-  const value = changeItem?.value;
-  const looksLikeMetaTest =
-    entry?.id === "0" ||
-    value?.id === "0" ||
-    value?.from?.id === "0" ||
-    value?.media?.id === "0";
+  return isSyntheticWebhook(envelope, entry, changeItem)
+    ? "META_TEST_EVENT"
+    : "REAL_COMMENT_EVENT";
+}
 
-  return looksLikeMetaTest ? "WEBHOOK_TEST" : "COMMENT_WEBHOOK_RECEIVED";
+function isSyntheticWebhook(envelope: any, entry: any, changeItem?: any) {
+  const value = changeItem?.value;
+  return (
+    envelope?.object === "instagram" &&
+    (entry?.id === "0" ||
+      value?.id === "0" ||
+      value?.from?.id === "0" ||
+      value?.media?.id === "0" ||
+      value?.media?.id === "123123123")
+  );
 }
 
 function safeWebhookMetadata(
   envelope: any,
   signatureValid: boolean,
   entry?: any,
-  changeItem?: any
+  changeItem?: any,
+  requestMeta?: ReturnType<typeof getRequestMetadata>
 ) {
   const entries = Array.isArray(envelope?.entry) ? envelope.entry : [];
   const changes = Array.isArray(entry?.changes) ? entry.changes : [];
   const value = changeItem?.value;
 
   return {
+    timestamp: new Date().toISOString(),
+    headers: requestMeta,
     object: typeof envelope?.object === "string" ? envelope.object : undefined,
+    entryId: entry?.id,
     field: changeItem?.field,
     entryCount: entries.length,
     changesCount: changes.length,
     hasValue: Boolean(value),
+    valueKeys: value && typeof value === "object" ? Object.keys(value) : [],
     hasCommentId: Boolean(value?.id),
     hasMediaId: Boolean(value?.media?.id),
     hasFromId: Boolean(value?.from?.id),
+    hasText: Boolean(value?.text),
+    hasCommentText: Boolean(value?.text),
+    commentId: value?.id,
+    mediaId: value?.media?.id,
+    fromId: value?.from?.id,
+    igAccountId: entry?.id,
+    appearsSynthetic: entry ? isSyntheticWebhook(envelope, entry, changeItem) : false,
     signatureValid,
     processingStatus: "RECEIVED",
+  };
+}
+
+function parseJsonSafely(rawBody: string):
+  | { ok: true; body: any }
+  | { ok: false; error: string } {
+  try {
+    return { ok: true, body: JSON.parse(rawBody) };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "unknown_parse_error",
+    };
+  }
+}
+
+function getRequestMetadata(
+  req: NextRequest,
+  signature: string | null,
+  signatureValid: boolean
+) {
+  return {
+    timestamp: new Date().toISOString(),
+    hasXHubSignature256: Boolean(signature),
+    userAgent: req.headers.get("user-agent") ?? undefined,
+    signatureValid,
   };
 }
 
