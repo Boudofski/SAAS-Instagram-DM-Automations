@@ -78,7 +78,18 @@ export async function POST(req: NextRequest) {
           errorMessage: signatureResult.reason,
           payload: {
             hasSignature: Boolean(signature),
-            hasAppSecret: Boolean(process.env.META_APP_SECRET),
+            hasAppSecret: Boolean(
+              process.env.INSTAGRAM_APP_SECRET ??
+              process.env.INSTAGRAM_CLIENT_SECRET ??
+              process.env.META_APP_SECRET
+            ),
+            secretSource: process.env.INSTAGRAM_APP_SECRET
+              ? "INSTAGRAM_APP_SECRET"
+              : process.env.INSTAGRAM_CLIENT_SECRET
+              ? "INSTAGRAM_CLIENT_SECRET"
+              : process.env.META_APP_SECRET
+              ? "META_APP_SECRET"
+              : "none",
           },
         });
       } catch (error) {
@@ -628,7 +639,10 @@ function ok() {
 }
 
 function verifyMetaSignature(rawBody: string, signature: string | null) {
-  const appSecret = process.env.META_APP_SECRET;
+  const appSecret =
+    process.env.INSTAGRAM_APP_SECRET ??
+    process.env.INSTAGRAM_CLIENT_SECRET ??
+    process.env.META_APP_SECRET;
   if (!appSecret) {
     return { verified: false, reason: "missing_app_secret" };
   }

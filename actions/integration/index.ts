@@ -141,6 +141,31 @@ export const onIntegrate = async (code: string) => {
       updatingExistingIntegration: Boolean(existing),
     });
 
+    // Subscribe this IG account to comment + message webhook events.
+    // Required so Meta routes real activity to our webhook endpoint.
+    // Non-blocking — OAuth still succeeds if this fails.
+    try {
+      await axios.post(
+        `${instagramBaseUrl}/v21.0/${insts_id.data.user_id}/subscribed_apps`,
+        null,
+        {
+          params: {
+            subscribed_fields: "comments,messages",
+            access_token: token.access_token,
+          },
+        }
+      );
+      console.log("[oauth] webhook subscription result", {
+        igUserId: insts_id.data.user_id,
+        subscribed: true,
+      });
+    } catch (subErr) {
+      console.warn("[oauth] webhook subscription failed (non-fatal)", {
+        igUserId: insts_id.data.user_id,
+        message: subErr instanceof Error ? subErr.message : String(subErr),
+      });
+    }
+
     const today = new Date();
     const expire_date = today.setDate(today.getDate() + 60);
 
