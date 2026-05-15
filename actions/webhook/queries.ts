@@ -43,7 +43,7 @@ export const findAutomationForComment = async (
     where: {
       active: true,
       trigger: { some: { type: "COMMENT" } },
-      posts: { some: { postid: mediaId } },
+      posts: { some: { postid: { in: [mediaId, "ANY"] } } },
       User: {
         integrations: { some: { instagramId: igAccountId } },
       },

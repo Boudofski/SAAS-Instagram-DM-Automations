@@ -263,9 +263,19 @@ async function processEntry(entry: any) {
         link: listener.ctaLink ?? "",
       };
 
-      // 5. Send public comment reply if configured
-      if (listener.commentReply) {
-        const replyText = resolveTemplate(listener.commentReply, templateVars);
+      // 5. Send public comment reply — pick a random non-empty variation
+      const replyVariants = [
+        listener.commentReply,
+        listener.commentReply2,
+        listener.commentReply3,
+      ].filter(Boolean) as string[];
+      const chosenReply =
+        replyVariants.length > 0
+          ? replyVariants[Math.floor(Math.random() * replyVariants.length)]
+          : null;
+
+      if (chosenReply) {
+        const replyText = resolveTemplate(chosenReply, templateVars);
         try {
           const replyResult = await withRetry(() => sendCommentReply(commentId, replyText, token));
           const sent = replyResult.status === 200;
