@@ -11,10 +11,10 @@ import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
   searchParams?: { edit?: string };
 };
 
@@ -37,7 +37,7 @@ const STEP_TIPS = [
 ];
 
 export default function WizardPage({ params, searchParams }: Props) {
-  const { slug } = use(params);
+  const { slug } = params;
   const editId = searchParams?.edit;
   const { data: posts, isLoading: postsLoading } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
