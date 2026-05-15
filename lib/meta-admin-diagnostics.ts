@@ -1,5 +1,6 @@
 import { client } from "@/lib/prisma";
 import { INSTAGRAM_GRAPH_BASE_URL, META_GRAPH_BASE_URL } from "@/lib/fetch";
+import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import axios from "axios";
 
 type SafeMetaError = {
@@ -58,6 +59,7 @@ export async function getMetaAdminDiagnostics() {
   });
 
   if (!integration?.instagramId || !integration.token) {
+    const tokenFormat = getInstagramTokenFormatDiagnostic(integration?.token);
     return {
       connected: false,
       integration: null,
@@ -67,9 +69,68 @@ export async function getMetaAdminDiagnostics() {
       tokenValid: false,
       tokenScopes: [] as string[],
       tokenScopesStatus: "missing_token",
+      tokenFormat,
       appMode: "unknown",
       lastRealWebhookAt: null as Date | null,
       lastFailureReason: null as string | null,
+    };
+  }
+
+  const tokenFormat = getInstagramTokenFormatDiagnostic(integration.token);
+
+  if (!tokenFormat.looksUsable) {
+    const [lastRealWebhook, lastFailure] = await Promise.all([
+      client.webhookEvent.findFirst({
+        where: { igAccountId: integration.instagramId, eventType: "REAL_COMMENT_EVENT" },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+      client.webhookEvent.findFirst({
+        where: {
+          igAccountId: integration.instagramId,
+          OR: [
+            { status: "FAILED" },
+            { errorMessage: { not: null } },
+            { eventType: { in: ["SIGNATURE_FAILED", "PAYLOAD_INVALID"] } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        select: { errorMessage: true, eventType: true, status: true, createdAt: true },
+      }),
+    ]);
+
+    return {
+      connected: true,
+      integration: {
+        instagramId: integration.instagramId,
+        webhookAccountId: integration.webhookAccountId,
+        instagramUsername: integration.instagramUsername,
+        expiresAt: integration.expiresAt,
+        webhookSubscriptionLastAttemptedAt: integration.webhookSubscriptionLastAttemptedAt,
+        webhookSubscriptionStatusCode: integration.webhookSubscriptionStatusCode,
+        webhookSubscriptionSubscribed: integration.webhookSubscriptionSubscribed,
+        webhookSubscriptionError: integration.webhookSubscriptionError,
+        oauthLastError: integration.oauthLastError,
+        oauthLastErrorAt: integration.oauthLastErrorAt,
+        oauthLastErrorSource: integration.oauthLastErrorSource,
+        userEmail: integration.User?.email,
+        account: null,
+      },
+      subscribedAppsActive: false,
+      commentsSubscribed: false,
+      messagesSubscribed: false,
+      tokenValid: false,
+      tokenScopes: [] as string[],
+      tokenScopesStatus: "invalid_token_format",
+      tokenFormat,
+      appMode: "unknown",
+      appModeNote: "Meta app mode is not exposed by this Instagram token check; verify Dev/Live in Meta Developer Dashboard.",
+      subscribedAppsStatus: "skipped_invalid_token_format",
+      tokenStatus: `invalid_format:${tokenFormat.reason}`,
+      lastRealWebhookAt: lastRealWebhook?.createdAt ?? null,
+      lastFailureReason: lastFailure
+        ? `${lastFailure.eventType}/${lastFailure.status}: ${lastFailure.errorMessage ?? "no error message"}`
+        : null,
     };
   }
 
@@ -153,6 +214,7 @@ export async function getMetaAdminDiagnostics() {
     tokenValid: account.ok,
     tokenScopes,
     tokenScopesStatus: permissions.ok ? "available" : permissions.error.message ?? "unavailable",
+    tokenFormat,
     appMode: "unknown",
     appModeNote: "Meta app mode is not exposed by this Instagram token check; verify Dev/Live in Meta Developer Dashboard.",
     subscribedAppsStatus: subscriptions.ok ? "ok" : subscriptions.error.message ?? "failed",

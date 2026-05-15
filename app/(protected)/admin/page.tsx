@@ -1,5 +1,6 @@
 import { simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
 import { requireOwnerAdmin, maskSecret } from "@/lib/admin";
+import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
 import Link from "next/link";
@@ -214,6 +215,11 @@ export default async function AdminPage({
             <HealthCell label="Integration IG ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
             <HealthCell label="Webhook account ID" value={metaDiagnostics.integration?.webhookAccountId ?? "same as integration"} />
             <HealthCell label="Token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
+            <HealthCell
+              label="Token format"
+              value={`${metaDiagnostics.tokenFormat.reason} · ${metaDiagnostics.tokenFormat.length} chars`}
+              tone={metaDiagnostics.tokenFormat.looksUsable ? "green" : "red"}
+            />
             <HealthCell label="subscribed_apps active" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
             <HealthCell label="comments subscribed" value={metaDiagnostics.commentsSubscribed ? "yes" : "no"} tone={metaDiagnostics.commentsSubscribed ? "green" : "red"} />
             <HealthCell label="messages subscribed" value={metaDiagnostics.messagesSubscribed ? "yes" : "no"} tone={metaDiagnostics.messagesSubscribed ? "green" : "red"} />
@@ -301,7 +307,9 @@ export default async function AdminPage({
               <span>{integration.User?.email ?? "Unknown user"}</span>
               <span>{integration.instagramUsername ? `@${integration.instagramUsername}` : "No username"}</span>
               <span>{integration.instagramId ?? "No IG ID"}</span>
-              <span>{maskSecret(integration.token)}</span>
+              <span>
+                {maskSecret(integration.token)} · {getInstagramTokenFormatDiagnostic(integration.token).reason}
+              </span>
               <span>{integration.expiresAt ? new Date(integration.expiresAt).toLocaleDateString() : "No expiry"}</span>
             </AdminRow>
           ))}

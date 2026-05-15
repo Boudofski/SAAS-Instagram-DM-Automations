@@ -2,6 +2,7 @@
 
 import { refreshToken } from "@/lib/fetch";
 import { dashboardPath } from "@/lib/dashboard";
+import { normalizeInstagramAccessToken } from "@/lib/instagram-token";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
@@ -42,11 +43,21 @@ export const onboardUser = async () => {
           console.log("refresh");
 
           const refresh = await refreshToken(found.integrations[0].token);
+          const refreshedAccessToken = normalizeInstagramAccessToken(refresh);
+          if (!refreshedAccessToken) {
+            console.warn("[oauth] refresh returned invalid token format", {
+              integrationId: found.integrations[0].id,
+            });
+            return {
+              status: 500,
+              data: "instagram_token_refresh_invalid",
+            };
+          }
           const today = new Date();
           const expire_date = today.setDate(today.getDate() + 60);
 
           const update_token = await updateIntegration(
-            refresh.access_token,
+            refreshedAccessToken,
             new Date(expire_date),
             found.integrations[0].id
           );

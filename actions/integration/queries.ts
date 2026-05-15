@@ -1,5 +1,6 @@
 "use server";
 
+import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import { client } from "@/lib/prisma";
 
 export const updateIntegration = async (
@@ -16,6 +17,16 @@ export const updateIntegration = async (
     attemptedAt: Date;
   }
 ) => {
+  const tokenDiagnostic = getInstagramTokenFormatDiagnostic(token);
+  if (!tokenDiagnostic.looksUsable) {
+    console.warn("[oauth] refused to update integration with invalid token", {
+      integrationId: id,
+      tokenFormat: tokenDiagnostic.reason,
+      tokenLength: tokenDiagnostic.length,
+    });
+    throw new Error("invalid_instagram_token_format");
+  }
+
   return await client.integrations.update({
     where: { id },
     data: {
@@ -94,6 +105,16 @@ export const createIntegration = async (
     attemptedAt: Date;
   }
 ) => {
+  const tokenDiagnostic = getInstagramTokenFormatDiagnostic(token);
+  if (!tokenDiagnostic.looksUsable) {
+    console.warn("[oauth] refused to create integration with invalid token", {
+      clerkIdPresent: Boolean(clerkId),
+      tokenFormat: tokenDiagnostic.reason,
+      tokenLength: tokenDiagnostic.length,
+    });
+    throw new Error("invalid_instagram_token_format");
+  }
+
   return await client.user.update({
     where: {
       clerkId,

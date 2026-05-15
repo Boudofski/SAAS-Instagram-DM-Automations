@@ -1,4 +1,8 @@
 import axios from "axios";
+import {
+  getInstagramTokenFormatDiagnostic,
+  normalizeInstagramAccessToken,
+} from "./instagram-token";
 
 export const INSTAGRAM_GRAPH_BASE_URL =
   process.env.INSTAGRAM_GRAPH_BASE_URL ??
@@ -43,6 +47,15 @@ export function formatSafeMetaError(error: unknown) {
 }
 
 export const refreshToken = async (token: string) => {
+  const existingDiagnostic = getInstagramTokenFormatDiagnostic(token);
+  if (!existingDiagnostic.looksUsable) {
+    console.warn("[oauth] refresh skipped: stored token format invalid", {
+      tokenFormat: existingDiagnostic.reason,
+      tokenLength: existingDiagnostic.length,
+    });
+    throw new Error("invalid_stored_instagram_token_format");
+  }
+
   console.log("[meta-api] refresh token request", {
     endpointFamily: "instagram_graph",
   });
@@ -186,17 +199,53 @@ export const generateToken = async (code: string) => {
   });
 
   const token = await shortTokenRes.json();
+  const shortAccessToken = normalizeInstagramAccessToken(token);
+  const shortTokenDiagnostic = getInstagramTokenFormatDiagnostic(
+    typeof token === "object" && token !== null && "access_token" in token
+      ? (token as { access_token?: unknown }).access_token
+      : undefined
+  );
   console.log("[oauth] token exchange result", {
     tokenExchangeStatus: shortTokenRes.status,
-    hasAccessToken: Boolean(token.access_token),
+    hasAccessToken: Boolean(shortAccessToken),
+    accessTokenFormat: shortTokenDiagnostic.reason,
   });
 
-  if (shortTokenRes.ok && token.access_token) {
+  if (shortTokenRes.ok && shortAccessToken) {
     const long_token = await axios.get(
-      `${INSTAGRAM_GRAPH_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${token.access_token}`
+      `${INSTAGRAM_GRAPH_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${shortAccessToken}`
     );
-    return long_token.data;
+    const longAccessToken = normalizeInstagramAccessToken(long_token.data);
+    const longTokenDiagnostic = getInstagramTokenFormatDiagnostic(
+      typeof long_token.data === "object" &&
+        long_token.data !== null &&
+        "access_token" in long_token.data
+        ? (long_token.data as { access_token?: unknown }).access_token
+        : undefined
+    );
+    console.log("[oauth] long-lived token exchange result", {
+      tokenExchangeStatus: long_token.status,
+      hasAccessToken: Boolean(longAccessToken),
+      accessTokenFormat: longTokenDiagnostic.reason,
+    });
+
+    if (!longAccessToken) {
+      console.warn("[oauth] long-lived token rejected: invalid access_token format", {
+        accessTokenFormat: longTokenDiagnostic.reason,
+        accessTokenLength: longTokenDiagnostic.length,
+      });
+      return null;
+    }
+
+    return {
+      accessToken: longAccessToken,
+      expiresIn:
+        typeof long_token.data?.expires_in === "number"
+          ? long_token.data.expires_in
+          : undefined,
+    };
   }
 
   console.error("[oauth] token exchange failed:", token?.error_message ?? token?.error?.message ?? "unknown error");
+  return null;
 };

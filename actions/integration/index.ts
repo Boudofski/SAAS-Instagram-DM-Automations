@@ -7,6 +7,7 @@ import {
   getSafeMetaError,
   subscribeInstagramWebhooks,
 } from "@/lib/fetch";
+import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import { currentUser } from "@clerk/nextjs/server";
 import axios from "axios";
 import { redirect } from "next/navigation";
@@ -152,9 +153,10 @@ export const onIntegrate = async (code: string) => {
   try {
     const integration = await getIntegrations(user.id);
     const existing = integration?.integrations[0];
-    const token = await generateToken(code);
+    const tokenResult = await generateToken(code);
+    const accessToken = tokenResult?.accessToken;
 
-    if (!token) {
+    if (!accessToken) {
       console.log("[oauth] integration save skipped", {
         tokenExchangeStatus: "failed",
         hasAccessToken: false,
@@ -174,7 +176,7 @@ export const onIntegrate = async (code: string) => {
     const insts_id = await axios.get(
       `${INSTAGRAM_GRAPH_BASE_URL}/me?fields=user_id,username,profile_picture_url`,
       {
-        headers: { Authorization: `Bearer ${token.access_token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
 
@@ -186,15 +188,17 @@ export const onIntegrate = async (code: string) => {
 
     const subscriptionAttempt = await attemptWebhookSubscription(
       insts_id.data.user_id,
-      token.access_token
+      accessToken
     );
 
     const today = new Date();
-    const expire_date = today.setDate(today.getDate() + 60);
+    const expire_date = today.setSeconds(
+      today.getSeconds() + (tokenResult?.expiresIn ?? 60 * 24 * 60 * 60)
+    );
 
     if (existing) {
       const update = await updateIntegration(
-        token.access_token,
+        accessToken,
         new Date(expire_date),
         existing.id,
         insts_id.data.user_id,
@@ -220,7 +224,7 @@ export const onIntegrate = async (code: string) => {
 
     const create = await createIntegration(
       user.id,
-      token.access_token,
+      accessToken,
       new Date(expire_date),
       insts_id.data.user_id,
       insts_id.data.username,
@@ -262,6 +266,19 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       return { status: 404, data: "Connect Instagram before resubscribing webhooks" };
     }
 
+    const tokenDiagnostic = getInstagramTokenFormatDiagnostic(instagram.token);
+    if (!tokenDiagnostic.looksUsable) {
+      console.warn("[webhook-subscription] resubscribe skipped: stored token format invalid", {
+        integrationId: instagram.id,
+        tokenFormat: tokenDiagnostic.reason,
+        tokenLength: tokenDiagnostic.length,
+      });
+      return {
+        status: 400,
+        data: "Stored Instagram token is invalid. Reconnect Instagram before resubscribing webhooks.",
+      };
+    }
+
     const result = await subscribeInstagramWebhooks(
       instagram.instagramId,
       instagram.token
@@ -298,20 +315,23 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
     const integration = await getIntegrations(user.id);
     const instagram = integration?.integrations[0];
     if (instagram?.id && instagram.token) {
-      await updateIntegration(
-        instagram.token,
-        instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        instagram.id,
-        instagram.instagramId ?? undefined,
-        instagram.instagramUsername ?? undefined,
-        instagram.profilePictureUrl ?? undefined,
-        {
-          statusCode: getSafeMetaError(error).status,
-          subscribed: false,
-          error: safe || "subscribed_apps_failed",
-          attemptedAt: new Date(),
-        }
-      );
+      const tokenDiagnostic = getInstagramTokenFormatDiagnostic(instagram.token);
+      if (tokenDiagnostic.looksUsable) {
+        await updateIntegration(
+          instagram.token,
+          instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          instagram.id,
+          instagram.instagramId ?? undefined,
+          instagram.instagramUsername ?? undefined,
+          instagram.profilePictureUrl ?? undefined,
+          {
+            statusCode: getSafeMetaError(error).status,
+            subscribed: false,
+            error: safe || "subscribed_apps_failed",
+            attemptedAt: new Date(),
+          }
+        );
+      }
     }
     console.warn("[webhook-subscription] manual resubscribe failed", {
       error: getSafeMetaError(error),
