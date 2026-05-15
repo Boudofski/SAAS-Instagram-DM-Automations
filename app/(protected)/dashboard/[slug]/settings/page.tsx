@@ -1,6 +1,7 @@
 import Billing from "@/components/global/billing";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
+import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 
 type Props = { params: { slug: string } };
@@ -29,13 +30,24 @@ async function Page({ params }: Props) {
   return (
     <div className="flex flex-col gap-6 p-4 text-slate-950 sm:p-6 lg:p-8">
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="ap3k-kicker">Account settings</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight">
-          Instagram workspace
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Manage the connected Instagram profile, usage, and billing for AP3k.
-        </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+              Account settings
+            </p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight">
+              AP3k workspace
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">
+              Manage the signed-in AP3k user, connected Instagram profile, usage, and plan.
+            </p>
+          </div>
+          <SignOutButton redirectUrl="/">
+            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">
+              Sign out
+            </button>
+          </SignOutButton>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
@@ -100,11 +112,19 @@ async function Page({ params }: Props) {
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-            Usage limits
+            User and plan
           </p>
           <h2 className="mt-2 text-xl font-black">
             Current plan: {user?.subscription?.plan === "PRO" ? "Creator" : "Free"}
           </h2>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+              Signed-in AP3k user
+            </p>
+            <p className="mt-1 break-words text-sm font-bold text-slate-800">
+              {user?.email ?? user?.firstname ?? "Signed in"}
+            </p>
+          </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[
               ["Active campaigns", automations.filter((a: any) => a.active).length],

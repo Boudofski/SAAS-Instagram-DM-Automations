@@ -39,18 +39,19 @@ export default async function CampaignDetailPage({ params }: Props) {
       : 0;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 text-slate-950 sm:p-6 lg:p-8">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-8 gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link
             href={`/dashboard/${params.slug}/automation`}
-            className="text-xs text-rf-muted hover:text-rf-text transition-colors mb-2 inline-block"
+            className="text-xs text-slate-500 hover:text-slate-950 transition-colors mb-2 inline-block"
           >
-            ← Campaigns
+            Campaigns
           </Link>
-          <h1 className="text-2xl font-extrabold tracking-tight text-rf-text">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Automation detail</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">
             {automation.name}
           </h1>
           <div className="flex items-center gap-2 mt-2">
@@ -80,7 +81,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <p className="text-xs font-black uppercase tracking-wider text-amber-400">
               Campaign setup incomplete
             </p>
-            <p className="mt-1 text-sm text-rf-muted">
+            <p className="mt-1 text-sm text-slate-500">
               This campaign is missing{" "}
               {[
                 !automation.posts?.length && "a post",
@@ -96,22 +97,22 @@ export default async function CampaignDetailPage({ params }: Props) {
             href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`}
             className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm"
           >
-            Resume setup →
+            Resume setup
           </Link>
         </div>
       )}
 
-      <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-                Visual automation builder
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+                AutoDM flow
               </p>
-              <h2 className="mt-1 text-xl font-black">Comment to DM flow</h2>
+              <h2 className="mt-1 text-xl font-black">When comments match, AP3k sends the DM</h2>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
-              Preview mode
+              Live preview
             </span>
           </div>
 
@@ -171,7 +172,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`}
             className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm"
           >
-            Edit Flow
+            Edit Automation
           </Link>
         </aside>
       </div>
@@ -216,20 +217,20 @@ export default async function CampaignDetailPage({ params }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Campaign info */}
-        <div className="bg-rf-surface border border-rf-border rounded-2xl p-6 flex flex-col gap-5">
-          <h2 className="text-sm font-bold text-rf-text">Campaign details</h2>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-5">
+          <h2 className="text-sm font-bold text-slate-950">Campaign details</h2>
 
           {/* Post */}
           {automation.posts?.[0] && (
             <div>
-              <p className="text-xs text-rf-muted mb-2 uppercase tracking-wider font-semibold">Post</p>
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Post</p>
               {automation.posts[0].postid === "ANY" ? (
-                <div className="flex items-center gap-3 bg-rf-surface2 rounded-xl p-3">
+                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
                   <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-rf-blue/10 text-2xl">🌐</span>
-                  <p className="text-xs text-rf-muted">Any post — triggers on all Instagram posts</p>
+                  <p className="text-xs text-slate-500">Any post - triggers on all Instagram posts</p>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 bg-rf-surface2 rounded-xl p-3">
+                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
                   {automation.posts[0].media ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -238,9 +239,9 @@ export default async function CampaignDetailPage({ params }: Props) {
                       className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
                     />
                   ) : (
-                    <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-rf-surface2 text-xl">📷</span>
+                    <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-slate-50 text-xl">📷</span>
                   )}
-                  <p className="text-xs text-rf-muted line-clamp-2">
+                  <p className="text-xs text-slate-500 line-clamp-2">
                     {automation.posts[0].caption ?? "Reel / Post"}
                   </p>
                 </div>
@@ -250,7 +251,7 @@ export default async function CampaignDetailPage({ params }: Props) {
 
           {/* Keywords */}
           <div>
-            <p className="text-xs text-rf-muted mb-2 uppercase tracking-wider font-semibold">Keywords</p>
+            <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Keywords</p>
             <div className="flex flex-wrap gap-2">
               {automation.keywords?.length > 0 ? (
                 automation.keywords.map((kw: any, i: number) => (
@@ -268,7 +269,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-rf-muted">No keywords set</span>
+                <span className="text-xs text-slate-500">No keywords set</span>
               )}
             </div>
           </div>
@@ -276,11 +277,11 @@ export default async function CampaignDetailPage({ params }: Props) {
           {/* DM preview */}
           {automation.listener && (
             <div>
-              <p className="text-xs text-rf-muted mb-2 uppercase tracking-wider font-semibold">
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 DM message
               </p>
               <div className="bg-rf-blue/5 border border-rf-blue/15 rounded-xl p-4">
-                <p className="text-xs text-rf-text leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs text-slate-950 leading-relaxed whitespace-pre-wrap">
                   {automation.listener.prompt}
                 </p>
               </div>
@@ -291,7 +292,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                     {automation.listener.ctaButtonTitle || "Open link"}
                   </span>
                   {automation.listener.ctaLink && (
-                    <span className="text-[10px] text-rf-muted truncate">
+                    <span className="text-[10px] text-slate-500 truncate">
                       {automation.listener.ctaLink}
                     </span>
                   )}
@@ -307,7 +308,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             automation.listener.commentReply3
           ) && (
             <div>
-              <p className="text-xs text-rf-muted mb-2 uppercase tracking-wider font-semibold">
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 Public reply variations
               </p>
               <div className="flex flex-col gap-2">
@@ -320,9 +321,9 @@ export default async function CampaignDetailPage({ params }: Props) {
                   .map((reply: string, i: number) => (
                     <div
                       key={i}
-                      className="rounded-xl border border-rf-border bg-rf-surface2 px-3 py-2 text-xs text-rf-text"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-950"
                     >
-                      <span className="mr-2 text-rf-muted font-semibold">{i + 1}.</span>
+                      <span className="mr-2 text-slate-500 font-semibold">{i + 1}.</span>
                       {reply}
                     </div>
                   ))}
@@ -332,51 +333,51 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
 
         {/* Quick actions */}
-        <div className="bg-rf-surface border border-rf-border rounded-2xl p-6 flex flex-col gap-4">
-          <h2 className="text-sm font-bold text-rf-text">Quick actions</h2>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4">
+          <h2 className="text-sm font-bold text-slate-950">Quick actions</h2>
           <Link
             href={`/dashboard/${params.slug}/automation/new`}
-            className="flex items-center gap-3 px-4 py-3 bg-rf-surface2 border border-rf-border
-                       rounded-xl text-sm text-rf-muted hover:text-rf-text hover:border-rf-blue/30
+            className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200
+                       rounded-xl text-sm text-slate-500 hover:text-slate-950 hover:border-rf-blue/30
                        transition-all"
           >
             <span>➕</span> Create a new campaign
           </Link>
           <Link
             href={`/dashboard/${params.slug}/automation`}
-            className="flex items-center gap-3 px-4 py-3 bg-rf-surface2 border border-rf-border
-                       rounded-xl text-sm text-rf-muted hover:text-rf-text hover:border-rf-blue/30
+            className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200
+                       rounded-xl text-sm text-slate-500 hover:text-slate-950 hover:border-rf-blue/30
                        transition-all"
           >
             <span>📣</span> View all campaigns
           </Link>
-          <div className="flex items-center gap-3 px-4 py-3 bg-rf-surface2 border border-dashed
-                          border-rf-border rounded-xl text-sm text-rf-subtle">
+          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-dashed
+                          border-slate-200 rounded-xl text-sm text-slate-400">
             <span>📤</span> Export leads (coming soon)
           </div>
         </div>
 
       </div>
 
-      <div className="mt-6 rounded-2xl border border-rf-border bg-rf-surface p-6">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-rf-text">Live automation log</h2>
-            <p className="mt-1 text-xs text-rf-muted">
+            <h2 className="text-sm font-bold text-slate-950">Live automation log</h2>
+            <p className="mt-1 text-xs text-slate-500">
               Webhook receipts, keyword matches, DM sends, and failures from Meta.
             </p>
           </div>
-          <span className="rounded-full border border-rf-border bg-rf-surface2 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-rf-muted">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             Latest 30
           </span>
         </div>
 
         {activity.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-rf-border bg-rf-surface2/60 p-5 text-sm text-rf-muted">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
             No webhook activity yet. Comment a campaign keyword from another Instagram account to test the live pipeline.
           </div>
         ) : (
-          <div className="divide-y divide-rf-border">
+          <div className="divide-y divide-slate-200">
             {activity.map((item) => (
               <div key={`${item.source}-${item.id}`} className="flex gap-3 py-4">
                 <span
@@ -387,7 +388,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-rf-text">
+                    <p className="text-sm font-semibold text-slate-950">
                       {formatActivityType(item.type)}
                     </p>
                     {item.keyword && (
@@ -396,18 +397,18 @@ export default async function CampaignDetailPage({ params }: Props) {
                       </span>
                     )}
                     {item.status && (
-                      <span className="rounded-full bg-rf-surface2 px-2 py-0.5 text-[11px] font-semibold uppercase text-rf-muted">
+                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-500">
                         {item.status}
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-rf-muted">
+                  <p className="mt-1 text-xs text-slate-500">
                     {new Date(item.createdAt).toLocaleString()}
                     {item.igUserId ? ` · IG user ${item.igUserId}` : ""}
                     {item.commentId ? ` · comment ${item.commentId}` : ""}
                   </p>
                   {item.errorMessage && (
-                    <p className="mt-2 rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                    <p className="mt-2 rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-2 text-xs text-red-700">
                       {item.errorMessage}
                     </p>
                   )}
@@ -476,5 +477,5 @@ function getActivityTone(type: string, status?: string) {
   if (type.includes("FAILED") || status === "FAILED") return "bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.6)]";
   if (type.includes("SENT") || type.includes("MATCHED") || status === "PROCESSED") return "bg-rf-green shadow-[0_0_16px_rgba(34,197,94,0.45)]";
   if (type.includes("WEBHOOK") || status === "PROCESSING" || status === "RECEIVED") return "bg-rf-blue shadow-[0_0_16px_rgba(96,165,250,0.45)]";
-  return "bg-rf-muted";
+  return "bg-slate-400";
 }

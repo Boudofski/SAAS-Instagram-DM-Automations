@@ -1,8 +1,6 @@
 import { INTEGRATION_CARDS } from "@/constants/integrations";
 import IntegrationCard from "./_components/integration-card";
 
-type Props = {};
-
 const ERROR_COPY: Record<string, string> = {
   auth_missing: "Instagram returned successfully, but your AP3k session was not available. Sign in again and reconnect Instagram.",
   token_exchange_failed: "Instagram authorization was received, but AP3k could not exchange it for an access token.",
@@ -33,7 +31,7 @@ function Page({ searchParams }: PageProps) {
 
   return (
     <div className="flex justify-center p-4 text-slate-950 sm:p-6 lg:p-8">
-      <div className="flex w-full max-w-3xl flex-col gap-y-5">
+      <div className="flex w-full max-w-6xl flex-col gap-6">
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800">
             <p className="font-bold">
@@ -48,15 +46,40 @@ function Page({ searchParams }: PageProps) {
             )}
           </div>
         )}
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="ap3k-kicker">Official Meta connection</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-            Connect Instagram
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-            AP3k uses Meta&apos;s official Instagram APIs to listen for comments on your selected posts and send private replies only to people who interact with your account.
-          </p>
+
+        <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+              Official Meta connection
+            </p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+              Instagram account
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              Connect the Business or Creator Instagram account that owns the posts AP3k should monitor. Webhook health appears below after subscription attempts and real comment tests.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+              Test checklist
+            </p>
+            <div className="mt-4 space-y-3 text-sm text-slate-700">
+              {[
+                "Connected IG account is Business or Creator.",
+                "Webhook subscription shows a recent success.",
+                "Tester account is separate and accepted in Meta.",
+                "Test comment is on media owned by this IG account.",
+              ].map((item) => (
+                <div key={item} className="flex gap-3 rounded-xl border border-white/70 bg-white/70 p-3">
+                  <span className="mt-0.5 h-2 w-2 rounded-full bg-pink-500" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+
         {INTEGRATION_CARDS.map((card, index) => (
           <IntegrationCard key={index} {...card} />
         ))}

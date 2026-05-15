@@ -1,4 +1,4 @@
-import CampaignCard from "@/components/global/campaign-card";
+import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import OnboardingChecklist from "@/components/global/onboarding-checklist";
 import StatCard from "@/components/global/stat-card";
@@ -46,7 +46,6 @@ export default async function DashboardPage({ params }: Props) {
   const totalComments = automations.reduce(
     (sum: number, a: any) => sum + (a.listener?.commentCount ?? 0), 0
   );
-  const activeCount = automations.filter((a: any) => a.active).length;
   const replyRate = totalComments > 0
     ? Math.round((totalDms / totalComments) * 100)
     : 0;
@@ -66,45 +65,31 @@ export default async function DashboardPage({ params }: Props) {
 
   return (
     <div className="relative flex flex-col gap-6 p-4 text-slate-950 sm:p-6 lg:p-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 rounded-b-[3rem] bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50" />
-
-      <div className="flex flex-col gap-2">
-        <p className="ap3k-kicker">Creator command center</p>
-        <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-          Instagram comments into <span className="ap3k-gradient-text">DM revenue</span>
-        </h1>
-        <p className="max-w-2xl text-sm text-slate-600">
-          Monitor campaign momentum, capture leads, and launch new comment-to-DM flows without leaving AP3k.
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AutoDM</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Campaigns</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            Monitor comments, matched keywords, leads, and DM delivery for AP3k automations.
+          </p>
+        </div>
+        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button inline-flex px-5 py-2.5 text-sm">
+          + Create Automation
+        </Link>
       </div>
 
-      <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
-        <p className="text-xs font-black uppercase tracking-wider text-rf-blue">
-          Meta review test mode
-        </p>
-        <div className="mt-3 grid gap-3 md:grid-cols-4">
-          {[
-            { label: "Connect Instagram", done: Boolean(instagram), href: `/dashboard/${params.slug}/integrations` },
-            { label: "Create Campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
-            { label: "Test Comment", done: recentActivity.some((item) => item.type === "DM_SENT"), href: automations[0]?.id ? `/dashboard/${params.slug}/automation/${automations[0].id}` : `/dashboard/${params.slug}/automation/new` },
-            { label: "View Logs", done: recentActivity.length > 0, href: automations[0]?.id ? `/dashboard/${params.slug}/automation/${automations[0].id}` : `/dashboard/${params.slug}/automation` },
-          ].map((item, index) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm transition-colors hover:border-rf-pink/30 hover:bg-white"
-            >
-              <span className="text-[11px] font-bold uppercase tracking-wider text-rf-muted">
-                Step {index + 1}
-              </span>
-              <span className="mt-1 flex items-center justify-between font-bold text-slate-950">
-                {item.label}
-                <span className={item.done ? "text-rf-green" : "text-rf-muted"}>
-                  {item.done ? "Done" : "Open"}
-                </span>
-              </span>
-            </Link>
-          ))}
+      <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">Turn comments into DMs automatically</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              Connect Instagram, create an automation, comment a keyword from a tester account, then review logs in AP3k.
+            </p>
+          </div>
+          <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">
+            Create Automation
+          </Link>
         </div>
       </div>
 
@@ -150,32 +135,8 @@ export default async function DashboardPage({ params }: Props) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="DMs sent"         icon="✉️" value={totalDms}        empty={isEmpty} />
         <StatCard label="Comments matched" icon="💬" value={totalComments}   empty={isEmpty} />
-        <StatCard label="Active campaigns" icon="📣" value={activeCount}     empty={isEmpty} />
+        <StatCard label="Leads captured" icon="🎯" value={automations.reduce((sum: number, a: any) => sum + (a.leads?.length ?? 0), 0)} empty={isEmpty} />
         <StatCard label="Reply rate"       icon="📈" value={`${replyRate}%`} empty={isEmpty} />
-      </div>
-
-      {/* Quick create */}
-      <div className="relative flex flex-col items-start justify-between gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
-        <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-rf-pink/18 blur-3xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rf-orange/60 to-transparent" />
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-ap3k-gradient
-                          flex items-center justify-center text-2xl flex-shrink-0 shadow-ap3k-glow">
-            🚀
-          </div>
-          <div>
-            <h3 className="font-black text-slate-950">Launch a new campaign</h3>
-            <p className="text-xs text-slate-500">
-              Pick a post, add keywords, write your DM — live in 60 seconds.
-            </p>
-          </div>
-        </div>
-        <Link
-          href={`/dashboard/${params.slug}/automation/new`}
-          className="ap3k-gradient-button flex-shrink-0 px-5 py-2.5 text-sm"
-        >
-          + New Campaign
-        </Link>
       </div>
 
       {/* Main grid */}
@@ -202,20 +163,7 @@ export default async function DashboardPage({ params }: Props) {
               ctaHref={`/dashboard/${params.slug}/automation/new`}
             />
           ) : (
-            <div className="flex flex-col gap-3">
-              {automations.slice(0, 5).map((a: any) => (
-                <CampaignCard
-                  key={a.id}
-                  id={a.id}
-                  slug={params.slug}
-                  name={a.name}
-                  active={a.active}
-                  keywords={a.keywords ?? []}
-                  dmCount={a.listener?.dmCount ?? 0}
-                  listenerType={a.listener?.listener}
-                />
-              ))}
-            </div>
+            <AutomationTable slug={params.slug} automations={automations.slice(0, 8)} />
           )}
         </div>
 
@@ -225,7 +173,7 @@ export default async function DashboardPage({ params }: Props) {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-black text-slate-950">Activity feed</h2>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-rf-muted">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Live
               </span>
             </div>
@@ -254,7 +202,7 @@ export default async function DashboardPage({ params }: Props) {
                       {item.campaign} · {formatActivityTime(item.createdAt)}
                     </p>
                     {item.errorMessage && (
-                      <p className="mt-2 text-[11px] text-red-200">{item.errorMessage}</p>
+                      <p className="mt-2 text-[11px] text-red-600">{item.errorMessage}</p>
                     )}
                   </div>
                 ))}
