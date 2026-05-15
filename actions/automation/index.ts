@@ -13,7 +13,6 @@ import {
   deleteAutomationQuery,
   deleteKeywordsQuery,
   duplicateAutomationQuery,
-  findAutomation,
   findAutomationForUser,
   getAutomation,
   getAutomationAnalytics,
@@ -141,10 +140,10 @@ export const updateAutomationName = async (
     automation?: string;
   }
 ) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const update = await updateAutomation(automationId, data);
+    const update = await updateAutomation(automationId, user.id, data);
 
     if (update) return { status: 200, data: "Automation updated" };
     return { status: 404, data: "Failed to update automation" };
@@ -160,10 +159,10 @@ export const saveListener = async (
   reply?: string,
   ctaLink?: string
 ) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const create = await addListener(automationId, listener, prompt, reply, ctaLink);
+    const create = await addListener(automationId, user.id, listener, prompt, reply, ctaLink);
 
     if (create) return { status: 200, data: "Listener created" };
     return { status: 404, data: "Failed to create listener" };
@@ -173,10 +172,10 @@ export const saveListener = async (
 };
 
 export const saveTrigger = async (automationId: string, trigger: string[]) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const create = await addTrigger(automationId, trigger);
+    const create = await addTrigger(automationId, user.id, trigger);
 
     if (create) return { status: 200, data: "Trigger created" };
     return { status: 404, data: "Failed to create trigger" };
@@ -186,10 +185,10 @@ export const saveTrigger = async (automationId: string, trigger: string[]) => {
 };
 
 export const saveKeywords = async (automationId: string, keywords: string) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const create = await addKeyWords(automationId, keywords);
+    const create = await addKeyWords(automationId, user.id, keywords);
 
     if (create) return { status: 200, data: "Keywords created" };
     return { status: 404, data: "Failed to create keywords" };
@@ -199,10 +198,10 @@ export const saveKeywords = async (automationId: string, keywords: string) => {
 };
 
 export const deleteKeywords = async (automationId: string) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const deleted = await deleteKeywordsQuery(automationId);
+    const deleted = await deleteKeywordsQuery(automationId, user.id);
     if (deleted) {
       return { status: 200, data: "Keywords deleted" };
     }
@@ -256,10 +255,10 @@ export const savePosts = async (
     mediaType: "IMAGE" | "VIDEO" | "CAROSEL_ALBUM";
   }[]
 ) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const create = await addPosts(automationId, posts);
+    const create = await addPosts(automationId, user.id, posts);
 
     if (create) return { status: 200, data: "Posts created" };
     return { status: 404, data: "Failed to create posts" };
@@ -269,10 +268,10 @@ export const savePosts = async (
 };
 
 export const activateAutomation = async (id: string, status: boolean) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const activate = await updateAutomation(id, { active: status });
+    const activate = await updateAutomation(id, user.id, { active: status });
     if (activate) {
       return {
         status: 200,
@@ -286,10 +285,11 @@ export const activateAutomation = async (id: string, status: boolean) => {
 };
 
 export const getAutomationStats = async (automationId: string) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const stats = await getAutomationAnalytics(automationId);
+    const stats = await getAutomationAnalytics(automationId, user.id);
+    if (!stats) return { status: 404, data: null };
     return { status: 200, data: stats };
   } catch (error) {
     return { status: 500, data: null };
@@ -297,10 +297,11 @@ export const getAutomationStats = async (automationId: string) => {
 };
 
 export const getAutomationLogs = async (automationId: string) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
 
   try {
-    const activity = await getAutomationActivity(automationId);
+    const activity = await getAutomationActivity(automationId, user.id);
+    if (!activity) return { status: 404, data: [] };
     return { status: 200, data: activity };
   } catch (error) {
     return { status: 500, data: [] };
@@ -322,9 +323,9 @@ export const saveMatchingMode = async (
   automationId: string,
   mode: "EXACT" | "CONTAINS" | "SMART_AI"
 ) => {
-  await onCurrentUser();
+  const user = await onCurrentUser();
   try {
-    const update = await updateAutomation(automationId, { matchingMode: mode as any });
+    const update = await updateAutomation(automationId, user.id, { matchingMode: mode as any });
     if (update) return { status: 200, data: "Matching mode saved" };
     return { status: 404, data: "Failed to save matching mode" };
   } catch (error) {

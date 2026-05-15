@@ -23,10 +23,7 @@ export default async function OnboardingWelcomePage() {
   }
 
   const firstName = user.data?.firstname ?? "there";
-  const slug =
-    `${user.data?.firstname ?? ""}${user.data?.lastname ?? ""}` ||
-    user.data?.clerkId ||
-    "";
+  const slug = user.data?.clerkId ?? "";
 
   return (
     <div className="text-center">

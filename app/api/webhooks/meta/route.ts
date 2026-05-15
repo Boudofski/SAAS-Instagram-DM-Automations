@@ -48,8 +48,27 @@ export async function GET(req: NextRequest) {
   });
 
   if (mode === "subscribe" && tokenMatch && challenge) {
+    await createWebhookEvent({
+      eventType: "WEBHOOK_VERIFY_GET",
+      status: "PROCESSED",
+      payload: {
+        mode,
+        tokenMatch,
+        challengeExists: true,
+      },
+    });
     return new NextResponse(challenge, { status: 200 });
   }
+  await createWebhookEvent({
+    eventType: "WEBHOOK_VERIFY_GET",
+    status: "FAILED",
+    errorMessage: "webhook_verification_failed",
+    payload: {
+      mode,
+      tokenMatch,
+      challengeExists: Boolean(challenge),
+    },
+  });
   return NextResponse.json({ error: "webhook_verification_failed" }, { status: 403 });
 }
 
@@ -102,9 +121,21 @@ export async function POST(req: NextRequest) {
 
     const body = JSON.parse(rawBody);
     const entries = Array.isArray(body.entry) ? body.entry : [];
-    if (entries.length === 0) return ok();
+    if (entries.length === 0) {
+      await createWebhookEvent({
+        eventType: classifyWebhookEnvelope(body),
+        status: "IGNORED",
+        field: "none",
+        payload: safeWebhookMetadata(body, signatureResult.verified),
+      });
+      return ok();
+    }
 
-    await Promise.all(entries.map(processEntry));
+    await Promise.all(
+      entries.map((entry: any) =>
+        processEntry(entry, body, signatureResult.verified)
+      )
+    );
 
     return ok();
   } catch (error) {
@@ -116,7 +147,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function processEntry(entry: any) {
+async function processEntry(entry: any, envelope: any, signatureValid: boolean) {
   const igAccountId: string = entry.id;
   const changes = Array.isArray(entry.changes) ? entry.changes : [];
   const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
@@ -138,13 +169,14 @@ async function processEntry(entry: any) {
       const commentText: string = change.text ?? "";
 
       const webhookEvent = await createWebhookEvent({
-        eventType: "COMMENT_WEBHOOK_RECEIVED",
+        eventType: classifyCommentWebhook(envelope, entry, changeItem),
         field: changeItem.field,
         igAccountId,
         igUserId: commenterId,
         mediaId,
         commentId,
         payload: {
+          ...safeWebhookMetadata(envelope, signatureValid, entry, changeItem),
           hasMediaId: Boolean(mediaId),
           hasCommentId: Boolean(commentId),
           hasCommenterId: Boolean(commenterId),
@@ -425,6 +457,13 @@ async function processEntry(entry: any) {
       continue;
     } else {
       console.log("[webhook] unsupported change ignored", { field: changeItem.field });
+      await createWebhookEvent({
+        eventType: "UNHANDLED_WEBHOOK",
+        field: changeItem.field,
+        igAccountId,
+        status: "IGNORED",
+        payload: safeWebhookMetadata(envelope, signatureValid, entry, changeItem),
+      });
       continue;
     }
   }
@@ -438,11 +477,12 @@ async function processEntry(entry: any) {
       const dmText: string = messagingItem.message?.text ?? "";
 
       const webhookEvent = await createWebhookEvent({
-        eventType: "DM_WEBHOOK_RECEIVED",
+        eventType: "MESSAGE_WEBHOOK_RECEIVED",
         field: "messaging",
         igAccountId,
         igUserId: senderId,
         payload: {
+          ...safeWebhookMetadata(envelope, signatureValid, entry),
           hasSenderId: Boolean(senderId),
           hasText: Boolean(dmText),
         },
@@ -665,6 +705,53 @@ function verifyMetaSignature(rawBody: string, signature: string | null) {
   return {
     verified,
     reason: verified ? "verified" : "signature_mismatch",
+  };
+}
+
+function classifyWebhookEnvelope(body: any) {
+  if (body?.object === "instagram" && body?.entry?.[0]?.id === "0") {
+    return "WEBHOOK_TEST";
+  }
+
+  if (body?.object && !Array.isArray(body?.entry)) {
+    return "UNHANDLED_WEBHOOK";
+  }
+
+  return "UNHANDLED_WEBHOOK";
+}
+
+function classifyCommentWebhook(envelope: any, entry: any, changeItem: any) {
+  const value = changeItem?.value;
+  const looksLikeMetaTest =
+    entry?.id === "0" ||
+    value?.id === "0" ||
+    value?.from?.id === "0" ||
+    value?.media?.id === "0";
+
+  return looksLikeMetaTest ? "WEBHOOK_TEST" : "COMMENT_WEBHOOK_RECEIVED";
+}
+
+function safeWebhookMetadata(
+  envelope: any,
+  signatureValid: boolean,
+  entry?: any,
+  changeItem?: any
+) {
+  const entries = Array.isArray(envelope?.entry) ? envelope.entry : [];
+  const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+  const value = changeItem?.value;
+
+  return {
+    object: typeof envelope?.object === "string" ? envelope.object : undefined,
+    field: changeItem?.field,
+    entryCount: entries.length,
+    changesCount: changes.length,
+    hasValue: Boolean(value),
+    hasCommentId: Boolean(value?.id),
+    hasMediaId: Boolean(value?.media?.id),
+    hasFromId: Boolean(value?.from?.id),
+    signatureValid,
+    processingStatus: "RECEIVED",
   };
 }
 

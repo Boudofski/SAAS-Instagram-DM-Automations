@@ -109,6 +109,22 @@ export const sendCommentReply = async (
   );
 };
 
+export const subscribeInstagramWebhooks = async (
+  igAccountId: string,
+  token: string
+) => {
+  return await axios.post(
+    `${INSTAGRAM_BASE_URL}/v21.0/${igAccountId}/subscribed_apps`,
+    null,
+    {
+      params: {
+        subscribed_fields: "comments,messages",
+        access_token: token,
+      },
+    }
+  );
+};
+
 export const generateToken = async (code: string) => {
   const redirectUri =
     process.env.META_REDIRECT_URI ??

@@ -1,4 +1,5 @@
 import { onIntegrate } from "@/actions/integration";
+import { dashboardPath } from "@/lib/dashboard";
 import { redirect } from "next/navigation";
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
 };
 
 function integrationRedirect(slug?: string, error?: string) {
-  const target = slug ? `/dashboard/${slug}/integrations` : "/dashboard";
+  const target = slug ? `${dashboardPath(slug)}/integrations` : "/dashboard";
   if (!error) return redirect(target);
 
   const separator = target.includes("?") ? "&" : "?";
@@ -29,10 +30,7 @@ async function Page({ searchParams: { code, error, error_reason } }: Props) {
 
   if (code) {
     const user = await onIntegrate(code.split("#_")[0]);
-    const slug =
-      `${user.data?.firstname ?? ""}${user.data?.lastname ?? ""}` ||
-      user.data?.clerkId ||
-      "";
+    const slug = user.data?.clerkId || "";
 
     if (user.status === 200) {
       return integrationRedirect(slug);

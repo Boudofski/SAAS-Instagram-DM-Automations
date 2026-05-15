@@ -1,5 +1,7 @@
 import NavBar from "@/components/global/navbar";
 import Sidebar from "@/components/global/sidebar";
+import { onUserInfo } from "@/actions/user";
+import { dashboardPath } from "@/lib/dashboard";
 import {
   PrefetchUserAutomation,
   PrefetchUserProfile,
@@ -10,6 +12,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import React from "react";
 
 export const metadata: Metadata = {
@@ -25,6 +28,24 @@ type Props = {
 };
 
 async function Layout({ children, params }: Props) {
+  const userResult = await onUserInfo();
+  const currentClerkId = userResult.status === 200 ? userResult.data?.clerkId : null;
+
+  if (!currentClerkId) {
+    redirect("/sign-in");
+  }
+
+  if (params.slug !== currentClerkId) {
+    console.warn("[tenant-denied]", {
+      route: "/dashboard/[slug]",
+      currentUserExists: true,
+      targetResourceExists: Boolean(params.slug),
+      ownershipMatch: false,
+      resource: "DashboardSlug",
+    });
+    redirect(dashboardPath(currentClerkId));
+  }
+
   const query = new QueryClient();
 
   await PrefetchUserProfile(query);

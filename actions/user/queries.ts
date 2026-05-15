@@ -43,6 +43,7 @@ export const createUser = async (
     select: {
       firstname: true,
       lastname: true,
+      clerkId: true,
     },
   });
 };

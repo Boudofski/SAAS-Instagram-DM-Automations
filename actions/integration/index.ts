@@ -1,10 +1,10 @@
 "use server";
 
-import { generateToken } from "@/lib/fetch";
+import { formatSafeMetaError, generateToken, getSafeMetaError, subscribeInstagramWebhooks } from "@/lib/fetch";
 import { currentUser } from "@clerk/nextjs/server";
 import axios from "axios";
 import { redirect } from "next/navigation";
-import { createIntegration, getIntegrations, updateIntegration } from "./queries";
+import { createIntegration, getIntegrations, getWebhookHealthForUser, updateIntegration } from "./queries";
 
 const REQUIRED_IG_SCOPES = [
   "instagram_business_basic",
@@ -145,24 +145,20 @@ export const onIntegrate = async (code: string) => {
     // Required so Meta routes real activity to our webhook endpoint.
     // Non-blocking — OAuth still succeeds if this fails.
     try {
-      await axios.post(
-        `${instagramBaseUrl}/v21.0/${insts_id.data.user_id}/subscribed_apps`,
-        null,
-        {
-          params: {
-            subscribed_fields: "comments,messages",
-            access_token: token.access_token,
-          },
-        }
+      const subscription = await subscribeInstagramWebhooks(
+        insts_id.data.user_id,
+        token.access_token
       );
       console.log("[oauth] webhook subscription result", {
-        igUserId: insts_id.data.user_id,
+        igAccountIdPresent: Boolean(insts_id.data.user_id),
         subscribed: true,
+        status: subscription.status,
       });
     } catch (subErr) {
       console.warn("[oauth] webhook subscription failed (non-fatal)", {
-        igUserId: insts_id.data.user_id,
-        message: subErr instanceof Error ? subErr.message : String(subErr),
+        igAccountIdPresent: Boolean(insts_id.data.user_id),
+        subscribed: false,
+        error: getSafeMetaError(subErr),
       });
     }
 
@@ -222,5 +218,55 @@ export const onIntegrate = async (code: string) => {
         clerkId: user.id,
       },
     };
+  }
+};
+
+export const resubscribeCurrentInstagramWebhooks = async () => {
+  const user = await currentUser();
+  if (!user) return { status: 401, data: "Sign in required" };
+
+  try {
+    const integration = await getIntegrations(user.id);
+    const instagram = integration?.integrations[0];
+
+    if (!instagram?.token || !instagram.instagramId) {
+      return { status: 404, data: "Connect Instagram before resubscribing webhooks" };
+    }
+
+    const result = await subscribeInstagramWebhooks(
+      instagram.instagramId,
+      instagram.token
+    );
+
+    console.log("[webhook-subscription] manual resubscribe result", {
+      igAccountIdPresent: true,
+      subscribed: result.status >= 200 && result.status < 300,
+      status: result.status,
+    });
+
+    return {
+      status: 200,
+      data: "Webhook subscription refreshed for comments and messages",
+    };
+  } catch (error) {
+    const safe = formatSafeMetaError(error);
+    console.warn("[webhook-subscription] manual resubscribe failed", {
+      error: getSafeMetaError(error),
+    });
+    return {
+      status: 500,
+      data: safe || "Meta rejected the webhook subscription request",
+    };
+  }
+};
+
+export const getCurrentWebhookHealth = async () => {
+  const user = await currentUser();
+  if (!user) return { status: 401, data: null };
+
+  try {
+    return { status: 200, data: await getWebhookHealthForUser(user.id) };
+  } catch {
+    return { status: 500, data: null };
   }
 };

@@ -1,4 +1,5 @@
 import AP3kLogo from "@/components/global/ap3k-logo";
+import { dashboardPath } from "@/lib/dashboard";
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
@@ -12,12 +13,7 @@ async function getDashboardHref() {
     select: { firstname: true, lastname: true, clerkId: true },
   });
 
-  const slug =
-    `${profile?.firstname ?? ""}${profile?.lastname ?? ""}` ||
-    profile?.clerkId ||
-    user.id;
-
-  return slug ? `/dashboard/${slug}` : "/dashboard";
+  return dashboardPath(profile?.clerkId ?? user.id);
 }
 
 type Props = {

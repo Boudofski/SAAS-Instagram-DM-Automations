@@ -25,6 +25,41 @@ export type CampaignPayload = {
   };
 };
 
+export const logTenantAccessDenied = async ({
+  route,
+  clerkId,
+  resource,
+  resourceId,
+}: {
+  route: string;
+  clerkId?: string;
+  resource: string;
+  resourceId?: string;
+}) => {
+  let targetResourceExists = false;
+
+  try {
+    if (resource === "Automation" && resourceId) {
+      targetResourceExists = Boolean(
+        await client.automation.findUnique({
+          where: { id: resourceId },
+          select: { id: true },
+        })
+      );
+    }
+  } catch {
+    targetResourceExists = false;
+  }
+
+  console.warn("[tenant-denied]", {
+    route,
+    currentUserExists: Boolean(clerkId),
+    targetResourceExists,
+    ownershipMatch: false,
+    resource,
+  });
+};
+
 export const createAutomation = async (clerkId: string, id?: string) => {
   return await client.user.update({
     where: {
@@ -99,26 +134,6 @@ export const getAutomation = async (clerkId: string) => {
   });
 };
 
-export const findAutomation = async (id: string) => {
-  return await client.automation.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      keywords: true,
-      trigger: true,
-      posts: true,
-      listener: true,
-      User: {
-        select: {
-          subscription: true,
-          integrations: true,
-        },
-      },
-    },
-  });
-};
-
 export const findAutomationForUser = async (id: string, clerkId: string) => {
   return await client.automation.findFirst({
     where: {
@@ -142,10 +157,26 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
 
 export const updateAutomation = async (
   automationId: string,
+  clerkId: string,
   update: { name?: string; active?: boolean; matchingMode?: MATCHING_MODE }
 ) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/updateAutomation",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   return await client.automation.update({
-    where: { id: automationId },
+    where: { id: automation.id },
     data: {
       name: update.name,
       active: update.active,
@@ -239,14 +270,30 @@ export const deleteAutomationQuery = async (
 
 export const addListener = async (
   automationId: string,
+  clerkId: string,
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
   reply?: string,
   ctaLink?: string
 ) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/addListener",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   return await client.automation.update({
     where: {
-      id: automationId,
+      id: automation.id,
     },
     data: {
       listener: {
@@ -261,11 +308,30 @@ export const addListener = async (
   });
 };
 
-export const addTrigger = async (automationId: string, trigger: string[]) => {
+export const addTrigger = async (
+  automationId: string,
+  clerkId: string,
+  trigger: string[]
+) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/addTrigger",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   if (trigger.length === 2) {
     return await client.automation.update({
       where: {
-        id: automationId,
+        id: automation.id,
       },
       data: {
         trigger: {
@@ -279,7 +345,7 @@ export const addTrigger = async (automationId: string, trigger: string[]) => {
 
   return await client.automation.update({
     where: {
-      id: automationId,
+      id: automation.id,
     },
     data: {
       trigger: {
@@ -291,10 +357,29 @@ export const addTrigger = async (automationId: string, trigger: string[]) => {
   });
 };
 
-export const addKeyWords = async (automationId: string, keywords: string) => {
+export const addKeyWords = async (
+  automationId: string,
+  clerkId: string,
+  keywords: string
+) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/addKeyWords",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   return await client.automation.update({
     where: {
-      id: automationId,
+      id: automation.id,
     },
     data: {
       keywords: {
@@ -306,14 +391,33 @@ export const addKeyWords = async (automationId: string, keywords: string) => {
   });
 };
 
-export const deleteKeywordsQuery = async (automationId: string) => {
+export const deleteKeywordsQuery = async (
+  automationId: string,
+  clerkId: string
+) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/deleteKeywordsQuery",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   return await client.keyword.deleteMany({
-    where: { automationId },
+    where: { automationId: automation.id },
   });
 };
 
 export const addPosts = async (
   automationId: string,
+  clerkId: string,
   posts: {
     postid: string;
     caption?: string;
@@ -321,9 +425,24 @@ export const addPosts = async (
     mediaType: "IMAGE" | "VIDEO" | "CAROSEL_ALBUM";
   }[]
 ) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/addPosts",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   return await client.automation.update({
     where: {
-      id: automationId,
+      id: automation.id,
     },
     data: {
       posts: {
@@ -335,7 +454,25 @@ export const addPosts = async (
   });
 };
 
-export const getAutomationAnalytics = async (automationId: string) => {
+export const getAutomationAnalytics = async (
+  automationId: string,
+  clerkId: string
+) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/getAutomationAnalytics",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   const [
     dmsSent,
     dmsFailed,
@@ -345,20 +482,20 @@ export const getAutomationAnalytics = async (automationId: string) => {
     commentsReceived,
   ] = await Promise.all([
     client.messageLog.count({
-      where: { automationId, messageType: "DM", status: "SENT" },
+      where: { automationId: automation.id, messageType: "DM", status: "SENT" },
     }),
     client.messageLog.count({
-      where: { automationId, messageType: "DM", status: "FAILED" },
+      where: { automationId: automation.id, messageType: "DM", status: "FAILED" },
     }),
     client.messageLog.count({
-      where: { automationId, messageType: "COMMENT_REPLY", status: "SENT" },
+      where: { automationId: automation.id, messageType: "COMMENT_REPLY", status: "SENT" },
     }),
     client.messageLog.count({
-      where: { automationId, messageType: "COMMENT_REPLY", status: "FAILED" },
+      where: { automationId: automation.id, messageType: "COMMENT_REPLY", status: "FAILED" },
     }),
-    client.lead.count({ where: { automationId } }),
+    client.lead.count({ where: { automationId: automation.id } }),
     client.automationEvent.count({
-      where: { automationId, eventType: "COMMENT_RECEIVED" },
+      where: { automationId: automation.id, eventType: "COMMENT_RECEIVED" },
     }),
   ]);
 
@@ -372,20 +509,38 @@ export const getAutomationAnalytics = async (automationId: string) => {
   };
 };
 
-export const getAutomationActivity = async (automationId: string) => {
+export const getAutomationActivity = async (
+  automationId: string,
+  clerkId: string
+) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, User: { clerkId } },
+    select: { id: true },
+  });
+
+  if (!automation) {
+    await logTenantAccessDenied({
+      route: "actions/automation/getAutomationActivity",
+      clerkId,
+      resource: "Automation",
+      resourceId: automationId,
+    });
+    return null;
+  }
+
   const [events, messageLogs, webhookEvents] = await Promise.all([
     client.automationEvent.findMany({
-      where: { automationId },
+      where: { automationId: automation.id },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
     client.messageLog.findMany({
-      where: { automationId },
+      where: { automationId: automation.id },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
     client.webhookEvent.findMany({
-      where: { automationId },
+      where: { automationId: automation.id },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),

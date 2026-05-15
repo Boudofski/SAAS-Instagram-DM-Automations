@@ -1,9 +1,14 @@
 "use client";
 
-import { getInstagramConnectUrl } from "@/actions/integration";
+import {
+  getCurrentWebhookHealth,
+  getInstagramConnectUrl,
+  resubscribeCurrentInstagramWebhooks,
+} from "@/actions/integration";
 import { onUserInfo } from "@/actions/user";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { toast } from "sonner";
 
@@ -16,10 +21,32 @@ type Props = {
 
 function IntegrationCard({ title, description, icon, strategy }: Props) {
   const [isConnecting, setIsConnecting] = React.useState(false);
+  const { userId } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data } = useQuery({
-    queryKey: ["user-profile"],
+    queryKey: ["user-profile", userId],
     queryFn: onUserInfo,
+    enabled: Boolean(userId),
+  });
+
+  const { data: health } = useQuery({
+    queryKey: ["webhook-health", userId],
+    queryFn: getCurrentWebhookHealth,
+    enabled: Boolean(userId) && strategy === "INSTAGRAM",
+  });
+
+  const resubscribe = useMutation({
+    mutationKey: ["resubscribe-webhooks", userId],
+    mutationFn: resubscribeCurrentInstagramWebhooks,
+    onSuccess: async (result) => {
+      if (result.status === 200) {
+        toast.success(result.data);
+      } else {
+        toast.error(result.data ?? "Webhook resubscribe failed");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["webhook-health", userId] });
+    },
   });
 
   const integrated = data?.data?.integrations.find((i) => i.name === strategy);
@@ -77,15 +104,82 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           </div>
         )}
       </div>
-      <Button
-        onClick={onConnect}
-        disabled={!isInstagram || isConnecting}
-        className="ap3k-gradient-button min-w-36 text-white disabled:opacity-60"
-      >
-        {integrated ? "Reconnect Instagram" : isConnecting ? "Connecting..." : "Connect Instagram"}
-      </Button>
+      <div className="flex w-full flex-col gap-2 sm:w-auto">
+        <Button
+          onClick={onConnect}
+          disabled={!isInstagram || isConnecting}
+          className="ap3k-gradient-button min-w-36 text-white disabled:opacity-60"
+        >
+          {integrated ? "Reconnect Instagram" : isConnecting ? "Connecting..." : "Connect Instagram"}
+        </Button>
+        {integrated && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => resubscribe.mutate()}
+            disabled={resubscribe.isPending}
+            className="min-w-36 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          >
+            {resubscribe.isPending ? "Resubscribing..." : "Resubscribe webhooks"}
+          </Button>
+        )}
+      </div>
+      {integrated && (
+        <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 sm:basis-full">
+          <p className="font-black uppercase tracking-[0.16em] text-slate-500">
+            Webhook health
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <HealthItem
+              label="Last webhook"
+              value={formatHealth(health?.data?.lastWebhook)}
+            />
+            <HealthItem
+              label="Last comment"
+              value={formatHealth(health?.data?.lastCommentWebhook)}
+            />
+            <HealthItem
+              label="Last failure"
+              value={
+                health?.data?.lastFailure
+                  ? health.data.lastFailure.errorMessage ?? health.data.lastFailure.eventType
+                  : "No failures"
+              }
+            />
+          </div>
+          {!health?.data?.lastCommentWebhook && (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800">
+              No real comment webhook received from Meta yet. Check app mode,
+              tester acceptance, media ownership, account type, and webhook subscription.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 export default IntegrationCard;
+
+function HealthItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 break-words font-bold text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function formatHealth(
+  event?: {
+    eventType: string;
+    status: string;
+    createdAt: Date | string;
+  } | null
+) {
+  if (!event) return "None yet";
+  const date = new Date(event.createdAt);
+  return `${event.eventType} · ${event.status} · ${date.toLocaleString()}`;
+}

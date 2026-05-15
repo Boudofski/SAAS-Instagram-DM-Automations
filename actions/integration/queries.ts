@@ -67,3 +67,70 @@ export const createIntegration = async (
     },
   });
 };
+
+export const getWebhookHealthForUser = async (clerkId: string) => {
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: {
+      integrations: {
+        where: { name: "INSTAGRAM" },
+        take: 1,
+        select: { instagramId: true },
+      },
+    },
+  });
+
+  const igAccountId = user?.integrations[0]?.instagramId;
+  if (!igAccountId) {
+    return {
+      lastWebhook: null,
+      lastCommentWebhook: null,
+      lastFailure: null,
+    };
+  }
+
+  const [lastWebhook, lastCommentWebhook, lastFailure] = await Promise.all([
+    client.webhookEvent.findFirst({
+      where: { igAccountId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        eventType: true,
+        status: true,
+        field: true,
+        errorMessage: true,
+        createdAt: true,
+      },
+    }),
+    client.webhookEvent.findFirst({
+      where: { igAccountId, eventType: "COMMENT_WEBHOOK_RECEIVED" },
+      orderBy: { createdAt: "desc" },
+      select: {
+        eventType: true,
+        status: true,
+        field: true,
+        errorMessage: true,
+        createdAt: true,
+      },
+    }),
+    client.webhookEvent.findFirst({
+      where: {
+        igAccountId,
+        OR: [
+          { status: "FAILED" },
+          { eventType: "SIGNATURE_VERIFICATION_FAILED" },
+          { errorMessage: { not: null } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        eventType: true,
+        status: true,
+        field: true,
+        errorMessage: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
+  return { lastWebhook, lastCommentWebhook, lastFailure };
+};

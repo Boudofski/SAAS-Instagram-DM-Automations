@@ -1,6 +1,7 @@
 "use server";
 
 import { refreshToken } from "@/lib/fetch";
+import { dashboardPath } from "@/lib/dashboard";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
@@ -60,6 +61,7 @@ export const onboardUser = async () => {
         data: {
           firstname: found.firstname,
           lastname: found.lastname,
+          clerkId: found.clerkId,
         },
       };
     }
@@ -72,7 +74,7 @@ export const onboardUser = async () => {
 
     console.log("🧊🧊🧊");
 
-    return { status: 201, data: created };
+    return { status: 201, data: { ...created, clerkId: user.id } };
   } catch (error: any) {
     return { status: 500, data: error.message };
   }
@@ -176,12 +178,10 @@ export const onSubscribe = async (session_id: string) => {
 
       if (subscript) {
         const slug =
-          `${profile?.firstname ?? ""}${profile?.lastname ?? ""}` ||
-          profile?.clerkId ||
-          "";
+          profile?.clerkId || "";
         return {
           status: 200,
-          dashboardPath: slug ? `/dashboard/${slug}` : "/dashboard",
+          dashboardPath: dashboardPath(slug),
         };
       }
 

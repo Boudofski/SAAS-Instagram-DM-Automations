@@ -223,6 +223,43 @@ send attempts are stored in `MessageLog`.
 
 AP3k only sends a private reply/DM to users who commented or messaged the connected Instagram account. It does not scrape Instagram, log in with passwords, or send unsolicited DMs.
 
+### Why real comments may not trigger in Meta development mode
+
+Meta dashboard test webhooks only prove the callback URL and verify token work.
+They do not prove that a real Instagram comment is eligible for delivery.
+
+For real comment delivery while the app is still in Development mode, verify:
+
+- The connected Instagram account is Business or Creator.
+- The connected account owns the media being commented on.
+- The commenter is a separate Instagram account, not the connected business account.
+- The commenter has been added as a Meta app admin/developer/tester and accepted the invite.
+- The app is subscribed to `comments,messages` for the connected IG user after OAuth.
+- Vercel production has `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `META_APP_ID`, `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_REDIRECT_URI`, and `NEXT_PUBLIC_HOST_URL`.
+
+The dashboard Integrations page includes **Resubscribe webhooks** and webhook
+health cards. Do not mark delivery fixed until a real comment creates
+`WebhookEvent.eventType = COMMENT_WEBHOOK_RECEIVED`.
+
+### Owner Admin
+
+AP3k includes a safe owner-only admin UI at:
+
+```text
+/admin
+```
+
+Access is server-side restricted to:
+
+```text
+ADMIN_EMAILS=officialabde@gmail.com
+ADMIN_CLERK_USER_IDS=<optional comma-separated Clerk user IDs>
+```
+
+The admin panel shows production counts, users, integrations, campaigns,
+webhook events, automation events, message logs, and leads. It masks tokens and
+does not expose Prisma Studio or raw secrets publicly.
+
 ---
 
 ## Project Structure
