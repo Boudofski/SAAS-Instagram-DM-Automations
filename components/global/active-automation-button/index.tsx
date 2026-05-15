@@ -1,3 +1,5 @@
+"use client";
+
 import { activateAutomation } from "@/actions/automation";
 import { Button } from "@/components/ui/button";
 import { useMutationData } from "@/hooks/use-mutation-data";

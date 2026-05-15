@@ -25,6 +25,8 @@ export default async function CampaignDetailPage({ params }: Props) {
   const logsResult = await getAutomationLogs(params.id);
   const activity = logsResult.status === 200 ? (logsResult.data as any[]) : [];
 
+  const isIncomplete = !automation.listener || !automation.posts?.length || !automation.keywords?.length;
+
   const replyRate =
     stats && stats.commentsReceived > 0
       ? Math.round((stats.dmsSent / stats.commentsReceived) * 100)
@@ -71,6 +73,33 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
         <ActiveAutomationButton id={params.id} />
       </div>
+
+      {isIncomplete && (
+        <div className="mb-6 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-5 flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black uppercase tracking-wider text-amber-400">
+              Campaign setup incomplete
+            </p>
+            <p className="mt-1 text-sm text-rf-muted">
+              This campaign is missing{" "}
+              {[
+                !automation.posts?.length && "a post",
+                !automation.keywords?.length && "keywords",
+                !automation.listener && "a DM message",
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              . It won&apos;t trigger until setup is finished.
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`}
+            className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm"
+          >
+            Resume setup →
+          </Link>
+        </div>
+      )}
 
       <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm">
