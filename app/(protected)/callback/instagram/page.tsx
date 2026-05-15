@@ -1,13 +1,15 @@
-import { onIntegrate } from "@/actions/integration";
+import { onIntegrate, recordInstagramOAuthError } from "@/actions/integration";
 import { dashboardPath } from "@/lib/dashboard";
+import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 type Props = {
   searchParams: {
-    code: string;
+    code?: string;
     error?: string;
     error_reason?: string;
     error_description?: string;
+    message?: string;
   };
 };
 
@@ -19,13 +21,39 @@ function integrationRedirect(slug?: string, error?: string) {
   return redirect(`${target}${separator}integration_error=${encodeURIComponent(error)}`);
 }
 
-async function Page({ searchParams: { code, error, error_reason } }: Props) {
-  if (error || error_reason) {
+function isInsufficientDeveloperRole(params: Props["searchParams"]) {
+  const combined = [
+    params.error,
+    params.error_reason,
+    params.error_description,
+    params.message,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return combined.includes("insufficient developer role");
+}
+
+async function Page({ searchParams }: Props) {
+  const { code, error, error_reason, error_description, message } = searchParams;
+
+  if (error || error_reason || error_description || message) {
+    const clerkUser = await currentUser();
+    const errorCode = isInsufficientDeveloperRole(searchParams)
+      ? "insufficient_developer_role"
+      : "provider_denied";
+
+    if (errorCode === "insufficient_developer_role") {
+      await recordInstagramOAuthError(errorCode);
+    }
+
     console.warn("[oauth] callback returned provider error", {
       hasCode: Boolean(code),
-      providerError: Boolean(error || error_reason),
+      providerError: true,
+      errorCode,
     });
-    return integrationRedirect(undefined, "provider_denied");
+    return integrationRedirect(clerkUser?.id, errorCode);
   }
 
   if (code) {

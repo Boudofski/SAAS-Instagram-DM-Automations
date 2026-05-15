@@ -10,7 +10,13 @@ import {
 import { currentUser } from "@clerk/nextjs/server";
 import axios from "axios";
 import { redirect } from "next/navigation";
-import { createIntegration, getIntegrations, getWebhookHealthForUser, updateIntegration } from "./queries";
+import {
+  createIntegration,
+  getIntegrations,
+  getWebhookHealthForUser,
+  recordIntegrationOAuthError,
+  updateIntegration,
+} from "./queries";
 
 async function attemptWebhookSubscription(igAccountId: string, token: string) {
   const attemptedAt = new Date();
@@ -325,5 +331,17 @@ export const getCurrentWebhookHealth = async () => {
     return { status: 200, data: await getWebhookHealthForUser(user.id) };
   } catch {
     return { status: 500, data: null };
+  }
+};
+
+export const recordInstagramOAuthError = async (error: string) => {
+  const user = await currentUser();
+  if (!user) return { status: 401 };
+
+  try {
+    await recordIntegrationOAuthError(user.id, error, "instagram_oauth");
+    return { status: 200, data: { clerkId: user.id } };
+  } catch {
+    return { status: 500, data: { clerkId: user.id } };
   }
 };

@@ -29,6 +29,9 @@ export const updateIntegration = async (
       webhookSubscriptionStatusCode: subscription?.statusCode,
       webhookSubscriptionSubscribed: subscription?.subscribed,
       webhookSubscriptionError: subscription?.error,
+      oauthLastError: null,
+      oauthLastErrorAt: null,
+      oauthLastErrorSource: null,
     },
   });
 };
@@ -44,6 +47,35 @@ export const getIntegrations = async (clerkId: string) => {
           name: "INSTAGRAM",
         },
       },
+    },
+  });
+};
+
+export const recordIntegrationOAuthError = async (
+  clerkId: string,
+  error: string,
+  source = "instagram_oauth"
+) => {
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: {
+      integrations: {
+        where: { name: "INSTAGRAM" },
+        take: 1,
+        select: { id: true },
+      },
+    },
+  });
+
+  const integrationId = user?.integrations[0]?.id;
+  if (!integrationId) return null;
+
+  return await client.integrations.update({
+    where: { id: integrationId },
+    data: {
+      oauthLastError: error,
+      oauthLastErrorAt: new Date(),
+      oauthLastErrorSource: source,
     },
   });
 };
@@ -79,6 +111,9 @@ export const createIntegration = async (
           webhookSubscriptionStatusCode: subscription?.statusCode,
           webhookSubscriptionSubscribed: subscription?.subscribed,
           webhookSubscriptionError: subscription?.error,
+          oauthLastError: null,
+          oauthLastErrorAt: null,
+          oauthLastErrorSource: null,
         },
       },
     },

@@ -50,6 +50,9 @@ model Integrations {
   webhookSubscriptionStatusCode Int?
   webhookSubscriptionSubscribed Boolean?
   webhookSubscriptionError String?
+  oauthLastError String?
+  oauthLastErrorAt DateTime?
+  oauthLastErrorSource String?
 }
 
 model Automation {

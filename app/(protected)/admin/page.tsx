@@ -229,6 +229,17 @@ export default async function AdminPage({
                       : ""
                   }${metaDiagnostics.integration.webhookSubscriptionError ? ` · ${metaDiagnostics.integration.webhookSubscriptionError}` : ""}`
             } />
+            <HealthCell label="OAuth last error" value={
+              metaDiagnostics.integration?.oauthLastError
+                ? `${metaDiagnostics.integration.oauthLastError} · ${
+                    metaDiagnostics.integration.oauthLastErrorSource ?? "unknown_source"
+                  }${
+                    metaDiagnostics.integration.oauthLastErrorAt
+                      ? ` · ${new Date(metaDiagnostics.integration.oauthLastErrorAt).toLocaleString()}`
+                      : ""
+                  }`
+                : "none"
+            } tone={metaDiagnostics.integration?.oauthLastError ? "red" : "green"} />
             <HealthCell label="Token scopes" value={metaDiagnostics.tokenScopes.length ? metaDiagnostics.tokenScopes.join(", ") : metaDiagnostics.tokenScopesStatus} />
             <HealthCell label="App mode" value={`${metaDiagnostics.appMode}${metaDiagnostics.appModeNote ? " - verify in Meta dashboard" : ""}`} />
             <HealthCell label="Last real webhook" value={metaDiagnostics.lastRealWebhookAt ? new Date(metaDiagnostics.lastRealWebhookAt).toLocaleString() : "none yet"} tone={metaDiagnostics.lastRealWebhookAt ? "green" : "amber"} />
