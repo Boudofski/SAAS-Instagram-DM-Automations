@@ -50,7 +50,7 @@ model Automation {
   name         String            @default("Untitled")
   createdAt    DateTime          @default(now())
   active       Boolean           @default(false)
-  matchingMode MATCHING_MODE     @default(EXACT)
+  matchingMode MATCHING_MODE     @default(CONTAINS)
   trigger      Trigger[]
   listener     Listener?
   posts        Post[]
@@ -85,15 +85,18 @@ model Post {
 }
 
 model Listener {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  Automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  automationId String     @unique @db.Uuid
-  listener     LISTENERS  @default(MESSAGE)
-  prompt       String
-  commentReply String?
-  ctaLink      String?
-  dmCount      Int        @default(0)
-  commentCount Int        @default(0)
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Automation      Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  automationId    String     @unique @db.Uuid
+  listener        LISTENERS  @default(MESSAGE)
+  prompt          String
+  commentReply    String?
+  commentReply2   String?
+  commentReply3   String?
+  ctaLink         String?
+  ctaButtonTitle  String?
+  dmCount         Int        @default(0)
+  commentCount    Int        @default(0)
 }
 
 model Trigger {

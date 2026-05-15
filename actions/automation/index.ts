@@ -54,7 +54,10 @@ export const saveCampaign = async (payload: CampaignPayload, automationId?: stri
         ...payload.listener,
         prompt: payload.listener.prompt.trim(),
         commentReply: payload.listener.commentReply?.trim() || undefined,
+        commentReply2: payload.listener.commentReply2?.trim() || undefined,
+        commentReply3: payload.listener.commentReply3?.trim() || undefined,
         ctaLink: payload.listener.ctaLink?.trim() || undefined,
+        ctaButtonTitle: payload.listener.ctaButtonTitle?.trim() || undefined,
       },
     };
 
@@ -221,7 +224,7 @@ export const getProfilePosts = async () => {
     }
 
     const posts = await fetch(
-      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10`,
+      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,thumbnail_url,media_type,timestamp,permalink&limit=20`,
       {
         headers: { Authorization: `Bearer ${integration.token}` },
       }
