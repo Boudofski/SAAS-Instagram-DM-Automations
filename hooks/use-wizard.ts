@@ -22,7 +22,10 @@ export type WizardData = {
   matchingMode: "EXACT" | "CONTAINS" | "SMART_AI";
   dmMessage: string;
   ctaLink: string;
+  ctaButtonTitle: string;
   publicReply: string;
+  publicReply2: string;
+  publicReply3: string;
   aiMode: boolean;
   active: boolean;
 };
@@ -34,7 +37,10 @@ const INITIAL: WizardData = {
   matchingMode: "CONTAINS",
   dmMessage: "",
   ctaLink: "",
+  ctaButtonTitle: "",
   publicReply: "",
+  publicReply2: "",
+  publicReply3: "",
   aiMode: false,
   active: true,
 };
@@ -80,7 +86,10 @@ export function useWizard(slug: string, automationId?: string) {
           listener: data.aiMode ? "SMARTAI" : "MESSAGE",
           prompt: data.dmMessage,
           commentReply: data.publicReply || undefined,
+          commentReply2: data.publicReply2 || undefined,
+          commentReply3: data.publicReply3 || undefined,
           ctaLink: data.ctaLink || undefined,
+          ctaButtonTitle: data.ctaButtonTitle || undefined,
         },
       }, automationId);
 

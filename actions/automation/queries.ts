@@ -18,7 +18,10 @@ export type CampaignPayload = {
     listener: LISTENERS;
     prompt: string;
     commentReply?: string;
+    commentReply2?: string;
+    commentReply3?: string;
     ctaLink?: string;
+    ctaButtonTitle?: string;
   };
 };
 
@@ -212,7 +215,10 @@ export const duplicateAutomationQuery = async (
       listener: automation.listener.listener,
       prompt: automation.listener.prompt,
       commentReply: automation.listener.commentReply ?? undefined,
+      commentReply2: automation.listener.commentReply2 ?? undefined,
+      commentReply3: automation.listener.commentReply3 ?? undefined,
       ctaLink: automation.listener.ctaLink ?? undefined,
+      ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
     },
   };
 

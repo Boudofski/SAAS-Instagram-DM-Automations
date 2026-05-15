@@ -121,7 +121,9 @@ export default async function CampaignDetailPage({ params }: Props) {
               title="Post Comments"
               body={
                 automation.posts?.[0]
-                  ? `When someone comments on media ${automation.posts[0].postid}`
+                  ? automation.posts[0].postid === "ANY"
+                    ? "When someone comments on any of your posts or Reels."
+                    : `When someone comments on media ${automation.posts[0].postid}`
                   : "Add a post or media ID before activating."
               }
               tone="orange"
@@ -221,17 +223,28 @@ export default async function CampaignDetailPage({ params }: Props) {
           {automation.posts?.[0] && (
             <div>
               <p className="text-xs text-rf-muted mb-2 uppercase tracking-wider font-semibold">Post</p>
-              <div className="flex items-center gap-3 bg-rf-surface2 rounded-xl p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={automation.posts[0].media}
-                  alt={automation.posts[0].caption ?? "post"}
-                  className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
-                />
-                <p className="text-xs text-rf-muted line-clamp-2">
-                  {automation.posts[0].caption ?? "Reel / Post"}
-                </p>
-              </div>
+              {automation.posts[0].postid === "ANY" ? (
+                <div className="flex items-center gap-3 bg-rf-surface2 rounded-xl p-3">
+                  <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-rf-blue/10 text-2xl">🌐</span>
+                  <p className="text-xs text-rf-muted">Any post — triggers on all Instagram posts</p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-rf-surface2 rounded-xl p-3">
+                  {automation.posts[0].media ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={automation.posts[0].media}
+                      alt={automation.posts[0].caption ?? "post"}
+                      className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-rf-surface2 text-xl">📷</span>
+                  )}
+                  <p className="text-xs text-rf-muted line-clamp-2">
+                    {automation.posts[0].caption ?? "Reel / Post"}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -270,6 +283,49 @@ export default async function CampaignDetailPage({ params }: Props) {
                 <p className="text-xs text-rf-text leading-relaxed whitespace-pre-wrap">
                   {automation.listener.prompt}
                 </p>
+              </div>
+              {/* CTA button */}
+              {(automation.listener.ctaButtonTitle || automation.listener.ctaLink) && (
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-rf-blue/25 bg-rf-blue/10 px-4 py-2.5">
+                  <span className="text-xs font-bold text-rf-blue">
+                    {automation.listener.ctaButtonTitle || "Open link"}
+                  </span>
+                  {automation.listener.ctaLink && (
+                    <span className="text-[10px] text-rf-muted truncate">
+                      {automation.listener.ctaLink}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Public reply variations */}
+          {automation.listener && (
+            automation.listener.commentReply ||
+            automation.listener.commentReply2 ||
+            automation.listener.commentReply3
+          ) && (
+            <div>
+              <p className="text-xs text-rf-muted mb-2 uppercase tracking-wider font-semibold">
+                Public reply variations
+              </p>
+              <div className="flex flex-col gap-2">
+                {[
+                  automation.listener.commentReply,
+                  automation.listener.commentReply2,
+                  automation.listener.commentReply3,
+                ]
+                  .filter(Boolean)
+                  .map((reply: string, i: number) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-rf-border bg-rf-surface2 px-3 py-2 text-xs text-rf-text"
+                    >
+                      <span className="mr-2 text-rf-muted font-semibold">{i + 1}.</span>
+                      {reply}
+                    </div>
+                  ))}
               </div>
             </div>
           )}

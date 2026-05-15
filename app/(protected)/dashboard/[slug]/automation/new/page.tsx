@@ -70,7 +70,10 @@ export default function WizardPage({ params, searchParams }: Props) {
         : [],
       dmMessage: automation.listener?.prompt ?? "",
       publicReply: automation.listener?.commentReply ?? "",
+      publicReply2: automation.listener?.commentReply2 ?? "",
+      publicReply3: automation.listener?.commentReply3 ?? "",
       ctaLink: automation.listener?.ctaLink ?? "",
+      ctaButtonTitle: automation.listener?.ctaButtonTitle ?? "",
       aiMode: automation.listener?.listener === "SMARTAI",
       post: post
         ? {
@@ -164,37 +167,78 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ctaLabel="Connect Instagram"
                 ctaHref={`/dashboard/${slug}/integrations`}
               />
-            ) : postList.length === 0 ? (
-              <ManualMediaFallback
-                value={manualMedia}
-                selected={data.post?.postid ?? null}
-                onChange={setManualMedia}
-                onSelect={selectManualMedia}
-              />
             ) : (
-              <div className="flex flex-col gap-6">
-                <PostPicker
-                  posts={postList}
-                  selected={data.post?.postid ?? null}
-                  onSelect={(p) =>
+              <div className="flex flex-col gap-5">
+                {/* Any post option */}
+                <button
+                  type="button"
+                  onClick={() =>
                     update({
                       post: {
-                        postid: p.id,
-                        caption: p.caption,
-                        media: p.media_url,
-                        mediaType: p.media_type === "VIDEO" ? "VIDEO"
-                          : p.media_type === "CAROUSEL_ALBUM" ? "CAROSEL_ALBUM"
-                          : "IMAGE",
+                        postid: "ANY",
+                        caption: "Any post — triggers on all your Instagram posts",
+                        media: "",
+                        mediaType: "IMAGE",
                       },
                     })
                   }
-                />
+                  className={[
+                    "w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all",
+                    data.post?.postid === "ANY"
+                      ? "border-rf-blue bg-rf-blue/10 shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                      : "border-rf-border bg-rf-surface hover:border-rf-blue/40",
+                  ].join(" ")}
+                >
+                  <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-2xl">
+                    🌐
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-rf-text">Any post</p>
+                    <p className="text-xs text-rf-muted mt-0.5">
+                      Trigger on comments across all your posts and Reels.
+                    </p>
+                  </div>
+                  {data.post?.postid === "ANY" && (
+                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-rf-blue text-white text-xs font-bold">
+                      ✓
+                    </span>
+                  )}
+                </button>
+
+                {/* Specific post grid */}
+                {postList.length > 0 && (
+                  <div>
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-rf-muted">
+                      Or pick a specific post
+                    </p>
+                    <PostPicker
+                      posts={postList}
+                      selected={data.post?.postid !== "ANY" ? (data.post?.postid ?? null) : null}
+                      onSelect={(p) =>
+                        update({
+                          post: {
+                            postid: p.id,
+                            caption: p.caption,
+                            media: p.media_type === "VIDEO"
+                              ? (p.thumbnail_url ?? p.media_url)
+                              : p.media_url,
+                            mediaType:
+                              p.media_type === "VIDEO" ? "VIDEO"
+                              : p.media_type === "CAROUSEL_ALBUM" ? "CAROSEL_ALBUM"
+                              : "IMAGE",
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                )}
+
                 <ManualMediaFallback
                   value={manualMedia}
-                  selected={data.post?.postid ?? null}
+                  selected={data.post?.postid !== "ANY" ? (data.post?.postid ?? null) : null}
                   onChange={setManualMedia}
                   onSelect={selectManualMedia}
-                  compact
+                  compact={postList.length > 0}
                 />
               </div>
             )}
@@ -239,8 +283,10 @@ export default function WizardPage({ params, searchParams }: Props) {
             <DmEditor
               value={data.dmMessage}
               ctaLink={data.ctaLink}
+              ctaButtonTitle={data.ctaButtonTitle}
               onChange={(v) => update({ dmMessage: v })}
               onCtaLinkChange={(l) => update({ ctaLink: l })}
+              onCtaButtonTitleChange={(t) => update({ ctaButtonTitle: t })}
             />
           </div>
         )}
@@ -255,19 +301,36 @@ export default function WizardPage({ params, searchParams }: Props) {
               Public comment reply
             </h2>
             <p className="text-rf-muted text-sm mb-6">
-              Reply publicly under their comment before sending the DM. Leave blank to skip.
+              Reply publicly under their comment before sending the DM. AP3k randomly picks one
+              of your variations to keep replies natural. Leave all blank to skip.
             </p>
-            <textarea
-              value={data.publicReply}
-              onChange={(e) => update({ publicReply: e.target.value })}
-              placeholder="Optional — e.g. 'Sending you the link now! 📩'"
-              rows={3}
-              className="w-full bg-rf-surface border border-rf-border rounded-xl px-4 py-3
-                         text-sm text-rf-text placeholder:text-rf-subtle outline-none
-                         focus:border-rf-blue resize-none transition-colors"
-            />
-            <p className="text-xs text-rf-muted mt-2">
-              This appears publicly on your post. The DM is always sent regardless.
+            <div className="flex flex-col gap-3">
+              {(
+                [
+                  { field: "publicReply",  label: "Reply 1", placeholder: "e.g. Sending you the link now! 📩" },
+                  { field: "publicReply2", label: "Reply 2", placeholder: "e.g. Check your DMs! I just sent it 👀" },
+                  { field: "publicReply3", label: "Reply 3", placeholder: "e.g. Done! Look for my message 🎁" },
+                ] as const
+              ).map(({ field, label, placeholder }) => (
+                <div key={field}>
+                  <label className="mb-1.5 block text-xs font-semibold text-rf-muted">
+                    {label}
+                    {field === "publicReply" ? "" : " (optional)"}
+                  </label>
+                  <textarea
+                    value={data[field]}
+                    onChange={(e) => update({ [field]: e.target.value })}
+                    placeholder={placeholder}
+                    rows={2}
+                    className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-4 py-3
+                               text-sm text-rf-text placeholder:text-rf-subtle outline-none
+                               focus:border-rf-blue/60 resize-none transition-colors"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-rf-muted mt-3">
+              These appear publicly on your post. The private DM is always sent regardless.
             </p>
           </div>
         )}
@@ -350,19 +413,26 @@ export default function WizardPage({ params, searchParams }: Props) {
             </p>
 
             <div className="flex flex-col gap-2 mb-6">
-              {[
-                { label: "Name",         value: data.campaignName || "Untitled campaign",            step: 1 as const },
-                { label: "Post",         value: data.post?.caption?.slice(0, 60) ?? "Selected post", step: 1 as const },
-                { label: "Keywords",     value: data.keywords.join(", ") || "None",                  step: 2 as const },
-                { label: "DM message",   value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""), step: 3 as const },
-                { label: "Public reply", value: data.publicReply || "Skipped",                       step: 4 as const },
-                { label: "AI mode",      value: data.aiMode ? "Smart AI enabled" : "Standard mode",  step: 5 as const },
-                { label: "Status",       value: data.active ? "Activate immediately" : "Save paused", step: 6 as const },
-              ].map((row) => (
+              {(
+                [
+                  { label: "Name",         value: data.campaignName || "Untitled campaign",                                           step: 1 as const },
+                  { label: "Post",         value: data.post?.postid === "ANY" ? "Any post" : (data.post?.caption?.slice(0, 60) ?? "Selected post"), step: 1 as const },
+                  { label: "Keywords",     value: data.keywords.join(", ") || "None",                                                 step: 2 as const },
+                  { label: "DM message",   value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""),             step: 3 as const },
+                  ...(data.ctaButtonTitle || data.ctaLink
+                    ? [{ label: "CTA button", value: `${data.ctaButtonTitle || "Link"} → ${data.ctaLink || "url"}`, step: 3 as const }]
+                    : []),
+                  { label: "Public reply", value: [data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length > 0
+                      ? `${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)`
+                      : "Skipped",                                                                                                     step: 4 as const },
+                  { label: "AI mode",      value: data.aiMode ? "Smart AI enabled" : "Standard mode",                                step: 5 as const },
+                  { label: "Status",       value: data.active ? "Activate immediately" : "Save paused",                              step: 6 as const },
+                ] as { label: string; value: string; step: 1 | 2 | 3 | 4 | 5 | 6 }[]
+              ).map((row) => (
                 <div key={row.label}
                      className="flex items-center justify-between gap-3 px-4 py-3
                                 bg-rf-surface border border-rf-border rounded-xl">
-                  <span className="text-xs text-rf-muted w-24 flex-shrink-0">{row.label}</span>
+                  <span className="text-xs text-rf-muted w-28 flex-shrink-0">{row.label}</span>
                   <span className="text-xs text-rf-text flex-1 truncate">{row.value}</span>
                   <button
                     type="button"
