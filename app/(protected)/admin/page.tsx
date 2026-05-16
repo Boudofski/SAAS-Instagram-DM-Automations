@@ -40,6 +40,11 @@ export default async function AdminPage({
     messageLogs,
     leads,
     metaDiagnostics,
+    lastVerifyGet,
+    lastPostRaw,
+    lastSignatureFailed,
+    lastRealComment,
+    lastSimulated,
   ] = await Promise.all([
     client.user.count(),
     client.integrations.count(),
@@ -153,6 +158,31 @@ export default async function AdminPage({
       include: { automation: { select: { name: true } } },
     }),
     getMetaAdminDiagnostics(),
+    client.webhookEvent.findFirst({
+      where: { eventType: "WEBHOOK_VERIFY_GET" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, errorMessage: true, payload: true, createdAt: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "WEBHOOK_POST_RECEIVED_RAW" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, payload: true, createdAt: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "SIGNATURE_FAILED" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, errorMessage: true, payload: true, createdAt: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "REAL_COMMENT_EVENT", eventSource: "META_REAL" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, igAccountId: true, mediaId: true, createdAt: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventSource: "SIMULATED_INTERNAL" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, eventType: true, createdAt: true },
+    }),
   ]);
 
   return (
@@ -302,6 +332,100 @@ export default async function AdminPage({
               value={metaDiagnostics.integration?.webhookSubscriptionError ?? "none"}
               tone={metaDiagnostics.integration?.webhookSubscriptionError ? "amber" : "green"}
             />
+          </div>
+        </AdminSection>
+
+        <AdminSection title="Webhook Delivery Test">
+          <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
+            <HealthCell
+              label="Callback URL"
+              value="https://ap3k.com/api/webhooks/meta"
+              tone="slate"
+            />
+            <HealthCell
+              label="Last GET verify"
+              value={
+                lastVerifyGet
+                  ? `${lastVerifyGet.status} · token_match=${(lastVerifyGet.payload as any)?.tokenMatch ?? "unknown"} · ${new Date(lastVerifyGet.createdAt).toLocaleString()}`
+                  : "never received"
+              }
+              tone={lastVerifyGet?.status === "PROCESSED" ? "green" : lastVerifyGet ? "red" : "amber"}
+            />
+            <HealthCell
+              label="Last POST raw received"
+              value={
+                lastPostRaw
+                  ? `hasSignature=${(lastPostRaw.payload as any)?.hasSignature ?? "?"} · object=${(lastPostRaw.payload as any)?.object ?? "none"} · ${new Date(lastPostRaw.createdAt).toLocaleString()}`
+                  : "never received"
+              }
+              tone={lastPostRaw ? "green" : "red"}
+            />
+            <HealthCell
+              label="Last signature failed"
+              value={
+                lastSignatureFailed
+                  ? `${lastSignatureFailed.errorMessage ?? "unknown"} · ${new Date(lastSignatureFailed.createdAt).toLocaleString()}`
+                  : "none"
+              }
+              tone={lastSignatureFailed ? "red" : "green"}
+            />
+            <HealthCell
+              label="Last real comment"
+              value={
+                lastRealComment
+                  ? `${lastRealComment.status} · pageId=${lastRealComment.igAccountId ?? "none"} · ${new Date(lastRealComment.createdAt).toLocaleString()}`
+                  : "none yet"
+              }
+              tone={lastRealComment ? "green" : "amber"}
+            />
+            <HealthCell
+              label="Last simulated"
+              value={
+                lastSimulated
+                  ? `${lastSimulated.eventType} · ${new Date(lastSimulated.createdAt).toLocaleString()}`
+                  : "none"
+              }
+              tone={lastSimulated ? "green" : "slate"}
+            />
+          </div>
+
+          <div className="border-t border-slate-100 p-4 text-sm">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+              Manual Meta dashboard steps
+            </p>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-700">
+              <li>Meta Developers → AP3k app → Instagram API → API setup with Facebook login</li>
+              <li>Open <strong>Configure webhooks</strong></li>
+              <li>Set Callback URL to <code className="rounded bg-slate-100 px-1 font-mono text-xs">https://ap3k.com/api/webhooks/meta</code></li>
+              <li>Set Verify Token to the value of <code className="rounded bg-slate-100 px-1 font-mono text-xs">META_VERIFY_TOKEN</code> in Vercel env</li>
+              <li>Click <strong>Verify and Save</strong> — this triggers a GET that should appear above as PROCESSED</li>
+              <li>Subscribe <strong>comments</strong> field</li>
+              <li>Subscribe <strong>messages</strong> field</li>
+              <li>If using Page object webhooks, also subscribe <strong>feed</strong> / <strong>comments</strong> / <strong>messages</strong> there</li>
+              <li>Make a test comment from a separate accepted tester account on a post owned by @ceptice</li>
+            </ol>
+          </div>
+
+          <div className="border-t border-slate-100 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+              Signed self-test (proves deployed route accepts signed POSTs)
+            </p>
+            <form
+              method="POST"
+              action="/api/admin/webhook-self-test"
+              className="mt-3 flex items-center gap-3"
+            >
+              <button
+                type="submit"
+                className="rounded-xl bg-slate-950 px-5 py-2 text-sm font-bold text-white"
+              >
+                Run webhook self-test
+              </button>
+              <p className="text-xs text-slate-500">
+                Owner-only. Sends a signed INTERNAL_SELF_TEST payload to the webhook route and
+                stores the result. Does not send DMs.
+              </p>
+            </form>
           </div>
         </AdminSection>
 

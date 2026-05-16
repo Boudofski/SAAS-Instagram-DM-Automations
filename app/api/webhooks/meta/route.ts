@@ -89,6 +89,28 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
     const signature = req.headers.get("x-hub-signature-256");
+
+    // Store raw receipt before any processing — proves the route is reachable
+    try {
+      const quickParse = parseJsonSafely(rawBody);
+      await createWebhookEvent({
+        eventType: "WEBHOOK_POST_RECEIVED_RAW",
+        eventSource: "META_REAL",
+        status: "RECEIVED",
+        payload: {
+          hasSignature: Boolean(signature),
+          contentLength: rawBody.length,
+          userAgent: req.headers.get("user-agent") ?? undefined,
+          object: quickParse.ok ? (quickParse.body?.object ?? undefined) : undefined,
+          entryCount: quickParse.ok && Array.isArray(quickParse.body?.entry)
+            ? quickParse.body.entry.length
+            : undefined,
+        },
+      });
+    } catch {
+      // Non-critical — never let raw receipt logging block processing
+    }
+
     const signatureResult = verifyMetaSignature(rawBody, signature);
     const requestMeta = getRequestMetadata(req, signature, signatureResult.verified);
     const parsedBody = parseJsonSafely(rawBody);
@@ -145,6 +167,19 @@ export async function POST(req: NextRequest) {
     }
 
     const body = parsedBody.body;
+
+    // Self-test payloads must never trigger DM sends
+    if (body.source === "INTERNAL_SELF_TEST") {
+      await createWebhookEvent({
+        eventType: "INTERNAL_SELF_TEST",
+        eventSource: "SIMULATED_INTERNAL",
+        status: "PROCESSED",
+        igAccountId: Array.isArray(body.entry) ? body.entry[0]?.id : undefined,
+        payload: { source: "INTERNAL_SELF_TEST", signatureValid: signatureResult.verified },
+      });
+      return ok();
+    }
+
     const entries = Array.isArray(body.entry) ? body.entry : [];
     if (entries.length === 0) {
       await createWebhookEvent({
