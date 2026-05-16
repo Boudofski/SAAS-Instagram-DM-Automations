@@ -3,14 +3,17 @@ import { getMetaTokenHealth } from "@/lib/meta-auth-diagnostics";
 
 export async function getMetaAdminDiagnostics() {
   const integration = await client.integrations.findFirst({
-    where: { pageId: { not: null } },
+    where: { name: "INSTAGRAM" },
     orderBy: { createdAt: "desc" },
     select: {
       instagramId: true,
       webhookAccountId: true,
       pageId: true,
+      pageName: true,
       businessId: true,
       instagramUsername: true,
+      igAccountSource: true,
+      oauthResolutionDiagnostics: true,
       expiresAt: true,
       webhookSubscriptionLastAttemptedAt: true,
       webhookSubscriptionStatusCode: true,
@@ -37,7 +40,22 @@ export async function getMetaAdminDiagnostics() {
 
     return {
       connected: false,
-      integration: null,
+      integration: integration
+        ? {
+            instagramId: integration.instagramId,
+            webhookAccountId: integration.webhookAccountId,
+            pageId: integration.pageId,
+            pageName: integration.pageName,
+            businessId: integration.businessId,
+            instagramUsername: integration.instagramUsername,
+            igAccountSource: integration.igAccountSource,
+            oauthResolutionDiagnostics: integration.oauthResolutionDiagnostics,
+            oauthLastError: integration.oauthLastError,
+            oauthLastErrorAt: integration.oauthLastErrorAt,
+            oauthLastErrorSource: integration.oauthLastErrorSource,
+            userEmail: integration.User?.email,
+          }
+        : null,
       oauthState,
       subscribedAppsActive: false,
       commentsSubscribed: false,
@@ -133,8 +151,11 @@ export async function getMetaAdminDiagnostics() {
       instagramId: integration.instagramId,
       webhookAccountId: integration.webhookAccountId,
       pageId: integration.pageId,
+      pageName: integration.pageName,
       businessId: integration.businessId,
       instagramUsername: integration.instagramUsername,
+      igAccountSource: integration.igAccountSource,
+      oauthResolutionDiagnostics: integration.oauthResolutionDiagnostics,
       expiresAt: integration.expiresAt,
       webhookSubscriptionLastAttemptedAt: integration.webhookSubscriptionLastAttemptedAt,
       webhookSubscriptionStatusCode: integration.webhookSubscriptionStatusCode,

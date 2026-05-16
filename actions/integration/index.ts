@@ -160,13 +160,15 @@ export const onIntegrate = async (code: string) => {
       resolved = await resolveFacebookBusinessInstagramAccount(userAccessToken);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const resolutionDiagnostics = (error as any)?.diagnostics;
       const state =
         message === "ig_business_not_linked" || message === "page_token_missing"
           ? message
           : "page_resolution_failed";
-      await recordIntegrationOAuthError(user.id, state);
+      await recordIntegrationOAuthError(user.id, state, "facebook_business_oauth", resolutionDiagnostics);
       console.warn("[oauth] step page_resolution_failed", {
         state,
+        resolutionDiagnostics,
         error: getSafeMetaError(error),
       });
       return {
@@ -232,7 +234,10 @@ export const onIntegrate = async (code: string) => {
         resolved.instagramUsername,
         resolved.profilePictureUrl,
         resolved.pageId,
+        resolved.pageName,
         resolved.instagramBusinessAccountId,
+        resolved.igAccountSource,
+        resolved.diagnostics,
         subscriptionAttempt
       );
       console.log("[oauth] integration save result", {
@@ -260,7 +265,10 @@ export const onIntegrate = async (code: string) => {
       resolved.instagramUsername,
       resolved.profilePictureUrl,
       resolved.pageId,
+      resolved.pageName,
       resolved.instagramBusinessAccountId,
+      resolved.igAccountSource,
+      resolved.diagnostics,
       subscriptionAttempt
     );
     console.log("[oauth] integration save result", {
@@ -307,7 +315,10 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       instagram.instagramUsername ?? undefined,
       instagram.profilePictureUrl ?? undefined,
       instagram.pageId ?? undefined,
+      instagram.pageName ?? undefined,
       instagram.businessId ?? undefined,
+      instagram.igAccountSource ?? undefined,
+      instagram.oauthResolutionDiagnostics ?? undefined,
       {
         statusCode: result.status,
         subscribed,
@@ -336,7 +347,10 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
         instagram.instagramUsername ?? undefined,
         instagram.profilePictureUrl ?? undefined,
         instagram.pageId ?? undefined,
+        instagram.pageName ?? undefined,
         instagram.businessId ?? undefined,
+        instagram.igAccountSource ?? undefined,
+        instagram.oauthResolutionDiagnostics ?? undefined,
         {
           statusCode: getSafeMetaError(error).status,
           subscribed: false,

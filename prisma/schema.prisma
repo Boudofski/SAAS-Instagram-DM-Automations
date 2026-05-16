@@ -43,9 +43,12 @@ model Integrations {
   instagramId String?      @unique
   webhookAccountId String?
   pageId      String?
+  pageName    String?
   businessId  String?
   instagramUsername String?
   profilePictureUrl String?
+  igAccountSource String?
+  oauthResolutionDiagnostics Json?
   webhookSubscriptionLastAttemptedAt DateTime?
   webhookSubscriptionStatusCode Int?
   webhookSubscriptionSubscribed Boolean?

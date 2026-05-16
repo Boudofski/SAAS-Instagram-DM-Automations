@@ -10,7 +10,10 @@ export const updateIntegration = async (
   instagramUsername?: string,
   profilePictureUrl?: string,
   pageId?: string,
+  pageName?: string,
   businessId?: string,
+  igAccountSource?: string,
+  resolutionDiagnostics?: unknown,
   subscription?: {
     statusCode?: number;
     subscribed: boolean;
@@ -30,9 +33,12 @@ export const updateIntegration = async (
       instagramId,
       webhookAccountId: pageId,
       pageId,
+      pageName,
       businessId,
       instagramUsername,
       profilePictureUrl,
+      igAccountSource,
+      oauthResolutionDiagnostics: resolutionDiagnostics as any,
       webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
       webhookSubscriptionStatusCode: subscription?.statusCode,
       webhookSubscriptionSubscribed: subscription?.subscribed,
@@ -62,7 +68,8 @@ export const getIntegrations = async (clerkId: string) => {
 export const recordIntegrationOAuthError = async (
   clerkId: string,
   error: string,
-  source = "facebook_business_oauth"
+  source = "facebook_business_oauth",
+  resolutionDiagnostics?: unknown
 ) => {
   const user = await client.user.findUnique({
     where: { clerkId },
@@ -84,6 +91,7 @@ export const recordIntegrationOAuthError = async (
       oauthLastError: error,
       oauthLastErrorAt: new Date(),
       oauthLastErrorSource: source,
+      oauthResolutionDiagnostics: resolutionDiagnostics as any,
     },
   });
 };
@@ -122,7 +130,10 @@ export const createIntegration = async (
   instagramUsername?: string,
   profilePictureUrl?: string,
   pageId?: string,
+  pageName?: string,
   businessId?: string,
+  igAccountSource?: string,
+  resolutionDiagnostics?: unknown,
   subscription?: {
     statusCode?: number;
     subscribed: boolean;
@@ -146,9 +157,12 @@ export const createIntegration = async (
           instagramId,
           webhookAccountId: pageId,
           pageId,
+          pageName,
           businessId,
           instagramUsername,
           profilePictureUrl,
+          igAccountSource,
+          oauthResolutionDiagnostics: resolutionDiagnostics as any,
           webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
           webhookSubscriptionStatusCode: subscription?.statusCode,
           webhookSubscriptionSubscribed: subscription?.subscribed,

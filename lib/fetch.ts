@@ -227,38 +227,123 @@ export const generateToken = async (code: string) => {
 export const resolveFacebookBusinessInstagramAccount = async (userToken: string) => {
   const accounts = await axios.get(`${META_GRAPH_API_BASE_URL}/me/accounts`, {
     params: {
-      fields:
-        "id,name,access_token,instagram_business_account{id,username,profile_picture_url}",
+      fields: "id,name,access_token,tasks,perms",
       access_token: userToken,
     },
   });
 
   const pages = Array.isArray(accounts.data?.data) ? accounts.data.data : [];
+  const pageLookupAttempts: Array<{
+    pageId: string;
+    pageName?: string;
+    hasPageAccessToken: boolean;
+    status: "skipped_missing_page_token" | "ok" | "failed";
+    foundInstagramField?: "instagram_business_account" | "connected_instagram_account" | "none";
+    error?: string;
+  }> = [];
+
   console.log("[oauth] step me/accounts_success", {
     endpointFamily: "facebook_graph_page",
     pageCount: pages.length,
-    linkedInstagramPageCount: pages.filter((item: any) => item?.instagram_business_account?.id).length,
   });
-  const page = pages.find((item: any) => item?.instagram_business_account?.id);
-  const pageAccessToken = assertAccessToken(page?.access_token);
-  const instagramBusinessAccountId = page?.instagram_business_account?.id;
 
-  if (!page || !instagramBusinessAccountId) {
-    throw new Error("ig_business_not_linked");
+  for (const page of pages) {
+    const pageId = String(page?.id ?? "");
+    const pageName = page?.name as string | undefined;
+    const pageAccessToken = assertAccessToken(page?.access_token);
+
+    if (!pageId || !pageAccessToken) {
+      pageLookupAttempts.push({
+        pageId,
+        pageName,
+        hasPageAccessToken: Boolean(pageAccessToken),
+        status: "skipped_missing_page_token",
+      });
+      continue;
+    }
+
+    try {
+      const pageLookup = await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}`, {
+        params: {
+          fields:
+            "id,name,instagram_business_account{id,username,profile_picture_url},connected_instagram_account{id,username,profile_picture_url}",
+          access_token: pageAccessToken,
+        },
+      });
+      const instagramBusinessAccount = pageLookup.data?.instagram_business_account;
+      const connectedInstagramAccount = pageLookup.data?.connected_instagram_account;
+      const account = instagramBusinessAccount ?? connectedInstagramAccount;
+      const igAccountSource = instagramBusinessAccount
+        ? ("instagram_business_account" as const)
+        : connectedInstagramAccount
+          ? ("connected_instagram_account" as const)
+          : undefined;
+
+      pageLookupAttempts.push({
+        pageId,
+        pageName,
+        hasPageAccessToken: true,
+        status: "ok",
+        foundInstagramField: igAccountSource ?? "none",
+      });
+
+      if (account?.id && igAccountSource) {
+        const diagnostics = {
+          pagesReturned: pages.length,
+          pageLookupAttempts,
+          foundInstagramField: igAccountSource,
+          igAccountSource,
+          selectedPageName: pageName,
+          selectedPageId: pageId,
+          selectedInstagramUsername: account.username as string | undefined,
+        };
+        console.log("[oauth] step page_instagram_lookup_success", {
+          pagesReturned: diagnostics.pagesReturned,
+          pageLookupAttempts: diagnostics.pageLookupAttempts.length,
+          foundInstagramField: diagnostics.foundInstagramField,
+          igAccountSource: diagnostics.igAccountSource,
+          hasSelectedPageId: Boolean(diagnostics.selectedPageId),
+          hasSelectedInstagramUsername: Boolean(diagnostics.selectedInstagramUsername),
+        });
+        return {
+          pageId,
+          pageName,
+          pageAccessToken,
+          instagramBusinessAccountId: String(account.id),
+          instagramUsername: account.username as string | undefined,
+          profilePictureUrl: account.profile_picture_url as string | undefined,
+          igAccountSource,
+          diagnostics,
+        };
+      }
+    } catch (error) {
+      pageLookupAttempts.push({
+        pageId,
+        pageName,
+        hasPageAccessToken: true,
+        status: "failed",
+        error: formatSafeMetaError(error) || "page_lookup_failed",
+      });
+    }
   }
 
-  if (!pageAccessToken) {
-    throw new Error("page_token_missing");
+  if (!pages.length || pageLookupAttempts.every((attempt) => !attempt.hasPageAccessToken)) {
+    const error = new Error("page_token_missing");
+    (error as any).diagnostics = {
+      pagesReturned: pages.length,
+      pageLookupAttempts,
+      foundInstagramField: "none",
+    };
+    throw error;
   }
 
-  return {
-    pageId: String(page.id),
-    pageName: page.name as string | undefined,
-    pageAccessToken,
-    instagramBusinessAccountId: String(instagramBusinessAccountId),
-    instagramUsername: page.instagram_business_account?.username as string | undefined,
-    profilePictureUrl: page.instagram_business_account?.profile_picture_url as string | undefined,
+  const error = new Error("ig_business_not_linked");
+  (error as any).diagnostics = {
+    pagesReturned: pages.length,
+    pageLookupAttempts,
+    foundInstagramField: "none",
   };
+  throw error;
 };
 
 export const debugPageToken = async (token: string) => {

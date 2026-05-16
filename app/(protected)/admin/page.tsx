@@ -211,8 +211,15 @@ export default async function AdminPage({
                 ? `@${metaDiagnostics.integration.instagramUsername}`
                 : "Not connected"
             } />
+            <HealthCell label="Selected Page name" value={metaDiagnostics.integration?.pageName ?? "none"} />
             <HealthCell label="Facebook Page ID" value={metaDiagnostics.integration?.pageId ?? "none"} />
             <HealthCell label="IG business account ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
+            <HealthCell label="IG account source" value={metaDiagnostics.integration?.igAccountSource ?? "none"} />
+            <HealthCell label="Page resolution" value={
+              metaDiagnostics.integration?.oauthResolutionDiagnostics
+                ? JSON.stringify(metaDiagnostics.integration.oauthResolutionDiagnostics)
+                : "none"
+            } />
             <HealthCell label="OAuth state" value={metaDiagnostics.oauthState} tone={metaDiagnostics.oauthState === "oauth_success" ? "green" : "red"} />
             <HealthCell label="Page token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
             <HealthCell label="Page subscribed" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
