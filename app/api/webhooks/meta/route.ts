@@ -14,7 +14,7 @@ import {
   getChatHistory,
   trackResponse,
 } from "@/actions/webhook/queries";
-import { createHmac, timingSafeEqual } from "crypto";
+import { verifyMetaSignature } from "@/lib/webhook-signature";
 import { matchKeywordWithMode } from "@/lib/matching";
 import {
   formatSafeMetaError,
@@ -128,20 +128,17 @@ export async function POST(req: NextRequest) {
           status: "FAILED",
           errorMessage: signatureResult.reason,
           payload: {
-            ...safeWebhookMetadata(
-              parsedBody.ok ? parsedBody.body : undefined,
-              false,
-              undefined,
-              undefined,
-              requestMeta
-            ),
             hasSignature: Boolean(signature),
-            hasAppSecret: Boolean(
-              process.env.META_APP_SECRET
-            ),
-            secretSource: process.env.META_APP_SECRET
-              ? "META_APP_SECRET"
-              : "none",
+            signaturePrefix: "sha256",
+            candidateSecretsConfigured: signatureResult.candidateSecretsConfigured,
+            triedSecretCount: signatureResult.triedSecretCount,
+            rawBodyLength: rawBody.length,
+            rawBodySha256Short: signatureResult.rawBodySha256Short,
+            object: parsedBody.ok ? (parsedBody.body?.object ?? undefined) : undefined,
+            entryCount:
+              parsedBody.ok && Array.isArray(parsedBody.body?.entry)
+                ? parsedBody.body.entry.length
+                : undefined,
           },
         });
       } catch (error) {
@@ -814,32 +811,6 @@ function ok() {
   return NextResponse.json({ received: true }, { status: 200 });
 }
 
-function verifyMetaSignature(rawBody: string, signature: string | null) {
-  const appSecret = process.env.META_APP_SECRET;
-  if (!appSecret) {
-    return { verified: false, reason: "missing_app_secret" };
-  }
-  if (!signature?.startsWith("sha256=")) {
-    return { verified: false, reason: "missing_or_invalid_signature_header" };
-  }
-
-  const expected = `sha256=${createHmac("sha256", appSecret)
-    .update(rawBody, "utf8")
-    .digest("hex")}`;
-
-  const actualBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-
-  if (actualBuffer.length !== expectedBuffer.length) {
-    return { verified: false, reason: "signature_length_mismatch" };
-  }
-
-  const verified = timingSafeEqual(actualBuffer, expectedBuffer);
-  return {
-    verified,
-    reason: verified ? "verified" : "signature_mismatch",
-  };
-}
 
 function classifyWebhookEnvelope(body: any) {
   if (body?.object === "page" && body?.entry?.[0]?.id === "0") {
