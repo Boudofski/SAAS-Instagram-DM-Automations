@@ -20,11 +20,11 @@ import {
 } from "./queries";
 
 const REQUIRED_META_BUSINESS_SCOPES = [
-  "instagram_business_basic",
-  "instagram_business_manage_comments",
-  "instagram_business_manage_messages",
   "pages_show_list",
   "pages_read_engagement",
+  "instagram_basic",
+  "instagram_manage_comments",
+  "instagram_manage_messages",
 ];
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";

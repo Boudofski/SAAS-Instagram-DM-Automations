@@ -7,16 +7,17 @@ import {
 } from "@/lib/fetch";
 
 const REQUESTED_SCOPES = [
+  "pages_show_list",
+  "pages_read_engagement",
+  "instagram_basic",
+  "instagram_manage_comments",
+  "instagram_manage_messages",
+];
+
+const REJECTED_INCOMPATIBLE_SCOPES = [
   "instagram_business_basic",
   "instagram_business_manage_comments",
   "instagram_business_manage_messages",
-  "pages_show_list",
-  "pages_read_engagement",
-];
-
-const REJECTED_LEGACY_SCOPES = [
-  "instagram_basic",
-  "instagram_manage_messages",
   "business_management",
 ];
 
@@ -63,7 +64,7 @@ export function getCanonicalMetaConfig() {
     redirectUri,
     oauthAuthorizeEndpoint: "https://www.facebook.com/v25.0/dialog/oauth",
     requestedScopes: REQUESTED_SCOPES,
-    rejectedScopes: REJECTED_LEGACY_SCOPES,
+    rejectedScopes: REJECTED_INCOMPATIBLE_SCOPES,
     tokenEndpoint: `${META_GRAPH_API_BASE_URL}/oauth/access_token`,
     apiEndpointFamily: "facebook_graph_instagram_business",
     webhookSubscriptionEndpointFamily: "facebook_graph_page",
