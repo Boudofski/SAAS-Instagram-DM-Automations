@@ -1,15 +1,13 @@
 "use server";
 
 import {
-  INSTAGRAM_GRAPH_BASE_URL,
   formatSafeMetaError,
   generateToken,
   getSafeMetaError,
+  resolveFacebookBusinessInstagramAccount,
   subscribeInstagramWebhooks,
 } from "@/lib/fetch";
-import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import { currentUser } from "@clerk/nextjs/server";
-import axios from "axios";
 import { redirect } from "next/navigation";
 import {
   createIntegration,
@@ -19,60 +17,50 @@ import {
   updateIntegration,
 } from "./queries";
 
-async function attemptWebhookSubscription(igAccountId: string, token: string) {
+const REQUIRED_META_BUSINESS_SCOPES = [
+  "instagram_basic",
+  "instagram_manage_comments",
+  "instagram_manage_messages",
+  "pages_show_list",
+  "pages_read_engagement",
+  "business_management",
+];
+
+const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
+
+async function attemptWebhookSubscription(pageId: string, pageToken: string) {
   const attemptedAt = new Date();
   try {
-    const subscription = await subscribeInstagramWebhooks(igAccountId, token);
+    const subscription = await subscribeInstagramWebhooks(pageId, pageToken);
     const subscribed = subscription.status >= 200 && subscription.status < 300;
-    console.log("[oauth] webhook subscription result", {
-      endpointFamily: "instagram_graph",
-      igAccountIdPresent: Boolean(igAccountId),
+    console.log("[oauth] page webhook subscription result", {
+      endpointFamily: "facebook_graph_page",
+      pageIdPresent: Boolean(pageId),
       subscribed,
       status: subscription.status,
     });
-    return {
-      statusCode: subscription.status,
-      subscribed,
-      attemptedAt,
-    };
+    return { statusCode: subscription.status, subscribed, attemptedAt };
   } catch (error) {
     const safe = formatSafeMetaError(error);
-    console.warn("[oauth] webhook subscription failed", {
-      endpointFamily: "instagram_graph",
-      igAccountIdPresent: Boolean(igAccountId),
+    console.warn("[oauth] page webhook subscription failed", {
+      endpointFamily: "facebook_graph_page",
+      pageIdPresent: Boolean(pageId),
       subscribed: false,
       error: getSafeMetaError(error),
     });
     return {
       statusCode: getSafeMetaError(error).status,
       subscribed: false,
-      error: safe || "subscribed_apps_failed",
+      error: safe || "page_subscribed_apps_failed",
       attemptedAt,
     };
   }
 }
 
-const REQUIRED_IG_SCOPES = [
-  "instagram_business_basic",
-  "instagram_business_manage_comments",
-  "instagram_business_manage_messages",
-];
-
-const INSTAGRAM_BUSINESS_OAUTH_URL = "https://www.instagram.com/oauth/authorize";
-
 function getOAuthClientId() {
-  if (process.env.INSTAGRAM_APP_ID) {
-    return { clientId: process.env.INSTAGRAM_APP_ID, source: "INSTAGRAM_APP_ID" as const };
-  }
-
-  if (process.env.INSTAGRAM_CLIENT_ID) {
-    return { clientId: process.env.INSTAGRAM_CLIENT_ID, source: "INSTAGRAM_CLIENT_ID" as const };
-  }
-
   if (process.env.META_APP_ID) {
     return { clientId: process.env.META_APP_ID, source: "META_APP_ID" as const };
   }
-
   return { clientId: undefined, source: "missing" as const };
 }
 
@@ -86,16 +74,14 @@ export async function getInstagramOAuthUrl() {
   if (!redirectUri) throw new Error("META_REDIRECT_URI is not configured");
 
   const { clientId } = getOAuthClientId();
+  if (!clientId) throw new Error("META_APP_ID is not configured");
 
-  if (!clientId) throw new Error("INSTAGRAM_APP_ID, INSTAGRAM_CLIENT_ID, or META_APP_ID is not configured");
-
-  const url = new URL(INSTAGRAM_BUSINESS_OAUTH_URL);
+  const url = new URL(FACEBOOK_BUSINESS_OAUTH_URL);
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("scope", REQUIRED_IG_SCOPES.join(","));
+  url.searchParams.set("scope", REQUIRED_META_BUSINESS_SCOPES.join(","));
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("enable_fb_login", "0");
-  url.searchParams.set("force_authentication", "1");
+  url.searchParams.set("auth_type", "rerequest");
   return url.toString();
 }
 
@@ -111,12 +97,11 @@ export const getInstagramConnectUrl = async () => {
     const { source } = getOAuthClientId();
     console.log("[oauth] connect URL generated", {
       oauth_client_id_source: source,
-      hasInstagramAppId: Boolean(process.env.INSTAGRAM_APP_ID),
+      authProduct: "facebook_login_for_business",
       hasMetaAppId: Boolean(process.env.META_APP_ID),
-      hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
-      endpoint: INSTAGRAM_BUSINESS_OAUTH_URL,
-      scopeCount: REQUIRED_IG_SCOPES.length,
+      endpoint: FACEBOOK_BUSINESS_OAUTH_URL,
+      scopeCount: REQUIRED_META_BUSINESS_SCOPES.length,
       redirectIsProduction: process.env.META_REDIRECT_URI === "https://ap3k.com/callback/instagram",
     });
     return { status: 200, url };
@@ -125,9 +110,8 @@ export const getInstagramConnectUrl = async () => {
     console.error("[oauth] failed to generate connect URL", {
       message: error instanceof Error ? error.message : String(error),
       oauth_client_id_source: source,
-      hasInstagramAppId: Boolean(process.env.INSTAGRAM_APP_ID),
+      authProduct: "facebook_login_for_business",
       hasMetaAppId: Boolean(process.env.META_APP_ID),
-      hasConfiguredOAuthUrl: Boolean(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
     });
     return { status: 500, error: "oauth_url_unavailable" };
@@ -139,14 +123,10 @@ export const onIntegrate = async (code: string) => {
   console.log("[oauth] callback received", {
     hasCode: Boolean(code),
     hasCurrentUser: Boolean(user),
+    authProduct: "facebook_login_for_business",
   });
 
   if (!user) {
-    console.warn("[oauth] callback cannot save integration", {
-      hasCode: Boolean(code),
-      hasCurrentUser: false,
-      integrationSaved: false,
-    });
     return { status: 401, error: "auth_missing" };
   }
 
@@ -154,62 +134,54 @@ export const onIntegrate = async (code: string) => {
     const integration = await getIntegrations(user.id);
     const existing = integration?.integrations[0];
     const tokenResult = await generateToken(code);
-    const accessToken = tokenResult?.accessToken;
+    const userAccessToken = tokenResult?.accessToken;
 
-    if (!accessToken) {
-      console.log("[oauth] integration save skipped", {
-        tokenExchangeStatus: "failed",
-        hasAccessToken: false,
-        integrationSaved: false,
-      });
+    if (!userAccessToken) {
       return {
         status: 401,
         error: "token_exchange_failed",
-        data: {
-          firstname: user.firstName,
-          lastname: user.lastName,
-          clerkId: user.id,
-        },
+        data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
       };
     }
 
-    const insts_id = await axios.get(
-      `${INSTAGRAM_GRAPH_BASE_URL}/me?fields=user_id,username,profile_picture_url`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
-
-    console.log("[oauth] account fetch result", {
-      accountFetchStatus: insts_id.status,
-      hasInstagramUserId: Boolean(insts_id.data.user_id),
-      updatingExistingIntegration: Boolean(existing),
-    });
+    const resolved = await resolveFacebookBusinessInstagramAccount(userAccessToken);
+    if (!resolved) {
+      console.warn("[oauth] no linked Instagram Business account found", {
+        hasUserAccessToken: true,
+      });
+      return {
+        status: 401,
+        error: "no_linked_instagram_business_account",
+        data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+      };
+    }
 
     const subscriptionAttempt = await attemptWebhookSubscription(
-      insts_id.data.user_id,
-      accessToken
+      resolved.pageId,
+      resolved.pageAccessToken
     );
-
     const today = new Date();
-    const expire_date = today.setSeconds(
+    const expireDate = today.setSeconds(
       today.getSeconds() + (tokenResult?.expiresIn ?? 60 * 24 * 60 * 60)
     );
 
     if (existing) {
       const update = await updateIntegration(
-        accessToken,
-        new Date(expire_date),
+        resolved.pageAccessToken,
+        new Date(expireDate),
         existing.id,
-        insts_id.data.user_id,
-        insts_id.data.username,
-        insts_id.data.profile_picture_url,
+        resolved.instagramBusinessAccountId,
+        resolved.instagramUsername,
+        resolved.profilePictureUrl,
+        resolved.pageId,
+        resolved.instagramBusinessAccountId,
         subscriptionAttempt
       );
       console.log("[oauth] integration save result", {
         integrationSaved: Boolean(update),
         updatingExistingIntegration: true,
-        hasInstagramUserId: Boolean(insts_id.data.user_id),
+        hasPageId: Boolean(resolved.pageId),
+        hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
       });
       return {
         status: 200,
@@ -224,17 +196,20 @@ export const onIntegrate = async (code: string) => {
 
     const create = await createIntegration(
       user.id,
-      accessToken,
-      new Date(expire_date),
-      insts_id.data.user_id,
-      insts_id.data.username,
-      insts_id.data.profile_picture_url,
+      resolved.pageAccessToken,
+      new Date(expireDate),
+      resolved.instagramBusinessAccountId,
+      resolved.instagramUsername,
+      resolved.profilePictureUrl,
+      resolved.pageId,
+      resolved.instagramBusinessAccountId,
       subscriptionAttempt
     );
     console.log("[oauth] integration save result", {
       integrationSaved: Boolean(create),
       updatingExistingIntegration: false,
-      hasInstagramUserId: Boolean(insts_id.data.user_id),
+      hasPageId: Boolean(resolved.pageId),
+      hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
     });
     return { status: 200, data: create };
   } catch (error) {
@@ -245,11 +220,7 @@ export const onIntegrate = async (code: string) => {
     return {
       status: 500,
       error: "integration_save_failed",
-      data: {
-        firstname: user.firstName,
-        lastname: user.lastName,
-        clerkId: user.id,
-      },
+      data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
     };
   }
 };
@@ -262,36 +233,22 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
     const integration = await getIntegrations(user.id);
     const instagram = integration?.integrations[0];
 
-    if (!instagram?.token || !instagram.instagramId) {
-      return { status: 404, data: "Connect Instagram before resubscribing webhooks" };
+    if (!instagram?.token || !instagram.pageId) {
+      return { status: 404, data: "Connect Facebook Page and Instagram Business account before resubscribing webhooks" };
     }
 
-    const tokenDiagnostic = getInstagramTokenFormatDiagnostic(instagram.token);
-    if (!tokenDiagnostic.looksUsable) {
-      console.warn("[webhook-subscription] resubscribe skipped: stored token format invalid", {
-        integrationId: instagram.id,
-        tokenFormat: tokenDiagnostic.reason,
-        tokenLength: tokenDiagnostic.length,
-      });
-      return {
-        status: 400,
-        data: "Stored Instagram token is invalid. Reconnect Instagram before resubscribing webhooks.",
-      };
-    }
-
-    const result = await subscribeInstagramWebhooks(
-      instagram.instagramId,
-      instagram.token
-    );
+    const result = await subscribeInstagramWebhooks(instagram.pageId, instagram.token);
     const subscribed = result.status >= 200 && result.status < 300;
 
     await updateIntegration(
       instagram.token,
       instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
       instagram.id,
-      instagram.instagramId,
+      instagram.instagramId ?? undefined,
       instagram.instagramUsername ?? undefined,
       instagram.profilePictureUrl ?? undefined,
+      instagram.pageId ?? undefined,
+      instagram.businessId ?? undefined,
       {
         statusCode: result.status,
         subscribed,
@@ -299,47 +256,40 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       }
     );
 
-    console.log("[webhook-subscription] manual resubscribe result", {
-      endpointFamily: "instagram_graph",
-      igAccountIdPresent: true,
+    console.log("[webhook-subscription] manual page resubscribe result", {
+      endpointFamily: "facebook_graph_page",
+      pageIdPresent: true,
       subscribed,
       status: result.status,
     });
 
-    return {
-      status: 200,
-      data: "Webhook subscription refreshed for comments and messages",
-    };
+    return { status: 200, data: "Page webhook subscription refreshed for comments and messages" };
   } catch (error) {
     const safe = formatSafeMetaError(error);
     const integration = await getIntegrations(user.id);
     const instagram = integration?.integrations[0];
     if (instagram?.id && instagram.token) {
-      const tokenDiagnostic = getInstagramTokenFormatDiagnostic(instagram.token);
-      if (tokenDiagnostic.looksUsable) {
-        await updateIntegration(
-          instagram.token,
-          instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-          instagram.id,
-          instagram.instagramId ?? undefined,
-          instagram.instagramUsername ?? undefined,
-          instagram.profilePictureUrl ?? undefined,
-          {
-            statusCode: getSafeMetaError(error).status,
-            subscribed: false,
-            error: safe || "subscribed_apps_failed",
-            attemptedAt: new Date(),
-          }
-        );
-      }
+      await updateIntegration(
+        instagram.token,
+        instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        instagram.id,
+        instagram.instagramId ?? undefined,
+        instagram.instagramUsername ?? undefined,
+        instagram.profilePictureUrl ?? undefined,
+        instagram.pageId ?? undefined,
+        instagram.businessId ?? undefined,
+        {
+          statusCode: getSafeMetaError(error).status,
+          subscribed: false,
+          error: safe || "page_subscribed_apps_failed",
+          attemptedAt: new Date(),
+        }
+      );
     }
-    console.warn("[webhook-subscription] manual resubscribe failed", {
+    console.warn("[webhook-subscription] manual page resubscribe failed", {
       error: getSafeMetaError(error),
     });
-    return {
-      status: 500,
-      data: safe || "Meta rejected the webhook subscription request",
-    };
+    return { status: 500, data: safe || "Meta rejected the page webhook subscription request" };
   }
 };
 
@@ -359,7 +309,7 @@ export const recordInstagramOAuthError = async (error: string) => {
   if (!user) return { status: 401 };
 
   try {
-    await recordIntegrationOAuthError(user.id, error, "instagram_oauth");
+    await recordIntegrationOAuthError(user.id, error, "facebook_business_oauth");
     return { status: 200, data: { clerkId: user.id } };
   } catch {
     return { status: 500, data: { clerkId: user.id } };

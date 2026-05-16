@@ -21,7 +21,7 @@ type AutomationWithRelations = Automation & {
   listener: Listener | null;
   User: {
     subscription: Pick<Subscription, "plan"> | null;
-    integrations: Pick<Integrations, "token">[];
+    integrations: Pick<Integrations, "token" | "instagramId" | "pageId">[];
   } | null;
 };
 
@@ -52,11 +52,11 @@ export function normalizeInstagramMediaId(value?: string | null) {
  * Finds an active automation that:
  * - has a COMMENT trigger
  * - has a Post with postid matching the commented media
- * - belongs to a user whose Instagram account ID matches the webhook entry.id
+ * - belongs to a user whose connected Page ID matches the webhook entry.id
  */
 export const findAutomationForComment = async (
   mediaId: string,
-  igAccountId: string
+  pageId: string
 ): Promise<AutomationWithRelations | null> => {
   return await client.automation.findFirst({
     where: {
@@ -64,7 +64,7 @@ export const findAutomationForComment = async (
       trigger: { some: { type: "COMMENT" } },
       posts: { some: { postid: { in: [mediaId, "ANY"] } } },
       User: {
-        integrations: { some: { instagramId: igAccountId } },
+        integrations: { some: { pageId } },
       },
     },
     include: {
@@ -75,8 +75,8 @@ export const findAutomationForComment = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { token: true },
-            where: { instagramId: igAccountId },
+            select: { token: true, instagramId: true, pageId: true },
+            where: { pageId },
           },
         },
       },
@@ -86,7 +86,7 @@ export const findAutomationForComment = async (
 
 export const findAutomationForCommentWithReason = async (
   mediaId: string,
-  igAccountId: string
+  pageId: string
 ): Promise<{
   automation: AutomationWithRelations | null;
   failureReason?: "no_matching_integration" | "no_active_automation_for_media";
@@ -110,10 +110,8 @@ export const findAutomationForCommentWithReason = async (
   const integration = await client.integrations.findFirst({
     where: {
       OR: [
-        { instagramId: igAccountId },
-        { webhookAccountId: igAccountId },
-        { pageId: igAccountId },
-        { businessId: igAccountId },
+        { pageId },
+        { webhookAccountId: pageId },
       ],
     },
     select: {
@@ -133,7 +131,7 @@ export const findAutomationForCommentWithReason = async (
       diagnostics: {
         incomingMediaId: mediaId,
         normalizedIncomingMediaId,
-        incomingIgAccountId: igAccountId,
+        incomingPageId: pageId,
         allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
         allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
         matchingIntegrationFound: false,
@@ -144,10 +142,10 @@ export const findAutomationForCommentWithReason = async (
     };
   }
 
-  if (!integration.webhookAccountId || integration.webhookAccountId !== igAccountId) {
+  if (!integration.webhookAccountId || integration.webhookAccountId !== pageId) {
     await client.integrations.update({
       where: { id: integration.id },
-      data: { webhookAccountId: igAccountId },
+      data: { webhookAccountId: pageId },
     });
   }
 
@@ -164,8 +162,8 @@ export const findAutomationForCommentWithReason = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { token: true },
-            where: { instagramId: igAccountId },
+            select: { token: true, instagramId: true, pageId: true },
+            where: { pageId },
           },
         },
       },
@@ -194,7 +192,7 @@ export const findAutomationForCommentWithReason = async (
   const diagnostics = {
     incomingMediaId: mediaId,
     normalizedIncomingMediaId,
-    incomingIgAccountId: igAccountId,
+    incomingPageId: pageId,
     allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
     allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
     matchingIntegrationFound: true,
@@ -237,14 +235,14 @@ export const findAutomationForCommentWithReason = async (
  */
 export const findAutomationForDM = async (
   dmText: string,
-  igAccountId: string
+  pageId: string
 ): Promise<{ automation: AutomationWithRelations; matchedKeyword: string } | null> => {
   const automations = await client.automation.findMany({
     where: {
       active: true,
       trigger: { some: { type: "DM" } },
       User: {
-        integrations: { some: { instagramId: igAccountId } },
+        integrations: { some: { pageId } },
       },
     },
     include: {
@@ -254,8 +252,8 @@ export const findAutomationForDM = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { token: true },
-            where: { instagramId: igAccountId },
+            select: { token: true, instagramId: true, pageId: true },
+            where: { pageId },
           },
         },
       },
@@ -286,7 +284,7 @@ export const findAutomationById = async (id: string) => {
       User: {
         select: {
           subscription: { select: { plan: true } },
-          integrations: { select: { token: true } },
+          integrations: { select: { token: true, instagramId: true, pageId: true } },
         },
       },
     },
@@ -381,6 +379,7 @@ export const createAutomationEvent = async (data: {
 
 export const createWebhookEvent = async (data: {
   automationId?: string;
+  eventSource?: "META_REAL" | "SIMULATED_INTERNAL";
   eventType: string;
   field?: string;
   igAccountId?: string;

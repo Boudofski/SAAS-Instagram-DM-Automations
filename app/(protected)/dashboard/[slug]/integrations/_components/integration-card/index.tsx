@@ -153,10 +153,10 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <HealthItem
-              label="Token format"
+              label="Page token"
               value={
-                health?.data?.oauth?.tokenFormat
-                  ? `${health.data.oauth.tokenFormat.reason}${
+                health?.data?.oauth
+                  ? `${health.data.oauth.tokenPresent ? "stored" : "missing"}${
                       health.data.oauth.tokenExpired ? " · expired" : ""
                     }`
                   : "Unknown"

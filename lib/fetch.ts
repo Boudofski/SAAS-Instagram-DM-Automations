@@ -1,17 +1,9 @@
 import axios from "axios";
-import {
-  getInstagramTokenFormatDiagnostic,
-  normalizeInstagramAccessToken,
-} from "./instagram-token";
 
-export const INSTAGRAM_GRAPH_BASE_URL =
-  process.env.INSTAGRAM_GRAPH_BASE_URL ??
-  process.env.INSTAGRAM_BASE_URL ??
-  "https://graph.instagram.com";
 export const META_GRAPH_BASE_URL =
   process.env.META_GRAPH_BASE_URL ?? "https://graph.facebook.com";
-const INSTAGRAM_TOKEN_URL =
-  process.env.INSTAGRAM_TOKEN_URL ?? "https://api.instagram.com/oauth/access_token";
+export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION ?? "v25.0";
+export const META_GRAPH_API_BASE_URL = `${META_GRAPH_BASE_URL}/${META_GRAPH_VERSION}`;
 
 export function getSafeMetaError(error: unknown) {
   if (axios.isAxiosError(error)) {
@@ -47,22 +39,7 @@ export function formatSafeMetaError(error: unknown) {
 }
 
 export const refreshToken = async (token: string) => {
-  const existingDiagnostic = getInstagramTokenFormatDiagnostic(token);
-  if (!existingDiagnostic.looksUsable) {
-    console.warn("[oauth] refresh skipped: stored token format invalid", {
-      tokenFormat: existingDiagnostic.reason,
-      tokenLength: existingDiagnostic.length,
-    });
-    throw new Error("invalid_stored_instagram_token_format");
-  }
-
-  console.log("[meta-api] refresh token request", {
-    endpointFamily: "instagram_graph",
-  });
-  const refresh_token = await axios.get(
-    `${INSTAGRAM_GRAPH_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
-  );
-  return refresh_token.data;
+  return exchangeLongLivedFacebookUserToken(token);
 };
 
 export const sendDm = async (
@@ -72,12 +49,12 @@ export const sendDm = async (
   token: string
 ) => {
   console.log("[meta-api] send DM request", {
-    endpointFamily: "instagram_graph",
+    endpointFamily: "facebook_graph_instagram_business",
     hasUserId: Boolean(userId),
     hasReceiverId: Boolean(receiverId),
   });
   return await axios.post(
-    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
+    `${META_GRAPH_API_BASE_URL}/${userId}/messages`,
     {
       recipient: { id: receiverId },
       message: { text: prompt },
@@ -98,12 +75,12 @@ export const sendPrivateMessage = async (
   token: string
 ) => {
   console.log("[meta-api] send private reply request", {
-    endpointFamily: "instagram_graph",
+    endpointFamily: "facebook_graph_instagram_business",
     hasUserId: Boolean(userId),
     hasCommentId: Boolean(commentId),
   });
   return await axios.post(
-    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
+    `${META_GRAPH_API_BASE_URL}/${userId}/messages`,
     {
       recipient: { comment_id: commentId },
       message: { text: message },
@@ -119,7 +96,7 @@ export const sendPrivateMessage = async (
 
 /**
  * Posts a visible public reply under a comment.
- * Uses the Instagram Graph API for Instagram Login tokens.
+ * Uses the Instagram Graph API through Facebook Graph with a Page access token.
  */
 export const sendCommentReply = async (
   commentId: string,
@@ -127,11 +104,11 @@ export const sendCommentReply = async (
   token: string
 ) => {
   console.log("[meta-api] send comment reply request", {
-    endpointFamily: "instagram_graph",
+    endpointFamily: "facebook_graph_instagram_business",
     hasCommentId: Boolean(commentId),
   });
   return await axios.post(
-    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${commentId}/replies`,
+    `${META_GRAPH_API_BASE_URL}/${commentId}/replies`,
     { message },
     {
       headers: {
@@ -142,16 +119,16 @@ export const sendCommentReply = async (
   );
 };
 
-export const subscribeInstagramWebhooks = async (
-  igAccountId: string,
+export const subscribePageWebhooks = async (
+  pageId: string,
   token: string
 ) => {
   console.log("[meta-api] subscribed_apps request", {
-    endpointFamily: "instagram_graph",
-    hasIgAccountId: Boolean(igAccountId),
+    endpointFamily: "facebook_graph_page",
+    hasPageId: Boolean(pageId),
   });
   return await axios.post(
-    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${igAccountId}/subscribed_apps`,
+    `${META_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`,
     null,
     {
       params: {
@@ -162,7 +139,9 @@ export const subscribeInstagramWebhooks = async (
   );
 };
 
-export const generateToken = async (code: string) => {
+export const subscribeInstagramWebhooks = subscribePageWebhooks;
+
+function getMetaOAuthConfig() {
   const redirectUri =
     process.env.META_REDIRECT_URI ??
     (process.env.NEXT_PUBLIC_HOST_URL
@@ -173,78 +152,139 @@ export const generateToken = async (code: string) => {
     throw new Error("META_REDIRECT_URI is not configured");
   }
 
-  const clientId =
-    process.env.INSTAGRAM_APP_ID ??
-    process.env.INSTAGRAM_CLIENT_ID ??
-    process.env.META_APP_ID;
-  const clientSecret =
-    process.env.INSTAGRAM_APP_SECRET ??
-    process.env.INSTAGRAM_CLIENT_SECRET ?? process.env.META_APP_SECRET;
+  const clientId = process.env.META_APP_ID;
+  const clientSecret = process.env.META_APP_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error("Meta Instagram OAuth client credentials are not configured");
+    throw new Error("META_APP_ID and META_APP_SECRET are required for Facebook Business OAuth");
   }
 
-  const insta_form = new FormData();
-  insta_form.append("client_id", clientId);
-  insta_form.append("client_secret", clientSecret);
-  insta_form.append("grant_type", "authorization_code");
-  insta_form.append("redirect_uri", redirectUri);
-  insta_form.append("code", code);
+  return { clientId, clientSecret, redirectUri };
+}
 
-  const shortTokenRes = await fetch(INSTAGRAM_TOKEN_URL, {
-    method: "POST",
-    body: insta_form,
+function assertAccessToken(value: unknown) {
+  return typeof value === "string" && value.trim().length > 20 ? value : null;
+}
+
+export const exchangeLongLivedFacebookUserToken = async (shortUserToken: string) => {
+  const { clientId, clientSecret } = getMetaOAuthConfig();
+  const longToken = await axios.get(`${META_GRAPH_API_BASE_URL}/oauth/access_token`, {
+    params: {
+      grant_type: "fb_exchange_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      fb_exchange_token: shortUserToken,
+    },
   });
 
-  const token = await shortTokenRes.json();
-  const shortAccessToken = normalizeInstagramAccessToken(token);
-  const shortTokenDiagnostic = getInstagramTokenFormatDiagnostic(
-    typeof token === "object" && token !== null && "access_token" in token
-      ? (token as { access_token?: unknown }).access_token
-      : undefined
-  );
-  console.log("[oauth] token exchange result", {
+  const accessToken = assertAccessToken(longToken.data?.access_token);
+  if (!accessToken) return null;
+
+  return {
+    accessToken,
+    expiresIn:
+      typeof longToken.data?.expires_in === "number"
+        ? longToken.data.expires_in
+        : undefined,
+  };
+};
+
+export const generateToken = async (code: string) => {
+  const { clientId, clientSecret, redirectUri } = getMetaOAuthConfig();
+
+  const shortTokenRes = await axios.get(`${META_GRAPH_API_BASE_URL}/oauth/access_token`, {
+    params: {
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      code,
+    },
+  });
+
+  const shortAccessToken = assertAccessToken(shortTokenRes.data?.access_token);
+  console.log("[oauth] facebook code exchange result", {
+    endpointFamily: "facebook_graph_oauth",
     tokenExchangeStatus: shortTokenRes.status,
     hasAccessToken: Boolean(shortAccessToken),
-    accessTokenFormat: shortTokenDiagnostic.reason,
+    authProduct: "facebook_login_for_business",
   });
 
-  if (shortTokenRes.ok && shortAccessToken) {
-    const long_token = await axios.get(
-      `${INSTAGRAM_GRAPH_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${shortAccessToken}`
-    );
-    const longAccessToken = normalizeInstagramAccessToken(long_token.data);
-    const longTokenDiagnostic = getInstagramTokenFormatDiagnostic(
-      typeof long_token.data === "object" &&
-        long_token.data !== null &&
-        "access_token" in long_token.data
-        ? (long_token.data as { access_token?: unknown }).access_token
-        : undefined
-    );
-    console.log("[oauth] long-lived token exchange result", {
-      tokenExchangeStatus: long_token.status,
-      hasAccessToken: Boolean(longAccessToken),
-      accessTokenFormat: longTokenDiagnostic.reason,
-    });
-
-    if (!longAccessToken) {
-      console.warn("[oauth] long-lived token rejected: invalid access_token format", {
-        accessTokenFormat: longTokenDiagnostic.reason,
-        accessTokenLength: longTokenDiagnostic.length,
-      });
-      return null;
-    }
-
-    return {
-      accessToken: longAccessToken,
-      expiresIn:
-        typeof long_token.data?.expires_in === "number"
-          ? long_token.data.expires_in
-          : undefined,
-    };
+  if (!shortAccessToken) {
+    console.error("[oauth] facebook code exchange failed: missing access_token");
+    return null;
   }
 
-  console.error("[oauth] token exchange failed:", token?.error_message ?? token?.error?.message ?? "unknown error");
-  return null;
+  const longToken = await exchangeLongLivedFacebookUserToken(shortAccessToken);
+  console.log("[oauth] facebook long-lived token exchange result", {
+    endpointFamily: "facebook_graph_oauth",
+    hasAccessToken: Boolean(longToken?.accessToken),
+    authProduct: "facebook_login_for_business",
+  });
+
+  return longToken;
+};
+
+export const resolveFacebookBusinessInstagramAccount = async (userToken: string) => {
+  const accounts = await axios.get(`${META_GRAPH_API_BASE_URL}/me/accounts`, {
+    params: {
+      fields:
+        "id,name,access_token,instagram_business_account{id,username,profile_picture_url}",
+      access_token: userToken,
+    },
+  });
+
+  const pages = Array.isArray(accounts.data?.data) ? accounts.data.data : [];
+  const page = pages.find((item: any) => item?.instagram_business_account?.id);
+  const pageAccessToken = assertAccessToken(page?.access_token);
+  const instagramBusinessAccountId = page?.instagram_business_account?.id;
+
+  if (!page || !pageAccessToken || !instagramBusinessAccountId) {
+    return null;
+  }
+
+  return {
+    pageId: String(page.id),
+    pageName: page.name as string | undefined,
+    pageAccessToken,
+    instagramBusinessAccountId: String(instagramBusinessAccountId),
+    instagramUsername: page.instagram_business_account?.username as string | undefined,
+    profilePictureUrl: page.instagram_business_account?.profile_picture_url as string | undefined,
+  };
+};
+
+export const debugPageToken = async (token: string) => {
+  const { clientId, clientSecret } = getMetaOAuthConfig();
+  return await axios.get(`${META_GRAPH_API_BASE_URL}/debug_token`, {
+    params: {
+      input_token: token,
+      access_token: `${clientId}|${clientSecret}`,
+    },
+  });
+};
+
+export const getPageWebhookSubscriptions = async (pageId: string, pageToken: string) => {
+  return await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`, {
+    params: { access_token: pageToken },
+  });
+};
+
+export const getPageTokenPermissions = async (pageToken: string) => {
+  return await axios.get(`${META_GRAPH_API_BASE_URL}/me/permissions`, {
+    params: { access_token: pageToken },
+  });
+};
+
+export const getLinkedInstagramBusinessAccount = async (
+  pageId: string,
+  pageToken: string
+) => {
+  return await axios.get(
+    `${META_GRAPH_API_BASE_URL}/${pageId}`,
+    {
+      params: {
+        fields: "id,name,instagram_business_account{id,username,profile_picture_url}",
+        access_token: pageToken,
+      },
+    }
+  );
 };

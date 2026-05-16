@@ -1,6 +1,5 @@
-import { simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
+import { replaySavedWebhookEvent, simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
 import { requireOwnerAdmin, maskSecret } from "@/lib/admin";
-import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
 import Link from "next/link";
@@ -212,15 +211,10 @@ export default async function AdminPage({
                 ? `@${metaDiagnostics.integration.instagramUsername}`
                 : "Not connected"
             } />
-            <HealthCell label="Integration IG ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
-            <HealthCell label="Webhook account ID" value={metaDiagnostics.integration?.webhookAccountId ?? "same as integration"} />
-            <HealthCell label="Token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
-            <HealthCell
-              label="Token format"
-              value={`${metaDiagnostics.tokenFormat.reason} · ${metaDiagnostics.tokenFormat.length} chars`}
-              tone={metaDiagnostics.tokenFormat.looksUsable ? "green" : "red"}
-            />
-            <HealthCell label="subscribed_apps active" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
+            <HealthCell label="Facebook Page ID" value={metaDiagnostics.integration?.pageId ?? "none"} />
+            <HealthCell label="IG business account ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
+            <HealthCell label="Page token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
+            <HealthCell label="Page subscribed" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
             <HealthCell label="comments subscribed" value={metaDiagnostics.commentsSubscribed ? "yes" : "no"} tone={metaDiagnostics.commentsSubscribed ? "green" : "red"} />
             <HealthCell label="messages subscribed" value={metaDiagnostics.messagesSubscribed ? "yes" : "no"} tone={metaDiagnostics.messagesSubscribed ? "green" : "red"} />
             <HealthCell label="Token expires at" value={metaDiagnostics.integration?.expiresAt ? new Date(metaDiagnostics.integration.expiresAt).toLocaleString() : "unknown"} />
@@ -248,9 +242,9 @@ export default async function AdminPage({
             } tone={metaDiagnostics.integration?.oauthLastError ? "red" : "green"} />
             <HealthCell label="Token scopes" value={metaDiagnostics.tokenScopes.length ? metaDiagnostics.tokenScopes.join(", ") : metaDiagnostics.tokenScopesStatus} />
             <HealthCell label="Canonical OAuth product" value={metaDiagnostics.tokenHealth.config.product} />
-            <HealthCell label="Canonical app ID source" value={metaDiagnostics.tokenHealth.config.appIdSource} tone={metaDiagnostics.tokenHealth.config.hasAppIdMismatch ? "red" : "green"} />
-            <HealthCell label="Canonical secret source" value={metaDiagnostics.tokenHealth.config.appSecretSource} tone={metaDiagnostics.tokenHealth.config.hasSecretMismatch ? "red" : "green"} />
-            <HealthCell label="API endpoint family" value={metaDiagnostics.tokenHealth.config.apiEndpointFamily} tone={metaDiagnostics.tokenHealth.config.apiEndpointFamily === "instagram_graph" ? "green" : "red"} />
+            <HealthCell label="Canonical app ID source" value={metaDiagnostics.tokenHealth.config.appIdSource} tone={metaDiagnostics.tokenHealth.config.appIdSource === "META_APP_ID" ? "green" : "red"} />
+            <HealthCell label="Canonical secret source" value={metaDiagnostics.tokenHealth.config.appSecretSource} tone={metaDiagnostics.tokenHealth.config.appSecretSource === "META_APP_SECRET" ? "green" : "red"} />
+            <HealthCell label="API endpoint family" value={metaDiagnostics.tokenHealth.config.apiEndpointFamily} tone={metaDiagnostics.tokenHealth.config.apiEndpointFamily === "facebook_graph_instagram_business" ? "green" : "red"} />
             <HealthCell label="debug_token status" value={metaDiagnostics.tokenHealth.debugTokenStatus ?? "unknown"} tone={metaDiagnostics.tokenHealth.debugTokenStatus === "ok" ? "green" : "amber"} />
             <HealthCell label="Token app ID" value={metaDiagnostics.tokenHealth.tokenAppId ?? "unavailable"} tone={metaDiagnostics.tokenHealth.tokenBelongsToCurrentApp ? "green" : "amber"} />
             <HealthCell label="Token type" value={metaDiagnostics.tokenHealth.tokenType} />
@@ -258,6 +252,12 @@ export default async function AdminPage({
             <HealthCell label="Required scopes" value={metaDiagnostics.tokenHealth.requiredScopesPresent ? "present" : `missing ${metaDiagnostics.tokenHealth.missingScopes.join(", ")}`} tone={metaDiagnostics.tokenHealth.requiredScopesPresent ? "green" : "red"} />
             <HealthCell label="IG account linkage" value={metaDiagnostics.tokenHealth.igAccountLinked ? "matches integration" : "not confirmed"} tone={metaDiagnostics.tokenHealth.igAccountLinked ? "green" : "red"} />
             <HealthCell label="Auth diagnostics" value={metaDiagnostics.tokenHealth.diagnostics.length ? metaDiagnostics.tokenHealth.diagnostics.join(", ") : "none"} tone={metaDiagnostics.tokenHealth.diagnostics.length ? "amber" : "green"} />
+            <HealthCell label="Last 24h simulated" value={String(metaDiagnostics.last24h.simulatedEvents)} />
+            <HealthCell label="Last 24h real Meta" value={String(metaDiagnostics.last24h.realMetaEvents)} />
+            <HealthCell label="Last 24h failed signatures" value={String(metaDiagnostics.last24h.failedSignatures)} tone={metaDiagnostics.last24h.failedSignatures ? "red" : "green"} />
+            <HealthCell label="Last 24h ignored" value={String(metaDiagnostics.last24h.ignoredPayloads)} />
+            <HealthCell label="Last 24h keyword matched" value={String(metaDiagnostics.last24h.keywordMatched)} />
+            <HealthCell label="Last 24h DM sent/failed" value={`${metaDiagnostics.last24h.dmSent}/${metaDiagnostics.last24h.dmFailed}`} tone={metaDiagnostics.last24h.dmFailed ? "amber" : "green"} />
             <HealthCell label="App mode" value={`${metaDiagnostics.appMode}${metaDiagnostics.appModeNote ? " - verify in Meta dashboard" : ""}`} />
             <HealthCell label="Last real webhook" value={metaDiagnostics.lastRealWebhookAt ? new Date(metaDiagnostics.lastRealWebhookAt).toLocaleString() : "none yet"} tone={metaDiagnostics.lastRealWebhookAt ? "green" : "amber"} />
             <HealthCell label="Last failure" value={metaDiagnostics.lastFailureReason ?? "none"} />
@@ -269,8 +269,8 @@ export default async function AdminPage({
           <form action={simulateCommentWebhook} className="grid gap-3 p-4 text-sm md:grid-cols-5">
             <input
               name="igAccountId"
-              defaultValue={metaDiagnostics.integration?.webhookAccountId ?? metaDiagnostics.integration?.instagramId ?? ""}
-              placeholder="IG account ID"
+              defaultValue={metaDiagnostics.integration?.pageId ?? metaDiagnostics.integration?.webhookAccountId ?? ""}
+              placeholder="Facebook Page ID"
               className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
             />
             <input
@@ -319,7 +319,7 @@ export default async function AdminPage({
               <span>{integration.instagramUsername ? `@${integration.instagramUsername}` : "No username"}</span>
               <span>{integration.instagramId ?? "No IG ID"}</span>
               <span>
-                {maskSecret(integration.token)} · {getInstagramTokenFormatDiagnostic(integration.token).reason}
+                {maskSecret(integration.token)} · page token
               </span>
               <span>{integration.expiresAt ? new Date(integration.expiresAt).toLocaleDateString() : "No expiry"}</span>
             </AdminRow>
@@ -343,11 +343,20 @@ export default async function AdminPage({
             <AdminRow key={event.id}>
               <span><EventBadge eventType={event.eventType} /></span>
               <span><StatusBadge status={event.status} /></span>
-              <span>{event.igAccountId ?? "No IG account"}</span>
+              <span>{event.eventSource} · {event.igAccountId ?? "No Page"}</span>
               <span>{event.commentId ?? event.mediaId ?? "No object ID"}</span>
               <span>
                 {event.errorMessage ?? new Date(event.createdAt).toLocaleString()}
                 <PayloadSummary payload={event.payload} />
+                <PayloadRaw payload={event.payload} />
+                {event.eventSource === "META_REAL" && (
+                  <form action={replaySavedWebhookEvent} className="mt-2">
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <button className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50">
+                      Replay as simulation
+                    </button>
+                  </form>
+                )}
               </span>
             </AdminRow>
           ))}
@@ -496,6 +505,20 @@ function PayloadSummary({ payload }: { payload: unknown }) {
         </p>
       )}
     </div>
+  );
+}
+
+function PayloadRaw({ payload }: { payload: unknown }) {
+  if (!payload || typeof payload !== "object") return null;
+  return (
+    <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+      <summary className="cursor-pointer text-[11px] font-bold text-slate-600">
+        Sanitized payload
+      </summary>
+      <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-[11px] text-slate-700">
+        {JSON.stringify(payload, null, 2)}
+      </pre>
+    </details>
   );
 }
 

@@ -1,13 +1,10 @@
 "use server";
 
-import { refreshToken } from "@/lib/fetch";
 import { dashboardPath } from "@/lib/dashboard";
-import { normalizeInstagramAccessToken } from "@/lib/instagram-token";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { updateIntegration } from "../integration/queries";
 import { createUser, findUser, updateSubscription } from "./queries";
 
 const onboardingSkippedCookie = (clerkId: string) =>
@@ -40,31 +37,10 @@ export const onboardUser = async () => {
         const days = Math.round(time_left / (1000 * 3600 * 24));
 
         if (days < 5) {
-          console.log("refresh");
-
-          const refresh = await refreshToken(found.integrations[0].token);
-          const refreshedAccessToken = normalizeInstagramAccessToken(refresh);
-          if (!refreshedAccessToken) {
-            console.warn("[oauth] refresh returned invalid token format", {
-              integrationId: found.integrations[0].id,
-            });
-            return {
-              status: 500,
-              data: "instagram_token_refresh_invalid",
-            };
-          }
-          const today = new Date();
-          const expire_date = today.setDate(today.getDate() + 60);
-
-          const update_token = await updateIntegration(
-            refreshedAccessToken,
-            new Date(expire_date),
-            found.integrations[0].id
-          );
-
-          if (!update_token) {
-            console.log("Failed to update token");
-          }
+          console.warn("[oauth] page token near expiry; reconnect required", {
+            integrationId: found.integrations[0].id,
+            daysRemaining: days,
+          });
         }
       }
       return {

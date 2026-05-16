@@ -11,31 +11,33 @@ import {
 import { requireOwnerAdmin } from "@/lib/admin";
 import { matchKeywordWithMode } from "@/lib/matching";
 import { revalidatePath } from "next/cache";
+import { client } from "@/lib/prisma";
 
 export async function simulateCommentWebhook(formData: FormData) {
   await requireOwnerAdmin();
 
-  const igAccountId = String(formData.get("igAccountId") ?? "").trim();
+  const pageId = String(formData.get("igAccountId") ?? "").trim();
   const mediaId = String(formData.get("mediaId") ?? "").trim() || "SIMULATED_MEDIA";
   const commentId = String(formData.get("commentId") ?? "").trim() || `sim_${Date.now()}`;
   const commenterId = String(formData.get("commenterId") ?? "").trim() || "simulated_commenter";
   const text = String(formData.get("text") ?? "").trim() || "ai";
 
-  if (!igAccountId) {
+  if (!pageId) {
     return;
   }
 
   const webhookEvent = await createWebhookEvent({
-    eventType: "REAL_COMMENT_EVENT",
+    eventSource: "SIMULATED_INTERNAL",
+    eventType: "SIMULATED_COMMENT_EVENT",
     field: "comments",
-    igAccountId,
+    igAccountId: pageId,
     igUserId: commenterId,
     mediaId,
     commentId,
     payload: {
       simulation: true,
-      object: "instagram",
-      entryId: igAccountId,
+      object: "page",
+      entryId: pageId,
       field: "comments",
       changesCount: 1,
       hasValue: true,
@@ -46,11 +48,11 @@ export async function simulateCommentWebhook(formData: FormData) {
       hasText: true,
       mediaId,
       commentId,
-      igAccountId,
+      pageId,
     },
   });
 
-  const match = await findAutomationForCommentWithReason(mediaId, igAccountId);
+  const match = await findAutomationForCommentWithReason(mediaId, pageId);
   await mergeWebhookEventPayload(webhookEvent.id, {
     mediaMatching: match.diagnostics,
   });
@@ -129,4 +131,40 @@ export async function simulateCommentWebhook(formData: FormData) {
   });
 
   revalidatePath("/admin");
+}
+
+export async function replaySavedWebhookEvent(formData: FormData) {
+  await requireOwnerAdmin();
+
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  if (!eventId) return;
+
+  const event = await client.webhookEvent.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      eventSource: true,
+      igAccountId: true,
+      mediaId: true,
+      commentId: true,
+      igUserId: true,
+      payload: true,
+    },
+  });
+
+  if (!event || event.eventSource !== "META_REAL") return;
+
+  const payload =
+    event.payload && typeof event.payload === "object" && !Array.isArray(event.payload)
+      ? (event.payload as Record<string, unknown>)
+      : {};
+
+  const replayForm = new FormData();
+  replayForm.set("igAccountId", event.igAccountId ?? String(payload.entryId ?? ""));
+  replayForm.set("mediaId", event.mediaId ?? String(payload.mediaId ?? "REPLAY_MEDIA"));
+  replayForm.set("commentId", event.commentId ?? `replay_${event.id}`);
+  replayForm.set("commenterId", event.igUserId ?? String(payload.fromId ?? "replay_commenter"));
+  replayForm.set("text", String(payload.commentText ?? payload.text ?? "ai"));
+
+  await simulateCommentWebhook(replayForm);
 }

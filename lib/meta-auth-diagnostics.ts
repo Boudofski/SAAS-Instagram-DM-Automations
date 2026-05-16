@@ -1,11 +1,18 @@
 import axios from "axios";
-import { INSTAGRAM_GRAPH_BASE_URL, META_GRAPH_BASE_URL } from "@/lib/fetch";
-import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
+import {
+  getLinkedInstagramBusinessAccount,
+  getPageTokenPermissions,
+  getPageWebhookSubscriptions,
+  META_GRAPH_API_BASE_URL,
+} from "@/lib/fetch";
 
 const REQUIRED_SCOPES = [
-  "instagram_business_basic",
-  "instagram_business_manage_comments",
-  "instagram_business_manage_messages",
+  "instagram_basic",
+  "instagram_manage_comments",
+  "instagram_manage_messages",
+  "pages_show_list",
+  "pages_read_engagement",
+  "business_management",
 ];
 
 type SafeCall<T> =
@@ -23,9 +30,7 @@ function safeMetaError(error: unknown) {
     };
   }
 
-  return {
-    error: error instanceof Error ? error.message : String(error),
-  };
+  return { error: error instanceof Error ? error.message : String(error) };
 }
 
 async function safeCall<T>(operation: () => Promise<{ status: number; data: T }>): Promise<SafeCall<T>> {
@@ -38,13 +43,6 @@ async function safeCall<T>(operation: () => Promise<{ status: number; data: T }>
 }
 
 export function getCanonicalMetaConfig() {
-  const instagramAppId = process.env.INSTAGRAM_APP_ID ?? process.env.INSTAGRAM_CLIENT_ID;
-  const metaAppId = process.env.META_APP_ID;
-  const appId = instagramAppId ?? metaAppId;
-  const instagramSecret =
-    process.env.INSTAGRAM_APP_SECRET ?? process.env.INSTAGRAM_CLIENT_SECRET;
-  const metaSecret = process.env.META_APP_SECRET;
-  const appSecret = instagramSecret ?? metaSecret;
   const redirectUri =
     process.env.META_REDIRECT_URI ??
     (process.env.NEXT_PUBLIC_HOST_URL
@@ -52,31 +50,16 @@ export function getCanonicalMetaConfig() {
       : undefined);
 
   return {
-    product: "instagram_login" as const,
-    appId,
-    appIdSource: instagramAppId
-      ? process.env.INSTAGRAM_APP_ID
-        ? "INSTAGRAM_APP_ID"
-        : "INSTAGRAM_CLIENT_ID"
-      : metaAppId
-      ? "META_APP_ID"
-      : "none",
-    appSecret,
-    appSecretSource: instagramSecret
-      ? process.env.INSTAGRAM_APP_SECRET
-        ? "INSTAGRAM_APP_SECRET"
-        : "INSTAGRAM_CLIENT_SECRET"
-      : metaSecret
-      ? "META_APP_SECRET"
-      : "none",
+    product: "facebook_login_for_business" as const,
+    appId: process.env.META_APP_ID,
+    appIdSource: process.env.META_APP_ID ? "META_APP_ID" : "none",
+    appSecret: process.env.META_APP_SECRET,
+    appSecretSource: process.env.META_APP_SECRET ? "META_APP_SECRET" : "none",
     redirectUri,
-    hasAppIdMismatch: Boolean(instagramAppId && metaAppId && instagramAppId !== metaAppId),
-    hasSecretMismatch: Boolean(instagramSecret && metaSecret && instagramSecret !== metaSecret),
-    oauthAuthorizeEndpoint: "https://www.instagram.com/oauth/authorize",
-    tokenEndpoint: "https://api.instagram.com/oauth/access_token",
-    longTokenEndpointFamily: "instagram_graph",
-    apiEndpointFamily: "instagram_graph",
-    webhookSubscriptionEndpointFamily: "instagram_graph",
+    oauthAuthorizeEndpoint: "https://www.facebook.com/v25.0/dialog/oauth",
+    tokenEndpoint: `${META_GRAPH_API_BASE_URL}/oauth/access_token`,
+    apiEndpointFamily: "facebook_graph_instagram_business",
+    webhookSubscriptionEndpointFamily: "facebook_graph_page",
   };
 }
 
@@ -100,20 +83,23 @@ function sanitizeDebugToken(data: any) {
   };
 }
 
+function tokenLooksPresent(value?: string | null) {
+  return typeof value === "string" && value.trim().length > 20;
+}
+
 export async function getMetaTokenHealth(input: {
-  accessToken?: string | null;
-  instagramId?: string | null;
+  pageAccessToken?: string | null;
+  pageId?: string | null;
+  instagramBusinessAccountId?: string | null;
 }) {
   const config = getCanonicalMetaConfig();
-  const tokenFormat = getInstagramTokenFormatDiagnostic(input.accessToken);
   const appAccessToken = buildAppAccessToken(config.appId, config.appSecret);
 
-  if (!input.accessToken || !tokenFormat.looksUsable) {
+  if (!tokenLooksPresent(input.pageAccessToken)) {
     return {
       config,
-      tokenFormat,
       tokenValid: false,
-      graphValidationResult: "skipped_invalid_token_format",
+      graphValidationResult: "missing_page_access_token",
       debugToken: null,
       tokenAppId: null,
       tokenType: "unknown",
@@ -122,51 +108,35 @@ export async function getMetaTokenHealth(input: {
       tokenBelongsToCurrentApp: false,
       requiredScopesPresent: false,
       missingScopes: REQUIRED_SCOPES,
+      linkedInstagramBusinessAccount: null,
       igAccountLinked: false,
       subscribedAppsEligible: false,
       subscribedAppsActive: false,
-      diagnostics: ["invalid_token_format"],
+      commentsSubscribed: false,
+      messagesSubscribed: false,
+      diagnostics: ["missing_page_access_token"],
     };
   }
 
-  const [debugTokenCall, igMeCall, permissionsCall, subscribedAppsCall] =
+  const [debugTokenCall, permissionsCall, linkedIgCall, subscribedAppsCall] =
     await Promise.all([
       appAccessToken
         ? safeCall(() =>
-            axios.get(`${META_GRAPH_BASE_URL}/debug_token`, {
+            axios.get(`${META_GRAPH_API_BASE_URL}/debug_token`, {
               params: {
-                input_token: input.accessToken,
+                input_token: input.pageAccessToken,
                 access_token: appAccessToken,
               },
             })
           )
-        : Promise.resolve({
-            ok: false as const,
-            error: "missing_app_access_token",
-          }),
-      safeCall(() =>
-        axios.get(`${INSTAGRAM_GRAPH_BASE_URL}/me`, {
-          params: {
-            fields: "user_id,username,account_type",
-            access_token: input.accessToken,
-          },
-        })
-      ),
-      safeCall(() =>
-        axios.get(`${INSTAGRAM_GRAPH_BASE_URL}/me/permissions`, {
-          params: { access_token: input.accessToken },
-        })
-      ),
-      input.instagramId
-        ? safeCall(() =>
-            axios.get(`${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${input.instagramId}/subscribed_apps`, {
-              params: { access_token: input.accessToken },
-            })
-          )
-        : Promise.resolve({
-            ok: false as const,
-            error: "missing_instagram_id",
-          }),
+        : Promise.resolve({ ok: false as const, error: "missing_app_access_token" }),
+      safeCall(() => getPageTokenPermissions(input.pageAccessToken!)),
+      input.pageId
+        ? safeCall(() => getLinkedInstagramBusinessAccount(input.pageId!, input.pageAccessToken!))
+        : Promise.resolve({ ok: false as const, error: "missing_page_id" }),
+      input.pageId
+        ? safeCall(() => getPageWebhookSubscriptions(input.pageId!, input.pageAccessToken!))
+        : Promise.resolve({ ok: false as const, error: "missing_page_id" }),
     ]);
 
   const debugToken = debugTokenCall.ok ? sanitizeDebugToken(debugTokenCall.data) : null;
@@ -178,6 +148,9 @@ export async function getMetaTokenHealth(input: {
           .filter(Boolean)
       : debugToken?.scopes ?? [];
   const missingScopes = REQUIRED_SCOPES.filter((scope) => !tokenScopes.includes(scope));
+  const linkedInstagramBusinessAccount = linkedIgCall.ok
+    ? (linkedIgCall.data as any)?.instagram_business_account ?? null
+    : null;
   const subscribedData =
     subscribedAppsCall.ok && Array.isArray((subscribedAppsCall.data as any)?.data)
       ? (subscribedAppsCall.data as any).data
@@ -187,24 +160,25 @@ export async function getMetaTokenHealth(input: {
       Array.isArray(item.subscribed_fields) ? item.subscribed_fields : []
     )
   );
-  const diagnostics: string[] = [];
 
-  if (config.hasAppIdMismatch) diagnostics.push("app_id_env_mismatch");
-  if (config.hasSecretMismatch) diagnostics.push("app_secret_env_mismatch");
-  if (!debugTokenCall.ok) {
-    diagnostics.push(
-      debugTokenCall.error?.includes("Cannot parse access token")
-        ? "debug_token_cannot_parse_instagram_login_token"
-        : "debug_token_failed"
-    );
-  }
+  const diagnostics: string[] = [];
+  if (!debugTokenCall.ok) diagnostics.push("debug_token_failed");
   if (debugToken?.app_id && config.appId && debugToken.app_id !== config.appId) {
     diagnostics.push("token_issued_by_wrong_app");
   }
-  if (!igMeCall.ok) diagnostics.push("instagram_graph_me_failed");
   if (!permissionsCall.ok) diagnostics.push("token_scopes_unavailable");
   if (missingScopes.length > 0) diagnostics.push("missing_required_scopes");
-  if (!subscribedAppsCall.ok) diagnostics.push("subscribed_apps_failed");
+  if (!linkedIgCall.ok || !linkedInstagramBusinessAccount?.id) {
+    diagnostics.push("linked_instagram_business_account_missing");
+  }
+  if (
+    linkedInstagramBusinessAccount?.id &&
+    input.instagramBusinessAccountId &&
+    linkedInstagramBusinessAccount.id !== input.instagramBusinessAccountId
+  ) {
+    diagnostics.push("linked_instagram_business_account_mismatch");
+  }
+  if (!subscribedAppsCall.ok) diagnostics.push("page_subscribed_apps_failed");
   if (subscribedAppsCall.ok && !subscribedFields.has("comments")) {
     diagnostics.push("comments_not_subscribed");
   }
@@ -214,13 +188,12 @@ export async function getMetaTokenHealth(input: {
 
   return {
     config,
-    tokenFormat,
-    tokenValid: igMeCall.ok,
-    graphValidationResult: igMeCall.ok ? "instagram_graph_me_ok" : igMeCall.error,
+    tokenValid: Boolean(debugToken?.is_valid),
+    graphValidationResult: debugToken?.is_valid ? "debug_token_valid" : debugTokenCall.ok ? "debug_token_invalid" : debugTokenCall.error,
     debugToken,
     debugTokenStatus: debugTokenCall.ok ? "ok" : debugTokenCall.error,
     tokenAppId: debugToken?.app_id ?? null,
-    tokenType: debugToken?.type ?? "instagram_login_access_token_or_unknown",
+    tokenType: debugToken?.type ?? "page_access_token_or_unknown",
     tokenScopes,
     issuedByApp: debugToken?.application ?? null,
     tokenBelongsToCurrentApp: Boolean(
@@ -228,12 +201,9 @@ export async function getMetaTokenHealth(input: {
     ),
     requiredScopesPresent: missingScopes.length === 0,
     missingScopes,
-    igAccountLinked:
-      igMeCall.ok &&
-      Boolean((igMeCall.data as any)?.user_id) &&
-      (!input.instagramId || (igMeCall.data as any).user_id === input.instagramId),
-    igAccount: igMeCall.ok ? igMeCall.data : null,
-    subscribedAppsEligible: igMeCall.ok && missingScopes.length === 0,
+    linkedInstagramBusinessAccount,
+    igAccountLinked: Boolean(linkedInstagramBusinessAccount?.id),
+    subscribedAppsEligible: Boolean(debugToken?.is_valid && input.pageId),
     subscribedAppsActive: subscribedData.length > 0,
     commentsSubscribed: subscribedFields.has("comments"),
     messagesSubscribed: subscribedFields.has("messages"),

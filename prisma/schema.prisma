@@ -156,6 +156,7 @@ model WebhookEvent {
   automationId String?     @db.Uuid
   automation   Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
   provider     String      @default("meta")
+  eventSource  String      @default("META_REAL")
   eventType    String
   field        String?
   igAccountId  String?
@@ -171,6 +172,7 @@ model WebhookEvent {
   @@index([automationId, createdAt])
   @@index([igAccountId, createdAt])
   @@index([commentId])
+  @@index([eventSource, createdAt])
 }
 
 model MessageLog {

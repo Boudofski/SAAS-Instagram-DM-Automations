@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
 
   if (mode === "subscribe" && tokenMatch && challenge) {
     await createWebhookEvent({
-      eventType: "WEBHOOK_VERIFY_GET",
+          eventType: "WEBHOOK_VERIFY_GET",
+          eventSource: "META_REAL",
       status: "PROCESSED",
       payload: {
         mode,
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
   }
   await createWebhookEvent({
     eventType: "WEBHOOK_VERIFY_GET",
+    eventSource: "META_REAL",
     status: "FAILED",
     errorMessage: "webhook_verification_failed",
     payload: {
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
       try {
         await createWebhookEvent({
           eventType: "SIGNATURE_FAILED",
+          eventSource: "META_REAL",
           status: "FAILED",
           errorMessage: signatureResult.reason,
           payload: {
@@ -112,15 +115,9 @@ export async function POST(req: NextRequest) {
             ),
             hasSignature: Boolean(signature),
             hasAppSecret: Boolean(
-              process.env.INSTAGRAM_APP_SECRET ??
-              process.env.INSTAGRAM_CLIENT_SECRET ??
               process.env.META_APP_SECRET
             ),
-            secretSource: process.env.INSTAGRAM_APP_SECRET
-              ? "INSTAGRAM_APP_SECRET"
-              : process.env.INSTAGRAM_CLIENT_SECRET
-              ? "INSTAGRAM_CLIENT_SECRET"
-              : process.env.META_APP_SECRET
+            secretSource: process.env.META_APP_SECRET
               ? "META_APP_SECRET"
               : "none",
           },
@@ -136,6 +133,7 @@ export async function POST(req: NextRequest) {
     if (!parsedBody.ok) {
       await createWebhookEvent({
         eventType: "PAYLOAD_INVALID",
+        eventSource: "META_REAL",
         status: "FAILED",
         errorMessage: "invalid_json_payload",
         payload: {
@@ -151,6 +149,7 @@ export async function POST(req: NextRequest) {
     if (entries.length === 0) {
       await createWebhookEvent({
         eventType: classifyWebhookEnvelope(body),
+        eventSource: "META_REAL",
         status: "IGNORED",
         field: "none",
         payload: safeWebhookMetadata(
@@ -186,18 +185,19 @@ async function processEntry(
   signatureValid: boolean,
   requestMeta: ReturnType<typeof getRequestMetadata>
 ) {
-  const igAccountId: string = entry.id;
+  const pageId: string = entry.id;
   const changes = Array.isArray(entry.changes) ? entry.changes : [];
   const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
 
   const field = changes[0]?.field ?? (messaging.length ? "messaging" : "unknown");
-  console.log(`[webhook] POST field=${field} igAccountId=${igAccountId}`);
+  console.log(`[webhook] POST field=${field} pageId=${pageId}`);
 
   if (changes.length === 0 && messaging.length === 0) {
     await createWebhookEvent({
       eventType: "PAYLOAD_INVALID",
+      eventSource: "META_REAL",
       field,
-      igAccountId,
+      igAccountId: pageId,
       status: "IGNORED",
       errorMessage: "entry_without_changes_or_messaging",
       payload: safeWebhookMetadata(
@@ -226,8 +226,9 @@ async function processEntry(
 
       const webhookEvent = await createWebhookEvent({
         eventType: classifyCommentWebhook(envelope, entry, changeItem),
+        eventSource: "META_REAL",
         field: changeItem.field,
-        igAccountId,
+        igAccountId: pageId,
         igUserId: commenterId,
         mediaId,
         commentId,
@@ -251,7 +252,7 @@ async function processEntry(
       }
 
       // 1. Find active automation for this post
-      const match = await findAutomationForCommentWithReason(mediaId, igAccountId);
+      const match = await findAutomationForCommentWithReason(mediaId, pageId);
       const automation = match.automation;
       await mergeWebhookEventPayload(webhookEvent.id, {
         mediaMatching: match.diagnostics,
@@ -260,7 +261,7 @@ async function processEntry(
         const failureReason = match.failureReason ?? "no_active_automation_for_media";
         console.log("[webhook] automation match failed", {
           mediaId,
-          igAccountId,
+          pageId,
           failureReason,
         });
         await updateWebhookEvent(webhookEvent.id, {
@@ -360,6 +361,7 @@ async function processEntry(
       });
 
       const token = automation.User?.integrations?.[0]?.token;
+      const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
       if (!token) {
         console.warn("[webhook] automation token missing", { automationId: automation.id });
         await createMessageLog({
@@ -375,6 +377,24 @@ async function processEntry(
           automationId: automation.id,
           status: "FAILED",
           errorMessage: "token_missing",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+      if (!instagramBusinessAccountId) {
+        await createMessageLog({
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          mediaId,
+          commentId,
+          messageType: "DM",
+          status: "FAILED",
+          errorMessage: "instagram_business_account_missing",
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "FAILED",
+          errorMessage: "instagram_business_account_missing",
           processedAt: new Date(),
         });
         continue;
@@ -473,7 +493,7 @@ async function processEntry(
       // 7. Send private DM (referenced to the comment)
       try {
         const dmResult = await withRetry(() =>
-          sendPrivateMessage(igAccountId, commentId, dmMessageText, token)
+          sendPrivateMessage(instagramBusinessAccountId, commentId, dmMessageText, token)
         );
         const sent = dmResult.status === 200;
         console.log(`[webhook] ${sent ? "DM_SENT" : "DM_FAILED"} recipientId=${commenterId} automationId=${automation.id}`);
@@ -535,8 +555,9 @@ async function processEntry(
       console.log("[webhook] unsupported change ignored", { field: changeItem.field });
       await createWebhookEvent({
         eventType: "UNHANDLED_WEBHOOK",
+        eventSource: "META_REAL",
         field: changeItem.field,
-        igAccountId,
+        igAccountId: pageId,
         status: "IGNORED",
         payload: safeWebhookMetadata(envelope, signatureValid, entry, changeItem, requestMeta),
       });
@@ -554,8 +575,9 @@ async function processEntry(
 
       const webhookEvent = await createWebhookEvent({
         eventType: "REAL_MESSAGE_EVENT",
+        eventSource: "META_REAL",
         field: "messaging",
-        igAccountId,
+        igAccountId: pageId,
         igUserId: senderId,
         payload: {
           ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
@@ -574,13 +596,13 @@ async function processEntry(
       }
 
       // 1. Try to match an automation by keyword
-      const result = await findAutomationForDM(dmText, igAccountId);
+      const result = await findAutomationForDM(dmText, pageId);
 
       if (!result) {
         console.log(`[webhook] DM no-match senderId=${senderId} — checking SMARTAI conversation`);
         // No keyword match — check for an ongoing SMARTAI conversation
         try {
-          const chatHistory = await getChatHistory(igAccountId, senderId);
+          const chatHistory = await getChatHistory(pageId, senderId);
           if (chatHistory.history.length > 0 && chatHistory.automationId) {
             const automation = await findAutomationById(chatHistory.automationId);
             if (
@@ -589,7 +611,8 @@ async function processEntry(
               process.env.OPENAI_API_KEY
             ) {
               const token = automation.User?.integrations?.[0]?.token;
-              if (token) {
+              const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
+              if (token && instagramBusinessAccountId) {
                 const aiResp = await openai.chat.completions.create({
                   model: "gpt-4o-mini",
                   messages: [
@@ -604,10 +627,10 @@ async function processEntry(
                 const aiText = aiResp.choices[0].message.content;
                 if (aiText) {
                   await Promise.all([
-                    createChatHistory(automation.id, igAccountId, dmText, senderId),
-                    createChatHistory(automation.id, igAccountId, aiText, senderId),
+                    createChatHistory(automation.id, pageId, dmText, senderId),
+                    createChatHistory(automation.id, pageId, aiText, senderId),
                   ]);
-                  await withRetry(() => sendDm(igAccountId, senderId, aiText, token));
+                  await withRetry(() => sendDm(instagramBusinessAccountId, senderId, aiText, token));
                 }
               }
             }
@@ -648,16 +671,18 @@ async function processEntry(
       }
 
       const token = automation.User?.integrations?.[0]?.token;
-      if (!token || !automation.listener) {
+      const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
+      if (!token || !automation.listener || !instagramBusinessAccountId) {
         console.warn("[webhook] DM automation token or listener missing", {
           automationId: automation.id,
           hasToken: Boolean(token),
           hasListener: Boolean(automation.listener),
+          hasInstagramBusinessAccountId: Boolean(instagramBusinessAccountId),
         });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: "token_missing",
+          errorMessage: !instagramBusinessAccountId ? "instagram_business_account_missing" : "token_missing",
           processedAt: new Date(),
         });
         continue;
@@ -679,7 +704,7 @@ async function processEntry(
 
       if (isSmartAi) {
         try {
-          await createChatHistory(automation.id, igAccountId, dmText, senderId);
+          await createChatHistory(automation.id, pageId, dmText, senderId);
           const aiResp = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
@@ -690,14 +715,14 @@ async function processEntry(
             ],
           });
           dmMessageText = aiResp.choices[0].message.content ?? dmMessageText;
-          await createChatHistory(automation.id, igAccountId, dmMessageText, senderId);
+          await createChatHistory(automation.id, pageId, dmMessageText, senderId);
         } catch {
           // SMARTAI unavailable — fall through with resolved prompt
         }
       }
 
       try {
-        const dmResult = await withRetry(() => sendDm(igAccountId, senderId, dmMessageText, token));
+        const dmResult = await withRetry(() => sendDm(instagramBusinessAccountId, senderId, dmMessageText, token));
         const sent = dmResult.status === 200;
         await createMessageLog({
           automationId: automation.id,
@@ -755,10 +780,7 @@ function ok() {
 }
 
 function verifyMetaSignature(rawBody: string, signature: string | null) {
-  const appSecret =
-    process.env.INSTAGRAM_APP_SECRET ??
-    process.env.INSTAGRAM_CLIENT_SECRET ??
-    process.env.META_APP_SECRET;
+  const appSecret = process.env.META_APP_SECRET;
   if (!appSecret) {
     return { verified: false, reason: "missing_app_secret" };
   }
@@ -785,7 +807,7 @@ function verifyMetaSignature(rawBody: string, signature: string | null) {
 }
 
 function classifyWebhookEnvelope(body: any) {
-  if (body?.object === "instagram" && body?.entry?.[0]?.id === "0") {
+  if (body?.object === "page" && body?.entry?.[0]?.id === "0") {
     return "META_TEST_EVENT";
   }
 
@@ -805,7 +827,7 @@ function classifyCommentWebhook(envelope: any, entry: any, changeItem: any) {
 function isSyntheticWebhook(envelope: any, entry: any, changeItem?: any) {
   const value = changeItem?.value;
   return (
-    envelope?.object === "instagram" &&
+    envelope?.object === "page" &&
     (entry?.id === "0" ||
       value?.id === "0" ||
       value?.from?.id === "0" ||

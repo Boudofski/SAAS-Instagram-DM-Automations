@@ -7,13 +7,15 @@ export async function GET() {
   await requireOwnerAdmin();
 
   const integration = await client.integrations.findFirst({
-    where: { instagramId: { not: null } },
+    where: { pageId: { not: null } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       instagramId: true,
       instagramUsername: true,
       webhookAccountId: true,
+      pageId: true,
+      businessId: true,
       token: true,
       webhookSubscriptionSubscribed: true,
       webhookSubscriptionStatusCode: true,
@@ -24,8 +26,9 @@ export async function GET() {
   });
 
   const health = await getMetaTokenHealth({
-    accessToken: integration?.token,
-    instagramId: integration?.instagramId,
+    pageAccessToken: integration?.token,
+    pageId: integration?.pageId,
+    instagramBusinessAccountId: integration?.instagramId,
   });
 
   return NextResponse.json({
@@ -34,6 +37,8 @@ export async function GET() {
       ? {
           id: integration.id,
           instagramId: integration.instagramId,
+          pageId: integration.pageId,
+          businessId: integration.businessId,
           webhookAccountId: integration.webhookAccountId,
           instagramUsername: integration.instagramUsername,
           userEmail: integration.User?.email,

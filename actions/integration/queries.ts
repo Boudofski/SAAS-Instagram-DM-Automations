@@ -1,6 +1,5 @@
 "use server";
 
-import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import { client } from "@/lib/prisma";
 
 export const updateIntegration = async (
@@ -10,6 +9,8 @@ export const updateIntegration = async (
   instagramId?: string,
   instagramUsername?: string,
   profilePictureUrl?: string,
+  pageId?: string,
+  businessId?: string,
   subscription?: {
     statusCode?: number;
     subscribed: boolean;
@@ -17,14 +18,8 @@ export const updateIntegration = async (
     attemptedAt: Date;
   }
 ) => {
-  const tokenDiagnostic = getInstagramTokenFormatDiagnostic(token);
-  if (!tokenDiagnostic.looksUsable) {
-    console.warn("[oauth] refused to update integration with invalid token", {
-      integrationId: id,
-      tokenFormat: tokenDiagnostic.reason,
-      tokenLength: tokenDiagnostic.length,
-    });
-    throw new Error("invalid_instagram_token_format");
+  if (typeof token !== "string" || token.trim().length < 20) {
+    throw new Error("invalid_page_access_token");
   }
 
   return await client.integrations.update({
@@ -33,7 +28,9 @@ export const updateIntegration = async (
       token,
       expiresAt: expire,
       instagramId,
-      webhookAccountId: instagramId,
+      webhookAccountId: pageId,
+      pageId,
+      businessId,
       instagramUsername,
       profilePictureUrl,
       webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
@@ -65,7 +62,7 @@ export const getIntegrations = async (clerkId: string) => {
 export const recordIntegrationOAuthError = async (
   clerkId: string,
   error: string,
-  source = "instagram_oauth"
+  source = "facebook_business_oauth"
 ) => {
   const user = await client.user.findUnique({
     where: { clerkId },
@@ -95,9 +92,11 @@ export const createIntegration = async (
   clerkId: string,
   token: string,
   expire: Date,
-  insts_id: string,
+  instagramId: string,
   instagramUsername?: string,
   profilePictureUrl?: string,
+  pageId?: string,
+  businessId?: string,
   subscription?: {
     statusCode?: number;
     subscribed: boolean;
@@ -105,14 +104,8 @@ export const createIntegration = async (
     attemptedAt: Date;
   }
 ) => {
-  const tokenDiagnostic = getInstagramTokenFormatDiagnostic(token);
-  if (!tokenDiagnostic.looksUsable) {
-    console.warn("[oauth] refused to create integration with invalid token", {
-      clerkIdPresent: Boolean(clerkId),
-      tokenFormat: tokenDiagnostic.reason,
-      tokenLength: tokenDiagnostic.length,
-    });
-    throw new Error("invalid_instagram_token_format");
+  if (typeof token !== "string" || token.trim().length < 20) {
+    throw new Error("invalid_page_access_token");
   }
 
   return await client.user.update({
@@ -124,8 +117,10 @@ export const createIntegration = async (
         create: {
           token,
           expiresAt: expire,
-          instagramId: insts_id,
-          webhookAccountId: insts_id,
+          instagramId,
+          webhookAccountId: pageId,
+          pageId,
+          businessId,
           instagramUsername,
           profilePictureUrl,
           webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
@@ -156,6 +151,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
         select: {
           token: true,
           instagramId: true,
+          pageId: true,
           expiresAt: true,
           webhookSubscriptionLastAttemptedAt: true,
           webhookSubscriptionStatusCode: true,
@@ -167,17 +163,16 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
   });
 
   const integration = user?.integrations[0];
-  const igAccountId = integration?.instagramId;
-  const tokenFormat = getInstagramTokenFormatDiagnostic(integration?.token);
+  const pageId = integration?.pageId;
   const tokenExpired =
     integration?.expiresAt && integration.expiresAt.getTime() < Date.now();
-  if (!igAccountId) {
+  if (!pageId) {
     return {
       lastWebhook: null,
       lastCommentWebhook: null,
       lastFailure: null,
       oauth: {
-        tokenFormat,
+        tokenPresent: Boolean(integration?.token),
         tokenExpired: Boolean(tokenExpired),
       },
     };
@@ -185,7 +180,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
 
   const [lastWebhook, lastCommentWebhook, lastFailure] = await Promise.all([
     client.webhookEvent.findFirst({
-      where: { igAccountId },
+      where: { igAccountId: pageId },
       orderBy: { createdAt: "desc" },
       select: {
         eventType: true,
@@ -197,7 +192,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     }),
     client.webhookEvent.findFirst({
       where: {
-        igAccountId,
+        igAccountId: pageId,
         eventType: { in: ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] },
       },
       orderBy: { createdAt: "desc" },
@@ -211,7 +206,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     }),
     client.webhookEvent.findFirst({
       where: {
-        igAccountId,
+        igAccountId: pageId,
         OR: [
           { status: "FAILED" },
           { eventType: { in: ["SIGNATURE_FAILED", "SIGNATURE_VERIFICATION_FAILED"] } },
@@ -240,9 +235,9 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
       error: integration?.webhookSubscriptionError ?? null,
     },
     oauth: {
-      tokenFormat,
+      tokenPresent: Boolean(integration?.token),
       tokenExpired: Boolean(tokenExpired),
-      tokenUsable: tokenFormat.looksUsable && !tokenExpired,
+      tokenUsable: Boolean(integration?.token) && !tokenExpired,
     },
   };
 };
