@@ -107,11 +107,15 @@ export const findAutomationForCommentWithReason = async (
       businessId: true,
     },
   });
+  // Match by any known ID field — entry.id is IG Business ID for object=instagram,
+  // or Page ID for object=page. Try all stored ID fields to handle both shapes.
   const integration = await client.integrations.findFirst({
     where: {
       OR: [
         { pageId },
         { webhookAccountId: pageId },
+        { instagramId: pageId },
+        { businessId: pageId },
       ],
     },
     select: {
@@ -134,6 +138,7 @@ export const findAutomationForCommentWithReason = async (
         incomingPageId: pageId,
         allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
         allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
+        allActiveIntegrationPageIds: activeIntegrations.map((item) => item.pageId).filter(Boolean),
         matchingIntegrationFound: false,
         matchedAutomationIds: [],
         storedPostIds: [],
@@ -142,6 +147,7 @@ export const findAutomationForCommentWithReason = async (
     };
   }
 
+  // Store incoming ID as webhookAccountId so future lookups hit the fast path.
   if (!integration.webhookAccountId || integration.webhookAccountId !== pageId) {
     await client.integrations.update({
       where: { id: integration.id },

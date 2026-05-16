@@ -113,6 +113,8 @@ export async function POST(req: NextRequest) {
         payload: {
           hasSignature: Boolean(signature),
           contentLength: rawBody.length,
+          rawBodyLength: rawBody.length,
+          receivedAt: new Date().toISOString(),
           userAgent: req.headers.get("user-agent") ?? undefined,
           object: quickParse.ok ? (quickParse.body?.object ?? undefined) : undefined,
           entryCount: quickParse.ok && Array.isArray(quickParse.body?.entry)
@@ -120,8 +122,8 @@ export async function POST(req: NextRequest) {
             : undefined,
           firstEntryId: firstEntry?.id ?? undefined,
           firstField: firstChange?.field ?? undefined,
-          hasValueText: Boolean(firstValue?.text),
-          hasValueMediaId: Boolean(firstValue?.media?.id),
+          hasValueText: Boolean(firstValue?.text ?? firstValue?.comment_text ?? firstValue?.message),
+          hasValueMediaId: Boolean(firstValue?.media?.id ?? firstValue?.media_id),
         },
       });
     } catch {
@@ -267,11 +269,32 @@ async function processEntry(
     // -----------------------------------------------------------------------
     if (changeItem.field === "comments") {
       const change = changeItem.value;
-      const mediaId: string | undefined = change.media?.id;
-      const commentId: string | undefined = change.id;
-      const commenterId: string | undefined = change.from?.id;
-      const commenterUsername: string | undefined = change.from?.username;
-      const commentText: string = change.text ?? "";
+      // Instagram webhook shapes vary by object type and API version — use all known paths
+      const mediaId: string | undefined =
+        change.media?.id ??
+        change.media_id ??
+        change.media?.media_id ??
+        undefined;
+      const commentId: string | undefined =
+        change.id ??
+        change.comment_id ??
+        change.comment?.id ??
+        undefined;
+      const commenterId: string | undefined =
+        change.from?.id ??
+        change.user?.id ??
+        change.sender?.id ??
+        undefined;
+      const commenterUsername: string | undefined =
+        change.from?.username ??
+        change.username ??
+        change.user?.username ??
+        undefined;
+      const commentText: string =
+        change.text ??
+        change.comment_text ??
+        change.message ??
+        "";
 
       const webhookEvent = await createWebhookEvent({
         eventType: classifyCommentWebhook(envelope, entry, changeItem),
@@ -292,9 +315,15 @@ async function processEntry(
       });
 
       if (!mediaId || !commentId || !commenterId || !commentText) {
+        const missing = [
+          !mediaId && "media_id",
+          !commentId && "comment_id",
+          !commenterId && "commenter_id",
+          !commentText && "comment_text",
+        ].filter(Boolean).join(",");
         await updateWebhookEvent(webhookEvent.id, {
           status: "IGNORED",
-          errorMessage: "missing_required_comment_fields",
+          errorMessage: `missing_required_comment_fields:${missing}`,
           processedAt: new Date(),
         });
         continue;
@@ -521,6 +550,15 @@ async function processEntry(
         !!process.env.OPENAI_API_KEY;
 
       let dmMessageText = resolveTemplate(listener.prompt, templateVars);
+
+      // Append CTA link if present and not already included via {{link}} template
+      if (listener.ctaLink && !dmMessageText.includes(listener.ctaLink)) {
+        if (listener.ctaButtonTitle) {
+          dmMessageText += `\n\n${listener.ctaButtonTitle}: ${listener.ctaLink}`;
+        } else {
+          dmMessageText += `\n\n${listener.ctaLink}`;
+        }
+      }
 
       if (isSmartAi) {
         try {
@@ -830,7 +868,8 @@ function ok() {
 
 
 function classifyWebhookEnvelope(body: any) {
-  if (body?.object === "page" && body?.entry?.[0]?.id === "0") {
+  // Meta Test button sends entry.id="0" for both object=page and object=instagram
+  if (body?.entry?.[0]?.id === "0") {
     return "META_TEST_EVENT";
   }
 
@@ -847,15 +886,15 @@ function classifyCommentWebhook(envelope: any, entry: any, changeItem: any) {
     : "REAL_COMMENT_EVENT";
 }
 
-function isSyntheticWebhook(envelope: any, entry: any, changeItem?: any) {
+function isSyntheticWebhook(_envelope: any, entry: any, changeItem?: any) {
   const value = changeItem?.value;
+  // Synthetic IDs used by Meta Test button regardless of object type (page or instagram)
   return (
-    envelope?.object === "page" &&
-    (entry?.id === "0" ||
-      value?.id === "0" ||
-      value?.from?.id === "0" ||
-      value?.media?.id === "0" ||
-      value?.media?.id === "123123123")
+    entry?.id === "0" ||
+    value?.id === "0" ||
+    value?.from?.id === "0" ||
+    value?.media?.id === "0" ||
+    value?.media?.id === "123123123"
   );
 }
 

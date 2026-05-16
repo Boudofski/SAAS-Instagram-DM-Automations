@@ -1,20 +1,32 @@
-# AP3k — Meta Webhook Testing Checklist
+# AP3k — Meta Webhook & Real Comment Testing Checklist
+
+## Target Account Details
+
+| Field | Value |
+|-------|-------|
+| Instagram username | `@ceptice` |
+| Facebook Page | Ceptice |
+| Facebook Page ID | `100121532610908` |
+| IG Business Account ID | `17841451766608292` |
+| Callback URL | `https://ap3k.com/api/webhooks/meta` |
+
+---
 
 ## Required Vercel Environment Variables
 
 | Variable | Purpose |
 |----------|---------|
-| `META_VERIFY_TOKEN` | Webhook verification token (matches what you set in Meta Developers) |
-| `META_APP_ID` | Facebook App ID (from Meta Developers → App Settings → Basic) |
-| `META_APP_SECRET` | Facebook App Secret (used to sign/verify webhook payloads) |
+| `META_VERIFY_TOKEN` | Webhook verify token (matches what you set in Meta Developers) |
+| `META_APP_ID` | Facebook App ID (Meta Developers → App Settings → Basic) |
+| `META_APP_SECRET` | Facebook App Secret (signs/verifies webhook payloads) |
 | `DATABASE_URL` | PostgreSQL connection string |
-| `NEXT_PUBLIC_HOST_URL` | Production URL e.g. `https://ap3k.com` |
+| `NEXT_PUBLIC_HOST_URL` | `https://ap3k.com` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
 | `CLERK_SECRET_KEY` | Clerk secret key |
 
-Optional (fallback secrets for signature verification):
-| `INSTAGRAM_APP_SECRET` | Fallback if META_APP_SECRET is not set |
-| `INSTAGRAM_CLIENT_SECRET` | Additional fallback |
+Optional fallback secrets (tried if `META_APP_SECRET` is missing):
+- `INSTAGRAM_APP_SECRET`
+- `INSTAGRAM_CLIENT_SECRET`
 
 ---
 
@@ -24,7 +36,7 @@ Optional (fallback secrets for signature verification):
 GET https://ap3k.com/api/webhooks/meta/health
 ```
 
-Expected response:
+Expected:
 ```json
 {
   "ok": true,
@@ -36,117 +48,163 @@ Expected response:
 }
 ```
 
-If `hasMetaVerifyToken` or `hasMetaAppSecret` are `false`, check Vercel environment variables.
-
 ---
 
 ## Step 2 — Verify GET Challenge Endpoint
 
 ```
-GET https://ap3k.com/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=<YOUR_META_VERIFY_TOKEN>&hub.challenge=123456
+GET https://ap3k.com/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=<META_VERIFY_TOKEN>&hub.challenge=123456
 ```
 
-Expected response: plain text `123456` with HTTP 200.
-
-If you get 403, the `META_VERIFY_TOKEN` in Vercel does not match.
+Expected: plain text `123456` with HTTP 200.
 
 ---
 
 ## Step 3 — Run Admin Signed Self-Test
 
-1. Go to `/admin` (or `/ap3k-admin`)
+1. Go to `/admin` → Webhooks tab
 2. Click **Run webhook self-test**
-3. Expected result: `ok: true`, `responseStatus: 200`
+3. Expected: `ok: true`, `responseStatus: 200`
 
-This proves the deployed route accepts correctly signed POST payloads.
-If it fails, check `META_APP_SECRET` is set and the route is deployed.
+If self-test passes, the route is reachable and signature verification is working.
 
 ---
 
-## Step 4 — Meta Developers Configuration
+## Step 4 — Meta Developers Configuration (CRITICAL)
 
-### Webhook Setup
-1. Go to Meta Developers → Your App → Instagram API → API setup with Facebook login
-2. Open **Configure webhooks**
-3. Set **Callback URL**: `https://ap3k.com/api/webhooks/meta`
-4. Set **Verify Token**: value of `META_VERIFY_TOKEN` in Vercel
-5. Click **Verify and Save** — this triggers a GET that should appear in admin as `PROCESSED`
-6. Subscribe **comments** field
-7. Subscribe **messages** field
+### Which webhook product/object to use
 
-> **Important**: Do NOT use the **User** object/product for Instagram comment automation.
-> Use the **Instagram** or **Page** object (whichever Meta shows for your setup in the API configuration).
+**Do NOT use the "User" webhook object/product for Instagram comment automation.**
 
-### App Mode
-- If app is in **Development mode**, only accepted testers can trigger real webhooks.
-- Add testers: Meta Developers → App Roles → Testers (Facebook user) AND Instagram Tester (Instagram account).
-- Alternatively, submit for App Review to go Live.
+Use one of:
+- **Instagram API** → API setup with Facebook login → Configure webhooks
+- **Page** (if Meta shows this option for your setup)
+
+Instagram comment webhooks fire on the **Instagram** or **Page** object depending on how Meta routes them.
+
+### Exact configuration steps
+
+1. Go to **Meta Developers → AP3k → Use cases → Instagram API**
+2. Open **API setup with Facebook login**
+3. Open **Configure webhooks**
+4. Set **Callback URL**: `https://ap3k.com/api/webhooks/meta`
+5. Set **Verify Token**: value of `META_VERIFY_TOKEN` in Vercel
+6. Click **Verify and Save** — this triggers a GET that should appear in `/admin` as `WEBHOOK_VERIFY_GET PROCESSED`
+7. Subscribe **comments** field
+8. Subscribe **messages** field
+
+### App mode
+
+- If app is in **Development mode**: only accepted testers can trigger real webhooks
+- Add testers: Meta Developers → App Roles → Testers (Facebook account) AND Instagram Tester (Instagram account)
+- OR: submit for App Review to go **Live**
 
 ---
 
 ## Step 5 — Meta Test Button
 
-In Meta Developers → Webhooks → Send Test, click the test button for the `comments` field.
+In Meta Developers → Webhooks, click the test button for the `comments` field.
 
-Expected: Admin shows a `META_TEST_EVENT` event (not `REAL_COMMENT_EVENT` — this is expected for fake test payloads).
+Expected in `/admin` Webhooks tab: a `META_TEST_EVENT` event with `status=RECEIVED`.
 
----
-
-## Step 6 — Real Comment Test
-
-Prerequisites:
-- Connected Instagram account: `@ceptice` (or your account)
-- Facebook Page ID: `100121532610908`
-- IG Business ID: `17841451766608292`
-- Active campaign with: Any post, keyword `ai`, matching CONTAINS
-
-Steps:
-1. From a **separate** Instagram account (not `@ceptice`), that is accepted as a tester:
-2. Find any real post/Reel owned by `@ceptice`
-3. Comment `ai` on that post
-4. Wait 30–60 seconds
-5. Refresh admin page
-
-Expected pipeline:
-- `WEBHOOK_POST_RECEIVED_RAW` appears
-- `REAL_COMMENT_EVENT` appears (not META_TEST_EVENT)
-- `WEBHOOK_RECEIVED` automation event
-- `KEYWORD_MATCHED` automation event
-- Lead created
-- `DM_SENT` or `DM_FAILED` with reason in MessageLog
+> Note: The Meta Test button sends fake payloads (`entry.id=0`, `media.id=123123123`). These are correctly classified as `META_TEST_EVENT`, not `REAL_COMMENT_EVENT`. This is correct behavior.
 
 ---
 
-## Interpreting Admin Diagnostics
+## Step 6 — Run Real Comment Test
 
-| Symptom | Likely Cause | Fix |
-|---------|-------------|-----|
-| No `WEBHOOK_POST_RECEIVED_RAW` | Meta is not delivering to AP3k | Check callback URL in Meta dashboard, check app is Live or tester accepted, check correct webhook object/product selected |
-| `SIGNATURE_FAILED` | Wrong app secret | Check `META_APP_SECRET` in Vercel matches the App Secret in Meta Developers → App Settings → Basic |
-| `REAL_COMMENT_EVENT` with `no_matching_integration` | Entry ID does not match stored Page/IG ID | Reconnect Instagram and check that the Page ID stored matches what Meta sends in `entry.id` |
-| `REAL_COMMENT_EVENT` with `no_active_automation_for_media` | No campaign matches this post/keyword | Create an active campaign with Any post and the keyword |
-| `KEYWORD_MATCHED` but `DM_FAILED` | DM send failed | Check error message in MessageLog — usually permission, rate limit, or messaging window issue |
-| Meta Test button works, real comment does not arrive | App Development mode + commenter not a tester | Add commenter as Instagram Tester in Meta Developers → App Roles |
+### Prerequisites
+
+Before testing, in Admin:
+1. **Integration connected**: @ceptice with valid page token
+2. **Active campaign**: Any Post, keyword `ai`, matching CONTAINS
+3. **Checklist passes**: GET verify = PROCESSED, no signature failures
+
+### Test procedure
+
+1. Click **Start test window** in `/admin` Overview tab
+2. From a **separate Instagram account** (not @ceptice) that is accepted as a tester:
+3. Find any real post or Reel owned by @ceptice
+4. Comment exactly `ai` on that post
+5. Wait 30–60 seconds for Meta to deliver the webhook
+6. Go to `/admin` → Webhooks tab (test window filter will be active)
+
+### Expected pipeline
+
+| Step | Event |
+|------|-------|
+| 1 | `WEBHOOK_POST_RECEIVED_RAW` — proves POST received |
+| 2 | `REAL_COMMENT_EVENT` — classified as real, not synthetic |
+| 3 | `WEBHOOK_RECEIVED` AutomationEvent |
+| 4 | `KEYWORD_MATCHED` AutomationEvent |
+| 5 | Lead created |
+| 6 | `DM_SENT` or `DM_FAILED` with reason in MessageLog |
+
+### Verdict badge progression
+
+| Badge | Meaning |
+|-------|---------|
+| A — AP3k route works; waiting for Meta real delivery | Self-test passed but no real comment arrived |
+| B — Meta delivering comments; matching failed | Real comment arrived but no integration/campaign matched |
+| C — Keyword matched; DM failed | Matching worked but DM send failed |
+| D — End-to-end working | Real comment → keyword match → DM sent |
 
 ---
 
-## Meta Dashboard Subscription Warning
+## Integration Matching — How AP3k Finds the Right User
 
-AP3k currently operates in **Meta Dashboard Managed** subscription mode because `pages_manage_metadata` is not available in the app permissions.
+When Meta sends a real comment webhook, AP3k tries to match the `entry.id` against:
 
-This means the **Webhook Subscription toggle** must be manually confirmed ON in Meta Developers for the connected Instagram account. AP3k cannot subscribe programmatically without that permission.
+1. `integration.pageId` — Facebook Page ID (used when `object=page`)
+2. `integration.webhookAccountId` — auto-stored after first successful match
+3. `integration.instagramId` — IG Business Account ID (`17841451766608292`) — used when `object=instagram`
+4. `integration.businessId` — fallback
 
-Manual steps:
-1. Meta Developers → Your App → Instagram API → Webhooks
-2. Find the connected Instagram account
-3. Confirm the toggle is ON
-4. Confirm `comments` and `messages` fields are subscribed
+If no match: `no_matching_integration` error. Check that your integration has the correct Page ID and IG Business ID stored.
 
 ---
 
-## OAuth Scopes (Facebook Login for Business)
+## Diagnosing `no_matching_integration`
 
-Requested scopes (do not change):
+In `/admin` Webhooks tab, look at the `REAL_COMMENT_EVENT` payload (expand "Sanitized payload"):
+
+- `incomingPageId` — the ID Meta sent as `entry.id`
+- `allCandidatePageIds` — what AP3k has stored as Page IDs
+- `allCandidateInstagramIds` — what AP3k has stored as IG Business IDs
+- `matchingIntegrationFound` — if false, the incoming ID doesn't match any stored ID
+
+Fix: reconnect Instagram so the correct IDs are stored.
+
+---
+
+## Diagnosing `no_active_automation_for_media`
+
+Integration matched but no active campaign matches this media.
+
+- If campaign has **Any Post**: matches any `mediaId` — should always match
+- If campaign has **Specific Post**: the stored post ID must match the incoming `mediaId`
+
+Check the campaign's post setting in the dashboard.
+
+---
+
+## Diagnosing DM failure
+
+When `KEYWORD_MATCHED` exists but DM fails:
+
+- Check MessageLog error in `/admin` Leads & Messages tab
+- Common reasons:
+  - `permission_denied` — instagram_manage_messages scope not granted or app not live
+  - `24_hour_window` — user has not messaged the account first (for `sendDm` path)
+  - `comment_id_invalid` — comment ID not recognized by Meta
+  - `rate_limited` — Meta API rate limit exceeded
+  - `token_expired` — page access token expired (reconnect Instagram)
+
+---
+
+## OAuth Scopes (Do not change)
+
+Required:
 ```
 pages_show_list
 pages_read_engagement
@@ -158,7 +216,19 @@ instagram_manage_messages
 
 Do NOT add:
 - `pages_manage_metadata` — not available in Meta app permissions UI
-- `instagram_business_basic` — wrong scope family for this OAuth product
+- `instagram_business_basic` — wrong scope family for Facebook Login for Business
 - `instagram_business_manage_comments` — wrong scope family
 - `instagram_business_manage_messages` — wrong scope family
-- `instagram_content_publish` — not needed for comment-to-DM MVP
+- `instagram_content_publish` — not needed
+
+---
+
+## Subscription Mode Notes
+
+AP3k currently uses **META_DASHBOARD_MANAGED** mode because `pages_manage_metadata` is unavailable.
+
+Manual steps required in Meta Developers:
+1. Meta Developers → AP3k → Instagram API → Webhooks
+2. Find the connected Instagram account
+3. Confirm the webhook toggle is **ON**
+4. Confirm `comments` and `messages` fields are subscribed

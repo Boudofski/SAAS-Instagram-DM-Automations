@@ -11,6 +11,7 @@ type SearchParams = {
   q?: string;
   eventType?: string;
   tab?: string;
+  testSince?: string; // ISO timestamp — filters webhook events after this time
 };
 
 const TABS = [
@@ -33,6 +34,10 @@ export default async function AdminPage({
   const q = searchParams?.q?.trim();
   const eventType = searchParams?.eventType?.trim();
   const tab = searchParams?.tab ?? "overview";
+  const testSince = searchParams?.testSince
+    ? new Date(searchParams.testSince)
+    : null;
+  const testSinceValid = testSince && !Number.isNaN(testSince.getTime());
 
   const [
     totalUsers,
@@ -53,6 +58,10 @@ export default async function AdminPage({
     lastSignatureFailed,
     lastRealComment,
     lastSimulated,
+    lastMetaTest,
+    lastKeywordMatched,
+    lastDmSent,
+    lastDmFailed,
   ] = await Promise.all([
     client.user.count(),
     client.integrations.count(),
@@ -95,12 +104,32 @@ export default async function AdminPage({
     client.webhookEvent.findFirst({
       where: { eventType: "REAL_COMMENT_EVENT", eventSource: "META_REAL" },
       orderBy: { createdAt: "desc" },
-      select: { status: true, igAccountId: true, mediaId: true, createdAt: true },
+      select: { status: true, igAccountId: true, mediaId: true, errorMessage: true, createdAt: true },
     }),
     client.webhookEvent.findFirst({
       where: { eventSource: "SIMULATED_INTERNAL" },
       orderBy: { createdAt: "desc" },
       select: { status: true, eventType: true, createdAt: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "META_TEST_EVENT" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, createdAt: true, payload: true },
+    }),
+    client.automationEvent.findFirst({
+      where: { eventType: "KEYWORD_MATCHED" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, keyword: true, automationId: true },
+    }),
+    client.messageLog.findFirst({
+      where: { messageType: "DM", status: "SENT" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, automationId: true },
+    }),
+    client.messageLog.findFirst({
+      where: { messageType: "DM", status: "FAILED" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, errorMessage: true, automationId: true },
     }),
   ]);
 
@@ -173,6 +202,7 @@ export default async function AdminPage({
         ? client.webhookEvent.findMany({
             where: {
               ...(eventType ? { eventType } : {}),
+              ...(testSinceValid ? { createdAt: { gte: testSince! } } : {}),
               ...(q
                 ? {
                     OR: [
@@ -213,9 +243,52 @@ export default async function AdminPage({
     ]);
 
   const tabHref = (id: string, extra?: Record<string, string>) => {
-    const params = new URLSearchParams({ tab: id, ...(q ? { q } : {}), ...extra });
+    const params = new URLSearchParams({
+      tab: id,
+      ...(q ? { q } : {}),
+      ...(testSinceValid && searchParams?.testSince ? { testSince: searchParams.testSince } : {}),
+      ...extra,
+    });
     return `/admin?${params.toString()}`;
   };
+
+  // Compute verdict for the delivery status badge
+  const routeReachable = Boolean(lastPostRaw || lastSimulated || lastMetaTest);
+  const selfTestPassed = Boolean(lastSimulated);
+  const metaTestReached = Boolean(lastMetaTest);
+  const hasRealComment = Boolean(lastRealComment);
+  const realCommentFailed = hasRealComment && lastRealComment!.errorMessage && lastRealComment!.status !== "PROCESSED";
+  const hasKeywordMatch = Boolean(lastKeywordMatched);
+  const hasDmSent = Boolean(lastDmSent);
+  const hasDmFailed = Boolean(lastDmFailed);
+
+  type VerdictKey = "A" | "B" | "C" | "D" | "IDLE";
+  let verdict: VerdictKey = "IDLE";
+  let verdictLabel = "";
+  let verdictDetail = "";
+  let verdictColor = "border-slate-200 bg-slate-50 text-slate-700";
+
+  if (hasDmSent) {
+    verdict = "D";
+    verdictLabel = "End-to-end working";
+    verdictDetail = `Last DM sent: ${lastDmSent!.createdAt.toLocaleString()}`;
+    verdictColor = "border-emerald-300 bg-emerald-50 text-emerald-800";
+  } else if (hasKeywordMatch && hasDmFailed) {
+    verdict = "C";
+    verdictLabel = "Keyword matched — DM failed";
+    verdictDetail = lastDmFailed?.errorMessage ?? "Check MessageLog for DM failure reason";
+    verdictColor = "border-red-300 bg-red-50 text-red-800";
+  } else if (hasRealComment && realCommentFailed) {
+    verdict = "B";
+    verdictLabel = "Meta delivering comments — matching failed";
+    verdictDetail = lastRealComment?.errorMessage ?? "no_matching_integration or no_active_automation_for_media";
+    verdictColor = "border-amber-300 bg-amber-50 text-amber-800";
+  } else if (selfTestPassed || metaTestReached) {
+    verdict = "A";
+    verdictLabel = "AP3k route works — waiting for Meta real delivery";
+    verdictDetail = "Internal self-test and/or Meta Test button reached AP3k. No real Instagram comment event received yet.";
+    verdictColor = "border-blue-300 bg-blue-50 text-blue-800";
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -288,6 +361,108 @@ export default async function AdminPage({
         {/* ─── OVERVIEW TAB ─── */}
         {tab === "overview" && (
           <>
+            {/* Delivery verdict badge */}
+            {verdict !== "IDLE" && (
+              <div className={`rounded-2xl border p-5 ${verdictColor}`}>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full border border-current px-2.5 py-0.5 text-xs font-black">
+                    {verdict}
+                  </span>
+                  <p className="text-base font-black">{verdictLabel}</p>
+                </div>
+                <p className="mt-2 text-sm">{verdictDetail}</p>
+              </div>
+            )}
+
+            {/* Real Instagram delivery status */}
+            <AdminSection title="Real Instagram Delivery Status">
+              <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
+                <HealthCell label="Route reachable" value={routeReachable ? "yes" : "no data yet"} tone={routeReachable ? "green" : "slate"} />
+                <HealthCell label="Internal self-test" value={lastSimulated ? new Date(lastSimulated.createdAt).toLocaleString() : "not run yet"} tone={lastSimulated ? "green" : "slate"} />
+                <HealthCell label="Meta Test button" value={lastMetaTest ? new Date(lastMetaTest.createdAt).toLocaleString() : "not received"} tone={lastMetaTest ? "green" : "amber"} />
+                <HealthCell label="Last raw POST received" value={lastPostRaw ? new Date(lastPostRaw.createdAt).toLocaleString() : "none"} tone={lastPostRaw ? "green" : "red"} />
+                <HealthCell label="Last real Instagram comment" value={lastRealComment ? `${lastRealComment.status} · ${new Date(lastRealComment.createdAt).toLocaleString()}` : "none yet"} tone={lastRealComment ? (lastRealComment.status === "PROCESSED" ? "green" : "amber") : "red"} />
+                <HealthCell label="Real comment error" value={lastRealComment?.errorMessage ?? "n/a"} tone={lastRealComment?.errorMessage ? "amber" : "green"} />
+                <HealthCell label="Last signature failure" value={lastSignatureFailed ? new Date(lastSignatureFailed.createdAt).toLocaleString() : "none"} tone={lastSignatureFailed ? "red" : "green"} />
+                <HealthCell label="Last keyword matched" value={lastKeywordMatched ? `${lastKeywordMatched.keyword ?? "?"} · ${new Date(lastKeywordMatched.createdAt).toLocaleString()}` : "never"} tone={lastKeywordMatched ? "green" : "amber"} />
+                <HealthCell label="Last DM sent" value={lastDmSent ? new Date(lastDmSent.createdAt).toLocaleString() : "never"} tone={lastDmSent ? "green" : "amber"} />
+                <HealthCell label="Last DM failed" value={lastDmFailed ? `${lastDmFailed.errorMessage ?? "unknown"} · ${new Date(lastDmFailed.createdAt).toLocaleString()}` : "none"} tone={lastDmFailed ? "red" : "green"} />
+                <HealthCell label="Connected IG username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "not connected"} />
+                <HealthCell label="Connected IG Business ID" value={metaDiagnostics.integration?.instagramId ?? "not set"} />
+                <HealthCell label="Connected Page ID" value={metaDiagnostics.integration?.pageId ?? "not set"} />
+                <HealthCell label="Subscription mode" value={metaDiagnostics.subscriptionMode ?? "UNKNOWN"} tone={metaDiagnostics.subscriptionMode === "API_SUBSCRIBED" ? "green" : metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED" ? "amber" : "slate"} />
+                <HealthCell label="Callback URL" value="https://ap3k.com/api/webhooks/meta" tone="slate" />
+                <HealthCell label="GET verify status" value={lastVerifyGet ? `${lastVerifyGet.status} · ${new Date(lastVerifyGet.createdAt).toLocaleString()}` : "never received"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : lastVerifyGet ? "red" : "amber"} />
+              </div>
+            </AdminSection>
+
+            {/* Meta webhook product warning */}
+            {selfTestPassed && !hasRealComment && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+                  Meta Webhook Product Configuration Required
+                </p>
+                <h2 className="mt-2 text-lg font-black text-amber-900">
+                  Do not use the &quot;User&quot; webhook product for Instagram comment automation
+                </h2>
+                <p className="mt-2 text-sm text-amber-800 leading-relaxed">
+                  The internal self-test works but no real Instagram comment has arrived. This is almost always a Meta configuration problem.
+                </p>
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-100 p-4">
+                  <p className="text-xs font-black text-amber-800 mb-2">Exact steps in Meta Developers:</p>
+                  <ol className="list-decimal space-y-1.5 pl-4 text-xs text-amber-900">
+                    <li>Go to <strong>Meta Developers → AP3k → Use cases → Instagram API</strong></li>
+                    <li>Open <strong>API setup with Facebook login</strong></li>
+                    <li>Open <strong>Configure webhooks</strong></li>
+                    <li>Set Callback URL = <code className="rounded bg-amber-200 px-1 font-mono">https://ap3k.com/api/webhooks/meta</code></li>
+                    <li>Set Verify Token = value of <code className="rounded bg-amber-200 px-1 font-mono">META_VERIFY_TOKEN</code> in Vercel env</li>
+                    <li>Click <strong>Verify and Save</strong> — GET verify should appear in this admin as PROCESSED</li>
+                    <li>Subscribe <strong>comments</strong> field</li>
+                    <li>Subscribe <strong>messages</strong> field</li>
+                    <li><strong>Do NOT</strong> configure the Webhooks product under the User object for Instagram comment automation</li>
+                    <li>App must be <strong>Live</strong>, OR the commenter must be added as Instagram Tester in App Roles</li>
+                    <li>Comment from a <strong>different account</strong> (not @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}) on media owned by @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}</li>
+                  </ol>
+                </div>
+              </div>
+            )}
+
+            {/* Test window */}
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Real Comment Test Window</p>
+              <p className="mt-1 text-sm text-blue-800">
+                Start a test window to filter webhook events to only those received after you begin the test. Does not affect production.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {testSinceValid ? (
+                  <>
+                    <p className="text-xs text-blue-700">
+                      Test window active since: <strong>{testSince!.toLocaleString()}</strong>
+                    </p>
+                    <Link
+                      href={tabHref("overview").replace(/&?testSince=[^&]*/g, "")}
+                      className="rounded-xl border border-blue-300 bg-white px-4 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100"
+                    >
+                      Clear test window
+                    </Link>
+                    <Link
+                      href={tabHref("webhooks")}
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                    >
+                      View events since test start →
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href={`/admin?tab=overview&testSince=${encodeURIComponent(new Date().toISOString())}`}
+                    className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                  >
+                    Start test window
+                  </Link>
+                )}
+              </div>
+            </div>
+
             {/* Stats grid */}
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
@@ -525,6 +700,18 @@ export default async function AdminPage({
         {/* ─── WEBHOOKS TAB ─── */}
         {tab === "webhooks" && (
           <>
+            {testSinceValid && (
+              <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+                <span className="font-black">Test window active</span>
+                <span>Events shown from {testSince!.toLocaleString()} onwards only.</span>
+                <Link
+                  href={tabHref("webhooks").replace(/&?testSince=[^&]*/g, "")}
+                  className="ml-auto font-bold underline hover:text-blue-600"
+                >
+                  Clear
+                </Link>
+              </div>
+            )}
             <AdminSection title="Webhook Delivery Status">
               <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
                 <HealthCell
