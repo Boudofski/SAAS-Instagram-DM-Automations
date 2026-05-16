@@ -242,6 +242,8 @@ export default async function AdminPage({
             } tone={metaDiagnostics.integration?.oauthLastError ? "red" : "green"} />
             <HealthCell label="Token scopes" value={metaDiagnostics.tokenScopes.length ? metaDiagnostics.tokenScopes.join(", ") : metaDiagnostics.tokenScopesStatus} />
             <HealthCell label="Canonical OAuth product" value={metaDiagnostics.tokenHealth.config.product} />
+            <HealthCell label="Requested OAuth scopes" value={metaDiagnostics.tokenHealth.config.requestedScopes.join(", ")} />
+            <HealthCell label="Rejected legacy scopes" value={metaDiagnostics.tokenHealth.config.rejectedScopes.join(", ")} />
             <HealthCell label="Canonical app ID source" value={metaDiagnostics.tokenHealth.config.appIdSource} tone={metaDiagnostics.tokenHealth.config.appIdSource === "META_APP_ID" ? "green" : "red"} />
             <HealthCell label="Canonical secret source" value={metaDiagnostics.tokenHealth.config.appSecretSource} tone={metaDiagnostics.tokenHealth.config.appSecretSource === "META_APP_SECRET" ? "green" : "red"} />
             <HealthCell label="API endpoint family" value={metaDiagnostics.tokenHealth.config.apiEndpointFamily} tone={metaDiagnostics.tokenHealth.config.apiEndpointFamily === "facebook_graph_instagram_business" ? "green" : "red"} />

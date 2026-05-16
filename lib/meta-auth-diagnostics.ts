@@ -6,9 +6,14 @@ import {
   META_GRAPH_API_BASE_URL,
 } from "@/lib/fetch";
 
-const REQUIRED_SCOPES = [
+const REQUESTED_SCOPES = [
+  "instagram_business_basic",
+  "instagram_business_manage_comments",
+  "instagram_business_manage_messages",
+];
+
+const REJECTED_LEGACY_SCOPES = [
   "instagram_basic",
-  "instagram_manage_comments",
   "instagram_manage_messages",
   "pages_show_list",
   "pages_read_engagement",
@@ -57,6 +62,8 @@ export function getCanonicalMetaConfig() {
     appSecretSource: process.env.META_APP_SECRET ? "META_APP_SECRET" : "none",
     redirectUri,
     oauthAuthorizeEndpoint: "https://www.facebook.com/v25.0/dialog/oauth",
+    requestedScopes: REQUESTED_SCOPES,
+    rejectedScopes: REJECTED_LEGACY_SCOPES,
     tokenEndpoint: `${META_GRAPH_API_BASE_URL}/oauth/access_token`,
     apiEndpointFamily: "facebook_graph_instagram_business",
     webhookSubscriptionEndpointFamily: "facebook_graph_page",
@@ -107,7 +114,7 @@ export async function getMetaTokenHealth(input: {
       issuedByApp: null,
       tokenBelongsToCurrentApp: false,
       requiredScopesPresent: false,
-      missingScopes: REQUIRED_SCOPES,
+      missingScopes: REQUESTED_SCOPES,
       linkedInstagramBusinessAccount: null,
       igAccountLinked: false,
       subscribedAppsEligible: false,
@@ -147,7 +154,7 @@ export async function getMetaTokenHealth(input: {
           .map((item: any) => item.permission)
           .filter(Boolean)
       : debugToken?.scopes ?? [];
-  const missingScopes = REQUIRED_SCOPES.filter((scope) => !tokenScopes.includes(scope));
+  const missingScopes = REQUESTED_SCOPES.filter((scope) => !tokenScopes.includes(scope));
   const linkedInstagramBusinessAccount = linkedIgCall.ok
     ? (linkedIgCall.data as any)?.instagram_business_account ?? null
     : null;
