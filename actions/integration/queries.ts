@@ -154,7 +154,9 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
         where: { name: "INSTAGRAM" },
         take: 1,
         select: {
+          token: true,
           instagramId: true,
+          expiresAt: true,
           webhookSubscriptionLastAttemptedAt: true,
           webhookSubscriptionStatusCode: true,
           webhookSubscriptionSubscribed: true,
@@ -164,12 +166,20 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     },
   });
 
-  const igAccountId = user?.integrations[0]?.instagramId;
+  const integration = user?.integrations[0];
+  const igAccountId = integration?.instagramId;
+  const tokenFormat = getInstagramTokenFormatDiagnostic(integration?.token);
+  const tokenExpired =
+    integration?.expiresAt && integration.expiresAt.getTime() < Date.now();
   if (!igAccountId) {
     return {
       lastWebhook: null,
       lastCommentWebhook: null,
       lastFailure: null,
+      oauth: {
+        tokenFormat,
+        tokenExpired: Boolean(tokenExpired),
+      },
     };
   }
 
@@ -224,10 +234,15 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     lastCommentWebhook,
     lastFailure,
     subscription: {
-      lastAttemptedAt: user.integrations[0]?.webhookSubscriptionLastAttemptedAt ?? null,
-      statusCode: user.integrations[0]?.webhookSubscriptionStatusCode ?? null,
-      subscribed: user.integrations[0]?.webhookSubscriptionSubscribed ?? null,
-      error: user.integrations[0]?.webhookSubscriptionError ?? null,
+      lastAttemptedAt: integration?.webhookSubscriptionLastAttemptedAt ?? null,
+      statusCode: integration?.webhookSubscriptionStatusCode ?? null,
+      subscribed: integration?.webhookSubscriptionSubscribed ?? null,
+      error: integration?.webhookSubscriptionError ?? null,
+    },
+    oauth: {
+      tokenFormat,
+      tokenExpired: Boolean(tokenExpired),
+      tokenUsable: tokenFormat.looksUsable && !tokenExpired,
     },
   };
 };

@@ -25,7 +25,7 @@ async function attemptWebhookSubscription(igAccountId: string, token: string) {
     const subscription = await subscribeInstagramWebhooks(igAccountId, token);
     const subscribed = subscription.status >= 200 && subscription.status < 300;
     console.log("[oauth] webhook subscription result", {
-      endpointFamily: "meta_graph",
+      endpointFamily: "instagram_graph",
       igAccountIdPresent: Boolean(igAccountId),
       subscribed,
       status: subscription.status,
@@ -38,7 +38,7 @@ async function attemptWebhookSubscription(igAccountId: string, token: string) {
   } catch (error) {
     const safe = formatSafeMetaError(error);
     console.warn("[oauth] webhook subscription failed", {
-      endpointFamily: "meta_graph",
+      endpointFamily: "instagram_graph",
       igAccountIdPresent: Boolean(igAccountId),
       subscribed: false,
       error: getSafeMetaError(error),
@@ -300,7 +300,7 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
     );
 
     console.log("[webhook-subscription] manual resubscribe result", {
-      endpointFamily: "meta_graph",
+      endpointFamily: "instagram_graph",
       igAccountIdPresent: true,
       subscribed,
       status: result.status,

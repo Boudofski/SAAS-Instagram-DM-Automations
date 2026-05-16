@@ -1,5 +1,6 @@
 import { client } from "@/lib/prisma";
-import { INSTAGRAM_GRAPH_BASE_URL, META_GRAPH_BASE_URL } from "@/lib/fetch";
+import { INSTAGRAM_GRAPH_BASE_URL } from "@/lib/fetch";
+import { getMetaTokenHealth } from "@/lib/meta-auth-diagnostics";
 import { getInstagramTokenFormatDiagnostic } from "@/lib/instagram-token";
 import axios from "axios";
 
@@ -60,6 +61,10 @@ export async function getMetaAdminDiagnostics() {
 
   if (!integration?.instagramId || !integration.token) {
     const tokenFormat = getInstagramTokenFormatDiagnostic(integration?.token);
+    const tokenHealth = await getMetaTokenHealth({
+      accessToken: integration?.token,
+      instagramId: integration?.instagramId,
+    });
     return {
       connected: false,
       integration: null,
@@ -70,6 +75,7 @@ export async function getMetaAdminDiagnostics() {
       tokenScopes: [] as string[],
       tokenScopesStatus: "missing_token",
       tokenFormat,
+      tokenHealth,
       appMode: "unknown",
       lastRealWebhookAt: null as Date | null,
       lastFailureReason: null as string | null,
@@ -79,7 +85,11 @@ export async function getMetaAdminDiagnostics() {
   const tokenFormat = getInstagramTokenFormatDiagnostic(integration.token);
 
   if (!tokenFormat.looksUsable) {
-    const [lastRealWebhook, lastFailure] = await Promise.all([
+    const [tokenHealth, lastRealWebhook, lastFailure] = await Promise.all([
+      getMetaTokenHealth({
+        accessToken: integration.token,
+        instagramId: integration.instagramId,
+      }),
       client.webhookEvent.findFirst({
         where: { igAccountId: integration.instagramId, eventType: "REAL_COMMENT_EVENT" },
         orderBy: { createdAt: "desc" },
@@ -123,6 +133,7 @@ export async function getMetaAdminDiagnostics() {
       tokenScopes: [] as string[],
       tokenScopesStatus: "invalid_token_format",
       tokenFormat,
+      tokenHealth,
       appMode: "unknown",
       appModeNote: "Meta app mode is not exposed by this Instagram token check; verify Dev/Live in Meta Developer Dashboard.",
       subscribedAppsStatus: "skipped_invalid_token_format",
@@ -134,7 +145,7 @@ export async function getMetaAdminDiagnostics() {
     };
   }
 
-  const [account, subscriptions, permissions, lastRealWebhook, lastFailure] =
+  const [account, subscriptions, permissions, tokenHealth, lastRealWebhook, lastFailure] =
     await Promise.all([
       readJson(() =>
         axios.get(`${INSTAGRAM_GRAPH_BASE_URL}/me`, {
@@ -145,7 +156,7 @@ export async function getMetaAdminDiagnostics() {
         })
       ),
       readJson(() =>
-        axios.get(`${META_GRAPH_BASE_URL}/v21.0/${integration.instagramId}/subscribed_apps`, {
+        axios.get(`${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${integration.instagramId}/subscribed_apps`, {
           params: { access_token: integration.token },
         })
       ),
@@ -154,6 +165,10 @@ export async function getMetaAdminDiagnostics() {
           params: { access_token: integration.token },
         })
       ),
+      getMetaTokenHealth({
+        accessToken: integration.token,
+        instagramId: integration.instagramId,
+      }),
       client.webhookEvent.findFirst({
         where: { igAccountId: integration.instagramId, eventType: "REAL_COMMENT_EVENT" },
         orderBy: { createdAt: "desc" },
@@ -215,6 +230,7 @@ export async function getMetaAdminDiagnostics() {
     tokenScopes,
     tokenScopesStatus: permissions.ok ? "available" : permissions.error.message ?? "unavailable",
     tokenFormat,
+    tokenHealth,
     appMode: "unknown",
     appModeNote: "Meta app mode is not exposed by this Instagram token check; verify Dev/Live in Meta Developer Dashboard.",
     subscribedAppsStatus: subscriptions.ok ? "ok" : subscriptions.error.message ?? "failed",

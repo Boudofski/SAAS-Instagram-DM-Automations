@@ -72,12 +72,12 @@ export const sendDm = async (
   token: string
 ) => {
   console.log("[meta-api] send DM request", {
-    endpointFamily: "meta_graph",
+    endpointFamily: "instagram_graph",
     hasUserId: Boolean(userId),
     hasReceiverId: Boolean(receiverId),
   });
   return await axios.post(
-    `${META_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
+    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
     {
       recipient: { id: receiverId },
       message: { text: prompt },
@@ -98,12 +98,12 @@ export const sendPrivateMessage = async (
   token: string
 ) => {
   console.log("[meta-api] send private reply request", {
-    endpointFamily: "meta_graph",
+    endpointFamily: "instagram_graph",
     hasUserId: Boolean(userId),
     hasCommentId: Boolean(commentId),
   });
   return await axios.post(
-    `${META_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
+    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${userId}/messages`,
     {
       recipient: { comment_id: commentId },
       message: { text: message },
@@ -119,8 +119,7 @@ export const sendPrivateMessage = async (
 
 /**
  * Posts a visible public reply under a comment.
- * Uses the Facebook Graph API — this endpoint lives on graph.facebook.com
- * for all Business/Creator accounts.
+ * Uses the Instagram Graph API for Instagram Login tokens.
  */
 export const sendCommentReply = async (
   commentId: string,
@@ -128,11 +127,11 @@ export const sendCommentReply = async (
   token: string
 ) => {
   console.log("[meta-api] send comment reply request", {
-    endpointFamily: "meta_graph",
+    endpointFamily: "instagram_graph",
     hasCommentId: Boolean(commentId),
   });
   return await axios.post(
-    `${META_GRAPH_BASE_URL}/v21.0/${commentId}/replies`,
+    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${commentId}/replies`,
     { message },
     {
       headers: {
@@ -148,11 +147,11 @@ export const subscribeInstagramWebhooks = async (
   token: string
 ) => {
   console.log("[meta-api] subscribed_apps request", {
-    endpointFamily: "meta_graph",
+    endpointFamily: "instagram_graph",
     hasIgAccountId: Boolean(igAccountId),
   });
   return await axios.post(
-    `${META_GRAPH_BASE_URL}/v21.0/${igAccountId}/subscribed_apps`,
+    `${INSTAGRAM_GRAPH_BASE_URL}/v21.0/${igAccountId}/subscribed_apps`,
     null,
     {
       params: {

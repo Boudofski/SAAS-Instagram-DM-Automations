@@ -247,6 +247,17 @@ export default async function AdminPage({
                 : "none"
             } tone={metaDiagnostics.integration?.oauthLastError ? "red" : "green"} />
             <HealthCell label="Token scopes" value={metaDiagnostics.tokenScopes.length ? metaDiagnostics.tokenScopes.join(", ") : metaDiagnostics.tokenScopesStatus} />
+            <HealthCell label="Canonical OAuth product" value={metaDiagnostics.tokenHealth.config.product} />
+            <HealthCell label="Canonical app ID source" value={metaDiagnostics.tokenHealth.config.appIdSource} tone={metaDiagnostics.tokenHealth.config.hasAppIdMismatch ? "red" : "green"} />
+            <HealthCell label="Canonical secret source" value={metaDiagnostics.tokenHealth.config.appSecretSource} tone={metaDiagnostics.tokenHealth.config.hasSecretMismatch ? "red" : "green"} />
+            <HealthCell label="API endpoint family" value={metaDiagnostics.tokenHealth.config.apiEndpointFamily} tone={metaDiagnostics.tokenHealth.config.apiEndpointFamily === "instagram_graph" ? "green" : "red"} />
+            <HealthCell label="debug_token status" value={metaDiagnostics.tokenHealth.debugTokenStatus ?? "unknown"} tone={metaDiagnostics.tokenHealth.debugTokenStatus === "ok" ? "green" : "amber"} />
+            <HealthCell label="Token app ID" value={metaDiagnostics.tokenHealth.tokenAppId ?? "unavailable"} tone={metaDiagnostics.tokenHealth.tokenBelongsToCurrentApp ? "green" : "amber"} />
+            <HealthCell label="Token type" value={metaDiagnostics.tokenHealth.tokenType} />
+            <HealthCell label="Issued by app" value={metaDiagnostics.tokenHealth.issuedByApp ?? "unavailable"} />
+            <HealthCell label="Required scopes" value={metaDiagnostics.tokenHealth.requiredScopesPresent ? "present" : `missing ${metaDiagnostics.tokenHealth.missingScopes.join(", ")}`} tone={metaDiagnostics.tokenHealth.requiredScopesPresent ? "green" : "red"} />
+            <HealthCell label="IG account linkage" value={metaDiagnostics.tokenHealth.igAccountLinked ? "matches integration" : "not confirmed"} tone={metaDiagnostics.tokenHealth.igAccountLinked ? "green" : "red"} />
+            <HealthCell label="Auth diagnostics" value={metaDiagnostics.tokenHealth.diagnostics.length ? metaDiagnostics.tokenHealth.diagnostics.join(", ") : "none"} tone={metaDiagnostics.tokenHealth.diagnostics.length ? "amber" : "green"} />
             <HealthCell label="App mode" value={`${metaDiagnostics.appMode}${metaDiagnostics.appModeNote ? " - verify in Meta dashboard" : ""}`} />
             <HealthCell label="Last real webhook" value={metaDiagnostics.lastRealWebhookAt ? new Date(metaDiagnostics.lastRealWebhookAt).toLocaleString() : "none yet"} tone={metaDiagnostics.lastRealWebhookAt ? "green" : "amber"} />
             <HealthCell label="Last failure" value={metaDiagnostics.lastFailureReason ?? "none"} />

@@ -129,7 +129,39 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           <p className="font-black uppercase tracking-[0.16em] text-slate-500">
             Webhook health
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <HealthBadge
+              label="OAuth valid"
+              ok={Boolean(health?.data?.oauth?.tokenUsable)}
+            />
+            <HealthBadge
+              label="Token valid"
+              ok={Boolean(health?.data?.oauth?.tokenUsable)}
+            />
+            <HealthBadge
+              label="Webhook subscribed"
+              ok={Boolean(health?.data?.subscription?.subscribed)}
+            />
+            <HealthBadge
+              label="Comment delivery active"
+              ok={Boolean(health?.data?.lastCommentWebhook)}
+            />
+            <HealthBadge
+              label="Messaging active"
+              ok={!health?.data?.lastFailure?.errorMessage?.includes("dm_")}
+            />
+          </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <HealthItem
+              label="Token format"
+              value={
+                health?.data?.oauth?.tokenFormat
+                  ? `${health.data.oauth.tokenFormat.reason}${
+                      health.data.oauth.tokenExpired ? " · expired" : ""
+                    }`
+                  : "Unknown"
+              }
+            />
             <HealthItem
               label="Subscription attempted"
               value={
@@ -181,6 +213,21 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
 }
 
 export default IntegrationCard;
+
+function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <span
+      className={[
+        "rounded-full border px-2.5 py-1 text-[11px] font-black",
+        ok
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-amber-200 bg-amber-50 text-amber-800",
+      ].join(" ")}
+    >
+      {label}: {ok ? "ok" : "check"}
+    </span>
+  );
+}
 
 function HealthItem({ label, value }: { label: string; value: string }) {
   return (
