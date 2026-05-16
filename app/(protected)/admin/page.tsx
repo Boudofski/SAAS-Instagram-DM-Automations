@@ -464,6 +464,117 @@ export default async function AdminPage({
           </form>
         </AdminSection>
 
+        {/* Real Comment Delivery Warning — shown when AP3k is reachable but no real comments */}
+        {lastPostRaw && lastSimulated && !lastRealComment && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-600">
+              Delivery Gap Detected
+            </p>
+            <h2 className="mt-2 text-xl font-black text-amber-900">
+              AP3k is reachable — but no real Instagram comment has arrived
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-amber-800">
+              The webhook route received data and the internal self-test passed, but no{" "}
+              <strong>real</strong> comment event from Meta has been recorded. This is almost
+              always a Meta-side configuration issue, not an AP3k code issue.
+            </p>
+            <p className="mt-3 text-sm font-bold text-amber-900">Most likely causes:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">
+              <li>App is in Development mode and the commenter is not an accepted App Tester or Instagram Tester.</li>
+              <li>Wrong webhook product selected in Meta Developers UI — do <strong>not</strong> use the &quot;User&quot; object; use Instagram / Page / Instagram API.</li>
+              <li>
+                comments and messages fields not subscribed in Meta Developers → Instagram API → Webhooks.
+              </li>
+              <li>Comment was made on media not owned by the connected Instagram account (@{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}).</li>
+              <li>Commenter is the connected account owner (owner comments do not trigger the webhook).</li>
+            </ul>
+          </div>
+        )}
+
+        <AdminSection title="Real Comment Delivery Checklist">
+          <div className="p-4 text-sm">
+            <p className="mb-4 text-xs text-slate-500">
+              Every item below must be true for real Instagram comments to reach AP3k.
+              Items with a red/amber cell need attention.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <ChecklistItem
+                label="App mode — Live or tester accepted"
+                status={lastRealComment ? "ok" : "warn"}
+                detail="App must be Live, OR the commenter must be added as an App Tester in Meta Developers → App Roles → Testers."
+              />
+              <ChecklistItem
+                label="Correct webhook object selected"
+                status={lastRealComment ? "ok" : "warn"}
+                detail="In Meta Developers, do NOT use the 'User' object for Instagram comment automation. Use the Instagram or Page object (whichever Meta shows for your setup)."
+              />
+              <ChecklistItem
+                label="'comments' field subscribed"
+                status={metaDiagnostics.commentsSubscribed ? "ok" : lastRealComment ? "ok" : "error"}
+                detail="In Meta Developers → Instagram API (or Page) → Webhooks, the 'comments' field must be subscribed."
+              />
+              <ChecklistItem
+                label="'messages' field subscribed"
+                status={metaDiagnostics.messagesSubscribed ? "ok" : lastRealComment ? "ok" : "warn"}
+                detail="The 'messages' field must be subscribed for DM-related webhooks."
+              />
+              <ChecklistItem
+                label="Commenter is not the account owner"
+                status="info"
+                detail="The Instagram account owner commenting on their own post does not trigger webhooks. Use a separate tester account."
+              />
+              <ChecklistItem
+                label="Comment is on media owned by @{username}"
+                status="info"
+                detail={`Comment must be on a real post or Reel owned by @${metaDiagnostics.integration?.instagramUsername ?? "the connected Instagram account"}.`}
+              />
+              <ChecklistItem
+                label="Connected account is Business or Creator"
+                status={metaDiagnostics.integration?.igAccountSource === "instagram_business_account" ? "ok" : "warn"}
+                detail={`IG account source: ${metaDiagnostics.integration?.igAccountSource ?? "unknown"}. Must be instagram_business_account.`}
+              />
+              <ChecklistItem
+                label="Webhook GET verify confirmed"
+                status={lastVerifyGet?.status === "PROCESSED" ? "ok" : "warn"}
+                detail={lastVerifyGet ? `Last verify: ${lastVerifyGet.status} at ${new Date(lastVerifyGet.createdAt).toLocaleString()}` : "No GET verify recorded yet."}
+              />
+              <ChecklistItem
+                label="Route receives POSTs"
+                status={lastPostRaw ? "ok" : "error"}
+                detail={lastPostRaw ? `Last POST raw received at ${new Date(lastPostRaw.createdAt).toLocaleString()}` : "No POST has been received yet. Route may not be reachable from Meta."}
+              />
+              <ChecklistItem
+                label="Signature verification passing"
+                status={lastSignatureFailed && !lastRealComment ? "error" : "ok"}
+                detail={lastSignatureFailed ? `Last signature failure at ${new Date(lastSignatureFailed.createdAt).toLocaleString()}: ${lastSignatureFailed.errorMessage ?? "unknown reason"}` : "No recent signature failures."}
+              />
+              <ChecklistItem
+                label="Subscription mode"
+                status={metaDiagnostics.subscriptionMode === "API_SUBSCRIBED" ? "ok" : metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED" ? "warn" : "error"}
+                detail={metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED"
+                  ? "API subscription blocked (pages_manage_metadata not available). Confirm the Webhook Subscription toggle is manually ON in Meta Developers for this Instagram account."
+                  : metaDiagnostics.subscriptionMode === "API_SUBSCRIBED"
+                  ? "API subscription active."
+                  : `Subscription mode: ${metaDiagnostics.subscriptionMode ?? "unknown"}`}
+              />
+              <ChecklistItem
+                label="At least one active campaign"
+                status={activeCampaigns > 0 ? "ok" : "warn"}
+                detail={activeCampaigns > 0 ? `${activeCampaigns} active campaign(s) found.` : "No active campaigns. Create and activate a campaign before testing."}
+              />
+            </div>
+            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-relaxed text-blue-800">
+              <p className="font-bold">Quick test path for @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}:</p>
+              <ol className="mt-2 list-decimal space-y-1 pl-4">
+                <li>Create an active campaign with trigger: Any post, keyword: <code className="rounded bg-blue-100 px-1 font-mono">ai</code>, matching: CONTAINS.</li>
+                <li>From a separate tester account (not @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}), comment <code className="rounded bg-blue-100 px-1 font-mono">ai</code> on any real post owned by @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}.</li>
+                <li>Wait 30–60 seconds for Meta to deliver the webhook.</li>
+                <li>Refresh this admin page and check Last real comment cell above.</li>
+              </ol>
+            </div>
+          </div>
+        </AdminSection>
+
         <AdminSection title="Users">
           {users.map((user) => (
             <AdminRow key={user.id}>
@@ -710,6 +821,43 @@ function HealthCell({
         {label}
       </p>
       <p className="mt-1 break-words font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function ChecklistItem({
+  label,
+  detail,
+  status,
+}: {
+  label: string;
+  detail: string;
+  status: "ok" | "warn" | "error" | "info";
+}) {
+  const dot =
+    status === "ok"
+      ? "bg-emerald-500"
+      : status === "error"
+      ? "bg-red-500"
+      : status === "warn"
+      ? "bg-amber-400"
+      : "bg-blue-400";
+  const border =
+    status === "ok"
+      ? "border-emerald-100"
+      : status === "error"
+      ? "border-red-200"
+      : status === "warn"
+      ? "border-amber-200"
+      : "border-blue-100";
+
+  return (
+    <div className={`rounded-xl border p-3 ${border}`}>
+      <div className="flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dot}`} />
+        <p className="text-xs font-black text-slate-950">{label}</p>
+      </div>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{detail}</p>
     </div>
   );
 }

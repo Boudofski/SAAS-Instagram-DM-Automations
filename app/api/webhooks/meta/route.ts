@@ -49,29 +49,37 @@ export async function GET(req: NextRequest) {
   });
 
   if (mode === "subscribe" && tokenMatch && challenge) {
+    try {
+      await createWebhookEvent({
+        eventType: "WEBHOOK_VERIFY_GET",
+        eventSource: "META_REAL",
+        status: "PROCESSED",
+        payload: {
+          mode,
+          tokenMatch,
+          challengeExists: true,
+        },
+      });
+    } catch {
+      // Non-critical — never let DB logging break verification
+    }
+    return new NextResponse(challenge, { status: 200 });
+  }
+  try {
     await createWebhookEvent({
-          eventType: "WEBHOOK_VERIFY_GET",
-          eventSource: "META_REAL",
-      status: "PROCESSED",
+      eventType: "WEBHOOK_VERIFY_GET",
+      eventSource: "META_REAL",
+      status: "FAILED",
+      errorMessage: "webhook_verification_failed",
       payload: {
         mode,
         tokenMatch,
-        challengeExists: true,
+        challengeExists: Boolean(challenge),
       },
     });
-    return new NextResponse(challenge, { status: 200 });
+  } catch {
+    // Non-critical
   }
-  await createWebhookEvent({
-    eventType: "WEBHOOK_VERIFY_GET",
-    eventSource: "META_REAL",
-    status: "FAILED",
-    errorMessage: "webhook_verification_failed",
-    payload: {
-      mode,
-      tokenMatch,
-      challengeExists: Boolean(challenge),
-    },
-  });
   return NextResponse.json({ error: "webhook_verification_failed" }, { status: 403 });
 }
 
@@ -93,6 +101,11 @@ export async function POST(req: NextRequest) {
     // Store raw receipt before any processing — proves the route is reachable
     try {
       const quickParse = parseJsonSafely(rawBody);
+      const firstEntry = quickParse.ok && Array.isArray(quickParse.body?.entry)
+        ? quickParse.body.entry[0]
+        : undefined;
+      const firstChange = firstEntry?.changes?.[0];
+      const firstValue = firstChange?.value;
       await createWebhookEvent({
         eventType: "WEBHOOK_POST_RECEIVED_RAW",
         eventSource: "META_REAL",
@@ -105,6 +118,10 @@ export async function POST(req: NextRequest) {
           entryCount: quickParse.ok && Array.isArray(quickParse.body?.entry)
             ? quickParse.body.entry.length
             : undefined,
+          firstEntryId: firstEntry?.id ?? undefined,
+          firstField: firstChange?.field ?? undefined,
+          hasValueText: Boolean(firstValue?.text),
+          hasValueMediaId: Boolean(firstValue?.media?.id),
         },
       });
     } catch {

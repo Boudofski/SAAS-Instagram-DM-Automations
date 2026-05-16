@@ -135,7 +135,7 @@ export default async function DashboardPage({ params }: Props) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="DMs sent"         icon="✉️" value={totalDms}        empty={isEmpty} />
         <StatCard label="Comments matched" icon="💬" value={totalComments}   empty={isEmpty} />
-        <StatCard label="Leads captured" icon="🎯" value={automations.reduce((sum: number, a: any) => sum + (a.leads?.length ?? 0), 0)} empty={isEmpty} />
+        <StatCard label="Leads captured" icon="🎯" value={automations.reduce((sum: number, a: any) => sum + (a._count?.leads ?? 0), 0)} empty={isEmpty} />
         <StatCard label="Reply rate"       icon="📈" value={`${replyRate}%`} empty={isEmpty} />
       </div>
 

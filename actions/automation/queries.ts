@@ -128,6 +128,7 @@ export const getAutomation = async (clerkId: string) => {
         include: {
           keywords: true,
           listener: true,
+          _count: { select: { leads: true } },
         },
       },
     },
