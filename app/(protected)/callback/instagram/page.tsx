@@ -64,6 +64,10 @@ async function Page({ searchParams }: Props) {
       return integrationRedirect(slug);
     }
 
+    if (user.status === 202) {
+      return redirect(`${dashboardPath(slug)}/integrations/select-account`);
+    }
+
     return integrationRedirect(slug, user.error ?? "oauth_failed");
   }
 

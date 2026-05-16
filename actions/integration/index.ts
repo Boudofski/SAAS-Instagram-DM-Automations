@@ -4,20 +4,25 @@ import {
   formatSafeMetaError,
   generateToken,
   debugPageToken,
+  getEligibleFacebookInstagramAccounts,
   getSafeMetaError,
-  resolveFacebookBusinessInstagramAccount,
   subscribeInstagramWebhooks,
+  type EligibleInstagramAccount,
 } from "@/lib/fetch";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import {
   createIntegration,
+  createMetaOAuthSelection,
   deleteIntegrationForUser,
+  deleteMetaOAuthSelection,
+  getLatestMetaOAuthSelection,
   getIntegrations,
   getWebhookHealthForUser,
   recordIntegrationOAuthError,
   updateIntegration,
 } from "./queries";
+import { dashboardPath } from "@/lib/dashboard";
 
 const REQUIRED_META_BUSINESS_SCOPES = [
   "pages_show_list",
@@ -155,9 +160,55 @@ export const onIntegrate = async (code: string) => {
       hasUserAccessToken: true,
     });
 
-    let resolved: Awaited<ReturnType<typeof resolveFacebookBusinessInstagramAccount>>;
+    let resolved: EligibleInstagramAccount;
     try {
-      resolved = await resolveFacebookBusinessInstagramAccount(userAccessToken);
+      const resolution = await getEligibleFacebookInstagramAccounts(userAccessToken);
+      const resolutionDiagnostics = {
+        pagesReturned: resolution.pagesReturned,
+        pageLookupAttempts: resolution.pageLookupAttempts,
+        foundInstagramField: resolution.eligibleAccounts.length ? "found" : "none",
+      };
+
+      if (!resolution.eligibleAccounts.length) {
+        const hasPageToken = resolution.pageLookupAttempts.some(
+          (attempt) => attempt.hasPageAccessToken
+        );
+        const state = hasPageToken ? "ig_business_not_linked" : "page_token_missing";
+        await recordIntegrationOAuthError(
+          user.id,
+          state,
+          "facebook_business_oauth",
+          resolutionDiagnostics
+        );
+        console.warn("[oauth] step page_resolution_failed", {
+          state,
+          resolutionDiagnostics,
+          message:
+            "Facebook returned Pages, but Graph API did not expose instagram_business_account or connected_instagram_account. Check Page access tasks and advanced access.",
+        });
+        return {
+          status: 401,
+          error: state,
+          data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+        };
+      }
+
+      if (resolution.eligibleAccounts.length > 1) {
+        await createMetaOAuthSelection(
+          user.id,
+          resolution.eligibleAccounts,
+          new Date(Date.now() + 10 * 60 * 1000)
+        );
+        console.log("[oauth] step account_selection_required", {
+          eligibleAccounts: resolution.eligibleAccounts.length,
+        });
+        return {
+          status: 202,
+          data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+        };
+      }
+
+      resolved = resolution.eligibleAccounts[0];
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const resolutionDiagnostics = (error as any)?.diagnostics;
@@ -183,6 +234,7 @@ export const onIntegrate = async (code: string) => {
     });
     console.log("[oauth] step ig_business_linked", {
       hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
+      igAccountSource: resolved.igAccountSource,
     });
 
     try {
@@ -382,6 +434,108 @@ export const disconnectCurrentInstagramIntegration = async () => {
       message: error instanceof Error ? error.message : String(error),
     });
     return { status: 500, data: "Instagram account could not be disconnected" };
+  }
+};
+
+export const getPendingInstagramAccountSelections = async () => {
+  const user = await currentUser();
+  if (!user) return { status: 401, data: [] };
+
+  const selection = await getLatestMetaOAuthSelection(user.id);
+  const accounts = Array.isArray(selection?.accounts) ? selection.accounts : [];
+
+  return {
+    status: 200,
+    data: accounts.map((account: any) => ({
+      pageId: String(account.pageId ?? ""),
+      pageName: account.pageName as string | undefined,
+      instagramBusinessAccountId: String(account.instagramBusinessAccountId ?? ""),
+      instagramUsername: account.instagramUsername as string | undefined,
+      profilePictureUrl: account.profilePictureUrl as string | undefined,
+      igAccountSource: account.igAccountSource as string | undefined,
+      tasks: Array.isArray(account.tasks) ? account.tasks.map(String) : [],
+    })),
+  };
+};
+
+export const selectPendingInstagramAccount = async (formData: FormData) => {
+  const user = await currentUser();
+  if (!user) return redirect("/sign-in");
+
+  const pageId = String(formData.get("pageId") ?? "").trim();
+  const selection = await getLatestMetaOAuthSelection(user.id);
+  const accounts = Array.isArray(selection?.accounts)
+    ? (selection.accounts as unknown as EligibleInstagramAccount[])
+    : [];
+  const selected = accounts.find((account) => account.pageId === pageId);
+
+  if (!selection || !selected) {
+    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=page_resolution_failed`);
+  }
+
+  try {
+    const debug = await debugPageToken(selected.pageAccessToken);
+    const isValid = Boolean(debug.data?.data?.is_valid);
+    if (!isValid) {
+      await recordIntegrationOAuthError(user.id, "page_token_missing");
+      return redirect(`${dashboardPath(user.id)}/integrations?integration_error=page_token_missing`);
+    }
+
+    const subscriptionAttempt = await attemptWebhookSubscription(
+      selected.pageId,
+      selected.pageAccessToken
+    );
+    const integration = await getIntegrations(user.id);
+    const existing = integration?.integrations[0];
+    const expireDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
+    if (existing) {
+      await updateIntegration(
+        selected.pageAccessToken,
+        expireDate,
+        existing.id,
+        selected.instagramBusinessAccountId,
+        selected.instagramUsername,
+        selected.profilePictureUrl,
+        selected.pageId,
+        selected.pageName,
+        selected.instagramBusinessAccountId,
+        selected.igAccountSource,
+        selected.diagnostics,
+        subscriptionAttempt
+      );
+    } else {
+      await createIntegration(
+        user.id,
+        selected.pageAccessToken,
+        expireDate,
+        selected.instagramBusinessAccountId,
+        selected.instagramUsername,
+        selected.profilePictureUrl,
+        selected.pageId,
+        selected.pageName,
+        selected.instagramBusinessAccountId,
+        selected.igAccountSource,
+        selected.diagnostics,
+        subscriptionAttempt
+      );
+    }
+
+    await deleteMetaOAuthSelection(selection.id);
+    console.log("[oauth] step selected_account_saved", {
+      selectedPageId: selected.pageId,
+      selectedPageName: selected.pageName,
+      selectedInstagramUsername: selected.instagramUsername,
+      igAccountSource: selected.igAccountSource,
+      subscribed: subscriptionAttempt.subscribed,
+    });
+    return redirect(`${dashboardPath(user.id)}/integrations`);
+  } catch (error) {
+    console.error("[oauth] selected account save failed", {
+      error: getSafeMetaError(error),
+    });
+    await recordIntegrationOAuthError(user.id, "integration_save_failed");
+    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=integration_save_failed`);
   }
 };
 

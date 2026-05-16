@@ -122,6 +122,59 @@ export const deleteIntegrationForUser = async (clerkId: string) => {
   });
 };
 
+export const createMetaOAuthSelection = async (
+  clerkId: string,
+  accounts: unknown,
+  expiresAt: Date
+) => {
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
+  if (!user) throw new Error("user_not_found");
+
+  await client.metaOAuthSelection.deleteMany({
+    where: { userId: user.id },
+  });
+
+  return await client.metaOAuthSelection.create({
+    data: {
+      userId: user.id,
+      accounts: accounts as any,
+      expiresAt,
+    },
+    select: { id: true },
+  });
+};
+
+export const getLatestMetaOAuthSelection = async (clerkId: string) => {
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
+  if (!user) return null;
+
+  return await client.metaOAuthSelection.findFirst({
+    where: {
+      userId: user.id,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      accounts: true,
+      expiresAt: true,
+    },
+  });
+};
+
+export const deleteMetaOAuthSelection = async (id: string) => {
+  return await client.metaOAuthSelection.delete({
+    where: { id },
+    select: { id: true },
+  });
+};
+
 export const createIntegration = async (
   clerkId: string,
   token: string,

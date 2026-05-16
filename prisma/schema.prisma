@@ -20,6 +20,7 @@ model User {
   subscription Subscription?
   integrations Integrations[]
   automations  Automation[]
+  metaOAuthSelections MetaOAuthSelection[]
 }
 
 model Subscription {
@@ -56,6 +57,17 @@ model Integrations {
   oauthLastError String?
   oauthLastErrorAt DateTime?
   oauthLastErrorSource String?
+}
+
+model MetaOAuthSelection {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  accounts  Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
 }
 
 model Automation {

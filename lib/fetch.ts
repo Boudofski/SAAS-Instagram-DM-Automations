@@ -224,10 +224,38 @@ export const generateToken = async (code: string) => {
   return longToken;
 };
 
-export const resolveFacebookBusinessInstagramAccount = async (userToken: string) => {
+export type EligibleInstagramAccount = {
+  pageId: string;
+  pageName?: string;
+  pageAccessToken: string;
+  instagramBusinessAccountId: string;
+  instagramUsername?: string;
+  profilePictureUrl?: string;
+  igAccountSource: "instagram_business_account" | "connected_instagram_account";
+  tasks: string[];
+  diagnostics: {
+    pagesReturned: number;
+    pageLookupAttempts: Array<{
+      pageId: string;
+      pageName?: string;
+      hasPageAccessToken: boolean;
+      status: "skipped_missing_page_token" | "ok" | "failed";
+      foundInstagramField?: "instagram_business_account" | "connected_instagram_account" | "none";
+      error?: string;
+    }>;
+    foundInstagramField: string;
+    igAccountSource: string;
+    selectedPageName?: string;
+    selectedPageId?: string;
+    selectedInstagramUsername?: string;
+  };
+};
+
+export const getEligibleFacebookInstagramAccounts = async (userToken: string) => {
   const accounts = await axios.get(`${META_GRAPH_API_BASE_URL}/me/accounts`, {
     params: {
-      fields: "id,name,access_token,tasks,perms",
+      fields:
+        "id,name,access_token,tasks,instagram_business_account{id,username,profile_picture_url},connected_instagram_account{id,username,profile_picture_url}",
       access_token: userToken,
     },
   });
@@ -247,10 +275,13 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
     pageCount: pages.length,
   });
 
+  const eligibleAccounts: EligibleInstagramAccount[] = [];
+
   for (const page of pages) {
     const pageId = String(page?.id ?? "");
     const pageName = page?.name as string | undefined;
     const pageAccessToken = assertAccessToken(page?.access_token);
+    const tasks = Array.isArray(page?.tasks) ? page.tasks.map(String) : [];
 
     if (!pageId || !pageAccessToken) {
       pageLookupAttempts.push({
@@ -263,6 +294,8 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
     }
 
     try {
+      const directInstagramBusinessAccount = page?.instagram_business_account;
+      const directConnectedInstagramAccount = page?.connected_instagram_account;
       const pageLookup = await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}`, {
         params: {
           fields:
@@ -270,8 +303,10 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
           access_token: pageAccessToken,
         },
       });
-      const instagramBusinessAccount = pageLookup.data?.instagram_business_account;
-      const connectedInstagramAccount = pageLookup.data?.connected_instagram_account;
+      const instagramBusinessAccount =
+        pageLookup.data?.instagram_business_account ?? directInstagramBusinessAccount;
+      const connectedInstagramAccount =
+        pageLookup.data?.connected_instagram_account ?? directConnectedInstagramAccount;
       const account = instagramBusinessAccount ?? connectedInstagramAccount;
       const igAccountSource = instagramBusinessAccount
         ? ("instagram_business_account" as const)
@@ -297,15 +332,7 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
           selectedPageId: pageId,
           selectedInstagramUsername: account.username as string | undefined,
         };
-        console.log("[oauth] step page_instagram_lookup_success", {
-          pagesReturned: diagnostics.pagesReturned,
-          pageLookupAttempts: diagnostics.pageLookupAttempts.length,
-          foundInstagramField: diagnostics.foundInstagramField,
-          igAccountSource: diagnostics.igAccountSource,
-          hasSelectedPageId: Boolean(diagnostics.selectedPageId),
-          hasSelectedInstagramUsername: Boolean(diagnostics.selectedInstagramUsername),
-        });
-        return {
+        eligibleAccounts.push({
           pageId,
           pageName,
           pageAccessToken,
@@ -313,8 +340,9 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
           instagramUsername: account.username as string | undefined,
           profilePictureUrl: account.profile_picture_url as string | undefined,
           igAccountSource,
+          tasks,
           diagnostics,
-        };
+        });
       }
     } catch (error) {
       pageLookupAttempts.push({
@@ -327,11 +355,40 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
     }
   }
 
-  if (!pages.length || pageLookupAttempts.every((attempt) => !attempt.hasPageAccessToken)) {
+  console.log("[oauth] step page_instagram_lookup_result", {
+    pagesReturned: pages.length,
+    pageLookupAttempts: pageLookupAttempts.length,
+    eligibleAccounts: eligibleAccounts.length,
+    eligibleWithMessagingAndModerate: eligibleAccounts.filter((account) => {
+      if (!account.tasks.length) return true;
+      return account.tasks.includes("MESSAGING") && account.tasks.includes("MODERATE");
+    }).length,
+  });
+
+  return {
+    pagesReturned: pages.length,
+    pageLookupAttempts,
+    eligibleAccounts: eligibleAccounts.filter((account) => {
+      if (!account.tasks.length) return true;
+      return account.tasks.includes("MESSAGING") && account.tasks.includes("MODERATE");
+    }),
+  };
+};
+
+export const resolveFacebookBusinessInstagramAccount = async (userToken: string) => {
+  const result = await getEligibleFacebookInstagramAccounts(userToken);
+  const account = result.eligibleAccounts[0];
+
+  if (account) return account;
+
+  if (
+    !result.pagesReturned ||
+    result.pageLookupAttempts.every((attempt) => !attempt.hasPageAccessToken)
+  ) {
     const error = new Error("page_token_missing");
     (error as any).diagnostics = {
-      pagesReturned: pages.length,
-      pageLookupAttempts,
+      pagesReturned: result.pagesReturned,
+      pageLookupAttempts: result.pageLookupAttempts,
       foundInstagramField: "none",
     };
     throw error;
@@ -339,8 +396,8 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
 
   const error = new Error("ig_business_not_linked");
   (error as any).diagnostics = {
-    pagesReturned: pages.length,
-    pageLookupAttempts,
+    pagesReturned: result.pagesReturned,
+    pageLookupAttempts: result.pageLookupAttempts,
     foundInstagramField: "none",
   };
   throw error;
