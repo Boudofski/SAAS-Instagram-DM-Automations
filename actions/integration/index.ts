@@ -3,6 +3,7 @@
 import {
   formatSafeMetaError,
   generateToken,
+  debugPageToken,
   getSafeMetaError,
   resolveFacebookBusinessInstagramAccount,
   subscribeInstagramWebhooks,
@@ -21,6 +22,8 @@ const REQUIRED_META_BUSINESS_SCOPES = [
   "instagram_business_basic",
   "instagram_business_manage_comments",
   "instagram_business_manage_messages",
+  "pages_show_list",
+  "pages_read_engagement",
 ];
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
@@ -98,6 +101,7 @@ export const getInstagramConnectUrl = async () => {
       hasMetaAppId: Boolean(process.env.META_APP_ID),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
       endpoint: FACEBOOK_BUSINESS_OAUTH_URL,
+      requestedScopes: REQUIRED_META_BUSINESS_SCOPES,
       scopeCount: REQUIRED_META_BUSINESS_SCOPES.length,
       redirectIsProduction: process.env.META_REDIRECT_URI === "https://ap3k.com/callback/instagram",
     });
@@ -130,25 +134,77 @@ export const onIntegrate = async (code: string) => {
   try {
     const integration = await getIntegrations(user.id);
     const existing = integration?.integrations[0];
+    console.log("[oauth] step oauth_received", {
+      hasCode: Boolean(code),
+      hasExistingIntegration: Boolean(existing),
+    });
+
     const tokenResult = await generateToken(code);
     const userAccessToken = tokenResult?.accessToken;
 
     if (!userAccessToken) {
+      await recordIntegrationOAuthError(user.id, "token_exchange_failed");
       return {
         status: 401,
         error: "token_exchange_failed",
         data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
       };
     }
+    console.log("[oauth] step token_exchange_success", {
+      hasUserAccessToken: true,
+    });
 
-    const resolved = await resolveFacebookBusinessInstagramAccount(userAccessToken);
-    if (!resolved) {
-      console.warn("[oauth] no linked Instagram Business account found", {
-        hasUserAccessToken: true,
+    let resolved: Awaited<ReturnType<typeof resolveFacebookBusinessInstagramAccount>>;
+    try {
+      resolved = await resolveFacebookBusinessInstagramAccount(userAccessToken);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const state =
+        message === "ig_business_not_linked" || message === "page_token_missing"
+          ? message
+          : "page_resolution_failed";
+      await recordIntegrationOAuthError(user.id, state);
+      console.warn("[oauth] step page_resolution_failed", {
+        state,
+        error: getSafeMetaError(error),
       });
       return {
         status: 401,
-        error: "no_linked_instagram_business_account",
+        error: state,
+        data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+      };
+    }
+    console.log("[oauth] step page_selected", {
+      hasPageId: Boolean(resolved.pageId),
+      hasPageAccessToken: Boolean(resolved.pageAccessToken),
+    });
+    console.log("[oauth] step ig_business_linked", {
+      hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
+    });
+
+    try {
+      const debug = await debugPageToken(resolved.pageAccessToken);
+      const isValid = Boolean(debug.data?.data?.is_valid);
+      console.log("[oauth] step page_token_validated", {
+        tokenValid: isValid,
+        tokenType: debug.data?.data?.type ?? "unknown",
+      });
+      if (!isValid) {
+        await recordIntegrationOAuthError(user.id, "page_token_missing");
+        return {
+          status: 401,
+          error: "page_token_missing",
+          data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+        };
+      }
+    } catch (error) {
+      await recordIntegrationOAuthError(user.id, "page_token_missing");
+      console.warn("[oauth] step page_token_validation_failed", {
+        error: getSafeMetaError(error),
+      });
+      return {
+        status: 401,
+        error: "page_token_missing",
         data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
       };
     }
@@ -157,6 +213,10 @@ export const onIntegrate = async (code: string) => {
       resolved.pageId,
       resolved.pageAccessToken
     );
+    console.log("[oauth] step subscribed_apps_success", {
+      subscribed: subscriptionAttempt.subscribed,
+      statusCode: subscriptionAttempt.statusCode,
+    });
     const today = new Date();
     const expireDate = today.setSeconds(
       today.getSeconds() + (tokenResult?.expiresIn ?? 60 * 24 * 60 * 60)
@@ -210,6 +270,7 @@ export const onIntegrate = async (code: string) => {
     });
     return { status: 200, data: create };
   } catch (error) {
+    await recordIntegrationOAuthError(user.id, "integration_save_failed");
     console.error("[oauth] onIntegrate error", {
       message: error instanceof Error ? error.message : String(error),
       integrationSaved: false,

@@ -234,12 +234,21 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
   });
 
   const pages = Array.isArray(accounts.data?.data) ? accounts.data.data : [];
+  console.log("[oauth] step me/accounts_success", {
+    endpointFamily: "facebook_graph_page",
+    pageCount: pages.length,
+    linkedInstagramPageCount: pages.filter((item: any) => item?.instagram_business_account?.id).length,
+  });
   const page = pages.find((item: any) => item?.instagram_business_account?.id);
   const pageAccessToken = assertAccessToken(page?.access_token);
   const instagramBusinessAccountId = page?.instagram_business_account?.id;
 
-  if (!page || !pageAccessToken || !instagramBusinessAccountId) {
-    return null;
+  if (!page || !instagramBusinessAccountId) {
+    throw new Error("ig_business_not_linked");
+  }
+
+  if (!pageAccessToken) {
+    throw new Error("page_token_missing");
   }
 
   return {

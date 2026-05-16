@@ -10,13 +10,13 @@ const REQUESTED_SCOPES = [
   "instagram_business_basic",
   "instagram_business_manage_comments",
   "instagram_business_manage_messages",
+  "pages_show_list",
+  "pages_read_engagement",
 ];
 
 const REJECTED_LEGACY_SCOPES = [
   "instagram_basic",
   "instagram_manage_messages",
-  "pages_show_list",
-  "pages_read_engagement",
   "business_management",
 ];
 

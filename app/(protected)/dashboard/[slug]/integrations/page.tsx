@@ -4,6 +4,10 @@ import IntegrationCard from "./_components/integration-card";
 const ERROR_COPY: Record<string, string> = {
   auth_missing: "Instagram returned successfully, but your AP3k session was not available. Sign in again and reconnect Instagram.",
   token_exchange_failed: "Instagram authorization was received, but AP3k could not exchange it for an access token.",
+  page_resolution_failed: "Meta authorization succeeded, but AP3k could not fetch Facebook Pages. Confirm pages_show_list and pages_read_engagement are approved/enabled for this app.",
+  ig_business_not_linked: "Meta returned Facebook Pages, but none had a linked Instagram Business account.",
+  page_token_missing: "Meta returned a Page, but AP3k could not validate a Page access token for it.",
+  webhook_subscription_failed: "The account connected, but AP3k could not subscribe the Facebook Page to comment/message webhooks.",
   integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the integration.",
   provider_denied: "Instagram did not authorize the connection.",
   insufficient_developer_role: "Meta rejected the connection because this Facebook/Instagram account does not have enough role access for this app while it is in development mode.",
@@ -17,6 +21,22 @@ const ERROR_STEPS: Record<string, string[]> = {
     "Make sure the user has Business Manager access to the Instagram asset.",
     "Make sure the Instagram tester invitation is accepted.",
     "Or publish the app after App Review.",
+  ],
+  page_resolution_failed: [
+    "Reconnect after confirming pages_show_list and pages_read_engagement are available to the Meta app.",
+    "Make sure the Facebook user has access to the Page that owns the Instagram Business account.",
+  ],
+  ig_business_not_linked: [
+    "Open the Facebook Page settings and confirm the Instagram Business or Creator account is linked.",
+    "Reconnect using the Facebook user that manages that Page.",
+  ],
+  page_token_missing: [
+    "Reconnect and approve all requested permissions.",
+    "Confirm the Facebook user has Page access in Meta Business settings.",
+  ],
+  webhook_subscription_failed: [
+    "Reconnect or use Resubscribe Webhooks after confirming Page access.",
+    "Check admin diagnostics for the safe Meta error from subscribed_apps.",
   ],
 };
 

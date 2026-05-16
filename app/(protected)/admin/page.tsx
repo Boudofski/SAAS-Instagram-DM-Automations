@@ -213,6 +213,7 @@ export default async function AdminPage({
             } />
             <HealthCell label="Facebook Page ID" value={metaDiagnostics.integration?.pageId ?? "none"} />
             <HealthCell label="IG business account ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
+            <HealthCell label="OAuth state" value={metaDiagnostics.oauthState} tone={metaDiagnostics.oauthState === "oauth_success" ? "green" : "red"} />
             <HealthCell label="Page token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
             <HealthCell label="Page subscribed" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
             <HealthCell label="comments subscribed" value={metaDiagnostics.commentsSubscribed ? "yes" : "no"} tone={metaDiagnostics.commentsSubscribed ? "green" : "red"} />

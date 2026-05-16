@@ -31,9 +31,14 @@ export async function getMetaAdminDiagnostics() {
   });
 
   if (!integration?.pageId || !integration.token) {
+    const oauthState =
+      integration?.oauthLastError ??
+      (integration?.token ? "page_resolution_failed" : "page_token_missing");
+
     return {
       connected: false,
       integration: null,
+      oauthState,
       subscribedAppsActive: false,
       commentsSubscribed: false,
       messagesSubscribed: false,
@@ -113,6 +118,17 @@ export async function getMetaAdminDiagnostics() {
 
   return {
     connected: true,
+    oauthState: integration.oauthLastError
+      ? integration.oauthLastError
+      : !integration.token
+        ? "page_token_missing"
+        : !integration.pageId
+          ? "page_resolution_failed"
+          : !integration.instagramId
+            ? "ig_business_not_linked"
+            : integration.webhookSubscriptionSubscribed === false
+              ? "webhook_subscription_failed"
+              : "oauth_success",
     integration: {
       instagramId: integration.instagramId,
       webhookAccountId: integration.webhookAccountId,
