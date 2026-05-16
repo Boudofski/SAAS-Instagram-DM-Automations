@@ -18,6 +18,7 @@ export async function getMetaAdminDiagnostics() {
       webhookSubscriptionLastAttemptedAt: true,
       webhookSubscriptionStatusCode: true,
       webhookSubscriptionSubscribed: true,
+      webhookSubscriptionMode: true,
       webhookSubscriptionError: true,
       oauthLastError: true,
       oauthLastErrorAt: true,
@@ -57,6 +58,7 @@ export async function getMetaAdminDiagnostics() {
           }
         : null,
       oauthState,
+      subscriptionMode: integration?.webhookSubscriptionMode ?? "UNKNOWN",
       subscribedAppsActive: false,
       commentsSubscribed: false,
       messagesSubscribed: false,
@@ -134,6 +136,8 @@ export async function getMetaAdminDiagnostics() {
     }),
   ]);
 
+  const subscriptionMode = integration.webhookSubscriptionMode ?? "UNKNOWN";
+
   return {
     connected: true,
     oauthState: integration.oauthLastError
@@ -144,9 +148,11 @@ export async function getMetaAdminDiagnostics() {
           ? "page_resolution_failed"
           : !integration.instagramId
             ? "ig_business_not_linked"
-            : integration.webhookSubscriptionSubscribed === false
+            : integration.webhookSubscriptionSubscribed === false &&
+                subscriptionMode !== "META_DASHBOARD_MANAGED"
               ? "webhook_subscription_failed"
               : "oauth_success",
+    subscriptionMode,
     integration: {
       instagramId: integration.instagramId,
       webhookAccountId: integration.webhookAccountId,
@@ -160,6 +166,7 @@ export async function getMetaAdminDiagnostics() {
       webhookSubscriptionLastAttemptedAt: integration.webhookSubscriptionLastAttemptedAt,
       webhookSubscriptionStatusCode: integration.webhookSubscriptionStatusCode,
       webhookSubscriptionSubscribed: integration.webhookSubscriptionSubscribed,
+      webhookSubscriptionMode: integration.webhookSubscriptionMode,
       webhookSubscriptionError: integration.webhookSubscriptionError,
       oauthLastError: integration.oauthLastError,
       oauthLastErrorAt: integration.oauthLastErrorAt,

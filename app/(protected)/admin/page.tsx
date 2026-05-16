@@ -272,6 +272,36 @@ export default async function AdminPage({
             <HealthCell label="Last real webhook" value={metaDiagnostics.lastRealWebhookAt ? new Date(metaDiagnostics.lastRealWebhookAt).toLocaleString() : "none yet"} tone={metaDiagnostics.lastRealWebhookAt ? "green" : "amber"} />
             <HealthCell label="Last failure" value={metaDiagnostics.lastFailureReason ?? "none"} />
             <HealthCell label="Subscription status" value={metaDiagnostics.subscribedAppsStatus ?? "unknown"} />
+            <HealthCell
+              label="Subscription mode"
+              value={metaDiagnostics.subscriptionMode ?? "UNKNOWN"}
+              tone={
+                metaDiagnostics.subscriptionMode === "API_SUBSCRIBED" ? "green" :
+                metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED" ? "amber" :
+                metaDiagnostics.subscriptionMode === "FAILED" ? "red" : "slate"
+              }
+            />
+            <HealthCell
+              label="business_management requested"
+              value={metaDiagnostics.tokenHealth.config.requestedScopes.includes("business_management") ? "yes" : "no"}
+              tone={metaDiagnostics.tokenHealth.config.requestedScopes.includes("business_management") ? "green" : "red"}
+            />
+            <HealthCell
+              label="business_management granted"
+              value={
+                metaDiagnostics.tokenHealth.tokenScopes.length > 0
+                  ? metaDiagnostics.tokenHealth.tokenScopes.includes("business_management") ? "yes" : "no"
+                  : "scopes unavailable"
+              }
+              tone={
+                metaDiagnostics.tokenHealth.tokenScopes.includes("business_management") ? "green" : "amber"
+              }
+            />
+            <HealthCell
+              label="Last subscription error"
+              value={metaDiagnostics.integration?.webhookSubscriptionError ?? "none"}
+              tone={metaDiagnostics.integration?.webhookSubscriptionError ? "amber" : "green"}
+            />
           </div>
         </AdminSection>
 

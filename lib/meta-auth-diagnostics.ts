@@ -9,6 +9,7 @@ import {
 const REQUESTED_SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
+  "business_management",
   "instagram_basic",
   "instagram_manage_comments",
   "instagram_manage_messages",
@@ -18,7 +19,6 @@ const REJECTED_INCOMPATIBLE_SCOPES = [
   "instagram_business_basic",
   "instagram_business_manage_comments",
   "instagram_business_manage_messages",
-  "business_management",
 ];
 
 type SafeCall<T> =

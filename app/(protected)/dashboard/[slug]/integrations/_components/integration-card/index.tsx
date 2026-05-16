@@ -173,6 +173,25 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           <p className="font-black uppercase tracking-[0.16em] text-slate-500">
             Webhook health
           </p>
+          {health?.data?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED" && (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-bold">Meta dashboard subscription required</p>
+              <p className="mt-1 leading-relaxed">
+                AP3k is connected, but Meta did not allow API subscription because{" "}
+                <code className="rounded bg-amber-100 px-1 font-mono text-xs">pages_manage_metadata</code>{" "}
+                is unavailable. In Meta Developers, confirm the Webhook Subscription toggle is ON for
+                this Instagram account and that comments and messages fields are subscribed.
+              </p>
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-relaxed">
+                <li>Go to Meta Developers → Instagram API setup with Facebook login</li>
+                <li>Find the Webhook Subscription section</li>
+                <li>Confirm Webhook Subscription is ON for this account</li>
+                <li>Confirm <strong>comments</strong> field is subscribed</li>
+                <li>Confirm <strong>messages</strong> field is subscribed</li>
+                <li>Test with a real comment from a separate accepted tester account</li>
+              </ul>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
             <HealthBadge
               label="OAuth valid"
@@ -184,7 +203,10 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             />
             <HealthBadge
               label="Webhook subscribed"
-              ok={Boolean(health?.data?.subscription?.subscribed)}
+              ok={
+                Boolean(health?.data?.subscription?.subscribed) ||
+                health?.data?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED"
+              }
             />
             <HealthBadge
               label="Comment delivery active"
@@ -218,11 +240,13 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               label="Subscription result"
               value={
                 health?.data?.subscription
-                  ? `${health.data.subscription.subscribed ? "success" : "failure"}${
-                      health.data.subscription.statusCode
-                        ? ` · ${health.data.subscription.statusCode}`
-                        : ""
-                    }`
+                  ? health.data.subscription.subscriptionMode === "META_DASHBOARD_MANAGED"
+                    ? "dashboard managed (see notice above)"
+                    : `${health.data.subscription.subscribed ? "success" : "failure"}${
+                        health.data.subscription.statusCode
+                          ? ` · ${health.data.subscription.statusCode}`
+                          : ""
+                      }`
                   : "Unknown"
               }
             />

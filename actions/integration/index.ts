@@ -27,6 +27,7 @@ import { dashboardPath } from "@/lib/dashboard";
 const REQUIRED_META_BUSINESS_SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
+  "business_management",
   "instagram_basic",
   "instagram_manage_comments",
   "instagram_manage_messages",
@@ -39,24 +40,33 @@ async function attemptWebhookSubscription(pageId: string, pageToken: string) {
   try {
     const subscription = await subscribeInstagramWebhooks(pageId, pageToken);
     const subscribed = subscription.status >= 200 && subscription.status < 300;
+    const subscriptionMode = subscribed ? "API_SUBSCRIBED" : "FAILED";
     console.log("[oauth] page webhook subscription result", {
       endpointFamily: "facebook_graph_page",
       pageIdPresent: Boolean(pageId),
       subscribed,
+      subscriptionMode,
       status: subscription.status,
     });
-    return { statusCode: subscription.status, subscribed, attemptedAt };
+    return { statusCode: subscription.status, subscribed, subscriptionMode, attemptedAt };
   } catch (error) {
+    const metaError = getSafeMetaError(error);
     const safe = formatSafeMetaError(error);
+    const isMetaDashboardManaged =
+      typeof metaError.message === "string" &&
+      metaError.message.includes("pages_manage_metadata");
+    const subscriptionMode = isMetaDashboardManaged ? "META_DASHBOARD_MANAGED" : "FAILED";
     console.warn("[oauth] page webhook subscription failed", {
       endpointFamily: "facebook_graph_page",
       pageIdPresent: Boolean(pageId),
       subscribed: false,
-      error: getSafeMetaError(error),
+      subscriptionMode,
+      error: metaError,
     });
     return {
-      statusCode: getSafeMetaError(error).status,
+      statusCode: metaError.status,
       subscribed: false,
+      subscriptionMode,
       error: safe || "page_subscribed_apps_failed",
       attemptedAt,
     };
@@ -356,8 +366,7 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       return { status: 404, data: "Connect Facebook Page and Instagram Business account before resubscribing webhooks" };
     }
 
-    const result = await subscribeInstagramWebhooks(instagram.pageId, instagram.token);
-    const subscribed = result.status >= 200 && result.status < 300;
+    const subscriptionAttempt = await attemptWebhookSubscription(instagram.pageId, instagram.token);
 
     await updateIntegration(
       instagram.token,
@@ -371,50 +380,32 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       instagram.businessId ?? undefined,
       instagram.igAccountSource ?? undefined,
       instagram.oauthResolutionDiagnostics ?? undefined,
-      {
-        statusCode: result.status,
-        subscribed,
-        attemptedAt: new Date(),
-      }
+      subscriptionAttempt
     );
 
     console.log("[webhook-subscription] manual page resubscribe result", {
       endpointFamily: "facebook_graph_page",
       pageIdPresent: true,
-      subscribed,
-      status: result.status,
+      subscribed: subscriptionAttempt.subscribed,
+      subscriptionMode: subscriptionAttempt.subscriptionMode,
+      status: subscriptionAttempt.statusCode,
     });
 
-    return { status: 200, data: "Page webhook subscription refreshed for comments and messages" };
-  } catch (error) {
-    const safe = formatSafeMetaError(error);
-    const integration = await getIntegrations(user.id);
-    const instagram = integration?.integrations[0];
-    if (instagram?.id && instagram.token) {
-      await updateIntegration(
-        instagram.token,
-        instagram.expiresAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        instagram.id,
-        instagram.instagramId ?? undefined,
-        instagram.instagramUsername ?? undefined,
-        instagram.profilePictureUrl ?? undefined,
-        instagram.pageId ?? undefined,
-        instagram.pageName ?? undefined,
-        instagram.businessId ?? undefined,
-        instagram.igAccountSource ?? undefined,
-        instagram.oauthResolutionDiagnostics ?? undefined,
-        {
-          statusCode: getSafeMetaError(error).status,
-          subscribed: false,
-          error: safe || "page_subscribed_apps_failed",
-          attemptedAt: new Date(),
-        }
-      );
+    if (subscriptionAttempt.subscriptionMode === "META_DASHBOARD_MANAGED") {
+      return {
+        status: 200,
+        data: "Meta dashboard subscription required — confirm the Webhook Subscription toggle is ON in Meta Developers for this Instagram account",
+      };
     }
+    if (subscriptionAttempt.subscribed) {
+      return { status: 200, data: "Page webhook subscription refreshed for comments and messages" };
+    }
+    return { status: 500, data: subscriptionAttempt.error || "Meta rejected the page webhook subscription request" };
+  } catch (error) {
     console.warn("[webhook-subscription] manual page resubscribe failed", {
       error: getSafeMetaError(error),
     });
-    return { status: 500, data: safe || "Meta rejected the page webhook subscription request" };
+    return { status: 500, data: formatSafeMetaError(error) || "Meta rejected the page webhook subscription request" };
   }
 };
 

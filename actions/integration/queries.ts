@@ -17,6 +17,7 @@ export const updateIntegration = async (
   subscription?: {
     statusCode?: number;
     subscribed: boolean;
+    subscriptionMode?: string;
     error?: string;
     attemptedAt: Date;
   }
@@ -42,6 +43,7 @@ export const updateIntegration = async (
       webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
       webhookSubscriptionStatusCode: subscription?.statusCode,
       webhookSubscriptionSubscribed: subscription?.subscribed,
+      webhookSubscriptionMode: subscription?.subscriptionMode,
       webhookSubscriptionError: subscription?.error,
       oauthLastError: null,
       oauthLastErrorAt: null,
@@ -190,6 +192,7 @@ export const createIntegration = async (
   subscription?: {
     statusCode?: number;
     subscribed: boolean;
+    subscriptionMode?: string;
     error?: string;
     attemptedAt: Date;
   }
@@ -219,6 +222,7 @@ export const createIntegration = async (
           webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
           webhookSubscriptionStatusCode: subscription?.statusCode,
           webhookSubscriptionSubscribed: subscription?.subscribed,
+          webhookSubscriptionMode: subscription?.subscriptionMode,
           webhookSubscriptionError: subscription?.error,
           oauthLastError: null,
           oauthLastErrorAt: null,
@@ -249,6 +253,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
           webhookSubscriptionLastAttemptedAt: true,
           webhookSubscriptionStatusCode: true,
           webhookSubscriptionSubscribed: true,
+          webhookSubscriptionMode: true,
           webhookSubscriptionError: true,
         },
       },
@@ -325,6 +330,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
       lastAttemptedAt: integration?.webhookSubscriptionLastAttemptedAt ?? null,
       statusCode: integration?.webhookSubscriptionStatusCode ?? null,
       subscribed: integration?.webhookSubscriptionSubscribed ?? null,
+      subscriptionMode: integration?.webhookSubscriptionMode ?? null,
       error: integration?.webhookSubscriptionError ?? null,
     },
     oauth: {
