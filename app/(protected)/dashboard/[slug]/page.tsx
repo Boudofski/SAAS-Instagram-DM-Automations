@@ -78,20 +78,22 @@ export default async function DashboardPage({ params }: Props) {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">Turn comments into DMs automatically</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-              Connect Instagram, create an automation, comment a keyword from a tester account, then review logs in AP3k.
-            </p>
+      {isEmpty && (
+        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">Turn comments into DMs automatically</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                Connect Instagram, create an automation, comment a keyword from a tester account, then review logs in AP3k.
+              </p>
+            </div>
+            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">
+              Create Automation
+            </Link>
           </div>
-          <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">
-            Create Automation
-          </Link>
         </div>
-      </div>
+      )}
 
       {instagram && (
         <div className={[

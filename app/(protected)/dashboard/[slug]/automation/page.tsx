@@ -30,16 +30,18 @@ export default async function AutomationsPage({ params }: Props) {
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k AutoDM</p>
-        <h2 className="mt-2 text-2xl font-black text-slate-950">Turn comments into DMs automatically</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-          Build official Instagram comment-to-DM automations, test keywords, and inspect delivery logs from one clean workspace.
-        </p>
-        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button mt-5 inline-flex px-5 py-2.5 text-sm">
-          Create Automation
-        </Link>
-      </div>
+      {automations.length === 0 && (
+        <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k AutoDM</p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950">Turn comments into DMs automatically</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+            Build official Instagram comment-to-DM automations, test keywords, and inspect delivery logs from one clean workspace.
+          </p>
+          <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button mt-5 inline-flex px-5 py-2.5 text-sm">
+            Create Automation
+          </Link>
+        </div>
+      )}
 
       {automations.length === 0 ? (
         <EmptyState
