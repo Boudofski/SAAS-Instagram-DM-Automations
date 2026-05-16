@@ -12,6 +12,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import {
   createIntegration,
+  deleteIntegrationForUser,
   getIntegrations,
   getWebhookHealthForUser,
   recordIntegrationOAuthError,
@@ -348,6 +349,25 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       error: getSafeMetaError(error),
     });
     return { status: 500, data: safe || "Meta rejected the page webhook subscription request" };
+  }
+};
+
+export const disconnectCurrentInstagramIntegration = async () => {
+  const user = await currentUser();
+  if (!user) return { status: 401, data: "Sign in required" };
+
+  try {
+    const deleted = await deleteIntegrationForUser(user.id);
+    if (!deleted) {
+      return { status: 404, data: "No Instagram account is connected" };
+    }
+
+    return { status: 200, data: "Instagram account disconnected" };
+  } catch (error) {
+    console.error("[oauth] disconnect instagram integration failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return { status: 500, data: "Instagram account could not be disconnected" };
   }
 };
 

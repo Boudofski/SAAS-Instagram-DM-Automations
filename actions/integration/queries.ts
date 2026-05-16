@@ -88,6 +88,32 @@ export const recordIntegrationOAuthError = async (
   });
 };
 
+export const deleteIntegrationForUser = async (clerkId: string) => {
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: {
+      integrations: {
+        where: { name: "INSTAGRAM" },
+        take: 1,
+        select: { id: true, pageId: true, instagramId: true },
+      },
+    },
+  });
+
+  const integration = user?.integrations[0];
+  if (!integration) return null;
+
+  console.log("[oauth] disconnect instagram integration", {
+    hasPageId: Boolean(integration.pageId),
+    hasInstagramBusinessAccountId: Boolean(integration.instagramId),
+  });
+
+  return await client.integrations.delete({
+    where: { id: integration.id },
+    select: { id: true },
+  });
+};
+
 export const createIntegration = async (
   clerkId: string,
   token: string,

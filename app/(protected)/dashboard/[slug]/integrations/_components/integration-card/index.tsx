@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  disconnectCurrentInstagramIntegration,
   getCurrentWebhookHealth,
   getInstagramConnectUrl,
   resubscribeCurrentInstagramWebhooks,
@@ -49,6 +50,22 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
     },
   });
 
+  const disconnect = useMutation({
+    mutationKey: ["disconnect-instagram", userId],
+    mutationFn: disconnectCurrentInstagramIntegration,
+    onSuccess: async (result) => {
+      if (result.status === 200) {
+        toast.success(result.data);
+      } else {
+        toast.error(result.data ?? "Instagram disconnect failed");
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["user-profile", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["webhook-health", userId] }),
+      ]);
+    },
+  });
+
   const integrated = data?.data?.integrations.find((i) => i.name === strategy);
   const isInstagram = strategy === "INSTAGRAM";
 
@@ -69,6 +86,17 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
     } finally {
       setIsConnecting(false);
     }
+  };
+
+  const onDisconnect = () => {
+    if (!isInstagram || !integrated || disconnect.isPending) return;
+
+    const confirmed = window.confirm(
+      "Disconnect this Instagram account from AP3k? Existing campaigns and logs will stay, but AP3k will stop using this account token until you reconnect."
+    );
+    if (!confirmed) return;
+
+    disconnect.mutate();
   };
 
   return (
@@ -98,8 +126,13 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
                   : "Instagram connected"}
               </p>
               <p className="truncate text-[11px] text-slate-500">
-                Account ID: {integrated.instagramId}
+                IG business ID: {integrated.instagramId}
               </p>
+              {integrated.pageId && (
+                <p className="truncate text-[11px] text-slate-500">
+                  Page ID: {integrated.pageId}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -121,6 +154,17 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             className="min-w-36 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           >
             {resubscribe.isPending ? "Resubscribing..." : "Resubscribe webhooks"}
+          </Button>
+        )}
+        {integrated && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onDisconnect}
+            disabled={disconnect.isPending}
+            className="min-w-36 border-red-200 bg-white text-red-700 hover:bg-red-50"
+          >
+            {disconnect.isPending ? "Disconnecting..." : "Disconnect account"}
           </Button>
         )}
       </div>
