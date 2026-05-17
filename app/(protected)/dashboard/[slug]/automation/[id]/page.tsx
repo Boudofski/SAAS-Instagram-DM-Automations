@@ -377,7 +377,7 @@ export default async function CampaignDetailPage({ params }: Props) {
 
         {activity.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
-            No webhook activity yet. Comment a campaign keyword from another Instagram account to test the live pipeline.
+            No events yet. Comment on a connected Instagram post to test this campaign.
           </div>
         ) : (
           <div className="divide-y divide-slate-200">
@@ -392,7 +392,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-slate-950">
-                      {formatActivityType(item.type)}
+                      {formatActivityType(item.type, item.keyword)}
                     </p>
                     {item.keyword && (
                       <span className="rounded-full bg-rf-blue/10 px-2 py-0.5 text-[11px] font-semibold text-rf-blue">
@@ -469,11 +469,15 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatActivityType(type: string) {
+function formatActivityType(type: string, keyword?: string) {
+  if (type === "KEYWORD_MATCHED" && keyword === "ANY_COMMENT") {
+    return "Any comment trigger matched";
+  }
   const friendly: Record<string, string> = {
-    WEBHOOK_RECEIVED: "Comment webhook received",
+    WEBHOOK_RECEIVED: "Comment received",
     COMMENT_RECEIVED: "Comment received",
     KEYWORD_MATCHED: "Trigger matched",
+    ANY_COMMENT: "Any comment trigger matched",
     PUBLIC_REPLY_SENT: "Public reply sent",
     PUBLIC_REPLY_FAILED: "Public reply failed",
     DM_SENT: "Private DM sent",

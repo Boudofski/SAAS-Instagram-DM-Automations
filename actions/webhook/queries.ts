@@ -1,5 +1,5 @@
 import { client } from "@/lib/prisma";
-import { matchKeywordWithMode } from "@/lib/matching";
+import { matchKeywordWithMode, normalizeMatchText } from "@/lib/matching";
 import type {
   Automation,
   Keyword,
@@ -19,9 +19,13 @@ import type {
 type AutomationWithRelations = Automation & {
   keywords: Keyword[];
   listener: Listener | null;
+  posts?: { postid: string; media?: string | null; caption?: string | null; mediaType?: string | null }[];
   User: {
     subscription: Pick<Subscription, "plan"> | null;
-    integrations: Pick<Integrations, "id" | "token" | "instagramId" | "pageId">[];
+    integrations: Pick<
+      Integrations,
+      "id" | "token" | "instagramId" | "pageId"
+    >[];
   } | null;
 };
 
@@ -88,6 +92,7 @@ export const findAutomationForCommentWithReason = async (
   pageId: string
 ): Promise<{
   automation: AutomationWithRelations | null;
+  automations: AutomationWithRelations[];
   failureReason?: "no_matching_integration" | "no_active_automation_for_media";
   diagnostics: Prisma.InputJsonObject;
 }> => {
@@ -130,6 +135,7 @@ export const findAutomationForCommentWithReason = async (
   if (!integration?.userId) {
     return {
       automation: null,
+      automations: [],
       failureReason: "no_matching_integration",
       diagnostics: {
         incomingMediaId: mediaId,
@@ -167,7 +173,14 @@ export const findAutomationForCommentWithReason = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { id: true, token: true, instagramId: true, pageId: true },
+            select: {
+              id: true,
+              token: true,
+              instagramId: true,
+              pageId: true,
+              webhookAccountId: true,
+              businessId: true,
+            },
           },
         },
       },
@@ -175,21 +188,38 @@ export const findAutomationForCommentWithReason = async (
   });
 
   const activeAutomations = accountAutomations.filter((automation) => automation.active);
-  const comparisons = accountAutomations.flatMap((automation) =>
-    automation.posts.map((post) => {
+  const comparisons = accountAutomations.flatMap((automation) => {
+    const posts = automation.posts.length > 0 ? automation.posts : [{ postid: "" }];
+    return posts.map((post) => {
       const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
+      const isAnyPost = post.postid === "ANY" || normalizedStoredPostId === "ANY";
       return {
         automationId: automation.id,
+        automationName: automation.name,
         automationActive: automation.active,
+        triggerMode: automation.triggerMode,
+        matchingMode: automation.matchingMode,
+        storedKeywords: automation.keywords.map((keyword) => keyword.word),
+        normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
         storedPostId: post.postid,
         normalizedStoredPostId,
         incomingMediaId: mediaId,
         normalizedIncomingMediaId,
-        isAnyPost: post.postid === "ANY",
+        isAnyPost,
         normalizedMatch:
-          post.postid === "ANY" ||
+          isAnyPost ||
           normalizedStoredPostId === normalizedIncomingMediaId,
       };
+    });
+  });
+  const matchedAutomations = activeAutomations.filter((item) =>
+    item.posts.some((post) => {
+      const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
+      return (
+        post.postid === "ANY" ||
+        normalizedStoredPostId === "ANY" ||
+        normalizedStoredPostId === normalizedIncomingMediaId
+      );
     })
   );
 
@@ -206,27 +236,30 @@ export const findAutomationForCommentWithReason = async (
     matchedAutomationIds: comparisons
       .filter((item) => item.automationActive && item.normalizedMatch)
       .map((item) => item.automationId),
+    matchedAutomationCount: matchedAutomations.length,
     storedPostIds: comparisons.map((item) => item.storedPostId),
     comparisons,
   };
 
   if (activeAutomations.length === 0) {
-    return { automation: null, failureReason: "no_active_automation_for_media", diagnostics };
+    return {
+      automation: null,
+      automations: [],
+      failureReason: "no_active_automation_for_media",
+      diagnostics,
+    };
   }
 
-  const automation = activeAutomations.find((item) =>
-    item.posts.some(
-      (post) =>
-        post.postid === "ANY" ||
-        normalizeInstagramMediaId(post.postid) === normalizedIncomingMediaId
-    )
-  );
-
-  if (!automation) {
-    return { automation: null, failureReason: "no_active_automation_for_media", diagnostics };
+  if (matchedAutomations.length === 0) {
+    return {
+      automation: null,
+      automations: [],
+      failureReason: "no_active_automation_for_media",
+      diagnostics,
+    };
   }
 
-  return { automation, diagnostics };
+  return { automation: matchedAutomations[0], automations: matchedAutomations, diagnostics };
 };
 
 // ---------------------------------------------------------------------------
@@ -256,7 +289,14 @@ export const findAutomationForDM = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { id: true, token: true, instagramId: true, pageId: true },
+            select: {
+              id: true,
+              token: true,
+              instagramId: true,
+              pageId: true,
+              webhookAccountId: true,
+              businessId: true,
+            },
           },
         },
       },
@@ -287,7 +327,16 @@ export const findAutomationById = async (id: string) => {
       User: {
         select: {
           subscription: { select: { plan: true } },
-          integrations: { select: { id: true, token: true, instagramId: true, pageId: true } },
+          integrations: {
+            select: {
+              id: true,
+              token: true,
+              instagramId: true,
+              pageId: true,
+              webhookAccountId: true,
+              businessId: true,
+            },
+          },
         },
       },
     },

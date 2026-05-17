@@ -19,6 +19,9 @@ const mockUserFindUnique = vi.fn();
 const mockUserUpdate = vi.fn();
 const mockKeywordDeleteMany = vi.fn();
 const mockTransactionFn = vi.fn();
+const mockAutomationEventFindMany = vi.fn();
+const mockMessageLogFindMany = vi.fn();
+const mockWebhookEventFindMany = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   client: {
@@ -36,6 +39,9 @@ vi.mock("@/lib/prisma", () => ({
     post: { deleteMany: vi.fn() },
     trigger: { deleteMany: vi.fn() },
     listener: { deleteMany: vi.fn() },
+    automationEvent: { findMany: (...args: any[]) => mockAutomationEventFindMany(...args) },
+    messageLog: { findMany: (...args: any[]) => mockMessageLogFindMany(...args) },
+    webhookEvent: { findMany: (...args: any[]) => mockWebhookEventFindMany(...args) },
     $transaction: (...args: any[]) => mockTransactionFn(...args),
   },
 }));
@@ -44,6 +50,7 @@ import {
   deleteAutomationQuery,
   findAutomationForUser,
   getAutomation,
+  getAutomationActivity,
   updateAutomation,
   updateCompleteAutomation,
 } from "@/actions/automation/queries";
@@ -172,6 +179,51 @@ describe("updateCompleteAutomation — ownership check before transaction", () =
 
     expect(result).toBeNull();
     expect(mockTransactionFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("getAutomationActivity — owner scoped logs", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns events for the owning user after checking automation ownership", async () => {
+    const now = new Date("2026-05-17T10:00:00.000Z");
+    mockAutomationFindFirst.mockResolvedValue({ id: AUTOMATION_A_ID });
+    mockAutomationEventFindMany.mockResolvedValue([
+      {
+        id: "event-1",
+        automationId: AUTOMATION_A_ID,
+        eventType: "KEYWORD_MATCHED",
+        createdAt: now,
+        keyword: "ai",
+        meta: { triggerMode: "SPECIFIC_KEYWORD" },
+      },
+    ]);
+    mockMessageLogFindMany.mockResolvedValue([]);
+    mockWebhookEventFindMany.mockResolvedValue([]);
+
+    const result = await getAutomationActivity(AUTOMATION_A_ID, USER_A_CLERK_ID);
+
+    expect(mockAutomationFindFirst).toHaveBeenCalledWith({
+      where: { id: AUTOMATION_A_ID, User: { clerkId: USER_A_CLERK_ID } },
+      select: { id: true },
+    });
+    expect(result?.[0]).toMatchObject({
+      id: "event-1",
+      type: "KEYWORD_MATCHED",
+      keyword: "ai",
+      source: "event",
+    });
+  });
+
+  it("denies another user's campaign logs", async () => {
+    mockAutomationFindFirst.mockResolvedValue(null);
+
+    const result = await getAutomationActivity(AUTOMATION_B_ID, USER_A_CLERK_ID);
+
+    expect(result).toBeNull();
+    expect(mockAutomationEventFindMany).not.toHaveBeenCalled();
+    expect(mockMessageLogFindMany).not.toHaveBeenCalled();
+    expect(mockWebhookEventFindMany).not.toHaveBeenCalled();
   });
 });
 

@@ -2,6 +2,13 @@ import { MATCHING_MODE } from "@prisma/client";
 
 export const ANY_COMMENT_KEYWORD = "ANY_COMMENT";
 
+export function normalizeMatchText(value: string) {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase();
+}
+
 export function resolveCommentTriggerMatch({
   text,
   keywords,
@@ -22,17 +29,19 @@ export function matchKeywordWithMode(
   keywords: { word: string }[],
   mode: MATCHING_MODE
 ): string | null {
-  const lower = text.toLowerCase().trim();
+  const normalizedText = normalizeMatchText(text);
+  if (!normalizedText) return null;
 
   for (const kw of keywords) {
-    const kwLower = kw.word.toLowerCase();
+    const normalizedKeyword = normalizeMatchText(kw.word);
+    if (!normalizedKeyword) continue;
 
     if (mode === "EXACT") {
-      if (lower === kwLower) return kw.word;
+      if (normalizedText === normalizedKeyword) return kw.word;
     } else {
       // CONTAINS and SMART_AI both use substring match.
       // SMART_AI adds optional OpenAI verification at the call site.
-      if (lower.includes(kwLower)) return kw.word;
+      if (normalizedText.includes(normalizedKeyword)) return kw.word;
     }
   }
 

@@ -21,6 +21,11 @@ describe("matchKeywordWithMode — EXACT", () => {
   it("returns null for no match", () => {
     expect(matchKeywordWithMode("hello world", keywords, "EXACT")).toBeNull();
   });
+
+  it("matches after trimming and collapsing whitespace", () => {
+    expect(matchKeywordWithMode(" ai ", [{ word: "ai" }], "EXACT")).toBe("ai");
+    expect(matchKeywordWithMode("send   ai", [{ word: "send ai" }], "EXACT")).toBe("send ai");
+  });
 });
 
 describe("matchKeywordWithMode — CONTAINS", () => {
@@ -35,6 +40,18 @@ describe("matchKeywordWithMode — CONTAINS", () => {
 
   it("returns null when keyword not present", () => {
     expect(matchKeywordWithMode("hello world", keywords, "CONTAINS")).toBeNull();
+  });
+
+  it("matches short keywords case-insensitively inside phrases", () => {
+    const ai = [{ word: "ai" }];
+    expect(matchKeywordWithMode("ai", ai, "CONTAINS")).toBe("ai");
+    expect(matchKeywordWithMode("AI", ai, "CONTAINS")).toBe("ai");
+    expect(matchKeywordWithMode("send ai please", ai, "CONTAINS")).toBe("ai");
+    expect(matchKeywordWithMode("send ai!", ai, "CONTAINS")).toBe("ai");
+  });
+
+  it("handles Arabic text without changing matching semantics", () => {
+    expect(matchKeywordWithMode("أرسل الدليل الآن", [{ word: "الدليل" }], "CONTAINS")).toBe("الدليل");
   });
 });
 

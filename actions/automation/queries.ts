@@ -547,6 +547,7 @@ export const getAutomationActivity = async (
       commentId: item.commentId ?? undefined,
       keyword: item.keyword ?? undefined,
       errorMessage: item.errorMessage ?? undefined,
+      meta: item.meta ?? item.payload ?? undefined,
       source: item.messageType ? "message" : item.provider ? "webhook" : "event",
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

@@ -15,7 +15,7 @@ import {
   trackResponse,
 } from "@/actions/webhook/queries";
 import { verifyMetaSignature } from "@/lib/webhook-signature";
-import { resolveCommentTriggerMatch } from "@/lib/matching";
+import { normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
 import {
   formatSafeMetaError,
   getSafeMetaError,
@@ -339,11 +339,59 @@ async function processEntry(
         continue;
       }
 
-      // 1. Find active automation for this post
+      const commentDiagnostics = {
+        object: envelope?.object,
+        field: changeItem.field,
+        entryId: entry?.id,
+        mediaId,
+        commentId,
+        commenterId,
+        rawCommentText: commentText,
+        normalizedCommentText: normalizeMatchText(commentText),
+      };
+
+      // 1. Find active automations for this post, then select by trigger.
       const match = await findAutomationForCommentWithReason(mediaId, pageId);
-      const automation = match.automation;
+      const candidateAutomations = match.automations?.length
+        ? match.automations
+        : match.automation
+          ? [match.automation]
+          : [];
+      const triggerDecisions = candidateAutomations.map((candidate) => {
+        const matchedKeyword = resolveCommentTriggerMatch({
+          text: commentText,
+          keywords: candidate.keywords,
+          mode: candidate.matchingMode,
+          triggerMode: candidate.triggerMode,
+        });
+        return { automation: candidate, matchedKeyword };
+      });
+      const selectedDecision = triggerDecisions.find((decision) => Boolean(decision.matchedKeyword));
+      const automation = selectedDecision?.automation ?? candidateAutomations[0] ?? null;
+      const matchedKeyword = selectedDecision?.matchedKeyword ?? null;
+      const triggerDiagnostics = {
+        ...commentDiagnostics,
+        matchedIntegrationId:
+          match.diagnostics && typeof match.diagnostics === "object"
+            ? (match.diagnostics as any).matchedIntegrationId
+            : undefined,
+        matchedAutomationIds: candidateAutomations.map((candidate) => candidate.id),
+        triggerDecisions: triggerDecisions.map(({ automation: candidate, matchedKeyword }) => ({
+          automationId: candidate.id,
+          automationName: candidate.name,
+          automationActive: candidate.active,
+          triggerMode: candidate.triggerMode,
+          matchingMode: candidate.matchingMode,
+          storedKeywords: candidate.keywords.map((keyword) => keyword.word),
+          normalizedKeywords: candidate.keywords.map((keyword) => normalizeMatchText(keyword.word)),
+          storedPostIds: candidate.posts?.map((post) => post.postid) ?? [],
+          matchedKeyword,
+          noMatchReason: matchedKeyword ? undefined : "no_keyword_match",
+        })),
+      };
       await mergeWebhookEventPayload(webhookEvent.id, {
         mediaMatching: match.diagnostics,
+        triggerMatching: triggerDiagnostics,
       });
       if (!automation?.listener) {
         const failureReason = match.failureReason ?? "no_active_automation_for_media";
@@ -371,14 +419,17 @@ async function processEntry(
         igUserId: commenterId,
         mediaId,
         commentId,
-      });
-
-      // 2. Match keyword using this automation's matching mode
-      const matchedKeyword = resolveCommentTriggerMatch({
-        text: commentText,
-        keywords: automation.keywords,
-        mode: automation.matchingMode,
-        triggerMode: automation.triggerMode,
+        meta: {
+          ...triggerDiagnostics,
+          automationId: automation.id,
+          automationName: automation.name,
+          automationActive: automation.active,
+          triggerMode: automation.triggerMode,
+          matchingMode: automation.matchingMode,
+          storedKeywords: automation.keywords.map((keyword) => keyword.word),
+          normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
+          storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
+        },
       });
 
       if (!matchedKeyword) {
@@ -390,6 +441,18 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: commentText.slice(0, 100),
+          meta: {
+            ...triggerDiagnostics,
+            automationId: automation.id,
+            automationName: automation.name,
+            automationActive: automation.active,
+            triggerMode: automation.triggerMode,
+            matchingMode: automation.matchingMode,
+            storedKeywords: automation.keywords.map((keyword) => keyword.word),
+            normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
+            storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
+            noMatchReason: "no_keyword_match",
+          },
         });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
@@ -409,6 +472,13 @@ async function processEntry(
         mediaId,
         commentId,
         keyword: matchedKeyword,
+        meta: {
+          ...triggerDiagnostics,
+          automationId: automation.id,
+          automationName: automation.name,
+          triggerMode: automation.triggerMode,
+          matchingMode: automation.matchingMode,
+        },
       });
 
       // 3. Log comment received
@@ -449,7 +519,7 @@ async function processEntry(
         mediaId,
       });
 
-      const integrationRaw = automation.User?.integrations?.[0];
+      const integrationRaw = selectIntegrationForWebhook(automation.User?.integrations, pageId);
       const tokenResolution = resolveIntegrationSendToken(integrationRaw);
       const instagramBusinessAccountId = integrationRaw?.instagramId;
       if (!tokenResolution.ok) {
@@ -537,12 +607,15 @@ async function processEntry(
           });
 
           // Fallback: Standard Access — top-level comment with @mention
-          if (commenterUsername && mediaId) {
+          if (mediaId) {
             publicReplyEndpoint = "mention_comment";
-            const mentionText = `@${commenterUsername} ${replyText}`;
+            const mentionText = commenterUsername ? `@${commenterUsername} ${replyText}` : replyText;
             try {
               const fallback = await withRetry(() => sendMediaComment(mediaId, mentionText, token));
               publicReplySent = fallback.status === 200;
+              if (!commenterUsername) {
+                publicReplyErrorMessage = "commenter_username_missing_mention_omitted";
+              }
             } catch (mentionErr) {
               publicReplyErrorMessage = `threaded=${threadedError} mention=${formatSafeMetaError(mentionErr)}`;
               console.warn("[webhook] Standard Access @mention fallback also failed", getSafeMetaError(mentionErr));
@@ -559,7 +632,7 @@ async function processEntry(
           commentId,
           messageType: "COMMENT_REPLY",
           status: publicReplySent ? "SENT" : "FAILED",
-          errorMessage: publicReplyErrorMessage,
+          errorMessage: publicReplySent ? undefined : publicReplyErrorMessage,
         });
         await createAutomationEvent({
           automationId: automation.id,
@@ -568,7 +641,11 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { endpoint: publicReplyEndpoint, ...(publicReplyErrorMessage ? { error: publicReplyErrorMessage } : {}) },
+          meta: {
+            endpoint: publicReplyEndpoint,
+            mentionOmitted: publicReplyErrorMessage === "commenter_username_missing_mention_omitted",
+            ...(publicReplyErrorMessage && !publicReplySent ? { error: publicReplyErrorMessage } : {}),
+          },
         });
       }
 
@@ -1079,6 +1156,19 @@ function isRateLimited(key: string) {
 
   existing.count += 1;
   return existing.count > WEBHOOK_RATE_LIMIT_MAX;
+}
+
+function selectIntegrationForWebhook<T extends {
+  pageId?: string | null;
+  webhookAccountId?: string | null;
+  instagramId?: string | null;
+  businessId?: string | null;
+}>(integrations: T[] | undefined, entryId: string): T | undefined {
+  return integrations?.find((integration) =>
+    [integration.webhookAccountId, integration.instagramId, integration.businessId, integration.pageId]
+      .filter(Boolean)
+      .some((id) => String(id).trim() === String(entryId).trim())
+  ) ?? integrations?.[0];
 }
 
 async function withRetry<T>(operation: () => Promise<T>, attempts = SEND_RETRY_ATTEMPTS): Promise<T> {
