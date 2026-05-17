@@ -13,7 +13,7 @@ type SelectedPost = {
   postid: string;
   caption?: string;
   media: string;
-  mediaType: "IMAGE" | "VIDEO" | "CAROSEL_ALBUM";
+  mediaType: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
 };
 
 export type WizardData = {
@@ -84,13 +84,14 @@ export function useWizard(slug: string, automationId?: string) {
     setError(null);
 
     try {
-      const saved = await saveCampaign({
+      const payload = {
         name: data.campaignName,
         active: typeof activeOverride === "boolean" ? activeOverride : data.active,
         matchingMode: data.matchingMode,
         triggerMode: data.triggerMode,
         post: data.post,
         keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
+        publicReplyEnabled: data.publicReplyEnabled,
         listener: {
           listener: "MESSAGE",
           prompt: data.dmMessage,
@@ -100,7 +101,29 @@ export function useWizard(slug: string, automationId?: string) {
           ctaLink: data.ctaLink || undefined,
           ctaButtonTitle: data.ctaButtonTitle || undefined,
         },
-      }, automationId);
+      } as const;
+
+      if (process.env.NODE_ENV !== "production") {
+        console.info("[campaign-wizard] save payload", {
+          name: payload.name,
+          active: payload.active,
+          triggerMode: payload.triggerMode,
+          matchingMode: payload.matchingMode,
+          postid: payload.post.postid,
+          keywordsCount: payload.keywords.length,
+          listenerPromptPresent: Boolean(payload.listener.prompt?.trim()),
+          publicReplyEnabled: payload.publicReplyEnabled,
+          publicReplyCount: [
+            payload.listener.commentReply,
+            payload.listener.commentReply2,
+            payload.listener.commentReply3,
+          ].filter(Boolean).length,
+          ctaTitlePresent: Boolean(payload.listener.ctaButtonTitle),
+          ctaUrlPresent: Boolean(payload.listener.ctaLink),
+        });
+      }
+
+      const saved = await saveCampaign(payload, automationId);
 
       const savedData = saved.data;
       const campaignId =
@@ -109,12 +132,13 @@ export function useWizard(slug: string, automationId?: string) {
           : null;
 
       if (saved.status !== 200 || !campaignId) {
-        throw new Error(typeof saved.data === "string" ? saved.data : "Failed to save campaign");
+        throw new Error(typeof saved.data === "string" ? saved.data : "Could not save campaign. Please try again.");
       }
 
       router.push(`/dashboard/${slug}/automation/${campaignId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      console.error("[campaign-wizard] save failed", err);
+      setError(err instanceof Error ? err.message : "Could not save campaign. Please try again.");
       setIsSubmitting(false);
     }
   };

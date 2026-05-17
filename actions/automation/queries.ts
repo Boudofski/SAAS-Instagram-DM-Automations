@@ -1,30 +1,10 @@
 "use server";
 
 import { client } from "@/lib/prisma";
-import type { LISTENERS, MATCHING_MODE, MEDIATYPE } from "@prisma/client";
+import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
+import type { MATCHING_MODE } from "@prisma/client";
 
-export type CampaignPayload = {
-  name: string;
-  active: boolean;
-  matchingMode: MATCHING_MODE;
-  triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
-  post: {
-    postid: string;
-    caption?: string;
-    media: string;
-    mediaType: MEDIATYPE;
-  };
-  keywords: string[];
-  listener: {
-    listener: LISTENERS;
-    prompt: string;
-    commentReply?: string;
-    commentReply2?: string;
-    commentReply3?: string;
-    ctaLink?: string;
-    ctaButtonTitle?: string;
-  };
-};
+export type CampaignPayload = NormalizedCampaignPayload;
 
 export const logTenantAccessDenied = async ({
   route,
@@ -243,7 +223,7 @@ export const duplicateAutomationQuery = async (
   const payload: CampaignPayload = {
     name: `${automation.name || "Untitled campaign"} copy`,
     active: false,
-    matchingMode: automation.matchingMode,
+    matchingMode: automation.matchingMode === "EXACT" ? "EXACT" : "CONTAINS",
     triggerMode: (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ?? "SPECIFIC_KEYWORD",
     post: {
       postid: automation.posts[0].postid,
@@ -253,7 +233,7 @@ export const duplicateAutomationQuery = async (
     },
     keywords: automation.keywords.map((keyword) => keyword.word),
     listener: {
-      listener: automation.listener.listener,
+      listener: "MESSAGE",
       prompt: automation.listener.prompt,
       commentReply: automation.listener.commentReply ?? undefined,
       commentReply2: automation.listener.commentReply2 ?? undefined,
@@ -432,7 +412,7 @@ export const addPosts = async (
     postid: string;
     caption?: string;
     media: string;
-    mediaType: "IMAGE" | "VIDEO" | "CAROSEL_ALBUM";
+    mediaType: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
   }[]
 ) => {
   const automation = await client.automation.findFirst({

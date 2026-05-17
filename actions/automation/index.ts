@@ -2,13 +2,18 @@
 
 import { onCurrentUser } from "../user";
 import { findUser } from "../user/queries";
+import {
+  normalizeCampaignPayload,
+  summarizeCampaignPayload,
+  validateNormalizedCampaignPayload,
+  type RawCampaignPayload,
+} from "@/lib/campaign-save";
 import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
 import {
   addKeyWords,
   addListener,
   addPosts,
   addTrigger,
-  CampaignPayload,
   createAutomation,
   createCompleteAutomation,
   deleteAutomationQuery,
@@ -36,38 +41,32 @@ export const createAutomations = async (id?: string) => {
   }
 };
 
-export const saveCampaign = async (payload: CampaignPayload, automationId?: string) => {
+export const saveCampaign = async (payload: RawCampaignPayload, automationId?: string) => {
   const user = await onCurrentUser();
 
   try {
-    const cleanPayload: CampaignPayload = {
-      ...payload,
-      name: payload.name.trim() || "Untitled campaign",
-      triggerMode: payload.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
-      keywords: Array.from(
-        new Set(
-          payload.keywords
-            .map((keyword) => keyword.trim())
-            .filter(Boolean)
-        )
-      ),
-      listener: {
-        ...payload.listener,
-        prompt: payload.listener.prompt.trim(),
-        commentReply: payload.listener.commentReply?.trim() || undefined,
-        commentReply2: payload.listener.commentReply2?.trim() || undefined,
-        commentReply3: payload.listener.commentReply3?.trim() || undefined,
-        ctaLink: payload.listener.ctaLink?.trim() || undefined,
-        ctaButtonTitle: payload.listener.ctaButtonTitle?.trim() || undefined,
-      },
-    };
+    const cleanPayload = normalizeCampaignPayload(payload);
+    const validationError = validateNormalizedCampaignPayload(cleanPayload);
+    const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
 
-    if (!cleanPayload.post.postid || !cleanPayload.listener.prompt) {
-      return { status: 400, data: "Campaign needs a post and DM message" };
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[campaign-save] normalized payload", {
+        action: "saveCampaign",
+        userId: user.id,
+        automationId,
+        ...summary,
+      });
     }
 
-    if (cleanPayload.triggerMode === "SPECIFIC_KEYWORD" && cleanPayload.keywords.length === 0) {
-      return { status: 400, data: "Specific keyword campaigns need at least one keyword" };
+    if (validationError) {
+      console.warn("[campaign-save] validation failed", {
+        action: "saveCampaign",
+        userId: user.id,
+        automationId,
+        reason: validationError,
+        ...summary,
+      });
+      return { status: 400, data: validationError };
     }
 
     const saved = automationId
@@ -82,9 +81,50 @@ export const saveCampaign = async (payload: CampaignPayload, automationId?: stri
 
     return { status: 404, data: "Campaign not found" };
   } catch (error) {
-    return { status: 500, data: "Failed to save campaign" };
+    const message = campaignSaveErrorMessage(error);
+    console.error("[campaign-save] save failed", {
+      action: "saveCampaign",
+      userId: user.id,
+      automationId,
+      prismaCode: getPrismaErrorCode(error),
+      prismaMeta: getSafePrismaMeta(error),
+      message,
+    });
+    return { status: 500, data: message };
   }
 };
+
+function campaignSaveErrorMessage(error: unknown) {
+  const code = getPrismaErrorCode(error);
+  const text = error instanceof Error ? error.message : String(error);
+  const meta = JSON.stringify(getSafePrismaMeta(error) ?? {});
+
+  if (code === "P2022" || text.includes("triggerMode") || meta.includes("triggerMode")) {
+    return "Could not save campaign because the database migration is missing. Deploy migration.";
+  }
+
+  if (
+    text.includes("mediaType") ||
+    text.includes("MEDIATYPE") ||
+    text.includes("CAROSEL_ALBUM") ||
+    text.includes("CAROUSEL_ALBUM")
+  ) {
+    return "Could not save campaign. Check selected Instagram post.";
+  }
+
+  return "Could not save campaign. Please try again.";
+}
+
+function getPrismaErrorCode(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : undefined;
+}
+
+function getSafePrismaMeta(error: unknown) {
+  if (typeof error !== "object" || error === null || !("meta" in error)) return undefined;
+  return (error as { meta?: unknown }).meta;
+}
 
 export const getAllAutomation = async () => {
   const user = await onCurrentUser();
@@ -269,7 +309,7 @@ export const savePosts = async (
     postid: string;
     caption?: string;
     media: string;
-    mediaType: "IMAGE" | "VIDEO" | "CAROSEL_ALBUM";
+    mediaType: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
   }[]
 ) => {
   const user = await onCurrentUser();

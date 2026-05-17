@@ -238,7 +238,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                               : (p.media_url ?? p.thumbnail_url ?? ""),
                             mediaType:
                               p.media_type === "VIDEO" ? "VIDEO"
-                              : p.media_type === "CAROUSEL_ALBUM" ? "CAROSEL_ALBUM"
+                              : p.media_type === "CAROUSEL_ALBUM" ? "CAROUSEL_ALBUM"
                               : "IMAGE",
                           },
                         })
