@@ -21,6 +21,7 @@ import {
   getSafeMetaError,
   sendDm,
   sendCommentReply,
+  sendMediaComment,
 } from "@/lib/fetch";
 import {
   sendInstagramCommentPrivateReply,
@@ -499,6 +500,8 @@ async function processEntry(
       };
 
       // 5. Send public comment reply — pick a random non-empty variation
+      // Primary: threaded reply via POST /{commentId}/replies (Advanced Access)
+      // Fallback: top-level @mention comment via POST /{mediaId}/comments (Standard Access)
       const replyVariants = [
         listener.commentReply,
         listener.commentReply2,
@@ -511,47 +514,56 @@ async function processEntry(
 
       if (chosenReply) {
         const replyText = resolveTemplate(chosenReply, templateVars);
+        let publicReplySent = false;
+        let publicReplyEndpoint: "threaded_reply" | "mention_comment" = "threaded_reply";
+        let publicReplyErrorMessage: string | undefined;
+
         try {
+          // Primary: Advanced Access — true threaded reply linked to the comment
           const replyResult = await withRetry(() => sendCommentReply(commentId, replyText, token));
-          const sent = replyResult.status === 200;
-          await createMessageLog({
-            automationId: automation.id,
-            recipientIgId: commenterId,
-            mediaId,
-            commentId,
-            messageType: "COMMENT_REPLY",
-            status: sent ? "SENT" : "FAILED",
+          publicReplySent = replyResult.status === 200;
+        } catch (threadedErr) {
+          const threadedError = formatSafeMetaError(threadedErr);
+          console.warn("[webhook] threaded comment reply failed — trying Standard Access @mention fallback", {
+            error: getSafeMetaError(threadedErr),
+            hasCommenterUsername: Boolean(commenterUsername),
+            hasMediaId: Boolean(mediaId),
           });
-          await createAutomationEvent({
-            automationId: automation.id,
-            eventType: sent ? "PUBLIC_REPLY_SENT" : "PUBLIC_REPLY_FAILED",
-            igUserId: commenterId,
-            mediaId,
-            commentId,
-            keyword: matchedKeyword,
-          });
-        } catch (err) {
-          const safeError = formatSafeMetaError(err);
-          console.warn("[webhook] public reply failed", getSafeMetaError(err));
-          await createMessageLog({
-            automationId: automation.id,
-            recipientIgId: commenterId,
-            mediaId,
-            commentId,
-            messageType: "COMMENT_REPLY",
-            status: "FAILED",
-            errorMessage: safeError,
-          });
-          await createAutomationEvent({
-            automationId: automation.id,
-            eventType: "PUBLIC_REPLY_FAILED",
-            igUserId: commenterId,
-            mediaId,
-            commentId,
-            keyword: matchedKeyword,
-            meta: { error: safeError },
-          });
+
+          // Fallback: Standard Access — top-level comment with @mention
+          if (commenterUsername && mediaId) {
+            publicReplyEndpoint = "mention_comment";
+            const mentionText = `@${commenterUsername} ${replyText}`;
+            try {
+              const fallback = await withRetry(() => sendMediaComment(mediaId, mentionText, token));
+              publicReplySent = fallback.status === 200;
+            } catch (mentionErr) {
+              publicReplyErrorMessage = `threaded=${threadedError} mention=${formatSafeMetaError(mentionErr)}`;
+              console.warn("[webhook] Standard Access @mention fallback also failed", getSafeMetaError(mentionErr));
+            }
+          } else {
+            publicReplyErrorMessage = threadedError;
+          }
         }
+
+        await createMessageLog({
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          mediaId,
+          commentId,
+          messageType: "COMMENT_REPLY",
+          status: publicReplySent ? "SENT" : "FAILED",
+          errorMessage: publicReplyErrorMessage,
+        });
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: publicReplySent ? "PUBLIC_REPLY_SENT" : "PUBLIC_REPLY_FAILED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword,
+          meta: { endpoint: publicReplyEndpoint, ...(publicReplyErrorMessage ? { error: publicReplyErrorMessage } : {}) },
+        });
       }
 
       // 6. Build DM message — resolve template first, then optionally run through SMARTAI

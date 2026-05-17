@@ -62,6 +62,8 @@ export default async function AdminPage({
     lastKeywordMatched,
     lastDmSent,
     lastDmFailed,
+    lastPublicReplySent,
+    lastPublicReplyFailed,
   ] = await Promise.all([
     client.user.count(),
     client.integrations.count(),
@@ -130,6 +132,16 @@ export default async function AdminPage({
       where: { messageType: "DM", status: "FAILED" },
       orderBy: { createdAt: "desc" },
       select: { createdAt: true, errorMessage: true, automationId: true },
+    }),
+    client.messageLog.findFirst({
+      where: { messageType: "COMMENT_REPLY", status: "SENT" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, automationId: true },
+    }),
+    client.messageLog.findFirst({
+      where: { messageType: "COMMENT_REPLY", status: "FAILED" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, errorMessage: true },
     }),
   ]);
 
@@ -381,26 +393,51 @@ export default async function AdminPage({
 
             {/* DM capability missing banner */}
             {dmCapabilityMissing && (
-              <div className="rounded-2xl border border-red-300 bg-red-50 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-red-700">
-                  DM API Capability Missing — Meta code=3
-                </p>
-                <h2 className="mt-2 text-lg font-black text-red-900">
-                  Public comment reply works. Auto DM is blocked by the Meta app.
-                </h2>
-                <p className="mt-2 text-sm text-red-800 leading-relaxed">
-                  Meta returned <code className="rounded bg-red-100 px-1 font-mono text-xs">(#3) Application does not have the capability to make this API call</code> when AP3k called the Instagram Messaging API (<code className="rounded bg-red-100 px-1 font-mono text-xs">POST /{"{ig-business-account-id}"}/messages</code>). This is an app-level capability block, not a token or webhook issue.
-                </p>
-                <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-red-700">Capability checklist</p>
-                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-red-800">
-                  <li>Go to <strong>Meta Developers → Your App → Instagram → Permissions and Features</strong> and confirm <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> is added.</li>
-                  <li>Confirm the access level. In <strong>Development mode</strong>, only accepted Testers/Developers/Admins can use messaging. In Production, Advanced Access is required after App Review.</li>
-                  <li>Go to <strong>Meta Developers → Your App → App Settings → Advanced</strong> and confirm the Instagram Messaging use case / capability is enabled.</li>
-                  <li>Confirm <strong>App Review</strong> — if the app is published (Live mode), <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> requires approved Advanced Access.</li>
-                  <li>Confirm the <strong>Webhook messages field</strong> is subscribed for the Instagram account (messages field, not just comments).</li>
-                  <li>Confirm the Page access token in the integration was issued after <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> was approved — if not, reconnect Instagram.</li>
-                  <li>The commenter must be an <strong>accepted Tester</strong> of the Meta app if in Development mode.</li>
-                </ul>
+              <div className="rounded-2xl border border-red-300 bg-red-50 p-5 space-y-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                    DM API Capability Missing — Meta code=3
+                  </p>
+                  <h2 className="mt-2 text-lg font-black text-red-900">
+                    {lastPublicReplySent ? "Public comment reply working." : "Public comment reply status unknown."} Auto DM is blocked by the Meta app.
+                  </h2>
+                  <p className="mt-2 text-sm text-red-800 leading-relaxed">
+                    Meta returned <code className="rounded bg-red-100 px-1 font-mono text-xs">(#3) Application does not have the capability to make this API call</code> when AP3k called the Instagram Messaging API (<code className="rounded bg-red-100 px-1 font-mono text-xs">POST /{"{ig-business-account-id}"}/messages</code>). This is an <strong>app-level capability block</strong>, not a token or webhook issue. AP3k is using the Facebook Login product (Page tokens) — the correct permission is <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code>, not <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_business_manage_messages</code> (that is for the Instagram Login product).
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-red-200 bg-white p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-red-700 mb-2">Exact next step — enable the capability</p>
+                  <ol className="list-decimal space-y-1.5 pl-5 text-sm text-red-800">
+                    <li>Go to <strong>Meta Developers → Your App → Use cases</strong></li>
+                    <li>Open <strong>Instagram API with Facebook Login → Customize</strong></li>
+                    <li>Find <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> under Permissions</li>
+                    <li>Click <strong>Add</strong> if not listed, then set access level to <strong>Standard Access</strong> (for development/testers) or submit <strong>Advanced Access</strong> review (for production)</li>
+                    <li>After approval, go to Integrations and <strong>Reconnect Instagram</strong> to issue a fresh token with the new scope</li>
+                    <li>Confirm the <strong>messages</strong> webhook field is subscribed (not just comments)</li>
+                  </ol>
+                </div>
+
+                {lastPublicReplySent && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700 mb-1">Fallback active while DM approval is pending</p>
+                    <p className="text-sm text-emerald-800 leading-relaxed">
+                      AP3k automatically falls back to a public <strong>@mention comment</strong> on the post when a private DM is blocked. This uses <code className="rounded bg-emerald-100 px-1 font-mono text-xs">POST /{"{mediaId}"}/comments</code> (Standard Access — no App Review needed). The commenter sees the reply publicly under the post.
+                    </p>
+                    <p className="mt-1.5 text-xs text-emerald-700">Last public reply sent: {new Date(lastPublicReplySent.createdAt).toLocaleString()}</p>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-red-700 mb-2">Full capability checklist</p>
+                  <ul className="list-disc space-y-1.5 pl-5 text-sm text-red-800">
+                    <li>In <strong>Development mode</strong>, only accepted App Testers / Developers / Admins can receive DMs from AP3k. Add the commenter&apos;s Facebook account under <strong>Meta Developers → App Roles → Testers</strong>.</li>
+                    <li>In <strong>Live mode</strong> (published app), <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> requires <strong>Advanced Access</strong> approval via App Review before any user can receive DMs.</li>
+                    <li>Confirm <strong>App Settings → Advanced → Instagram Messaging</strong> use case is enabled.</li>
+                    <li>The Page access token must have been issued <em>after</em> <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> was approved — reconnect if in doubt.</li>
+                    <li>Do <strong>not</strong> request <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_business_manage_messages</code> — AP3k uses Facebook Login (Page tokens), not Instagram Login (user tokens). Wrong product.</li>
+                  </ul>
+                </div>
               </div>
             )}
 
@@ -417,6 +454,16 @@ export default async function AdminPage({
                 <HealthCell label="Last keyword matched" value={lastKeywordMatched ? `${lastKeywordMatched.keyword ?? "?"} · ${new Date(lastKeywordMatched.createdAt).toLocaleString()}` : "never"} tone={lastKeywordMatched ? "green" : "amber"} />
                 <HealthCell label="Last DM sent" value={lastDmSent ? new Date(lastDmSent.createdAt).toLocaleString() : "never"} tone={lastDmSent ? "green" : "amber"} />
                 <HealthCell label="Last DM failed" value={lastDmFailed ? `${lastDmFailed.errorMessage ?? "unknown"} · ${new Date(lastDmFailed.createdAt).toLocaleString()}` : "none"} tone={lastDmFailed ? "red" : "green"} />
+                <HealthCell
+                  label="Public comment reply"
+                  value={lastPublicReplySent ? `working · ${new Date(lastPublicReplySent.createdAt).toLocaleString()}` : "not sent yet"}
+                  tone={lastPublicReplySent ? "green" : "slate"}
+                />
+                <HealthCell
+                  label="Public reply last error"
+                  value={lastPublicReplyFailed ? `${lastPublicReplyFailed.errorMessage ?? "unknown"} · ${new Date(lastPublicReplyFailed.createdAt).toLocaleString()}` : "none"}
+                  tone={lastPublicReplyFailed && !lastPublicReplySent ? "amber" : "green"}
+                />
                 <HealthCell label="Connected IG username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "not connected"} />
                 <HealthCell label="Connected IG Business ID" value={metaDiagnostics.integration?.instagramId ?? "not set"} />
                 <HealthCell label="Connected Page ID" value={metaDiagnostics.integration?.pageId ?? "not set"} />

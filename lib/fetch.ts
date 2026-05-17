@@ -95,20 +95,52 @@ export const sendPrivateMessage = async (
 };
 
 /**
- * Posts a visible public reply under a comment.
- * Uses the Instagram Graph API through Facebook Graph with a Page access token.
+ * Posts a threaded reply directly under a comment (Advanced Access).
+ * Endpoint: POST /{commentId}/replies
+ * Requires instagram_manage_comments at Advanced Access level after App Review.
  */
 export const sendCommentReply = async (
   commentId: string,
   message: string,
   token: string
 ) => {
-  console.log("[meta-api] send comment reply request", {
+  console.log("[meta-api] send threaded comment reply (Advanced Access)", {
     endpointFamily: "facebook_graph_instagram_business",
+    accessMode: "advanced",
+    endpoint: "comment_replies",
     hasCommentId: Boolean(commentId),
   });
   return await axios.post(
     `${META_GRAPH_API_BASE_URL}/${commentId}/replies`,
+    { message },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
+/**
+ * Posts a top-level comment on a media object (Standard Access).
+ * Endpoint: POST /{mediaId}/comments
+ * Works without App Review. Use with an @mention prefix as a fallback
+ * when threaded replies are blocked by capability restrictions.
+ */
+export const sendMediaComment = async (
+  mediaId: string,
+  message: string,
+  token: string
+) => {
+  console.log("[meta-api] send media comment (Standard Access)", {
+    endpointFamily: "facebook_graph_instagram_business",
+    accessMode: "standard",
+    endpoint: "media_comments",
+    hasMediaId: Boolean(mediaId),
+  });
+  return await axios.post(
+    `${META_GRAPH_API_BASE_URL}/${mediaId}/comments`,
     { message },
     {
       headers: {
