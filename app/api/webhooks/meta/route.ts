@@ -20,9 +20,12 @@ import {
   formatSafeMetaError,
   getSafeMetaError,
   sendDm,
-  sendPrivateMessage,
   sendCommentReply,
 } from "@/lib/fetch";
+import {
+  sendInstagramCommentPrivateReply,
+  formatPrivateReplyError,
+} from "@/lib/instagram-dm";
 import { resolveTemplate } from "@/lib/template";
 import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/send-token";
 import { openai } from "@/lib/openai";
@@ -559,15 +562,6 @@ async function processEntry(
 
       let dmMessageText = resolveTemplate(listener.prompt, templateVars);
 
-      // Append CTA link if present and not already included via {{link}} template
-      if (listener.ctaLink && !dmMessageText.includes(listener.ctaLink)) {
-        if (listener.ctaButtonTitle) {
-          dmMessageText += `\n\n${listener.ctaButtonTitle}: ${listener.ctaLink}`;
-        } else {
-          dmMessageText += `\n\n${listener.ctaLink}`;
-        }
-      }
-
       if (isSmartAi) {
         try {
           const aiResp = await openai.chat.completions.create({
@@ -585,41 +579,46 @@ async function processEntry(
         }
       }
 
-      // 7. Send private DM (referenced to the comment)
-      try {
-        const dmResult = await withRetry(() =>
-          sendPrivateMessage(instagramBusinessAccountId, commentId, dmMessageText, token)
-        );
-        const sent = dmResult.status === 200;
-        console.log(`[webhook] ${sent ? "DM_SENT" : "DM_FAILED"} recipientId=${commenterId} automationId=${automation.id}`);
+      // 7. Send private DM (private reply linked to the comment, with direct DM fallback)
+      const dmResult = await sendInstagramCommentPrivateReply({
+        token,
+        igBusinessAccountId: instagramBusinessAccountId,
+        commentId,
+        commenterId,
+        message: dmMessageText,
+        ctaTitle: listener.ctaButtonTitle,
+        ctaUrl: listener.ctaLink,
+      });
+
+      if (dmResult.ok) {
+        console.log(`[webhook] DM_SENT recipientId=${commenterId} automationId=${automation.id} endpoint=${dmResult.endpoint} ctaMode=${dmResult.ctaMode}`);
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
           mediaId,
           commentId,
           messageType: "DM",
-          status: sent ? "SENT" : "FAILED",
+          status: "SENT",
         });
         await createAutomationEvent({
           automationId: automation.id,
-          eventType: sent ? "DM_SENT" : "DM_FAILED",
+          eventType: "DM_SENT",
           igUserId: commenterId,
           mediaId,
           commentId,
           keyword: matchedKeyword,
+          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode },
         });
-        if (sent) {
-          await trackResponse(automation.id, "DM");
-        }
+        await trackResponse(automation.id, "DM");
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
-          status: sent ? "PROCESSED" : "FAILED",
-          errorMessage: sent ? "dm_sent" : "dm_failed",
+          status: "PROCESSED",
+          errorMessage: "dm_sent",
           processedAt: new Date(),
         });
-      } catch (err) {
-        const safeError = formatSafeMetaError(err);
-        console.warn("[webhook] private reply failed", getSafeMetaError(err));
+      } else {
+        const errorMessage = formatPrivateReplyError(dmResult);
+        console.warn(`[webhook] DM_FAILED recipientId=${commenterId} automationId=${automation.id} reason=${dmResult.reason} endpoint=${dmResult.endpoint}`);
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -627,7 +626,7 @@ async function processEntry(
           commentId,
           messageType: "DM",
           status: "FAILED",
-          errorMessage: safeError,
+          errorMessage,
         });
         await createAutomationEvent({
           automationId: automation.id,
@@ -636,12 +635,17 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { error: safeError },
+          meta: {
+            reason: dmResult.reason,
+            endpoint: dmResult.endpoint,
+            metaError: dmResult.metaError,
+            ctaMode: dmResult.ctaMode,
+          },
         });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: `dm_failed: ${safeError}`,
+          errorMessage: `dm_failed: ${errorMessage}`,
           processedAt: new Date(),
         });
       }

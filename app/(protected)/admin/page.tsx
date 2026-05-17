@@ -261,6 +261,7 @@ export default async function AdminPage({
   const hasKeywordMatch = Boolean(lastKeywordMatched);
   const hasDmSent = Boolean(lastDmSent);
   const hasDmFailed = Boolean(lastDmFailed);
+  const dmCapabilityMissing = lastDmFailed?.errorMessage === "dm_capability_missing";
 
   type VerdictKey = "A" | "B" | "C" | "D" | "IDLE";
   let verdict: VerdictKey = "IDLE";
@@ -275,8 +276,12 @@ export default async function AdminPage({
     verdictColor = "border-emerald-300 bg-emerald-50 text-emerald-800";
   } else if (hasKeywordMatch && hasDmFailed) {
     verdict = "C";
-    verdictLabel = "Keyword matched — DM failed";
-    verdictDetail = lastDmFailed?.errorMessage ?? "Check MessageLog for DM failure reason";
+    verdictLabel = dmCapabilityMissing
+      ? "Keyword matched — DM blocked by Meta capability"
+      : "Keyword matched — DM failed";
+    verdictDetail = dmCapabilityMissing
+      ? "Meta rejected the private DM API call with code=3. Public comment reply works. See capability checklist below."
+      : (lastDmFailed?.errorMessage ?? "Check MessageLog for DM failure reason");
     verdictColor = "border-red-300 bg-red-50 text-red-800";
   } else if (hasRealComment && realCommentFailed) {
     verdict = "B";
@@ -371,6 +376,31 @@ export default async function AdminPage({
                   <p className="text-base font-black">{verdictLabel}</p>
                 </div>
                 <p className="mt-2 text-sm">{verdictDetail}</p>
+              </div>
+            )}
+
+            {/* DM capability missing banner */}
+            {dmCapabilityMissing && (
+              <div className="rounded-2xl border border-red-300 bg-red-50 p-5">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                  DM API Capability Missing — Meta code=3
+                </p>
+                <h2 className="mt-2 text-lg font-black text-red-900">
+                  Public comment reply works. Auto DM is blocked by the Meta app.
+                </h2>
+                <p className="mt-2 text-sm text-red-800 leading-relaxed">
+                  Meta returned <code className="rounded bg-red-100 px-1 font-mono text-xs">(#3) Application does not have the capability to make this API call</code> when AP3k called the Instagram Messaging API (<code className="rounded bg-red-100 px-1 font-mono text-xs">POST /{"{ig-business-account-id}"}/messages</code>). This is an app-level capability block, not a token or webhook issue.
+                </p>
+                <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-red-700">Capability checklist</p>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-red-800">
+                  <li>Go to <strong>Meta Developers → Your App → Instagram → Permissions and Features</strong> and confirm <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> is added.</li>
+                  <li>Confirm the access level. In <strong>Development mode</strong>, only accepted Testers/Developers/Admins can use messaging. In Production, Advanced Access is required after App Review.</li>
+                  <li>Go to <strong>Meta Developers → Your App → App Settings → Advanced</strong> and confirm the Instagram Messaging use case / capability is enabled.</li>
+                  <li>Confirm <strong>App Review</strong> — if the app is published (Live mode), <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> requires approved Advanced Access.</li>
+                  <li>Confirm the <strong>Webhook messages field</strong> is subscribed for the Instagram account (messages field, not just comments).</li>
+                  <li>Confirm the Page access token in the integration was issued after <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> was approved — if not, reconnect Instagram.</li>
+                  <li>The commenter must be an <strong>accepted Tester</strong> of the Meta app if in Development mode.</li>
+                </ul>
               </div>
             )}
 
