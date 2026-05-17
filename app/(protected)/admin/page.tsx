@@ -4,6 +4,11 @@ import { replaySavedWebhookEvent, simulateCommentWebhook } from "@/actions/admin
 import { requireOwnerAdmin, maskSecret } from "@/lib/admin";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
+import {
+  buildWebhookPipelineDiagnostics,
+  developmentModeDeliveryMessage,
+  shouldShowDevelopmentModeDeliveryBanner,
+} from "@/lib/webhook-pipeline-diagnostics";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -107,7 +112,18 @@ export default async function AdminPage({
     client.webhookEvent.findFirst({
       where: { eventType: "REAL_COMMENT_EVENT", eventSource: "META_REAL" },
       orderBy: { createdAt: "desc" },
-      select: { status: true, igAccountId: true, mediaId: true, errorMessage: true, createdAt: true },
+      select: {
+        id: true,
+        automationId: true,
+        status: true,
+        igAccountId: true,
+        mediaId: true,
+        commentId: true,
+        errorMessage: true,
+        payload: true,
+        createdAt: true,
+        eventType: true,
+      },
     }),
     client.webhookEvent.findFirst({
       where: { eventSource: "SIMULATED_INTERNAL" },
@@ -259,6 +275,49 @@ export default async function AdminPage({
           })
         : Promise.resolve([]),
     ]);
+
+  const [lastPipelineAutomationEvents, lastPipelineMessageLogs] =
+    lastRealComment?.automationId
+      ? await Promise.all([
+          client.automationEvent.findMany({
+            where: {
+              automationId: lastRealComment.automationId,
+              ...(lastRealComment.commentId ? { commentId: lastRealComment.commentId } : {}),
+            },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          }),
+          client.messageLog.findMany({
+            where: {
+              automationId: lastRealComment.automationId,
+              ...(lastRealComment.commentId ? { commentId: lastRealComment.commentId } : {}),
+            },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          }),
+        ])
+      : [[], []];
+
+  const simulationCampaigns = tab === "webhooks"
+    ? await client.automation.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          User: { select: { email: true } },
+          posts: { select: { postid: true } },
+          keywords: { select: { word: true } },
+        },
+      })
+    : [];
+
+  const lastPipeline = buildWebhookPipelineDiagnostics({
+    lastPostRaw,
+    lastSignatureFailed,
+    lastRealComment,
+    automationEvents: lastPipelineAutomationEvents,
+    messageLogs: lastPipelineMessageLogs,
+  });
+  const showDevelopmentDeliveryBanner = shouldShowDevelopmentModeDeliveryBanner(lastPostRaw);
 
   const tabHref = (id: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams({
@@ -521,6 +580,31 @@ export default async function AdminPage({
                 <HealthCell label="Callback URL" value="https://ap3k.com/api/webhooks/meta" tone="slate" />
                 <HealthCell label="GET verify status" value={lastVerifyGet ? `${lastVerifyGet.status} · ${new Date(lastVerifyGet.createdAt).toLocaleString()}` : "never received"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : lastVerifyGet ? "red" : "amber"} />
               </div>
+            </AdminSection>
+
+            <AdminSection title="Last Pipeline Stage">
+              {showDevelopmentDeliveryBanner && (
+                <div className="border-b border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">
+                  {developmentModeDeliveryMessage()}
+                </div>
+              )}
+              <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
+                <HealthCell label="WEBHOOK_POST_RECEIVED_RAW" value={lastPipeline.rawArrived ? "arrived" : "not received"} tone={lastPipeline.rawArrived ? "green" : "red"} />
+                <HealthCell label="Signature" value={lastPipeline.signaturePassed === undefined ? "not verified yet" : lastPipeline.signaturePassed ? "passed" : "failed"} tone={lastPipeline.signaturePassed === false ? "red" : lastPipeline.signaturePassed ? "green" : "amber"} />
+                <HealthCell label="REAL_COMMENT_EVENT" value={lastPipeline.realCommentClassified ? "classified" : "not classified"} tone={lastPipeline.realCommentClassified ? "green" : "amber"} />
+                <HealthCell label="Integration matched" value={lastPipeline.integrationMatched ? "yes" : "no"} tone={lastPipeline.integrationMatched ? "green" : "amber"} />
+                <HealthCell label="Media/post matched" value={lastPipeline.mediaMatched ? "yes" : "no"} tone={lastPipeline.mediaMatched ? "green" : "amber"} />
+                <HealthCell label="Trigger matched" value={lastPipeline.triggerMatched ? (lastPipeline.matchedKeyword || "yes") : "no"} tone={lastPipeline.triggerMatched ? "green" : "amber"} />
+                <HealthCell label="Public reply attempted" value={lastPipeline.publicReplyAttempted ? "yes" : "no"} tone={lastPipeline.publicReplyAttempted ? "green" : "slate"} />
+                <HealthCell label="DM attempted" value={lastPipeline.dmAttempted ? "yes" : "no"} tone={lastPipeline.dmAttempted ? "green" : "slate"} />
+                <HealthCell label="Final reason" value={lastPipeline.finalReason ?? "unknown"} tone={lastPipeline.finalReason?.includes("failed") || lastPipeline.finalReason?.includes("missing") || lastPipeline.finalReason?.includes("not_deliver") ? "red" : "slate"} />
+              </div>
+              {(lastPipeline.mediaMatching || lastPipeline.triggerMatching) && (
+                <div className="grid gap-3 border-t border-slate-100 p-4 text-xs md:grid-cols-2">
+                  <DiagnosticJson title="mediaMatching" value={lastPipeline.mediaMatching} />
+                  <DiagnosticJson title="triggerMatching" value={lastPipeline.triggerMatching} />
+                </div>
+              )}
             </AdminSection>
 
             {/* Meta webhook product warning */}
@@ -930,17 +1014,23 @@ export default async function AdminPage({
               </div>
             </AdminSection>
 
-            <AdminSection title="Simulate Comment Webhook">
+            <AdminSection title="Run Simulated Comment Against Campaign">
               <form action={simulateCommentWebhook} className="grid gap-3 p-4 text-sm md:grid-cols-5">
-                <input
-                  name="igAccountId"
-                  defaultValue={metaDiagnostics.integration?.pageId ?? metaDiagnostics.integration?.webhookAccountId ?? ""}
-                  placeholder="Facebook Page ID"
+                <select
+                  name="automationId"
                   className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
-                />
+                  required
+                >
+                  <option value="">Select campaign</option>
+                  {simulationCampaigns.map((campaign: any) => (
+                    <option key={campaign.id} value={campaign.id}>
+                      {campaign.name} · {campaign.active ? "active" : "paused"} · {campaign.User?.email ?? "unknown"}
+                    </option>
+                  ))}
+                </select>
                 <input
                   name="mediaId"
-                  defaultValue="ANY_TEST_MEDIA"
+                  defaultValue={(simulationCampaigns[0] as any)?.posts?.[0]?.postid === "ANY" ? "ANY_TEST_MEDIA" : (simulationCampaigns[0] as any)?.posts?.[0]?.postid ?? "ANY_TEST_MEDIA"}
                   placeholder="Media ID"
                   className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
                 />
@@ -951,16 +1041,16 @@ export default async function AdminPage({
                   className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
                 />
                 <input
-                  name="text"
-                  defaultValue="ai"
+                  name="commentText"
+                  defaultValue={(simulationCampaigns[0] as any)?.keywords?.[0]?.word ?? "ai"}
                   placeholder="Comment text"
                   className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
                 />
                 <button className="rounded-xl bg-slate-950 px-4 py-2 font-bold text-white">
-                  Simulate
+                  Run simulated comment against campaign
                 </button>
                 <p className="md:col-span-5 text-xs text-slate-500">
-                  Uses the same matching path after signature/classification. Records a simulated DM failure — never sends to Meta.
+                  Decision-only safe mode. Shows integration match, post match, trigger match, keyword, and noMatchReason in the newest simulated webhook event. Never sends a real DM.
                 </p>
               </form>
             </AdminSection>
@@ -1236,8 +1326,12 @@ function PayloadSummary({ payload }: { payload: unknown }) {
     item.mediaMatching && typeof item.mediaMatching === "object"
       ? (item.mediaMatching as Record<string, unknown>)
       : null;
+  const triggerMatching =
+    item.triggerMatching && typeof item.triggerMatching === "object"
+      ? (item.triggerMatching as Record<string, unknown>)
+      : null;
 
-  if (bits.length === 0 && !mediaMatching) return null;
+  if (bits.length === 0 && !mediaMatching && !triggerMatching && !item.simulationResult) return null;
 
   return (
     <div className="mt-1 space-y-1 break-words font-mono text-[11px] text-slate-500">
@@ -1254,7 +1348,44 @@ function PayloadSummary({ payload }: { payload: unknown }) {
             : "none"}
         </p>
       )}
+      {triggerMatching && (
+        <p>
+          triggerMatch: mode={String(triggerMatching.triggerMode ?? "none")} ·
+          keyword={String(triggerMatching.matchedKeyword ?? "none")} ·
+          reason={String(triggerMatching.noMatchReason ?? item.simulationResult ?? "matched")}
+        </p>
+      )}
+      {Boolean(item.simulationResult) && (
+        <p>
+          simulation: integration={String(item.integrationMatched ?? "unknown")} ·
+          post={String(item.postMatched ?? "unknown")} ·
+          trigger={String(item.triggerMatched ?? "unknown")} ·
+          result={String(item.simulationResult)}
+        </p>
+      )}
     </div>
+  );
+}
+
+function DiagnosticJson({ title, value }: { title: string; value: unknown }) {
+  if (!value || typeof value !== "object") {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{title}</p>
+        <p className="mt-1 text-xs text-slate-500">No diagnostic payload recorded.</p>
+      </div>
+    );
+  }
+
+  return (
+    <details className="rounded-xl border border-slate-200 bg-slate-50 p-3" open>
+      <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+        {title}
+      </summary>
+      <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words text-[11px] text-slate-700">
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    </details>
   );
 }
 
