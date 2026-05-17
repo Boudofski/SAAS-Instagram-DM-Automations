@@ -17,7 +17,7 @@ async function getDashboardHref() {
 }
 
 type Props = {
-  current?: "home" | "pricing" | "privacy" | "terms";
+  current?: "home" | "pricing" | "privacy" | "terms" | "data-deletion";
 };
 
 export default async function WebsiteNav({ current }: Props) {

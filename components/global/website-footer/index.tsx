@@ -13,8 +13,11 @@ export default function WebsiteFooter() {
           <Link href="/terms" className="transition-colors hover:text-rf-text">
             Terms
           </Link>
-          <a href="mailto:support@ap3k.com" className="transition-colors hover:text-rf-text">
-            Support
+          <Link href="/data-deletion" className="transition-colors hover:text-rf-text">
+            Data Deletion
+          </Link>
+          <a href="mailto:contact@ap3k.com" className="transition-colors hover:text-rf-text">
+            Contact
           </a>
         </div>
         <p>© 2026 AP3k</p>
