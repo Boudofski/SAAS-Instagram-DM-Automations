@@ -64,6 +64,7 @@ export default async function AdminPage({
     lastDmFailed,
     lastPublicReplySent,
     lastPublicReplyFailed,
+    lastInboundDm,
   ] = await Promise.all([
     client.user.count(),
     client.integrations.count(),
@@ -142,6 +143,11 @@ export default async function AdminPage({
       where: { messageType: "COMMENT_REPLY", status: "FAILED" },
       orderBy: { createdAt: "desc" },
       select: { createdAt: true, errorMessage: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "REAL_MESSAGE_EVENT", eventSource: "META_REAL" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, errorMessage: true, igAccountId: true, createdAt: true },
     }),
   ]);
 
@@ -391,6 +397,28 @@ export default async function AdminPage({
               </div>
             )}
 
+            {/* Inbound Instagram message received banner */}
+            {lastInboundDm && lastInboundDm.errorMessage === "inbound_message_received_no_dm_automation" && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">
+                  Inbound Instagram Message Received
+                </p>
+                <h2 className="mt-2 text-lg font-black text-blue-900">
+                  Instagram DM webhook delivery works.
+                </h2>
+                <p className="mt-2 text-sm text-blue-800 leading-relaxed">
+                  AP3k received a real inbound DM from Instagram at{" "}
+                  <strong>{new Date(lastInboundDm.createdAt).toLocaleString()}</strong>. The webhook
+                  pipeline (signature verification → entry parsing → sender extraction) is fully operational.
+                  No DM keyword automation is configured yet, so the message was acknowledged and recorded.
+                </p>
+                <p className="mt-3 text-sm text-blue-800 leading-relaxed">
+                  <strong>DM keyword automations are not enabled yet.</strong> To auto-respond to inbound DMs,
+                  create a campaign and configure DM keyword triggers.
+                </p>
+              </div>
+            )}
+
             {/* DM capability missing banner */}
             {dmCapabilityMissing && (
               <div className="rounded-2xl border border-red-300 bg-red-50 p-5 space-y-4">
@@ -463,6 +491,28 @@ export default async function AdminPage({
                   label="Public reply last error"
                   value={lastPublicReplyFailed ? `${lastPublicReplyFailed.errorMessage ?? "unknown"} · ${new Date(lastPublicReplyFailed.createdAt).toLocaleString()}` : "none"}
                   tone={lastPublicReplyFailed && !lastPublicReplySent ? "amber" : "green"}
+                />
+                <HealthCell
+                  label="Inbound Instagram message"
+                  value={lastInboundDm ? `received · ${new Date(lastInboundDm.createdAt).toLocaleString()}` : "none yet"}
+                  tone={lastInboundDm ? "green" : "slate"}
+                />
+                <HealthCell
+                  label="Inbound DM status"
+                  value={
+                    !lastInboundDm
+                      ? "no inbound messages yet"
+                      : lastInboundDm.errorMessage === "inbound_message_received_no_dm_automation"
+                      ? "received — no DM automation configured"
+                      : lastInboundDm.errorMessage === "echo_message_skipped"
+                      ? "echo skipped (sent by account)"
+                      : (lastInboundDm.errorMessage ?? lastInboundDm.status)
+                  }
+                  tone={
+                    !lastInboundDm ? "slate"
+                    : lastInboundDm.errorMessage === "echo_message_skipped" ? "slate"
+                    : "green"
+                  }
                 />
                 <HealthCell label="Connected IG username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "not connected"} />
                 <HealthCell label="Connected IG Business ID" value={metaDiagnostics.integration?.instagramId ?? "not set"} />

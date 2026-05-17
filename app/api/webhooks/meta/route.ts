@@ -29,6 +29,11 @@ import {
 } from "@/lib/instagram-dm";
 import { resolveTemplate } from "@/lib/template";
 import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/send-token";
+import {
+  parseMessagingItem,
+  INBOUND_MESSAGE_NO_AUTOMATION,
+  INBOUND_MESSAGE_ECHO_SKIPPED,
+} from "@/lib/instagram-message-event";
 import { openai } from "@/lib/openai";
 
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -678,11 +683,62 @@ async function processEntry(
 
   for (const messagingItem of messaging) {
     // -----------------------------------------------------------------------
-    // DM EVENT
+    // INBOUND DM EVENT (entry.messaging — not entry.changes)
     // -----------------------------------------------------------------------
-    if (messagingItem) {
-      const senderId: string | undefined = messagingItem.sender?.id;
-      const dmText: string = messagingItem.message?.text ?? "";
+    if (!messagingItem) continue;
+
+    const parsed = parseMessagingItem(messagingItem);
+    const senderId = parsed.ok ? parsed.data.senderId : (messagingItem.sender?.id ? String(messagingItem.sender.id) : undefined);
+    const dmText = parsed.ok ? (parsed.data.messageText ?? "") : (messagingItem.message?.text ?? "");
+
+    // Echo messages are copies of outbound messages sent by the IG account — skip them.
+    if (parsed.ok && parsed.data.isEcho) {
+      const echoEvent = await createWebhookEvent({
+        eventType: "REAL_MESSAGE_EVENT",
+        eventSource: "META_REAL",
+        field: "messaging",
+        igAccountId: pageId,
+        igUserId: senderId,
+        payload: {
+          ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
+          ...parsed.diagnostics,
+          messageMid: parsed.data.messageMid,
+          entryId: entry?.id,
+          object: envelope?.object,
+        },
+      });
+      await updateWebhookEvent(echoEvent.id, {
+        status: "IGNORED",
+        errorMessage: INBOUND_MESSAGE_ECHO_SKIPPED,
+        processedAt: new Date(),
+      });
+      continue;
+    }
+
+    {
+      // Build rich messaging diagnostics for the event payload
+      const messagingPayload = parsed.ok
+        ? {
+            ...parsed.diagnostics,
+            recipientId: parsed.data.recipientId,
+            messageMid: parsed.data.messageMid,
+            messageTimestamp: parsed.data.messageTimestamp,
+            hasPostback: Boolean(parsed.data.postback),
+            entryId: entry?.id,
+            object: envelope?.object,
+          }
+        : {
+            hasSenderId: Boolean(senderId),
+            hasRecipientId: false,
+            hasMessageText: Boolean(dmText),
+            hasMessageMid: false,
+            hasTimestamp: false,
+            hasPostback: false,
+            isEcho: false,
+            parseFailureReason: !parsed.ok ? parsed.reason : undefined,
+            entryId: entry?.id,
+            object: envelope?.object,
+          };
 
       const webhookEvent = await createWebhookEvent({
         eventType: "REAL_MESSAGE_EVENT",
@@ -692,12 +748,16 @@ async function processEntry(
         igUserId: senderId,
         payload: {
           ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
-          hasSenderId: Boolean(senderId),
-          hasMessageText: Boolean(dmText),
+          ...messagingPayload,
         },
       });
 
       if (!senderId || !dmText) {
+        console.log("[webhook] inbound DM missing required fields — ignoring", {
+          hasSenderId: Boolean(senderId),
+          hasMessageText: Boolean(dmText),
+          parseReason: !parsed.ok ? parsed.reason : undefined,
+        });
         await updateWebhookEvent(webhookEvent.id, {
           status: "IGNORED",
           errorMessage: "missing_required_dm_fields",
@@ -710,8 +770,11 @@ async function processEntry(
       const result = await findAutomationForDM(dmText, pageId);
 
       if (!result) {
-        console.log(`[webhook] DM no-match senderId=${senderId} — checking SMARTAI conversation`);
-        // No keyword match — check for an ongoing SMARTAI conversation
+        // No DM automation configured or no keyword matched.
+        // Check for an active SMARTAI conversation before giving up.
+        console.log(`[webhook] inbound DM — no keyword automation matched senderId=${senderId}`, {
+          hint: "DM keyword automations are not enabled yet — configure a DM automation with keywords to respond automatically",
+        });
         try {
           const chatHistory = await getChatHistory(pageId, senderId);
           if (chatHistory.history.length > 0 && chatHistory.automationId) {
@@ -752,7 +815,7 @@ async function processEntry(
         }
         await updateWebhookEvent(webhookEvent.id, {
           status: "PROCESSED",
-          errorMessage: "no_keyword_match",
+          errorMessage: INBOUND_MESSAGE_NO_AUTOMATION,
           processedAt: new Date(),
         });
         continue;
