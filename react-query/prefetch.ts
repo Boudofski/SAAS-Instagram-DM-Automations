@@ -8,7 +8,7 @@ export const PrefetchUserProfile = async (client: QueryClient) => {
   return await client.prefetchQuery({
     queryKey: ["user-profile", user?.id],
     queryFn: onUserInfo,
-    staleTime: 60000,
+    staleTime: 0,
   });
 };
 
@@ -17,7 +17,7 @@ export const PrefetchUserAutomation = async (client: QueryClient) => {
   return await client.prefetchQuery({
     queryKey: ["user-automation", user?.id],
     queryFn: getAllAutomation,
-    staleTime: 60000,
+    staleTime: 0,
   });
 };
 
@@ -29,6 +29,6 @@ export const PrefetchUserAutomations = async (
   return await client.prefetchQuery({
     queryKey: ["automation-info", user?.id, automationId],
     queryFn: () => getAutomationInfo(automationId),
-    staleTime: 60000,
+    staleTime: 0,
   });
 };

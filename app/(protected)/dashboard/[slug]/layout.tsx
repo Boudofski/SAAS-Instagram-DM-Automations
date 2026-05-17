@@ -2,6 +2,7 @@ import NavBar from "@/components/global/navbar";
 import Sidebar from "@/components/global/sidebar";
 import { onUserInfo } from "@/actions/user";
 import { dashboardPath } from "@/lib/dashboard";
+import { ClerkCacheSyncer } from "@/providers/clerk-cache-syncer";
 import {
   PrefetchUserAutomation,
   PrefetchUserProfile,
@@ -54,6 +55,7 @@ async function Layout({ children, params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(query)}>
+      <ClerkCacheSyncer />
       <div className="min-h-screen bg-slate-50 p-3 text-slate-950">
         <Sidebar slug={params.slug} />
         <div className="relative z-10 flex flex-col overflow-auto lg:ml-[260px] lg:pl-8 lg:py-5">
