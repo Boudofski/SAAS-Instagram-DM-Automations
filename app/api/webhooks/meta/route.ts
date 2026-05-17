@@ -24,6 +24,7 @@ import {
   sendCommentReply,
 } from "@/lib/fetch";
 import { resolveTemplate } from "@/lib/template";
+import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/send-token";
 import { openai } from "@/lib/openai";
 
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -438,10 +439,16 @@ async function processEntry(
         mediaId,
       });
 
-      const token = automation.User?.integrations?.[0]?.token;
-      const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
-      if (!token) {
-        console.warn("[webhook] automation token missing", { automationId: automation.id });
+      const integrationRaw = automation.User?.integrations?.[0];
+      const tokenResolution = resolveIntegrationSendToken(integrationRaw);
+      const instagramBusinessAccountId = integrationRaw?.instagramId;
+      if (!tokenResolution.ok) {
+        const diag = tokenResolutionDiagnostics(integrationRaw);
+        console.warn("[webhook] automation token missing", {
+          automationId: automation.id,
+          reason: tokenResolution.reason,
+          ...diag,
+        });
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -459,6 +466,7 @@ async function processEntry(
         });
         continue;
       }
+      const token = tokenResolution.token;
       if (!instagramBusinessAccountId) {
         await createMessageLog({
           automationId: automation.id,
@@ -697,9 +705,10 @@ async function processEntry(
               automation.User?.subscription?.plan === "PRO" &&
               process.env.OPENAI_API_KEY
             ) {
-              const token = automation.User?.integrations?.[0]?.token;
+              const smartAiResolution = resolveIntegrationSendToken(automation.User?.integrations?.[0]);
               const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
-              if (token && instagramBusinessAccountId) {
+              if (smartAiResolution.ok && instagramBusinessAccountId) {
+                const token = smartAiResolution.token;
                 const aiResp = await openai.chat.completions.create({
                   model: "gpt-4o-mini",
                   messages: [
@@ -757,23 +766,31 @@ async function processEntry(
         continue;
       }
 
-      const token = automation.User?.integrations?.[0]?.token;
-      const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
-      if (!token || !automation.listener || !instagramBusinessAccountId) {
+      const dmIntegrationRaw = automation.User?.integrations?.[0];
+      const dmTokenResolution = resolveIntegrationSendToken(dmIntegrationRaw);
+      const instagramBusinessAccountId = dmIntegrationRaw?.instagramId;
+      if (!dmTokenResolution.ok || !automation.listener || !instagramBusinessAccountId) {
+        const diag = tokenResolutionDiagnostics(dmIntegrationRaw);
         console.warn("[webhook] DM automation token or listener missing", {
           automationId: automation.id,
-          hasToken: Boolean(token),
+          reason: dmTokenResolution.ok ? undefined : dmTokenResolution.reason,
           hasListener: Boolean(automation.listener),
           hasInstagramBusinessAccountId: Boolean(instagramBusinessAccountId),
+          ...diag,
         });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
-          errorMessage: !instagramBusinessAccountId ? "instagram_business_account_missing" : "token_missing",
+          errorMessage: !instagramBusinessAccountId
+            ? "instagram_business_account_missing"
+            : !automation.listener
+              ? "listener_missing"
+              : "token_missing",
           processedAt: new Date(),
         });
         continue;
       }
+      const token = dmTokenResolution.token;
 
       const templateVars = {
         username: "",

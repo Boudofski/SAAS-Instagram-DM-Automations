@@ -1,6 +1,7 @@
 "use server";
 
 import { client } from "@/lib/prisma";
+import { resolveIntegrationSendToken } from "@/lib/send-token";
 
 export const updateIntegration = async (
   token: string,
@@ -322,6 +323,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     }),
   ]);
 
+  const tokenResolution = resolveIntegrationSendToken(integration);
   return {
     lastWebhook,
     lastCommentWebhook,
@@ -336,7 +338,10 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     oauth: {
       tokenPresent: Boolean(integration?.token),
       tokenExpired: Boolean(tokenExpired),
-      tokenUsable: Boolean(integration?.token) && !tokenExpired,
+      tokenFormatValid: tokenResolution.ok,
+      tokenSource: tokenResolution.ok ? tokenResolution.source : null,
+      tokenUsable: tokenResolution.ok && !tokenExpired,
+      reconnectRequired: !tokenResolution.ok,
     },
   };
 };

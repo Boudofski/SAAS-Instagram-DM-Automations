@@ -173,6 +173,20 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           <p className="font-black uppercase tracking-[0.16em] text-slate-500">
             Webhook health
           </p>
+          {integrated?.instagramId && health?.data?.oauth?.reconnectRequired && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+              <p className="font-bold">Reconnect Instagram</p>
+              <p className="mt-1 leading-relaxed">
+                AP3k matched your real comment, but the selected Page token is missing or invalid.
+                Click <strong>Reconnect Instagram</strong> above to re-authorise and restore DM delivery.
+              </p>
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-relaxed">
+                <li>Token source attempted: <code className="rounded bg-red-100 px-1 font-mono">{health.data.oauth.tokenSource ?? "none"}</code></li>
+                <li>Page token present: {health.data.oauth.tokenPresent ? "yes" : "no"}</li>
+                <li>Token format valid: {health.data.oauth.tokenFormatValid ? "yes" : "no"}</li>
+              </ul>
+            </div>
+          )}
           {health?.data?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED" && (
             <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               <p className="font-bold">Meta dashboard subscription required</p>
@@ -198,8 +212,8 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               ok={Boolean(health?.data?.oauth?.tokenUsable)}
             />
             <HealthBadge
-              label="Token valid"
-              ok={Boolean(health?.data?.oauth?.tokenUsable)}
+              label="Token format"
+              ok={Boolean(health?.data?.oauth?.tokenFormatValid)}
             />
             <HealthBadge
               label="Webhook subscribed"
@@ -222,9 +236,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               label="Page token"
               value={
                 health?.data?.oauth
-                  ? `${health.data.oauth.tokenPresent ? "stored" : "missing"}${
-                      health.data.oauth.tokenExpired ? " · expired" : ""
-                    }`
+                  ? `${health.data.oauth.tokenPresent ? "stored" : "missing"} · ${health.data.oauth.tokenFormatValid ? "format ok" : "format invalid"}${health.data.oauth.tokenExpired ? " · expired" : ""}${health.data.oauth.tokenSource ? ` · source: ${health.data.oauth.tokenSource}` : ""}`
                   : "Unknown"
               }
             />

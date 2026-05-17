@@ -21,7 +21,7 @@ type AutomationWithRelations = Automation & {
   listener: Listener | null;
   User: {
     subscription: Pick<Subscription, "plan"> | null;
-    integrations: Pick<Integrations, "token" | "instagramId" | "pageId">[];
+    integrations: Pick<Integrations, "id" | "token" | "instagramId" | "pageId">[];
   } | null;
 };
 
@@ -75,8 +75,7 @@ export const findAutomationForComment = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { token: true, instagramId: true, pageId: true },
-            where: { pageId },
+            select: { id: true, token: true, instagramId: true, pageId: true },
           },
         },
       },
@@ -168,8 +167,7 @@ export const findAutomationForCommentWithReason = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { token: true, instagramId: true, pageId: true },
-            where: { pageId },
+            select: { id: true, token: true, instagramId: true, pageId: true },
           },
         },
       },
@@ -258,8 +256,7 @@ export const findAutomationForDM = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { token: true, instagramId: true, pageId: true },
-            where: { pageId },
+            select: { id: true, token: true, instagramId: true, pageId: true },
           },
         },
       },
@@ -290,7 +287,7 @@ export const findAutomationById = async (id: string) => {
       User: {
         select: {
           subscription: { select: { plan: true } },
-          integrations: { select: { token: true, instagramId: true, pageId: true } },
+          integrations: { select: { id: true, token: true, instagramId: true, pageId: true } },
         },
       },
     },
