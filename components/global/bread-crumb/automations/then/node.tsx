@@ -2,7 +2,7 @@
 
 import { Separator } from "@/components/ui/separator";
 import { useQueryAutomations } from "@/hooks/user-queries";
-import { PlaneBlue, SmartAi, Warning } from "@/icons";
+import { PlaneBlue, Warning } from "@/icons";
 import PostButton from "../post";
 
 type Props = {
@@ -31,16 +31,8 @@ function ThenNode({ id }: Props) {
       </div>
       <div className="bg-background-80 p-3 rounded-xl flex flex-col gap-y-2">
         <div className="flex gap-x-2 items-center">
-          {data.data.listener.listener === "MESSAGE" ? (
-            <PlaneBlue />
-          ) : (
-            <SmartAi />
-          )}
-          <p className="text-lg">
-            {data.data.listener.listener === "MESSAGE"
-              ? "Send The User Message"
-              : "Let Smart AI Take Over"}
-          </p>
+          <PlaneBlue />
+          <p className="text-lg">Send the user message</p>
         </div>
         <p className="font-light text-text-secondary">
           {data.data.listener.prompt}

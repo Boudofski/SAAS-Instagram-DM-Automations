@@ -9,7 +9,7 @@ import type { StepStatus } from "@/components/global/wizard-stepper";
 import { useQueryAutomationPosts, useQueryUser } from "@/hooks/user-queries";
 import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -20,32 +20,29 @@ type Props = {
 
 const STEP_LABELS = [
   "Choose post",
-  "Keywords",
+  "Trigger",
   "Write DM",
   "Public reply",
-  "AI mode",
-  "Activate",
+  "Review & Activate",
 ];
 
 const STEP_TIPS = [
   "Pick the Reel or post you want to run this campaign on.",
-  "Use 2-4 keywords. More keywords = more DMs triggered.",
+  "Choose a keyword trigger or run on every comment.",
   "This is the most important step. Write a DM people actually want to receive.",
-  "Optional - leave blank to skip. This appears publicly under the comment.",
-  "Smart AI handles follow-up questions automatically. Requires Creator plan.",
+  "Optional public replies help commenters know to check their DMs.",
   "Review everything. You can pause or edit this campaign at any time.",
 ];
 
 export default function WizardPage({ params, searchParams }: Props) {
   const { slug } = params;
   const editId = searchParams?.edit;
-  const { data: posts, isLoading: postsLoading } = useQueryAutomationPosts();
+  const { data: posts, isLoading: postsLoading, refetch: refetchPosts, isFetching: postsFetching } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
   const { data: editing } = useQueryAutomations(editId ?? "", Boolean(editId));
   const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
 
-  const isProUser = user?.data?.subscription?.plan === "PRO";
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } =
     useWizard(slug, editId);
 
@@ -74,7 +71,12 @@ export default function WizardPage({ params, searchParams }: Props) {
       publicReply3: automation.listener?.commentReply3 ?? "",
       ctaLink: automation.listener?.ctaLink ?? "",
       ctaButtonTitle: automation.listener?.ctaButtonTitle ?? "",
-      aiMode: automation.listener?.listener === "SMARTAI",
+      triggerMode: automation.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
+      publicReplyEnabled: Boolean(
+        automation.listener?.commentReply ||
+        automation.listener?.commentReply2 ||
+        automation.listener?.commentReply3
+      ),
       post: post
         ? {
             postid: post.postid,
@@ -137,7 +139,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         {step === 1 && (
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-2">
-              📸 Step 1 of 6
+              Step 1 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Name it and choose a post or Reel
@@ -196,7 +198,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-950">Any post</p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Trigger on comments across all your posts and Reels.
+                      Trigger on comments across all posts and Reels.
                     </p>
                   </div>
                   {data.post?.postid === "ANY" && (
@@ -209,9 +211,20 @@ export default function WizardPage({ params, searchParams }: Props) {
                 {/* Specific post grid */}
                 {postList.length > 0 && (
                   <div>
-                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Or pick a specific post
-                    </p>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Choose a specific post or Reel
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void refetchPosts()}
+                        disabled={postsFetching}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <RefreshCw className={postsFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+                        Refresh posts
+                      </button>
+                    </div>
                     <PostPicker
                       posts={postList}
                       selected={data.post?.postid !== "ANY" ? (data.post?.postid ?? null) : null}
@@ -221,8 +234,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                             postid: p.id,
                             caption: p.caption,
                             media: p.media_type === "VIDEO"
-                              ? (p.thumbnail_url ?? p.media_url)
-                              : p.media_url,
+                              ? (p.thumbnail_url ?? p.media_url ?? "")
+                              : (p.media_url ?? p.thumbnail_url ?? ""),
                             mediaType:
                               p.media_type === "VIDEO" ? "VIDEO"
                               : p.media_type === "CAROUSEL_ALBUM" ? "CAROSEL_ALBUM"
@@ -241,30 +254,36 @@ export default function WizardPage({ params, searchParams }: Props) {
                   onSelect={selectManualMedia}
                   compact={postList.length > 0}
                 />
+                {posts?.data?.error && (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {posts.data.error}
+                  </p>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Step 2 — Keywords */}
+        {/* Step 2 — Trigger */}
         {step === 2 && (
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-2">
-              🏷️ Step 2 of 6
+              Step 2 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               What triggers your DM?
             </h2>
             <p className="text-slate-500 text-sm mb-6">
-              Add the words people comment to receive your DM automatically.
+              Trigger on specific keywords or every comment in the selected post scope.
             </p>
             <KeywordInput
+              triggerMode={data.triggerMode}
               keywords={data.keywords}
               matchingMode={data.matchingMode}
+              onTriggerModeChange={(mode) => update({ triggerMode: mode })}
               onAdd={(w) => update({ keywords: [...data.keywords, w] })}
               onRemove={(w) => update({ keywords: data.keywords.filter((k) => k !== w) })}
               onModeChange={(m) => update({ matchingMode: m })}
-              isProUser={isProUser}
             />
           </div>
         )}
@@ -273,13 +292,13 @@ export default function WizardPage({ params, searchParams }: Props) {
         {step === 3 && (
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-rf-blue mb-2">
-              ✉️ Step 3 of 6
+              Step 3 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Write your DM
             </h2>
             <p className="text-slate-500 text-sm mb-6">
-              This is the message people receive when they comment your keyword.
+              This is the message people receive after their comment triggers the campaign.
             </p>
             <DmEditor
               value={data.dmMessage}
@@ -296,15 +315,46 @@ export default function WizardPage({ params, searchParams }: Props) {
         {step === 4 && (
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-              💬 Step 4 of 6 — Optional
+              Step 4 of 5 — Optional
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Public comment reply
             </h2>
             <p className="text-slate-500 text-sm mb-6">
-              Reply publicly under their comment before sending the DM. AP3k randomly picks one
-              of your variations to keep replies natural. Leave all blank to skip.
+              AP3k can publicly reply to the comment. If true threaded reply is not available,
+              AP3k uses a top-level @mention reply fallback.
             </p>
+            <button
+              type="button"
+              onClick={() => update({ publicReplyEnabled: !data.publicReplyEnabled })}
+              className={[
+                "mb-5 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
+                data.publicReplyEnabled
+                  ? "border-rf-blue/25 bg-rf-blue/10"
+                  : "border-slate-200 bg-white",
+              ].join(" ")}
+            >
+              <span>
+                <span className="block text-sm font-bold text-slate-950">Send public reply</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  Reply publicly before the private DM. Turn off to skip public replies.
+                </span>
+              </span>
+              <span
+                className={[
+                  "relative h-6 w-11 rounded-full transition-colors",
+                  data.publicReplyEnabled ? "bg-rf-blue" : "bg-slate-300",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "absolute top-1 h-4 w-4 rounded-full bg-white transition-all",
+                    data.publicReplyEnabled ? "left-6" : "left-1",
+                  ].join(" ")}
+                />
+              </span>
+            </button>
+            {data.publicReplyEnabled && (
             <div className="flex flex-col gap-3">
               {(
                 [
@@ -325,86 +375,23 @@ export default function WizardPage({ params, searchParams }: Props) {
                     rows={2}
                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3
                                text-sm text-slate-950 placeholder:text-slate-400 outline-none
-                               focus:border-pink-300 resize-none transition-colors"
+                               focus:border-pink-300 focus:ring-2 focus:ring-pink-100 resize-none transition-colors"
                   />
                 </div>
               ))}
             </div>
+            )}
             <p className="text-xs text-slate-500 mt-3">
-              These appear publicly on your post. The private DM is always sent regardless.
+              AP3k randomly picks one enabled variation. Add up to 3 variations.
             </p>
           </div>
         )}
 
-        {/* Step 5 — AI mode (optional) */}
+        {/* Step 5 — Review & Activate */}
         {step === 5 && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-              🤖 Step 5 of 6 — Optional
-            </p>
-            <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              Smart AI replies
-            </h2>
-            <p className="text-slate-500 text-sm mb-6">
-              Let AI handle follow-up questions in the DM thread. 24/7, in your tone.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => isProUser && update({ aiMode: !data.aiMode })}
-              className={[
-                "w-full flex items-start gap-4 p-5 rounded-2xl border-2 transition-all text-left",
-                data.aiMode && isProUser
-                  ? "border-rf-purple/40 bg-rf-purple/6"
-                  : "border-slate-200 bg-white",
-                !isProUser ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-rf-purple/30",
-              ].join(" ")}
-            >
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rf-blue to-rf-purple
-                              flex items-center justify-center text-xl flex-shrink-0">
-                🤖
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-slate-950 text-sm">Smart AI</span>
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5
-                                   rounded bg-gradient-to-r from-rf-blue to-rf-purple text-white">
-                    PRO
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 leading-snug">
-                  AI reads follow-up messages and responds intelligently based on your DM prompt.
-                  Converts more leads without your involvement.
-                </p>
-                {!isProUser && (
-                  <Link
-                    href="/payment"
-                    className="text-xs text-rf-blue font-semibold mt-2 inline-block hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Upgrade to Creator to unlock
-                  </Link>
-                )}
-              </div>
-              {/* Toggle */}
-              <div className={[
-                "w-10 h-5 rounded-full relative flex-shrink-0 transition-colors",
-                data.aiMode && isProUser ? "bg-rf-purple" : "bg-rf-subtle",
-              ].join(" ")}>
-                <span className={[
-                  "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all",
-                  data.aiMode && isProUser ? "left-5" : "left-0.5",
-                ].join(" ")} />
-              </div>
-            </button>
-          </div>
-        )}
-
-        {/* Step 6 — Review & Activate */}
-        {step === 6 && (
-          <div>
             <p className="text-xs font-bold uppercase tracking-widest text-rf-green mb-2">
-              🚀 Step 6 of 6
+              Step 5 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Review &amp; Activate
@@ -418,17 +405,17 @@ export default function WizardPage({ params, searchParams }: Props) {
                 [
                   { label: "Name",         value: data.campaignName || "Untitled campaign",                                           step: 1 as const },
                   { label: "Post",         value: data.post?.postid === "ANY" ? "Any post" : (data.post?.caption?.slice(0, 60) ?? "Selected post"), step: 1 as const },
-                  { label: "Keywords",     value: data.keywords.join(", ") || "None",                                                 step: 2 as const },
+                  { label: "Trigger",      value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword",           step: 2 as const },
+                  { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.join(", "),   step: 2 as const },
                   { label: "DM message",   value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""),             step: 3 as const },
                   ...(data.ctaButtonTitle || data.ctaLink
                     ? [{ label: "CTA button", value: `${data.ctaButtonTitle || "Link"} -> ${data.ctaLink || "url"}`, step: 3 as const }]
                     : []),
-                  { label: "Public reply", value: [data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length > 0
+                  { label: "Public reply", value: data.publicReplyEnabled && [data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length > 0
                       ? `${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)`
                       : "Skipped",                                                                                                     step: 4 as const },
-                  { label: "AI mode",      value: data.aiMode ? "Smart AI enabled" : "Standard mode",                                step: 5 as const },
-                  { label: "Status",       value: data.active ? "Activate immediately" : "Save paused",                              step: 6 as const },
-                ] as { label: string; value: string; step: 1 | 2 | 3 | 4 | 5 | 6 }[]
+                  { label: "Status",       value: data.active ? "Live after save" : "Save as draft",                                 step: 5 as const },
+                ] as { label: string; value: string; step: 1 | 2 | 3 | 4 | 5 }[]
               ).map((row) => (
                 <div key={row.label}
                      className="flex items-center justify-between gap-3 px-4 py-3
@@ -494,10 +481,11 @@ export default function WizardPage({ params, searchParams }: Props) {
           </h2>
           <div className="mt-4 space-y-3 text-sm">
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
-            <PreviewRow label="Keywords" value={data.keywords.length ? data.keywords.join(", ") : "None yet"} />
+            <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} />
+            <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.join(", ") : "None yet"} />
             <PreviewRow label="DM" value={data.dmMessage || "Write your primary DM"} />
             <PreviewRow label="CTA" value={data.ctaButtonTitle || data.ctaLink ? `${data.ctaButtonTitle || "Button"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No CTA"} />
-            <PreviewRow label="Public replies" value={`${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)`} />
+            <PreviewRow label="Public reply" value={data.publicReplyEnabled ? `${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)` : "Off"} />
             <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
           </div>
         </aside>
@@ -521,7 +509,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               Back
             </button>
           )}
-          {step < 6 ? (
+          {step < 5 ? (
             <button
               type="button"
               onClick={next}
@@ -529,23 +517,39 @@ export default function WizardPage({ params, searchParams }: Props) {
               className="ap3k-gradient-button disabled:opacity-40
                          text-sm px-7 py-2.5"
             >
-              {step === 4 || step === 5 ? "Skip" : "Next"}
+              {step === 4 ? "Skip" : "Next"}
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={activate}
-              disabled={isSubmitting}
-              className="ap3k-gradient-button
-                         text-sm px-8 py-2.5 rounded-xl flex items-center gap-2
-                         disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <><Loader2 size={14} className="animate-spin" /> Activating…</>
-              ) : (
-                editId ? "Save Campaign" : "Activate Campaign"
-              )}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  update({ active: false });
+                  void activate(false);
+                }}
+                disabled={isSubmitting}
+                className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              >
+                Save as draft
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  update({ active: true });
+                  void activate(true);
+                }}
+                disabled={isSubmitting}
+                className="ap3k-gradient-button
+                           text-sm px-8 py-2.5 rounded-xl flex items-center gap-2
+                           disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                ) : (
+                  editId ? "Update campaign" : "Activate campaign"
+                )}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -583,7 +587,7 @@ function ManualMediaFallback({
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5">
       <h3 className="text-sm font-black text-slate-950">
-        {compact ? "Use a media ID manually" : "No posts found. Add a media ID manually."}
+        {compact ? "Can't find a post? Paste media ID or URL manually." : "No posts found. Add a media ID manually."}
       </h3>
       <p className="mt-2 text-xs leading-relaxed text-slate-500">
         Paste the Instagram media ID for the post or Reel. A post URL can be saved as a reference,

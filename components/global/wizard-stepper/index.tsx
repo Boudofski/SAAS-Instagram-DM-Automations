@@ -21,7 +21,7 @@ export default function WizardStepper({ steps }: Props) {
                 step.status === "active" &&
                   "bg-rf-blue text-white shadow-[0_0_14px_rgba(59,130,246,0.4)]",
                 step.status === "todo" &&
-                  "bg-rf-surface2 border border-rf-subtle text-rf-muted"
+                  "bg-white border border-slate-300 text-slate-500"
               )}
             >
               {step.status === "done" ? "✓" : i + 1}
@@ -31,7 +31,7 @@ export default function WizardStepper({ steps }: Props) {
                 "text-[10px] font-semibold whitespace-nowrap",
                 step.status === "done" && "text-rf-green",
                 step.status === "active" && "text-rf-blue",
-                step.status === "todo" && "text-rf-subtle"
+                step.status === "todo" && "text-slate-500"
               )}
             >
               {step.label}
@@ -44,7 +44,7 @@ export default function WizardStepper({ steps }: Props) {
                 "h-0.5 flex-1 mx-1 mb-4",
                 step.status === "done"
                   ? "bg-rf-green"
-                  : "bg-rf-subtle"
+                  : "bg-slate-200"
               )}
             />
           )}

@@ -52,8 +52,8 @@ function metaGenericError(code = 100) {
 beforeEach(() => {
   vi.resetAllMocks();
   // axios.isAxiosError must return true for our fake errors
-  mockedAxios.isAxiosError = (e: unknown): e is any => Boolean((e as any)?.isAxiosError);
-  mockedAxios.post = vi.fn();
+  mockedAxios.isAxiosError = vi.fn((e: unknown): e is any => Boolean((e as any)?.isAxiosError)) as any;
+  mockedAxios.post = vi.fn() as any;
 });
 
 afterEach(() => {
@@ -75,7 +75,7 @@ describe("sendInstagramCommentPrivateReply", () => {
     expect(result.ok).toBe(true);
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
 
-    const [url, body] = mockedAxios.post.mock.calls[0];
+    const [url, body] = mockedAxios.post.mock.calls[0] as [string, any];
     expect(url).toContain(`/${IG_BIZ_ID}/messages`);
     expect(body.recipient).toEqual({ comment_id: COMMENT_ID });
     expect(body.message.text).toBe("Hello!");

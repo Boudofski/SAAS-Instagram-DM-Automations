@@ -8,7 +8,6 @@ import { cn, getMonth } from "@/lib/utils";
 import Link from "next/link";
 import { useMemo } from "react";
 import CreateAutomation from "../create-automation";
-import GradientButton from "../gradient-button";
 
 type Props = {};
 
@@ -90,18 +89,9 @@ function AutomationList({}: Props) {
               {automation.createdAt.getUTCFullYear()}
             </p>
 
-            {automation.listener?.listener === "SMARTAI" ? (
-              <GradientButton
-                type="BUTTON"
-                className="w-full bg-background-80 text-white hover:bg-background-80"
-              >
-                Smart AI
-              </GradientButton>
-            ) : (
-              <Button className="bg-background-80 hover:bg-background-80 text-white">
-                Standard
-              </Button>
-            )}
+            <Button className="bg-background-80 hover:bg-background-80 text-white">
+              {automation.active ? "Live" : "Paused"}
+            </Button>
           </div>
         </Link>
       ))}

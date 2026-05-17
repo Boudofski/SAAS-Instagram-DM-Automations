@@ -2,6 +2,7 @@
 
 import { onCurrentUser } from "../user";
 import { findUser } from "../user/queries";
+import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
 import {
   addKeyWords,
   addListener,
@@ -42,6 +43,7 @@ export const saveCampaign = async (payload: CampaignPayload, automationId?: stri
     const cleanPayload: CampaignPayload = {
       ...payload,
       name: payload.name.trim() || "Untitled campaign",
+      triggerMode: payload.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
       keywords: Array.from(
         new Set(
           payload.keywords
@@ -60,8 +62,12 @@ export const saveCampaign = async (payload: CampaignPayload, automationId?: stri
       },
     };
 
-    if (!cleanPayload.post.postid || !cleanPayload.listener.prompt || cleanPayload.keywords.length === 0) {
-      return { status: 400, data: "Campaign needs a post, keyword, and DM message" };
+    if (!cleanPayload.post.postid || !cleanPayload.listener.prompt) {
+      return { status: 400, data: "Campaign needs a post and DM message" };
+    }
+
+    if (cleanPayload.triggerMode === "SPECIFIC_KEYWORD" && cleanPayload.keywords.length === 0) {
+      return { status: 400, data: "Specific keyword campaigns need at least one keyword" };
     }
 
     const saved = automationId
@@ -216,16 +222,21 @@ export const getProfilePosts = async () => {
 
   try {
     const profile = await findUser(user.id);
-    const integration = profile?.integrations[0];
-    if (!integration?.token) {
-      console.log("[instagram-media] fetch skipped: no connected Instagram token");
-      return { status: 200, data: { data: [] } };
+    const connection = resolveInstagramMediaConnection(profile?.integrations);
+    if (!connection.ok) {
+      console.log("[instagram-media] fetch skipped: missing connected Instagram token or business account");
+      return {
+        status: 401,
+        data: { data: [], error: connection.error },
+      };
     }
 
+    const baseUrl = process.env.INSTAGRAM_BASE_URL || "https://graph.facebook.com/v20.0";
     const posts = await fetch(
-      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,thumbnail_url,media_type,timestamp,permalink&limit=20`,
+      `${baseUrl}/${connection.instagramBusinessAccountId}/media?fields=id,caption,media_url,thumbnail_url,media_type,timestamp,permalink&limit=25`,
       {
-        headers: { Authorization: `Bearer ${integration.token}` },
+        headers: { Authorization: `Bearer ${connection.token}` },
+        next: { revalidate: 60 },
       }
     );
 
@@ -236,13 +247,19 @@ export const getProfilePosts = async () => {
       status: posts.status,
       message: parsed?.error?.message ?? "unknown error",
     });
-    return { status: 404 };
+    return {
+      status: posts.status,
+      data: {
+        data: [],
+        error: instagramMediaFetchError(posts.status),
+      },
+    };
   } catch (error: any) {
     console.log("[instagram-media] fetch error", {
       message: error instanceof Error ? error.message : String(error),
     });
 
-    return { status: 500 };
+    return { status: 500, data: { data: [], error: "AP3k could not load posts right now." } };
   }
 };
 

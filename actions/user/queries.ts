@@ -10,6 +10,7 @@ export const findUser = async (clerkId: string) => {
     include: {
       subscription: true,
       integrations: {
+        orderBy: { createdAt: "desc" },
         select: {
           id: true,
           token: true,

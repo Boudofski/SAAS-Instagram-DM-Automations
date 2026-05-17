@@ -90,15 +90,13 @@ export default function CampaignCard({
       <Badge
         className={cn(
           "w-fit text-xs font-bold flex-shrink-0 rounded-full",
-          listenerType === "SMARTAI"
-            ? "bg-rf-purple/10 text-rf-purple border-rf-purple/25"
-            : isActive
+          isActive
             ? "bg-rf-green/10 text-rf-green border-rf-green/25"
             : "bg-rf-amber/10 text-rf-amber border-rf-amber/25"
         )}
         variant="outline"
       >
-        {listenerType === "SMARTAI" ? "Smart AI" : isActive ? "Live" : "Paused"}
+        {isActive ? "Live" : "Paused"}
       </Badge>
     </Link>
   );

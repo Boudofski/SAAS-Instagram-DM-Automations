@@ -47,7 +47,12 @@ export default function DmEditor({
     <div className="flex flex-col gap-4">
       {/* Template picker header */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-rf-text">DM message</span>
+        <div>
+          <span className="text-sm font-semibold text-slate-950">Private message</span>
+          <p className="mt-1 text-xs text-slate-500">
+            This message is sent privately after the user comments.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setShowTemplates((s) => !s)}
@@ -65,8 +70,8 @@ export default function DmEditor({
               type="button"
               onClick={() => { onChange(t.text); setShowTemplates(false); }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg
-                         bg-rf-surface2 border border-rf-border hover:border-rf-blue/40
-                         text-rf-muted hover:text-rf-text transition-all"
+                         bg-white border border-slate-200 hover:border-rf-blue/40
+                         text-slate-600 hover:text-slate-950 transition-all"
             >
               {t.icon} {t.label}
             </button>
@@ -80,9 +85,11 @@ export default function DmEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Hey {{first_name}}! Here's what you asked for → {{link}}"
         rows={4}
-        className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-4 py-3.5 text-sm
-                   text-rf-text placeholder:text-rf-subtle outline-none focus:border-rf-blue/60
-                   resize-none transition-colors leading-relaxed"
+        dir="auto"
+        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm
+                   leading-relaxed text-slate-950 outline-none transition-colors
+                   placeholder:text-slate-400 selection:bg-rf-blue selection:text-white
+                   focus:border-pink-300 focus:ring-2 focus:ring-pink-100 disabled:bg-slate-100 disabled:text-slate-500"
       />
 
       {/* Variable chips */}
@@ -102,45 +109,47 @@ export default function DmEditor({
       </div>
 
       {/* CTA button section */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-3">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-rf-muted">CTA button</p>
-          <span className="text-[10px] text-rf-subtle">optional</span>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">CTA</p>
+          <span className="text-[10px] text-slate-500">optional</span>
         </div>
         <input
           type="text"
           value={ctaButtonTitle}
           onChange={(e) => onCtaButtonTitleChange(e.target.value)}
-          placeholder='Button label — e.g. "Get the guide"'
-          className="bg-white/[0.04] border border-white/15 rounded-xl px-4 py-3 text-sm
-                     text-rf-text placeholder:text-rf-subtle outline-none focus:border-rf-blue/60
-                     transition-colors"
+          placeholder='CTA label — e.g. "Get the guide"'
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm
+                     text-slate-950 placeholder:text-slate-400 outline-none transition-colors
+                     selection:bg-rf-blue selection:text-white focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
         />
         <input
           type="url"
           value={ctaLink}
           onChange={(e) => onCtaLinkChange(e.target.value)}
-          placeholder="Button URL — e.g. https://yoursite.com/guide"
-          className="bg-white/[0.04] border border-white/15 rounded-xl px-4 py-3 text-sm
-                     text-rf-text placeholder:text-rf-subtle outline-none focus:border-rf-blue/60
-                     transition-colors"
+          placeholder="CTA URL — e.g. https://yoursite.com/guide"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm
+                     text-slate-950 placeholder:text-slate-400 outline-none transition-colors
+                     selection:bg-rf-blue selection:text-white focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
         />
-        <p className="text-[11px] text-rf-subtle leading-relaxed">
-          Instagram doesn&apos;t support button templates in all DM contexts. AP3k appends the link
-          to your message text so the recipient always receives it. The button below shows how it
-          looks when the API supports it.
+        <p className="text-[11px] text-slate-500 leading-relaxed">
+          If buttons are not supported by Meta in this context, AP3k appends the link to the
+          message text.
         </p>
       </div>
 
       {/* Live preview */}
       {value && (
         <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/5 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-rf-muted mb-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
             Preview
           </p>
           <div className="flex flex-col items-start gap-2 max-w-[85%]">
-            <div className="bg-white/[0.07] border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3
-                            text-sm text-rf-text leading-relaxed">
+            <div
+              dir="auto"
+              className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3
+                         text-sm leading-relaxed text-slate-950 shadow-sm whitespace-pre-wrap"
+            >
               {preview.split("\n").map((line, i, arr) => (
                 <span key={i}>
                   {line}

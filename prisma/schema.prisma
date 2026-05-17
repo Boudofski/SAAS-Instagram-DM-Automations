@@ -77,6 +77,7 @@ model Automation {
   createdAt    DateTime          @default(now())
   active       Boolean           @default(false)
   matchingMode MATCHING_MODE     @default(CONTAINS)
+  triggerMode  String            @default("SPECIFIC_KEYWORD")
   trigger      Trigger[]
   listener     Listener?
   posts        Post[]

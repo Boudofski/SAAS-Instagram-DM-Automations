@@ -15,7 +15,7 @@ import {
   trackResponse,
 } from "@/actions/webhook/queries";
 import { verifyMetaSignature } from "@/lib/webhook-signature";
-import { matchKeywordWithMode } from "@/lib/matching";
+import { resolveCommentTriggerMatch } from "@/lib/matching";
 import {
   formatSafeMetaError,
   getSafeMetaError,
@@ -374,11 +374,12 @@ async function processEntry(
       });
 
       // 2. Match keyword using this automation's matching mode
-      const matchedKeyword = matchKeywordWithMode(
-        commentText,
-        automation.keywords,
-        automation.matchingMode
-      );
+      const matchedKeyword = resolveCommentTriggerMatch({
+        text: commentText,
+        keywords: automation.keywords,
+        mode: automation.matchingMode,
+        triggerMode: automation.triggerMode,
+      });
 
       if (!matchedKeyword) {
         console.log(`[webhook] automation match: none (automationId=${automation.id} mode=${automation.matchingMode})`);

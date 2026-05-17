@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { matchKeywordWithMode } from "./matching";
+import { ANY_COMMENT_KEYWORD, matchKeywordWithMode, resolveCommentTriggerMatch } from "./matching";
 
 const keywords = [
   { word: "GUIDE" },
@@ -57,5 +57,48 @@ describe("matchKeywordWithMode — edge cases", () => {
     const multi = [{ word: "FREE" }, { word: "free guide" }];
     const result = matchKeywordWithMode("get free guide now", multi, "CONTAINS");
     expect(result).toBe("FREE");
+  });
+});
+
+describe("resolveCommentTriggerMatch", () => {
+  it("matches any-comment trigger without keywords", () => {
+    expect(
+      resolveCommentTriggerMatch({
+        text: "anything at all",
+        keywords: [],
+        mode: "CONTAINS",
+        triggerMode: "ANY_COMMENT",
+      })
+    ).toBe(ANY_COMMENT_KEYWORD);
+  });
+
+  it("keeps specific keyword contains and exact behavior", () => {
+    expect(
+      resolveCommentTriggerMatch({
+        text: "please send guide",
+        keywords,
+        mode: "CONTAINS",
+        triggerMode: "SPECIFIC_KEYWORD",
+      })
+    ).toBe("GUIDE");
+    expect(
+      resolveCommentTriggerMatch({
+        text: "please send guide",
+        keywords,
+        mode: "EXACT",
+        triggerMode: "SPECIFIC_KEYWORD",
+      })
+    ).toBeNull();
+  });
+
+  it("does not make legacy empty-keyword campaigns match every comment", () => {
+    expect(
+      resolveCommentTriggerMatch({
+        text: "anything",
+        keywords: [],
+        mode: "CONTAINS",
+        triggerMode: "SPECIFIC_KEYWORD",
+      })
+    ).toBeNull();
   });
 });

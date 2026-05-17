@@ -3,15 +3,16 @@
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-type MatchingMode = "EXACT" | "CONTAINS" | "SMART_AI";
+type MatchingMode = "EXACT" | "CONTAINS";
 
 type Props = {
+  triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
   keywords: string[];
   matchingMode: MatchingMode;
+  onTriggerModeChange: (mode: "SPECIFIC_KEYWORD" | "ANY_COMMENT") => void;
   onAdd: (word: string) => void;
   onRemove: (word: string) => void;
   onModeChange: (mode: MatchingMode) => void;
-  isProUser?: boolean;
 };
 
 const KW_COLOURS = [
@@ -21,14 +22,13 @@ const KW_COLOURS = [
   "bg-rf-green/10 text-rf-green border-rf-green/25",
 ];
 
-const MODES: { value: MatchingMode; label: string; desc: string; pro?: boolean }[] = [
+const MODES: { value: MatchingMode; label: string; desc: string }[] = [
   { value: "CONTAINS", label: "Contains",   desc: "Keyword appears anywhere in comment" },
   { value: "EXACT",    label: "Exact match", desc: "Comment is exactly this word" },
-  { value: "SMART_AI", label: "Smart AI",    desc: "AI detects intent", pro: true },
 ];
 
 export default function KeywordInput({
-  keywords, matchingMode, onAdd, onRemove, onModeChange, isProUser,
+  triggerMode, keywords, matchingMode, onTriggerModeChange, onAdd, onRemove, onModeChange,
 }: Props) {
   const [value, setValue] = useState("");
 
@@ -41,6 +41,47 @@ export default function KeywordInput({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[
+          {
+            value: "SPECIFIC_KEYWORD" as const,
+            label: "Specific keyword",
+            desc: "Only trigger when the comment contains one of your keywords.",
+          },
+          {
+            value: "ANY_COMMENT" as const,
+            label: "Any comment",
+            desc: "Trigger for every comment on the selected post scope.",
+          },
+        ].map((mode) => (
+          <button
+            key={mode.value}
+            type="button"
+            onClick={() => onTriggerModeChange(mode.value)}
+            className={cn(
+              "rounded-2xl border-2 p-4 text-left transition-all",
+              triggerMode === mode.value
+                ? "border-rf-blue bg-rf-blue/10 shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
+                : "border-slate-200 bg-white hover:border-rf-blue/40"
+            )}
+          >
+            <span className="text-sm font-black text-slate-950">{mode.label}</span>
+            <span className="mt-1 block text-xs leading-relaxed text-slate-500">{mode.desc}</span>
+          </button>
+        ))}
+      </div>
+
+      {triggerMode === "ANY_COMMENT" && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-bold">Every comment will trigger this automation.</p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-800">
+            Use carefully to avoid sending too many public replies or DMs.
+          </p>
+        </div>
+      )}
+
+      {triggerMode === "SPECIFIC_KEYWORD" && (
+        <>
       {/* Input row */}
       <div className="flex gap-2.5">
         <input
@@ -49,9 +90,9 @@ export default function KeywordInput({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder='Type a keyword (e.g. "link", "guide", "yes")'
-          className="flex-1 bg-rf-surface/80 border border-white/10 rounded-xl px-4 py-3 text-sm
-                     text-rf-text placeholder:text-rf-subtle outline-none focus:border-rf-blue
-                     transition-colors"
+          className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm
+                     text-slate-950 placeholder:text-slate-400 outline-none transition-colors
+                     focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
         />
         <button
           type="button"
@@ -88,33 +129,28 @@ export default function KeywordInput({
       )}
 
       {/* Matching mode */}
-      <div className="flex gap-2 bg-rf-surface/80 border border-white/10 rounded-2xl p-3">
+      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
         {MODES.map((m) => (
           <button
             key={m.value}
             type="button"
-            disabled={m.pro && !isProUser}
-            onClick={() => (!m.pro || isProUser) ? onModeChange(m.value) : undefined}
+            onClick={() => onModeChange(m.value)}
             className={cn(
               "flex-1 rounded-lg px-3 py-2.5 text-center transition-all border",
               matchingMode === m.value
-                ? "bg-ap3k-gradient-soft border-rf-pink/30 text-rf-text"
-                : "border-transparent hover:bg-white/5 text-rf-muted",
-              m.pro && !isProUser && "opacity-50 cursor-not-allowed"
+                ? "border-rf-blue bg-white text-slate-950 shadow-sm"
+                : "border-transparent text-slate-500 hover:bg-white"
             )}
           >
             <div className="text-xs font-bold flex items-center justify-center gap-1.5">
               {m.label}
-              {m.pro && (
-                <span className="bg-ap3k-gradient text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                  PRO
-                </span>
-              )}
             </div>
-            <div className="text-[10px] text-rf-muted mt-0.5">{m.desc}</div>
+            <div className="mt-0.5 text-[10px] text-slate-500">{m.desc}</div>
           </button>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }

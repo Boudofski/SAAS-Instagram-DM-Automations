@@ -24,7 +24,7 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For creators running active comment-to-DM funnels.",
-    features: ["Unlimited campaigns", "Unlimited DMs", "Smart AI replies", "Lead export"],
+    features: ["Unlimited campaigns", "Unlimited DMs", "Public reply fallback", "Lead export"],
     href: "/payment?plan=creator",
   },
   AGENCY: {

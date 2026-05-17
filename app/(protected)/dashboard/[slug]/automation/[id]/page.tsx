@@ -25,7 +25,8 @@ export default async function CampaignDetailPage({ params }: Props) {
   const logsResult = await getAutomationLogs(params.id);
   const activity = logsResult.status === 200 ? (logsResult.data as any[]) : [];
 
-  const isIncomplete = !automation.listener || !automation.posts?.length || !automation.keywords?.length;
+  const isAnyComment = automation.triggerMode === "ANY_COMMENT";
+  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length);
 
   const replyRate =
     stats && stats.commentsReceived > 0
@@ -65,11 +66,6 @@ export default async function CampaignDetailPage({ params }: Props) {
             >
               {automation.active ? "● Live" : "● Paused"}
             </Badge>
-            {automation.listener?.listener === "SMARTAI" && (
-              <Badge className="bg-rf-purple/10 text-rf-purple border-rf-purple/25" variant="outline">
-                Smart AI
-              </Badge>
-            )}
           </div>
         </div>
         <ActiveAutomationButton id={params.id} />
@@ -85,7 +81,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               This campaign is missing{" "}
               {[
                 !automation.posts?.length && "a post",
-                !automation.keywords?.length && "keywords",
+                !isAnyComment && !automation.keywords?.length && "keywords",
                 !automation.listener && "a DM message",
               ]
                 .filter(Boolean)
@@ -134,7 +130,9 @@ export default async function CampaignDetailPage({ params }: Props) {
               label="Condition"
               title="Keyword Matched"
               body={
-                automation.keywords?.length
+                isAnyComment
+                  ? "Every comment triggers this campaign."
+                  : automation.keywords?.length
                   ? automation.keywords.map((keyword: any) => keyword.word).join(", ")
                   : "No keywords configured."
               }
@@ -164,7 +162,8 @@ export default async function CampaignDetailPage({ params }: Props) {
           </p>
           <div className="mt-5 space-y-4">
             <SettingsRow label="Status" value={automation.active ? "Live" : "Paused"} />
-            <SettingsRow label="Matching" value={automation.matchingMode ?? "CONTAINS"} />
+            <SettingsRow label="Trigger mode" value={isAnyComment ? "Any comment" : "Specific keyword"} />
+            <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
             <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />
             <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />
           </div>
@@ -251,9 +250,13 @@ export default async function CampaignDetailPage({ params }: Props) {
 
           {/* Keywords */}
           <div>
-            <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Keywords</p>
+            <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Trigger</p>
             <div className="flex flex-wrap gap-2">
-              {automation.keywords?.length > 0 ? (
+              {isAnyComment ? (
+                <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-rf-blue/10 text-rf-blue border-rf-blue/20">
+                  Every comment
+                </span>
+              ) : automation.keywords?.length > 0 ? (
                 automation.keywords.map((kw: any, i: number) => (
                   <span
                     key={kw.id}
@@ -409,7 +412,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                   </p>
                   {item.errorMessage && (
                     <p className="mt-2 rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-2 text-xs text-red-700">
-                      {item.errorMessage}
+                      {formatLogError(item.errorMessage)}
                     </p>
                   )}
                 </div>
@@ -467,10 +470,32 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
 }
 
 function formatActivityType(type: string) {
+  const friendly: Record<string, string> = {
+    WEBHOOK_RECEIVED: "Comment webhook received",
+    COMMENT_RECEIVED: "Comment received",
+    KEYWORD_MATCHED: "Trigger matched",
+    PUBLIC_REPLY_SENT: "Public reply sent",
+    PUBLIC_REPLY_FAILED: "Public reply failed",
+    DM_SENT: "Private DM sent",
+    DM_FAILED: "Private DM failed",
+    DUPLICATE_SKIPPED: "Duplicate skipped",
+    NO_MATCH: "No trigger match",
+    DM_FAILED_FAILED: "Private DM failed",
+    COMMENT_REPLY_SENT: "Public reply sent",
+    COMMENT_REPLY_FAILED: "Public reply failed",
+  };
+  if (friendly[type]) return friendly[type];
   return type
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatLogError(message: string) {
+  if (message.includes("code=3") || message.includes("capability") || message.includes("permission")) {
+    return "Meta blocked private DM until instagram_manage_messages capability is approved.";
+  }
+  return message;
 }
 
 function getActivityTone(type: string, status?: string) {

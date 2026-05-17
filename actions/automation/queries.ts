@@ -7,6 +7,7 @@ export type CampaignPayload = {
   name: string;
   active: boolean;
   matchingMode: MATCHING_MODE;
+  triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
   post: {
     postid: string;
     caption?: string;
@@ -87,15 +88,18 @@ export const createCompleteAutomation = async (
           name: payload.name,
           active: payload.active,
           matchingMode: payload.matchingMode,
+          triggerMode: payload.triggerMode,
           posts: {
             create: payload.post,
           },
-          keywords: {
-            createMany: {
-              data: payload.keywords.map((word) => ({ word })),
-              skipDuplicates: true,
+          ...(payload.keywords.length > 0 && {
+            keywords: {
+              createMany: {
+                data: payload.keywords.map((word) => ({ word })),
+                skipDuplicates: true,
+              },
             },
-          },
+          }),
           trigger: {
             create: { type: "COMMENT" },
           },
@@ -211,13 +215,16 @@ export const updateCompleteAutomation = async (
         name: payload.name,
         active: payload.active,
         matchingMode: payload.matchingMode,
+        triggerMode: payload.triggerMode,
         posts: { create: payload.post },
-        keywords: {
-          createMany: {
-            data: payload.keywords.map((word) => ({ word })),
-            skipDuplicates: true,
+        ...(payload.keywords.length > 0 && {
+          keywords: {
+            createMany: {
+              data: payload.keywords.map((word) => ({ word })),
+              skipDuplicates: true,
+            },
           },
-        },
+        }),
         trigger: { create: { type: "COMMENT" } },
         listener: { create: payload.listener },
       },
@@ -237,6 +244,7 @@ export const duplicateAutomationQuery = async (
     name: `${automation.name || "Untitled campaign"} copy`,
     active: false,
     matchingMode: automation.matchingMode,
+    triggerMode: (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ?? "SPECIFIC_KEYWORD",
     post: {
       postid: automation.posts[0].postid,
       caption: automation.posts[0].caption ?? undefined,

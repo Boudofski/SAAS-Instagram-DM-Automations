@@ -3,10 +3,11 @@
 import {
   saveCampaign,
 } from "@/actions/automation";
+import { canAdvancePublicReplyStep, canAdvanceTriggerStep } from "@/lib/campaign-validation";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
+export type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 type SelectedPost = {
   postid: string;
@@ -18,21 +19,23 @@ type SelectedPost = {
 export type WizardData = {
   post: SelectedPost | null;
   campaignName: string;
+  triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
   keywords: string[];
-  matchingMode: "EXACT" | "CONTAINS" | "SMART_AI";
+  matchingMode: "EXACT" | "CONTAINS";
   dmMessage: string;
   ctaLink: string;
   ctaButtonTitle: string;
   publicReply: string;
   publicReply2: string;
   publicReply3: string;
-  aiMode: boolean;
+  publicReplyEnabled: boolean;
   active: boolean;
 };
 
 const INITIAL: WizardData = {
   post: null,
   campaignName: "",
+  triggerMode: "SPECIFIC_KEYWORD",
   keywords: [],
   matchingMode: "CONTAINS",
   dmMessage: "",
@@ -41,7 +44,7 @@ const INITIAL: WizardData = {
   publicReply: "",
   publicReply2: "",
   publicReply3: "",
-  aiMode: false,
+  publicReplyEnabled: true,
   active: true,
 };
 
@@ -55,20 +58,25 @@ export function useWizard(slug: string, automationId?: string) {
   const update = (partial: Partial<WizardData>) =>
     setData((prev) => ({ ...prev, ...partial }));
 
-  const next = () => setStep((s) => Math.min(6, s + 1) as WizardStep);
+  const next = () => setStep((s) => Math.min(5, s + 1) as WizardStep);
   const back = () => setStep((s) => Math.max(1, s - 1) as WizardStep);
   const goTo = (s: WizardStep) => setStep(s);
 
   const canAdvance = (): boolean => {
     if (step === 1) return !!data.post;
-    if (step === 2) return data.keywords.length > 0;
+    if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
     if (step === 3) return data.dmMessage.trim().length > 0;
+    if (step === 4) return canAdvancePublicReplyStep(data.publicReplyEnabled, [data.publicReply, data.publicReply2, data.publicReply3]);
     return true;
   };
 
-  const activate = async () => {
-    if (!data.post || data.keywords.length === 0 || !data.dmMessage.trim()) {
+  const activate = async (activeOverride?: boolean) => {
+    if (!data.post || !data.dmMessage.trim()) {
       setError("Please complete all required steps before activating.");
+      return;
+    }
+    if (data.triggerMode === "SPECIFIC_KEYWORD" && data.keywords.length === 0) {
+      setError("Add at least one keyword or switch the trigger to Any comment.");
       return;
     }
 
@@ -78,16 +86,17 @@ export function useWizard(slug: string, automationId?: string) {
     try {
       const saved = await saveCampaign({
         name: data.campaignName,
-        active: data.active,
+        active: typeof activeOverride === "boolean" ? activeOverride : data.active,
         matchingMode: data.matchingMode,
+        triggerMode: data.triggerMode,
         post: data.post,
-        keywords: data.keywords,
+        keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
         listener: {
-          listener: data.aiMode ? "SMARTAI" : "MESSAGE",
+          listener: "MESSAGE",
           prompt: data.dmMessage,
-          commentReply: data.publicReply || undefined,
-          commentReply2: data.publicReply2 || undefined,
-          commentReply3: data.publicReply3 || undefined,
+          commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
+          commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
+          commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
           ctaLink: data.ctaLink || undefined,
           ctaButtonTitle: data.ctaButtonTitle || undefined,
         },

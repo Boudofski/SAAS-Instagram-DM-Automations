@@ -63,7 +63,7 @@ export default function AutomationTable({
               <option value="name">Name A-Z</option>
             </select>
             <Button type="button" variant="outline" disabled className="h-11 rounded-xl border-slate-200">
-              Export soon
+              Export coming soon
             </Button>
           </div>
         </div>
@@ -75,10 +75,9 @@ export default function AutomationTable({
             <tr>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Post/Reel</th>
-              <th className="px-4 py-3">Keywords</th>
+              <th className="px-4 py-3">Trigger</th>
               <th className="px-4 py-3">Runs</th>
               <th className="px-4 py-3">Leads</th>
-              <th className="px-4 py-3">Button clicks</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -86,7 +85,7 @@ export default function AutomationTable({
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
                   No automations match your search.
                 </td>
               </tr>
@@ -96,6 +95,7 @@ export default function AutomationTable({
                 const isAny = post?.postid === "ANY";
                 const runs = automation.listener?.commentCount ?? 0;
                 const leads = automation.leads?.length ?? automation._count?.leads ?? 0;
+                const isAnyComment = automation.triggerMode === "ANY_COMMENT";
 
                 return (
                   <tr key={automation.id} className="text-sm text-slate-700">
@@ -113,7 +113,7 @@ export default function AutomationTable({
                           <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600">
                             {automation.name || "Untitled automation"}
                           </Link>
-                          <p className="text-xs text-slate-500">{automation.listener?.listener === "SMARTAI" ? "Smart AI" : "Standard DM"}</p>
+                          <p className="text-xs text-slate-500">Private DM</p>
                         </div>
                       </div>
                     </td>
@@ -124,7 +124,11 @@ export default function AutomationTable({
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex max-w-[220px] flex-wrap gap-1.5">
-                        {(automation.keywords ?? []).slice(0, 3).map((keyword: any) => (
+                        {isAnyComment ? (
+                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">
+                            Any comment
+                          </span>
+                        ) : (automation.keywords ?? []).slice(0, 3).map((keyword: any) => (
                           <span key={keyword.id ?? keyword.word} className="rounded-full border border-pink-100 bg-pink-50 px-2 py-0.5 text-xs font-bold text-pink-700">
                             {keyword.word}
                           </span>
@@ -133,7 +137,6 @@ export default function AutomationTable({
                     </td>
                     <td className="px-4 py-4 font-black text-slate-950">{runs}</td>
                     <td className="px-4 py-4 font-black text-slate-950">{leads}</td>
-                    <td className="px-4 py-4 text-slate-400">Soon</td>
                     <td className="px-4 py-4">
                       <span className={[
                         "rounded-full px-2.5 py-1 text-xs font-black",
