@@ -1,7 +1,15 @@
 "use server";
 
 import { replaySavedWebhookEvent, simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
-import { requireOwnerAdmin, maskSecret } from "@/lib/admin";
+import {
+  adminEnvironmentLabel,
+  classifyDeliveryError,
+  formatAdminDate,
+  getTopAdminIssue,
+  sanitizeAdminPayload,
+  stripeCustomerDashboardUrl,
+} from "@/lib/admin-control-center";
+import { maskSecret, requireOwnerAdmin } from "@/lib/admin";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
 import {
@@ -10,89 +18,90 @@ import {
   shouldShowDevelopmentModeDeliveryBanner,
 } from "@/lib/webhook-pipeline-diagnostics";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 type SearchParams = {
   q?: string;
   eventType?: string;
   tab?: string;
-  testSince?: string; // ISO timestamp — filters webhook events after this time
+  testSince?: string;
 };
 
 const TABS = [
-  { id: "overview",     label: "Overview" },
-  { id: "meta",         label: "Meta Health" },
-  { id: "webhooks",     label: "Webhooks" },
+  { id: "overview", label: "Overview" },
+  { id: "users", label: "Users" },
+  { id: "subscriptions", label: "Subscriptions" },
   { id: "integrations", label: "Integrations" },
-  { id: "campaigns",    label: "Campaigns" },
-  { id: "leads",        label: "Leads & Messages" },
-  { id: "users",        label: "Users" },
-  { id: "system",       label: "System" },
+  { id: "campaigns", label: "Campaigns" },
+  { id: "webhooks", label: "Webhooks" },
+  { id: "messages", label: "Messages & Replies" },
+  { id: "meta", label: "Meta Health" },
+  { id: "compliance", label: "App Review" },
+  { id: "system", label: "System" },
+  { id: "danger", label: "Danger Zone" },
 ] as const;
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
+export default async function AdminPage({ searchParams }: { searchParams?: SearchParams }) {
   const admin = await requireOwnerAdmin();
+  const tab = TABS.some((item) => item.id === searchParams?.tab) ? searchParams!.tab! : "overview";
   const q = searchParams?.q?.trim();
   const eventType = searchParams?.eventType?.trim();
-  const tab = searchParams?.tab ?? "overview";
-  const testSince = searchParams?.testSince
-    ? new Date(searchParams.testSince)
+  const qUuid = q && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)
+    ? q
     : null;
-  const testSinceValid = testSince && !Number.isNaN(testSince.getTime());
+  const testSince = searchParams?.testSince ? new Date(searchParams.testSince) : null;
+  const testSinceValid = Boolean(testSince && !Number.isNaN(testSince.getTime()));
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const [
     totalUsers,
+    activeUsers,
     totalIntegrations,
-    activeIntegrations,
+    connectedInstagramAccounts,
     totalCampaigns,
     activeCampaigns,
-    totalWebhookEvents,
-    commentWebhooks,
-    failedWebhooks,
     totalLeads,
+    totalWebhookEvents,
     totalMessageLogs,
-    dmSent,
-    dmFailed,
+    comments24h,
+    matches24h,
+    publicRepliesSent24h,
+    dmsSent24h,
+    dmsFailed24h,
+    signatureFailures24h,
+    tokenMissingFailures24h,
+    revenueSubscriptions,
     metaDiagnostics,
     lastVerifyGet,
     lastPostRaw,
     lastSignatureFailed,
     lastRealComment,
-    lastSimulated,
+    lastInboundDm,
     lastMetaTest,
+    lastSimulated,
     lastKeywordMatched,
-    lastDmSent,
-    lastDmFailed,
     lastPublicReplySent,
     lastPublicReplyFailed,
-    lastInboundDm,
+    lastDmSent,
+    lastDmFailed,
   ] = await Promise.all([
     client.user.count(),
+    client.user.count({ where: { automations: { some: { events: { some: { createdAt: { gte: since24h } } } } } } }),
     client.integrations.count(),
     client.integrations.count({ where: { instagramId: { not: null } } }),
     client.automation.count(),
     client.automation.count({ where: { active: true } }),
-    client.webhookEvent.count(),
-    client.webhookEvent.count({
-      where: { eventType: { in: ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] } },
-    }),
-    client.webhookEvent.count({
-      where: {
-        OR: [
-          { status: "FAILED" },
-          { eventType: { in: ["SIGNATURE_FAILED", "SIGNATURE_VERIFICATION_FAILED"] } },
-          { errorMessage: { not: null } },
-        ],
-      },
-    }),
     client.lead.count(),
+    client.webhookEvent.count(),
     client.messageLog.count(),
-    client.messageLog.count({ where: { messageType: "DM", status: "SENT" } }),
-    client.messageLog.count({ where: { messageType: "DM", status: "FAILED" } }),
+    client.automationEvent.count({ where: { eventType: "COMMENT_RECEIVED", createdAt: { gte: since24h } } }),
+    client.automationEvent.count({ where: { eventType: "KEYWORD_MATCHED", createdAt: { gte: since24h } } }),
+    client.messageLog.count({ where: { messageType: "COMMENT_REPLY", status: "SENT", createdAt: { gte: since24h } } }),
+    client.messageLog.count({ where: { messageType: "DM", status: "SENT", createdAt: { gte: since24h } } }),
+    client.messageLog.count({ where: { messageType: "DM", status: "FAILED", createdAt: { gte: since24h } } }),
+    client.webhookEvent.count({ where: { eventType: "SIGNATURE_FAILED", createdAt: { gte: since24h } } }),
+    client.messageLog.count({ where: { errorMessage: { contains: "token_missing" }, createdAt: { gte: since24h } } }),
+    client.subscription.count({ where: { plan: "PRO" } }),
     getMetaAdminDiagnostics(),
     client.webhookEvent.findFirst({
       where: { eventType: "WEBHOOK_VERIFY_GET" },
@@ -115,30 +124,46 @@ export default async function AdminPage({
       select: {
         id: true,
         automationId: true,
+        eventType: true,
         status: true,
         igAccountId: true,
+        igUserId: true,
         mediaId: true,
         commentId: true,
         errorMessage: true,
         payload: true,
         createdAt: true,
-        eventType: true,
       },
     }),
     client.webhookEvent.findFirst({
-      where: { eventSource: "SIMULATED_INTERNAL" },
+      where: { eventType: "REAL_MESSAGE_EVENT", eventSource: "META_REAL" },
       orderBy: { createdAt: "desc" },
-      select: { status: true, eventType: true, createdAt: true },
+      select: { status: true, errorMessage: true, igAccountId: true, createdAt: true },
     }),
     client.webhookEvent.findFirst({
       where: { eventType: "META_TEST_EVENT" },
       orderBy: { createdAt: "desc" },
-      select: { status: true, createdAt: true, payload: true },
+      select: { status: true, payload: true, createdAt: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventSource: "SIMULATED_INTERNAL" },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, eventType: true, payload: true, createdAt: true },
     }),
     client.automationEvent.findFirst({
       where: { eventType: "KEYWORD_MATCHED" },
       orderBy: { createdAt: "desc" },
       select: { createdAt: true, keyword: true, automationId: true },
+    }),
+    client.messageLog.findFirst({
+      where: { messageType: "COMMENT_REPLY", status: "SENT" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, automationId: true },
+    }),
+    client.messageLog.findFirst({
+      where: { messageType: "COMMENT_REPLY", status: "FAILED" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, errorMessage: true, automationId: true },
     }),
     client.messageLog.findFirst({
       where: { messageType: "DM", status: "SENT" },
@@ -150,165 +175,28 @@ export default async function AdminPage({
       orderBy: { createdAt: "desc" },
       select: { createdAt: true, errorMessage: true, automationId: true },
     }),
-    client.messageLog.findFirst({
-      where: { messageType: "COMMENT_REPLY", status: "SENT" },
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true, automationId: true },
-    }),
-    client.messageLog.findFirst({
-      where: { messageType: "COMMENT_REPLY", status: "FAILED" },
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true, errorMessage: true },
-    }),
-    client.webhookEvent.findFirst({
-      where: { eventType: "REAL_MESSAGE_EVENT", eventSource: "META_REAL" },
-      orderBy: { createdAt: "desc" },
-      select: { status: true, errorMessage: true, igAccountId: true, createdAt: true },
-    }),
   ]);
 
-  // Tab-specific data — only fetch what the active tab needs
-  const [users, integrations, automations, webhookEvents, automationEvents, messageLogs, leads] =
-    await Promise.all([
-      tab === "users"
-        ? client.user.findMany({
-            where: q
-              ? {
-                  OR: [
-                    { email: { contains: q, mode: "insensitive" } },
-                    { firstname: { contains: q, mode: "insensitive" } },
-                    { lastname: { contains: q, mode: "insensitive" } },
-                  ],
-                }
-              : undefined,
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            include: {
-              subscription: true,
-              integrations: {
-                select: {
-                  id: true,
-                  instagramId: true,
-                  instagramUsername: true,
-                  token: true,
-                  expiresAt: true,
-                },
-              },
-              _count: { select: { automations: true } },
-            },
-          })
-        : Promise.resolve([]),
-      tab === "integrations"
-        ? client.integrations.findMany({
-            where: q
-              ? {
-                  OR: [
-                    { instagramUsername: { contains: q, mode: "insensitive" } },
-                    { instagramId: { contains: q } },
-                    { User: { email: { contains: q, mode: "insensitive" } } },
-                  ],
-                }
-              : undefined,
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            include: { User: { select: { email: true, clerkId: true } } },
-          })
-        : Promise.resolve([]),
-      tab === "campaigns"
-        ? client.automation.findMany({
-            where: q
-              ? {
-                  OR: [
-                    { name: { contains: q, mode: "insensitive" } },
-                    { User: { email: { contains: q, mode: "insensitive" } } },
-                  ],
-                }
-              : undefined,
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            include: {
-              User: { select: { email: true, clerkId: true } },
-              _count: { select: { keywords: true, leads: true, messageLogs: true } },
-            },
-          })
-        : Promise.resolve([]),
-      tab === "webhooks"
-        ? client.webhookEvent.findMany({
-            where: {
-              ...(eventType ? { eventType } : {}),
-              ...(testSinceValid ? { createdAt: { gte: testSince! } } : {}),
-              ...(q
-                ? {
-                    OR: [
-                      { eventType: { contains: q, mode: "insensitive" } },
-                      { igAccountId: { contains: q } },
-                      { mediaId: { contains: q } },
-                      { commentId: { contains: q } },
-                      { errorMessage: { contains: q, mode: "insensitive" } },
-                    ],
-                  }
-                : {}),
-            },
-            orderBy: { createdAt: "desc" },
-            take: 50,
-          })
-        : Promise.resolve([]),
-      tab === "leads"
-        ? client.automationEvent.findMany({
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            include: { automation: { select: { name: true } } },
-          })
-        : Promise.resolve([]),
-      tab === "leads"
-        ? client.messageLog.findMany({
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            include: { automation: { select: { name: true } } },
-          })
-        : Promise.resolve([]),
-      tab === "leads"
-        ? client.lead.findMany({
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            include: { automation: { select: { name: true } } },
-          })
-        : Promise.resolve([]),
-    ]);
-
-  const [lastPipelineAutomationEvents, lastPipelineMessageLogs] =
-    lastRealComment?.automationId
-      ? await Promise.all([
-          client.automationEvent.findMany({
-            where: {
-              automationId: lastRealComment.automationId,
-              ...(lastRealComment.commentId ? { commentId: lastRealComment.commentId } : {}),
-            },
-            orderBy: { createdAt: "desc" },
-            take: 20,
-          }),
-          client.messageLog.findMany({
-            where: {
-              automationId: lastRealComment.automationId,
-              ...(lastRealComment.commentId ? { commentId: lastRealComment.commentId } : {}),
-            },
-            orderBy: { createdAt: "desc" },
-            take: 20,
-          }),
-        ])
-      : [[], []];
-
-  const simulationCampaigns = tab === "webhooks"
-    ? await client.automation.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        include: {
-          User: { select: { email: true } },
-          posts: { select: { postid: true } },
-          keywords: { select: { word: true } },
-        },
-      })
-    : [];
+  const [lastPipelineAutomationEvents, lastPipelineMessageLogs] = lastRealComment?.automationId
+    ? await Promise.all([
+        client.automationEvent.findMany({
+          where: {
+            automationId: lastRealComment.automationId,
+            ...(lastRealComment.commentId ? { commentId: lastRealComment.commentId } : {}),
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        }),
+        client.messageLog.findMany({
+          where: {
+            automationId: lastRealComment.automationId,
+            ...(lastRealComment.commentId ? { commentId: lastRealComment.commentId } : {}),
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        }),
+      ])
+    : [[], []];
 
   const lastPipeline = buildWebhookPipelineDiagnostics({
     lastPostRaw,
@@ -318,1152 +206,808 @@ export default async function AdminPage({
     messageLogs: lastPipelineMessageLogs,
   });
   const showDevelopmentDeliveryBanner = shouldShowDevelopmentModeDeliveryBanner(lastPostRaw);
+  const dmCapabilityMissing = lastDmFailed?.errorMessage === "dm_capability_missing";
+  const topIssue = getTopAdminIssue({
+    lastPostRaw,
+    signatureFailures24h,
+    dmCapabilityMissing,
+    tokenMissingFailures24h,
+    dmFailed24h: dmsFailed24h,
+    activeCampaigns,
+  });
 
   const tabHref = (id: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams({
       tab: id,
       ...(q ? { q } : {}),
+      ...(eventType && id === "webhooks" ? { eventType } : {}),
       ...(testSinceValid && searchParams?.testSince ? { testSince: searchParams.testSince } : {}),
       ...extra,
     });
     return `/admin?${params.toString()}`;
   };
 
-  // Compute verdict for the delivery status badge
-  const routeReachable = Boolean(lastPostRaw || lastSimulated || lastMetaTest);
-  const selfTestPassed = Boolean(lastSimulated);
-  const metaTestReached = Boolean(lastMetaTest);
-  const hasRealComment = Boolean(lastRealComment);
-  const realCommentFailed = hasRealComment && lastRealComment!.errorMessage && lastRealComment!.status !== "PROCESSED";
-  const hasKeywordMatch = Boolean(lastKeywordMatched);
-  const hasDmSent = Boolean(lastDmSent);
-  const hasDmFailed = Boolean(lastDmFailed);
-  const dmCapabilityMissing = lastDmFailed?.errorMessage === "dm_capability_missing";
+  const users = tab === "users"
+    ? await client.user.findMany({
+        where: q ? {
+          OR: [
+            { email: { contains: q, mode: "insensitive" } },
+            { firstname: { contains: q, mode: "insensitive" } },
+            { lastname: { contains: q, mode: "insensitive" } },
+            { clerkId: { contains: q } },
+            { integrations: { some: { instagramUsername: { contains: q, mode: "insensitive" } } } },
+            { integrations: { some: { instagramId: { contains: q } } } },
+          ],
+        } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 25,
+        include: {
+          subscription: true,
+          integrations: { select: { instagramUsername: true, instagramId: true, pageId: true } },
+          automations: {
+            select: {
+              id: true,
+              active: true,
+              events: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+              _count: { select: { leads: true } },
+            },
+          },
+          _count: { select: { automations: true, integrations: true } },
+        },
+      })
+    : [];
 
-  type VerdictKey = "A" | "B" | "C" | "D" | "IDLE";
-  let verdict: VerdictKey = "IDLE";
-  let verdictLabel = "";
-  let verdictDetail = "";
-  let verdictColor = "border-slate-200 bg-slate-50 text-slate-700";
+  const subscriptions = tab === "subscriptions"
+    ? await client.subscription.findMany({
+        where: q ? {
+          OR: [
+            { customerId: { contains: q } },
+            { User: { email: { contains: q, mode: "insensitive" } } },
+            { User: { clerkId: { contains: q } } },
+          ],
+        } : undefined,
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+        include: { User: { select: { email: true, clerkId: true } } },
+      })
+    : [];
 
-  if (hasDmSent) {
-    verdict = "D";
-    verdictLabel = "End-to-end working";
-    verdictDetail = `Last DM sent: ${lastDmSent!.createdAt.toLocaleString()}`;
-    verdictColor = "border-emerald-300 bg-emerald-50 text-emerald-800";
-  } else if (hasKeywordMatch && hasDmFailed) {
-    verdict = "C";
-    verdictLabel = dmCapabilityMissing
-      ? "Keyword matched — DM blocked by Meta capability"
-      : "Keyword matched — DM failed";
-    verdictDetail = dmCapabilityMissing
-      ? "Meta rejected the private DM API call with code=3. Public comment reply works. See capability checklist below."
-      : (lastDmFailed?.errorMessage ?? "Check MessageLog for DM failure reason");
-    verdictColor = "border-red-300 bg-red-50 text-red-800";
-  } else if (hasRealComment && realCommentFailed) {
-    verdict = "B";
-    verdictLabel = "Meta delivering comments — matching failed";
-    verdictDetail = lastRealComment?.errorMessage ?? "no_matching_integration or no_active_automation_for_media";
-    verdictColor = "border-amber-300 bg-amber-50 text-amber-800";
-  } else if (selfTestPassed || metaTestReached) {
-    verdict = "A";
-    verdictLabel = "AP3k route works — waiting for Meta real delivery";
-    verdictDetail = "Internal self-test and/or Meta Test button reached AP3k. No real Instagram comment event received yet.";
-    verdictColor = "border-blue-300 bg-blue-50 text-blue-800";
-  }
+  const integrations = tab === "integrations"
+    ? await client.integrations.findMany({
+        where: q ? {
+          OR: [
+            { instagramUsername: { contains: q, mode: "insensitive" } },
+            { instagramId: { contains: q } },
+            { pageId: { contains: q } },
+            { webhookAccountId: { contains: q } },
+            { businessId: { contains: q } },
+            { User: { email: { contains: q, mode: "insensitive" } } },
+          ],
+        } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          createdAt: true,
+          expiresAt: true,
+          instagramId: true,
+          webhookAccountId: true,
+          pageId: true,
+          pageName: true,
+          businessId: true,
+          instagramUsername: true,
+          igAccountSource: true,
+          webhookSubscriptionMode: true,
+          webhookSubscriptionError: true,
+          oauthLastError: true,
+          oauthLastErrorAt: true,
+          token: true,
+          User: { select: { email: true, clerkId: true } },
+        },
+      })
+    : [];
+
+  const campaigns = tab === "campaigns" || tab === "webhooks" || tab === "meta"
+    ? await client.automation.findMany({
+        where: q && tab === "campaigns" ? {
+          OR: [
+            ...(qUuid ? [{ id: qUuid }] : []),
+            { name: { contains: q, mode: "insensitive" } },
+            { User: { email: { contains: q, mode: "insensitive" } } },
+            { posts: { some: { postid: { contains: q } } } },
+          ],
+        } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          User: { select: { email: true, clerkId: true } },
+          keywords: { select: { word: true } },
+          posts: { select: { postid: true, mediaType: true, caption: true } },
+          listener: true,
+          _count: { select: { leads: true, messageLogs: true, events: true } },
+        },
+      })
+    : [];
+
+  const webhookEvents = tab === "webhooks"
+    ? await client.webhookEvent.findMany({
+        where: {
+          ...(eventType ? { eventType } : {}),
+          ...(testSinceValid ? { createdAt: { gte: testSince! } } : {}),
+          ...(q ? {
+            OR: [
+              ...(qUuid ? [{ id: qUuid }] : []),
+              { eventType: { contains: q, mode: "insensitive" } },
+              { igAccountId: { contains: q } },
+              { igUserId: { contains: q } },
+              { mediaId: { contains: q } },
+              { commentId: { contains: q } },
+              { errorMessage: { contains: q, mode: "insensitive" } },
+              { automation: { name: { contains: q, mode: "insensitive" } } },
+            ],
+          } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { automation: { select: { name: true, User: { select: { email: true } } } } },
+      })
+    : [];
+
+  const messageLogs = tab === "messages"
+    ? await client.messageLog.findMany({
+        where: q ? {
+          OR: [
+            { recipientIgId: { contains: q } },
+            { mediaId: { contains: q } },
+            { commentId: { contains: q } },
+            { errorMessage: { contains: q, mode: "insensitive" } },
+            { automation: { name: { contains: q, mode: "insensitive" } } },
+            { automation: { User: { email: { contains: q, mode: "insensitive" } } } },
+          ],
+        } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { automation: { select: { name: true, User: { select: { email: true } } } } },
+      })
+    : [];
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      {/* Header */}
-      <div className="border-b border-red-200 bg-red-50 px-6 py-4 lg:px-10">
-        <div className="mx-auto max-w-7xl flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">
-              Owner Admin — sensitive production data
-            </p>
-            <h1 className="mt-1 text-2xl font-black text-slate-950">AP3k admin</h1>
-            <p className="mt-0.5 text-xs text-red-700">
-              Signed in as {admin.email ?? admin.clerkId}. Tokens and secrets are masked.
-            </p>
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto max-w-[1500px] px-5 py-4 lg:px-8">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-black tracking-tight">AP3k Admin</h1>
+                <Badge tone={adminEnvironmentLabel() === "Production" ? "green" : "amber"}>{adminEnvironmentLabel()}</Badge>
+                <Badge tone="slate">Read-only control center</Badge>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Signed in as <span className="font-bold text-slate-800">{admin.email ?? admin.clerkId}</span> · Last refreshed {formatAdminDate(new Date())}
+              </p>
+            </div>
+            <form className="flex w-full flex-col gap-2 sm:flex-row xl:max-w-2xl">
+              <input type="hidden" name="tab" value={tab} />
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Search current section by email, IG username, campaign, event, comment, media ID"
+                className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-pink-300"
+              />
+              {tab === "webhooks" && (
+                <input
+                  name="eventType"
+                  defaultValue={eventType}
+                  placeholder="Event type"
+                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-pink-300"
+                />
+              )}
+              <button className="rounded-xl bg-slate-950 px-5 py-2 text-sm font-bold text-white">Search</button>
+              <Link href={tabHref(tab)} className="rounded-xl border border-slate-200 px-5 py-2 text-center text-sm font-bold text-slate-700">
+                Refresh
+              </Link>
+            </form>
           </div>
-          <Link href="/dashboard" className="text-xs font-bold text-slate-600 hover:text-slate-950">
-            ← Dashboard
-          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* Tab nav */}
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <div className="flex gap-1 overflow-x-auto">
-            {TABS.map(({ id, label }) => (
+      <div className="mx-auto grid max-w-[1500px] gap-6 px-5 py-6 lg:grid-cols-[250px_1fr] lg:px-8">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <nav className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+            {TABS.map((item) => (
               <Link
-                key={id}
-                href={tabHref(id)}
+                key={item.id}
+                href={tabHref(item.id)}
                 className={[
-                  "shrink-0 border-b-2 px-4 py-3 text-sm font-bold transition-colors",
-                  tab === id
-                    ? "border-pink-500 text-pink-600"
-                    : "border-transparent text-slate-500 hover:text-slate-950",
+                  "mb-1 block rounded-xl px-3 py-2.5 text-sm font-bold transition-colors",
+                  tab === item.id ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950",
                 ].join(" ")}
               >
-                {label}
+                {item.label}
               </Link>
             ))}
-          </div>
-        </div>
-      </div>
+          </nav>
+        </aside>
 
-      <div className="mx-auto max-w-7xl space-y-6 p-6 lg:p-10">
+        <section className="min-w-0 space-y-6">
+          {tab === "overview" && (
+            <>
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <StatCard label="Total users" value={totalUsers} detail={`${activeUsers} active in 24h`} />
+                <StatCard label="Connected IG accounts" value={connectedInstagramAccounts} detail={`${totalIntegrations} integrations total`} />
+                <StatCard label="Active campaigns" value={activeCampaigns} detail={`${totalCampaigns} campaigns total`} />
+                <StatCard label="Leads captured" value={totalLeads} detail={`${comments24h} comments in 24h`} />
+                <StatCard label="Trigger matches 24h" value={matches24h} detail="Keyword and Any Comment matches" />
+                <StatCard label="Public replies 24h" value={publicRepliesSent24h} detail="Sent public comment replies" />
+                <StatCard label="DMs sent 24h" value={dmsSent24h} detail={`${dmsFailed24h} failed in 24h`} tone={dmsFailed24h ? "amber" : "green"} />
+                <StatCard label="Active subscriptions" value={revenueSubscriptions} detail="Read-only Stripe visibility" />
+              </section>
 
-        {/* Global search bar (visible on tabs that support it) */}
-        {(tab === "users" || tab === "integrations" || tab === "campaigns" || tab === "webhooks") && (
-          <form className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row">
-            <input type="hidden" name="tab" value={tab} />
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Search users, accounts, campaigns, events…"
-              className="min-h-11 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-pink-300"
-            />
-            {tab === "webhooks" && (
-              <input
-                name="eventType"
-                defaultValue={eventType}
-                placeholder="Event type filter"
-                className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-pink-300"
+              <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+                <Panel title="Top Issue Right Now">
+                  <div className={`rounded-xl border p-4 ${tonePanel(topIssue.tone)}`}>
+                    <p className="text-lg font-black">{topIssue.label}</p>
+                    <p className="mt-1 text-sm">{topIssue.detail}</p>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <HealthCard label="Meta webhook delivery" value={lastPostRaw ? "Receiving POSTs" : "No raw POST yet"} tone={lastPostRaw ? "green" : "red"} />
+                    <HealthCard label="Last real comment" value={lastRealComment ? `${lastRealComment.status} · ${formatAdminDate(lastRealComment.createdAt)}` : "None"} tone={lastRealComment ? "green" : "amber"} />
+                    <HealthCard label="Public reply status" value={lastPublicReplySent ? `Working · ${formatAdminDate(lastPublicReplySent.createdAt)}` : "No sent reply yet"} tone={lastPublicReplySent ? "green" : "slate"} />
+                    <HealthCard label="DM capability" value={dmCapabilityMissing ? "Meta capability missing" : lastDmSent ? "DM sent" : "No success yet"} tone={dmCapabilityMissing ? "red" : lastDmSent ? "green" : "amber"} />
+                  </div>
+                </Panel>
+
+                <Panel title="Last Pipeline Stage">
+                  {showDevelopmentDeliveryBanner && (
+                    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-900">
+                      {developmentModeDeliveryMessage()}
+                    </div>
+                  )}
+                  <PipelineGrid pipeline={lastPipeline} />
+                </Panel>
+              </section>
+            </>
+          )}
+
+          {tab === "users" && (
+            <Panel title="Users" description="Read-only user inventory. Dangerous account actions are disabled until audit logging and typed confirmations exist.">
+              <DataTable
+                headers={["User", "Clerk ID", "Plan", "Instagram", "Campaigns", "Leads", "Last activity", "Actions"]}
+                rows={users.map((user: any) => {
+                  const leads = user.automations.reduce((sum: number, automation: any) => sum + automation._count.leads, 0);
+                  const lastActivity = user.automations
+                    .flatMap((automation: any) => automation.events.map((event: any) => event.createdAt))
+                    .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0];
+                  return [
+                    <Identity key="user" title={user.email} subtitle={`${user.firstname ?? ""} ${user.lastname ?? ""}`.trim() || "No profile name"} />,
+                    <Mono key="clerk">{user.clerkId}</Mono>,
+                    <Badge key="plan" tone={user.subscription?.plan === "PRO" ? "purple" : "slate"}>{user.subscription?.plan ?? "FREE"}</Badge>,
+                    user.integrations[0]?.instagramUsername ? `@${user.integrations[0].instagramUsername}` : "Not connected",
+                    String(user._count.automations),
+                    String(leads),
+                    formatAdminDate(lastActivity),
+                    <DisabledActions key="actions" labels={["View details later", "Suspend", "Delete data"]} />,
+                  ];
+                })}
+                empty="No users found."
               />
-            )}
-            <button className="rounded-xl bg-slate-950 px-5 py-2 text-sm font-bold text-white">
-              Filter
-            </button>
-          </form>
-        )}
+            </Panel>
+          )}
 
-        {/* ─── OVERVIEW TAB ─── */}
-        {tab === "overview" && (
-          <>
-            {/* Delivery verdict badge */}
-            {verdict !== "IDLE" && (
-              <div className={`rounded-2xl border p-5 ${verdictColor}`}>
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full border border-current px-2.5 py-0.5 text-xs font-black">
-                    {verdict}
-                  </span>
-                  <p className="text-base font-black">{verdictLabel}</p>
+          {tab === "subscriptions" && (
+            <Panel title="Subscriptions" description="Read-only subscription view. Stripe write actions are intentionally disabled in this version.">
+              <DataTable
+                headers={["User", "Plan", "Stripe customer", "Status", "Updated", "Stripe", "Actions"]}
+                rows={subscriptions.map((sub: any) => [
+                  <Identity key="user" title={sub.User?.email ?? "Unknown user"} subtitle={sub.User?.clerkId ?? "No Clerk ID"} />,
+                  <Badge key="plan" tone={sub.plan === "PRO" ? "purple" : "slate"}>{sub.plan}</Badge>,
+                  <Mono key="customer">{sub.customerId ?? "No customer"}</Mono>,
+                  sub.plan === "PRO" ? <Badge key="active" tone="green">Active/internal PRO</Badge> : <Badge key="free" tone="slate">Free</Badge>,
+                  formatAdminDate(sub.updatedAt),
+                  sub.customerId && stripeCustomerDashboardUrl(sub.customerId) ? (
+                    <a key="stripe" className="font-bold text-rf-blue hover:underline" href={stripeCustomerDashboardUrl(sub.customerId)!} target="_blank" rel="noreferrer">Open Stripe</a>
+                  ) : "No link",
+                  <DisabledActions key="actions" labels={["Cancel", "Sync", "Override plan"]} />,
+                ])}
+                empty="No subscription records found."
+              />
+            </Panel>
+          )}
+
+          {tab === "integrations" && (
+            <Panel title="Instagram Integrations" description="Tokens are never displayed. Health badges use stored safe metadata and recent event signals.">
+              <DataTable
+                headers={["Owner", "IG account", "Page", "IG Business ID", "Webhook ID", "Token", "Subscription", "Last error", "Actions"]}
+                rows={integrations.map((integration: any) => [
+                  <Identity key="owner" title={integration.User?.email ?? "Unknown user"} subtitle={integration.User?.clerkId ?? ""} />,
+                  <Identity key="ig" title={integration.instagramUsername ? `@${integration.instagramUsername}` : "No username"} subtitle={integration.igAccountSource ?? "Unknown source"} />,
+                  <Identity key="page" title={integration.pageName ?? "No page"} subtitle={integration.pageId ?? "No Page ID"} />,
+                  <Mono key="ig-id">{integration.instagramId ?? "Missing"}</Mono>,
+                  <Mono key="webhook-id">{integration.webhookAccountId ?? "Missing"}</Mono>,
+                  <Badge key="token" tone={integration.token ? "green" : "red"}>{integration.token ? maskSecret(integration.token) : "Missing"}</Badge>,
+                  <Badge key="sub" tone={integration.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "amber"}>{integration.webhookSubscriptionMode ?? "Unknown"}</Badge>,
+                  integration.oauthLastError ?? integration.webhookSubscriptionError ?? "None",
+                  <DisabledActions key="actions" labels={["Disconnect", "Reconnect required", "Resubscribe"]} />,
+                ])}
+                empty="No integrations found."
+              />
+            </Panel>
+          )}
+
+          {tab === "campaigns" && (
+            <Panel title="Campaigns" description="Admin campaign inventory and delivery counters. Editing is linked/read-only here to avoid tenant confusion.">
+              <DataTable
+                headers={["Owner", "Campaign", "Status", "Trigger", "Post scope", "Replies", "Messages", "Created", "Actions"]}
+                rows={campaigns.map((campaign: any) => {
+                  const keywords = campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : campaign.keywords.map((kw: any) => kw.word).join(", ") || "No keywords";
+                  const postScope = campaign.posts[0]?.postid === "ANY" ? "Any post" : campaign.posts[0]?.postid ?? "No post";
+                  const publicReplyEnabled = Boolean(campaign.listener?.commentReply || campaign.listener?.commentReply2 || campaign.listener?.commentReply3);
+                  return [
+                    campaign.User?.email ?? "Unknown user",
+                    <Identity key="campaign" title={campaign.name} subtitle={campaign.id} />,
+                    <Badge key="status" tone={campaign.active ? "green" : "slate"}>{campaign.active ? "Active" : "Paused"}</Badge>,
+                    <Identity key="trigger" title={campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} subtitle={`${campaign.matchingMode} · ${keywords}`} />,
+                    <Mono key="post">{postScope}</Mono>,
+                    publicReplyEnabled ? <Badge key="reply" tone="green">Enabled</Badge> : <Badge key="reply" tone="slate">Off</Badge>,
+                    `${campaign._count.messageLogs} logs · ${campaign._count.leads} leads`,
+                    formatAdminDate(campaign.createdAt),
+                    <DisabledActions key="actions" labels={["Activate/pause", "Delete", "Duplicate"]} />,
+                  ];
+                })}
+                empty="No campaigns found."
+              />
+            </Panel>
+          )}
+
+          {tab === "webhooks" && (
+            <>
+              <Panel title="Webhook Diagnostics">
+                <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                  <HealthCard label="Last raw POST" value={formatAdminDate(lastPostRaw?.createdAt)} tone={lastPostRaw ? "green" : "red"} />
+                  <HealthCard label="GET verify" value={lastVerifyGet ? `${lastVerifyGet.status} · ${formatAdminDate(lastVerifyGet.createdAt)}` : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
+                  <HealthCard label="Signature failures 24h" value={String(signatureFailures24h)} tone={signatureFailures24h ? "red" : "green"} />
+                  <HealthCard label="Real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
+                  <HealthCard label="Inbound DM" value={formatAdminDate(lastInboundDm?.createdAt)} tone={lastInboundDm ? "green" : "slate"} />
+                  <HealthCard label="Internal self-test" value={formatAdminDate(lastSimulated?.createdAt)} tone={lastSimulated ? "green" : "slate"} />
                 </div>
-                <p className="mt-2 text-sm">{verdictDetail}</p>
-              </div>
-            )}
-
-            {/* Inbound Instagram message received banner */}
-            {lastInboundDm && lastInboundDm.errorMessage === "inbound_message_received_no_dm_automation" && (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">
-                  Inbound Instagram Message Received
-                </p>
-                <h2 className="mt-2 text-lg font-black text-blue-900">
-                  Instagram DM webhook delivery works.
-                </h2>
-                <p className="mt-2 text-sm text-blue-800 leading-relaxed">
-                  AP3k received a real inbound DM from Instagram at{" "}
-                  <strong>{new Date(lastInboundDm.createdAt).toLocaleString()}</strong>. The webhook
-                  pipeline (signature verification → entry parsing → sender extraction) is fully operational.
-                  No DM keyword automation is configured yet, so the message was acknowledged and recorded.
-                </p>
-                <p className="mt-3 text-sm text-blue-800 leading-relaxed">
-                  <strong>DM keyword automations are not enabled yet.</strong> To auto-respond to inbound DMs,
-                  create a campaign and configure DM keyword triggers.
-                </p>
-              </div>
-            )}
-
-            {/* DM capability missing banner */}
-            {dmCapabilityMissing && (
-              <div className="rounded-2xl border border-red-300 bg-red-50 p-5 space-y-4">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-red-700">
-                    DM API Capability Missing — Meta code=3
-                  </p>
-                  <h2 className="mt-2 text-lg font-black text-red-900">
-                    {lastPublicReplySent ? "Public comment reply working." : "Public comment reply status unknown."} Auto DM is blocked by the Meta app.
-                  </h2>
-                  <p className="mt-2 text-sm text-red-800 leading-relaxed">
-                    Meta returned <code className="rounded bg-red-100 px-1 font-mono text-xs">(#3) Application does not have the capability to make this API call</code> when AP3k called the Instagram Messaging API (<code className="rounded bg-red-100 px-1 font-mono text-xs">POST /{"{ig-business-account-id}"}/messages</code>). This is an <strong>app-level capability block</strong>, not a token or webhook issue. AP3k is using the Facebook Login product (Page tokens) — the correct permission is <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code>, not <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_business_manage_messages</code> (that is for the Instagram Login product).
-                  </p>
+                <div className="mt-4">
+                  <PipelineGrid pipeline={lastPipeline} />
                 </div>
-
-                <div className="rounded-xl border border-red-200 bg-white p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.12em] text-red-700 mb-2">Exact next step — enable the capability</p>
-                  <ol className="list-decimal space-y-1.5 pl-5 text-sm text-red-800">
-                    <li>Go to <strong>Meta Developers → Your App → Use cases</strong></li>
-                    <li>Open <strong>Instagram API with Facebook Login → Customize</strong></li>
-                    <li>Find <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> under Permissions</li>
-                    <li>Click <strong>Add</strong> if not listed, then set access level to <strong>Standard Access</strong> (for development/testers) or submit <strong>Advanced Access</strong> review (for production)</li>
-                    <li>After approval, go to Integrations and <strong>Reconnect Instagram</strong> to issue a fresh token with the new scope</li>
-                    <li>Confirm the <strong>messages</strong> webhook field is subscribed (not just comments)</li>
-                  </ol>
-                </div>
-
-                {lastPublicReplySent && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700 mb-1">Fallback active while DM approval is pending</p>
-                    <p className="text-sm text-emerald-800 leading-relaxed">
-                      AP3k automatically falls back to a public <strong>@mention comment</strong> on the post when a private DM is blocked. This uses <code className="rounded bg-emerald-100 px-1 font-mono text-xs">POST /{"{mediaId}"}/comments</code> (Standard Access — no App Review needed). The commenter sees the reply publicly under the post.
-                    </p>
-                    <p className="mt-1.5 text-xs text-emerald-700">Last public reply sent: {new Date(lastPublicReplySent.createdAt).toLocaleString()}</p>
+                {(lastPipeline.mediaMatching || lastPipeline.triggerMatching) && (
+                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <AdminJsonViewer title="mediaMatching" value={lastPipeline.mediaMatching} />
+                    <AdminJsonViewer title="triggerMatching" value={lastPipeline.triggerMatching} />
                   </div>
                 )}
+              </Panel>
 
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.12em] text-red-700 mb-2">Full capability checklist</p>
-                  <ul className="list-disc space-y-1.5 pl-5 text-sm text-red-800">
-                    <li>In <strong>Development mode</strong>, only accepted App Testers / Developers / Admins can receive DMs from AP3k. Add the commenter&apos;s Facebook account under <strong>Meta Developers → App Roles → Testers</strong>.</li>
-                    <li>In <strong>Live mode</strong> (published app), <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> requires <strong>Advanced Access</strong> approval via App Review before any user can receive DMs.</li>
-                    <li>Confirm <strong>App Settings → Advanced → Instagram Messaging</strong> use case is enabled.</li>
-                    <li>The Page access token must have been issued <em>after</em> <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_manage_messages</code> was approved — reconnect if in doubt.</li>
-                    <li>Do <strong>not</strong> request <code className="rounded bg-red-100 px-1 font-mono text-xs">instagram_business_manage_messages</code> — AP3k uses Facebook Login (Page tokens), not Instagram Login (user tokens). Wrong product.</li>
-                  </ul>
+              <Panel title="Testing Tools">
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <form method="POST" action="/api/admin/webhook-self-test" className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 className="font-black">Signed internal self-test</h3>
+                    <p className="mt-1 text-sm text-slate-600">Sends a signed INTERNAL_SELF_TEST payload to the webhook route. Does not send DMs.</p>
+                    <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run webhook self-test</button>
+                  </form>
+                  <form action={simulateCommentWebhook} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 className="font-black">Run simulated comment against campaign</h3>
+                    <p className="mt-1 text-sm text-slate-600">Decision-only safe mode. It never sends a real DM.</p>
+                    <div className="mt-4 grid gap-2">
+                      <select name="automationId" required className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm">
+                        <option value="">Select campaign</option>
+                        {campaigns.map((campaign: any) => (
+                          <option key={campaign.id} value={campaign.id}>{campaign.name} · {campaign.active ? "active" : "paused"} · {campaign.User?.email ?? "unknown"}</option>
+                        ))}
+                      </select>
+                      <input name="mediaId" defaultValue={(campaigns[0] as any)?.posts?.[0]?.postid === "ANY" ? "ANY_TEST_MEDIA" : (campaigns[0] as any)?.posts?.[0]?.postid ?? "ANY_TEST_MEDIA"} className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm" placeholder="Media ID" />
+                      <input name="commenterId" defaultValue="simulated_commenter" className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm" placeholder="Commenter ID" />
+                      <input name="commentText" defaultValue={(campaigns[0] as any)?.keywords?.[0]?.word ?? "ai"} className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm" placeholder="Comment text" />
+                    </div>
+                    <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run matching simulation</button>
+                  </form>
                 </div>
-              </div>
-            )}
+              </Panel>
 
-            {/* Real Instagram delivery status */}
-            <AdminSection title="Real Instagram Delivery Status">
-              <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
-                <HealthCell label="Route reachable" value={routeReachable ? "yes" : "no data yet"} tone={routeReachable ? "green" : "slate"} />
-                <HealthCell label="Internal self-test" value={lastSimulated ? new Date(lastSimulated.createdAt).toLocaleString() : "not run yet"} tone={lastSimulated ? "green" : "slate"} />
-                <HealthCell label="Meta Test button" value={lastMetaTest ? new Date(lastMetaTest.createdAt).toLocaleString() : "not received"} tone={lastMetaTest ? "green" : "amber"} />
-                <HealthCell label="Last raw POST received" value={lastPostRaw ? new Date(lastPostRaw.createdAt).toLocaleString() : "none"} tone={lastPostRaw ? "green" : "red"} />
-                <HealthCell label="Last real Instagram comment" value={lastRealComment ? `${lastRealComment.status} · ${new Date(lastRealComment.createdAt).toLocaleString()}` : "none yet"} tone={lastRealComment ? (lastRealComment.status === "PROCESSED" ? "green" : "amber") : "red"} />
-                <HealthCell label="Real comment error" value={lastRealComment?.errorMessage ?? "n/a"} tone={lastRealComment?.errorMessage ? "amber" : "green"} />
-                <HealthCell label="Last signature failure" value={lastSignatureFailed ? new Date(lastSignatureFailed.createdAt).toLocaleString() : "none"} tone={lastSignatureFailed ? "red" : "green"} />
-                <HealthCell label="Last keyword matched" value={lastKeywordMatched ? `${lastKeywordMatched.keyword ?? "?"} · ${new Date(lastKeywordMatched.createdAt).toLocaleString()}` : "never"} tone={lastKeywordMatched ? "green" : "amber"} />
-                <HealthCell label="Last DM sent" value={lastDmSent ? new Date(lastDmSent.createdAt).toLocaleString() : "never"} tone={lastDmSent ? "green" : "amber"} />
-                <HealthCell label="Last DM failed" value={lastDmFailed ? `${lastDmFailed.errorMessage ?? "unknown"} · ${new Date(lastDmFailed.createdAt).toLocaleString()}` : "none"} tone={lastDmFailed ? "red" : "green"} />
-                <HealthCell
-                  label="Public comment reply"
-                  value={lastPublicReplySent ? `working · ${new Date(lastPublicReplySent.createdAt).toLocaleString()}` : "not sent yet"}
-                  tone={lastPublicReplySent ? "green" : "slate"}
+              <Panel title="Webhook Events">
+                <FilterPills
+                  items={[
+                    ["All", tabHref("webhooks", { eventType: "" })],
+                    ["Real comments", tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" })],
+                    ["Messages", tabHref("webhooks", { eventType: "REAL_MESSAGE_EVENT" })],
+                    ["Signature failed", tabHref("webhooks", { eventType: "SIGNATURE_FAILED" })],
+                    ["Meta test", tabHref("webhooks", { eventType: "META_TEST_EVENT" })],
+                  ]}
                 />
-                <HealthCell
-                  label="Public reply last error"
-                  value={lastPublicReplyFailed ? `${lastPublicReplyFailed.errorMessage ?? "unknown"} · ${new Date(lastPublicReplyFailed.createdAt).toLocaleString()}` : "none"}
-                  tone={lastPublicReplyFailed && !lastPublicReplySent ? "amber" : "green"}
+                <DataTable
+                  headers={["Time", "Source", "Event", "Object", "IDs", "Status", "Reason", "User/Campaign", "Action"]}
+                  rows={webhookEvents.map((event: any) => {
+                    const payload = event.payload && typeof event.payload === "object" ? event.payload as Record<string, unknown> : {};
+                    return [
+                      formatAdminDate(event.createdAt),
+                      <Badge key="source" tone={event.eventSource === "META_REAL" ? "green" : "blue"}>{event.eventSource}</Badge>,
+                      <EventBadge key="event" eventType={event.eventType} />,
+                      `${String(payload.object ?? "unknown")} · ${event.field ?? String(payload.field ?? "none")}`,
+                      <Identity key="ids" title={event.commentId ?? event.mediaId ?? event.igAccountId ?? event.id} subtitle={`media ${event.mediaId ?? "n/a"}`} />,
+                      <StatusBadge key="status" status={event.status} />,
+                      event.errorMessage ?? String((payload as any).simulationResult ?? "None"),
+                      <Identity key="campaign" title={event.automation?.name ?? "No campaign"} subtitle={event.automation?.User?.email ?? ""} />,
+                      event.eventSource === "META_REAL" && event.automationId ? (
+                        <form key="replay" action={replaySavedWebhookEvent}>
+                          <input type="hidden" name="eventId" value={event.id} />
+                          <button className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-700">Replay safe simulation</button>
+                        </form>
+                      ) : <span key="no-action" className="text-xs text-slate-400">No action</span>,
+                    ];
+                  })}
+                  details={(eventIndex) => {
+                    const event = webhookEvents[eventIndex] as any;
+                    return event ? (
+                      <div className="grid gap-3 p-4 lg:grid-cols-2">
+                        <PayloadSummary payload={event.payload} />
+                        <AdminJsonViewer title="Sanitized payload" value={sanitizeAdminPayload(event.payload)} />
+                      </div>
+                    ) : null;
+                  }}
+                  empty="No webhook events found."
                 />
-                <HealthCell
-                  label="Inbound Instagram message"
-                  value={lastInboundDm ? `received · ${new Date(lastInboundDm.createdAt).toLocaleString()}` : "none yet"}
-                  tone={lastInboundDm ? "green" : "slate"}
-                />
-                <HealthCell
-                  label="Inbound DM status"
-                  value={
-                    !lastInboundDm
-                      ? "no inbound messages yet"
-                      : lastInboundDm.errorMessage === "inbound_message_received_no_dm_automation"
-                      ? "received — no DM automation configured"
-                      : lastInboundDm.errorMessage === "echo_message_skipped"
-                      ? "echo skipped (sent by account)"
-                      : (lastInboundDm.errorMessage ?? lastInboundDm.status)
-                  }
-                  tone={
-                    !lastInboundDm ? "slate"
-                    : lastInboundDm.errorMessage === "echo_message_skipped" ? "slate"
-                    : "green"
-                  }
-                />
-                <HealthCell label="Connected IG username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "not connected"} />
-                <HealthCell label="Connected IG Business ID" value={metaDiagnostics.integration?.instagramId ?? "not set"} />
-                <HealthCell label="Connected Page ID" value={metaDiagnostics.integration?.pageId ?? "not set"} />
-                <HealthCell label="Subscription mode" value={metaDiagnostics.subscriptionMode ?? "UNKNOWN"} tone={metaDiagnostics.subscriptionMode === "API_SUBSCRIBED" ? "green" : metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED" ? "amber" : "slate"} />
-                <HealthCell label="Callback URL" value="https://ap3k.com/api/webhooks/meta" tone="slate" />
-                <HealthCell label="GET verify status" value={lastVerifyGet ? `${lastVerifyGet.status} · ${new Date(lastVerifyGet.createdAt).toLocaleString()}` : "never received"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : lastVerifyGet ? "red" : "amber"} />
-              </div>
-            </AdminSection>
+              </Panel>
+            </>
+          )}
 
-            <AdminSection title="Last Pipeline Stage">
-              {showDevelopmentDeliveryBanner && (
-                <div className="border-b border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">
-                  {developmentModeDeliveryMessage()}
-                </div>
-              )}
-              <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
-                <HealthCell label="WEBHOOK_POST_RECEIVED_RAW" value={lastPipeline.rawArrived ? "arrived" : "not received"} tone={lastPipeline.rawArrived ? "green" : "red"} />
-                <HealthCell label="Signature" value={lastPipeline.signaturePassed === undefined ? "not verified yet" : lastPipeline.signaturePassed ? "passed" : "failed"} tone={lastPipeline.signaturePassed === false ? "red" : lastPipeline.signaturePassed ? "green" : "amber"} />
-                <HealthCell label="REAL_COMMENT_EVENT" value={lastPipeline.realCommentClassified ? "classified" : "not classified"} tone={lastPipeline.realCommentClassified ? "green" : "amber"} />
-                <HealthCell label="Integration matched" value={lastPipeline.integrationMatched ? "yes" : "no"} tone={lastPipeline.integrationMatched ? "green" : "amber"} />
-                <HealthCell label="Media/post matched" value={lastPipeline.mediaMatched ? "yes" : "no"} tone={lastPipeline.mediaMatched ? "green" : "amber"} />
-                <HealthCell label="Trigger matched" value={lastPipeline.triggerMatched ? (lastPipeline.matchedKeyword || "yes") : "no"} tone={lastPipeline.triggerMatched ? "green" : "amber"} />
-                <HealthCell label="Public reply attempted" value={lastPipeline.publicReplyAttempted ? "yes" : "no"} tone={lastPipeline.publicReplyAttempted ? "green" : "slate"} />
-                <HealthCell label="DM attempted" value={lastPipeline.dmAttempted ? "yes" : "no"} tone={lastPipeline.dmAttempted ? "green" : "slate"} />
-                <HealthCell label="Final reason" value={lastPipeline.finalReason ?? "unknown"} tone={lastPipeline.finalReason?.includes("failed") || lastPipeline.finalReason?.includes("missing") || lastPipeline.finalReason?.includes("not_deliver") ? "red" : "slate"} />
-              </div>
-              {(lastPipeline.mediaMatching || lastPipeline.triggerMatching) && (
-                <div className="grid gap-3 border-t border-slate-100 p-4 text-xs md:grid-cols-2">
-                  <DiagnosticJson title="mediaMatching" value={lastPipeline.mediaMatching} />
-                  <DiagnosticJson title="triggerMatching" value={lastPipeline.triggerMatching} />
-                </div>
-              )}
-            </AdminSection>
-
-            {/* Meta webhook product warning */}
-            {selfTestPassed && !hasRealComment && (
-              <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
-                  Meta Webhook Product Configuration Required
-                </p>
-                <h2 className="mt-2 text-lg font-black text-amber-900">
-                  Do not use the &quot;User&quot; webhook product for Instagram comment automation
-                </h2>
-                <p className="mt-2 text-sm text-amber-800 leading-relaxed">
-                  The internal self-test works but no real Instagram comment has arrived. This is almost always a Meta configuration problem.
-                </p>
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-100 p-4">
-                  <p className="text-xs font-black text-amber-800 mb-2">Exact steps in Meta Developers:</p>
-                  <ol className="list-decimal space-y-1.5 pl-4 text-xs text-amber-900">
-                    <li>Go to <strong>Meta Developers → AP3k → Use cases → Instagram API</strong></li>
-                    <li>Open <strong>API setup with Facebook login</strong></li>
-                    <li>Open <strong>Configure webhooks</strong></li>
-                    <li>Set Callback URL = <code className="rounded bg-amber-200 px-1 font-mono">https://ap3k.com/api/webhooks/meta</code></li>
-                    <li>Set Verify Token = value of <code className="rounded bg-amber-200 px-1 font-mono">META_VERIFY_TOKEN</code> in Vercel env</li>
-                    <li>Click <strong>Verify and Save</strong> — GET verify should appear in this admin as PROCESSED</li>
-                    <li>Subscribe <strong>comments</strong> field</li>
-                    <li>Subscribe <strong>messages</strong> field</li>
-                    <li><strong>Do NOT</strong> configure the Webhooks product under the User object for Instagram comment automation</li>
-                    <li>App must be <strong>Live</strong>, OR the commenter must be added as Instagram Tester in App Roles</li>
-                    <li>Comment from a <strong>different account</strong> (not @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}) on media owned by @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}</li>
-                  </ol>
-                </div>
-              </div>
-            )}
-
-            {/* Test window */}
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Real Comment Test Window</p>
-              <p className="mt-1 text-sm text-blue-800">
-                Start a test window to filter webhook events to only those received after you begin the test. Does not affect production.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                {testSinceValid ? (
-                  <>
-                    <p className="text-xs text-blue-700">
-                      Test window active since: <strong>{testSince!.toLocaleString()}</strong>
-                    </p>
-                    <Link
-                      href={tabHref("overview").replace(/&?testSince=[^&]*/g, "")}
-                      className="rounded-xl border border-blue-300 bg-white px-4 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100"
-                    >
-                      Clear test window
-                    </Link>
-                    <Link
-                      href={tabHref("webhooks")}
-                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                    >
-                      View events since test start →
-                    </Link>
-                  </>
-                ) : (
-                  <Link
-                    href={`/admin?tab=overview&testSince=${encodeURIComponent(new Date().toISOString())}`}
-                    className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                  >
-                    Start test window
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* Stats grid */}
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: "Users", value: totalUsers, href: tabHref("users") },
-                { label: "Integrations", value: `${activeIntegrations}/${totalIntegrations} active`, href: tabHref("integrations") },
-                { label: "Campaigns", value: `${activeCampaigns}/${totalCampaigns} active`, href: tabHref("campaigns") },
-                { label: "Webhook events", value: totalWebhookEvents, href: tabHref("webhooks") },
-                { label: "Comment webhooks", value: commentWebhooks, href: tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" }) },
-                { label: "Failed webhooks", value: failedWebhooks, href: tabHref("webhooks") },
-                { label: "Leads", value: totalLeads, href: tabHref("leads") },
-                { label: "DM sent/failed", value: `${dmSent}/${dmFailed}`, href: tabHref("leads") },
-              ].map(({ label, value, href }) => (
-                <Link key={label} href={href} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-                  <p className="text-2xl font-black">{value}</p>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
-                </Link>
-              ))}
-            </section>
-
-            {/* Delivery gap warning */}
-            {lastPostRaw && lastSimulated && !lastRealComment && (
-              <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-600">
-                  Delivery Gap Detected
-                </p>
-                <h2 className="mt-2 text-xl font-black text-amber-900">
-                  AP3k is reachable — but no real Instagram comment has arrived
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-amber-800">
-                  The webhook route received data and the internal self-test passed, but no{" "}
-                  <strong>real</strong> comment event from Meta has been recorded. This is almost
-                  always a Meta-side configuration issue, not an AP3k code issue.
-                </p>
-                <p className="mt-3 text-sm font-bold text-amber-900">Most likely causes:</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">
-                  <li>App is in Development mode and the commenter is not an accepted App Tester or Instagram Tester.</li>
-                  <li>Wrong webhook product selected — do <strong>not</strong> use the &quot;User&quot; object; use Instagram or Page.</li>
-                  <li>comments and messages fields not subscribed in Meta Developers.</li>
-                  <li>Comment was made on media not owned by @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}.</li>
-                  <li>Commenter is the connected account owner (owner comments do not trigger webhooks).</li>
-                </ul>
-              </div>
-            )}
-
-            {/* Real comment delivery checklist */}
-            <AdminSection title="Real Comment Delivery Checklist">
-              <div className="p-4 text-sm">
-                <p className="mb-4 text-xs text-slate-500">
-                  Every item below must be true for real Instagram comments to reach AP3k.
-                </p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <ChecklistItem
-                    label="App mode — Live or tester accepted"
-                    status={lastRealComment ? "ok" : "warn"}
-                    detail="App must be Live, OR the commenter must be added as an App Tester in Meta Developers → App Roles → Testers."
-                  />
-                  <ChecklistItem
-                    label="Correct webhook object selected"
-                    status={lastRealComment ? "ok" : "warn"}
-                    detail="Do NOT use the 'User' object for Instagram comment automation. Use the Instagram or Page object."
-                  />
-                  <ChecklistItem
-                    label="'comments' field subscribed"
-                    status={metaDiagnostics.commentsSubscribed ? "ok" : lastRealComment ? "ok" : "error"}
-                    detail="In Meta Developers → Instagram API → Webhooks, the 'comments' field must be subscribed."
-                  />
-                  <ChecklistItem
-                    label="'messages' field subscribed"
-                    status={metaDiagnostics.messagesSubscribed ? "ok" : lastRealComment ? "ok" : "warn"}
-                    detail="The 'messages' field must be subscribed for DM-related webhooks."
-                  />
-                  <ChecklistItem
-                    label="Commenter is not the account owner"
-                    status="info"
-                    detail="The IG account owner commenting on their own post does not trigger webhooks. Use a separate tester account."
-                  />
-                  <ChecklistItem
-                    label={`Comment on media owned by @${metaDiagnostics.integration?.instagramUsername ?? "connected account"}`}
-                    status="info"
-                    detail={`Comment must be on a real post or Reel owned by @${metaDiagnostics.integration?.instagramUsername ?? "the connected Instagram account"}.`}
-                  />
-                  <ChecklistItem
-                    label="Connected account is Business or Creator"
-                    status={metaDiagnostics.integration?.igAccountSource === "instagram_business_account" ? "ok" : "warn"}
-                    detail={`IG account source: ${metaDiagnostics.integration?.igAccountSource ?? "unknown"}. Must be instagram_business_account.`}
-                  />
-                  <ChecklistItem
-                    label="Webhook GET verify confirmed"
-                    status={lastVerifyGet?.status === "PROCESSED" ? "ok" : "warn"}
-                    detail={lastVerifyGet ? `Last verify: ${lastVerifyGet.status} at ${new Date(lastVerifyGet.createdAt).toLocaleString()}` : "No GET verify recorded yet."}
-                  />
-                  <ChecklistItem
-                    label="Route receives POSTs"
-                    status={lastPostRaw ? "ok" : "error"}
-                    detail={lastPostRaw ? `Last POST raw at ${new Date(lastPostRaw.createdAt).toLocaleString()}` : "No POST received yet. Route may not be reachable from Meta."}
-                  />
-                  <ChecklistItem
-                    label="Signature verification passing"
-                    status={lastSignatureFailed && !lastRealComment ? "error" : "ok"}
-                    detail={lastSignatureFailed ? `Last failure at ${new Date(lastSignatureFailed.createdAt).toLocaleString()}: ${lastSignatureFailed.errorMessage ?? "unknown reason"}` : "No recent signature failures."}
-                  />
-                  <ChecklistItem
-                    label="Subscription mode"
-                    status={metaDiagnostics.subscriptionMode === "API_SUBSCRIBED" ? "ok" : metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED" ? "warn" : "error"}
-                    detail={metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED"
-                      ? "API subscription blocked (pages_manage_metadata not available). Confirm webhook subscription toggle is manually ON in Meta Developers."
-                      : metaDiagnostics.subscriptionMode === "API_SUBSCRIBED"
-                      ? "API subscription active."
-                      : `Subscription mode: ${metaDiagnostics.subscriptionMode ?? "unknown"}`}
-                  />
-                  <ChecklistItem
-                    label="At least one active campaign"
-                    status={activeCampaigns > 0 ? "ok" : "warn"}
-                    detail={activeCampaigns > 0 ? `${activeCampaigns} active campaign(s) found.` : "No active campaigns. Create and activate a campaign before testing."}
-                  />
-                </div>
-                <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-relaxed text-blue-800">
-                  <p className="font-bold">Quick test path for @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}:</p>
-                  <ol className="mt-2 list-decimal space-y-1 pl-4">
-                    <li>Create an active campaign — trigger: Any post, keyword: <code className="rounded bg-blue-100 px-1 font-mono">ai</code>, matching: CONTAINS.</li>
-                    <li>From a separate tester account, comment <code className="rounded bg-blue-100 px-1 font-mono">ai</code> on any post owned by @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}.</li>
-                    <li>Wait 30–60 seconds for Meta to deliver the webhook.</li>
-                    <li>Refresh this page and check the checklist items above.</li>
-                  </ol>
-                </div>
-              </div>
-            </AdminSection>
-          </>
-        )}
-
-        {/* ─── META HEALTH TAB ─── */}
-        {tab === "meta" && (
-          <AdminSection title="Meta Delivery Diagnostics">
-            <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
-              <HealthCell label="Connected account" value={
-                metaDiagnostics.integration?.instagramUsername
-                  ? `@${metaDiagnostics.integration.instagramUsername}`
-                  : "Not connected"
-              } />
-              <HealthCell label="Selected Page name" value={metaDiagnostics.integration?.pageName ?? "none"} />
-              <HealthCell label="Facebook Page ID" value={metaDiagnostics.integration?.pageId ?? "none"} />
-              <HealthCell label="IG business account ID" value={metaDiagnostics.integration?.instagramId ?? "none"} />
-              <HealthCell label="IG account source" value={metaDiagnostics.integration?.igAccountSource ?? "none"} />
-              <HealthCell label="Page resolution" value={
-                metaDiagnostics.integration?.oauthResolutionDiagnostics
-                  ? JSON.stringify(metaDiagnostics.integration.oauthResolutionDiagnostics)
-                  : "none"
-              } />
-              <HealthCell label="OAuth state" value={metaDiagnostics.oauthState} tone={metaDiagnostics.oauthState === "oauth_success" ? "green" : "red"} />
-              <HealthCell label="Page token valid" value={metaDiagnostics.tokenValid ? "yes" : "no"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
-              <HealthCell label="Page subscribed" value={metaDiagnostics.subscribedAppsActive ? "yes" : "no"} tone={metaDiagnostics.subscribedAppsActive ? "green" : "red"} />
-              <HealthCell label="comments subscribed" value={metaDiagnostics.commentsSubscribed ? "yes" : "no"} tone={metaDiagnostics.commentsSubscribed ? "green" : "red"} />
-              <HealthCell label="messages subscribed" value={metaDiagnostics.messagesSubscribed ? "yes" : "no"} tone={metaDiagnostics.messagesSubscribed ? "green" : "red"} />
-              <HealthCell label="Token expires at" value={metaDiagnostics.integration?.expiresAt ? new Date(metaDiagnostics.integration.expiresAt).toLocaleString() : "unknown"} />
-              <HealthCell label="Webhook subscription last attempted" value={metaDiagnostics.integration?.webhookSubscriptionLastAttemptedAt ? new Date(metaDiagnostics.integration.webhookSubscriptionLastAttemptedAt).toLocaleString() : "never"} />
-              <HealthCell label="Webhook subscription stored result" value={
-                metaDiagnostics.integration?.webhookSubscriptionSubscribed === null ||
-                metaDiagnostics.integration?.webhookSubscriptionSubscribed === undefined
-                  ? "unknown"
-                  : `${metaDiagnostics.integration.webhookSubscriptionSubscribed ? "success" : "failure"}${
-                      metaDiagnostics.integration.webhookSubscriptionStatusCode
-                        ? ` · ${metaDiagnostics.integration.webhookSubscriptionStatusCode}`
-                        : ""
-                    }${metaDiagnostics.integration.webhookSubscriptionError ? ` · ${metaDiagnostics.integration.webhookSubscriptionError}` : ""}`
-              } />
-              <HealthCell label="OAuth last error" value={
-                metaDiagnostics.integration?.oauthLastError
-                  ? `${metaDiagnostics.integration.oauthLastError} · ${
-                      metaDiagnostics.integration.oauthLastErrorSource ?? "unknown_source"
-                    }${
-                      metaDiagnostics.integration.oauthLastErrorAt
-                        ? ` · ${new Date(metaDiagnostics.integration.oauthLastErrorAt).toLocaleString()}`
-                        : ""
-                    }`
-                  : "none"
-              } tone={metaDiagnostics.integration?.oauthLastError ? "red" : "green"} />
-              <HealthCell label="Token scopes" value={metaDiagnostics.tokenScopes.length ? metaDiagnostics.tokenScopes.join(", ") : metaDiagnostics.tokenScopesStatus} />
-              <HealthCell label="Canonical OAuth product" value={metaDiagnostics.tokenHealth.config.product} />
-              <HealthCell label="Requested OAuth scopes" value={metaDiagnostics.tokenHealth.config.requestedScopes.join(", ")} />
-              <HealthCell label="Rejected legacy scopes" value={metaDiagnostics.tokenHealth.config.rejectedScopes.join(", ")} />
-              <HealthCell label="Canonical app ID source" value={metaDiagnostics.tokenHealth.config.appIdSource} tone={metaDiagnostics.tokenHealth.config.appIdSource === "META_APP_ID" ? "green" : "red"} />
-              <HealthCell label="Canonical secret source" value={metaDiagnostics.tokenHealth.config.appSecretSource} tone={metaDiagnostics.tokenHealth.config.appSecretSource === "META_APP_SECRET" ? "green" : "red"} />
-              <HealthCell label="API endpoint family" value={metaDiagnostics.tokenHealth.config.apiEndpointFamily} tone={metaDiagnostics.tokenHealth.config.apiEndpointFamily === "facebook_graph_instagram_business" ? "green" : "red"} />
-              <HealthCell label="debug_token status" value={metaDiagnostics.tokenHealth.debugTokenStatus ?? "unknown"} tone={metaDiagnostics.tokenHealth.debugTokenStatus === "ok" ? "green" : "amber"} />
-              <HealthCell label="Token app ID" value={metaDiagnostics.tokenHealth.tokenAppId ?? "unavailable"} tone={metaDiagnostics.tokenHealth.tokenBelongsToCurrentApp ? "green" : "amber"} />
-              <HealthCell label="Token type" value={metaDiagnostics.tokenHealth.tokenType} />
-              <HealthCell label="Issued by app" value={metaDiagnostics.tokenHealth.issuedByApp ?? "unavailable"} />
-              <HealthCell label="Required scopes" value={metaDiagnostics.tokenHealth.requiredScopesPresent ? "present" : `missing ${metaDiagnostics.tokenHealth.missingScopes.join(", ")}`} tone={metaDiagnostics.tokenHealth.requiredScopesPresent ? "green" : "red"} />
-              <HealthCell label="IG account linkage" value={metaDiagnostics.tokenHealth.igAccountLinked ? "matches integration" : "not confirmed"} tone={metaDiagnostics.tokenHealth.igAccountLinked ? "green" : "red"} />
-              <HealthCell label="Auth diagnostics" value={metaDiagnostics.tokenHealth.diagnostics.length ? metaDiagnostics.tokenHealth.diagnostics.join(", ") : "none"} tone={metaDiagnostics.tokenHealth.diagnostics.length ? "amber" : "green"} />
-              <HealthCell label="Last 24h simulated" value={String(metaDiagnostics.last24h.simulatedEvents)} />
-              <HealthCell label="Last 24h real Meta" value={String(metaDiagnostics.last24h.realMetaEvents)} />
-              <HealthCell label="Last 24h failed signatures" value={String(metaDiagnostics.last24h.failedSignatures)} tone={metaDiagnostics.last24h.failedSignatures ? "red" : "green"} />
-              <HealthCell label="Last 24h ignored" value={String(metaDiagnostics.last24h.ignoredPayloads)} />
-              <HealthCell label="Last 24h keyword matched" value={String(metaDiagnostics.last24h.keywordMatched)} />
-              <HealthCell label="Last 24h DM sent/failed" value={`${metaDiagnostics.last24h.dmSent}/${metaDiagnostics.last24h.dmFailed}`} tone={metaDiagnostics.last24h.dmFailed ? "amber" : "green"} />
-              <HealthCell label="App mode" value={`${metaDiagnostics.appMode}${metaDiagnostics.appModeNote ? " - verify in Meta dashboard" : ""}`} />
-              <HealthCell label="Last real webhook" value={metaDiagnostics.lastRealWebhookAt ? new Date(metaDiagnostics.lastRealWebhookAt).toLocaleString() : "none yet"} tone={metaDiagnostics.lastRealWebhookAt ? "green" : "amber"} />
-              <HealthCell label="Last failure" value={metaDiagnostics.lastFailureReason ?? "none"} />
-              <HealthCell label="Subscription status" value={metaDiagnostics.subscribedAppsStatus ?? "unknown"} />
-              <HealthCell
-                label="Subscription mode"
-                value={metaDiagnostics.subscriptionMode ?? "UNKNOWN"}
-                tone={
-                  metaDiagnostics.subscriptionMode === "API_SUBSCRIBED" ? "green" :
-                  metaDiagnostics.subscriptionMode === "META_DASHBOARD_MANAGED" ? "amber" :
-                  metaDiagnostics.subscriptionMode === "FAILED" ? "red" : "slate"
-                }
+          {tab === "messages" && (
+            <Panel title="Messages & Replies" description="Delivery logs for public replies and private DM attempts.">
+              <DataTable
+                headers={["Time", "Owner/Campaign", "Type", "Status", "Endpoint", "Object IDs", "Error", "Action"]}
+                rows={messageLogs.map((log: any) => {
+                  const classified = classifyDeliveryError(log.errorMessage);
+                  return [
+                    formatAdminDate(log.createdAt),
+                    <Identity key="campaign" title={log.automation?.name ?? "Unknown campaign"} subtitle={log.automation?.User?.email ?? ""} />,
+                    <Badge key="type" tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>,
+                    <StatusBadge key="status" status={log.status} />,
+                    log.messageType === "DM" ? "ig_business/messages" : "comment/media reply",
+                    <Identity key="ids" title={`comment ${log.commentId ?? "n/a"}`} subtitle={`media ${log.mediaId ?? "n/a"}`} />,
+                    log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "None",
+                    <DisabledActions key="actions" labels={["View details", "Copy safe error"]} />,
+                  ];
+                })}
+                empty="No message logs found."
               />
-              <HealthCell
-                label="business_management requested"
-                value={metaDiagnostics.tokenHealth.config.requestedScopes.includes("business_management") ? "yes" : "no"}
-                tone={metaDiagnostics.tokenHealth.config.requestedScopes.includes("business_management") ? "green" : "red"}
-              />
-              <HealthCell
-                label="business_management granted"
-                value={
-                  metaDiagnostics.tokenHealth.tokenScopes.length > 0
-                    ? metaDiagnostics.tokenHealth.tokenScopes.includes("business_management") ? "yes" : "no"
-                    : "scopes unavailable"
-                }
-                tone={
-                  metaDiagnostics.tokenHealth.tokenScopes.includes("business_management") ? "green" : "amber"
-                }
-              />
-              <HealthCell
-                label="Last subscription error"
-                value={metaDiagnostics.integration?.webhookSubscriptionError ?? "none"}
-                tone={metaDiagnostics.integration?.webhookSubscriptionError ? "amber" : "green"}
-              />
-            </div>
-          </AdminSection>
-        )}
+            </Panel>
+          )}
 
-        {/* ─── WEBHOOKS TAB ─── */}
-        {tab === "webhooks" && (
-          <>
-            {testSinceValid && (
-              <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800">
-                <span className="font-black">Test window active</span>
-                <span>Events shown from {testSince!.toLocaleString()} onwards only.</span>
-                <Link
-                  href={tabHref("webhooks").replace(/&?testSince=[^&]*/g, "")}
-                  className="ml-auto font-bold underline hover:text-blue-600"
-                >
-                  Clear
-                </Link>
-              </div>
-            )}
-            <AdminSection title="Webhook Delivery Status">
-              <div className="grid gap-3 p-4 text-sm md:grid-cols-3">
-                <HealthCell
-                  label="Callback URL"
-                  value="https://ap3k.com/api/webhooks/meta"
-                  tone="slate"
-                />
-                <HealthCell
-                  label="Last GET verify"
-                  value={
-                    lastVerifyGet
-                      ? `${lastVerifyGet.status} · token_match=${(lastVerifyGet.payload as any)?.tokenMatch ?? "unknown"} · ${new Date(lastVerifyGet.createdAt).toLocaleString()}`
-                      : "never received"
-                  }
-                  tone={lastVerifyGet?.status === "PROCESSED" ? "green" : lastVerifyGet ? "red" : "amber"}
-                />
-                <HealthCell
-                  label="Last POST raw received"
-                  value={
-                    lastPostRaw
-                      ? `hasSignature=${(lastPostRaw.payload as any)?.hasSignature ?? "?"} · object=${(lastPostRaw.payload as any)?.object ?? "none"} · ${new Date(lastPostRaw.createdAt).toLocaleString()}`
-                      : "never received"
-                  }
-                  tone={lastPostRaw ? "green" : "red"}
-                />
-                <HealthCell
-                  label="Last signature failed"
-                  value={
-                    lastSignatureFailed
-                      ? `${lastSignatureFailed.errorMessage ?? "unknown"} · ${new Date(lastSignatureFailed.createdAt).toLocaleString()}`
-                      : "none"
-                  }
-                  tone={lastSignatureFailed ? "red" : "green"}
-                />
-                <HealthCell
-                  label="Last real comment"
-                  value={
-                    lastRealComment
-                      ? `${lastRealComment.status} · pageId=${lastRealComment.igAccountId ?? "none"} · ${new Date(lastRealComment.createdAt).toLocaleString()}`
-                      : "none yet"
-                  }
-                  tone={lastRealComment ? "green" : "amber"}
-                />
-                <HealthCell
-                  label="Last simulated"
-                  value={
-                    lastSimulated
-                      ? `${lastSimulated.eventType} · ${new Date(lastSimulated.createdAt).toLocaleString()}`
-                      : "none"
-                  }
-                  tone={lastSimulated ? "green" : "slate"}
-                />
-              </div>
-
-              <div className="border-t border-slate-100 p-4 text-sm">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                  Manual Meta dashboard steps
-                </p>
-                <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-700">
-                  <li>Meta Developers → AP3k app → Instagram API → API setup with Facebook login</li>
-                  <li>Open <strong>Configure webhooks</strong></li>
-                  <li>Set Callback URL to <code className="rounded bg-slate-100 px-1 font-mono text-xs">https://ap3k.com/api/webhooks/meta</code></li>
-                  <li>Set Verify Token to the value of <code className="rounded bg-slate-100 px-1 font-mono text-xs">META_VERIFY_TOKEN</code> in Vercel env</li>
-                  <li>Click <strong>Verify and Save</strong> — triggers a GET that should appear above as PROCESSED</li>
-                  <li>Subscribe <strong>comments</strong> and <strong>messages</strong> fields</li>
-                  <li>Test from a separate accepted tester account commenting on a post owned by @{metaDiagnostics.integration?.instagramUsername ?? "ceptice"}</li>
-                </ol>
-              </div>
-
-              <div className="border-t border-slate-100 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                  Signed self-test
-                </p>
-                <form
-                  method="POST"
-                  action="/api/admin/webhook-self-test"
-                  className="mt-3 flex items-center gap-3"
-                >
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-slate-950 px-5 py-2 text-sm font-bold text-white"
-                  >
-                    Run webhook self-test
-                  </button>
-                  <p className="text-xs text-slate-500">
-                    Sends a signed INTERNAL_SELF_TEST payload to the webhook route. Does not send DMs.
-                  </p>
-                </form>
-              </div>
-            </AdminSection>
-
-            <AdminSection title="Run Simulated Comment Against Campaign">
-              <form action={simulateCommentWebhook} className="grid gap-3 p-4 text-sm md:grid-cols-5">
-                <select
-                  name="automationId"
-                  className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
-                  required
-                >
-                  <option value="">Select campaign</option>
-                  {simulationCampaigns.map((campaign: any) => (
-                    <option key={campaign.id} value={campaign.id}>
-                      {campaign.name} · {campaign.active ? "active" : "paused"} · {campaign.User?.email ?? "unknown"}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  name="mediaId"
-                  defaultValue={(simulationCampaigns[0] as any)?.posts?.[0]?.postid === "ANY" ? "ANY_TEST_MEDIA" : (simulationCampaigns[0] as any)?.posts?.[0]?.postid ?? "ANY_TEST_MEDIA"}
-                  placeholder="Media ID"
-                  className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
-                />
-                <input
-                  name="commenterId"
-                  defaultValue="simulated_commenter"
-                  placeholder="Commenter ID"
-                  className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
-                />
-                <input
-                  name="commentText"
-                  defaultValue={(simulationCampaigns[0] as any)?.keywords?.[0]?.word ?? "ai"}
-                  placeholder="Comment text"
-                  className="min-h-10 rounded-xl border border-slate-200 px-3 outline-none focus:border-pink-300"
-                />
-                <button className="rounded-xl bg-slate-950 px-4 py-2 font-bold text-white">
-                  Run simulated comment against campaign
-                </button>
-                <p className="md:col-span-5 text-xs text-slate-500">
-                  Decision-only safe mode. Shows integration match, post match, trigger match, keyword, and noMatchReason in the newest simulated webhook event. Never sends a real DM.
-                </p>
-              </form>
-            </AdminSection>
-
-            <AdminSection title="Webhook Events">
-              {(webhookEvents as any[]).map((event) => (
-                <AdminRow key={event.id}>
-                  <span><EventBadge eventType={event.eventType} /></span>
-                  <span><StatusBadge status={event.status} /></span>
-                  <span className="text-xs text-slate-500">{event.eventSource} · {event.igAccountId ?? "No Page"}</span>
-                  <span className="text-xs text-slate-500">{event.commentId ?? event.mediaId ?? "No object ID"}</span>
-                  <span className="text-xs">
-                    {event.errorMessage ?? new Date(event.createdAt).toLocaleString()}
-                    <PayloadSummary payload={event.payload} />
-                    <PayloadRaw payload={event.payload} />
-                    {event.eventSource === "META_REAL" && (
-                      <form action={replaySavedWebhookEvent} className="mt-2">
-                        <input type="hidden" name="eventId" value={event.id} />
-                        <button className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50">
-                          Replay as simulation
-                        </button>
-                      </form>
-                    )}
-                  </span>
-                </AdminRow>
-              ))}
-              {(webhookEvents as any[]).length === 0 && (
-                <p className="p-4 text-sm text-slate-500">No webhook events found.</p>
-              )}
-            </AdminSection>
-          </>
-        )}
-
-        {/* ─── INTEGRATIONS TAB ─── */}
-        {tab === "integrations" && (
-          <AdminSection title="Integrations">
-            {(integrations as any[]).map((integration) => (
-              <AdminRow key={integration.id}>
-                <span>{integration.User?.email ?? "Unknown user"}</span>
-                <span>{integration.instagramUsername ? `@${integration.instagramUsername}` : "No username"}</span>
-                <span>{integration.instagramId ?? "No IG ID"}</span>
-                <span>{maskSecret(integration.token)} · page token</span>
-                <span>{integration.expiresAt ? new Date(integration.expiresAt).toLocaleDateString() : "No expiry"}</span>
-              </AdminRow>
-            ))}
-            {(integrations as any[]).length === 0 && (
-              <p className="p-4 text-sm text-slate-500">No integrations found.</p>
-            )}
-          </AdminSection>
-        )}
-
-        {/* ─── CAMPAIGNS TAB ─── */}
-        {tab === "campaigns" && (
-          <AdminSection title="Campaigns">
-            {(automations as any[]).map((automation) => (
-              <AdminRow key={automation.id}>
-                <span>{automation.name}</span>
-                <span>{automation.User?.email ?? "Unknown user"}</span>
-                <span>
-                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-bold ${automation.active ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
-                    {automation.active ? "Active" : "Paused"}
-                  </span>
-                </span>
-                <span>{automation.matchingMode}</span>
-                <span>{automation._count.keywords} keywords · {automation._count.leads} leads · {automation._count.messageLogs} logs</span>
-              </AdminRow>
-            ))}
-            {(automations as any[]).length === 0 && (
-              <p className="p-4 text-sm text-slate-500">No campaigns found.</p>
-            )}
-          </AdminSection>
-        )}
-
-        {/* ─── LEADS & MESSAGES TAB ─── */}
-        {tab === "leads" && (
-          <>
-            <AdminSection title="Leads">
-              {(leads as any[]).map((lead) => (
-                <AdminRow key={lead.id}>
-                  <span>{lead.igUsername ? `@${lead.igUsername}` : lead.igUserId}</span>
-                  <span>{lead.automation.name}</span>
-                  <span>{lead.mediaId ?? "No media"}</span>
-                  <span>{lead.commentText?.slice(0, 80) ?? "No text"}</span>
-                  <span>{new Date(lead.createdAt).toLocaleString()}</span>
-                </AdminRow>
-              ))}
-              {(leads as any[]).length === 0 && (
-                <p className="p-4 text-sm text-slate-500">No leads yet.</p>
-              )}
-            </AdminSection>
-
-            <AdminSection title="Message Logs">
-              {(messageLogs as any[]).map((log) => (
-                <AdminRow key={log.id}>
-                  <span>{log.messageType}</span>
-                  <span><StatusBadge status={log.status} /></span>
-                  <span>{log.automation.name}</span>
-                  <span>{log.commentId ?? log.recipientIgId}</span>
-                  <span>{log.errorMessage ?? new Date(log.createdAt).toLocaleString()}</span>
-                </AdminRow>
-              ))}
-              {(messageLogs as any[]).length === 0 && (
-                <p className="p-4 text-sm text-slate-500">No message logs yet.</p>
-              )}
-            </AdminSection>
-
-            <AdminSection title="Automation Events">
-              {(automationEvents as any[]).map((event) => (
-                <AdminRow key={event.id}>
-                  <span>{event.eventType}</span>
-                  <span>{event.automation.name}</span>
-                  <span>{event.keyword ?? "No keyword"}</span>
-                  <span>{event.commentId ?? event.mediaId ?? "No object ID"}</span>
-                  <span>{new Date(event.createdAt).toLocaleString()}</span>
-                </AdminRow>
-              ))}
-              {(automationEvents as any[]).length === 0 && (
-                <p className="p-4 text-sm text-slate-500">No automation events yet.</p>
-              )}
-            </AdminSection>
-          </>
-        )}
-
-        {/* ─── USERS TAB ─── */}
-        {tab === "users" && (
-          <AdminSection title="Users">
-            {(users as any[]).map((user) => (
-              <AdminRow key={user.id}>
-                <span>{user.email}</span>
-                <span>{user.firstname} {user.lastname}</span>
-                <span>
-                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-bold ${user.subscription?.plan === "PRO" ? "border-purple-200 bg-purple-50 text-purple-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
-                    {user.subscription?.plan ?? "FREE"}
-                  </span>
-                </span>
-                <span>{user._count.automations} campaigns</span>
-                <span>{user.integrations[0]?.instagramUsername ? `@${user.integrations[0].instagramUsername}` : "No IG"}</span>
-              </AdminRow>
-            ))}
-            {(users as any[]).length === 0 && (
-              <p className="p-4 text-sm text-slate-500">No users found.</p>
-            )}
-          </AdminSection>
-        )}
-
-        {/* ─── SYSTEM TAB ─── */}
-        {tab === "system" && (
-          <div className="space-y-6">
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ["Total users", totalUsers],
-                ["Total integrations", totalIntegrations],
-                ["Total campaigns", totalCampaigns],
-                ["Total webhook events", totalWebhookEvents],
-                ["Total leads", totalLeads],
-                ["Total message logs", totalMessageLogs],
-                ["DM sent", dmSent],
-                ["DM failed", dmFailed],
-              ].map(([label, value]) => (
-                <div key={label as string} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="text-2xl font-black">{value}</p>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+          {tab === "meta" && (
+            <>
+              <Panel title="Meta App Configuration">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <HealthCard label="App ID" value={process.env.META_APP_ID ? "Present" : "Missing"} tone={process.env.META_APP_ID ? "green" : "red"} />
+                  <HealthCard label="App secret" value={process.env.META_APP_SECRET ? "Present" : "Missing"} tone={process.env.META_APP_SECRET ? "green" : "red"} />
+                  <HealthCard label="Verify token" value={process.env.META_VERIFY_TOKEN ? "Present" : "Missing"} tone={process.env.META_VERIFY_TOKEN ? "green" : "red"} />
+                  <HealthCard label="Product flow" value="Facebook Login + Page token" tone="green" />
+                  <HealthCard label="Webhook URL" value={`${process.env.NEXT_PUBLIC_HOST_URL ?? "https://ap3k.com"}/api/webhooks/meta`} />
+                  <HealthCard label="Page token valid" value={metaDiagnostics.tokenValid ? "Yes" : "No"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
+                  <HealthCard label="Comments field" value={metaDiagnostics.commentsSubscribed ? "Subscribed" : "Not confirmed"} tone={metaDiagnostics.commentsSubscribed ? "green" : "amber"} />
+                  <HealthCard label="Messages field" value={metaDiagnostics.messagesSubscribed ? "Subscribed" : "Not confirmed"} tone={metaDiagnostics.messagesSubscribed ? "green" : "amber"} />
                 </div>
-              ))}
-            </section>
+                <Callout tone="amber" title="Permission family">
+                  AP3k uses Facebook Login for Business + Page tokens: instagram_basic, instagram_manage_comments, instagram_manage_messages, pages_show_list, pages_read_engagement, business_management. Do not mix instagram_business_* unless migrating to Instagram Login.
+                </Callout>
+              </Panel>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-base font-black">Database health</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Model counts above are live. Migration status is intentionally not exposed in this UI.
-              </p>
-            </div>
+              <Panel title="Meta Delivery Center">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <HealthCard label="GET verify" value={lastVerifyGet ? `${lastVerifyGet.status} · ${formatAdminDate(lastVerifyGet.createdAt)}` : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
+                  <HealthCard label="POST receive" value={lastPostRaw ? formatAdminDate(lastPostRaw.createdAt) : "No POST"} tone={lastPostRaw ? "green" : "red"} />
+                  <HealthCard label="Last real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
+                  <HealthCard label="Last inbound DM" value={formatAdminDate(lastInboundDm?.createdAt)} tone={lastInboundDm ? "green" : "slate"} />
+                  <HealthCard label="Public reply" value={lastPublicReplySent ? "Working" : "No success yet"} tone={lastPublicReplySent ? "green" : "amber"} />
+                  <HealthCard label="Last DM result" value={lastDmFailed?.errorMessage ?? (lastDmSent ? "Sent" : "No result")} tone={lastDmFailed ? "red" : lastDmSent ? "green" : "amber"} />
+                </div>
+                <Callout tone="red" title="Code 3 explanation">
+                  If Meta returns code=3, private DM is blocked until instagram_manage_messages capability is approved or the app/tester setup allows the recipient. Public replies should still be attempted.
+                </Callout>
+              </Panel>
+            </>
+          )}
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-base font-black">Required Vercel environment variables</h2>
-              <div className="mt-3 grid gap-2 text-xs font-mono">
+          {tab === "compliance" && (
+            <Panel title="App Review / Compliance">
+              <div className="grid gap-4 xl:grid-cols-2">
                 {[
-                  ["META_VERIFY_TOKEN", Boolean(process.env.META_VERIFY_TOKEN)],
-                  ["META_APP_ID", Boolean(process.env.META_APP_ID)],
-                  ["META_APP_SECRET", Boolean(process.env.META_APP_SECRET)],
-                  ["DATABASE_URL", Boolean(process.env.DATABASE_URL)],
-                  ["NEXT_PUBLIC_HOST_URL", Boolean(process.env.NEXT_PUBLIC_HOST_URL)],
-                  ["CLERK_SECRET_KEY", Boolean(process.env.CLERK_SECRET_KEY)],
-                ].map(([name, present]) => (
-                  <div key={name as string} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                    <span className="font-mono text-slate-700">{name as string}</span>
-                    <span className={`font-black ${present ? "text-emerald-600" : "text-red-600"}`}>
-                      {present ? "set" : "MISSING"}
-                    </span>
+                  ["instagram_basic", "Identify the connected Instagram business account and profile metadata."],
+                  ["instagram_manage_comments", "Read comment events and send public replies to comments."],
+                  ["instagram_manage_messages", "Send private replies linked to Instagram comments."],
+                  ["pages_show_list", "Let the user select the Facebook Page connected to Instagram."],
+                  ["pages_read_engagement", "Read Page linkage and webhook-related account information."],
+                  ["business_management", "Resolve business assets during Facebook Login for Business."],
+                ].map(([permission, purpose]) => (
+                  <div key={permission} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="font-mono text-sm font-black text-slate-950">{permission}</p>
+                    <p className="mt-2 text-sm text-slate-600">{purpose}</p>
+                    <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Review evidence</p>
+                    <p className="mt-1 text-xs text-slate-600">Show account connection, comment webhook receipt, public reply attempt, and private DM result or Meta code=3.</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <LinkBox label="Privacy Policy" href="/privacy" />
+                <LinkBox label="Terms" href="/terms" />
+                <LinkBox label="Data Deletion" href="/data-deletion" />
+              </div>
+              <AdminJsonViewer title="Reviewer instructions block" value={{
+                short: "AP3k uses Facebook Login for Business + Page tokens to automate Instagram comment replies and private replies for connected business accounts.",
+                warning: "Do not mix instagram_business_* permissions unless migrating to Instagram Login.",
+                test: "Connect Instagram, create Any post + keyword campaign, comment from accepted tester, verify public reply and DM status in admin logs.",
+              }} />
+            </Panel>
+          )}
 
+          {tab === "system" && (
+            <Panel title="System">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <HealthCard label="App URL" value={process.env.NEXT_PUBLIC_HOST_URL ?? "Not set"} tone={process.env.NEXT_PUBLIC_HOST_URL ? "green" : "amber"} />
+                <HealthCard label="Environment" value={adminEnvironmentLabel()} tone={adminEnvironmentLabel() === "Production" ? "green" : "amber"} />
+                <HealthCard label="Node" value={process.version} />
+                <HealthCard label="Latest commit" value={process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "Unavailable"} />
+                {["DATABASE_URL", "NEXT_PUBLIC_HOST_URL", "META_APP_ID", "META_APP_SECRET", "META_VERIFY_TOKEN", "CLERK_SECRET_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"].map((key) => (
+                  <HealthCard key={key} label={key} value={process.env[key] ? "Set" : "Missing"} tone={process.env[key] ? "green" : "red"} />
+                ))}
+              </div>
+              <Callout tone="amber" title="Migration note">
+                Migration execution is intentionally not available from admin. Use deployment migration docs and CI/CD for schema changes.
+              </Callout>
+            </Panel>
+          )}
+
+          {tab === "danger" && (
+            <Panel title="Danger Zone / Audit Logs" description="This first version is read-only. Destructive controls are disabled until AdminAuditLog, typed confirmations, rollback/error handling, and tests are added.">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <DangerCard title="Delete user data" />
+                <DangerCard title="Disconnect Instagram integration" />
+                <DangerCard title="Delete campaign" />
+                <DangerCard title="Cancel subscription" />
+              </div>
+              <Callout tone="amber" title="No audit-log migration added">
+                No destructive write actions were implemented, so no AdminAuditLog migration was added in this pass.
+              </Callout>
+            </Panel>
+          )}
+        </section>
       </div>
     </main>
   );
 }
 
-function AdminSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function PipelineGrid({ pipeline }: { pipeline: ReturnType<typeof buildWebhookPipelineDiagnostics> }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      <HealthCard label="WEBHOOK_POST_RECEIVED_RAW" value={pipeline.rawArrived ? "Arrived" : "Not received"} tone={pipeline.rawArrived ? "green" : "red"} />
+      <HealthCard label="Signature" value={pipeline.signaturePassed === undefined ? "Not verified" : pipeline.signaturePassed ? "Passed" : "Failed"} tone={pipeline.signaturePassed === false ? "red" : pipeline.signaturePassed ? "green" : "amber"} />
+      <HealthCard label="REAL_COMMENT_EVENT" value={pipeline.realCommentClassified ? "Classified" : "Not classified"} tone={pipeline.realCommentClassified ? "green" : "amber"} />
+      <HealthCard label="Integration matched" value={pipeline.integrationMatched ? "Yes" : "No"} tone={pipeline.integrationMatched ? "green" : "amber"} />
+      <HealthCard label="Media/post matched" value={pipeline.mediaMatched ? "Yes" : "No"} tone={pipeline.mediaMatched ? "green" : "amber"} />
+      <HealthCard label="Trigger matched" value={pipeline.triggerMatched ? (pipeline.matchedKeyword || "Yes") : "No"} tone={pipeline.triggerMatched ? "green" : "amber"} />
+      <HealthCard label="Public reply attempted" value={pipeline.publicReplyAttempted ? "Yes" : "No"} tone={pipeline.publicReplyAttempted ? "green" : "slate"} />
+      <HealthCard label="DM attempted" value={pipeline.dmAttempted ? "Yes" : "No"} tone={pipeline.dmAttempted ? "green" : "slate"} />
+      <HealthCard label="Final reason" value={pipeline.finalReason ?? "Unknown"} tone={pipeline.finalReason?.includes("failed") || pipeline.finalReason?.includes("missing") || pipeline.finalReason?.includes("not_deliver") ? "red" : "slate"} />
+    </div>
+  );
+}
+
+function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-600">
-        {title}
-      </h2>
-      <div className="divide-y divide-slate-100">{children}</div>
+      <div className="border-b border-slate-200 px-5 py-4">
+        <h2 className="text-base font-black text-slate-950">{title}</h2>
+        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+      </div>
+      <div className="p-5">{children}</div>
     </section>
   );
 }
 
-function AdminRow({ children }: { children: ReactNode }) {
+function StatCard({ label, value, detail, tone = "slate" }: { label: string; value: ReactNode; detail: string; tone?: Tone }) {
   return (
-    <div className="grid gap-2 px-4 py-3 text-sm md:grid-cols-5">
-      {children}
+    <div className={`rounded-2xl border p-5 shadow-sm ${tonePanel(tone)}`}>
+      <p className="text-3xl font-black tracking-tight">{value}</p>
+      <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-1 text-sm text-slate-600">{detail}</p>
     </div>
   );
 }
 
-function EventBadge({ eventType }: { eventType: string }) {
-  const className =
-    eventType === "REAL_COMMENT_EVENT" || eventType === "REAL_MESSAGE_EVENT"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : eventType === "META_TEST_EVENT"
-      ? "border-blue-200 bg-blue-50 text-blue-700"
-      : eventType === "SIGNATURE_FAILED" || eventType === "PAYLOAD_INVALID"
-      ? "border-red-200 bg-red-50 text-red-700"
-      : "border-slate-200 bg-slate-50 text-slate-700";
-
+function HealthCard({ label, value, tone = "slate" }: { label: string; value: ReactNode; tone?: Tone }) {
   return (
-    <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-black ${className}`}>
-      {eventType}
-    </span>
+    <div className={`rounded-xl border p-3 ${tonePanel(tone)}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <div className="mt-1 break-words text-sm font-bold text-slate-950">{value}</div>
+    </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const className =
-    status === "PROCESSED"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : status === "FAILED"
-      ? "border-red-200 bg-red-50 text-red-700"
-      : status === "IGNORED"
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-slate-200 bg-slate-50 text-slate-700";
-
+function DataTable({
+  headers,
+  rows,
+  details,
+  empty,
+}: {
+  headers: string[];
+  rows: ReactNode[][];
+  details?: (index: number) => ReactNode;
+  empty: string;
+}) {
+  if (rows.length === 0) return <EmptyState message={empty} />;
   return (
-    <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-black ${className}`}>
-      {status}
-    </span>
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 bg-slate-50">
+            {headers.map((header) => (
+              <th key={header} className="whitespace-nowrap px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <Fragment key={`rowgroup-${index}`}>
+              <tr className="border-b border-slate-100 align-top">
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex} className="max-w-[320px] px-3 py-3 text-slate-700">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+              {details && (
+                <tr className="border-b border-slate-100 bg-slate-50/60">
+                  <td colSpan={headers.length}>{details(index)}</td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
 function PayloadSummary({ payload }: { payload: unknown }) {
-  if (!payload || typeof payload !== "object") return null;
+  if (!payload || typeof payload !== "object") return <EmptyState message="No diagnostic payload." />;
   const item = payload as Record<string, unknown>;
-  const bits = [
-    item.object ? `object=${item.object}` : null,
-    item.field ? `field=${item.field}` : null,
-    item.entryCount !== undefined ? `entries=${item.entryCount}` : null,
-    item.changesCount !== undefined ? `changes=${item.changesCount}` : null,
-    item.appearsSynthetic !== undefined ? `synthetic=${item.appearsSynthetic}` : null,
-    item.hasCommentText !== undefined ? `text=${item.hasCommentText}` : null,
-  ].filter(Boolean);
-  const mediaMatching =
-    item.mediaMatching && typeof item.mediaMatching === "object"
-      ? (item.mediaMatching as Record<string, unknown>)
-      : null;
-  const triggerMatching =
-    item.triggerMatching && typeof item.triggerMatching === "object"
-      ? (item.triggerMatching as Record<string, unknown>)
-      : null;
-
-  if (bits.length === 0 && !mediaMatching && !triggerMatching && !item.simulationResult) return null;
-
+  const mediaMatching = item.mediaMatching && typeof item.mediaMatching === "object" ? item.mediaMatching as Record<string, unknown> : null;
+  const triggerMatching = item.triggerMatching && typeof item.triggerMatching === "object" ? item.triggerMatching as Record<string, unknown> : null;
   return (
-    <div className="mt-1 space-y-1 break-words font-mono text-[11px] text-slate-500">
-      {bits.length > 0 && <p>{bits.join(" · ")}</p>}
+    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
+      <p className="font-black uppercase tracking-[0.12em] text-slate-500">Diagnostic summary</p>
+      <p>object={String(item.object ?? "unknown")} · field={String(item.field ?? "unknown")} · simulation={String(item.simulation ?? false)}</p>
       {mediaMatching && (
-        <p>
-          mediaMatch: incoming={String(mediaMatching.incomingMediaId ?? "none")} ·
-          normalized={String(mediaMatching.normalizedIncomingMediaId ?? "none")} ·
-          matched={Array.isArray(mediaMatching.matchedAutomationIds)
-            ? mediaMatching.matchedAutomationIds.join(",") || "none"
-            : "none"} ·
-          stored={Array.isArray(mediaMatching.storedPostIds)
-            ? mediaMatching.storedPostIds.join(",") || "none"
-            : "none"}
-        </p>
+        <p>mediaMatch: incoming={String(mediaMatching.incomingMediaId ?? "none")} · matched={Array.isArray(mediaMatching.matchedAutomationIds) ? mediaMatching.matchedAutomationIds.join(",") || "none" : "none"}</p>
       )}
       {triggerMatching && (
-        <p>
-          triggerMatch: mode={String(triggerMatching.triggerMode ?? "none")} ·
-          keyword={String(triggerMatching.matchedKeyword ?? "none")} ·
-          reason={String(triggerMatching.noMatchReason ?? item.simulationResult ?? "matched")}
-        </p>
-      )}
-      {Boolean(item.simulationResult) && (
-        <p>
-          simulation: integration={String(item.integrationMatched ?? "unknown")} ·
-          post={String(item.postMatched ?? "unknown")} ·
-          trigger={String(item.triggerMatched ?? "unknown")} ·
-          result={String(item.simulationResult)}
-        </p>
+        <p>triggerMatch: mode={String(triggerMatching.triggerMode ?? "none")} · keyword={String(triggerMatching.matchedKeyword ?? "none")} · reason={String(triggerMatching.noMatchReason ?? item.simulationResult ?? "matched")}</p>
       )}
     </div>
   );
 }
 
-function DiagnosticJson({ title, value }: { title: string; value: unknown }) {
-  if (!value || typeof value !== "object") {
-    return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{title}</p>
-        <p className="mt-1 text-xs text-slate-500">No diagnostic payload recorded.</p>
-      </div>
-    );
-  }
-
+function AdminJsonViewer({ title, value }: { title: string; value: unknown }) {
   return (
-    <details className="rounded-xl border border-slate-200 bg-slate-50 p-3" open>
-      <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
-        {title}
-      </summary>
-      <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words text-[11px] text-slate-700">
-        {JSON.stringify(value, null, 2)}
+    <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.14em] text-slate-500">{title}</summary>
+      <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-700">
+        {JSON.stringify(sanitizeAdminPayload(value), null, 2)}
       </pre>
     </details>
   );
 }
 
-function PayloadRaw({ payload }: { payload: unknown }) {
-  if (!payload || typeof payload !== "object") return null;
-  return (
-    <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
-      <summary className="cursor-pointer text-[11px] font-bold text-slate-600">
-        Sanitized payload
-      </summary>
-      <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-[11px] text-slate-700">
-        {JSON.stringify(payload, null, 2)}
-      </pre>
-    </details>
-  );
+function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: Tone }) {
+  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-black ${toneBadge(tone)}`}>{children}</span>;
 }
 
-function HealthCell({
-  label,
-  value,
-  tone = "slate",
-}: {
-  label: string;
-  value: string;
-  tone?: "slate" | "green" | "red" | "amber";
-}) {
-  const toneClass =
-    tone === "green"
-      ? "border-emerald-200 bg-emerald-50"
-      : tone === "red"
-      ? "border-red-200 bg-red-50"
-      : tone === "amber"
-      ? "border-amber-200 bg-amber-50"
-      : "border-slate-200 bg-slate-50";
+function EventBadge({ eventType }: { eventType: string }) {
+  const tone: Tone =
+    eventType === "REAL_COMMENT_EVENT" || eventType === "REAL_MESSAGE_EVENT" ? "green" :
+    eventType === "SIGNATURE_FAILED" || eventType === "PAYLOAD_INVALID" ? "red" :
+    eventType === "META_TEST_EVENT" ? "blue" : "slate";
+  return <Badge tone={tone}>{eventType}</Badge>;
+}
 
+function StatusBadge({ status }: { status: string }) {
+  const tone: Tone = status === "PROCESSED" || status === "SENT" ? "green" : status === "FAILED" ? "red" : status === "IGNORED" ? "amber" : "slate";
+  return <Badge tone={tone}>{status}</Badge>;
+}
+
+function Identity({ title, subtitle }: { title: ReactNode; subtitle?: ReactNode }) {
   return (
-    <div className={`rounded-xl border p-3 ${toneClass}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-1 break-words font-bold text-slate-900">{value}</p>
+    <div className="min-w-0">
+      <p className="truncate font-bold text-slate-950">{title}</p>
+      {subtitle && <p className="truncate text-xs text-slate-500">{subtitle}</p>}
     </div>
   );
 }
 
-function ChecklistItem({
-  label,
-  detail,
-  status,
-}: {
-  label: string;
-  detail: string;
-  status: "ok" | "warn" | "error" | "info";
-}) {
-  const dot =
-    status === "ok"
-      ? "bg-emerald-500"
-      : status === "error"
-      ? "bg-red-500"
-      : status === "warn"
-      ? "bg-amber-400"
-      : "bg-blue-400";
-  const border =
-    status === "ok"
-      ? "border-emerald-100"
-      : status === "error"
-      ? "border-red-200"
-      : status === "warn"
-      ? "border-amber-200"
-      : "border-blue-100";
+function Mono({ children }: { children: ReactNode }) {
+  return <span className="break-all font-mono text-xs text-slate-600">{children}</span>;
+}
 
+function DisabledActions({ labels }: { labels: string[] }) {
   return (
-    <div className={`rounded-xl border p-3 ${border}`}>
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dot}`} />
-        <p className="text-xs font-black text-slate-950">{label}</p>
-      </div>
-      <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{detail}</p>
+    <div className="flex flex-wrap gap-1">
+      {labels.map((label) => (
+        <button key={label} disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-400" title="Disabled until audited admin write flow exists">
+          {label}
+        </button>
+      ))}
     </div>
   );
+}
+
+function DangerCard({ title }: { title: string }) {
+  return (
+    <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+      <p className="font-black text-red-900">{title}</p>
+      <p className="mt-1 text-sm text-red-700">Disabled. Requires AdminAuditLog, typed confirmation, server admin check, rollback/error handling, and tests.</p>
+      <button disabled className="mt-4 cursor-not-allowed rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-300">Disabled</button>
+    </div>
+  );
+}
+
+function Callout({ title, children, tone = "slate" }: { title: string; children: ReactNode; tone?: Tone }) {
+  return (
+    <div className={`mt-4 rounded-xl border p-4 ${tonePanel(tone)}`}>
+      <p className="font-black">{title}</p>
+      <p className="mt-1 text-sm leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
+function FilterPills({ items }: { items: Array<[string, string]> }) {
+  return (
+    <div className="mb-4 flex flex-wrap gap-2">
+      {items.map(([label, href]) => (
+        <Link key={label} href={href} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-white">
+          {label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function LinkBox({ label, href }: { label: string; href: string }) {
+  return (
+    <Link href={href} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-rf-blue hover:bg-white">
+      {label}
+    </Link>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">{message}</div>;
+}
+
+type Tone = "slate" | "green" | "red" | "amber" | "blue" | "purple";
+
+function tonePanel(tone: Tone) {
+  const map: Record<Tone, string> = {
+    slate: "border-slate-200 bg-slate-50 text-slate-800",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    red: "border-red-200 bg-red-50 text-red-900",
+    amber: "border-amber-200 bg-amber-50 text-amber-900",
+    blue: "border-blue-200 bg-blue-50 text-blue-900",
+    purple: "border-purple-200 bg-purple-50 text-purple-900",
+  };
+  return map[tone];
+}
+
+function toneBadge(tone: Tone) {
+  const map: Record<Tone, string> = {
+    slate: "border-slate-200 bg-slate-50 text-slate-600",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    purple: "border-purple-200 bg-purple-50 text-purple-700",
+  };
+  return map[tone];
 }
