@@ -113,7 +113,9 @@ export default function AutomationTable({
                           <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600">
                             {automation.name || "Untitled automation"}
                           </Link>
-                          <p className="text-xs text-slate-500">Private DM</p>
+                          <p className="text-xs text-slate-500">
+                            {automation.sendPrivateDm === false ? "DM handled externally" : "Private DM"}
+                          </p>
                         </div>
                       </div>
                     </td>

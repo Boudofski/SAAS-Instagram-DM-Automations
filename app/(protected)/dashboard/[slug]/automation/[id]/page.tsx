@@ -26,7 +26,13 @@ export default async function CampaignDetailPage({ params }: Props) {
   const activity = logsResult.status === 200 ? (logsResult.data as any[]) : [];
 
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
-  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length);
+  const sendPrivateDm = automation.sendPrivateDm !== false;
+  const hasPublicReply = Boolean(
+    automation.listener?.commentReply ||
+      automation.listener?.commentReply2 ||
+      automation.listener?.commentReply3
+  );
+  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
 
   const replyRate =
     stats && stats.commentsReceived > 0
@@ -82,7 +88,8 @@ export default async function CampaignDetailPage({ params }: Props) {
               {[
                 !automation.posts?.length && "a post",
                 !isAnyComment && !automation.keywords?.length && "keywords",
-                !automation.listener && "a DM message",
+                sendPrivateDm && !automation.listener?.prompt && "a DM message",
+                !sendPrivateDm && !hasPublicReply && "a public reply or private DM",
               ]
                 .filter(Boolean)
                 .join(", ")}
@@ -149,7 +156,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               <FlowNode
                 label="Action"
                 title="Send Message"
-                body={automation.listener?.prompt || "No private DM configured."}
+                body={sendPrivateDm ? (automation.listener?.prompt || "No private DM configured.") : "Private DM skipped: handled by external tool"}
                 tone="blue"
               />
             </div>
@@ -164,6 +171,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Status" value={automation.active ? "Live" : "Paused"} />
             <SettingsRow label="Trigger mode" value={isAnyComment ? "Any comment" : "Specific keyword"} />
             <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
+            <SettingsRow label="Private DM" value={sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />
             <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />
             <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />
           </div>
@@ -278,7 +286,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
 
           {/* DM preview */}
-          {automation.listener && (
+          {automation.listener && sendPrivateDm && (
             <div>
               <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 DM message
@@ -301,6 +309,16 @@ export default async function CampaignDetailPage({ params }: Props) {
                   )}
                 </div>
               )}
+            </div>
+          )}
+          {automation.listener && !sendPrivateDm && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Private DM
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-950">
+                Private DM skipped: handled by external tool
+              </p>
             </div>
           )}
 
@@ -481,6 +499,7 @@ function formatActivityType(type: string, keyword?: string) {
     PUBLIC_REPLY_SENT: "Public reply sent",
     PUBLIC_REPLY_FAILED: "Public reply failed",
     DM_SENT: "Private DM sent",
+    DM_SKIPPED: "Private DM skipped",
     DM_FAILED: "Private DM failed",
     DUPLICATE_SKIPPED: "Duplicate skipped",
     NO_MATCH: "No trigger match",

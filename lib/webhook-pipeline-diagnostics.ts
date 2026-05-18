@@ -63,7 +63,7 @@ export function buildWebhookPipelineDiagnostics({
     event.eventType === "PUBLIC_REPLY_SENT" || event.eventType === "PUBLIC_REPLY_FAILED"
   );
   const dmEvent = automationEvents.find((event) =>
-    event.eventType === "DM_SENT" || event.eventType === "DM_FAILED"
+    event.eventType === "DM_SENT" || event.eventType === "DM_FAILED" || event.eventType === "DM_SKIPPED"
   );
   const keywordEvent = automationEvents.find((event) => event.eventType === "KEYWORD_MATCHED");
 

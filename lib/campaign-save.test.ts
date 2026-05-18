@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "fs";
 import {
   normalizeCampaignMediaType,
   normalizeCampaignPayload,
@@ -35,6 +36,7 @@ describe("normalizeCampaignPayload", () => {
     expect(normalized.name).toBe("MA GLOBAL CAMPAIGN");
     expect(normalized.post.postid).toBe("180000");
     expect(normalized.keywords).toEqual(["ai"]);
+    expect(normalized.sendPrivateDm).toBe(true);
     expect(normalized.listener.prompt).toBe("Hey {{first_name}}");
     expect(normalized.listener.ctaLink).toBe("https://ceptice.com/");
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
@@ -98,5 +100,63 @@ describe("normalizeCampaignPayload", () => {
 
     expect(normalized.triggerMode).toBe("ANY_COMMENT");
     expect(normalized.keywords).toEqual([]);
+  });
+
+  it("defaults undefined sendPrivateDm to true for existing campaign behavior", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: undefined,
+    });
+
+    expect(normalized.sendPrivateDm).toBe(true);
+    expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
+  });
+
+  it("requires a DM message when sendPrivateDm is true", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: true,
+      listener: { ...basePayload.listener, prompt: " " },
+    });
+
+    expect(validateNormalizedCampaignPayload(normalized)).toBe("Campaign needs a DM message.");
+  });
+
+  it("allows an empty DM message when sendPrivateDm is false and public reply is enabled", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: false,
+      listener: { ...basePayload.listener, prompt: " ", ctaLink: "https://ignored.test" },
+    });
+
+    expect(normalized.sendPrivateDm).toBe(false);
+    expect(normalized.listener.prompt).toBe("");
+    expect(normalized.listener.ctaLink).toBeUndefined();
+    expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
+  });
+
+  it("rejects campaigns that would do nothing when private DM and public reply are both disabled", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: false,
+      publicReplyEnabled: false,
+      listener: { ...basePayload.listener, prompt: "" },
+    });
+
+    expect(validateNormalizedCampaignPayload(normalized)).toBe(
+      "Enable public reply or private DM before activating this campaign."
+    );
+  });
+});
+
+describe("sendPrivateDm migration contract", () => {
+  it("adds sendPrivateDm with default true and DM_SKIPPED event type", () => {
+    const migration = readFileSync(
+      "prisma/migrations/20260518024500_add_send_private_dm_to_automation/migration.sql",
+      "utf8"
+    );
+
+    expect(migration).toContain('"sendPrivateDm" BOOLEAN NOT NULL DEFAULT true');
+    expect(migration).toContain("'DM_SKIPPED'");
   });
 });

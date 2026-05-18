@@ -78,6 +78,7 @@ model Automation {
   active       Boolean           @default(false)
   matchingMode MATCHING_MODE     @default(CONTAINS)
   triggerMode  String            @default("SPECIFIC_KEYWORD")
+  sendPrivateDm Boolean          @default(true)
   trigger      Trigger[]
   listener     Listener?
   posts        Post[]
@@ -241,6 +242,7 @@ enum EVENT_TYPE {
   COMMENT_RECEIVED
   KEYWORD_MATCHED
   DM_SENT
+  DM_SKIPPED
   PUBLIC_REPLY_SENT
   DM_FAILED
   PUBLIC_REPLY_FAILED

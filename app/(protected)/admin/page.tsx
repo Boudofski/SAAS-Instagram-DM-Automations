@@ -537,7 +537,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           {tab === "campaigns" && (
             <Panel title="Campaigns" description="Admin campaign inventory and delivery counters. Editing is linked/read-only here to avoid tenant confusion.">
               <DataTable
-                headers={["Owner", "Campaign", "Status", "Trigger", "Post scope", "Replies", "Messages", "Created", "Actions"]}
+                headers={["Owner", "Campaign", "Status", "Trigger", "Post scope", "Replies", "Private DM", "Messages", "Created", "Actions"]}
                 rows={campaigns.map((campaign: any) => {
                   const keywords = campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : campaign.keywords.map((kw: any) => kw.word).join(", ") || "No keywords";
                   const postScope = campaign.posts[0]?.postid === "ANY" ? "Any post" : campaign.posts[0]?.postid ?? "No post";
@@ -549,6 +549,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <Identity key="trigger" title={campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} subtitle={`${campaign.matchingMode} · ${keywords}`} />,
                     <Mono key="post">{postScope}</Mono>,
                     publicReplyEnabled ? <Badge key="reply" tone="green">Enabled</Badge> : <Badge key="reply" tone="slate">Off</Badge>,
+                    campaign.sendPrivateDm === false ? <Badge key="private-dm" tone="amber">Skipped externally</Badge> : <Badge key="private-dm" tone="green">Sent by AP3k</Badge>,
                     `${campaign._count.messageLogs} logs · ${campaign._count.leads} leads`,
                     formatAdminDate(campaign.createdAt),
                     <DisabledActions key="actions" labels={["Activate/pause", "Delete", "Duplicate"]} />,
@@ -663,10 +664,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     formatAdminDate(log.createdAt),
                     <Identity key="campaign" title={log.automation?.name ?? "Unknown campaign"} subtitle={log.automation?.User?.email ?? ""} />,
                     <Badge key="type" tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>,
-                    <StatusBadge key="status" status={log.status} />,
+                    log.status === "SKIPPED" ? <Badge key="status" tone="amber">Skipped</Badge> : <StatusBadge key="status" status={log.status} />,
                     log.messageType === "DM" ? "ig_business/messages" : "comment/media reply",
                     <Identity key="ids" title={`comment ${log.commentId ?? "n/a"}`} subtitle={`media ${log.mediaId ?? "n/a"}`} />,
-                    log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "None",
+                    log.status === "SKIPPED" && log.errorMessage === "external_dm_tool_enabled"
+                      ? <Badge key="error" tone="amber">Skipped — external DM tool enabled</Badge>
+                      : log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "None",
                     <DisabledActions key="actions" labels={["View details", "Copy safe error"]} />,
                   ];
                 })}

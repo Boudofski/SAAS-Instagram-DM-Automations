@@ -649,6 +649,37 @@ async function processEntry(
         });
       }
 
+      if (automation.sendPrivateDm === false) {
+        await createMessageLog({
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          mediaId,
+          commentId,
+          messageType: "DM",
+          status: "SKIPPED",
+          errorMessage: "external_dm_tool_enabled",
+        });
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "DM_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword,
+          meta: {
+            reason: "external_dm_tool_enabled",
+            sendPrivateDm: false,
+          },
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "PROCESSED",
+          errorMessage: "dm_skipped_external_tool",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+
       // 6. Build DM message — resolve template first, then optionally run through SMARTAI
       const isSmartAi =
         listener.listener === "SMARTAI" &&

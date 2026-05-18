@@ -71,6 +71,7 @@ export default function WizardPage({ params, searchParams }: Props) {
       publicReply3: automation.listener?.commentReply3 ?? "",
       ctaLink: automation.listener?.ctaLink ?? "",
       ctaButtonTitle: automation.listener?.ctaButtonTitle ?? "",
+      sendPrivateDm: automation.sendPrivateDm !== false,
       triggerMode: automation.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
       publicReplyEnabled: Boolean(
         automation.listener?.commentReply ||
@@ -295,19 +296,59 @@ export default function WizardPage({ params, searchParams }: Props) {
               Step 3 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              Write your DM
+              Private DM settings
             </h2>
             <p className="text-slate-500 text-sm mb-6">
-              This is the message people receive after their comment triggers the campaign.
+              Choose whether AP3k sends the private DM or only handles matching and public replies.
             </p>
-            <DmEditor
-              value={data.dmMessage}
-              ctaLink={data.ctaLink}
-              ctaButtonTitle={data.ctaButtonTitle}
-              onChange={(v) => update({ dmMessage: v })}
-              onCtaLinkChange={(l) => update({ ctaLink: l })}
-              onCtaButtonTitleChange={(t) => update({ ctaButtonTitle: t })}
-            />
+            <button
+              type="button"
+              onClick={() => update({ sendPrivateDm: !data.sendPrivateDm })}
+              className={[
+                "mb-5 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
+                data.sendPrivateDm
+                  ? "border-rf-blue/25 bg-rf-blue/10"
+                  : "border-slate-200 bg-slate-50",
+              ].join(" ")}
+            >
+              <span>
+                <span className="block text-sm font-bold text-slate-950">Send private DM with AP3k</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  Turn this off if another tool handles DMs.
+                </span>
+              </span>
+              <span
+                className={[
+                  "relative h-6 w-11 rounded-full transition-colors",
+                  data.sendPrivateDm ? "bg-rf-blue" : "bg-slate-300",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "absolute top-1 h-4 w-4 rounded-full bg-white transition-all",
+                    data.sendPrivateDm ? "left-6" : "left-1",
+                  ].join(" ")}
+                />
+              </span>
+            </button>
+            {data.sendPrivateDm ? (
+              <DmEditor
+                value={data.dmMessage}
+                ctaLink={data.ctaLink}
+                ctaButtonTitle={data.ctaButtonTitle}
+                onChange={(v) => update({ dmMessage: v })}
+                onCtaLinkChange={(l) => update({ ctaLink: l })}
+                onCtaButtonTitleChange={(t) => update({ ctaButtonTitle: t })}
+              />
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-bold text-slate-950">Private DM skipped</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  AP3k will still receive comments, match triggers, and send public replies if enabled.
+                  Private DMs are handled by your external tool.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -407,8 +448,11 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Post",         value: data.post?.postid === "ANY" ? "Any post" : (data.post?.caption?.slice(0, 60) ?? "Selected post"), step: 1 as const },
                   { label: "Trigger",      value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword",           step: 2 as const },
                   { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.join(", "),   step: 2 as const },
-                  { label: "DM message",   value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""),             step: 3 as const },
-                  ...(data.ctaButtonTitle || data.ctaLink
+                  { label: "Private DM",   value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally",             step: 3 as const },
+                  ...(data.sendPrivateDm && data.dmMessage
+                    ? [{ label: "DM message", value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""), step: 3 as const }]
+                    : []),
+                  ...(data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink)
                     ? [{ label: "CTA button", value: `${data.ctaButtonTitle || "Link"} -> ${data.ctaLink || "url"}`, step: 3 as const }]
                     : []),
                   { label: "Public reply", value: data.publicReplyEnabled && [data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length > 0
@@ -453,7 +497,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               <span>
                 <span className="block text-sm font-bold text-slate-950">Active campaign</span>
                 <span className="mt-1 block text-xs text-slate-500">
-                  When enabled, AP3k listens for matching comments and sends the configured DM.
+                  When enabled, AP3k listens for matching comments, sends public replies, and {data.sendPrivateDm ? "sends the configured DM." : "skips private DM sending."}
                 </span>
               </span>
               <span
@@ -483,8 +527,9 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} />
             <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.join(", ") : "None yet"} />
-            <PreviewRow label="DM" value={data.dmMessage || "Write your primary DM"} />
-            <PreviewRow label="CTA" value={data.ctaButtonTitle || data.ctaLink ? `${data.ctaButtonTitle || "Button"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No CTA"} />
+            <PreviewRow label="Private DM" value={data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />
+            <PreviewRow label="DM" value={data.sendPrivateDm ? data.dmMessage || "Write your primary DM" : "Handled by external tool"} />
+            <PreviewRow label="CTA" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Button"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No CTA"} />
             <PreviewRow label="Public reply" value={data.publicReplyEnabled ? `${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)` : "Off"} />
             <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
           </div>

@@ -22,6 +22,7 @@ export type WizardData = {
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
   keywords: string[];
   matchingMode: "EXACT" | "CONTAINS";
+  sendPrivateDm: boolean;
   dmMessage: string;
   ctaLink: string;
   ctaButtonTitle: string;
@@ -38,6 +39,7 @@ const INITIAL: WizardData = {
   triggerMode: "SPECIFIC_KEYWORD",
   keywords: [],
   matchingMode: "CONTAINS",
+  sendPrivateDm: true,
   dmMessage: "",
   ctaLink: "",
   ctaButtonTitle: "",
@@ -65,18 +67,31 @@ export function useWizard(slug: string, automationId?: string) {
   const canAdvance = (): boolean => {
     if (step === 1) return !!data.post;
     if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
-    if (step === 3) return data.dmMessage.trim().length > 0;
-    if (step === 4) return canAdvancePublicReplyStep(data.publicReplyEnabled, [data.publicReply, data.publicReply2, data.publicReply3]);
+    if (step === 3) return !data.sendPrivateDm || data.dmMessage.trim().length > 0;
+    if (step === 4) {
+      const replies = [data.publicReply, data.publicReply2, data.publicReply3];
+      if (!data.sendPrivateDm) {
+        return data.publicReplyEnabled && replies.some((reply) => reply.trim());
+      }
+      return canAdvancePublicReplyStep(data.publicReplyEnabled, replies);
+    }
     return true;
   };
 
   const activate = async (activeOverride?: boolean) => {
-    if (!data.post || !data.dmMessage.trim()) {
+    if (!data.post || (data.sendPrivateDm && !data.dmMessage.trim())) {
       setError("Please complete all required steps before activating.");
       return;
     }
     if (data.triggerMode === "SPECIFIC_KEYWORD" && data.keywords.length === 0) {
       setError("Add at least one keyword or switch the trigger to Any comment.");
+      return;
+    }
+    if (
+      !data.sendPrivateDm &&
+      (!data.publicReplyEnabled || ![data.publicReply, data.publicReply2, data.publicReply3].some((reply) => reply.trim()))
+    ) {
+      setError("Enable public reply or private DM before activating this campaign.");
       return;
     }
 
@@ -89,6 +104,7 @@ export function useWizard(slug: string, automationId?: string) {
         active: typeof activeOverride === "boolean" ? activeOverride : data.active,
         matchingMode: data.matchingMode,
         triggerMode: data.triggerMode,
+        sendPrivateDm: data.sendPrivateDm,
         post: data.post,
         keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
         publicReplyEnabled: data.publicReplyEnabled,
@@ -98,8 +114,8 @@ export function useWizard(slug: string, automationId?: string) {
           commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
           commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
           commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
-          ctaLink: data.ctaLink || undefined,
-          ctaButtonTitle: data.ctaButtonTitle || undefined,
+          ctaLink: data.sendPrivateDm ? data.ctaLink || undefined : undefined,
+          ctaButtonTitle: data.sendPrivateDm ? data.ctaButtonTitle || undefined : undefined,
         },
       } as const;
 
@@ -112,6 +128,7 @@ export function useWizard(slug: string, automationId?: string) {
           postid: payload.post.postid,
           keywordsCount: payload.keywords.length,
           listenerPromptPresent: Boolean(payload.listener.prompt?.trim()),
+          sendPrivateDm: payload.sendPrivateDm,
           publicReplyEnabled: payload.publicReplyEnabled,
           publicReplyCount: [
             payload.listener.commentReply,

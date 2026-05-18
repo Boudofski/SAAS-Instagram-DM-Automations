@@ -15,6 +15,7 @@ export type RawCampaignPayload = {
   } | null;
   keywords?: string[];
   publicReplyEnabled?: boolean;
+  sendPrivateDm?: boolean;
   aiMode?: boolean;
   listener?: {
     listener?: string;
@@ -32,6 +33,7 @@ export type NormalizedCampaignPayload = {
   active: boolean;
   matchingMode: "EXACT" | "CONTAINS";
   triggerMode: CampaignTriggerMode;
+  sendPrivateDm: boolean;
   post: {
     postid: string;
     caption?: string;
@@ -59,6 +61,7 @@ export type CampaignPayloadSummary = {
   keywordsCount: number;
   listenerPromptPresent: boolean;
   publicReplyEnabled: boolean;
+  sendPrivateDm: boolean;
   publicReplyCount: number;
   ctaTitlePresent: boolean;
   ctaUrlPresent: boolean;
@@ -78,6 +81,7 @@ export function normalizeCampaignPayload(
 
   const postid = payload.post?.postid?.trim() ?? "";
   const publicReplyEnabled = payload.publicReplyEnabled !== false;
+  const sendPrivateDm = payload.sendPrivateDm !== false;
   const replies = publicReplyEnabled
     ? [
         payload.listener?.commentReply?.trim(),
@@ -91,6 +95,7 @@ export function normalizeCampaignPayload(
     active: Boolean(payload.active),
     matchingMode,
     triggerMode,
+    sendPrivateDm,
     post: {
       postid,
       caption: cleanOptional(payload.post?.caption),
@@ -104,8 +109,8 @@ export function normalizeCampaignPayload(
       commentReply: replies[0],
       commentReply2: replies[1],
       commentReply3: replies[2],
-      ctaLink: cleanOptional(payload.listener?.ctaLink),
-      ctaButtonTitle: cleanOptional(payload.listener?.ctaButtonTitle),
+      ctaLink: sendPrivateDm ? cleanOptional(payload.listener?.ctaLink) : undefined,
+      ctaButtonTitle: sendPrivateDm ? cleanOptional(payload.listener?.ctaButtonTitle) : undefined,
     },
   };
 }
@@ -113,12 +118,25 @@ export function normalizeCampaignPayload(
 export function validateNormalizedCampaignPayload(
   payload: NormalizedCampaignPayload
 ): string | null {
-  if (!payload.post.postid || !payload.listener.prompt) {
-    return "Campaign needs a post and DM message.";
+  if (!payload.post.postid) {
+    return "Campaign needs a post.";
   }
 
   if (payload.triggerMode === "SPECIFIC_KEYWORD" && payload.keywords.length === 0) {
     return "Specific keyword campaigns need at least one keyword.";
+  }
+
+  if (payload.sendPrivateDm && !payload.listener.prompt) {
+    return "Campaign needs a DM message.";
+  }
+
+  const publicReplyCount = [
+    payload.listener.commentReply,
+    payload.listener.commentReply2,
+    payload.listener.commentReply3,
+  ].filter(Boolean).length;
+  if (!payload.sendPrivateDm && publicReplyCount === 0) {
+    return "Enable public reply or private DM before activating this campaign.";
   }
 
   return null;
@@ -137,6 +155,7 @@ export function summarizeCampaignPayload(
     active: payload.active,
     triggerMode: payload.triggerMode,
     matchingMode: payload.matchingMode,
+    sendPrivateDm: payload.sendPrivateDm,
     postid: payload.post.postid,
     keywordsCount: payload.keywords.length,
     listenerPromptPresent: Boolean(payload.listener.prompt),

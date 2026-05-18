@@ -170,6 +170,7 @@ describe("updateCompleteAutomation — ownership check before transaction", () =
       active: false,
       matchingMode: "CONTAINS" as const,
       triggerMode: "SPECIFIC_KEYWORD" as const,
+      sendPrivateDm: true,
       post: { postid: "p1", caption: undefined, media: "url", mediaType: "IMAGE" as const },
       keywords: [],
       listener: { listener: "MESSAGE" as const, prompt: "Hi", commentReply: undefined, ctaLink: undefined, commentReply2: undefined, commentReply3: undefined, ctaButtonTitle: undefined },

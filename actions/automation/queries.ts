@@ -69,6 +69,7 @@ export const createCompleteAutomation = async (
           active: payload.active,
           matchingMode: payload.matchingMode,
           triggerMode: payload.triggerMode,
+          sendPrivateDm: payload.sendPrivateDm,
           posts: {
             create: payload.post,
           },
@@ -196,6 +197,7 @@ export const updateCompleteAutomation = async (
         active: payload.active,
         matchingMode: payload.matchingMode,
         triggerMode: payload.triggerMode,
+        sendPrivateDm: payload.sendPrivateDm,
         posts: { create: payload.post },
         ...(payload.keywords.length > 0 && {
           keywords: {
@@ -225,6 +227,7 @@ export const duplicateAutomationQuery = async (
     active: false,
     matchingMode: automation.matchingMode === "EXACT" ? "EXACT" : "CONTAINS",
     triggerMode: (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ?? "SPECIFIC_KEYWORD",
+    sendPrivateDm: automation.sendPrivateDm,
     post: {
       postid: automation.posts[0].postid,
       caption: automation.posts[0].caption ?? undefined,

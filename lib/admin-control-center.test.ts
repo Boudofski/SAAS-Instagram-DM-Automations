@@ -35,6 +35,10 @@ describe("admin control center helpers", () => {
       label: "Reconnect account",
       tone: "amber",
     });
+    expect(classifyDeliveryError("external_dm_tool_enabled")).toMatchObject({
+      label: "Skipped — external DM tool enabled",
+      tone: "amber",
+    });
   });
 
   it("keeps subscription management read-only with Stripe customer links", () => {

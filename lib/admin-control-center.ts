@@ -58,6 +58,13 @@ export function classifyDeliveryError(error?: string | null) {
       tone: "amber" as const,
     };
   }
+  if (text.includes("external_dm_tool_enabled")) {
+    return {
+      label: "Skipped — external DM tool enabled",
+      detail: "Campaign is configured to let another tool handle private DMs.",
+      tone: "amber" as const,
+    };
+  }
   if (!text) {
     return { label: "No error", detail: "No delivery error recorded.", tone: "green" as const };
   }
