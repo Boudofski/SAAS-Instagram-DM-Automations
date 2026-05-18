@@ -53,6 +53,11 @@ export default async function DashboardPage({ params }: Props) {
   const instagram = userResult.data?.integrations?.[0];
   const tokenExpired =
     instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now();
+  const displayName =
+    userResult.data?.firstname ||
+    userResult.data?.email?.split("@")[0] ||
+    "there";
+  const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
@@ -61,27 +66,27 @@ export default async function DashboardPage({ params }: Props) {
   ];
 
   return (
-    <div className="relative flex flex-col gap-6 p-4 text-slate-950 sm:p-6 lg:p-8">
+    <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Instagram AutoDM</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
             Monitor comments, matched keywords, leads, and DM delivery for AP3k automations.
           </p>
         </div>
-        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button inline-flex px-5 py-2.5 text-sm">
+        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button inline-flex w-full justify-center px-5 py-2.5 text-sm sm:w-auto">
           + Create campaign
         </Link>
       </div>
 
       {isEmpty && (
-        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950">Turn comments into DMs automatically</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Turn comments into DMs automatically</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 Connect Instagram, create an automation, comment a keyword from a tester account, then review logs in AP3k.
               </p>
             </div>
@@ -94,8 +99,8 @@ export default async function DashboardPage({ params }: Props) {
 
       {instagram && (
         <div className={[
-          "flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between",
-          tokenExpired ? "border-red-200" : "border-emerald-100",
+          "flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between",
+          tokenExpired ? "border-red-200 dark:border-red-500/35" : "border-emerald-100 dark:border-emerald-500/25",
         ].join(" ")}>
           <div className="flex items-center gap-3">
             {instagram.profilePictureUrl ? (
@@ -111,10 +116,10 @@ export default async function DashboardPage({ params }: Props) {
               </div>
             )}
             <div>
-              <p className="text-sm font-black text-slate-950">
+              <p className="text-sm font-black text-slate-950 dark:text-white">
                 {instagram.instagramUsername ? `@${instagram.instagramUsername}` : "Instagram connected"}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {tokenExpired
                   ? "Token expired. Reconnect Instagram before testing comments."
                   : "Ready for official comment-to-DM testing."}
@@ -134,24 +139,24 @@ export default async function DashboardPage({ params }: Props) {
         <HealthPill label="Instagram connected" state={instagram && !tokenExpired ? "ok" : "warn"} />
         <HealthPill label="Comments webhook active" state="ok" />
         <HealthPill label="Public reply fallback ready" state="ok" />
-        <HealthPill label="DM capability pending" state="warn" />
+        <HealthPill label={hasExternalDmCampaign ? "External DM mode active" : "DM capability pending"} state="warn" />
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="DMs sent"         icon="✉️" value={totalDms}        empty={isEmpty} />
-        <StatCard label="Comments matched" icon="💬" value={totalComments}   empty={isEmpty} />
-        <StatCard label="Leads captured" icon="🎯" value={automations.reduce((sum: number, a: any) => sum + (a._count?.leads ?? 0), 0)} empty={isEmpty} />
-        <StatCard label="Reply rate"       icon="📈" value={`${replyRate}%`} empty={isEmpty} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="DMs sent"         icon="DM" value={totalDms}        empty={isEmpty} />
+        <StatCard label="Comments matched" icon="CM" value={totalComments}   empty={isEmpty} />
+        <StatCard label="Leads captured" icon="LD" value={automations.reduce((sum: number, a: any) => sum + (a._count?.leads ?? 0), 0)} empty={isEmpty} />
+        <StatCard label="Reply rate"       icon="RR" value={`${replyRate}%`} empty={isEmpty} />
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
 
         {/* Campaigns */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-black text-slate-950">Active campaigns</h2>
+            <h2 className="font-black text-slate-950 dark:text-white">Active campaigns</h2>
             <Link
               href={`/dashboard/${params.slug}/automation`}
               className="text-xs font-bold text-rf-pink hover:text-rf-purple"
@@ -185,10 +190,10 @@ export default async function DashboardPage({ params }: Props) {
 
 function HealthPill({ label, state }: { label: string; state: "ok" | "warn" }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
       <div className="flex items-center gap-2">
         <span className={state === "ok" ? "h-2.5 w-2.5 rounded-full bg-emerald-500" : "h-2.5 w-2.5 rounded-full bg-amber-500"} />
-        <p className="text-xs font-black text-slate-950">{label}</p>
+        <p className="text-xs font-black text-slate-950 dark:text-white">{label}</p>
       </div>
     </div>
   );

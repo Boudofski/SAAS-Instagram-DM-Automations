@@ -13,13 +13,13 @@ export default function StatCard({ label, value, icon, delta, deltaDir = "neutra
   return (
     <div className="ap3k-card ap3k-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rf-pink/50 to-transparent" />
-      <div className="flex items-center gap-2 text-rf-muted text-xs font-black uppercase tracking-[0.18em]">
-        <span className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-base shadow-inner">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-rf-muted">
+        <span className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-black text-rf-pink shadow-inner dark:border-white/10 dark:bg-white/[0.04] dark:text-base">
           {icon}
         </span>
         {label}
       </div>
-      <div className="text-3xl font-black tracking-tight text-rf-text">
+      <div className="text-3xl font-black tracking-tight text-slate-950 dark:text-rf-text">
         {empty ? "—" : value}
       </div>
       {delta && !empty && (

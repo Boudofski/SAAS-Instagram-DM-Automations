@@ -46,19 +46,19 @@ export default async function CampaignDetailPage({ params }: Props) {
       : 0;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 text-slate-950 sm:p-6 lg:p-8">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 text-slate-950 dark:text-white sm:p-6 lg:p-8">
 
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link
             href={`/dashboard/${params.slug}/automation`}
-            className="text-xs text-slate-500 hover:text-slate-950 transition-colors mb-2 inline-block"
+            className="text-xs dark:text-slate-400 text-slate-500 hover:text-slate-950 dark:hover:text-white transition-colors mb-2 inline-block"
           >
             Campaigns
           </Link>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Automation detail</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
             {automation.name}
           </h1>
           <div className="flex items-center gap-2 mt-2">
@@ -83,7 +83,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <p className="text-xs font-black uppercase tracking-wider text-amber-400">
               Campaign setup incomplete
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm dark:text-slate-400 text-slate-500">
               This campaign is missing{" "}
               {[
                 !automation.posts?.length && "a post",
@@ -106,7 +106,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6 text-slate-950 dark:text-white shadow-sm">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
@@ -114,7 +114,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               </p>
               <h2 className="mt-1 text-xl font-black">When comments match, AP3k sends the DM</h2>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-xs font-bold dark:text-slate-400 text-slate-500">
               Live preview
             </span>
           </div>
@@ -163,8 +163,8 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
         </div>
 
-        <aside className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+        <aside className="rounded-3xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6 text-slate-950 dark:text-white shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.18em] dark:text-slate-400 text-slate-500">
             Settings
           </p>
           <div className="mt-5 space-y-4">
@@ -184,11 +184,11 @@ export default async function CampaignDetailPage({ params }: Props) {
         </aside>
       </div>
 
-      <div className="mb-8 rounded-2xl border border-blue-100 bg-white p-4 text-slate-950 shadow-sm">
+      <div className="mb-8 rounded-2xl border border-blue-100 bg-white p-4 text-slate-950 dark:text-white shadow-sm">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-blue">
           Reviewer test script
         </p>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm dark:text-slate-300 text-slate-600">
           This campaign listens for comments on the selected Instagram media,
           matches the configured keyword, replies publicly if enabled, then sends
           the private DM through Meta&apos;s official API. The log below shows
@@ -225,16 +225,16 @@ export default async function CampaignDetailPage({ params }: Props) {
 
         {/* Campaign info */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-5">
-          <h2 className="text-sm font-bold text-slate-950">Campaign details</h2>
+          <h2 className="text-sm font-bold text-slate-950 dark:text-white">Campaign details</h2>
 
           {/* Post */}
           {automation.posts?.[0] && (
             <div>
-              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Post</p>
+              <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">Post</p>
               {automation.posts[0].postid === "ANY" ? (
                 <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
                   <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-rf-blue/10 text-2xl">🌐</span>
-                  <p className="text-xs text-slate-500">Any post - triggers on all Instagram posts</p>
+                  <p className="text-xs dark:text-slate-400 text-slate-500">Any post - triggers on all Instagram posts</p>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
@@ -248,7 +248,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                   ) : (
                     <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-slate-50 text-xl">📷</span>
                   )}
-                  <p className="text-xs text-slate-500 line-clamp-2">
+                  <p className="text-xs dark:text-slate-400 text-slate-500 line-clamp-2">
                     {automation.posts[0].caption ?? "Reel / Post"}
                   </p>
                 </div>
@@ -258,7 +258,7 @@ export default async function CampaignDetailPage({ params }: Props) {
 
           {/* Keywords */}
           <div>
-            <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Trigger</p>
+            <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">Trigger</p>
             <div className="flex flex-wrap gap-2">
               {isAnyComment ? (
                 <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-rf-blue/10 text-rf-blue border-rf-blue/20">
@@ -280,7 +280,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-slate-500">No keywords set</span>
+                <span className="text-xs dark:text-slate-400 text-slate-500">No keywords set</span>
               )}
             </div>
           </div>
@@ -288,11 +288,11 @@ export default async function CampaignDetailPage({ params }: Props) {
           {/* DM preview */}
           {automation.listener && sendPrivateDm && (
             <div>
-              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">
+              <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 DM message
               </p>
               <div className="bg-rf-blue/5 border border-rf-blue/15 rounded-xl p-4">
-                <p className="text-xs text-slate-950 leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs text-slate-950 dark:text-white leading-relaxed whitespace-pre-wrap">
                   {automation.listener.prompt}
                 </p>
               </div>
@@ -303,7 +303,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                     {automation.listener.ctaButtonTitle || "Open link"}
                   </span>
                   {automation.listener.ctaLink && (
-                    <span className="text-[10px] text-slate-500 truncate">
+                    <span className="text-[10px] dark:text-slate-400 text-slate-500 truncate">
                       {automation.listener.ctaLink}
                     </span>
                   )}
@@ -312,11 +312,11 @@ export default async function CampaignDetailPage({ params }: Props) {
             </div>
           )}
           {automation.listener && !sendPrivateDm && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-4">
+              <p className="text-xs font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
                 Private DM
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
+              <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-white">
                 Private DM skipped: handled by external tool
               </p>
             </div>
@@ -329,7 +329,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             automation.listener.commentReply3
           ) && (
             <div>
-              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">
+              <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 Public reply variations
               </p>
               <div className="flex flex-col gap-2">
@@ -342,9 +342,9 @@ export default async function CampaignDetailPage({ params }: Props) {
                   .map((reply: string, i: number) => (
                     <div
                       key={i}
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-950"
+                      className="rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-2 text-xs text-slate-950 dark:text-white"
                     >
-                      <span className="mr-2 text-slate-500 font-semibold">{i + 1}.</span>
+                      <span className="mr-2 dark:text-slate-400 text-slate-500 font-semibold">{i + 1}.</span>
                       {reply}
                     </div>
                   ))}
@@ -355,11 +355,11 @@ export default async function CampaignDetailPage({ params }: Props) {
 
         {/* Quick actions */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4">
-          <h2 className="text-sm font-bold text-slate-950">Quick actions</h2>
+          <h2 className="text-sm font-bold text-slate-950 dark:text-white">Quick actions</h2>
           <Link
             href={`/dashboard/${params.slug}/automation/new`}
             className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200
-                       rounded-xl text-sm text-slate-500 hover:text-slate-950 hover:border-rf-blue/30
+                       rounded-xl text-sm dark:text-slate-400 text-slate-500 hover:text-slate-950 dark:hover:text-white hover:border-rf-blue/30
                        transition-all"
           >
             <span>➕</span> Create a new campaign
@@ -367,7 +367,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <Link
             href={`/dashboard/${params.slug}/automation`}
             className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200
-                       rounded-xl text-sm text-slate-500 hover:text-slate-950 hover:border-rf-blue/30
+                       rounded-xl text-sm dark:text-slate-400 text-slate-500 hover:text-slate-950 dark:hover:text-white hover:border-rf-blue/30
                        transition-all"
           >
             <span>📣</span> View all campaigns
@@ -380,21 +380,21 @@ export default async function CampaignDetailPage({ params }: Props) {
 
       </div>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-slate-950">Live automation log</h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <h2 className="text-sm font-bold text-slate-950 dark:text-white">Live automation log</h2>
+            <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
               Webhook receipts, keyword matches, DM sends, and failures from Meta.
             </p>
           </div>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
             Latest 30
           </span>
         </div>
 
         {activity.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-5 text-sm dark:text-slate-400 text-slate-500">
             No events yet. Comment on a connected Instagram post to test this campaign.
           </div>
         ) : (
@@ -409,7 +409,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-950">
+                    <p className="text-sm font-semibold text-slate-950 dark:text-white">
                       {formatActivityType(item.type, item.keyword)}
                     </p>
                     {item.keyword && (
@@ -418,12 +418,12 @@ export default async function CampaignDetailPage({ params }: Props) {
                       </span>
                     )}
                     {item.status && (
-                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-500">
+                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold uppercase dark:text-slate-400 text-slate-500">
                         {item.status}
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
                     {new Date(item.createdAt).toLocaleString()}
                     {item.igUserId ? ` · IG user ${item.igUserId}` : ""}
                     {item.commentId ? ` · comment ${item.commentId}` : ""}
@@ -464,8 +464,8 @@ function FlowNode({
   return (
     <div className={`rounded-2xl border bg-gradient-to-br to-white p-5 ${tones[tone]}`}>
       <p className="text-[11px] font-black uppercase tracking-[0.18em]">{label}</p>
-      <h3 className="mt-2 text-lg font-black text-slate-950">{title}</h3>
-      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{body}</p>
+      <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{title}</h3>
+      <p className="mt-2 line-clamp-3 text-sm leading-relaxed dark:text-slate-300 text-slate-600">{body}</p>
     </div>
   );
 }
@@ -478,11 +478,11 @@ function FlowConnector() {
 
 function SettingsRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-3">
+      <p className="text-[11px] font-bold uppercase tracking-[0.16em] dark:text-slate-400 text-slate-500">
         {label}
       </p>
-      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
     </div>
   );
 }

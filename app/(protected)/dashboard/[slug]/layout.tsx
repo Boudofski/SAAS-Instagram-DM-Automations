@@ -56,9 +56,9 @@ async function Layout({ children, params }: Props) {
   return (
     <HydrationBoundary state={dehydrate(query)}>
       <ClerkCacheSyncer />
-      <div className="min-h-screen bg-slate-50 p-3 text-slate-950">
+      <div className="ap3k-page overflow-x-hidden">
         <Sidebar slug={params.slug} />
-        <div className="relative z-10 flex flex-col overflow-auto lg:ml-[260px] lg:pl-8 lg:py-5">
+        <div className="relative z-10 flex min-w-0 flex-col px-3 py-3 lg:ml-[260px] lg:px-6 lg:py-5">
           <NavBar slug={params.slug} />
           {children}
         </div>

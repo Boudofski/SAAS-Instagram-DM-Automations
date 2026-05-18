@@ -100,13 +100,13 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 sm:flex-row sm:items-center sm:justify-between">
-      {icon}
-      <div className="flex flex-col flex-1">
+    <div className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white lg:grid-cols-[auto_minmax(0,1fr)_auto]">
+      <div className="hidden sm:block">{icon}</div>
+      <div className="flex min-w-0 flex-col">
         <h3 className="text-xl font-black">{title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">{description}</p>
+        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">{description}</p>
         {integrated?.instagramId && (
-          <div className="mt-3 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
             {integrated.profilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -125,11 +125,11 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
                   ? `@${integrated.instagramUsername}`
                   : "Instagram connected"}
               </p>
-              <p className="truncate text-[11px] text-slate-500">
+              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                 IG business ID: {integrated.instagramId}
               </p>
               {integrated.pageId && (
-                <p className="truncate text-[11px] text-slate-500">
+                <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                   Page ID: {integrated.pageId}
                 </p>
               )}
@@ -137,7 +137,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           </div>
         )}
       </div>
-      <div className="flex w-full flex-col gap-2 sm:w-auto">
+      <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto lg:flex-col">
         <Button
           onClick={onConnect}
           disabled={!isInstagram || isConnecting}
@@ -151,7 +151,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             variant="outline"
             onClick={() => resubscribe.mutate()}
             disabled={resubscribe.isPending}
-            className="min-w-36 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            className="min-w-36 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
           >
             {resubscribe.isPending ? "Resubscribing..." : "Resubscribe webhooks"}
           </Button>
@@ -162,19 +162,19 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             variant="outline"
             onClick={onDisconnect}
             disabled={disconnect.isPending}
-            className="min-w-36 border-red-200 bg-white text-red-700 hover:bg-red-50"
+            className="min-w-36 border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300 dark:hover:bg-red-500/10"
           >
             {disconnect.isPending ? "Disconnecting..." : "Disconnect account"}
           </Button>
         )}
       </div>
       {integrated && (
-        <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 sm:basis-full">
-          <p className="font-black uppercase tracking-[0.16em] text-slate-500">
+        <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300 lg:col-span-3">
+          <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             Webhook health
           </p>
           {integrated?.instagramId && health?.data?.oauth?.reconnectRequired && (
-            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
               <p className="font-bold">Reconnect Instagram</p>
               <p className="mt-1 leading-relaxed">
                 AP3k matched your real comment, but the selected Page token is missing or invalid.
@@ -188,7 +188,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             </div>
           )}
           {health?.data?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED" && (
-            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
               <p className="font-bold">Meta dashboard subscription required</p>
               <p className="mt-1 leading-relaxed">
                 AP3k is connected, but Meta did not allow API subscription because{" "}
@@ -231,7 +231,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               ok={!health?.data?.lastFailure?.errorMessage?.includes("dm_")}
             />
           </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             <HealthItem
               label="Page token"
               value={
@@ -281,7 +281,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             />
           </div>
           {!health?.data?.lastCommentWebhook && (
-            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800">
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
               No real comment webhook received from Meta yet. Check app mode,
               tester acceptance, media ownership, account type, and webhook subscription.
             </p>
@@ -300,8 +300,8 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
       className={[
         "rounded-full border px-2.5 py-1 text-[11px] font-black",
         ok
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-amber-200 bg-amber-50 text-amber-800",
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+          : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
       ].join(" ")}
     >
       {label}: {ok ? "ok" : "check"}
@@ -311,11 +311,11 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
 
 function HealthItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
         {label}
       </p>
-      <p className="mt-1 break-words font-bold text-slate-800">{value}</p>
+      <p className="mt-1 break-words font-bold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }

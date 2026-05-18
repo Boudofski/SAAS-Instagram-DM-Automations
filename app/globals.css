@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 327 73% 97%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 330 81% 60%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -37,7 +37,7 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-    --page-background: white;
+    --page-background: #f8fafc;
 
     --scrollbar-track: transparent;
     --scrollbar-thumb: #545454;
@@ -48,9 +48,9 @@
 
   .dark {
     /* AP3k palette */
-    --background: 224 49% 8%;       /* #0B1020 */
-    --foreground: 210 40% 98%;      /* #F9FAFB */
-    --card: 222 47% 11%;            /* #0F172A */
+    --background: 230 53% 5%;       /* #050816 */
+    --foreground: 210 40% 98%;      /* #F8FAFC */
+    --card: 222 47% 11%;            /* #111827 */
     --card-foreground: 210 40% 98%;
     --popover: 222 29% 11%;
     --popover-foreground: 210 40% 98%;
@@ -64,7 +64,7 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --border: 219 32% 22%;          /* #26324A */
+    --border: 217 33% 18%;          /* rgba-ish slate border */
     --input: 220 32% 19%;
     --ring: 217 91% 60%;
     --chart-1: 217 91% 60%;
@@ -80,7 +80,7 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 220 32% 19%;
     --sidebar-ring: 217 91% 60%;
-    --page-background: #0B1020;
+    --page-background: #050816;
   }
 }
 
@@ -92,10 +92,10 @@
     @apply bg-background text-foreground antialiased;
     min-height: 100vh;
     background:
-      radial-gradient(circle at 12% -10%, rgba(245, 133, 41, 0.12), transparent 34rem),
-      radial-gradient(circle at 78% 0%, rgba(221, 42, 123, 0.14), transparent 32rem),
-      radial-gradient(circle at 45% 42%, rgba(81, 91, 212, 0.08), transparent 38rem),
-      linear-gradient(180deg, #0b1020 0%, #0f172a 56%, #0b1020 100%);
+      radial-gradient(circle at 12% -10%, rgba(249, 115, 22, 0.12), transparent 34rem),
+      radial-gradient(circle at 78% 0%, rgba(236, 72, 153, 0.12), transparent 32rem),
+      radial-gradient(circle at 45% 42%, rgba(139, 92, 246, 0.08), transparent 38rem),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
     background-attachment: fixed;
   }
 
@@ -105,10 +105,10 @@
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.18;
+    opacity: 0.16;
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      linear-gradient(rgba(100, 116, 139, 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100, 116, 139, 0.09) 1px, transparent 1px);
     background-size: 72px 72px;
     mask-image: linear-gradient(to bottom, black, transparent 72%);
   }
@@ -116,11 +116,11 @@
 
 @layer components {
   .ap3k-card {
-    @apply border border-white/10 bg-rf-surface/75 shadow-ap3k-card backdrop-blur-xl;
+    @apply border border-slate-200 bg-white/85 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-rf-surface/75 dark:shadow-ap3k-card;
   }
 
   .ap3k-card-hover {
-    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-rf-surface/90 hover:shadow-ap3k-glow;
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:shadow-ap3k-glow dark:hover:bg-rf-surface/90;
   }
 
   .ap3k-gradient-text {
@@ -142,11 +142,38 @@
   }
 
   .ap3k-outline-button {
-    @apply rounded-xl border border-white/10 bg-white/[0.03] font-bold text-rf-muted backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-white/[0.06] hover:text-rf-text;
+    @apply rounded-xl border border-slate-200 bg-white/75 font-bold text-slate-700 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-white hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-rf-muted dark:hover:bg-white/[0.06] dark:hover:text-rf-text;
   }
 
   .ap3k-kicker {
     @apply text-xs font-black uppercase tracking-[0.2em] text-rf-pink;
+  }
+
+  .ap3k-page {
+    @apply min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-slate-50;
+  }
+
+  .ap3k-panel {
+    @apply rounded-2xl border border-slate-200 bg-white/90 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#101827] dark:shadow-ap3k-card;
+  }
+
+  .ap3k-muted {
+    @apply text-slate-600 dark:text-slate-400;
+  }
+
+  .ap3k-input {
+    @apply border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 focus:border-pink-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-50 dark:placeholder:text-slate-500;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

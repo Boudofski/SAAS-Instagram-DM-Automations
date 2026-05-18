@@ -105,24 +105,24 @@ export default function WizardPage({ params, searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
+    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-slate-50">
 
       {/* Wizard header */}
       <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-4
-                      border-b border-slate-200 bg-white/90 backdrop-blur-xl sm:px-8">
+                      border-b border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] backdrop-blur-xl sm:px-8">
         <Link href={`/dashboard/${slug}/automation`}
-              className="text-slate-500 text-sm hover:text-slate-950 transition-colors">
+              className="dark:text-slate-400 text-slate-500 text-sm hover:text-slate-950 dark:hover:text-white transition-colors">
           Back
         </Link>
         <div className="text-center">
-          <p className="text-sm font-bold text-slate-950">
+          <p className="text-sm font-bold text-slate-950 dark:text-white">
             {editId ? "Edit Campaign" : "New Campaign"}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs dark:text-slate-400 text-slate-500">
             {editId ? "Update your automation flow" : "Launch in 60 seconds"}
           </p>
         </div>
-        <span className="text-xs text-slate-500 flex items-center gap-1.5">
+        <span className="text-xs dark:text-slate-400 text-slate-500 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-rf-green" /> Auto-saved
         </span>
       </div>
@@ -134,7 +134,7 @@ export default function WizardPage({ params, searchParams }: Props) {
 
       {/* Body */}
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_340px] sm:px-8">
-        <main className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <main className="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6 shadow-sm">
 
         {/* Step 1 — Choose post */}
         {step === 1 && (
@@ -145,23 +145,23 @@ export default function WizardPage({ params, searchParams }: Props) {
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Name it and choose a post or Reel
             </h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Which post do you want to run this campaign on?
             </p>
             <div className="mb-6">
-              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
                 Campaign name
               </label>
               <input
                 value={data.campaignName}
                 onChange={(event) => update({ campaignName: event.target.value })}
                 placeholder="Example: May launch guide"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-pink-300"
+                className="w-full rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] px-4 py-3 text-sm text-slate-950 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-pink-300"
               />
             </div>
             {postsLoading ? (
               <div className="flex justify-center py-16">
-                <Loader2 className="animate-spin text-slate-500" />
+                <Loader2 className="animate-spin dark:text-slate-400 text-slate-500" />
               </div>
             ) : !hasInstagramConnection ? (
               <EmptyState
@@ -190,15 +190,15 @@ export default function WizardPage({ params, searchParams }: Props) {
                     "w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all",
                     data.post?.postid === "ANY"
                       ? "border-rf-blue bg-rf-blue/10 shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
-                      : "border-slate-200 bg-white hover:border-rf-blue/40",
+                      : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] hover:border-rf-blue/40",
                   ].join(" ")}
                 >
                   <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-2xl">
                     🌐
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-950">Any post</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-sm font-bold text-slate-950 dark:text-white">Any post</p>
+                    <p className="text-xs dark:text-slate-400 text-slate-500 mt-0.5">
                       Trigger on comments across all posts and Reels.
                     </p>
                   </div>
@@ -213,14 +213,14 @@ export default function WizardPage({ params, searchParams }: Props) {
                 {postList.length > 0 && (
                   <div>
                     <div className="mb-3 flex items-center justify-between gap-3">
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <p className="text-xs font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
                         Choose a specific post or Reel
                       </p>
                       <button
                         type="button"
                         onClick={() => void refetchPosts()}
                         disabled={postsFetching}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold dark:text-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                       >
                         <RefreshCw className={postsFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
                         Refresh posts
@@ -274,7 +274,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               What triggers your DM?
             </h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Trigger on specific keywords or every comment in the selected post scope.
             </p>
             <KeywordInput
@@ -298,7 +298,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Private DM settings
             </h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Choose whether AP3k sends the private DM or only handles matching and public replies.
             </p>
             <button
@@ -308,12 +308,12 @@ export default function WizardPage({ params, searchParams }: Props) {
                 "mb-5 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
                 data.sendPrivateDm
                   ? "border-rf-blue/25 bg-rf-blue/10"
-                  : "border-slate-200 bg-slate-50",
+                  : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]",
               ].join(" ")}
             >
               <span>
-                <span className="block text-sm font-bold text-slate-950">Send private DM with AP3k</span>
-                <span className="mt-1 block text-xs text-slate-500">
+                <span className="block text-sm font-bold text-slate-950 dark:text-white">Send private DM with AP3k</span>
+                <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
                   Turn this off if another tool handles DMs.
                 </span>
               </span>
@@ -341,9 +341,9 @@ export default function WizardPage({ params, searchParams }: Props) {
                 onCtaButtonTitleChange={(t) => update({ ctaButtonTitle: t })}
               />
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-sm font-bold text-slate-950">Private DM skipped</p>
-                <p className="mt-1 text-sm text-slate-500">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-5">
+                <p className="text-sm font-bold text-slate-950 dark:text-white">Private DM skipped</p>
+                <p className="mt-1 text-sm dark:text-slate-400 text-slate-500">
                   AP3k will still receive comments, match triggers, and send public replies if enabled.
                   Private DMs are handled by your external tool.
                 </p>
@@ -355,13 +355,13 @@ export default function WizardPage({ params, searchParams }: Props) {
         {/* Step 4 — Public reply (optional) */}
         {step === 4 && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+            <p className="text-xs font-bold uppercase tracking-widest dark:text-slate-400 text-slate-500 mb-2">
               Step 4 of 5 — Optional
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Public comment reply
             </h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               AP3k can publicly reply to the comment. If true threaded reply is not available,
               AP3k uses a top-level @mention reply fallback.
             </p>
@@ -372,12 +372,12 @@ export default function WizardPage({ params, searchParams }: Props) {
                 "mb-5 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
                 data.publicReplyEnabled
                   ? "border-rf-blue/25 bg-rf-blue/10"
-                  : "border-slate-200 bg-white",
+                  : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
               ].join(" ")}
             >
               <span>
-                <span className="block text-sm font-bold text-slate-950">Send public reply</span>
-                <span className="mt-1 block text-xs text-slate-500">
+                <span className="block text-sm font-bold text-slate-950 dark:text-white">Send public reply</span>
+                <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
                   Reply publicly before the private DM. Turn off to skip public replies.
                 </span>
               </span>
@@ -405,7 +405,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ] as const
               ).map(({ field, label, placeholder }) => (
                 <div key={field}>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                  <label className="mb-1.5 block text-xs font-semibold dark:text-slate-400 text-slate-500">
                     {label}
                     {field === "publicReply" ? "" : " (optional)"}
                   </label>
@@ -415,14 +415,14 @@ export default function WizardPage({ params, searchParams }: Props) {
                     placeholder={placeholder}
                     rows={2}
                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3
-                               text-sm text-slate-950 placeholder:text-slate-400 outline-none
+                               text-sm text-slate-950 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none
                                focus:border-pink-300 focus:ring-2 focus:ring-pink-100 resize-none transition-colors"
                   />
                 </div>
               ))}
             </div>
             )}
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="text-xs dark:text-slate-400 text-slate-500 mt-3">
               AP3k randomly picks one enabled variation. Add up to 3 variations.
             </p>
           </div>
@@ -437,7 +437,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
               Review &amp; Activate
             </h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Everything look good? Hit activate and your campaign goes live instantly.
             </p>
 
@@ -464,8 +464,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                 <div key={row.label}
                      className="flex items-center justify-between gap-3 px-4 py-3
                                 bg-white border border-slate-200 rounded-xl">
-                  <span className="text-xs text-slate-500 w-28 flex-shrink-0">{row.label}</span>
-                  <span className="text-xs text-slate-950 flex-1 truncate">{row.value}</span>
+                  <span className="text-xs dark:text-slate-400 text-slate-500 w-28 flex-shrink-0">{row.label}</span>
+                  <span className="text-xs text-slate-950 dark:text-white flex-1 truncate">{row.value}</span>
                   <button
                     type="button"
                     onClick={() => goTo(row.step)}
@@ -491,12 +491,12 @@ export default function WizardPage({ params, searchParams }: Props) {
                 "mb-6 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
                 data.active
                   ? "border-rf-green/25 bg-rf-green/10"
-                  : "border-slate-200 bg-white",
+                  : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
               ].join(" ")}
             >
               <span>
-                <span className="block text-sm font-bold text-slate-950">Active campaign</span>
-                <span className="mt-1 block text-xs text-slate-500">
+                <span className="block text-sm font-bold text-slate-950 dark:text-white">Active campaign</span>
+                <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
                   When enabled, AP3k listens for matching comments, sends public replies, and {data.sendPrivateDm ? "sends the configured DM." : "skips private DM sending."}
                 </span>
               </span>
@@ -518,9 +518,9 @@ export default function WizardPage({ params, searchParams }: Props) {
         )}
 
         </main>
-        <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <aside className="h-fit rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-5 shadow-sm">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Preview</p>
-          <h2 className="mt-2 text-lg font-black text-slate-950">
+          <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
             {data.campaignName || (editId ? "Edit automation" : "New automation")}
           </h2>
           <div className="mt-4 space-y-3 text-sm">
@@ -537,9 +537,9 @@ export default function WizardPage({ params, searchParams }: Props) {
       </div>
 
       {/* Sticky footer */}
-      <div className="sticky bottom-0 border-t border-slate-200 bg-white/90 px-4 py-4
+      <div className="sticky bottom-0 border-t border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] px-4 py-4
                       flex items-center justify-between backdrop-blur-xl sm:px-10">
-        <p className="text-xs text-slate-500 hidden sm:block">
+        <p className="text-xs dark:text-slate-400 text-slate-500 hidden sm:block">
           {STEP_TIPS[step - 1]}
         </p>
         <div className="flex items-center gap-3 ml-auto">
@@ -548,7 +548,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               type="button"
               onClick={back}
               disabled={isSubmitting}
-              className="border border-slate-200 text-slate-500 hover:text-slate-950 hover:border-rf-subtle
+              className="border border-slate-200 dark:text-slate-400 text-slate-500 hover:text-slate-950 dark:hover:text-white hover:border-rf-subtle
                          font-semibold text-sm px-6 py-2.5 rounded-xl transition-colors"
             >
               Back
@@ -573,7 +573,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   void activate(false);
                 }}
                 disabled={isSubmitting}
-                className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-semibold dark:text-slate-300 text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
               >
                 Save as draft
               </button>
@@ -605,8 +605,8 @@ export default function WizardPage({ params, searchParams }: Props) {
 
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-2">
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] dark:text-slate-400 text-slate-500">
         {label}
       </p>
       <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-800">
@@ -630,11 +630,11 @@ function ManualMediaFallback({
   compact?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5">
-      <h3 className="text-sm font-black text-slate-950">
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-5">
+      <h3 className="text-sm font-black text-slate-950 dark:text-white">
         {compact ? "Can't find a post? Paste media ID or URL manually." : "No posts found. Add a media ID manually."}
       </h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+      <p className="mt-2 text-xs leading-relaxed dark:text-slate-400 text-slate-500">
         Paste the Instagram media ID for the post or Reel. A post URL can be saved as a reference,
         but webhook matching is most reliable with the Meta media ID returned by Instagram.
       </p>
@@ -643,7 +643,7 @@ function ManualMediaFallback({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Instagram media ID or post URL"
-          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-pink-300"
+          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-4 py-3 text-sm text-slate-950 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-pink-300"
         />
         <button
           type="button"

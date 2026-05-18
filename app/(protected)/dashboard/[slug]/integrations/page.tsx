@@ -50,10 +50,9 @@ function Page({ searchParams }: PageProps) {
   const error = searchParams?.integration_error;
 
   return (
-    <div className="flex justify-center p-4 text-slate-950 sm:p-6 lg:p-8">
-      <div className="flex w-full max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
             <p className="font-bold">
               {ERROR_COPY[error] ?? ERROR_COPY.oauth_failed}
             </p>
@@ -67,31 +66,31 @@ function Page({ searchParams }: PageProps) {
           </div>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="ap3k-panel p-6">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
               Official Meta connection
             </p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              Instagram account
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+              Connect Instagram
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
               Connect the Business or Creator Instagram account that owns the posts AP3k should monitor. Webhook health appears below after subscription attempts and real comment tests.
             </p>
           </div>
 
-          <div className="rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm">
+          <div className="rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
               Test checklist
             </p>
-            <div className="mt-4 space-y-3 text-sm text-slate-700">
+            <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2 lg:grid-cols-1">
               {[
                 "Connected IG account is Business or Creator.",
                 "Webhook subscription shows a recent success.",
                 "Tester account is separate and accepted in Meta.",
                 "Test comment is on media owned by this IG account.",
               ].map((item) => (
-                <div key={item} className="flex gap-3 rounded-xl border border-white/70 bg-white/70 p-3">
+                <div key={item} className="flex gap-3 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.05]">
                   <span className="mt-0.5 h-2 w-2 rounded-full bg-pink-500" />
                   <span>{item}</span>
                 </div>
@@ -103,7 +102,6 @@ function Page({ searchParams }: PageProps) {
         {INTEGRATION_CARDS.map((card, index) => (
           <IntegrationCard key={index} {...card} />
         ))}
-      </div>
     </div>
   );
 }

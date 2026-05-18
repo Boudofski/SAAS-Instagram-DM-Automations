@@ -1,6 +1,7 @@
 "use server";
 
 import { replaySavedWebhookEvent, simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
+import ThemeToggle from "@/components/global/theme-toggle";
 import {
   adminEnvironmentLabel,
   classifyDeliveryError,
@@ -9,7 +10,7 @@ import {
   sanitizeAdminPayload,
   stripeCustomerDashboardUrl,
 } from "@/lib/admin-control-center";
-import { maskSecret, requireOwnerAdmin } from "@/lib/admin";
+import { requireOwnerAdmin } from "@/lib/admin";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
 import {
@@ -372,8 +373,8 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     : [];
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <main className="ap3k-page">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/88 backdrop-blur-2xl dark:border-white/10 dark:bg-[#050816]/88">
         <div className="mx-auto max-w-[1500px] px-5 py-4 lg:px-8">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
@@ -382,30 +383,31 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 <Badge tone={adminEnvironmentLabel() === "Production" ? "green" : "amber"}>{adminEnvironmentLabel()}</Badge>
                 <Badge tone="slate">Read-only control center</Badge>
               </div>
-              <p className="mt-1 text-xs text-slate-500">
-                Signed in as <span className="font-bold text-slate-800">{admin.email ?? admin.clerkId}</span> · Last refreshed {formatAdminDate(new Date())}
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Signed in as <span className="font-bold text-slate-800 dark:text-slate-100">{admin.email ?? admin.clerkId}</span> · Last refreshed {formatAdminDate(new Date())}
               </p>
             </div>
-            <form className="flex w-full flex-col gap-2 sm:flex-row xl:max-w-2xl">
+            <form className="flex w-full flex-col gap-2 sm:flex-row xl:max-w-3xl">
               <input type="hidden" name="tab" value={tab} />
               <input
                 name="q"
                 defaultValue={q}
                 placeholder="Search current section by email, IG username, campaign, event, comment, media ID"
-                className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-pink-300"
+                className="ap3k-input min-h-11 flex-1 rounded-xl px-3 text-sm outline-none focus:border-pink-300"
               />
               {tab === "webhooks" && (
                 <input
                   name="eventType"
                   defaultValue={eventType}
                   placeholder="Event type"
-                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-pink-300"
+                  className="ap3k-input min-h-11 rounded-xl px-3 text-sm outline-none focus:border-pink-300"
                 />
               )}
               <button className="rounded-xl bg-slate-950 px-5 py-2 text-sm font-bold text-white">Search</button>
-              <Link href={tabHref(tab)} className="rounded-xl border border-slate-200 px-5 py-2 text-center text-sm font-bold text-slate-700">
+              <Link href={tabHref(tab)} className="rounded-xl border border-slate-200 bg-white px-5 py-2 text-center text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
                 Refresh
               </Link>
+              <ThemeToggle compact />
             </form>
           </div>
         </div>
@@ -413,14 +415,14 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
       <div className="mx-auto grid max-w-[1500px] gap-6 px-5 py-6 lg:grid-cols-[250px_1fr] lg:px-8">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-white/10 dark:bg-white/[0.04] lg:block">
             {TABS.map((item) => (
               <Link
                 key={item.id}
                 href={tabHref(item.id)}
                 className={[
-                  "mb-1 block rounded-xl px-3 py-2.5 text-sm font-bold transition-colors",
-                  tab === item.id ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950",
+                  "mb-0 block shrink-0 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors lg:mb-1",
+                  tab === item.id ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white",
                 ].join(" ")}
               >
                 {item.label}
@@ -524,7 +526,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   <Identity key="page" title={integration.pageName ?? "No page"} subtitle={integration.pageId ?? "No Page ID"} />,
                   <Mono key="ig-id">{integration.instagramId ?? "Missing"}</Mono>,
                   <Mono key="webhook-id">{integration.webhookAccountId ?? "Missing"}</Mono>,
-                  <Badge key="token" tone={integration.token ? "green" : "red"}>{integration.token ? maskSecret(integration.token) : "Missing"}</Badge>,
+                  <Badge key="token" tone={integration.token ? "green" : "red"}>{integration.token ? "Stored" : "Missing"}</Badge>,
                   <Badge key="sub" tone={integration.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "amber"}>{integration.webhookSubscriptionMode ?? "Unknown"}</Badge>,
                   integration.oauthLastError ?? integration.webhookSubscriptionError ?? "None",
                   <DisabledActions key="actions" labels={["Disconnect", "Reconnect required", "Resubscribe"]} />,
@@ -798,10 +800,10 @@ function PipelineGrid({ pipeline }: { pipeline: ReturnType<typeof buildWebhookPi
 
 function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <h2 className="text-base font-black text-slate-950">{title}</h2>
-        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white/92 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#101827]/90">
+      <div className="border-b border-slate-200 px-5 py-4 dark:border-white/10">
+        <h2 className="text-base font-black text-slate-950 dark:text-white">{title}</h2>
+        {description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>}
       </div>
       <div className="p-5">{children}</div>
     </section>
@@ -812,8 +814,8 @@ function StatCard({ label, value, detail, tone = "slate" }: { label: string; val
   return (
     <div className={`rounded-2xl border p-5 shadow-sm ${tonePanel(tone)}`}>
       <p className="text-3xl font-black tracking-tight">{value}</p>
-      <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <p className="mt-1 text-sm text-slate-600">{detail}</p>
+      <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{detail}</p>
     </div>
   );
 }
@@ -821,8 +823,8 @@ function StatCard({ label, value, detail, tone = "slate" }: { label: string; val
 function HealthCard({ label, value, tone = "slate" }: { label: string; value: ReactNode; tone?: Tone }) {
   return (
     <div className={`rounded-xl border p-3 ${tonePanel(tone)}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <div className="mt-1 break-words text-sm font-bold text-slate-950">{value}</div>
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <div className="mt-1 break-words text-sm font-bold text-slate-950 dark:text-white">{value}</div>
     </div>
   );
 }
@@ -840,12 +842,12 @@ function DataTable({
 }) {
   if (rows.length === 0) return <EmptyState message={empty} />;
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
       <table className="min-w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]">
             {headers.map((header) => (
-              <th key={header} className="whitespace-nowrap px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+              <th key={header} className="whitespace-nowrap px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                 {header}
               </th>
             ))}
@@ -854,15 +856,15 @@ function DataTable({
         <tbody>
           {rows.map((row, index) => (
             <Fragment key={`rowgroup-${index}`}>
-              <tr className="border-b border-slate-100 align-top">
+              <tr className="border-b border-slate-100 align-top dark:border-white/10">
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="max-w-[320px] px-3 py-3 text-slate-700">
+                  <td key={cellIndex} className="max-w-[320px] px-3 py-3 text-slate-700 dark:text-slate-300">
                     {cell}
                   </td>
                 ))}
               </tr>
               {details && (
-                <tr className="border-b border-slate-100 bg-slate-50/60">
+                <tr className="border-b border-slate-100 bg-slate-50/60 dark:border-white/10 dark:bg-white/[0.03]">
                   <td colSpan={headers.length}>{details(index)}</td>
                 </tr>
               )}
@@ -880,8 +882,8 @@ function PayloadSummary({ payload }: { payload: unknown }) {
   const mediaMatching = item.mediaMatching && typeof item.mediaMatching === "object" ? item.mediaMatching as Record<string, unknown> : null;
   const triggerMatching = item.triggerMatching && typeof item.triggerMatching === "object" ? item.triggerMatching as Record<string, unknown> : null;
   return (
-    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
-      <p className="font-black uppercase tracking-[0.12em] text-slate-500">Diagnostic summary</p>
+    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+      <p className="font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Diagnostic summary</p>
       <p>object={String(item.object ?? "unknown")} · field={String(item.field ?? "unknown")} · simulation={String(item.simulation ?? false)}</p>
       {mediaMatching && (
         <p>mediaMatch: incoming={String(mediaMatching.incomingMediaId ?? "none")} · matched={Array.isArray(mediaMatching.matchedAutomationIds) ? mediaMatching.matchedAutomationIds.join(",") || "none" : "none"}</p>
@@ -895,9 +897,9 @@ function PayloadSummary({ payload }: { payload: unknown }) {
 
 function AdminJsonViewer({ title, value }: { title: string; value: unknown }) {
   return (
-    <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.14em] text-slate-500">{title}</summary>
-      <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-700">
+    <details className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+      <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{title}</summary>
+      <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
         {JSON.stringify(sanitizeAdminPayload(value), null, 2)}
       </pre>
     </details>
@@ -924,21 +926,21 @@ function StatusBadge({ status }: { status: string }) {
 function Identity({ title, subtitle }: { title: ReactNode; subtitle?: ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="truncate font-bold text-slate-950">{title}</p>
-      {subtitle && <p className="truncate text-xs text-slate-500">{subtitle}</p>}
+      <p className="truncate font-bold text-slate-950 dark:text-white">{title}</p>
+      {subtitle && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
     </div>
   );
 }
 
 function Mono({ children }: { children: ReactNode }) {
-  return <span className="break-all font-mono text-xs text-slate-600">{children}</span>;
+  return <span className="break-all font-mono text-xs text-slate-600 dark:text-slate-300">{children}</span>;
 }
 
 function DisabledActions({ labels }: { labels: string[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {labels.map((label) => (
-        <button key={label} disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-400" title="Disabled until audited admin write flow exists">
+        <button key={label} disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-400 dark:border-white/10 dark:bg-white/[0.04]" title="Disabled until audited admin write flow exists">
           {label}
         </button>
       ))}
@@ -948,10 +950,10 @@ function DisabledActions({ labels }: { labels: string[] }) {
 
 function DangerCard({ title }: { title: string }) {
   return (
-    <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-      <p className="font-black text-red-900">{title}</p>
-      <p className="mt-1 text-sm text-red-700">Disabled. Requires AdminAuditLog, typed confirmation, server admin check, rollback/error handling, and tests.</p>
-      <button disabled className="mt-4 cursor-not-allowed rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-300">Disabled</button>
+    <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10">
+      <p className="font-black text-red-900 dark:text-red-200">{title}</p>
+      <p className="mt-1 text-sm text-red-700 dark:text-red-300">Disabled. Requires AdminAuditLog, typed confirmation, server admin check, rollback/error handling, and tests.</p>
+      <button disabled className="mt-4 cursor-not-allowed rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-300 dark:border-red-500/30 dark:bg-white/[0.04]">Disabled</button>
     </div>
   );
 }
@@ -969,7 +971,7 @@ function FilterPills({ items }: { items: Array<[string, string]> }) {
   return (
     <div className="mb-4 flex flex-wrap gap-2">
       {items.map(([label, href]) => (
-        <Link key={label} href={href} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-white">
+        <Link key={label} href={href} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.08]">
           {label}
         </Link>
       ))}
@@ -979,38 +981,38 @@ function FilterPills({ items }: { items: Array<[string, string]> }) {
 
 function LinkBox({ label, href }: { label: string; href: string }) {
   return (
-    <Link href={href} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-rf-blue hover:bg-white">
+    <Link href={href} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-rf-blue hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]">
       {label}
     </Link>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
-  return <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">{message}</div>;
+  return <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">{message}</div>;
 }
 
 type Tone = "slate" | "green" | "red" | "amber" | "blue" | "purple";
 
 function tonePanel(tone: Tone) {
   const map: Record<Tone, string> = {
-    slate: "border-slate-200 bg-slate-50 text-slate-800",
-    green: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    red: "border-red-200 bg-red-50 text-red-900",
-    amber: "border-amber-200 bg-amber-50 text-amber-900",
-    blue: "border-blue-200 bg-blue-50 text-blue-900",
-    purple: "border-purple-200 bg-purple-50 text-purple-900",
+    slate: "border-slate-200 bg-slate-50 text-slate-800 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200",
+    red: "border-red-200 bg-red-50 text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200",
+    amber: "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100",
+    blue: "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200",
+    purple: "border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-200",
   };
   return map[tone];
 }
 
 function toneBadge(tone: Tone) {
   const map: Record<Tone, string> = {
-    slate: "border-slate-200 bg-slate-50 text-slate-600",
-    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    red: "border-red-200 bg-red-50 text-red-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
-    purple: "border-purple-200 bg-purple-50 text-purple-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
+    red: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300",
+    amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
+    blue: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300",
+    purple: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-300",
   };
   return map[tone];
 }

@@ -14,7 +14,7 @@ function CreateAutomation({ slug }: Props) {
   return (
     <Button
       asChild
-      className="ap3k-gradient-button rounded-xl py-6 text-white lg:px-8"
+      className="ap3k-gradient-button h-10 rounded-xl px-3 text-white sm:px-4 lg:px-6"
     >
       <Link href={href}>
         <AutomationDuoToneWhite />

@@ -16,7 +16,7 @@ const PLAN_COPY = {
     price: "$0",
     period: "/month",
     description: "For validating your first Instagram comment-to-DM campaign.",
-    features: ["1 active campaign", "Up to 50 DMs/month", "Keyword triggers", "Basic analytics"],
+    features: ["1 active campaign", "Free testing", "Keyword triggers", "Basic analytics"],
     href: "/pricing",
   },
   PRO: {
@@ -24,7 +24,7 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For creators running active comment-to-DM funnels.",
-    features: ["Unlimited campaigns", "Unlimited DMs", "Public reply fallback", "Lead export"],
+    features: ["Unlimited campaigns", "Serious campaign volume", "Public reply fallback", "Lead export"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
@@ -53,8 +53,8 @@ function PaymentCard({ label, current }: Props) {
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm",
-        isActive && "border-rf-pink/35 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50"
+        "flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
+        isActive && "border-rf-pink/35 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 dark:bg-ap3k-gradient-soft"
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -65,14 +65,14 @@ function PaymentCard({ label, current }: Props) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600">{plan.description}</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
         <span className="text-4xl font-black tracking-tight">{plan.price}</span>
-        <span className="text-sm text-rf-muted">{plan.period}</span>
+        <span className="text-sm text-slate-500 dark:text-rf-muted">{plan.period}</span>
       </div>
       <div className="mt-5 flex flex-1 flex-col gap-2.5">
         {plan.features.map((feature) => (
-          <p key={feature} className="flex gap-2 text-sm text-slate-600">
+          <p key={feature} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300">
             <CircleCheck className="h-4 w-4 flex-shrink-0 text-rf-green" />
             {feature}
           </p>

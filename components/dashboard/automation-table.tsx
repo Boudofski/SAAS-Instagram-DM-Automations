@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { type ReactNode, useMemo, useState, useTransition } from "react";
 
 type AutomationTableProps = {
   slug: string;
@@ -41,37 +41,113 @@ export default function AutomationTable({
   }, [automations, query, sort]);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
       {showControls && (
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
           <div className="relative flex-1">
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search automations or keywords"
-              className="h-11 rounded-xl border-slate-200 bg-slate-50 text-slate-950 placeholder:text-slate-400"
+              className="ap3k-input h-11 rounded-xl"
             />
           </div>
           <div className="flex flex-wrap gap-2">
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as "newest" | "active" | "name")}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 outline-none"
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 outline-none dark:border-white/10 dark:bg-[#101827] dark:text-slate-200"
             >
               <option value="newest">Newest first</option>
               <option value="active">Active first</option>
               <option value="name">Name A-Z</option>
             </select>
-            <Button type="button" variant="outline" disabled className="h-11 rounded-xl border-slate-200">
+            <Button type="button" variant="outline" disabled className="h-11 rounded-xl border-slate-200 dark:border-white/10">
               Export coming soon
             </Button>
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="grid gap-3 p-3 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+            No automations match your search.
+          </div>
+        ) : (
+          filtered.map((automation) => {
+            const post = automation.posts?.[0];
+            const isAny = post?.postid === "ANY";
+            const runs = automation.listener?.commentCount ?? 0;
+            const leads = automation.leads?.length ?? automation._count?.leads ?? 0;
+            const isAnyComment = automation.triggerMode === "ANY_COMMENT";
+            return (
+              <article key={automation.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-[#101827]">
+                <div className="flex items-start gap-3">
+                  {post?.media && !isAny ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={post.media} alt={post.caption ?? automation.name ?? "Campaign"} className="h-12 w-12 rounded-xl object-cover" />
+                  ) : (
+                    <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600">
+                      AP
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
+                      {automation.name || "Untitled automation"}
+                    </Link>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword"} · {automation.sendPrivateDm === false ? "External DM" : "AP3k DM"}
+                    </p>
+                  </div>
+                  <span className={[
+                    "shrink-0 rounded-full px-2.5 py-1 text-xs font-black",
+                    automation.active ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+                  ].join(" ")}>
+                    {automation.active ? "Live" : "Paused"}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Runs</p>
+                    <p className="font-black text-slate-950 dark:text-white">{runs}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Leads</p>
+                    <p className="font-black text-slate-950 dark:text-white">{leads}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <ActionLink href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}>Edit</ActionLink>
+                  <ActionLink href={`/dashboard/${slug}/automation/${automation.id}`}>View</ActionLink>
+                  <ActionButton disabled={isPending} onClick={() => startTransition(() => { void activateAutomation(automation.id, !Boolean(automation.active)).then(() => router.refresh()); })}>
+                    {automation.active ? "Pause" : "Activate"}
+                  </ActionButton>
+                  <ActionButton disabled={isPending} onClick={() => startTransition(() => { void duplicateAutomation(automation.id).then(() => router.refresh()); })}>
+                    Duplicate
+                  </ActionButton>
+                  <ActionButton
+                    danger
+                    disabled={isPending}
+                    onClick={() => {
+                      if (!window.confirm("Delete this campaign? This keeps tenant checks in place but removes the campaign for your account.")) return;
+                      startTransition(() => {
+                        void deleteAutomation(automation.id).then(() => router.refresh());
+                      });
+                    }}
+                  >
+                    Delete
+                  </ActionButton>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[860px] text-left">
-          <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+          <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
             <tr>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Post/Reel</th>
@@ -82,7 +158,7 @@ export default function AutomationTable({
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-white/10">
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
@@ -98,7 +174,7 @@ export default function AutomationTable({
                 const isAnyComment = automation.triggerMode === "ANY_COMMENT";
 
                 return (
-                  <tr key={automation.id} className="text-sm text-slate-700">
+                  <tr key={automation.id} className="text-sm text-slate-700 dark:text-slate-300">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         {post?.media && !isAny ? (
@@ -110,10 +186,10 @@ export default function AutomationTable({
                           </div>
                         )}
                         <div className="min-w-0">
-                          <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600">
+                          <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
                             {automation.name || "Untitled automation"}
                           </Link>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {automation.sendPrivateDm === false ? "DM handled externally" : "Private DM"}
                           </p>
                         </div>
@@ -137,8 +213,8 @@ export default function AutomationTable({
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-4 font-black text-slate-950">{runs}</td>
-                    <td className="px-4 py-4 font-black text-slate-950">{leads}</td>
+                    <td className="px-4 py-4 font-black text-slate-950 dark:text-white">{runs}</td>
+                    <td className="px-4 py-4 font-black text-slate-950 dark:text-white">{leads}</td>
                     <td className="px-4 py-4">
                       <span className={[
                         "rounded-full px-2.5 py-1 text-xs font-black",
@@ -148,11 +224,11 @@ export default function AutomationTable({
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           Edit
                         </Link>
-                        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           View
                         </Link>
                         <button
@@ -163,7 +239,7 @@ export default function AutomationTable({
                                 .then(() => router.refresh());
                             });
                           }}
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
                         >
                           {automation.active ? "Pause" : "Activate"}
                         </button>
@@ -174,13 +250,14 @@ export default function AutomationTable({
                               void duplicateAutomation(automation.id).then(() => router.refresh());
                             });
                           }}
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
                         >
                           Duplicate
                         </button>
                         <button
                           disabled={isPending}
                           onClick={() => {
+                            if (!window.confirm("Delete this campaign? This keeps tenant checks in place but removes the campaign for your account.")) return;
                             startTransition(() => {
                               void deleteAutomation(automation.id).then(() => router.refresh());
                             });
@@ -199,5 +276,40 @@ export default function AutomationTable({
         </table>
       </div>
     </div>
+  );
+}
+
+function ActionLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+      {children}
+    </Link>
+  );
+}
+
+function ActionButton({
+  children,
+  disabled,
+  onClick,
+  danger,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        "rounded-lg border bg-white px-3 py-2 text-xs font-bold disabled:opacity-50 dark:bg-white/[0.04]",
+        danger
+          ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-300"
+          : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300",
+      ].join(" ")}
+    >
+      {children}
+    </button>
   );
 }

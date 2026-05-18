@@ -33,24 +33,23 @@ export default function Sidebar({ slug }: Props) {
   const email = user?.primaryEmailAddress?.emailAddress;
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 z-40 hidden w-[260px] flex-col border-r border-slate-200
-                      bg-white/92 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:flex">
+    <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-[260px] flex-col border-r border-slate-200 bg-white/92 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#0b1020]/92 dark:text-slate-50 lg:flex">
       {/* Logo */}
-      <div className="border-b border-slate-200 px-5 py-5">
-        <AP3kLogo className="text-sm text-slate-950" />
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+      <div className="border-b border-slate-200 px-5 py-5 dark:border-white/10">
+        <AP3kLogo className="text-sm text-slate-950 dark:text-white" />
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             AP3k user
           </p>
-          <p className="mt-2 truncate text-sm font-black text-slate-950">
+          <p className="mt-2 truncate text-sm font-black text-slate-950 dark:text-white">
             {displayName}
           </p>
           {email && (
-            <p className="truncate text-xs text-slate-500">{email}</p>
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{email}</p>
           )}
         </div>
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             Instagram account
           </p>
           <div className="mt-3 flex items-center gap-3">
@@ -67,12 +66,12 @@ export default function Sidebar({ slug }: Props) {
               </div>
             )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-950">
+              <p className="truncate text-sm font-black text-slate-950 dark:text-white">
                 {instagram?.instagramUsername
                   ? `@${instagram.instagramUsername}`
                   : "Not connected"}
               </p>
-              <p className="truncate text-xs text-slate-500">
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 {instagram ? "Official Meta connection" : "Connect to start"}
               </p>
             </div>
@@ -96,8 +95,8 @@ export default function Sidebar({ slug }: Props) {
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-bold transition-all",
                 isActive
-                  ? "border border-pink-200 bg-gradient-to-r from-orange-50 via-pink-50 to-indigo-50 text-slate-950 shadow-[0_10px_30px_rgba(221,42,123,0.10)]"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-950"
+                  ? "border border-pink-200 bg-gradient-to-r from-orange-50 via-pink-50 to-indigo-50 text-slate-950 shadow-[0_10px_30px_rgba(221,42,123,0.10)] dark:border-rf-pink/30 dark:bg-ap3k-gradient-soft dark:text-white"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -110,10 +109,10 @@ export default function Sidebar({ slug }: Props) {
       {/* Upgrade card — Free tier only */}
       <SubscriptionPlan type="FREE">
         <div className="px-3 pb-4">
-          <div className="relative overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4">
+          <div className="relative overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4 dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
             <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
-            <p className="relative text-xs font-black text-slate-950 mb-1">Upgrade to Creator</p>
-            <p className="text-[11px] text-slate-500 mb-3 leading-snug">
+            <p className="relative mb-1 text-xs font-black text-slate-950 dark:text-white">Upgrade to Creator</p>
+            <p className="mb-3 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
               Unlock AI replies &amp; unlimited campaigns
             </p>
             <Link
@@ -125,13 +124,13 @@ export default function Sidebar({ slug }: Props) {
           </div>
         </div>
       </SubscriptionPlan>
-      <div className="border-t border-slate-200 p-3">
+      <div className="border-t border-slate-200 p-3 dark:border-white/10">
         <button
           onClick={() => {
             queryClient.clear();
             void signOut({ redirectUrl: "/" });
           }}
-          className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
+          className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           Sign out
         </button>

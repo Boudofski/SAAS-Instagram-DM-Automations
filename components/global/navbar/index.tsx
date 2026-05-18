@@ -1,6 +1,7 @@
 "use client";
 
 import { Separator } from "@/components/ui/separator";
+import ThemeToggle from "@/components/global/theme-toggle";
 import { PAGE_BREAD_CRUMBS } from "@/constants/pages";
 import { usePath } from "@/hooks/user-nav";
 import { HelpDuoToneWhite } from "@/icons";
@@ -27,10 +28,10 @@ function NavBar({ slug }: Props) {
   return (
     currentPage && (
       <div className="flex flex-col">
-        <div className="flex gap-x-3 lg:gap-x-5 justify-end text-slate-950">
+        <div className="sticky top-3 z-30 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/85 p-2 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#101827]/88 dark:text-slate-50 lg:justify-end">
           <span className="lg:hidden flex items-center flex-1 gap-x-2">
-            <Sheet trigger={<Menu />} className="lg:hidden" side="left">
-              <div className="flex flex-col gap-y-5 w-full h-full p-3 bg-[#0e0e0e] bg-opacity-90 bg-clip-padding backdrop-filter backdrop--blur__safari backdrop-blur-3xl">
+            <Sheet trigger={<Menu aria-label="Open navigation" />} className="lg:hidden" side="left">
+              <div className="flex h-full w-full flex-col gap-y-5 bg-[#0b1020] p-3 text-white backdrop-blur-3xl">
                 <div className="flex gap-x-2 items-center p-5 justify-center">
                   <LogoSmall />
                 </div>
@@ -63,6 +64,7 @@ function NavBar({ slug }: Props) {
           </span>
           <Search />
           <CreateAutomation slug={slug} />
+          <ThemeToggle compact />
           <Notification />
         </div>
         <MainBreadCrumbs page={page === slug ? "Home" : page} slug={slug} />
