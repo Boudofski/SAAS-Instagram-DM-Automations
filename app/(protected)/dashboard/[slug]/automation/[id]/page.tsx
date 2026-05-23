@@ -2,6 +2,7 @@ import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/acti
 import ActiveAutomationButton from "@/components/global/active-automation-button";
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { formatActivityDisplay, getReviewerTestCopy } from "@/lib/campaign-activity-format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -106,7 +107,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-3xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6 text-slate-950 dark:text-white shadow-sm">
+        <div className="ap3k-card rounded-3xl p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
@@ -165,7 +166,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
         </div>
 
-        <aside className="rounded-3xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6 text-slate-950 dark:text-white shadow-sm">
+        <aside className="ap3k-card rounded-3xl p-6">
           <p className="text-xs font-black uppercase tracking-[0.18em] dark:text-slate-400 text-slate-500">
             Settings
           </p>
@@ -186,14 +187,11 @@ export default async function CampaignDetailPage({ params }: Props) {
         </aside>
       </div>
 
-      <div className="mb-8 rounded-2xl border border-blue-100 bg-white p-4 text-slate-950 dark:text-white shadow-sm">
+      <div className="ap3k-card mb-8 rounded-2xl p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-blue">
           Reviewer test script
         </p>
-        <p className="mt-2 text-sm dark:text-slate-300 text-slate-600">
-          This campaign listens for comments on the selected Instagram media,
-          matches the configured trigger, replies publicly if enabled, and {sendPrivateDm ? "sends the configured private DM through Meta's official API." : "skips private DM sending because an external tool handles DMs."} The log below shows each step when a real test comment is received.
-        </p>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{getReviewerTestCopy(sendPrivateDm)}</p>
       </div>
 
       {/* Stats */}
@@ -224,7 +222,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Campaign info */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-5">
+        <div className="ap3k-card rounded-2xl p-6 flex flex-col gap-5">
           <h2 className="text-sm font-bold text-slate-950 dark:text-white">Campaign details</h2>
 
           {/* Post */}
@@ -232,12 +230,12 @@ export default async function CampaignDetailPage({ params }: Props) {
             <div>
               <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">Post</p>
               {automation.posts[0].postid === "ANY" ? (
-                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                <div className="ap3k-preview-card flex items-center gap-3 p-3">
                   <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-rf-blue/10 text-2xl">🌐</span>
-                  <p className="text-xs dark:text-slate-400 text-slate-500">Any post - triggers on all Instagram posts</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">Any post - triggers on all Instagram posts</p>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                <div className="ap3k-preview-card flex items-center gap-3 p-3">
                   {automation.posts[0].media ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -246,9 +244,9 @@ export default async function CampaignDetailPage({ params }: Props) {
                       className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
                     />
                   ) : (
-                    <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-slate-50 text-xl">📷</span>
+                    <span className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center bg-slate-100 text-xl dark:bg-white/[0.06]">📷</span>
                   )}
-                  <p className="text-xs dark:text-slate-400 text-slate-500 line-clamp-2">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
                     {automation.posts[0].caption ?? "Reel / Post"}
                   </p>
                 </div>
@@ -291,7 +289,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 DM message
               </p>
-              <div className="bg-rf-blue/5 border border-rf-blue/15 rounded-xl p-4">
+              <div className="rounded-xl border border-rf-blue/20 bg-rf-blue/5 p-4 dark:bg-rf-blue/10">
                 <p className="text-xs text-slate-950 dark:text-white leading-relaxed whitespace-pre-wrap">
                   {automation.listener.prompt}
                 </p>
@@ -303,7 +301,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                     {automation.listener.ctaButtonTitle || "Open link"}
                   </span>
                   {automation.listener.ctaLink && (
-                    <span className="text-[10px] dark:text-slate-400 text-slate-500 truncate">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate">
                       {automation.listener.ctaLink}
                     </span>
                   )}
@@ -354,38 +352,35 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
 
         {/* Quick actions */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4">
+        <div className="ap3k-card rounded-2xl p-6 flex flex-col gap-4">
           <h2 className="text-sm font-bold text-slate-950 dark:text-white">Quick actions</h2>
           <Link
             href={`/dashboard/${params.slug}/automation/new`}
-            className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200
-                       rounded-xl text-sm dark:text-slate-400 text-slate-500 hover:text-slate-950 dark:hover:text-white hover:border-rf-blue/30
+            className="ap3k-review-row text-sm text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:border-rf-blue/30
                        transition-all"
           >
             <span>➕</span> Create a new campaign
           </Link>
           <Link
             href={`/dashboard/${params.slug}/automation`}
-            className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200
-                       rounded-xl text-sm dark:text-slate-400 text-slate-500 hover:text-slate-950 dark:hover:text-white hover:border-rf-blue/30
+            className="ap3k-review-row text-sm text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:border-rf-blue/30
                        transition-all"
           >
             <span>📣</span> View all campaigns
           </Link>
-          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-dashed
-                          border-slate-200 rounded-xl text-sm text-slate-400">
+          <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
             <span>📤</span> Export leads (coming soon)
           </div>
         </div>
 
       </div>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-6">
+      <div className="ap3k-card mt-6 rounded-2xl p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-slate-950 dark:text-white">Live automation log</h2>
             <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
-              Webhook receipts, keyword matches, DM sends, and failures from Meta.
+              Latest 30 events · technical diagnostics are collapsed.
             </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
@@ -398,44 +393,57 @@ export default async function CampaignDetailPage({ params }: Props) {
             No events yet. Comment on a connected Instagram post to test this campaign.
           </div>
         ) : (
-          <div className="divide-y divide-slate-200">
-            {activity.map((item) => (
-              <div key={`${item.source}-${item.id}`} className="flex gap-3 py-4">
-                <span
-                  className={[
-                    "mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full",
-                    getActivityTone(item.type, item.status),
-                  ].join(" ")}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-950 dark:text-white">
-                      {formatActivityType(item.type, item.keyword)}
+          <div className="divide-y divide-slate-200 dark:divide-white/10">
+            {activity.map((item) => {
+              const display = formatActivityDisplay(item);
+              return (
+                <div key={`${item.source}-${item.id}`} className={["flex gap-3 py-4", display.technical ? "opacity-80" : ""].join(" ")}>
+                  <span
+                    className={[
+                      "mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full",
+                      activityDotClass(display.tone),
+                    ].join(" ")}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className={["text-sm font-semibold", display.technical ? "text-slate-700 dark:text-slate-300" : "text-slate-950 dark:text-white"].join(" ")}>
+                        {display.label}
+                      </p>
+                      {item.keyword && (
+                        <span className="rounded-full bg-rf-blue/10 px-2 py-0.5 text-[11px] font-semibold text-rf-blue">
+                          {item.keyword}
+                        </span>
+                      )}
+                      {display.badge && (
+                        <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase", badgeClass(display.tone)].join(" ")}>
+                          {display.badge}
+                        </span>
+                      )}
+                      {display.technical && (
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
+                          Technical
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
+                      {new Date(item.createdAt).toLocaleString()}
                     </p>
-                    {item.keyword && (
-                      <span className="rounded-full bg-rf-blue/10 px-2 py-0.5 text-[11px] font-semibold text-rf-blue">
-                        {item.keyword}
-                      </span>
-                    )}
-                    {item.status && (
-                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold uppercase dark:text-slate-400 text-slate-500">
-                        {item.status}
-                      </span>
-                    )}
+                    <details className="mt-2 group">
+                      <summary className="cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
+                        Details
+                      </summary>
+                      <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                        {display.detail && <p>{display.detail}</p>}
+                        <p>{item.type}{item.status ? ` · ${item.status}` : ""}</p>
+                        {item.igUserId ? <p>IG user {item.igUserId}</p> : null}
+                        {item.mediaId ? <p>Media {item.mediaId}</p> : null}
+                        {item.commentId ? <p>Comment {item.commentId}</p> : null}
+                      </div>
+                    </details>
                   </div>
-                  <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
-                    {new Date(item.createdAt).toLocaleString()}
-                    {item.igUserId ? ` · IG user ${item.igUserId}` : ""}
-                    {item.commentId ? ` · comment ${item.commentId}` : ""}
-                  </p>
-                  {item.errorMessage && (
-                    <p className="mt-2 rounded-lg border border-red-500/15 bg-red-500/10 px-3 py-2 text-xs text-red-700">
-                      {formatLogError(item.errorMessage)}
-                    </p>
-                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -455,14 +463,14 @@ function FlowNode({
   tone: "orange" | "pink" | "purple" | "blue";
 }) {
   const tones = {
-    orange: "from-orange-50 border-orange-200 text-orange-600",
-    pink: "from-pink-50 border-pink-200 text-pink-600",
-    purple: "from-purple-50 border-purple-200 text-purple-600",
-    blue: "from-blue-50 border-blue-200 text-blue-600",
+    orange: "from-orange-50 border-orange-200 text-orange-600 dark:from-orange-500/10 dark:to-white/[0.03] dark:border-orange-500/25 dark:text-orange-300",
+    pink: "from-pink-50 border-pink-200 text-pink-600 dark:from-pink-500/10 dark:to-white/[0.03] dark:border-pink-500/25 dark:text-pink-300",
+    purple: "from-purple-50 border-purple-200 text-purple-600 dark:from-purple-500/10 dark:to-white/[0.03] dark:border-purple-500/25 dark:text-purple-300",
+    blue: "from-blue-50 border-blue-200 text-blue-600 dark:from-blue-500/10 dark:to-white/[0.03] dark:border-blue-500/25 dark:text-blue-300",
   };
 
   return (
-    <div className={`rounded-2xl border bg-gradient-to-br to-white p-5 ${tones[tone]}`}>
+    <div className={`rounded-2xl border bg-gradient-to-br to-white p-5 dark:bg-[#101827] ${tones[tone]}`}>
       <p className="text-[11px] font-black uppercase tracking-[0.18em]">{label}</p>
       <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{title}</h3>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed dark:text-slate-300 text-slate-600">{body}</p>
@@ -487,50 +495,24 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatActivityType(type: string, keyword?: string) {
-  if (type === "KEYWORD_MATCHED" && keyword === "ANY_COMMENT") {
-    return "Any comment trigger matched";
-  }
-  const friendly: Record<string, string> = {
-    WEBHOOK_RECEIVED: "Comment received",
-    COMMENT_RECEIVED: "Comment received",
-    KEYWORD_MATCHED: "Trigger matched",
-    ANY_COMMENT: "Any comment trigger matched",
-    PUBLIC_REPLY_SENT: "Public reply sent",
-    PUBLIC_REPLY_FAILED: "Public reply failed",
-    DM_SENT: "Private DM sent",
-    DM_SKIPPED: "Private DM skipped",
-    DM_FAILED: "Private DM failed",
-    DUPLICATE_SKIPPED: "Duplicate skipped",
-    SELF_COMMENT_SKIPPED: "Ignored self-comment from connected account",
-    COMMENT_SKIPPED: "Ignored comment",
-    LOOP_GUARD_TRIGGERED: "Loop guard skipped public reply",
-    LOOP_GUARD_PAUSED_CAMPAIGN: "Campaign auto-paused by loop guard",
-    NO_MATCH: "No trigger match",
-    DM_FAILED_FAILED: "Private DM failed",
-    COMMENT_REPLY_SENT: "Public reply sent",
-    COMMENT_REPLY_FAILED: "Public reply failed",
+function activityDotClass(tone: "green" | "blue" | "amber" | "red" | "slate") {
+  const tones = {
+    green: "bg-rf-green shadow-[0_0_16px_rgba(34,197,94,0.45)]",
+    blue: "bg-rf-blue shadow-[0_0_16px_rgba(96,165,250,0.45)]",
+    amber: "bg-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.45)]",
+    red: "bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.6)]",
+    slate: "bg-slate-400",
   };
-  if (friendly[type]) return friendly[type];
-  return type
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return tones[tone];
 }
 
-function formatLogError(message: string) {
-  if (message.includes("static_reply_limit_reached")) {
-    return "Skipped — monthly static reply limit reached.";
-  }
-  if (message.includes("code=3") || message.includes("capability") || message.includes("permission")) {
-    return "Meta blocked private DM until instagram_manage_messages capability is approved.";
-  }
-  return message;
-}
-
-function getActivityTone(type: string, status?: string) {
-  if (type.includes("FAILED") || status === "FAILED") return "bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.6)]";
-  if (type.includes("SENT") || type.includes("MATCHED") || status === "PROCESSED") return "bg-rf-green shadow-[0_0_16px_rgba(34,197,94,0.45)]";
-  if (type.includes("WEBHOOK") || status === "PROCESSING" || status === "RECEIVED") return "bg-rf-blue shadow-[0_0_16px_rgba(96,165,250,0.45)]";
-  return "bg-slate-400";
+function badgeClass(tone: "green" | "blue" | "amber" | "red" | "slate") {
+  const tones = {
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
+    blue: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300",
+    amber: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
+    red: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300",
+    slate: "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
+  };
+  return tones[tone];
 }
