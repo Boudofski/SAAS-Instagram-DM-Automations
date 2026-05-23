@@ -54,7 +54,7 @@ function PaymentCard({ label, current }: Props) {
     <div
       className={cn(
         "flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
-        isActive && "border-rf-pink/35 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 dark:bg-ap3k-gradient-soft"
+        isActive && "border-rf-pink/35 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-slate-950 dark:border-rf-pink/40 dark:bg-[#171123] dark:bg-none dark:text-white dark:shadow-[0_18px_60px_rgba(221,42,123,0.12)]"
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -83,7 +83,9 @@ function PaymentCard({ label, current }: Props) {
         disabled={isActive || isIncludedFree || isAgency}
         className={cn(
           "mt-6 rounded-xl font-bold",
-          isActive || isIncludedFree || isAgency ? "bg-white/10 text-rf-muted" : "ap3k-gradient-button"
+          isActive || isIncludedFree || isAgency
+            ? "border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-300"
+            : "ap3k-gradient-button"
         )}
       >
         <Link href={isActive || isIncludedFree || isAgency ? "/dashboard" : plan.href}>

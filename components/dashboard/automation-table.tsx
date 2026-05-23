@@ -78,8 +78,8 @@ export default function AutomationTable({
           filtered.map((automation) => {
             const post = automation.posts?.[0];
             const isAny = post?.postid === "ANY";
-            const runs = automation.listener?.commentCount ?? 0;
-            const leads = automation.leads?.length ?? automation._count?.leads ?? 0;
+            const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
+            const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
             const isAnyComment = automation.triggerMode === "ANY_COMMENT";
             return (
               <article key={automation.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-[#101827]">
@@ -88,7 +88,7 @@ export default function AutomationTable({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={post.media} alt={post.caption ?? automation.name ?? "Campaign"} className="h-12 w-12 rounded-xl object-cover" />
                   ) : (
-                    <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600">
+                    <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300">
                       AP
                     </div>
                   )}
@@ -152,6 +152,7 @@ export default function AutomationTable({
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Post/Reel</th>
               <th className="px-4 py-3">Trigger</th>
+              <th className="px-4 py-3">Mode</th>
               <th className="px-4 py-3">Runs</th>
               <th className="px-4 py-3">Leads</th>
               <th className="px-4 py-3">Status</th>
@@ -161,7 +162,7 @@ export default function AutomationTable({
           <tbody className="divide-y divide-slate-100 dark:divide-white/10">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                   No automations match your search.
                 </td>
               </tr>
@@ -169,9 +170,10 @@ export default function AutomationTable({
               filtered.map((automation) => {
                 const post = automation.posts?.[0];
                 const isAny = post?.postid === "ANY";
-                const runs = automation.listener?.commentCount ?? 0;
-                const leads = automation.leads?.length ?? automation._count?.leads ?? 0;
+                const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
+                const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
                 const isAnyComment = automation.triggerMode === "ANY_COMMENT";
+                const mode = automation.sendPrivateDm === false ? "External DM" : "AP3k DM";
 
                 return (
                   <tr key={automation.id} className="text-sm text-slate-700 dark:text-slate-300">
@@ -181,7 +183,7 @@ export default function AutomationTable({
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={post.media} alt={post.caption ?? automation.name ?? "Campaign"} className="h-11 w-11 rounded-xl object-cover" />
                         ) : (
-                          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600">
+                          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300">
                             AP
                           </div>
                         )}
@@ -190,35 +192,40 @@ export default function AutomationTable({
                             {automation.name || "Untitled automation"}
                           </Link>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {automation.sendPrivateDm === false ? "DM handled externally" : "Private DM"}
+                            {mode}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
                         {isAny ? "Any post" : post?.postid ? "Specific post" : "Manual"}
                       </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex max-w-[220px] flex-wrap gap-1.5">
                         {isAnyComment ? (
-                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">
+                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
                             Any comment
                           </span>
                         ) : (automation.keywords ?? []).slice(0, 3).map((keyword: any) => (
-                          <span key={keyword.id ?? keyword.word} className="rounded-full border border-pink-100 bg-pink-50 px-2 py-0.5 text-xs font-bold text-pink-700">
+                          <span key={keyword.id ?? keyword.word} className="rounded-full border border-pink-100 bg-pink-50 px-2 py-0.5 text-xs font-bold text-pink-700 dark:border-pink-500/30 dark:bg-pink-500/10 dark:text-pink-200">
                             {keyword.word}
                           </span>
                         ))}
                       </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
+                        {mode}
+                      </span>
                     </td>
                     <td className="px-4 py-4 font-black text-slate-950 dark:text-white">{runs}</td>
                     <td className="px-4 py-4 font-black text-slate-950 dark:text-white">{leads}</td>
                     <td className="px-4 py-4">
                       <span className={[
                         "rounded-full px-2.5 py-1 text-xs font-black",
-                        automation.active ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
+                        automation.active ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
                       ].join(" ")}>
                         {automation.active ? "Live" : "Paused"}
                       </span>
@@ -262,7 +269,7 @@ export default function AutomationTable({
                               void deleteAutomation(automation.id).then(() => router.refresh());
                             });
                           }}
-                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
                         >
                           Delete
                         </button>

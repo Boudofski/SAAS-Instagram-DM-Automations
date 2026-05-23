@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUserFindUnique = vi.fn();
 const mockMessageLogCount = vi.fn();
+const mockAutomationEventCount = vi.fn();
 const mockAutomationCount = vi.fn();
 const mockIntegrationCount = vi.fn();
 const mockAutomationFindFirst = vi.fn();
@@ -10,6 +11,7 @@ vi.mock("@/lib/prisma", () => ({
   client: {
     user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
     messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
+    automationEvent: { count: (...args: any[]) => mockAutomationEventCount(...args) },
     automation: {
       count: (...args: any[]) => mockAutomationCount(...args),
       findFirst: (...args: any[]) => mockAutomationFindFirst(...args),
@@ -29,6 +31,7 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   mockUserFindUnique.mockResolvedValue({ subscription: { plan: "FREE" } });
   mockMessageLogCount.mockResolvedValue(0);
+  mockAutomationEventCount.mockResolvedValue(0);
   mockAutomationCount.mockResolvedValue(0);
   mockIntegrationCount.mockResolvedValue(0);
   mockAutomationFindFirst.mockResolvedValue(null);
@@ -36,7 +39,7 @@ beforeEach(() => {
 
 describe("usage query helpers", () => {
   it("counts sent comment replies and DMs as static monthly replies", async () => {
-    mockMessageLogCount.mockResolvedValue(7);
+    mockMessageLogCount.mockResolvedValueOnce(4).mockResolvedValueOnce(3);
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
@@ -44,7 +47,14 @@ describe("usage query helpers", () => {
     expect(mockMessageLogCount).toHaveBeenCalledWith({
       where: expect.objectContaining({
         status: "SENT",
-        messageType: { in: ["COMMENT_REPLY", "DM"] },
+        messageType: "COMMENT_REPLY",
+        automation: { userId: "user-1" },
+      }),
+    });
+    expect(mockMessageLogCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        status: "SENT",
+        messageType: "DM",
         automation: { userId: "user-1" },
       }),
     });
@@ -76,12 +86,33 @@ describe("usage query helpers", () => {
   });
 
   it("blocks static replies when the monthly limit is reached", async () => {
-    mockMessageLogCount.mockResolvedValue(50);
+    mockMessageLogCount.mockResolvedValueOnce(50).mockResolvedValueOnce(0);
 
     const result = await canSendStaticReply("user-1", new Date("2026-05-24T12:00:00Z"));
 
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("static_reply_limit_reached");
+  });
+
+  it("falls back to sent automation events when message logs are missing", async () => {
+    mockMessageLogCount.mockResolvedValue(0);
+    mockAutomationEventCount.mockResolvedValueOnce(2).mockResolvedValueOnce(3);
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(usage.staticReplies.used).toBe(5);
+    expect(mockAutomationEventCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        eventType: "PUBLIC_REPLY_SENT",
+        automation: { userId: "user-1" },
+      }),
+    });
+    expect(mockAutomationEventCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        eventType: "DM_SENT",
+        automation: { userId: "user-1" },
+      }),
+    });
   });
 
   it("blocks a second active campaign on Free", async () => {

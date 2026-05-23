@@ -15,6 +15,8 @@ function MainBreadCrumbs({ page, slug }: Props) {
       ? "Connect Instagram and manage official account access."
       : page === "automation"
       ? "Create and manage comment-to-DM campaigns."
+      : page === "billing"
+      ? "Review plan limits, billing status, and monthly usage."
       : page === "settings"
       ? "Review your AP3k plan and account settings."
       : "Manage your AP3k workspace.";

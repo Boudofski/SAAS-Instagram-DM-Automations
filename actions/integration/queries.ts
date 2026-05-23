@@ -1,6 +1,7 @@
 "use server";
 
 import { client } from "@/lib/prisma";
+import { getIntegrationHealth, REAL_COMMENT_WEBHOOK_TYPES } from "@/lib/dashboard-metrics";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
 
 export const updateIntegration = async (
@@ -77,6 +78,7 @@ export const recordIntegrationOAuthError = async (
   const user = await client.user.findUnique({
     where: { clerkId },
     select: {
+      id: true,
       integrations: {
         where: { name: "INSTAGRAM" },
         take: 1,
@@ -103,6 +105,7 @@ export const deleteIntegrationForUser = async (clerkId: string) => {
   const user = await client.user.findUnique({
     where: { clerkId },
     select: {
+      id: true,
       integrations: {
         where: { name: "INSTAGRAM" },
         take: 1,
@@ -243,6 +246,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
   const user = await client.user.findUnique({
     where: { clerkId },
     select: {
+      id: true,
       integrations: {
         where: { name: "INSTAGRAM" },
         take: 1,
@@ -250,6 +254,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
           token: true,
           instagramId: true,
           pageId: true,
+          webhookAccountId: true,
           expiresAt: true,
           webhookSubscriptionLastAttemptedAt: true,
           webhookSubscriptionStatusCode: true,
@@ -261,11 +266,17 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     },
   });
 
+  const userId = user?.id;
   const integration = user?.integrations[0];
   const pageId = integration?.pageId;
+  const accountIds = [
+    integration?.pageId,
+    integration?.instagramId,
+    integration?.webhookAccountId,
+  ].filter(Boolean) as string[];
   const tokenExpired =
     integration?.expiresAt && integration.expiresAt.getTime() < Date.now();
-  if (!pageId) {
+  if (!pageId || !userId) {
     return {
       lastWebhook: null,
       lastCommentWebhook: null,
@@ -277,39 +288,12 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     };
   }
 
-  const [lastWebhook, lastCommentWebhook, lastFailure] = await Promise.all([
-    client.webhookEvent.findFirst({
-      where: { igAccountId: pageId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        eventType: true,
-        status: true,
-        field: true,
-        errorMessage: true,
-        createdAt: true,
-      },
-    }),
+  const [lastWebhook, lastCommentWebhook, lastFailure, dashboardHealth] = await Promise.all([
     client.webhookEvent.findFirst({
       where: {
-        igAccountId: pageId,
-        eventType: { in: ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] },
-      },
-      orderBy: { createdAt: "desc" },
-      select: {
-        eventType: true,
-        status: true,
-        field: true,
-        errorMessage: true,
-        createdAt: true,
-      },
-    }),
-    client.webhookEvent.findFirst({
-      where: {
-        igAccountId: pageId,
         OR: [
-          { status: "FAILED" },
-          { eventType: { in: ["SIGNATURE_FAILED", "SIGNATURE_VERIFICATION_FAILED"] } },
-          { errorMessage: { not: null } },
+          { automation: { userId } },
+          ...(accountIds.length > 0 ? [{ igAccountId: { in: accountIds } }] : []),
         ],
       },
       orderBy: { createdAt: "desc" },
@@ -321,12 +305,57 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
         createdAt: true,
       },
     }),
+    client.webhookEvent.findFirst({
+      where: {
+        eventType: { in: [...REAL_COMMENT_WEBHOOK_TYPES] },
+        OR: [
+          { automation: { userId } },
+          ...(accountIds.length > 0 ? [{ igAccountId: { in: accountIds } }] : []),
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        eventType: true,
+        status: true,
+        field: true,
+        errorMessage: true,
+        createdAt: true,
+      },
+    }),
+    client.webhookEvent.findFirst({
+      where: {
+        AND: [
+          {
+            OR: [
+              { automation: { userId } },
+              ...(accountIds.length > 0 ? [{ igAccountId: { in: accountIds } }] : []),
+            ],
+          },
+          {
+            OR: [
+              { status: "FAILED" },
+              { eventType: { in: ["SIGNATURE_FAILED", "SIGNATURE_VERIFICATION_FAILED"] } },
+              { errorMessage: { not: null } },
+            ],
+          },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        eventType: true,
+        status: true,
+        field: true,
+        errorMessage: true,
+        createdAt: true,
+      },
+    }),
+    getIntegrationHealth(userId),
   ]);
 
   const tokenResolution = resolveIntegrationSendToken(integration);
   return {
     lastWebhook,
-    lastCommentWebhook,
+    lastCommentWebhook: lastCommentWebhook ?? dashboardHealth.lastRealComment,
     lastFailure,
     subscription: {
       lastAttemptedAt: integration?.webhookSubscriptionLastAttemptedAt ?? null,

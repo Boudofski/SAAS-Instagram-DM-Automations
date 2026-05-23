@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePath } from "@/hooks/user-nav";
 import SubscriptionPlan from "../subscription-plan";
 import AP3kLogo from "../ap3k-logo";
-import { Home, Link2, Megaphone, Settings } from "lucide-react";
+import { CreditCard, Home, Link2, Megaphone, Settings } from "lucide-react";
 import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ const NAV = [
   { icon: Home, label: "Home",         segment: "" },
   { icon: Megaphone, label: "Campaigns",    segment: "automation" },
   { icon: Link2, label: "Integrations", segment: "integrations" },
+  { icon: CreditCard, label: "Billing", segment: "billing" },
   { icon: Settings, label: "Settings",    segment: "settings" },
 ] as const;
 

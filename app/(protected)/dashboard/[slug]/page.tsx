@@ -5,6 +5,7 @@ import StatCard from "@/components/global/stat-card";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
+import { getCampaignTableMetrics, getDashboardGreeting, getUserDashboardMetrics } from "@/lib/dashboard-metrics";
 import { isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -41,26 +42,23 @@ export default async function DashboardPage({ params }: Props) {
       ? (automationsResult.data as any[])
       : [];
 
-  const totalDms = automations.reduce(
-    (sum: number, a: any) => sum + (a.listener?.dmCount ?? 0), 0
-  );
-  const totalComments = automations.reduce(
-    (sum: number, a: any) => sum + (a.listener?.commentCount ?? 0), 0
-  );
-  const replyRate = totalComments > 0
-    ? Math.round((totalDms / totalComments) * 100)
-    : 0;
-
   const isEmpty = automations.length === 0;
   const instagram = userResult.data?.integrations?.[0];
   const tokenExpired =
     instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now();
-  const displayName =
-    userResult.data?.firstname ||
-    userResult.data?.email?.split("@")[0] ||
-    "there";
+  const displayName = getDashboardGreeting(userResult.data ?? {});
   const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
-  const usage = userResult.data?.id ? await getUserMonthlyUsage(userResult.data.id) : null;
+  const [usage, metrics, campaignMetrics] = userResult.data?.id
+    ? await Promise.all([
+        getUserMonthlyUsage(userResult.data.id),
+        getUserDashboardMetrics(userResult.data.id),
+        getCampaignTableMetrics(userResult.data.id),
+      ])
+    : [null, null, {} as Record<string, any>];
+  const automationsWithMetrics = automations.map((automation) => ({
+    ...automation,
+    metrics: campaignMetrics[automation.id] ?? { runs: 0, leads: automation._count?.leads ?? 0 },
+  }));
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
@@ -172,17 +170,17 @@ export default async function DashboardPage({ params }: Props) {
 
       <div className="grid gap-3 md:grid-cols-4">
         <HealthPill label="Instagram connected" state={instagram && !tokenExpired ? "ok" : "warn"} />
-        <HealthPill label="Comments webhook active" state="ok" />
+        <HealthPill label="Comments webhook active" state={metrics?.lastRealCommentAt ? "ok" : "warn"} />
         <HealthPill label="Public reply fallback ready" state="ok" />
         <HealthPill label={hasExternalDmCampaign ? "External DM mode active" : "DM capability pending"} state="warn" />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="DMs sent"         icon="DM" value={totalDms}        empty={isEmpty} />
-        <StatCard label="Comments matched" icon="CM" value={totalComments}   empty={isEmpty} />
-        <StatCard label="Leads captured" icon="LD" value={automations.reduce((sum: number, a: any) => sum + (a._count?.leads ?? 0), 0)} empty={isEmpty} />
-        <StatCard label="Reply rate"       icon="RR" value={`${replyRate}%`} empty={isEmpty} />
+        <StatCard label="DMs sent"         icon="DM" value={metrics?.dmsSent ?? 0}        empty={isEmpty} />
+        <StatCard label="Comments matched" icon="CM" value={metrics?.commentsMatched ?? 0}   empty={isEmpty} />
+        <StatCard label="Leads captured" icon="LD" value={metrics?.leadsCaptured ?? 0} empty={isEmpty} />
+        <StatCard label="Reply rate"       icon="RR" value={`${metrics?.replyRate ?? 0}%`} empty={isEmpty} />
       </div>
 
       {/* Main grid */}
@@ -209,7 +207,7 @@ export default async function DashboardPage({ params }: Props) {
               ctaHref={`/dashboard/${params.slug}/automation/new`}
             />
           ) : (
-            <AutomationTable slug={params.slug} automations={automations.slice(0, 8)} />
+            <AutomationTable slug={params.slug} automations={automationsWithMetrics.slice(0, 8)} />
           )}
         </div>
 

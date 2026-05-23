@@ -28,7 +28,7 @@ function NavBar({ slug }: Props) {
   return (
     currentPage && (
       <div className="flex flex-col">
-        <div className="sticky top-3 z-30 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/85 p-2 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#101827]/88 dark:text-slate-50 lg:justify-end">
+        <div className="sticky top-3 z-30 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/82 p-2 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1020]/80 dark:text-slate-50 lg:justify-end">
           <span className="lg:hidden flex items-center flex-1 gap-x-2">
             <Sheet trigger={<Menu aria-label="Open navigation" />} className="lg:hidden" side="left">
               <div className="flex h-full w-full flex-col gap-y-5 bg-[#0b1020] p-3 text-white backdrop-blur-3xl">
@@ -67,7 +67,7 @@ function NavBar({ slug }: Props) {
           <ThemeToggle compact />
           <Notification />
         </div>
-        <MainBreadCrumbs page={page === slug ? "Home" : page} slug={slug} />
+        {page !== slug && <MainBreadCrumbs page={page} slug={slug} />}
       </div>
     )
   );

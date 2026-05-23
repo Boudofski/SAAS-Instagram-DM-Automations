@@ -40,9 +40,9 @@ function Billing({ current = "FREE", usage }: Props) {
           </div>
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <UsageBar label="Static replies" metric={usage.staticReplies} />
-            <UsageBar label="AI replies" metric={usage.aiReplies} />
+            <UsageBar label="AI replies" metric={usage.aiReplies} helper="Reserved for future AI replies" />
             <UsageBar label="Active campaigns" metric={usage.activeCampaigns} />
-            <UsageBar label="Connected Instagram accounts" metric={usage.connectedAccounts} />
+            <UsageBar label="Connected Instagram accounts" metric={usage.connectedAccounts} helper="Creator supports 1 connected account." />
           </div>
           {current === "FREE" ? (
             <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
@@ -66,7 +66,7 @@ function Billing({ current = "FREE", usage }: Props) {
 
 export default Billing;
 
-function UsageBar({ label, metric }: { label: string; metric: UsageSummary["staticReplies"] }) {
+function UsageBar({ label, metric, helper }: { label: string; metric: UsageSummary["staticReplies"]; helper?: string }) {
   const tone = usageTone(metric.percent, metric.blocked);
   const bar =
     tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
@@ -84,7 +84,7 @@ function UsageBar({ label, metric }: { label: string; metric: UsageSummary["stat
         <div className={`h-full rounded-full ${bar}`} style={{ width: `${isUnlimited(metric.limit) ? 6 : metric.percent}%` }} />
       </div>
       <p className={`mt-2 text-xs font-bold ${metric.blocked ? "text-red-600 dark:text-red-300" : "text-slate-500 dark:text-slate-300"}`}>
-        {metric.blocked ? "Limit reached" : isUnlimited(metric.limit) ? "Unlimited" : `${metric.remaining?.toLocaleString()} remaining`}
+        {helper ?? (metric.blocked ? "Limit reached" : isUnlimited(metric.limit) ? "Unlimited" : `${metric.remaining?.toLocaleString()} remaining`)}
       </p>
     </div>
   );

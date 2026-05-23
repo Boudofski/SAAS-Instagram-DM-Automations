@@ -20,11 +20,19 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
 
-  const [staticReplies, activeCampaigns, connectedAccounts] = await Promise.all([
+  const [publicReplyLogs, dmLogs, activeCampaigns, connectedAccounts] = await Promise.all([
     client.messageLog.count({
       where: {
         status: "SENT",
-        messageType: { in: ["COMMENT_REPLY", "DM"] },
+        messageType: "COMMENT_REPLY",
+        createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+        automation: { userId },
+      },
+    }),
+    client.messageLog.count({
+      where: {
+        status: "SENT",
+        messageType: "DM",
         createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
         automation: { userId },
       },
@@ -32,6 +40,27 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     client.automation.count({ where: { userId, active: true } }),
     client.integrations.count({ where: { userId } }),
   ]);
+  const [publicReplyEventFallback, dmEventFallback] = await Promise.all([
+    publicReplyLogs > 0
+      ? Promise.resolve(0)
+      : client.automationEvent.count({
+          where: {
+            eventType: "PUBLIC_REPLY_SENT",
+            createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+            automation: { userId },
+          },
+        }),
+    dmLogs > 0
+      ? Promise.resolve(0)
+      : client.automationEvent.count({
+          where: {
+            eventType: "DM_SENT",
+            createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+            automation: { userId },
+          },
+        }),
+  ]);
+  const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback;
 
   return {
     plan,

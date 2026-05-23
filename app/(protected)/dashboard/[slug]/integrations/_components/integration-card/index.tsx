@@ -286,6 +286,12 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               tester acceptance, media ownership, account type, and webhook subscription.
             </p>
           )}
+          {health?.data?.lastCommentWebhook && (
+            <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
+              Comment delivery active: ok. Last comment: {new Date(health.data.lastCommentWebhook.createdAt).toLocaleString()}.
+              Outbound DM capability may still depend on Meta messaging approval.
+            </p>
+          )}
         </div>
       )}
     </div>

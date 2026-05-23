@@ -2,6 +2,7 @@ import Billing from "@/components/global/billing";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
+import { getUserDashboardMetrics } from "@/lib/dashboard-metrics";
 import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 
@@ -19,15 +20,9 @@ async function Page({ params }: Props) {
       ? (automationsResult.data as any[])
       : [];
   const instagram = user?.integrations?.[0];
-  const usage = user?.id ? await getUserMonthlyUsage(user.id) : undefined;
-  const totalComments = automations.reduce(
-    (sum: number, automation: any) => sum + (automation.listener?.commentCount ?? 0),
-    0
-  );
-  const totalDms = automations.reduce(
-    (sum: number, automation: any) => sum + (automation.listener?.dmCount ?? 0),
-    0
-  );
+  const [usage, metrics] = user?.id
+    ? await Promise.all([getUserMonthlyUsage(user.id), getUserDashboardMetrics(user.id)])
+    : [undefined, null];
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -87,8 +82,8 @@ async function Page({ params }: Props) {
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
               ["Campaigns", automations.length],
-              ["Comments", totalComments],
-              ["DMs sent", totalDms],
+              ["Comments matched", metrics?.commentsMatched ?? 0],
+              ["DMs sent", metrics?.dmsSent ?? 0],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
                 <p className="text-2xl font-black">{value}</p>
