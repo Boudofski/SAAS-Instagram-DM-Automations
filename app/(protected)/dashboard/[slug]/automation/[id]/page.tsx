@@ -112,7 +112,9 @@ export default async function CampaignDetailPage({ params }: Props) {
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
                 AutoDM flow
               </p>
-              <h2 className="mt-1 text-xl font-black">When comments match, AP3k sends the DM</h2>
+              <h2 className="mt-1 text-xl font-black">
+                When comments match, AP3k {sendPrivateDm ? "sends the configured replies" : "handles public replies only"}
+              </h2>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-xs font-bold dark:text-slate-400 text-slate-500">
               Live preview
@@ -190,9 +192,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         </p>
         <p className="mt-2 text-sm dark:text-slate-300 text-slate-600">
           This campaign listens for comments on the selected Instagram media,
-          matches the configured keyword, replies publicly if enabled, then sends
-          the private DM through Meta&apos;s official API. The log below shows
-          each step when a real test comment is received.
+          matches the configured trigger, replies publicly if enabled, and {sendPrivateDm ? "sends the configured private DM through Meta's official API." : "skips private DM sending because an external tool handles DMs."} The log below shows each step when a real test comment is received.
         </p>
       </div>
 
@@ -519,6 +519,9 @@ function formatActivityType(type: string, keyword?: string) {
 }
 
 function formatLogError(message: string) {
+  if (message.includes("static_reply_limit_reached")) {
+    return "Skipped — monthly static reply limit reached.";
+  }
   if (message.includes("code=3") || message.includes("capability") || message.includes("permission")) {
     return "Meta blocked private DM until instagram_manage_messages capability is approved.";
   }

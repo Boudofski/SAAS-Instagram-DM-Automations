@@ -47,7 +47,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by caption or media ID"
-          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+          className="ap3k-input w-full rounded-xl py-2.5 pl-9 pr-3 text-sm"
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -64,10 +64,10 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
             type="button"
             onClick={() => onSelect(post)}
             className={cn(
-              "group overflow-hidden rounded-2xl border-2 bg-white text-left transition-all",
+              "group overflow-hidden rounded-2xl border-2 bg-white text-left transition-all dark:bg-[#101827]",
               isSelected
                 ? "border-rf-blue shadow-[0_0_0_3px_rgba(59,130,246,0.25)] scale-[1.03]"
-                : "border-slate-200 hover:border-rf-blue/50"
+                : "border-slate-200 hover:border-rf-blue/50 dark:border-white/10"
             )}
           >
             <div className="flex gap-3 p-3">
@@ -90,13 +90,13 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-950">
+                <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-950 dark:text-slate-50">
                   {post.caption?.trim() || "Instagram post or Reel"}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
                   {formatPostDate(post.timestamp)}
                 </p>
-                <p className="mt-1 truncate font-mono text-[11px] text-slate-400">
+                <p className="mt-1 truncate font-mono text-[11px] text-slate-500 dark:text-slate-400">
                   {post.id}
                 </p>
                 {post.permalink && (
@@ -116,7 +116,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
       })}
       </div>
       {filtered.length === 0 && (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
           No posts match your search.
         </div>
       )}

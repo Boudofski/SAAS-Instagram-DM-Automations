@@ -116,7 +116,7 @@
 
 @layer components {
   .ap3k-card {
-    @apply border border-slate-200 bg-white/85 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-rf-surface/75 dark:shadow-ap3k-card;
+    @apply border border-slate-200 bg-white/85 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-rf-surface/75 dark:text-slate-50 dark:shadow-ap3k-card;
   }
 
   .ap3k-card-hover {
@@ -158,11 +158,41 @@
   }
 
   .ap3k-muted {
-    @apply text-slate-600 dark:text-slate-400;
+    @apply text-slate-600 dark:text-slate-300;
   }
 
   .ap3k-input {
-    @apply border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 focus:border-pink-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-50 dark:placeholder:text-slate-500;
+    @apply border border-slate-200 bg-white text-slate-950 shadow-sm selection:bg-rf-blue selection:text-white placeholder:text-slate-400 outline-none transition-colors focus:border-pink-300 focus:ring-2 focus:ring-pink-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-600 disabled:opacity-100 dark:border-white/10 dark:bg-[#101827] dark:text-slate-50 dark:placeholder:text-slate-400 dark:focus:border-rf-blue/60 dark:focus:ring-rf-blue/20 dark:disabled:bg-white/[0.06] dark:disabled:text-slate-300;
+  }
+
+  .ap3k-textarea {
+    @apply ap3k-input min-h-[90px] resize-y leading-relaxed;
+  }
+
+  .ap3k-select {
+    @apply ap3k-input;
+  }
+
+  .ap3k-review-row {
+    @apply flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#101827] dark:text-slate-50;
+  }
+
+  .ap3k-preview-card {
+    @apply rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-950 dark:border-white/10 dark:bg-[#101827] dark:text-slate-50;
+  }
+
+  .ap3k-input:-webkit-autofill,
+  .ap3k-textarea:-webkit-autofill,
+  .ap3k-select:-webkit-autofill {
+    -webkit-text-fill-color: rgb(15 23 42);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  .dark .ap3k-input:-webkit-autofill,
+  .dark .ap3k-textarea:-webkit-autofill,
+  .dark .ap3k-select:-webkit-autofill {
+    -webkit-text-fill-color: rgb(248 250 252);
+    box-shadow: 0 0 0 1000px #101827 inset;
   }
 }
 

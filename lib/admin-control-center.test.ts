@@ -39,6 +39,10 @@ describe("admin control center helpers", () => {
       label: "Skipped — external DM tool enabled",
       tone: "amber",
     });
+    expect(classifyDeliveryError("static_reply_limit_reached")).toMatchObject({
+      label: "Skipped — monthly reply limit reached",
+      tone: "amber",
+    });
   });
 
   it("keeps subscription management read-only with Stripe customer links", () => {

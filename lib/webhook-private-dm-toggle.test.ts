@@ -14,6 +14,7 @@ const mockCountRecentPublicReplies = vi.fn();
 const mockHasRecentHandledCommenter = vi.fn();
 const mockCountLoopGuardEvents = vi.fn();
 const mockPauseAutomationForLoopGuard = vi.fn();
+const mockCanSendStaticReply = vi.fn();
 const mockUpsertLead = vi.fn();
 const mockTrackResponse = vi.fn();
 const mockSendInstagramCommentPrivateReply = vi.fn();
@@ -76,11 +77,16 @@ vi.mock("@/lib/openai", () => ({
   openai: { chat: { completions: { create: vi.fn() } } },
 }));
 
+vi.mock("@/actions/usage/queries", () => ({
+  canSendStaticReply: (...args: any[]) => mockCanSendStaticReply(...args),
+}));
+
 import { POST } from "@/app/api/webhooks/meta/route";
 
 function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {}) {
   return {
     id: overrides.id ?? `automation-${sendPrivateDm ? "dm-on" : "dm-off"}`,
+    userId: "user-1",
     name: "Campaign",
     active: true,
     matchingMode: "CONTAINS",
@@ -159,6 +165,16 @@ beforeEach(() => {
   mockHasRecentHandledCommenter.mockResolvedValue(false);
   mockCountLoopGuardEvents.mockResolvedValue(0);
   mockPauseAutomationForLoopGuard.mockResolvedValue({});
+  mockCanSendStaticReply.mockResolvedValue({
+    ok: true,
+    usage: {
+      plan: "FREE",
+      planLabel: "Free",
+      periodLabel: "May 2026",
+      enforcementStart: new Date("2026-05-01T00:00:00Z"),
+      staticReplies: { used: 0, limit: 50, blocked: false },
+    },
+  });
   mockSendCommentReply.mockResolvedValue({ status: 200, data: { id: "reply-comment-1" } });
   mockSendMediaComment.mockResolvedValue({ status: 200, data: { id: "reply-comment-1" } });
   mockSendInstagramCommentPrivateReply.mockResolvedValue({
@@ -396,6 +412,52 @@ describe("comment webhook private DM toggle", () => {
     );
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: "LOOP_GUARD_PAUSED_CAMPAIGN" })
+    );
+  });
+
+  it("skips public reply and private DM when the static reply limit is reached", async () => {
+    const campaign = automation(true);
+    mockCanSendStaticReply.mockResolvedValue({
+      ok: false,
+      reason: "static_reply_limit_reached",
+      usage: {
+        plan: "FREE",
+        planLabel: "Free",
+        periodLabel: "May 2026",
+        enforcementStart: new Date("2026-05-23T00:00:00Z"),
+        staticReplies: { used: 50, limit: 50, blocked: true },
+      },
+    });
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockUpsertLead).not.toHaveBeenCalled();
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "COMMENT_SKIPPED",
+        meta: expect.objectContaining({ reason: "static_reply_limit_reached" }),
+      })
+    );
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageType: "COMMENT_REPLY",
+        status: "SKIPPED",
+        errorMessage: "static_reply_limit_reached",
+      })
+    );
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageType: "DM",
+        status: "SKIPPED",
+        errorMessage: "static_reply_limit_reached",
+      })
     );
   });
 });

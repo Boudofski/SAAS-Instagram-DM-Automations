@@ -68,6 +68,13 @@ export function classifyDeliveryError(error?: string | null) {
       tone: "red" as const,
     };
   }
+  if (text.includes("static_reply_limit_reached")) {
+    return {
+      label: "Skipped — monthly reply limit reached",
+      detail: "Plan limit blocked public reply/private DM before any Meta API call.",
+      tone: "amber" as const,
+    };
+  }
   if (text.includes("dm_capability_missing") || text.includes("code=3")) {
     return {
       label: "Meta capability missing",

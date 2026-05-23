@@ -11,3 +11,9 @@ export function nextThemeMode(current?: string | null): ThemeMode {
   if (mode === "light") return "system";
   return "dark";
 }
+
+export function ap3kFormControlClass(kind: "input" | "textarea" | "select" = "input") {
+  if (kind === "textarea") return "ap3k-textarea";
+  if (kind === "select") return "ap3k-select";
+  return "ap3k-input";
+}

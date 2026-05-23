@@ -9,11 +9,11 @@ const PLANS = [
     ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
     features: [
       { text: "1 active campaign", included: true },
-      { text: "Up to 50 DMs/month", included: true },
+      { text: "Up to 50 static replies/month", included: true },
       { text: "Keyword triggers", included: true },
       { text: "Basic analytics", included: true },
-      { text: "Smart AI replies", included: false },
-      { text: "Unlimited DMs", included: false },
+      { text: "AI replies", included: false },
+      { text: "Higher reply volume", included: false },
     ],
   },
   {
@@ -21,8 +21,8 @@ const PLANS = [
     ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
     features: [
       { text: "Unlimited campaigns", included: true },
-      { text: "Unlimited DMs", included: true },
-      { text: "Smart AI replies", included: true },
+      { text: "5,000 static replies/month", included: true },
+      { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Full analytics + leads export", included: true },
       { text: "{{variable}} personalisation", included: true },
       { text: "Priority support", included: true },
@@ -30,11 +30,11 @@ const PLANS = [
   },
   {
     tier: "Agency", price: "$79", description: "For teams managing multiple accounts",
-    ctaLabel: "Start Agency plan", ctaHref: "/payment?plan=agency", featured: false,
+    ctaLabel: "Contact / coming soon", ctaHref: "/pricing", featured: false,
     features: [
       { text: "Everything in Creator", included: true },
       { text: "Up to 10 Instagram accounts", included: true },
-      { text: "Team access", included: true },
+      { text: "Team access", included: false },
       { text: "Dedicated onboarding", included: true },
       { text: "Custom integrations", included: true },
       { text: "SLA support", included: true },
@@ -52,8 +52,8 @@ const FAQ = [
     a: "Absolutely. No lock-in. Cancel from your settings in seconds — your campaigns pause immediately.",
   },
   {
-    q: "What's the DM limit on Free?",
-    a: "50 DMs per month across 1 active campaign. Upgrade to Creator for unlimited DMs and campaigns.",
+    q: "What's the reply limit on Free?",
+    a: "50 successful static replies per month across 1 active campaign. Successful public replies and private DMs count; failed and skipped messages do not.",
   },
 ] as const;
 

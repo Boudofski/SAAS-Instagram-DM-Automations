@@ -56,7 +56,7 @@ export default function AutomationTable({
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as "newest" | "active" | "name")}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 outline-none dark:border-white/10 dark:bg-[#101827] dark:text-slate-200"
+              className="ap3k-select h-11 rounded-xl px-3 text-sm font-bold"
             >
               <option value="newest">Newest first</option>
               <option value="active">Active first</option>

@@ -13,6 +13,8 @@ import {
 import { requireOwnerAdmin } from "@/lib/admin";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import { client } from "@/lib/prisma";
+import { getUserMonthlyUsage } from "@/actions/usage/queries";
+import { isUnlimited } from "@/lib/plan-limits";
 import {
   buildWebhookPipelineDiagnostics,
   developmentModeDeliveryMessage,
@@ -26,6 +28,7 @@ type SearchParams = {
   eventType?: string;
   tab?: string;
   testSince?: string;
+  usageFilter?: string;
 };
 
 const TABS = [
@@ -47,12 +50,14 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   const tab = TABS.some((item) => item.id === searchParams?.tab) ? searchParams!.tab! : "overview";
   const q = searchParams?.q?.trim();
   const eventType = searchParams?.eventType?.trim();
+  const usageFilter = searchParams?.usageFilter?.trim();
   const qUuid = q && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)
     ? q
     : null;
   const testSince = searchParams?.testSince ? new Date(searchParams.testSince) : null;
   const testSinceValid = Boolean(testSince && !Number.isNaN(testSince.getTime()));
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));
 
   const [
     totalUsers,
@@ -206,6 +211,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     lastLoopGuardEvent,
     topOffendingCampaign,
     safetyEvents,
+    totalStaticRepliesThisMonth,
   ] = await Promise.all([
     client.automationEvent.count({
       where: { eventType: "SELF_COMMENT_SKIPPED", createdAt: { gte: since24h } },
@@ -246,6 +252,13 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           include: { automation: { select: { name: true, User: { select: { email: true } } } } },
         })
       : Promise.resolve([]),
+    client.messageLog.count({
+      where: {
+        status: "SENT",
+        messageType: { in: ["COMMENT_REPLY", "DM"] },
+        createdAt: { gte: monthStart },
+      },
+    }),
   ]);
   const topOffendingAutomationId = topOffendingCampaign[0]?.automationId;
   const topOffendingAutomation = topOffendingAutomationId
@@ -276,11 +289,23 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     duplicateCommentsSkipped24h,
   });
 
+  const usageUsers = await client.user.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: { id: true },
+  });
+  const adminUsageSummaries = await Promise.all(
+    usageUsers.map((item) => getUserMonthlyUsage(item.id))
+  );
+  const usersOverReplyLimit = adminUsageSummaries.filter((usage) => usage.staticReplies.blocked).length;
+  const usersNearReplyLimit = adminUsageSummaries.filter((usage) => !usage.staticReplies.blocked && usage.staticReplies.percent >= 70).length;
+
   const tabHref = (id: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams({
       tab: id,
       ...(q ? { q } : {}),
       ...(eventType && id === "webhooks" ? { eventType } : {}),
+      ...(usageFilter && id === "subscriptions" ? { usageFilter } : {}),
       ...(testSinceValid && searchParams?.testSince ? { testSince: searchParams.testSince } : {}),
       ...extra,
     });
@@ -328,9 +353,18 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
         } : undefined,
         orderBy: { updatedAt: "desc" },
         take: 50,
-        include: { User: { select: { email: true, clerkId: true } } },
+          include: { User: { select: { id: true, email: true, clerkId: true } } },
       })
     : [];
+  const subscriptionUsage = tab === "subscriptions"
+    ? new Map(
+        await Promise.all(
+          subscriptions
+            .filter((sub: any) => sub.User?.id)
+            .map(async (sub: any) => [sub.User.id, await getUserMonthlyUsage(sub.User.id)] as const)
+        )
+      )
+    : new Map();
 
   const integrations = tab === "integrations"
     ? await client.integrations.findMany({
@@ -502,6 +536,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 <StatCard label="Public replies 24h" value={publicRepliesSent24h} detail="Sent public comment replies" />
                 <StatCard label="DMs sent 24h" value={dmsSent24h} detail={`${dmsFailed24h} failed in 24h`} tone={dmsFailed24h ? "amber" : "green"} />
                 <StatCard label="Active subscriptions" value={revenueSubscriptions} detail="Read-only Stripe visibility" />
+                <StatCard label="Static replies month" value={totalStaticRepliesThisMonth} detail="Successful public replies and DMs this month" />
+                <StatCard label="Users near limit" value={usersNearReplyLimit} detail="At least 70% of monthly replies" tone={usersNearReplyLimit ? "amber" : "green"} />
+                <StatCard label="Users over limit" value={usersOverReplyLimit} detail="Monthly replies blocked" tone={usersOverReplyLimit ? "red" : "green"} />
                 <StatCard label="Self comments skipped" value={selfCommentsSkipped24h} detail="Connected-account comments ignored in 24h" tone={selfCommentsSkipped24h ? "amber" : "green"} />
                 <StatCard label="Duplicates skipped" value={duplicateCommentsSkipped24h} detail="Repeated comment webhooks ignored in 24h" tone={duplicateCommentsSkipped24h ? "amber" : "green"} />
                 <StatCard label="Loop guard triggered" value={loopGuardTriggered24h} detail="Emergency loop protection events in 24h" tone={loopGuardTriggered24h ? "red" : "green"} />
@@ -568,11 +605,32 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
           {tab === "subscriptions" && (
             <Panel title="Subscriptions" description="Read-only subscription view. Stripe write actions are intentionally disabled in this version.">
+              <FilterPills
+                items={[
+                  ["All", tabHref("subscriptions", { usageFilter: "" })],
+                  ["Over limit", tabHref("subscriptions", { usageFilter: "over" })],
+                  ["Near limit", tabHref("subscriptions", { usageFilter: "near" })],
+                  ["Free users", tabHref("subscriptions", { usageFilter: "free" })],
+                  ["Creator users", tabHref("subscriptions", { usageFilter: "creator" })],
+                ]}
+              />
               <DataTable
-                headers={["User", "Plan", "Stripe customer", "Status", "Updated", "Stripe", "Actions"]}
-                rows={subscriptions.map((sub: any) => [
+                headers={["User", "Plan", "Static replies", "Campaigns", "Accounts", "Stripe customer", "Status", "Updated", "Stripe", "Actions"]}
+                rows={subscriptions.filter((sub: any) => {
+                  const usage = sub.User?.id ? subscriptionUsage.get(sub.User.id) : null;
+                  if (usageFilter === "over") return Boolean(usage?.staticReplies.blocked);
+                  if (usageFilter === "near") return Boolean(usage && !usage.staticReplies.blocked && usage.staticReplies.percent >= 70);
+                  if (usageFilter === "free") return sub.plan === "FREE";
+                  if (usageFilter === "creator") return sub.plan === "PRO";
+                  return true;
+                }).map((sub: any) => {
+                  const usage = sub.User?.id ? subscriptionUsage.get(sub.User.id) : null;
+                  return [
                   <Identity key="user" title={sub.User?.email ?? "Unknown user"} subtitle={sub.User?.clerkId ?? "No Clerk ID"} />,
-                  <Badge key="plan" tone={sub.plan === "PRO" ? "purple" : "slate"}>{sub.plan}</Badge>,
+                  <Badge key="plan" tone={sub.plan === "PRO" ? "purple" : "slate"}>{sub.plan === "PRO" ? "Creator" : "Free"}</Badge>,
+                  usage ? <UsageCell key="static" used={usage.staticReplies.used} limit={usage.staticReplies.limit} blocked={usage.staticReplies.blocked} /> : "Unknown",
+                  usage ? <UsageCell key="campaigns" used={usage.activeCampaigns.used} limit={usage.activeCampaigns.limit} blocked={usage.activeCampaigns.blocked} /> : "Unknown",
+                  usage ? <UsageCell key="accounts" used={usage.connectedAccounts.used} limit={usage.connectedAccounts.limit} blocked={usage.connectedAccounts.blocked} /> : "Unknown",
                   <Mono key="customer">{sub.customerId ?? "No customer"}</Mono>,
                   sub.plan === "PRO" ? <Badge key="active" tone="green">Active/internal PRO</Badge> : <Badge key="free" tone="slate">Free</Badge>,
                   formatAdminDate(sub.updatedAt),
@@ -580,7 +638,8 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <a key="stripe" className="font-bold text-rf-blue hover:underline" href={stripeCustomerDashboardUrl(sub.customerId)!} target="_blank" rel="noreferrer">Open Stripe</a>
                   ) : "No link",
                   <DisabledActions key="actions" labels={["Cancel", "Sync", "Override plan"]} />,
-                ])}
+                ];
+                })}
                 empty="No subscription records found."
               />
             </Panel>
@@ -668,15 +727,15 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <h3 className="font-black">Run simulated comment against campaign</h3>
                     <p className="mt-1 text-sm text-slate-600">Decision-only safe mode. It never sends a real DM.</p>
                     <div className="mt-4 grid gap-2">
-                      <select name="automationId" required className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm">
+                      <select name="automationId" required className="ap3k-select min-h-10 rounded-xl px-3 text-sm">
                         <option value="">Select campaign</option>
                         {campaigns.map((campaign: any) => (
                           <option key={campaign.id} value={campaign.id}>{campaign.name} · {campaign.active ? "active" : "paused"} · {campaign.User?.email ?? "unknown"}</option>
                         ))}
                       </select>
-                      <input name="mediaId" defaultValue={(campaigns[0] as any)?.posts?.[0]?.postid === "ANY" ? "ANY_TEST_MEDIA" : (campaigns[0] as any)?.posts?.[0]?.postid ?? "ANY_TEST_MEDIA"} className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm" placeholder="Media ID" />
-                      <input name="commenterId" defaultValue="simulated_commenter" className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm" placeholder="Commenter ID" />
-                      <input name="commentText" defaultValue={(campaigns[0] as any)?.keywords?.[0]?.word ?? "ai"} className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm" placeholder="Comment text" />
+                      <input name="mediaId" defaultValue={(campaigns[0] as any)?.posts?.[0]?.postid === "ANY" ? "ANY_TEST_MEDIA" : (campaigns[0] as any)?.posts?.[0]?.postid ?? "ANY_TEST_MEDIA"} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Media ID" />
+                      <input name="commenterId" defaultValue="simulated_commenter" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Commenter ID" />
+                      <input name="commentText" defaultValue={(campaigns[0] as any)?.keywords?.[0]?.word ?? "ai"} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Comment text" />
                     </div>
                     <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run matching simulation</button>
                   </form>
@@ -857,9 +916,10 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             <Panel title="System">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <HealthCard label="App URL" value={process.env.NEXT_PUBLIC_HOST_URL ?? "Not set"} tone={process.env.NEXT_PUBLIC_HOST_URL ? "green" : "amber"} />
-                <HealthCard label="Environment" value={adminEnvironmentLabel()} tone={adminEnvironmentLabel() === "Production" ? "green" : "amber"} />
-                <HealthCard label="Node" value={process.version} />
-                <HealthCard label="Latest commit" value={process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "Unavailable"} />
+                  <HealthCard label="Environment" value={adminEnvironmentLabel()} tone={adminEnvironmentLabel() === "Production" ? "green" : "amber"} />
+                  <HealthCard label="Node" value={process.version} />
+                  <HealthCard label="Latest commit" value={process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "Unavailable"} />
+                  <HealthCard label="Usage enforcement from" value={process.env.USAGE_LIMITS_ENFORCED_FROM ?? "Current calendar month"} tone="slate" />
                 {["DATABASE_URL", "NEXT_PUBLIC_HOST_URL", "META_APP_ID", "META_APP_SECRET", "META_VERIFY_TOKEN", "CLERK_SECRET_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"].map((key) => (
                   <HealthCard key={key} label={key} value={process.env[key] ? "Set" : "Missing"} tone={process.env[key] ? "green" : "red"} />
                 ))}
@@ -932,6 +992,17 @@ function HealthCard({ label, value, tone = "slate" }: { label: string; value: Re
     <div className={`rounded-xl border p-3 ${tonePanel(tone)}`}>
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
       <div className="mt-1 break-words text-sm font-bold text-slate-950 dark:text-white">{value}</div>
+    </div>
+  );
+}
+
+function UsageCell({ used, limit, blocked }: { used: number; limit: number | "unlimited"; blocked: boolean }) {
+  return (
+    <div className="space-y-1">
+      <Badge tone={blocked ? "red" : "green"}>
+        {used.toLocaleString()} / {isUnlimited(limit) ? "Unlimited" : limit.toLocaleString()}
+      </Badge>
+      {blocked && <p className="text-xs font-bold text-red-600 dark:text-red-300">Limit reached</p>}
     </div>
   );
 }

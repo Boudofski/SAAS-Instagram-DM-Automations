@@ -37,6 +37,7 @@ import {
 } from "@/lib/instagram-dm";
 import { resolveTemplate } from "@/lib/template";
 import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/send-token";
+import { canSendStaticReply } from "@/actions/usage/queries";
 import {
   parseMessagingItem,
   INBOUND_MESSAGE_NO_AUTOMATION,
@@ -685,6 +686,55 @@ async function processEntry(
         continue;
       }
 
+      if (automation.userId) {
+        const usageAllowed = await canSendStaticReply(automation.userId);
+        if (!usageAllowed.ok) {
+          await createAutomationEvent({
+            automationId: automation.id,
+            eventType: "COMMENT_SKIPPED",
+            igUserId: commenterId,
+            mediaId,
+            commentId,
+            keyword: matchedKeyword,
+            meta: {
+              reason: "static_reply_limit_reached",
+              plan: usageAllowed.usage.plan,
+              used: usageAllowed.usage.staticReplies.used,
+              limit: usageAllowed.usage.staticReplies.limit,
+              periodLabel: usageAllowed.usage.periodLabel,
+              enforcementStart: usageAllowed.usage.enforcementStart.toISOString(),
+            },
+          });
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "COMMENT_REPLY",
+            status: "SKIPPED",
+            errorMessage: "static_reply_limit_reached",
+          });
+          if (automation.sendPrivateDm !== false) {
+            await createMessageLog({
+              automationId: automation.id,
+              recipientIgId: commenterId,
+              mediaId,
+              commentId,
+              messageType: "DM",
+              status: "SKIPPED",
+              errorMessage: "static_reply_limit_reached",
+            });
+          }
+          await updateWebhookEvent(webhookEvent.id, {
+            automationId: automation.id,
+            status: "IGNORED",
+            errorMessage: "static_reply_limit_reached",
+            processedAt: new Date(),
+          });
+          continue;
+        }
+      }
+
       await upsertLead({
         automationId: automation.id,
         igUserId: commenterId,
@@ -919,6 +969,43 @@ async function processEntry(
           processedAt: new Date(),
         });
         continue;
+      }
+
+      if (automation.userId) {
+        const dmUsageAllowed = await canSendStaticReply(automation.userId);
+        if (!dmUsageAllowed.ok) {
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "DM",
+            status: "SKIPPED",
+            errorMessage: "static_reply_limit_reached",
+          });
+          await createAutomationEvent({
+            automationId: automation.id,
+            eventType: "DM_SKIPPED",
+            igUserId: commenterId,
+            mediaId,
+            commentId,
+            keyword: matchedKeyword,
+            meta: {
+              reason: "static_reply_limit_reached",
+              plan: dmUsageAllowed.usage.plan,
+              used: dmUsageAllowed.usage.staticReplies.used,
+              limit: dmUsageAllowed.usage.staticReplies.limit,
+              periodLabel: dmUsageAllowed.usage.periodLabel,
+            },
+          });
+          await updateWebhookEvent(webhookEvent.id, {
+            automationId: automation.id,
+            status: "PROCESSED",
+            errorMessage: "dm_skipped_static_reply_limit_reached",
+            processedAt: new Date(),
+          });
+          continue;
+        }
       }
 
       // 6. Build DM message — resolve template first, then optionally run through SMARTAI

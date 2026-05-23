@@ -48,8 +48,8 @@ export default function DmEditor({
       {/* Template picker header */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-sm font-semibold text-slate-950">Private message</span>
-          <p className="mt-1 text-xs text-slate-500">
+          <span className="text-sm font-semibold text-slate-950 dark:text-white">Private message</span>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
             This message is sent privately after the user comments.
           </p>
         </div>
@@ -70,8 +70,8 @@ export default function DmEditor({
               type="button"
               onClick={() => { onChange(t.text); setShowTemplates(false); }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg
-                         bg-white border border-slate-200 hover:border-rf-blue/40
-                         text-slate-600 hover:text-slate-950 transition-all"
+                         border border-slate-200 bg-white text-slate-600 transition-all hover:border-rf-blue/40
+                         hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white"
             >
               {t.icon} {t.label}
             </button>
@@ -86,10 +86,7 @@ export default function DmEditor({
         placeholder="Hey {{first_name}}! Here's what you asked for → {{link}}"
         rows={4}
         dir="auto"
-        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm
-                   leading-relaxed text-slate-950 outline-none transition-colors
-                   placeholder:text-slate-400 selection:bg-rf-blue selection:text-white
-                   focus:border-pink-300 focus:ring-2 focus:ring-pink-100 disabled:bg-slate-100 disabled:text-slate-500"
+        className="ap3k-textarea w-full resize-none rounded-xl px-4 py-3.5 text-sm"
       />
 
       {/* Variable chips */}
@@ -109,7 +106,7 @@ export default function DmEditor({
       </div>
 
       {/* CTA button section */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
         <div className="flex items-center gap-2">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">CTA</p>
           <span className="text-[10px] text-slate-500">optional</span>
@@ -119,20 +116,16 @@ export default function DmEditor({
           value={ctaButtonTitle}
           onChange={(e) => onCtaButtonTitleChange(e.target.value)}
           placeholder='CTA label — e.g. "Get the guide"'
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm
-                     text-slate-950 placeholder:text-slate-400 outline-none transition-colors
-                     selection:bg-rf-blue selection:text-white focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+          className="ap3k-input rounded-xl px-4 py-3 text-sm"
         />
         <input
           type="url"
           value={ctaLink}
           onChange={(e) => onCtaLinkChange(e.target.value)}
           placeholder="CTA URL — e.g. https://yoursite.com/guide"
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm
-                     text-slate-950 placeholder:text-slate-400 outline-none transition-colors
-                     selection:bg-rf-blue selection:text-white focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+          className="ap3k-input rounded-xl px-4 py-3 text-sm"
         />
-        <p className="text-[11px] text-slate-500 leading-relaxed">
+        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-300">
           If buttons are not supported by Meta in this context, AP3k appends the link to the
           message text.
         </p>
@@ -147,8 +140,8 @@ export default function DmEditor({
           <div className="flex flex-col items-start gap-2 max-w-[85%]">
             <div
               dir="auto"
-              className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3
-                         text-sm leading-relaxed text-slate-950 shadow-sm whitespace-pre-wrap"
+              className="whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3
+                         text-sm leading-relaxed text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#101827] dark:text-slate-50"
             >
               {preview.split("\n").map((line, i, arr) => (
                 <span key={i}>

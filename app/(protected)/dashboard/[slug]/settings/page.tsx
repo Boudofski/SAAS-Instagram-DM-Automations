@@ -1,6 +1,7 @@
 import Billing from "@/components/global/billing";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
+import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 
@@ -18,6 +19,7 @@ async function Page({ params }: Props) {
       ? (automationsResult.data as any[])
       : [];
   const instagram = user?.integrations?.[0];
+  const usage = user?.id ? await getUserMonthlyUsage(user.id) : undefined;
   const totalComments = automations.reduce(
     (sum: number, automation: any) => sum + (automation.listener?.commentCount ?? 0),
     0
@@ -140,7 +142,7 @@ async function Page({ params }: Props) {
         </div>
       </div>
 
-      <Billing />
+      <Billing current={user?.subscription?.plan ?? "FREE"} usage={usage} />
     </div>
   );
 }

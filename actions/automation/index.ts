@@ -9,6 +9,7 @@ import {
   type RawCampaignPayload,
 } from "@/lib/campaign-save";
 import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
+import { canActivateCampaign } from "@/actions/usage/queries";
 import {
   addKeyWords,
   addListener,
@@ -67,6 +68,20 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
         ...summary,
       });
       return { status: 400, data: validationError };
+    }
+
+    if (cleanPayload.active) {
+      const profile = await findUser(user.id);
+      const activation = profile?.id
+        ? await canActivateCampaign(profile.id, automationId)
+        : { ok: false };
+
+      if (!activation.ok) {
+        return {
+          status: 403,
+          data: "Your plan allows 1 active campaign. Pause another campaign or upgrade.",
+        };
+      }
     }
 
     const saved = automationId
@@ -189,6 +204,19 @@ export const updateAutomationName = async (
   const user = await onCurrentUser();
 
   try {
+    if (data.active === true) {
+      const profile = await findUser(user.id);
+      const activation = profile?.id
+        ? await canActivateCampaign(profile.id, automationId)
+        : { ok: false };
+      if (!activation.ok) {
+        return {
+          status: 403,
+          data: "Your plan allows 1 active campaign. Pause another campaign or upgrade.",
+        };
+      }
+    }
+
     const update = await updateAutomation(automationId, user.id, data);
 
     if (update) return { status: 200, data: "Automation updated" };

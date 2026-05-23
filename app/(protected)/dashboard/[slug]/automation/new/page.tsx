@@ -156,7 +156,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 value={data.campaignName}
                 onChange={(event) => update({ campaignName: event.target.value })}
                 placeholder="Example: May launch guide"
-                className="w-full rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] px-4 py-3 text-sm text-slate-950 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-pink-300"
+                className="ap3k-input w-full rounded-xl px-4 py-3 text-sm"
               />
             </div>
             {postsLoading ? (
@@ -220,7 +220,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                         type="button"
                         onClick={() => void refetchPosts()}
                         disabled={postsFetching}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold dark:text-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
                       >
                         <RefreshCw className={postsFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
                         Refresh posts
@@ -414,9 +414,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                     onChange={(e) => update({ [field]: e.target.value })}
                     placeholder={placeholder}
                     rows={2}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3
-                               text-sm text-slate-950 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none
-                               focus:border-pink-300 focus:ring-2 focus:ring-pink-100 resize-none transition-colors"
+                    dir="auto"
+                    className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
                   />
                 </div>
               ))}
@@ -462,10 +461,9 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ] as { label: string; value: string; step: 1 | 2 | 3 | 4 | 5 }[]
               ).map((row) => (
                 <div key={row.label}
-                     className="flex items-center justify-between gap-3 px-4 py-3
-                                bg-white border border-slate-200 rounded-xl">
-                  <span className="text-xs dark:text-slate-400 text-slate-500 w-28 flex-shrink-0">{row.label}</span>
-                  <span className="text-xs text-slate-950 dark:text-white flex-1 truncate">{row.value}</span>
+                     className="ap3k-review-row">
+                  <span className="w-28 flex-shrink-0 text-xs font-bold text-slate-500 dark:text-slate-300">{row.label}</span>
+                  <span className="flex-1 truncate text-xs font-semibold text-slate-950 dark:text-slate-50">{row.value}</span>
                   <button
                     type="button"
                     onClick={() => goTo(row.step)}
@@ -605,11 +603,11 @@ export default function WizardPage({ params, searchParams }: Props) {
 
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-2">
-      <p className="text-[11px] font-black uppercase tracking-[0.14em] dark:text-slate-400 text-slate-500">
+    <div className="ap3k-preview-card">
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
         {label}
       </p>
-      <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-800">
+      <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
         {value}
       </p>
     </div>
@@ -630,7 +628,7 @@ function ManualMediaFallback({
   compact?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-5">
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-white/[0.04]">
       <h3 className="text-sm font-black text-slate-950 dark:text-white">
         {compact ? "Can't find a post? Paste media ID or URL manually." : "No posts found. Add a media ID manually."}
       </h3>
@@ -643,7 +641,7 @@ function ManualMediaFallback({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Instagram media ID or post URL"
-          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-4 py-3 text-sm text-slate-950 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-pink-300"
+          className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm"
         />
         <button
           type="button"

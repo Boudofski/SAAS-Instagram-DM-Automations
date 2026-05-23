@@ -90,9 +90,7 @@ export default function KeywordInput({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder='Type a keyword (e.g. "link", "guide", "yes")'
-          className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm
-                     text-slate-950 placeholder:text-slate-400 outline-none transition-colors
-                     focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+          className="ap3k-input flex-1 rounded-xl px-4 py-3 text-sm"
         />
         <button
           type="button"
@@ -129,7 +127,7 @@ export default function KeywordInput({
       )}
 
       {/* Matching mode */}
-      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
         {MODES.map((m) => (
           <button
             key={m.value}
@@ -138,8 +136,8 @@ export default function KeywordInput({
             className={cn(
               "flex-1 rounded-lg px-3 py-2.5 text-center transition-all border",
               matchingMode === m.value
-                ? "border-rf-blue bg-white text-slate-950 shadow-sm"
-                : "border-transparent text-slate-500 hover:bg-white"
+                ? "border-rf-blue bg-white text-slate-950 shadow-sm dark:bg-[#101827] dark:text-white"
+                : "border-transparent text-slate-500 hover:bg-white dark:text-slate-300 dark:hover:bg-white/[0.06]"
             )}
           >
             <div className="text-xs font-bold flex items-center justify-center gap-1.5">

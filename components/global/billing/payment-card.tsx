@@ -16,7 +16,7 @@ const PLAN_COPY = {
     price: "$0",
     period: "/month",
     description: "For validating your first Instagram comment-to-DM campaign.",
-    features: ["1 active campaign", "Free testing", "Keyword triggers", "Basic analytics"],
+    features: ["1 active campaign", "50 static replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
     href: "/pricing",
   },
   PRO: {
@@ -24,7 +24,7 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For creators running active comment-to-DM funnels.",
-    features: ["Unlimited campaigns", "Serious campaign volume", "Public reply fallback", "Lead export"],
+    features: ["Unlimited campaigns", "5,000 static replies/month", "750 AI replies/month when AI is enabled", "Lead export"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
@@ -32,7 +32,7 @@ const PLAN_COPY = {
     price: "$79",
     period: "/month",
     description: "For teams managing multiple creator accounts.",
-    features: ["Everything in Creator", "Up to 10 Instagram accounts", "Team workflows", "Priority onboarding"],
+    features: ["Everything in Creator", "20,000 static replies/month", "5,000 AI replies/month when AI is enabled", "Up to 10 Instagram accounts"],
     href: "/payment?plan=agency",
   },
 } as const;
@@ -47,7 +47,7 @@ function PaymentCard({ label, current }: Props) {
     : isIncludedFree
     ? "Included"
     : isAgency
-    ? "Upgrade to Agency"
+    ? "Contact / Coming soon"
     : "Upgrade to Creator";
 
   return (
@@ -80,13 +80,13 @@ function PaymentCard({ label, current }: Props) {
       </div>
       <Button
         asChild
-        disabled={isActive || isIncludedFree}
+        disabled={isActive || isIncludedFree || isAgency}
         className={cn(
           "mt-6 rounded-xl font-bold",
-          isActive || isIncludedFree ? "bg-white/10 text-rf-muted" : "ap3k-gradient-button"
+          isActive || isIncludedFree || isAgency ? "bg-white/10 text-rf-muted" : "ap3k-gradient-button"
         )}
       >
-        <Link href={isActive || isIncludedFree ? "/dashboard" : plan.href}>
+        <Link href={isActive || isIncludedFree || isAgency ? "/dashboard" : plan.href}>
           {ctaLabel}
         </Link>
       </Button>

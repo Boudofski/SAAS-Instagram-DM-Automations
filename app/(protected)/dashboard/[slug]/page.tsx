@@ -4,6 +4,8 @@ import OnboardingChecklist from "@/components/global/onboarding-checklist";
 import StatCard from "@/components/global/stat-card";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
+import { getUserMonthlyUsage } from "@/actions/usage/queries";
+import { isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -58,6 +60,7 @@ export default async function DashboardPage({ params }: Props) {
     userResult.data?.email?.split("@")[0] ||
     "there";
   const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
+  const usage = userResult.data?.id ? await getUserMonthlyUsage(userResult.data.id) : null;
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
@@ -135,6 +138,38 @@ export default async function DashboardPage({ params }: Props) {
         </div>
       )}
 
+      {usage && (
+        <div className={[
+          "rounded-2xl border p-4 shadow-sm",
+          usage.staticReplies.blocked
+            ? "border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
+            : usage.staticReplies.percent >= 70
+              ? "border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10"
+              : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
+        ].join(" ")}>
+          <div className="grid gap-3 md:grid-cols-3">
+            <UsageMini label="Plan" value={usage.planLabel} />
+            <UsageMini
+              label="Static replies this month"
+              value={`${usage.staticReplies.used.toLocaleString()} / ${isUnlimited(usage.staticReplies.limit) ? "Unlimited" : usage.staticReplies.limit.toLocaleString()}`}
+              percent={usage.staticReplies.percent}
+              blocked={usage.staticReplies.blocked}
+            />
+            <UsageMini
+              label="Active campaigns"
+              value={`${usage.activeCampaigns.used.toLocaleString()} / ${isUnlimited(usage.activeCampaigns.limit) ? "Unlimited" : usage.activeCampaigns.limit.toLocaleString()}`}
+              percent={usage.activeCampaigns.percent}
+              blocked={usage.activeCampaigns.blocked}
+            />
+          </div>
+          {usage.staticReplies.blocked && (
+            <p className="mt-3 text-sm font-bold text-red-700 dark:text-red-200">
+              Monthly reply limit reached. Campaign replies are paused until upgrade or next month.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-3 md:grid-cols-4">
         <HealthPill label="Instagram connected" state={instagram && !tokenExpired ? "ok" : "warn"} />
         <HealthPill label="Comments webhook active" state="ok" />
@@ -184,6 +219,33 @@ export default async function DashboardPage({ params }: Props) {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+function UsageMini({
+  label,
+  value,
+  percent = 0,
+  blocked = false,
+}: {
+  label: string;
+  value: string;
+  percent?: number;
+  blocked?: boolean;
+}) {
+  const tone = usageTone(percent, blocked);
+  const bar = tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
+
+  return (
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">{label}</p>
+      <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
+      {percent > 0 || blocked ? (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.08]">
+          <div className={`h-full ${bar}`} style={{ width: `${percent}%` }} />
+        </div>
+      ) : null}
     </div>
   );
 }
