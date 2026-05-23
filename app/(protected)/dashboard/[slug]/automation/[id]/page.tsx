@@ -2,7 +2,7 @@ import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/acti
 import ActiveAutomationButton from "@/components/global/active-automation-button";
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
-import { formatActivityDisplay, getReviewerTestCopy } from "@/lib/campaign-activity-format";
+import { formatActivityDisplay, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -33,6 +33,14 @@ export default async function CampaignDetailPage({ params }: Props) {
       automation.listener?.commentReply2 ||
       automation.listener?.commentReply3
   );
+  const modeLabels = getCampaignModeLabels({
+    sendPrivateDm,
+    publicReplyCount: [
+      automation.listener?.commentReply,
+      automation.listener?.commentReply2,
+      automation.listener?.commentReply3,
+    ].filter(Boolean).length,
+  });
   const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
 
   const replyRate =
@@ -152,15 +160,17 @@ export default async function CampaignDetailPage({ params }: Props) {
             <div className="grid gap-4 md:grid-cols-2">
               <FlowNode
                 label="Action"
-                title="Reply to Comment"
-                body={automation.listener?.commentReply || "Public reply is disabled."}
+                title={hasPublicReply ? "Reply to Comment" : "Public Reply Off"}
+                body={automation.listener?.commentReply || "Disabled for this campaign."}
                 tone="purple"
+                disabled={!hasPublicReply}
               />
               <FlowNode
                 label="Action"
-                title="Send Message"
-                body={sendPrivateDm ? (automation.listener?.prompt || "No private DM configured.") : "Private DM skipped: handled by external tool"}
+                title={sendPrivateDm ? "Send Message" : "Private DM Off"}
+                body={sendPrivateDm ? (automation.listener?.prompt || "No private DM configured.") : "Off — external tool handles private messages."}
                 tone="blue"
+                disabled={!sendPrivateDm}
               />
             </div>
           </div>
@@ -174,9 +184,11 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Status" value={automation.active ? "Live" : "Paused"} />
             <SettingsRow label="Trigger mode" value={isAnyComment ? "Any comment" : "Specific keyword"} />
             <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
-            <SettingsRow label="Private DM" value={sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />
+            <SettingsRow label="Public reply" value={modeLabels.publicReply} />
+            <SettingsRow label="Private DM" value={modeLabels.privateDm} />
             <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />
             <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />
+            <SettingsRow label="Settings source" value="Saved database state" />
           </div>
           <Link
             href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`}
@@ -195,7 +207,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard
           label="DMs sent"
           icon="✉️"
@@ -207,9 +219,14 @@ export default async function CampaignDetailPage({ params }: Props) {
           value={stats?.leadsCollected ?? 0}
         />
         <StatCard
-          label="Comments matched"
+          label="Comments"
           icon="💬"
           value={stats?.commentsReceived ?? automation.listener?.commentCount ?? 0}
+        />
+        <StatCard
+          label="Public replies"
+          icon="↩"
+          value={stats?.repliesSent ?? 0}
         />
         <StatCard
           label="Reply rate"
@@ -380,12 +397,27 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div>
             <h2 className="text-sm font-bold text-slate-950 dark:text-white">Live automation log</h2>
             <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
-              Latest 30 events · technical diagnostics are collapsed.
+              Latest 20 events · technical diagnostics are collapsed.
             </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
-            Latest 30
+            Latest 20
           </span>
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {["All", "Activity", "Sent", "Skipped", "Failed", "Technical"].map((filter) => (
+            <span
+              key={filter}
+              className={[
+                "rounded-full border px-2.5 py-1 text-[11px] font-black uppercase",
+                filter === "Activity"
+                  ? "border-rf-pink/40 bg-rf-pink/10 text-rf-pink"
+                  : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400",
+              ].join(" ")}
+            >
+              {filter}
+            </span>
+          ))}
         </div>
 
         {activity.length === 0 ? (
@@ -395,7 +427,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-white/10">
             {activity.map((item) => {
-              const display = formatActivityDisplay(item);
+              const display = formatActivityDisplay({ ...item, privateDmEnabled: sendPrivateDm });
               return (
                 <div key={`${item.source}-${item.id}`} className={["flex gap-3 py-4", display.technical ? "opacity-80" : ""].join(" ")}>
                   <span
@@ -456,11 +488,13 @@ function FlowNode({
   title,
   body,
   tone,
+  disabled = false,
 }: {
   label: string;
   title: string;
   body: string;
   tone: "orange" | "pink" | "purple" | "blue";
+  disabled?: boolean;
 }) {
   const tones = {
     orange: "from-orange-50 border-orange-200 text-orange-600 dark:from-orange-500/10 dark:to-white/[0.03] dark:border-orange-500/25 dark:text-orange-300",
@@ -470,7 +504,7 @@ function FlowNode({
   };
 
   return (
-    <div className={`rounded-2xl border bg-gradient-to-br to-white p-5 dark:bg-[#101827] ${tones[tone]}`}>
+    <div className={`rounded-2xl border bg-gradient-to-br to-white p-5 dark:bg-[#101827] ${disabled ? "opacity-60 grayscale" : ""} ${tones[tone]}`}>
       <p className="text-[11px] font-black uppercase tracking-[0.18em]">{label}</p>
       <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{title}</h3>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed dark:text-slate-300 text-slate-600">{body}</p>

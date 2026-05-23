@@ -9,6 +9,7 @@ import type { StepStatus } from "@/components/global/wizard-stepper";
 import { useQueryAutomationPosts, useQueryUser } from "@/hooks/user-queries";
 import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
+import { isWeakPublicReply } from "@/lib/campaign-activity-format";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -417,6 +418,11 @@ export default function WizardPage({ params, searchParams }: Props) {
                     dir="auto"
                     className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
                   />
+                  {data[field].trim() && isWeakPublicReply(data[field]) && (
+                    <p className="mt-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                      For reliable testing, use clear text. Emoji-only replies may be hidden/collapsed by Instagram.
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

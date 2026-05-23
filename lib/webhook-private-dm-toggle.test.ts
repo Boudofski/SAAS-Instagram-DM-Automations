@@ -84,6 +84,9 @@ vi.mock("@/actions/usage/queries", () => ({
 import { POST } from "@/app/api/webhooks/meta/route";
 
 function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {}) {
+  const commentReply = Object.prototype.hasOwnProperty.call(overrides, "commentReply")
+    ? overrides.commentReply
+    : "Check your DMs";
   return {
     id: overrides.id ?? `automation-${sendPrivateDm ? "dm-on" : "dm-off"}`,
     userId: "user-1",
@@ -97,9 +100,9 @@ function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {})
     listener: {
       listener: "MESSAGE",
       prompt: "Here is the link",
-      commentReply: overrides.commentReply ?? "Check your DMs",
-      commentReply2: null,
-      commentReply3: null,
+      commentReply,
+      commentReply2: overrides.commentReply2 ?? null,
+      commentReply3: overrides.commentReply3 ?? null,
       ctaLink: null,
       ctaButtonTitle: null,
     },
@@ -255,6 +258,101 @@ describe("comment webhook private DM toggle", () => {
           sourceCommentId: "comment-1",
           publicReplyTextHash: expect.any(String),
         }),
+      })
+    );
+  });
+
+  it("does not call public reply endpoints when public reply is disabled", async () => {
+    const campaign = automation(true, { commentReply: null });
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendMediaComment).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        automationId: campaign.id,
+        eventType: "COMMENT_SKIPPED",
+        meta: expect.objectContaining({ reason: "public_reply_disabled" }),
+      })
+    );
+  });
+
+  it("with both outbound actions off sends nothing and logs clear skips", async () => {
+    const campaign = automation(false, { commentReply: null });
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendMediaComment).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "COMMENT_SKIPPED",
+        meta: expect.objectContaining({ reason: "public_reply_disabled" }),
+      })
+    );
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "DM_SKIPPED",
+        meta: expect.objectContaining({ reason: "external_dm_tool_enabled" }),
+      })
+    );
+  });
+
+  it("with public reply on and DM off sends exactly one public reply and logs DM skipped", async () => {
+    const campaign = automation(false);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockSendCommentReply).toHaveBeenCalledOnce();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "PUBLIC_REPLY_SENT" })
+    );
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "DM_SKIPPED" })
+    );
+  });
+
+  it("logs public reply failed when Meta returns success without an id", async () => {
+    const campaign = automation(false);
+    mockSendCommentReply.mockResolvedValue({ status: 200, data: {} });
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "PUBLIC_REPLY_FAILED",
+        meta: expect.objectContaining({ error: "meta_public_reply_missing_id" }),
+      })
+    );
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageType: "COMMENT_REPLY",
+        status: "FAILED",
+        errorMessage: "meta_public_reply_missing_id",
       })
     );
   });

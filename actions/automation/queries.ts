@@ -554,7 +554,7 @@ export const getAutomationActivity = async (
       source: item.messageType ? "message" : item.provider ? "webhook" : "event",
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 30);
+    .slice(0, 20);
 };
 
 export const getDashboardActivity = async (clerkId: string) => {
@@ -598,10 +598,14 @@ export const getDashboardActivity = async (clerkId: string) => {
       createdAt: item.createdAt,
       type: item.eventType ?? `${item.messageType}_${item.status}`,
       status: item.status ?? undefined,
+      igUserId: item.igUserId ?? item.recipientIgId ?? undefined,
+      mediaId: item.mediaId ?? undefined,
+      commentId: item.commentId ?? undefined,
       keyword: item.keyword ?? undefined,
       errorMessage: item.errorMessage ?? undefined,
+      meta: item.meta ?? item.payload ?? undefined,
       source: item.messageType ? "message" : item.provider ? "webhook" : "event",
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 12);
+    .slice(0, 20);
 };

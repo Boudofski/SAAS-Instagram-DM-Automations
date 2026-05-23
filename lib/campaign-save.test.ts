@@ -86,6 +86,26 @@ describe("normalizeCampaignPayload", () => {
     expect(normalized.listener.commentReply).toBeUndefined();
   });
 
+  it("persists edit intent for sendPrivateDm=false in normalized payload", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: false,
+    });
+
+    expect(normalized.sendPrivateDm).toBe(false);
+  });
+
+  it("persists public reply disabled by clearing saved reply variations", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      publicReplyEnabled: false,
+    });
+
+    expect(normalized.listener.commentReply).toBeUndefined();
+    expect(normalized.listener.commentReply2).toBeUndefined();
+    expect(normalized.listener.commentReply3).toBeUndefined();
+  });
+
   it("accepts the corrected carousel enum and maps the legacy typo", () => {
     expect(normalizeCampaignMediaType("CAROUSEL_ALBUM")).toBe("CAROUSEL_ALBUM");
     expect(normalizeCampaignMediaType("CAROSEL_ALBUM")).toBe("CAROUSEL_ALBUM");

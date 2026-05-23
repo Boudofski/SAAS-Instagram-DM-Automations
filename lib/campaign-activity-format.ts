@@ -5,6 +5,10 @@ type ActivityInput = {
   errorMessage?: string | null;
   meta?: unknown;
   source?: string | null;
+  igUserId?: string | null;
+  commentId?: string | null;
+  createdAt?: Date | string;
+  privateDmEnabled?: boolean;
 };
 
 export type ActivityDisplay = {
@@ -14,6 +18,26 @@ export type ActivityDisplay = {
   detail: string | null;
   technical: boolean;
 };
+
+export type RecentActivityItem = {
+  title: string;
+  actor: string | null;
+  subtitle: string;
+  time: string;
+  tone: "green" | "blue" | "purple" | "amber" | "red" | "slate";
+  kind: string;
+};
+
+export function getCampaignModeLabels(input: {
+  sendPrivateDm?: boolean | null;
+  publicReplyCount?: number;
+}) {
+  const publicReplyOn = (input.publicReplyCount ?? 0) > 0;
+  return {
+    publicReply: publicReplyOn ? "On" : "Off",
+    privateDm: input.sendPrivateDm === false ? "Off — external tool" : "Sent by AP3k",
+  };
+}
 
 export function getReviewerTestCopy(sendPrivateDm: boolean) {
   return sendPrivateDm
@@ -38,12 +62,32 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
     };
   }
 
+  if ((type === "DM_FAILED" || type === "DM_FAILED_FAILED") && capabilityBlocked && item.privateDmEnabled === false) {
+    return {
+      label: "Old private DM failure before DM was turned off",
+      badge: "OLD",
+      tone: "slate",
+      detail: formatLogError(text),
+      technical: false,
+    };
+  }
+
   if ((type === "DM_FAILED" || type === "DM_FAILED_FAILED") && capabilityBlocked) {
     return {
       label: "Public reply sent · Private DM blocked by Meta",
       badge: "WARNING",
       tone: "amber",
       detail: formatLogError(text),
+      technical: false,
+    };
+  }
+
+  if (type === "DM_SKIPPED" && text.includes("external_dm_tool_enabled")) {
+    return {
+      label: "Private DM skipped",
+      badge: "SKIPPED",
+      tone: "amber",
+      detail: "External DM tool enabled.",
       technical: false,
     };
   }
@@ -64,6 +108,16 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
       badge: "LIMIT",
       tone: "amber",
       detail: null,
+      technical: false,
+    };
+  }
+
+  if (type === "COMMENT_SKIPPED" && text.includes("public_reply_disabled")) {
+    return {
+      label: "Public reply skipped",
+      badge: "OFF",
+      tone: "amber",
+      detail: "Public reply is disabled for this campaign.",
       technical: false,
     };
   }
@@ -116,6 +170,90 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
   };
 }
 
+export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
+  const display = formatActivityDisplay(item);
+  const actor = item.igUserId ? `@${item.igUserId}` : null;
+  const commentSuffix = item.commentId ? ` → comment ${truncateId(item.commentId)}` : "";
+  const meta = metaRecord(item.meta);
+  const replyId = typeof meta.publicReplyCommentId === "string" ? meta.publicReplyCommentId : null;
+  const endpoint = typeof meta.endpoint === "string" ? meta.endpoint : null;
+  const base = {
+    actor,
+    time: item.createdAt ? formatActivityTime(item.createdAt) : "",
+  };
+
+  if (item.type === "PUBLIC_REPLY_SENT" || item.type === "COMMENT_REPLY_SENT") {
+    return {
+      ...base,
+      title: "Public reply sent",
+      subtitle: `Comment reply (static)${commentSuffix}${replyId ? ` · Meta reply ${truncateId(replyId)}` : ""}`,
+      tone: "green",
+      kind: "sent",
+    };
+  }
+  if (item.type === "DM_SKIPPED") {
+    return {
+      ...base,
+      title: "Private DM skipped",
+      subtitle: `External DM tool enabled${commentSuffix}`,
+      tone: "amber",
+      kind: "skipped",
+    };
+  }
+  if ((item.type === "DM_FAILED" || item.type === "DM_FAILED_FAILED") && isMetaCapabilityMissing(activityText(item))) {
+    return {
+      ...base,
+      title: "Private DM blocked by Meta",
+      subtitle: `Requires instagram_manage_messages approval${commentSuffix}`,
+      tone: "red",
+      kind: "failed",
+    };
+  }
+  if (item.type === "KEYWORD_MATCHED") {
+    return {
+      ...base,
+      title: "Trigger matched",
+      subtitle: item.keyword ? `Keyword "${item.keyword}" → post comments` : "Comment trigger matched",
+      tone: "purple",
+      kind: "activity",
+    };
+  }
+  if (item.type === "COMMENT_RECEIVED" || item.type === "REAL_COMMENT_EVENT" || item.type === "WEBHOOK_RECEIVED") {
+    return {
+      ...base,
+      title: "Comment received",
+      subtitle: commentSuffix ? commentSuffix.replace(/^ → /, "") : "Instagram comment webhook",
+      tone: "blue",
+      kind: "activity",
+    };
+  }
+  if (item.type === "SELF_COMMENT_SKIPPED") {
+    return {
+      ...base,
+      title: "Ignored self-comment",
+      subtitle: "Connected account comment ignored",
+      tone: "amber",
+      kind: "skipped",
+    };
+  }
+  if (display.label === "Duplicate webhook ignored") {
+    return {
+      ...base,
+      title: "Duplicate ignored",
+      subtitle: "Repeated webhook delivery ignored",
+      tone: "slate",
+      kind: "skipped",
+    };
+  }
+  return {
+    ...base,
+    title: display.label,
+    subtitle: `${display.detail ?? endpoint ?? "Campaign activity"}${commentSuffix}`,
+    tone: display.tone === "slate" ? "slate" : display.tone,
+    kind: display.technical ? "technical" : display.tone === "red" ? "failed" : display.tone === "amber" ? "skipped" : "activity",
+  };
+}
+
 export function formatLogError(message: string) {
   if (message.includes("static_reply_limit_reached")) {
     return "Skipped — monthly static reply limit reached.";
@@ -134,6 +272,11 @@ export function isMetaCapabilityMissing(message: string) {
     text.includes("capability") ||
     text.includes("permission")
   );
+}
+
+export function isWeakPublicReply(text: string) {
+  const meaningful = Array.from(text).filter((char) => /[A-Za-z0-9\u0600-\u06FF]/.test(char)).join("");
+  return meaningful.length < 6;
 }
 
 function friendlyActivityType(type: string) {
@@ -182,4 +325,19 @@ function activityText(item: ActivityInput) {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
+}
+
+function metaRecord(meta: unknown): Record<string, unknown> {
+  return meta && typeof meta === "object" && !Array.isArray(meta) ? (meta as Record<string, unknown>) : {};
+}
+
+function truncateId(value: string) {
+  return value.length > 12 ? `${value.slice(0, 12)}...` : value;
+}
+
+function formatActivityTime(value: Date | string) {
+  return new Date(value).toLocaleTimeString("en", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

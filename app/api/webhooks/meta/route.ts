@@ -686,7 +686,71 @@ async function processEntry(
         continue;
       }
 
-      if (automation.userId) {
+      const listener = automation.listener;
+      const replyVariants = [
+        listener.commentReply,
+        listener.commentReply2,
+        listener.commentReply3,
+      ].filter(Boolean) as string[];
+      const publicReplyEnabled = replyVariants.length > 0;
+      const privateDmEnabled = automation.sendPrivateDm !== false;
+
+      if (!publicReplyEnabled) {
+        await createMessageLog({
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          mediaId,
+          commentId,
+          messageType: "COMMENT_REPLY",
+          status: "SKIPPED",
+          errorMessage: "public_reply_disabled",
+        });
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "COMMENT_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword,
+          meta: {
+            reason: "public_reply_disabled",
+            publicReplyEnabled: false,
+          },
+        });
+      }
+
+      if (!publicReplyEnabled && !privateDmEnabled) {
+        await createMessageLog({
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          mediaId,
+          commentId,
+          messageType: "DM",
+          status: "SKIPPED",
+          errorMessage: "external_dm_tool_enabled",
+        });
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "DM_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword,
+          meta: {
+            reason: "external_dm_tool_enabled",
+            sendPrivateDm: false,
+          },
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "PROCESSED",
+          errorMessage: "outbound_skipped_by_campaign_settings",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+
+      if (automation.userId && (publicReplyEnabled || privateDmEnabled)) {
         const usageAllowed = await canSendStaticReply(automation.userId);
         if (!usageAllowed.ok) {
           await createAutomationEvent({
@@ -714,7 +778,7 @@ async function processEntry(
             status: "SKIPPED",
             errorMessage: "static_reply_limit_reached",
           });
-          if (automation.sendPrivateDm !== false) {
+          if (privateDmEnabled) {
             await createMessageLog({
               automationId: automation.id,
               recipientIgId: commenterId,
@@ -752,15 +816,28 @@ async function processEntry(
           reason: tokenResolution.reason,
           ...diag,
         });
-        await createMessageLog({
-          automationId: automation.id,
-          recipientIgId: commenterId,
-          mediaId,
-          commentId,
-          messageType: "DM",
-          status: "FAILED",
-          errorMessage: "token_missing",
-        });
+        if (publicReplyEnabled) {
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "COMMENT_REPLY",
+            status: "FAILED",
+            errorMessage: "token_missing",
+          });
+        }
+        if (privateDmEnabled) {
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "DM",
+            status: "FAILED",
+            errorMessage: "token_missing",
+          });
+        }
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
@@ -771,15 +848,28 @@ async function processEntry(
       }
       const token = tokenResolution.token;
       if (!instagramBusinessAccountId) {
-        await createMessageLog({
-          automationId: automation.id,
-          recipientIgId: commenterId,
-          mediaId,
-          commentId,
-          messageType: "DM",
-          status: "FAILED",
-          errorMessage: "instagram_business_account_missing",
-        });
+        if (publicReplyEnabled) {
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "COMMENT_REPLY",
+            status: "FAILED",
+            errorMessage: "instagram_business_account_missing",
+          });
+        }
+        if (privateDmEnabled) {
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "DM",
+            status: "FAILED",
+            errorMessage: "instagram_business_account_missing",
+          });
+        }
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "FAILED",
@@ -788,8 +878,6 @@ async function processEntry(
         });
         continue;
       }
-
-      const listener = automation.listener;
 
       const templateVars = {
         username: commenterUsername ?? "",
@@ -801,13 +889,8 @@ async function processEntry(
       // 5. Send public comment reply — pick a random non-empty variation
       // Primary: threaded reply via POST /{commentId}/replies (Advanced Access)
       // Fallback: top-level @mention comment via POST /{mediaId}/comments (Standard Access)
-      const replyVariants = [
-        listener.commentReply,
-        listener.commentReply2,
-        listener.commentReply3,
-      ].filter(Boolean) as string[];
       const chosenReply =
-        replyVariants.length > 0
+        publicReplyEnabled
           ? replyVariants[Math.floor(Math.random() * replyVariants.length)]
           : null;
 
@@ -881,8 +964,11 @@ async function processEntry(
         try {
           // Primary: Advanced Access — true threaded reply linked to the comment
           const replyResult = await withRetry(() => sendCommentReply(commentId, replyText, token));
-          publicReplySent = replyResult.status === 200;
           publicReplyCommentId = extractMetaCreatedObjectId(replyResult);
+          publicReplySent = replyResult.status === 200 && Boolean(publicReplyCommentId);
+          if (replyResult.status === 200 && !publicReplyCommentId) {
+            publicReplyErrorMessage = "meta_public_reply_missing_id";
+          }
         } catch (threadedErr) {
           const threadedError = formatSafeMetaError(threadedErr);
           console.warn("[webhook] threaded comment reply failed — trying Standard Access @mention fallback", {
@@ -898,8 +984,11 @@ async function processEntry(
             outboundPublicReplyText = mentionText;
             try {
               const fallback = await withRetry(() => sendMediaComment(mediaId, mentionText, token));
-              publicReplySent = fallback.status === 200;
               publicReplyCommentId = extractMetaCreatedObjectId(fallback);
+              publicReplySent = fallback.status === 200 && Boolean(publicReplyCommentId);
+              if (fallback.status === 200 && !publicReplyCommentId) {
+                publicReplyErrorMessage = "meta_public_reply_missing_id";
+              }
               if (!commenterUsername) {
                 publicReplyErrorMessage = "commenter_username_missing_mention_omitted";
               }
