@@ -199,6 +199,62 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
       ])
     : [[], []];
 
+  const [
+    selfCommentsSkipped24h,
+    duplicateCommentsSkipped24h,
+    loopGuardTriggered24h,
+    lastLoopGuardEvent,
+    topOffendingCampaign,
+    safetyEvents,
+  ] = await Promise.all([
+    client.automationEvent.count({
+      where: { eventType: "SELF_COMMENT_SKIPPED", createdAt: { gte: since24h } },
+    }),
+    client.automationEvent.count({
+      where: { eventType: "DUPLICATE_SKIPPED", createdAt: { gte: since24h } },
+    }),
+    client.automationEvent.count({
+      where: { eventType: { in: ["LOOP_GUARD_TRIGGERED", "LOOP_GUARD_PAUSED_CAMPAIGN"] }, createdAt: { gte: since24h } },
+    }),
+    client.automationEvent.findFirst({
+      where: { eventType: { in: ["LOOP_GUARD_TRIGGERED", "LOOP_GUARD_PAUSED_CAMPAIGN"] } },
+      orderBy: { createdAt: "desc" },
+      include: { automation: { select: { name: true, active: true, User: { select: { email: true } } } } },
+    }),
+    client.messageLog.groupBy({
+      by: ["automationId"],
+      where: { messageType: "COMMENT_REPLY", status: "SENT", createdAt: { gte: since24h } },
+      _count: { _all: true },
+      orderBy: { _count: { automationId: "desc" } },
+      take: 1,
+    }),
+    tab === "messages"
+      ? client.automationEvent.findMany({
+          where: {
+            eventType: {
+              in: [
+                "SELF_COMMENT_SKIPPED",
+                "COMMENT_SKIPPED",
+                "DUPLICATE_SKIPPED",
+                "LOOP_GUARD_TRIGGERED",
+                "LOOP_GUARD_PAUSED_CAMPAIGN",
+              ],
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          include: { automation: { select: { name: true, User: { select: { email: true } } } } },
+        })
+      : Promise.resolve([]),
+  ]);
+  const topOffendingAutomationId = topOffendingCampaign[0]?.automationId;
+  const topOffendingAutomation = topOffendingAutomationId
+    ? await client.automation.findUnique({
+        where: { id: topOffendingAutomationId },
+        select: { name: true, User: { select: { email: true } } },
+      })
+    : null;
+
   const lastPipeline = buildWebhookPipelineDiagnostics({
     lastPostRaw,
     lastSignatureFailed,
@@ -215,6 +271,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     tokenMissingFailures24h,
     dmFailed24h: dmsFailed24h,
     activeCampaigns,
+    loopGuardTriggered24h,
+    selfCommentsSkipped24h,
+    duplicateCommentsSkipped24h,
   });
 
   const tabHref = (id: string, extra?: Record<string, string>) => {
@@ -443,6 +502,15 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 <StatCard label="Public replies 24h" value={publicRepliesSent24h} detail="Sent public comment replies" />
                 <StatCard label="DMs sent 24h" value={dmsSent24h} detail={`${dmsFailed24h} failed in 24h`} tone={dmsFailed24h ? "amber" : "green"} />
                 <StatCard label="Active subscriptions" value={revenueSubscriptions} detail="Read-only Stripe visibility" />
+                <StatCard label="Self comments skipped" value={selfCommentsSkipped24h} detail="Connected-account comments ignored in 24h" tone={selfCommentsSkipped24h ? "amber" : "green"} />
+                <StatCard label="Duplicates skipped" value={duplicateCommentsSkipped24h} detail="Repeated comment webhooks ignored in 24h" tone={duplicateCommentsSkipped24h ? "amber" : "green"} />
+                <StatCard label="Loop guard triggered" value={loopGuardTriggered24h} detail="Emergency loop protection events in 24h" tone={loopGuardTriggered24h ? "red" : "green"} />
+                <StatCard
+                  label="Top reply campaign"
+                  value={topOffendingCampaign[0]?._count?._all ?? 0}
+                  detail={topOffendingAutomation ? `${topOffendingAutomation.name} · ${topOffendingAutomation.User?.email ?? "unknown"}` : "No public replies in 24h"}
+                  tone={topOffendingCampaign[0] ? "amber" : "green"}
+                />
               </section>
 
               <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
@@ -456,6 +524,8 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <HealthCard label="Last real comment" value={lastRealComment ? `${lastRealComment.status} · ${formatAdminDate(lastRealComment.createdAt)}` : "None"} tone={lastRealComment ? "green" : "amber"} />
                     <HealthCard label="Public reply status" value={lastPublicReplySent ? `Working · ${formatAdminDate(lastPublicReplySent.createdAt)}` : "No sent reply yet"} tone={lastPublicReplySent ? "green" : "slate"} />
                     <HealthCard label="DM capability" value={dmCapabilityMissing ? "Meta capability missing" : lastDmSent ? "DM sent" : "No success yet"} tone={dmCapabilityMissing ? "red" : lastDmSent ? "green" : "amber"} />
+                    <HealthCard label="Last loop guard" value={lastLoopGuardEvent ? `${lastLoopGuardEvent.eventType} · ${formatAdminDate(lastLoopGuardEvent.createdAt)}` : "None"} tone={lastLoopGuardEvent ? "red" : "green"} />
+                    <HealthCard label="Recommendation" value="Pause Any Comment campaigns until review if loop guard or self-comment skips appear." tone={loopGuardTriggered24h ? "red" : "amber"} />
                   </div>
                 </Panel>
 
@@ -572,6 +642,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   <HealthCard label="Real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
                   <HealthCard label="Inbound DM" value={formatAdminDate(lastInboundDm?.createdAt)} tone={lastInboundDm ? "green" : "slate"} />
                   <HealthCard label="Internal self-test" value={formatAdminDate(lastSimulated?.createdAt)} tone={lastSimulated ? "green" : "slate"} />
+                  <HealthCard label="Self skipped 24h" value={String(selfCommentsSkipped24h)} tone={selfCommentsSkipped24h ? "amber" : "green"} />
+                  <HealthCard label="Duplicate skipped 24h" value={String(duplicateCommentsSkipped24h)} tone={duplicateCommentsSkipped24h ? "amber" : "green"} />
+                  <HealthCard label="Loop guard 24h" value={String(loopGuardTriggered24h)} tone={loopGuardTriggered24h ? "red" : "green"} />
                 </div>
                 <div className="mt-4">
                   <PipelineGrid pipeline={lastPipeline} />
@@ -616,6 +689,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     ["All", tabHref("webhooks", { eventType: "" })],
                     ["Real comments", tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" })],
                     ["Messages", tabHref("webhooks", { eventType: "REAL_MESSAGE_EVENT" })],
+                    ["Self skipped", tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" })],
                     ["Signature failed", tabHref("webhooks", { eventType: "SIGNATURE_FAILED" })],
                     ["Meta test", tabHref("webhooks", { eventType: "META_TEST_EVENT" })],
                   ]}
@@ -657,27 +731,60 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           )}
 
           {tab === "messages" && (
-            <Panel title="Messages & Replies" description="Delivery logs for public replies and private DM attempts.">
-              <DataTable
-                headers={["Time", "Owner/Campaign", "Type", "Status", "Endpoint", "Object IDs", "Error", "Action"]}
-                rows={messageLogs.map((log: any) => {
-                  const classified = classifyDeliveryError(log.errorMessage);
-                  return [
-                    formatAdminDate(log.createdAt),
-                    <Identity key="campaign" title={log.automation?.name ?? "Unknown campaign"} subtitle={log.automation?.User?.email ?? ""} />,
-                    <Badge key="type" tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>,
-                    log.status === "SKIPPED" ? <Badge key="status" tone="amber">Skipped</Badge> : <StatusBadge key="status" status={log.status} />,
-                    log.messageType === "DM" ? "ig_business/messages" : "comment/media reply",
-                    <Identity key="ids" title={`comment ${log.commentId ?? "n/a"}`} subtitle={`media ${log.mediaId ?? "n/a"}`} />,
-                    log.status === "SKIPPED" && log.errorMessage === "external_dm_tool_enabled"
-                      ? <Badge key="error" tone="amber">Skipped — external DM tool enabled</Badge>
-                      : log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "None",
-                    <DisabledActions key="actions" labels={["View details", "Copy safe error"]} />,
-                  ];
-                })}
-                empty="No message logs found."
-              />
-            </Panel>
+            <>
+              <Panel title="Safety Skips & Loop Guard" description="Ignored self-comments, duplicate webhooks, cooldown skips, and emergency loop protection are shown separately from delivery failures.">
+                <DataTable
+                  headers={["Time", "Owner/Campaign", "Status", "Reason", "Object IDs", "Recommendation"]}
+                  rows={safetyEvents.map((event: any) => {
+                    const meta = event.meta && typeof event.meta === "object" ? event.meta as Record<string, unknown> : {};
+                    const reason = String(meta.reason ?? event.eventType);
+                    return [
+                      formatAdminDate(event.createdAt),
+                      <Identity key="campaign" title={event.automation?.name ?? "Unknown campaign"} subtitle={event.automation?.User?.email ?? ""} />,
+                      <EventBadge key="event" eventType={event.eventType} />,
+                      reason === "self_comment_author"
+                        ? "Ignored self-comment from connected account"
+                        : reason === "duplicate_comment_webhook"
+                          ? "Ignored duplicate webhook"
+                          : reason === "automation_rate_limit_loop_guard"
+                            ? "Loop guard skipped public reply"
+                            : reason === "commenter_recently_handled"
+                              ? "Commenter recently handled"
+                              : reason === "recent_ap3k_reply_text_match"
+                                ? "Ignored AP3k-generated reply text"
+                                : reason,
+                      <Identity key="ids" title={`comment ${event.commentId ?? "n/a"}`} subtitle={`media ${event.mediaId ?? "n/a"}`} />,
+                      event.eventType === "LOOP_GUARD_PAUSED_CAMPAIGN"
+                        ? "Campaign auto-paused by loop guard"
+                        : "Pause Any Comment campaigns until review if counts rise.",
+                    ];
+                  })}
+                  empty="No safety skip events found."
+                />
+              </Panel>
+
+              <Panel title="Messages & Replies" description="Delivery logs for public replies and private DM attempts.">
+                <DataTable
+                  headers={["Time", "Owner/Campaign", "Type", "Status", "Endpoint", "Object IDs", "Error", "Action"]}
+                  rows={messageLogs.map((log: any) => {
+                    const classified = classifyDeliveryError(log.errorMessage);
+                    return [
+                      formatAdminDate(log.createdAt),
+                      <Identity key="campaign" title={log.automation?.name ?? "Unknown campaign"} subtitle={log.automation?.User?.email ?? ""} />,
+                      <Badge key="type" tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>,
+                      log.status === "SKIPPED" ? <Badge key="status" tone="amber">Skipped</Badge> : <StatusBadge key="status" status={log.status} />,
+                      log.messageType === "DM" ? "ig_business/messages" : "comment/media reply",
+                      <Identity key="ids" title={`comment ${log.commentId ?? "n/a"}`} subtitle={`media ${log.mediaId ?? "n/a"}`} />,
+                      log.status === "SKIPPED" && log.errorMessage === "external_dm_tool_enabled"
+                        ? <Badge key="error" tone="amber">Skipped — external DM tool enabled</Badge>
+                        : log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "None",
+                      <DisabledActions key="actions" labels={["View details", "Copy safe error"]} />,
+                    ];
+                  })}
+                  empty="No message logs found."
+                />
+              </Panel>
+            </>
           )}
 
           {tab === "meta" && (
@@ -913,6 +1020,8 @@ function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: Tone 
 function EventBadge({ eventType }: { eventType: string }) {
   const tone: Tone =
     eventType === "REAL_COMMENT_EVENT" || eventType === "REAL_MESSAGE_EVENT" ? "green" :
+    eventType === "LOOP_GUARD_TRIGGERED" || eventType === "LOOP_GUARD_PAUSED_CAMPAIGN" ? "red" :
+    eventType === "SELF_COMMENT_SKIPPED" || eventType === "COMMENT_SKIPPED" || eventType === "DUPLICATE_SKIPPED" ? "amber" :
     eventType === "SIGNATURE_FAILED" || eventType === "PAYLOAD_INVALID" ? "red" :
     eventType === "META_TEST_EVENT" ? "blue" : "slate";
   return <Badge tone={tone}>{eventType}</Badge>;

@@ -24,7 +24,7 @@ type AutomationWithRelations = Automation & {
     subscription: Pick<Subscription, "plan"> | null;
     integrations: Pick<
       Integrations,
-      "id" | "token" | "instagramId" | "pageId"
+      "id" | "token" | "instagramId" | "pageId" | "webhookAccountId" | "businessId" | "instagramUsername"
     >[];
   } | null;
 };
@@ -79,7 +79,15 @@ export const findAutomationForComment = async (
         select: {
           subscription: { select: { plan: true } },
           integrations: {
-            select: { id: true, token: true, instagramId: true, pageId: true },
+            select: {
+              id: true,
+              token: true,
+              instagramId: true,
+              pageId: true,
+              webhookAccountId: true,
+              businessId: true,
+              instagramUsername: true,
+            },
           },
         },
       },
@@ -109,6 +117,7 @@ export const findAutomationForCommentWithReason = async (
       webhookAccountId: true,
       pageId: true,
       businessId: true,
+      instagramUsername: true,
     },
   });
   // Match by any known ID field — entry.id is IG Business ID for object=instagram,
@@ -129,6 +138,7 @@ export const findAutomationForCommentWithReason = async (
       webhookAccountId: true,
       pageId: true,
       businessId: true,
+      instagramUsername: true,
     },
   });
 
@@ -180,6 +190,7 @@ export const findAutomationForCommentWithReason = async (
               pageId: true,
               webhookAccountId: true,
               businessId: true,
+              instagramUsername: true,
             },
           },
         },
@@ -233,6 +244,7 @@ export const findAutomationForCommentWithReason = async (
     matchedIntegrationId: integration.id,
     matchedIntegrationInstagramId: integration.instagramId,
     matchedIntegrationWebhookAccountId: integration.webhookAccountId,
+    matchedIntegrationUsername: integration.instagramUsername,
     matchedAutomationIds: comparisons
       .filter((item) => item.automationActive && item.normalizedMatch)
       .map((item) => item.automationId),
@@ -296,6 +308,7 @@ export const findAutomationForDM = async (
               pageId: true,
               webhookAccountId: true,
               businessId: true,
+              instagramUsername: true,
             },
           },
         },
@@ -371,6 +384,149 @@ export const isDuplicate = async (
     },
   });
   return !!existing;
+};
+
+export const hasProcessedCommentWebhook = async (
+  automationId: string,
+  commentId: string,
+  currentWebhookEventId?: string
+) => {
+  const [event, messageLog, webhookEvent] = await Promise.all([
+    client.automationEvent.findFirst({
+      where: {
+        automationId,
+        commentId,
+        eventType: {
+          in: [
+            "COMMENT_RECEIVED",
+            "KEYWORD_MATCHED",
+            "DM_SENT",
+            "DM_SKIPPED",
+            "PUBLIC_REPLY_SENT",
+            "PUBLIC_REPLY_FAILED",
+            "DM_FAILED",
+            "DUPLICATE_SKIPPED",
+          ],
+        },
+      },
+      select: { id: true },
+    }),
+    client.messageLog.findFirst({
+      where: { automationId, commentId },
+      select: { id: true },
+    }),
+    client.webhookEvent.findFirst({
+      where: {
+        automationId,
+        commentId,
+        ...(currentWebhookEventId ? { id: { not: currentWebhookEventId } } : {}),
+        status: { in: ["PROCESSED", "IGNORED", "FAILED"] },
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  return Boolean(event || messageLog || webhookEvent);
+};
+
+export const hasAp3kGeneratedCommentId = async (
+  automationId: string,
+  commentId: string
+) => {
+  const event = await client.automationEvent.findFirst({
+    where: {
+      automationId,
+      commentId,
+      eventType: "PUBLIC_REPLY_SENT",
+    },
+    select: { id: true },
+  });
+
+  return Boolean(event);
+};
+
+export const hasRecentAp3kReplyTextMatch = async (data: {
+  automationId: string;
+  mediaId: string;
+  normalizedText: string;
+  textHash: string;
+  since: Date;
+}) => {
+  const recentEvents = await client.automationEvent.findMany({
+    where: {
+      automationId: data.automationId,
+      mediaId: data.mediaId,
+      eventType: "PUBLIC_REPLY_SENT",
+      createdAt: { gte: data.since },
+    },
+    select: { meta: true },
+    take: 50,
+    orderBy: { createdAt: "desc" },
+  });
+
+  return recentEvents.some((event) => {
+    const meta = event.meta && typeof event.meta === "object" && !Array.isArray(event.meta)
+      ? (event.meta as Record<string, unknown>)
+      : {};
+    return (
+      meta.publicReplyTextHash === data.textHash ||
+      meta.normalizedPublicReplyText === data.normalizedText
+    );
+  });
+};
+
+export const countRecentPublicReplies = async (data: {
+  automationId: string;
+  mediaId?: string;
+  since: Date;
+}) => {
+  return await client.messageLog.count({
+    where: {
+      automationId: data.automationId,
+      messageType: "COMMENT_REPLY",
+      status: "SENT",
+      createdAt: { gte: data.since },
+      ...(data.mediaId ? { mediaId: data.mediaId } : {}),
+    },
+  });
+};
+
+export const hasRecentHandledCommenter = async (data: {
+  automationId: string;
+  commenterId: string;
+  mediaId: string;
+  since: Date;
+}) => {
+  const existing = await client.messageLog.findFirst({
+    where: {
+      automationId: data.automationId,
+      recipientIgId: data.commenterId,
+      mediaId: data.mediaId,
+      status: "SENT",
+      createdAt: { gte: data.since },
+      messageType: { in: ["COMMENT_REPLY", "DM"] },
+    },
+    select: { id: true },
+  });
+
+  return Boolean(existing);
+};
+
+export const countLoopGuardEvents = async (automationId: string, since: Date) => {
+  return await client.automationEvent.count({
+    where: {
+      automationId,
+      eventType: "LOOP_GUARD_TRIGGERED",
+      createdAt: { gte: since },
+    },
+  });
+};
+
+export const pauseAutomationForLoopGuard = async (automationId: string) => {
+  return await client.automation.update({
+    where: { id: automationId },
+    data: { active: false },
+  });
 };
 
 // ---------------------------------------------------------------------------

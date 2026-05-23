@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import {
   findAutomationForCommentWithReason,
   findAutomationForDM,
   findAutomationById,
   isDuplicate,
+  hasProcessedCommentWebhook,
+  hasAp3kGeneratedCommentId,
+  hasRecentAp3kReplyTextMatch,
+  countRecentPublicReplies,
+  hasRecentHandledCommenter,
+  countLoopGuardEvents,
+  pauseAutomationForLoopGuard,
   createMessageLog,
   upsertLead,
   createAutomationEvent,
@@ -39,6 +47,13 @@ import { openai } from "@/lib/openai";
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
 const WEBHOOK_RATE_LIMIT_MAX = 120;
 const SEND_RETRY_ATTEMPTS = 2;
+const RECENT_REPLY_TEXT_WINDOW_MS = 10 * 60 * 1000;
+const COMMENTER_COOLDOWN_MS = 10 * 60 * 1000;
+const LOOP_GUARD_MEDIA_WINDOW_MS = 10 * 60 * 1000;
+const LOOP_GUARD_AUTOMATION_WINDOW_MS = 60 * 60 * 1000;
+const MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M = 5;
+const MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR = 50;
+const LOOP_GUARD_PAUSE_THRESHOLD_1H = 3;
 const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 
 // ---------------------------------------------------------------------------
@@ -408,10 +423,137 @@ async function processEntry(
         continue;
       }
 
+      const integrationRaw = selectIntegrationForWebhook(automation.User?.integrations, pageId);
+      const selfComment = getSelfCommentReason({
+        commenterId,
+        commenterUsername,
+        igAccountId: pageId,
+        integration: integrationRaw,
+        diagnostics: match.diagnostics,
+      });
+      if (selfComment) {
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "IGNORED",
+          errorMessage: "self_comment_author",
+          processedAt: new Date(),
+        });
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "SELF_COMMENT_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          meta: {
+            reason: "self_comment_author",
+            matchedBy: selfComment,
+            commenterId,
+            commenterUsername,
+            igAccountId: pageId,
+            integrationId: integrationRaw?.id,
+            integrationInstagramId: integrationRaw?.instagramId,
+            integrationWebhookAccountId: integrationRaw?.webhookAccountId,
+            integrationUsername: integrationRaw?.instagramUsername,
+            commentId,
+            mediaId,
+          },
+        });
+        continue;
+      }
+
       await updateWebhookEvent(webhookEvent.id, {
         automationId: automation.id,
         status: "PROCESSING",
       });
+
+      if (await hasAp3kGeneratedCommentId(automation.id, commentId)) {
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "COMMENT_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          meta: {
+            reason: "ap3k_generated_comment",
+            commenterId,
+            commenterUsername,
+            igAccountId: pageId,
+            integrationId: integrationRaw?.id,
+            integrationInstagramId: integrationRaw?.instagramId,
+            commentId,
+            mediaId,
+          },
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "IGNORED",
+          errorMessage: "ap3k_generated_comment",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+
+      const normalizedIncomingCommentText = normalizeMatchText(commentText);
+      const incomingCommentTextHash = hashNormalizedText(normalizedIncomingCommentText);
+      if (await hasRecentAp3kReplyTextMatch({
+        automationId: automation.id,
+        mediaId,
+        normalizedText: normalizedIncomingCommentText,
+        textHash: incomingCommentTextHash,
+        since: new Date(Date.now() - RECENT_REPLY_TEXT_WINDOW_MS),
+      })) {
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "COMMENT_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          meta: {
+            reason: "recent_ap3k_reply_text_match",
+            commenterId,
+            commenterUsername,
+            igAccountId: pageId,
+            integrationId: integrationRaw?.id,
+            integrationInstagramId: integrationRaw?.instagramId,
+            commentId,
+            mediaId,
+            textHash: incomingCommentTextHash,
+          },
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "IGNORED",
+          errorMessage: "recent_ap3k_reply_text_match",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+
+      if (await hasProcessedCommentWebhook(automation.id, commentId, webhookEvent.id)) {
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "DUPLICATE_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword ?? undefined,
+          meta: {
+            reason: "duplicate_comment_webhook",
+            commenterId,
+            commenterUsername,
+            igAccountId: pageId,
+            commentId,
+            mediaId,
+          },
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "IGNORED",
+          errorMessage: "duplicate_comment_webhook",
+          processedAt: new Date(),
+        });
+        continue;
+      }
 
       await createAutomationEvent({
         automationId: automation.id,
@@ -501,11 +643,43 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
+          meta: { reason: "duplicate_comment_webhook" },
         });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
-          errorMessage: "duplicate_skipped",
+          errorMessage: "duplicate_comment_webhook",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+
+      if (await hasRecentHandledCommenter({
+        automationId: automation.id,
+        commenterId,
+        mediaId,
+        since: new Date(Date.now() - COMMENTER_COOLDOWN_MS),
+      })) {
+        await createAutomationEvent({
+          automationId: automation.id,
+          eventType: "COMMENT_SKIPPED",
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword,
+          meta: {
+            reason: "commenter_recently_handled",
+            commenterId,
+            commenterUsername,
+            mediaId,
+            commentId,
+            cooldownMinutes: COMMENTER_COOLDOWN_MS / 60_000,
+          },
+        });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "IGNORED",
+          errorMessage: "commenter_recently_handled",
           processedAt: new Date(),
         });
         continue;
@@ -519,7 +693,6 @@ async function processEntry(
         mediaId,
       });
 
-      const integrationRaw = selectIntegrationForWebhook(automation.User?.integrations, pageId);
       const tokenResolution = resolveIntegrationSendToken(integrationRaw);
       const instagramBusinessAccountId = integrationRaw?.instagramId;
       if (!tokenResolution.ok) {
@@ -590,14 +763,76 @@ async function processEntry(
 
       if (chosenReply) {
         const replyText = resolveTemplate(chosenReply, templateVars);
+        const mediaReplyCount10m = await countRecentPublicReplies({
+          automationId: automation.id,
+          mediaId,
+          since: new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS),
+        });
+        const automationReplyCount1h = await countRecentPublicReplies({
+          automationId: automation.id,
+          since: new Date(Date.now() - LOOP_GUARD_AUTOMATION_WINDOW_MS),
+        });
+        const loopGuardExceeded =
+          mediaReplyCount10m >= MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M ||
+          automationReplyCount1h >= MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR;
+
+        if (loopGuardExceeded) {
+          await createAutomationEvent({
+            automationId: automation.id,
+            eventType: "LOOP_GUARD_TRIGGERED",
+            igUserId: commenterId,
+            mediaId,
+            commentId,
+            keyword: matchedKeyword,
+            meta: {
+              reason: "automation_rate_limit_loop_guard",
+              mediaReplyCount10m,
+              automationReplyCount1h,
+              maxPublicRepliesPerAutomationPerMediaPer10Minutes: MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M,
+              maxPublicRepliesPerAutomationPerHour: MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR,
+              recommendation: "Loop guard triggered - campaign paused recommended.",
+            },
+          });
+          const loopGuardEvents1h = await countLoopGuardEvents(
+            automation.id,
+            new Date(Date.now() - LOOP_GUARD_AUTOMATION_WINDOW_MS)
+          );
+          if (loopGuardEvents1h >= LOOP_GUARD_PAUSE_THRESHOLD_1H) {
+            await pauseAutomationForLoopGuard(automation.id);
+            await createAutomationEvent({
+              automationId: automation.id,
+              eventType: "LOOP_GUARD_PAUSED_CAMPAIGN",
+              igUserId: commenterId,
+              mediaId,
+              commentId,
+              keyword: matchedKeyword,
+              meta: {
+                reason: "automation_rate_limit_loop_guard",
+                message: "Campaign auto-paused because AP3k detected a self-reply loop.",
+                loopGuardEvents1h,
+              },
+            });
+          }
+          await updateWebhookEvent(webhookEvent.id, {
+            automationId: automation.id,
+            status: "IGNORED",
+            errorMessage: "automation_rate_limit_loop_guard",
+            processedAt: new Date(),
+          });
+          continue;
+        }
+
         let publicReplySent = false;
         let publicReplyEndpoint: "threaded_reply" | "mention_comment" = "threaded_reply";
         let publicReplyErrorMessage: string | undefined;
+        let publicReplyCommentId: string | undefined;
+        let outboundPublicReplyText = replyText;
 
         try {
           // Primary: Advanced Access — true threaded reply linked to the comment
           const replyResult = await withRetry(() => sendCommentReply(commentId, replyText, token));
           publicReplySent = replyResult.status === 200;
+          publicReplyCommentId = extractMetaCreatedObjectId(replyResult);
         } catch (threadedErr) {
           const threadedError = formatSafeMetaError(threadedErr);
           console.warn("[webhook] threaded comment reply failed — trying Standard Access @mention fallback", {
@@ -610,9 +845,11 @@ async function processEntry(
           if (mediaId) {
             publicReplyEndpoint = "mention_comment";
             const mentionText = commenterUsername ? `@${commenterUsername} ${replyText}` : replyText;
+            outboundPublicReplyText = mentionText;
             try {
               const fallback = await withRetry(() => sendMediaComment(mediaId, mentionText, token));
               publicReplySent = fallback.status === 200;
+              publicReplyCommentId = extractMetaCreatedObjectId(fallback);
               if (!commenterUsername) {
                 publicReplyErrorMessage = "commenter_username_missing_mention_omitted";
               }
@@ -629,7 +866,7 @@ async function processEntry(
           automationId: automation.id,
           recipientIgId: commenterId,
           mediaId,
-          commentId,
+          commentId: publicReplyCommentId ?? commentId,
           messageType: "COMMENT_REPLY",
           status: publicReplySent ? "SENT" : "FAILED",
           errorMessage: publicReplySent ? undefined : publicReplyErrorMessage,
@@ -639,10 +876,14 @@ async function processEntry(
           eventType: publicReplySent ? "PUBLIC_REPLY_SENT" : "PUBLIC_REPLY_FAILED",
           igUserId: commenterId,
           mediaId,
-          commentId,
+          commentId: publicReplySent ? publicReplyCommentId : commentId,
           keyword: matchedKeyword,
           meta: {
             endpoint: publicReplyEndpoint,
+            sourceCommentId: commentId,
+            publicReplyCommentId,
+            publicReplyTextHash: hashNormalizedText(normalizeMatchText(outboundPublicReplyText)),
+            normalizedPublicReplyText: normalizeMatchText(outboundPublicReplyText),
             mentionOmitted: publicReplyErrorMessage === "commenter_username_missing_mention_omitted",
             ...(publicReplyErrorMessage && !publicReplySent ? { error: publicReplyErrorMessage } : {}),
           },
@@ -1190,16 +1431,89 @@ function isRateLimited(key: string) {
 }
 
 function selectIntegrationForWebhook<T extends {
+  id?: string | null;
   pageId?: string | null;
   webhookAccountId?: string | null;
   instagramId?: string | null;
   businessId?: string | null;
+  instagramUsername?: string | null;
 }>(integrations: T[] | undefined, entryId: string): T | undefined {
   return integrations?.find((integration) =>
     [integration.webhookAccountId, integration.instagramId, integration.businessId, integration.pageId]
       .filter(Boolean)
       .some((id) => String(id).trim() === String(entryId).trim())
   ) ?? integrations?.[0];
+}
+
+function normalizeAccountUsername(value?: string | null) {
+  return value ? String(value).trim().replace(/^@+/, "").toLocaleLowerCase() : "";
+}
+
+function normalizeAccountId(value?: string | null) {
+  return value ? String(value).trim() : "";
+}
+
+function getSelfCommentReason(input: {
+  commenterId?: string;
+  commenterUsername?: string;
+  igAccountId?: string;
+  integration?: {
+    instagramId?: string | null;
+    webhookAccountId?: string | null;
+    pageId?: string | null;
+    businessId?: string | null;
+    instagramUsername?: string | null;
+  };
+  diagnostics?: unknown;
+}) {
+  const commenterId = normalizeAccountId(input.commenterId);
+  const commenterUsername = normalizeAccountUsername(input.commenterUsername);
+  const igAccountId = normalizeAccountId(input.igAccountId);
+  const diagnostics =
+    input.diagnostics && typeof input.diagnostics === "object" && !Array.isArray(input.diagnostics)
+      ? (input.diagnostics as Record<string, unknown>)
+      : {};
+
+  const integrationInstagramId = normalizeAccountId(input.integration?.instagramId);
+  const integrationWebhookAccountId = normalizeAccountId(input.integration?.webhookAccountId);
+  const integrationPageId = normalizeAccountId(input.integration?.pageId);
+  const integrationBusinessId = normalizeAccountId(input.integration?.businessId);
+  const diagnosticInstagramId = normalizeAccountId(diagnostics.matchedIntegrationInstagramId as string | undefined);
+  const diagnosticWebhookId = normalizeAccountId(diagnostics.matchedIntegrationWebhookAccountId as string | undefined);
+
+  const ownIds = [
+    integrationInstagramId,
+    integrationWebhookAccountId,
+    integrationPageId,
+    integrationBusinessId,
+    diagnosticInstagramId,
+    diagnosticWebhookId,
+    igAccountId,
+  ].filter(Boolean);
+
+  if (commenterId && ownIds.includes(commenterId)) return "commenter_id_matches_connected_account";
+
+  const integrationUsername = normalizeAccountUsername(input.integration?.instagramUsername);
+  const diagnosticUsername = normalizeAccountUsername(diagnostics.matchedIntegrationUsername as string | undefined);
+  const ownUsernames = [integrationUsername, diagnosticUsername].filter(Boolean);
+  if (commenterUsername && ownUsernames.includes(commenterUsername)) {
+    return "commenter_username_matches_connected_account";
+  }
+
+  return null;
+}
+
+function hashNormalizedText(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function extractMetaCreatedObjectId(response: unknown) {
+  const data = response && typeof response === "object" && "data" in response
+    ? (response as { data?: unknown }).data
+    : undefined;
+  if (!data || typeof data !== "object") return undefined;
+  const record = data as Record<string, unknown>;
+  return typeof record.id === "string" && record.id.trim() ? record.id.trim() : undefined;
 }
 
 async function withRetry<T>(operation: () => Promise<T>, attempts = SEND_RETRY_ATTEMPTS): Promise<T> {

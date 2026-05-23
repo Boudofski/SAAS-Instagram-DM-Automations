@@ -75,7 +75,7 @@ export default function KeywordInput({
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-bold">Every comment will trigger this automation.</p>
           <p className="mt-1 text-xs leading-relaxed text-amber-800">
-            Use carefully to avoid sending too many public replies or DMs.
+            AP3k automatically ignores your own replies to prevent loops. Use carefully with public replies and keep cooldowns in mind.
           </p>
         </div>
       )}

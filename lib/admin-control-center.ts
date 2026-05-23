@@ -5,6 +5,9 @@ export type AdminIssueInput = {
   tokenMissingFailures24h: number;
   dmFailed24h: number;
   activeCampaigns: number;
+  loopGuardTriggered24h?: number;
+  selfCommentsSkipped24h?: number;
+  duplicateCommentsSkipped24h?: number;
 };
 
 const SENSITIVE_KEY_PATTERN =
@@ -44,6 +47,27 @@ export function formatAdminDate(value?: Date | string | null) {
 
 export function classifyDeliveryError(error?: string | null) {
   const text = error ?? "";
+  if (text.includes("self_comment_author")) {
+    return {
+      label: "Ignored self-comment",
+      detail: "Comment came from the connected Instagram account.",
+      tone: "amber" as const,
+    };
+  }
+  if (text.includes("duplicate_comment_webhook")) {
+    return {
+      label: "Ignored duplicate webhook",
+      detail: "Comment ID was already processed.",
+      tone: "amber" as const,
+    };
+  }
+  if (text.includes("automation_rate_limit_loop_guard")) {
+    return {
+      label: "Loop guard skipped",
+      detail: "Reply volume crossed the emergency loop threshold.",
+      tone: "red" as const,
+    };
+  }
   if (text.includes("dm_capability_missing") || text.includes("code=3")) {
     return {
       label: "Meta capability missing",
@@ -78,6 +102,20 @@ export function getTopAdminIssue(input: AdminIssueInput) {
       detail:
         "Meta has not delivered a recent POST. In Development mode, connected account and commenter must be accepted app testers/admins/developers.",
       tone: "red" as const,
+    };
+  }
+  if ((input.loopGuardTriggered24h ?? 0) > 0) {
+    return {
+      label: "Loop guard triggered",
+      detail: `${input.loopGuardTriggered24h} loop guard event(s) in the last 24h. Pause Any Comment campaigns until review.`,
+      tone: "red" as const,
+    };
+  }
+  if ((input.selfCommentsSkipped24h ?? 0) > 0 || (input.duplicateCommentsSkipped24h ?? 0) > 0) {
+    return {
+      label: "Comment loop protection active",
+      detail: `${input.selfCommentsSkipped24h ?? 0} self-comment and ${input.duplicateCommentsSkipped24h ?? 0} duplicate webhook event(s) skipped in the last 24h.`,
+      tone: "amber" as const,
     };
   }
   if (input.signatureFailures24h > 0) {
