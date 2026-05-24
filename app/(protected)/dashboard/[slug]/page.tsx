@@ -6,7 +6,7 @@ import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automat
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { getCampaignTableMetrics, getDashboardGreeting, getUserDashboardMetrics } from "@/lib/dashboard-metrics";
-import { formatRecentActivity } from "@/lib/campaign-activity-format";
+import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -63,7 +63,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     ...automation,
     metrics: campaignMetrics[automation.id] ?? { runs: 0, leads: automation._count?.leads ?? 0 },
   }));
-  const recentActivity = recentResult.status === 200 ? (recentResult.data as any[]).slice(0, 20).map(formatRecentActivity) : [];
+  const recentActivity = recentResult.status === 200 ? groupCampaignActivity(recentResult.data as any[], { limit: 20 }) : [];
   const planLabel = usage?.planLabel ?? (userResult.data?.subscription?.plan === "PRO" ? "Creator" : "Free");
   const dmsSent = metrics?.dmsSent ?? 0;
 
@@ -263,14 +263,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((item, index) => (
-                  <div key={`${item.title}-${item.time}-${index}`} className="flex gap-3">
+                  <div key={`${item.id}-${index}`} className="flex gap-3">
                     <span className={["mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full", recentToneClass(item.tone)].join(" ")} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-black text-slate-950 dark:text-white">
-                          {item.title}{item.actor ? ` ${item.actor}` : ""}
+                          {item.title}{item.actorLabel ? ` ${item.actorLabel}` : ""}
                         </p>
-                        <span className="shrink-0 text-[11px] font-bold text-slate-400">{item.time}</span>
+                        <span className="shrink-0 text-[11px] font-bold text-slate-400">{new Date(item.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
                       <p className="truncate text-xs text-slate-500 dark:text-slate-400">{item.subtitle}</p>
                     </div>

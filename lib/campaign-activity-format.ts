@@ -1,4 +1,5 @@
-type ActivityInput = {
+export type ActivityInput = {
+  id?: string | null;
   type: string;
   status?: string | null;
   keyword?: string | null;
@@ -6,6 +7,7 @@ type ActivityInput = {
   meta?: unknown;
   source?: string | null;
   igUserId?: string | null;
+  mediaId?: string | null;
   commentId?: string | null;
   createdAt?: Date | string;
   privateDmEnabled?: boolean;
@@ -26,6 +28,41 @@ export type RecentActivityItem = {
   time: string;
   tone: "green" | "blue" | "purple" | "amber" | "red" | "slate";
   kind: string;
+};
+
+export type GroupedActivity = {
+  id: string;
+  commentId: string | null;
+  mediaId: string | null;
+  igUserId: string | null;
+  keyword: string | null;
+  createdAt: Date | string;
+  actorLabel: string | null;
+  commentText: string | null;
+  title: string;
+  subtitle: string;
+  steps: {
+    commentReceived: boolean;
+    triggerMatched: boolean;
+    publicReply: "sent" | "skipped" | "failed" | "off" | null;
+    privateDm: "sent" | "skipped" | "blocked" | "failed" | "off" | null;
+    selfCommentSkipped: boolean;
+    duplicateSkipped: boolean;
+    usageLimitReached: boolean;
+    loopGuard: boolean;
+  };
+  tone: "green" | "blue" | "amber" | "red" | "slate";
+  badge: string;
+  details: {
+    commentId?: string;
+    mediaId?: string;
+    igUserId?: string;
+    keyword?: string;
+    endpoint?: string;
+    publicReplyCommentId?: string;
+    error?: string;
+    technicalTypes: string[];
+  };
 };
 
 export function getCampaignModeLabels(input: {
@@ -254,6 +291,135 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
   };
 }
 
+export function groupCampaignActivity(
+  items: ActivityInput[],
+  options: { privateDmEnabled?: boolean; limit?: number } = {}
+): GroupedActivity[] {
+  const groups = new Map<string, ActivityInput[]>();
+  const sorted = [...items].sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
+
+  for (const item of sorted) {
+    const key = groupKey(item);
+    const current = groups.get(key) ?? [];
+    current.push({ ...item, privateDmEnabled: options.privateDmEnabled });
+    groups.set(key, current);
+  }
+
+  return Array.from(groups.entries())
+    .map(([id, groupItems]) => buildGroupedActivity(id, groupItems, options.privateDmEnabled))
+    .sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt))
+    .slice(0, options.limit ?? 20);
+}
+
+function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabled?: boolean): GroupedActivity {
+  const newest = [...items].sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt))[0];
+  const metas = items.map((item) => metaRecord(item.meta));
+  const commentId = firstString([...metas.map((meta) => meta.sourceCommentId), ...items.map((item) => item.commentId)]);
+  const mediaId = firstString(items.map((item) => item.mediaId));
+  const igUserId = firstString(items.map((item) => item.igUserId));
+  const keyword = firstString(items.map((item) => item.keyword));
+  const text = items.map(activityText).join(" ");
+  const types = new Set(items.map((item) => item.type));
+  const statuses = new Set(items.map((item) => item.status).filter(Boolean));
+  const publicReplyCommentId = firstString(metas.map((meta) => meta.publicReplyCommentId));
+  const endpoint = firstString(metas.map((meta) => meta.endpoint));
+  const error = firstString([
+    ...items.map((item) => item.errorMessage),
+    ...metas.map((meta) => meta.error),
+  ].map((value) => (typeof value === "string" ? formatLogError(value) : null)));
+
+  const steps = {
+    commentReceived: types.has("COMMENT_RECEIVED") || types.has("REAL_COMMENT_EVENT") || types.has("WEBHOOK_RECEIVED"),
+    triggerMatched: types.has("KEYWORD_MATCHED"),
+    publicReply: null as GroupedActivity["steps"]["publicReply"],
+    privateDm: null as GroupedActivity["steps"]["privateDm"],
+    selfCommentSkipped: types.has("SELF_COMMENT_SKIPPED"),
+    duplicateSkipped: types.has("DUPLICATE_SKIPPED") || text.includes("duplicate_comment_webhook"),
+    usageLimitReached: text.includes("static_reply_limit_reached"),
+    loopGuard: types.has("LOOP_GUARD_TRIGGERED") || types.has("LOOP_GUARD_PAUSED_CAMPAIGN"),
+  };
+
+  if (types.has("PUBLIC_REPLY_SENT") || types.has("COMMENT_REPLY_SENT")) steps.publicReply = "sent";
+  if (types.has("PUBLIC_REPLY_FAILED") || types.has("COMMENT_REPLY_FAILED")) steps.publicReply = "failed";
+  if (text.includes("public_reply_disabled")) steps.publicReply = "off";
+  if (types.has("COMMENT_SKIPPED") && steps.publicReply === null) steps.publicReply = "skipped";
+
+  if (types.has("DM_SENT")) steps.privateDm = "sent";
+  if (types.has("DM_SKIPPED")) steps.privateDm = text.includes("external_dm_tool_enabled") ? "off" : "skipped";
+  if (types.has("DM_FAILED") || types.has("DM_FAILED_FAILED")) {
+    steps.privateDm = isMetaCapabilityMissing(text) ? "blocked" : "failed";
+  }
+
+  const base: Omit<GroupedActivity, "title" | "subtitle" | "tone" | "badge"> = {
+    id,
+    commentId,
+    mediaId,
+    igUserId,
+    keyword,
+    createdAt: newest?.createdAt ?? new Date(0).toISOString(),
+    actorLabel: igUserId ? `@${igUserId}` : null,
+    commentText: firstString(metas.map((meta) => meta.commentText)),
+    steps,
+    details: {
+      ...(commentId ? { commentId } : {}),
+      ...(mediaId ? { mediaId } : {}),
+      ...(igUserId ? { igUserId } : {}),
+      ...(keyword ? { keyword } : {}),
+      ...(endpoint ? { endpoint } : {}),
+      ...(publicReplyCommentId ? { publicReplyCommentId } : {}),
+      ...(error ? { error } : {}),
+      technicalTypes: Array.from(types),
+    },
+  };
+
+  if (steps.selfCommentSkipped) {
+    return completeGroup(base, "Ignored self-comment from connected account", "Connected account comment ignored.", "amber", "SKIPPED");
+  }
+  if (steps.duplicateSkipped) {
+    return completeGroup(base, "Duplicate webhook ignored", "Repeated webhook delivery ignored.", "slate", "SKIPPED");
+  }
+  if (steps.loopGuard) {
+    return completeGroup(base, "Loop guard protected this campaign", "AP3k blocked a possible self-reply loop.", "amber", "PROTECTED");
+  }
+  if (steps.usageLimitReached) {
+    return completeGroup(base, "Monthly reply limit reached", "No public reply or DM was sent.", "amber", "LIMIT");
+  }
+  if (privateDmEnabled === false && steps.privateDm === "blocked") {
+    return completeGroup(
+      base,
+      "Older DM attempt blocked by Meta",
+      "Private DM is currently off; this is an older or historical event.",
+      "slate",
+      "OLD"
+    );
+  }
+  if (steps.publicReply === "sent" && (steps.privateDm === "skipped" || steps.privateDm === "off")) {
+    return completeGroup(base, "Comment handled successfully", "Public reply sent · Private DM skipped", "green", "SENT");
+  }
+  if (steps.publicReply === "sent" && steps.privateDm === "blocked") {
+    return completeGroup(base, "Comment partially handled", "Public reply sent · Private DM blocked by Meta approval", "amber", "PARTIAL");
+  }
+  if (steps.publicReply === "sent") {
+    return completeGroup(base, "Public reply sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
+  }
+  if (steps.publicReply === "off" && steps.privateDm === "off") {
+    return completeGroup(base, "Comment matched · no outbound action", "Public reply and private DM are disabled.", "slate", "SKIPPED");
+  }
+  if (steps.publicReply === "failed") {
+    return completeGroup(base, "Public reply failed", error ?? "Meta did not confirm the public reply.", "red", "FAILED");
+  }
+  if (steps.privateDm === "sent") {
+    return completeGroup(base, "Private DM sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
+  }
+  if (steps.privateDm === "blocked") {
+    return completeGroup(base, "Private DM blocked by Meta", "Requires instagram_manage_messages approval.", "red", "FAILED");
+  }
+  if (steps.triggerMatched) {
+    return completeGroup(base, "Comment matched · no outbound action", "No public reply or private DM was sent.", "slate", "SKIPPED");
+  }
+  return completeGroup(base, "Comment received · no trigger match", "No configured trigger matched this comment.", "slate", "NO MATCH");
+}
+
 export function formatLogError(message: string) {
   if (message.includes("static_reply_limit_reached")) {
     return "Skipped — monthly static reply limit reached.";
@@ -329,6 +495,38 @@ function activityText(item: ActivityInput) {
 
 function metaRecord(meta: unknown): Record<string, unknown> {
   return meta && typeof meta === "object" && !Array.isArray(meta) ? (meta as Record<string, unknown>) : {};
+}
+
+function groupKey(item: ActivityInput) {
+  const meta = metaRecord(item.meta);
+  const sourceCommentId = typeof meta.sourceCommentId === "string" ? meta.sourceCommentId : null;
+  if (sourceCommentId) return `comment:${sourceCommentId}`;
+  if (item.commentId) return `comment:${item.commentId}`;
+  const timeBucket = Math.floor(toTime(item.createdAt) / 5000);
+  if (item.mediaId && item.igUserId) return `near:${item.mediaId}:${item.igUserId}:${timeBucket}`;
+  return `item:${item.id ?? item.type}:${timeBucket}`;
+}
+
+function completeGroup(
+  base: Omit<GroupedActivity, "title" | "subtitle" | "tone" | "badge">,
+  title: string,
+  subtitle: string,
+  tone: GroupedActivity["tone"],
+  badge: string
+): GroupedActivity {
+  return { ...base, title, subtitle, tone, badge };
+}
+
+function firstString(values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function toTime(value?: Date | string | null) {
+  if (!value) return 0;
+  return new Date(value).getTime();
 }
 
 function truncateId(value: string) {

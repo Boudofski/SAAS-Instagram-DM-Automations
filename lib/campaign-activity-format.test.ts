@@ -5,6 +5,7 @@ import {
   formatLogError,
   getCampaignModeLabels,
   getReviewerTestCopy,
+  groupCampaignActivity,
   isWeakPublicReply,
 } from "@/lib/campaign-activity-format";
 
@@ -127,4 +128,111 @@ describe("campaign activity display formatting", () => {
     expect(isWeakPublicReply("تم إرسال الرابط الآن")).toBe(false);
     expect(isWeakPublicReply("تم الإرسال 🔥")).toBe(false);
   });
+
+  it("groups comment received, trigger matched, public reply sent, and DM skipped into one activity", () => {
+    const grouped = groupCampaignActivity([
+      event("COMMENT_RECEIVED"),
+      event("KEYWORD_MATCHED", { keyword: "ai" }),
+      event("PUBLIC_REPLY_SENT", { commentId: "reply-1", meta: { sourceCommentId: "comment-1", publicReplyCommentId: "reply-1" } }),
+      event("DM_SKIPPED", { errorMessage: "external_dm_tool_enabled" }),
+    ]);
+
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]).toMatchObject({
+      title: "Comment handled successfully",
+      subtitle: "Public reply sent · Private DM skipped",
+      badge: "SENT",
+      tone: "green",
+      steps: expect.objectContaining({ commentReceived: true, triggerMatched: true, publicReply: "sent", privateDm: "off" }),
+    });
+  });
+
+  it("groups public reply sent and DM code=3 as one partial activity", () => {
+    const grouped = groupCampaignActivity([
+      event("COMMENT_RECEIVED"),
+      event("KEYWORD_MATCHED", { keyword: "ai" }),
+      event("PUBLIC_REPLY_SENT", { commentId: "reply-1", meta: { sourceCommentId: "comment-1", publicReplyCommentId: "reply-1" } }),
+      event("DM_FAILED", { errorMessage: "dm_capability_missing" }),
+      event("REAL_COMMENT_EVENT", { status: "FAILED", errorMessage: "dm_failed: dm_capability_missing", source: "webhook" }),
+    ]);
+
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]).toMatchObject({
+      title: "Comment partially handled",
+      badge: "PARTIAL",
+      tone: "amber",
+      steps: expect.objectContaining({ publicReply: "sent", privateDm: "blocked" }),
+    });
+  });
+
+  it("deduplicates repeated raw events for the same commentId", () => {
+    const grouped = groupCampaignActivity([
+      event("COMMENT_RECEIVED"),
+      event("COMMENT_RECEIVED"),
+      event("KEYWORD_MATCHED"),
+    ]);
+
+    expect(grouped).toHaveLength(1);
+  });
+
+  it("groups self-comment, usage-limit, public-off, and no-match cases", () => {
+    expect(groupCampaignActivity([event("SELF_COMMENT_SKIPPED")])[0]).toMatchObject({
+      title: "Ignored self-comment from connected account",
+      badge: "SKIPPED",
+    });
+    expect(groupCampaignActivity([event("COMMENT_SKIPPED", { errorMessage: "static_reply_limit_reached" })])[0]).toMatchObject({
+      title: "Monthly reply limit reached",
+      badge: "LIMIT",
+    });
+    expect(groupCampaignActivity([
+      event("KEYWORD_MATCHED"),
+      event("COMMENT_SKIPPED", { errorMessage: "public_reply_disabled" }),
+      event("DM_SKIPPED", { errorMessage: "external_dm_tool_enabled" }),
+    ])[0]).toMatchObject({
+      title: "Comment matched · no outbound action",
+      badge: "SKIPPED",
+    });
+    expect(groupCampaignActivity([event("COMMENT_RECEIVED")])[0]).toMatchObject({
+      title: "Comment received · no trigger match",
+      badge: "NO MATCH",
+    });
+  });
+
+  it("shows old/historical DM failure copy when private DM is currently off", () => {
+    expect(groupCampaignActivity([
+      event("KEYWORD_MATCHED"),
+      event("DM_FAILED", { errorMessage: "dm_capability_missing" }),
+    ], { privateDmEnabled: false })[0]).toMatchObject({
+      title: "Older DM attempt blocked by Meta",
+      badge: "OLD",
+    });
+  });
+
+  it("limits to latest 20 grouped interactions instead of raw 20 events", () => {
+    const raw = Array.from({ length: 25 }).flatMap((_, index) => [
+      event("COMMENT_RECEIVED", { commentId: `comment-${index}`, createdAt: new Date(2026, 4, 24, 10, index).toISOString() }),
+      event("KEYWORD_MATCHED", { commentId: `comment-${index}`, createdAt: new Date(2026, 4, 24, 10, index, 1).toISOString() }),
+    ]);
+
+    const grouped = groupCampaignActivity(raw, { limit: 20 });
+
+    expect(grouped).toHaveLength(20);
+    expect(new Set(grouped.map((item) => item.commentId)).size).toBe(20);
+  });
 });
+
+function event(type: string, overrides: Record<string, any> = {}) {
+  return {
+    id: overrides.id ?? `${type}-1`,
+    type,
+    status: overrides.status,
+    keyword: overrides.keyword,
+    errorMessage: overrides.errorMessage,
+    meta: overrides.meta,
+    source: overrides.source,
+    igUserId: overrides.igUserId ?? "tester",
+    mediaId: overrides.mediaId ?? "media-1",
+    commentId: overrides.commentId ?? "comment-1",
+    createdAt: overrides.createdAt ?? "2026-05-24T20:00:00Z",
+  };
+}

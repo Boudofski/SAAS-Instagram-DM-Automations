@@ -2,7 +2,7 @@ import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/acti
 import ActiveAutomationButton from "@/components/global/active-automation-button";
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
-import { formatActivityDisplay, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
+import { groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -41,6 +41,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       automation.listener?.commentReply3,
     ].filter(Boolean).length,
   });
+  const groupedActivity = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
   const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
 
   const replyRate =
@@ -395,69 +396,49 @@ export default async function CampaignDetailPage({ params }: Props) {
       <div className="ap3k-card mt-6 rounded-2xl p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-slate-950 dark:text-white">Live automation log</h2>
+            <h2 className="text-sm font-bold text-slate-950 dark:text-white">Recent activity</h2>
             <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
-              Latest 20 events · technical diagnostics are collapsed.
+              Latest 20 comment interactions. Technical diagnostics are available in Admin.
             </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
             Latest 20
           </span>
         </div>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {["All", "Activity", "Sent", "Skipped", "Failed", "Technical"].map((filter) => (
-            <span
-              key={filter}
-              className={[
-                "rounded-full border px-2.5 py-1 text-[11px] font-black uppercase",
-                filter === "Activity"
-                  ? "border-rf-pink/40 bg-rf-pink/10 text-rf-pink"
-                  : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400",
-              ].join(" ")}
-            >
-              {filter}
-            </span>
-          ))}
-        </div>
 
-        {activity.length === 0 ? (
+        {groupedActivity.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-5 text-sm dark:text-slate-400 text-slate-500">
             No events yet. Comment on a connected Instagram post to test this campaign.
           </div>
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-white/10">
-            {activity.map((item) => {
-              const display = formatActivityDisplay({ ...item, privateDmEnabled: sendPrivateDm });
-              return (
-                <div key={`${item.source}-${item.id}`} className={["flex gap-3 py-4", display.technical ? "opacity-80" : ""].join(" ")}>
+            {groupedActivity.map((item) => (
+                <div key={item.id} className="flex gap-3 py-4">
                   <span
                     className={[
                       "mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full",
-                      activityDotClass(display.tone),
+                      activityDotClass(item.tone),
                     ].join(" ")}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className={["text-sm font-semibold", display.technical ? "text-slate-700 dark:text-slate-300" : "text-slate-950 dark:text-white"].join(" ")}>
-                        {display.label}
+                      <p className="text-sm font-semibold text-slate-950 dark:text-white">
+                        {item.title}
                       </p>
-                      {item.keyword && (
-                        <span className="rounded-full bg-rf-blue/10 px-2 py-0.5 text-[11px] font-semibold text-rf-blue">
-                          {item.keyword}
-                        </span>
-                      )}
-                      {display.badge && (
-                        <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase", badgeClass(display.tone)].join(" ")}>
-                          {display.badge}
-                        </span>
-                      )}
-                      {display.technical && (
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
-                          Technical
-                        </span>
-                      )}
+                      <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}>
+                        {item.badge}
+                      </span>
                     </div>
-                    <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                      {item.actorLabel ? `${item.actorLabel} · ` : ""}{item.subtitle}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <StepPill label="Comment" active={item.steps.commentReceived} />
+                      <StepPill label="Trigger" active={item.steps.triggerMatched} />
+                      <StepPill label="Public reply" state={item.steps.publicReply} />
+                      <StepPill label="DM" state={item.steps.privateDm} />
+                    </div>
+                    <p className="mt-2 text-xs dark:text-slate-400 text-slate-500">
                       {new Date(item.createdAt).toLocaleString()}
                     </p>
                     <details className="mt-2 group">
@@ -465,17 +446,18 @@ export default async function CampaignDetailPage({ params }: Props) {
                         Details
                       </summary>
                       <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                        {display.detail && <p>{display.detail}</p>}
-                        <p>{item.type}{item.status ? ` · ${item.status}` : ""}</p>
-                        {item.igUserId ? <p>IG user {item.igUserId}</p> : null}
-                        {item.mediaId ? <p>Media {item.mediaId}</p> : null}
-                        {item.commentId ? <p>Comment {item.commentId}</p> : null}
+                        {item.details.error ? <p>{item.details.error}</p> : null}
+                        {item.details.commentId ? <p>Comment {item.details.commentId}</p> : null}
+                        {item.details.mediaId ? <p>Media {item.details.mediaId}</p> : null}
+                        {item.details.igUserId ? <p>IG user {item.details.igUserId}</p> : null}
+                        {item.details.keyword ? <p>Matched keyword {item.details.keyword}</p> : null}
+                        {item.details.endpoint ? <p>Endpoint {item.details.endpoint}</p> : null}
+                        {item.details.publicReplyCommentId ? <p>Meta reply ID {item.details.publicReplyCommentId}</p> : null}
                       </div>
                     </details>
                   </div>
                 </div>
-              );
-            })}
+              ))}
           </div>
         )}
       </div>
@@ -526,6 +508,36 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
       </p>
       <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
     </div>
+  );
+}
+
+function StepPill({
+  label,
+  active,
+  state,
+}: {
+  label: string;
+  active?: boolean;
+  state?: "sent" | "skipped" | "failed" | "off" | "blocked" | null;
+}) {
+  const on = active || state === "sent";
+  const warning = state === "skipped" || state === "off" || state === "blocked";
+  const failed = state === "failed";
+  return (
+    <span
+      className={[
+        "rounded-full border px-2 py-0.5 text-[10px] font-black uppercase",
+        failed
+          ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+          : warning
+          ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+          : on
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+          : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400",
+      ].join(" ")}
+    >
+      {label}
+    </span>
   );
 }
 
