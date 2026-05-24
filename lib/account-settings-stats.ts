@@ -51,11 +51,11 @@ export async function getInstagramAccountSettingsStats(
     followers:
       typeof snapshot?.followersCount === "number"
         ? { value: snapshot.followersCount, enabled: true, subtitle: followerSubtitle }
-        : unavailable("Follower snapshots coming soon"),
+        : unavailable("Click Refresh profile on the Account page to load"),
     posts:
       typeof snapshot?.mediaCount === "number"
         ? { value: snapshot.mediaCount, enabled: true, subtitle: "Instagram media count" }
-        : unavailable("Media sync coming soon"),
+        : unavailable("Click Refresh profile on the Account page to load"),
     comments: { value: metrics.commentsReceived, enabled: true, subtitle: "Real external comments this period" },
     removed: unavailable("Moderation not enabled"),
     dmsIn: unavailable("DM webhooks require messaging approval"),

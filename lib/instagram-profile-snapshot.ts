@@ -129,10 +129,13 @@ export async function getInstagramSnapshotComparisonForUser(
 }
 
 export function getProfileSnapshotStatus(
-  snapshot: Pick<InstagramAccountSnapshot, "fetchedAt"> | null | undefined,
+  snapshot: Pick<InstagramAccountSnapshot, "fetchedAt" | "followersCount" | "mediaCount"> | null | undefined,
   now = new Date()
-) {
+): { label: "Missing" | "Partial" | "Fresh" | "Stale"; ok: boolean } {
   if (!snapshot) return { label: "Missing", ok: false };
+  const hasStats =
+    typeof snapshot.followersCount === "number" || typeof snapshot.mediaCount === "number";
+  if (!hasStats) return { label: "Partial", ok: false };
   const age = now.getTime() - snapshot.fetchedAt.getTime();
   if (age <= SNAPSHOT_FRESH_MS) return { label: "Fresh", ok: true };
   return { label: "Stale", ok: false };

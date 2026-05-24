@@ -68,8 +68,8 @@ describe("instagram account settings stats", () => {
   it("returns intentional unavailable states for unsupported data sources", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.followers).toEqual({ value: "Not enabled", enabled: false, subtitle: "Follower snapshots coming soon" });
-    expect(stats.posts).toEqual({ value: "Not enabled", enabled: false, subtitle: "Media sync coming soon" });
+    expect(stats.followers).toEqual({ value: "Not enabled", enabled: false, subtitle: "Click Refresh profile on the Account page to load" });
+    expect(stats.posts).toEqual({ value: "Not enabled", enabled: false, subtitle: "Click Refresh profile on the Account page to load" });
     expect(stats.removed).toEqual({ value: "Not enabled", enabled: false, subtitle: "Moderation not enabled" });
     expect(stats.dmsIn).toEqual({ value: "Not enabled", enabled: false, subtitle: "DM webhooks require messaging approval" });
   });

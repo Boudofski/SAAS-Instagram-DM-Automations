@@ -34,7 +34,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
     : [null, { status: 200, data: null }, null, null];
 
   const health = healthResult.status === 200 ? healthResult.data : null;
-  const snapshot = snapshotComparison?.current;
+  const snapshot = snapshotComparison?.current ?? null;
   const profileSnapshotStatus = getProfileSnapshotStatus(snapshot);
   const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
@@ -82,8 +82,20 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                 {instagram?.pageName ?? "Instagram Business or Creator profile"}
               </p>
               <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-500">
-                Profile stats: {profileSnapshotStatus.label} · {formatSnapshotRefreshTime(snapshot?.fetchedAt)}
+                Profile stats: {profileSnapshotStatus.label}
+                {profileSnapshotStatus.label === "Partial" && " (followers unavailable)"}
+                {" · "}{formatSnapshotRefreshTime(snapshot?.fetchedAt)}
               </p>
+              {connected && profileSnapshotStatus.label === "Missing" && (
+                <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
+                  Click &quot;Refresh profile&quot; above to load your Instagram followers and posts.
+                </p>
+              )}
+              {connected && profileSnapshotStatus.label === "Partial" && (
+                <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
+                  Profile loaded — click &quot;Refresh profile&quot; to retry loading followers and posts.
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <StatusBadge tone="pink">Official Meta connection</StatusBadge>
                 <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>

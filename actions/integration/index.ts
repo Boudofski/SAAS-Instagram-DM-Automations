@@ -12,6 +12,7 @@ import {
 import { refreshInstagramProfileSnapshotForUser } from "@/lib/instagram-profile-snapshot";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import {
   createIntegration,
   createMetaOAuthSelection,
@@ -309,6 +310,12 @@ export const onIntegrate = async (code: string) => {
         hasPageId: Boolean(resolved.pageId),
         hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
       });
+
+      // Seed initial profile snapshot (non-fatal — does not block OAuth redirect)
+      try {
+        await refreshInstagramProfileSnapshotForUser(user.id, existing.id, {});
+      } catch {}
+
       return {
         status: 200,
         data: {
@@ -340,6 +347,16 @@ export const onIntegrate = async (code: string) => {
       hasPageId: Boolean(resolved.pageId),
       hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
     });
+
+    // Seed initial profile snapshot for newly created integration (non-fatal)
+    try {
+      const freshIntegrations = await getIntegrations(user.id);
+      const newIntegrationId = freshIntegrations?.integrations[0]?.id;
+      if (newIntegrationId) {
+        await refreshInstagramProfileSnapshotForUser(user.id, newIntegrationId, {});
+      }
+    } catch {}
+
     return { status: 200, data: create };
   } catch (error) {
     await recordIntegrationOAuthError(user.id, "integration_save_failed");
@@ -417,7 +434,11 @@ export const refreshInstagramProfileSnapshot = async (
   const user = await currentUser();
   if (!user) return { status: 401, data: null, cached: false, error: "Sign in required" };
 
-  return refreshInstagramProfileSnapshotForUser(user.id, integrationId, options);
+  const result = await refreshInstagramProfileSnapshotForUser(user.id, integrationId, options);
+  if (!result.cached) {
+    revalidatePath("/dashboard", "layout");
+  }
+  return result;
 };
 
 export const disconnectCurrentInstagramIntegration = async () => {

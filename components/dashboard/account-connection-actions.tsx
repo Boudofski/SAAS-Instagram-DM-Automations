@@ -21,6 +21,7 @@ export default function AccountConnectionActions({ connected, integrationId }: P
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isProfileRefreshing, setIsProfileRefreshing] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState<{ ok: boolean; message: string } | null>(null);
 
   const reconnect = async () => {
     setIsConnecting(true);
@@ -49,17 +50,26 @@ export default function AccountConnectionActions({ connected, integrationId }: P
   const refreshProfile = () => {
     if (!integrationId) return;
     setIsProfileRefreshing(true);
+    setRefreshStatus(null);
     startTransition(async () => {
       try {
         const result = await refreshInstagramProfileSnapshot(integrationId, { force: true });
         if (result.status === 200 && !result.error) {
-          toast.success(result.cached ? result.message ?? "Using latest cached profile stats." : "Instagram profile stats refreshed.");
+          const msg = result.cached
+            ? result.message ?? "Using latest cached profile stats."
+            : "Instagram profile stats refreshed.";
+          toast.success(msg);
+          setRefreshStatus({ ok: true, message: msg });
           router.refresh();
           return;
         }
-        toast.error(result.error ?? "Instagram profile stats could not be refreshed.");
+        const errMsg = result.error ?? "Instagram profile stats could not be refreshed.";
+        toast.error(errMsg);
+        setRefreshStatus({ ok: false, message: errMsg });
       } catch {
-        toast.error("Instagram profile stats could not be refreshed.");
+        const errMsg = "Instagram profile stats could not be refreshed.";
+        toast.error(errMsg);
+        setRefreshStatus({ ok: false, message: errMsg });
       } finally {
         setIsProfileRefreshing(false);
       }
@@ -67,7 +77,8 @@ export default function AccountConnectionActions({ connected, integrationId }: P
   };
 
   return (
-    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+    <div className="flex w-full flex-col gap-2 sm:w-auto">
+      <div className="flex w-full flex-col gap-2 sm:flex-row">
       <Button
         type="button"
         onClick={reconnect}
@@ -98,6 +109,12 @@ export default function AccountConnectionActions({ connected, integrationId }: P
             {isPending ? "Refreshing..." : "Resubscribe webhooks"}
           </Button>
         </>
+      )}
+      </div>
+      {refreshStatus && (
+        <p className={`text-xs font-bold ${refreshStatus.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+          {refreshStatus.message}
+        </p>
       )}
     </div>
   );

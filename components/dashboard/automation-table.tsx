@@ -151,14 +151,14 @@ export default function AutomationTable({
         <table className="w-full table-fixed text-left">
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
             <tr>
-              <th className="w-[24%] px-3 py-3">Campaign</th>
-              <th className="w-[10%] px-3 py-3">Post</th>
-              <th className="w-[18%] px-3 py-3">Trigger</th>
-              <th className="w-[10%] px-3 py-3">Mode</th>
+              <th className="w-[22%] px-3 py-3">Campaign</th>
+              <th className="w-[9%] px-3 py-3">Post</th>
+              <th className="w-[16%] px-3 py-3">Trigger</th>
+              <th className="w-[9%] px-3 py-3">Mode</th>
               <th className="w-[7%] px-3 py-3">Runs</th>
               <th className="w-[7%] px-3 py-3">Leads</th>
               <th className="w-[8%] px-3 py-3">Status</th>
-              <th className="w-[16%] px-3 py-3 text-right">Actions</th>
+              <th className="w-[22%] px-3 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/10">
@@ -233,7 +233,7 @@ export default function AutomationTable({
                       </span>
                     </td>
                     <td className="px-3 py-4">
-                      <div className="flex flex-nowrap justify-end gap-1">
+                      <div className="flex flex-wrap justify-end gap-1.5">
                         <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           Edit
                         </Link>
