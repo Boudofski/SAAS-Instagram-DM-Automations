@@ -11,6 +11,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { toast } from "sonner";
+import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
 
 type Props = {
   title: string;
@@ -51,6 +52,10 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
 
   const integrated = data?.data?.integrations.find((i) => i.name === strategy);
   const isInstagram = strategy === "INSTAGRAM";
+  const lastFailure = formatUserFacingMetaError(
+    health?.data?.subscription?.error ?? health?.data?.lastFailure?.errorMessage,
+    health?.data?.lastFailure?.eventType
+  );
 
   const onConnect = async () => {
     if (!isInstagram) return;
@@ -243,12 +248,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
             />
             <HealthItem
               label="Last failure"
-              value={
-                health?.data?.subscription?.error ??
-                (health?.data?.lastFailure
-                  ? health.data.lastFailure.errorMessage ?? health.data.lastFailure.eventType
-                  : "No failures")
-              }
+              value={lastFailure.detail ? `${lastFailure.title} · ${lastFailure.detail}` : lastFailure.title}
             />
           </div>
           {!health?.data?.lastCommentWebhook && (

@@ -4,20 +4,24 @@ import { getCurrentWebhookHealth } from "@/actions/integration";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
-import { AlertTriangle, CheckCircle2, ExternalLink, Link2, Lock, ShieldAlert } from "lucide-react";
+import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
+import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
+import { AlertTriangle, CheckCircle2, ExternalLink, Lock, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
-type Props = { params: { slug: string } };
+type Props = { params: { slug: string }; searchParams?: { period?: string } };
 
-export default async function InstagramAccountPage({ params }: Props) {
+export default async function InstagramAccountPage({ params, searchParams }: Props) {
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const instagram = user?.integrations?.[0];
   const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
+  const period = parseDashboardPeriod(searchParams?.period);
+  const periodRange = getPeriodRange(period);
 
   const [stats, healthResult, usage] = user?.id
     ? await Promise.all([
-        getInstagramAccountSettingsStats(user.id, instagram?.id),
+        getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }),
         getCurrentWebhookHealth(),
         getUserMonthlyUsage(user.id),
       ])
@@ -28,6 +32,8 @@ export default async function InstagramAccountPage({ params }: Props) {
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
   const statusTone = tokenExpired ? "amber" : connected ? "green" : "slate";
+  const lastFailure = formatUserFacingMetaError(health?.subscription?.error ?? health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
+  const messagingCapability = formatUserFacingMetaError(health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -81,7 +87,10 @@ export default async function InstagramAccountPage({ params }: Props) {
       </section>
 
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
-        <SectionHeader label="Stats" helper="Real AP3k activity for this account. Unavailable metrics are not estimated." />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <SectionHeader label="Stats" helper={`Real AP3k activity for this account · ${periodRange.label}. Unavailable metrics are not estimated.`} />
+          <PeriodSelector slug={params.slug} active={period} />
+        </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {stats ? (
             <>
@@ -90,7 +99,7 @@ export default async function InstagramAccountPage({ params }: Props) {
               <SettingsStatCard label="Comments" stat={stats.comments} tone="orange" />
               <SettingsStatCard label="Removed" stat={stats.removed} tone="red" />
               <SettingsStatCard label="DMs In" stat={stats.dmsIn} tone="blue" />
-              <SettingsStatCard label="DMs Out" stat={stats.dmsOut} tone="green" />
+              <SettingsStatCard label="AP3k DMs Out" stat={stats.dmsOut} tone="green" />
               <SettingsStatCard label="Contacts" stat={stats.contacts} tone="orange" />
               <SettingsStatCard label="Reply Rate" stat={stats.replyRate} tone="slate" />
             </>
@@ -134,8 +143,13 @@ export default async function InstagramAccountPage({ params }: Props) {
           />
           <HealthCard label="Last webhook" value={formatHealthDate(health?.lastWebhook?.createdAt)} ok={Boolean(health?.lastWebhook)} />
           <HealthCard label="Last comment" value={formatHealthDate(health?.lastCommentWebhook?.createdAt)} ok={Boolean(health?.lastCommentWebhook)} />
-          <HealthCard label="Last failure" value={safeFailure(health)} ok={!health?.lastFailure && !health?.subscription?.error} />
-          <HealthCard label="Messaging capability" value={health?.lastFailure?.errorMessage?.includes("dm_") ? "Blocked by Meta" : "Pending or approved"} ok={!health?.lastFailure?.errorMessage?.includes("dm_")} />
+          <HealthCard label="Last failure" value={lastFailure.title} detail={lastFailure.detail} ok={lastFailure.severity === "ok"} />
+          <HealthCard
+            label="Messaging capability"
+            value={messagingCapability.title === "Private DM capability pending" ? "Pending App Review" : "Pending or approved"}
+            detail={messagingCapability.title === "Private DM capability pending" ? messagingCapability.detail : "Private replies depend on Meta messaging approval."}
+            ok={messagingCapability.title !== "Private DM capability pending"}
+          />
         </div>
 
         {usage && (
@@ -219,7 +233,7 @@ function MetaIdRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function HealthCard({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+function HealthCard({ label, value, detail, ok }: { label: string; value: string; detail?: string; ok: boolean }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
       <div className="flex items-center justify-between gap-2">
@@ -227,6 +241,7 @@ function HealthCard({ label, value, ok }: { label: string; value: string; ok: bo
         {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
       </div>
       <p className="mt-3 break-words text-sm font-black text-slate-800 dark:text-slate-100">{value}</p>
+      {detail && <p className="mt-1 text-xs font-bold leading-snug text-slate-500 dark:text-slate-400">{detail}</p>}
     </div>
   );
 }
@@ -236,9 +251,28 @@ function formatHealthDate(value?: Date | string | null) {
   return new Date(value).toLocaleString();
 }
 
-function safeFailure(health: Awaited<ReturnType<typeof getCurrentWebhookHealth>>["data"]) {
-  if (health?.subscription?.error) return health.subscription.error;
-  if (health?.lastFailure?.errorMessage) return health.lastFailure.errorMessage;
-  if (health?.lastFailure?.eventType) return health.lastFailure.eventType;
-  return "No failures";
+function PeriodSelector({ slug, active }: { slug: string; active: string }) {
+  return (
+    <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+      {[
+        ["24h", "Last 24h"],
+        ["7d", "Last 7d"],
+        ["month", "This month"],
+        ["30d", "Last 30d"],
+      ].map(([key, label]) => (
+        <Link
+          key={key}
+          href={`/dashboard/${slug}/account?period=${key}`}
+          className={[
+            "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black",
+            active === key
+              ? "bg-rf-pink/10 text-rf-pink"
+              : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
+          ].join(" ")}
+        >
+          {label}
+        </Link>
+      ))}
+    </div>
+  );
 }

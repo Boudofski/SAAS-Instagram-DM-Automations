@@ -36,6 +36,7 @@ const PLANS = [
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Full analytics + leads export", included: true },
       { text: "{{variable}} personalisation", included: true },
+      { text: "Private DM workflow after Meta approval", included: true },
       { text: "Priority support", included: true },
     ],
   },
@@ -61,7 +62,7 @@ const FEATURES = [
   { icon: MessageCircle, title: "Keyword triggers", desc: "Match exact or contains keywords across real Instagram comment webhooks." },
   { icon: Sparkles, title: "Any comment triggers", desc: "Launch low-friction campaigns where every comment on a selected post can qualify." },
   { icon: Reply, title: "Public reply fallback", desc: "Attempt threaded replies first, then fall back to public @mention comments when needed." },
-  { icon: Bot, title: "Private DM workflow", desc: "Send comment-linked private replies when Meta messaging capability is available." },
+  { icon: Bot, title: "Private DM workflow", desc: "Available after instagram_manage_messages approval." },
   { icon: TrendingUp, title: "Lead capture", desc: "Keep campaign-level counts, message logs, and delivery status for each automation." },
   { icon: FileCheck2, title: "App Review diagnostics", desc: "Show webhook delivery, signature status, Meta errors, and code=3 capability evidence." },
   { icon: ShieldCheck, title: "Admin control center", desc: "Read-only platform views for users, campaigns, integrations, webhooks, and messages." },
@@ -69,9 +70,9 @@ const FEATURES = [
 ] as const;
 
 const EXAMPLES = [
-  { comment: "GUIDE", action: "Free PDF guide sent via DM", color: "text-rf-pink" },
-  { comment: "PRICE", action: "Pricing page link sent via DM", color: "text-rf-purple" },
-  { comment: "BOOK", action: "Booking page sent via DM", color: "text-rf-blue" },
+  { comment: "GUIDE", action: "Public reply confirms the guide; private reply can send after Meta messaging approval", color: "text-rf-pink" },
+  { comment: "PRICE", action: "Pricing link tracked with public reply fallback", color: "text-rf-purple" },
+  { comment: "BOOK", action: "Booking interest captured as a lead", color: "text-rf-blue" },
 ] as const;
 
 const PROOF = [
@@ -84,7 +85,7 @@ const PROOF = [
 const STEPS = [
   ["01", "Connect Instagram", "Use Facebook Login for Business and Page tokens."],
   ["02", "Choose post + trigger", "Target any post, a specific media ID, keywords, or any comment."],
-  ["03", "Write replies", "Configure public replies and optional AP3k private DM sending."],
+  ["03", "Write replies", "Configure public replies and optional private replies after Meta messaging approval."],
   ["04", "Track results", "Review matches, reply status, DM attempts, and skipped external DMs."],
 ] as const;
 
@@ -105,9 +106,9 @@ export default function LandingPage() {
               </div>
 
               <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
-                Comments become DMs.
+                Comments become leads.
                 <span className="ap3k-gradient-text block animate-gradient-pan bg-[length:220%_220%]">
-                  DMs become sales.
+                  Replies become sales.
                 </span>
               </h1>
 
@@ -171,10 +172,10 @@ export default function LandingPage() {
                     </div>
                     <div className="ml-0 rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 sm:ml-8">
                       <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-pink">
-                        <MessageCircle className="h-4 w-4" /> DM sent by AP3k
+                        <MessageCircle className="h-4 w-4" /> Public reply sent
                       </div>
                       <p className="text-sm leading-relaxed">
-                        Hey Sarah, here is the guide you asked for. I also saved your spot for the next drop.
+                        Hey Sarah, the guide is ready. Private replies can follow when Meta messaging is enabled.
                       </p>
                     </div>
                     <div className="flex items-center gap-3 rounded-2xl border border-rf-green/20 bg-rf-green/10 p-4">
@@ -214,7 +215,7 @@ export default function LandingPage() {
                 Smooth automation for creators who move fast.
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-rf-muted">
-                Pick your post, add keywords, write your DM. AP3k keeps the follow-up moving while you create.
+                Pick your post, add keywords, write public replies, and enable private reply workflows when Meta messaging is approved.
               </p>
             </FadeIn>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -279,7 +280,7 @@ export default function LandingPage() {
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">Simple pricing</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">
-                Start free. Scale when your DMs do.
+                Start free. Scale when your replies do.
               </h2>
               <p className="mt-4 text-slate-600 dark:text-rf-muted">No hidden fees. Cancel any time.</p>
             </FadeIn>

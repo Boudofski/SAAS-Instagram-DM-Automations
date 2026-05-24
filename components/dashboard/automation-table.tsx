@@ -3,6 +3,7 @@
 import { activateAutomation, deleteAutomation, duplicateAutomation } from "@/actions/automation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState, useTransition } from "react";
@@ -81,6 +82,7 @@ export default function AutomationTable({
             const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
             const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
             const isAnyComment = automation.triggerMode === "ANY_COMMENT";
+            const mode = getCampaignModeLabel(automation.sendPrivateDm === false);
             return (
               <article key={automation.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-[#101827]">
                 <div className="flex items-start gap-3">
@@ -97,7 +99,7 @@ export default function AutomationTable({
                       {automation.name || "Untitled automation"}
                     </Link>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword"} · {automation.sendPrivateDm === false ? "External DM" : "AP3k DM"}
+                      {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword"} · {mode.full}
                     </p>
                   </div>
                   <span className={[
@@ -146,17 +148,17 @@ export default function AutomationTable({
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[980px] text-left">
+        <table className="w-full table-fixed text-left">
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3">Campaign</th>
-              <th className="px-4 py-3">Post/Reel</th>
-              <th className="px-4 py-3">Trigger</th>
-              <th className="px-4 py-3">Mode</th>
-              <th className="px-4 py-3">Runs</th>
-              <th className="px-4 py-3">Leads</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="w-[24%] px-3 py-3">Campaign</th>
+              <th className="w-[10%] px-3 py-3">Post</th>
+              <th className="w-[18%] px-3 py-3">Trigger</th>
+              <th className="w-[10%] px-3 py-3">Mode</th>
+              <th className="w-[7%] px-3 py-3">Runs</th>
+              <th className="w-[7%] px-3 py-3">Leads</th>
+              <th className="w-[8%] px-3 py-3">Status</th>
+              <th className="w-[16%] px-3 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/10">
@@ -173,11 +175,11 @@ export default function AutomationTable({
                 const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
                 const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
                 const isAnyComment = automation.triggerMode === "ANY_COMMENT";
-                const mode = automation.sendPrivateDm === false ? "External DM" : "AP3k DM";
+                const mode = getCampaignModeLabel(automation.sendPrivateDm === false);
 
                 return (
                   <tr key={automation.id} className="text-sm text-slate-700 dark:text-slate-300">
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
                         {post?.media && !isAny ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -192,18 +194,18 @@ export default function AutomationTable({
                             {automation.name || "Untitled automation"}
                           </Link>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {mode}
+                            {mode.full}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
+                    <td className="px-3 py-4">
+                      <span className="whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
                         {isAny ? "Any post" : post?.postid ? "Specific post" : "Manual"}
                       </span>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex max-w-[220px] flex-wrap gap-1.5">
+                    <td className="px-3 py-4">
+                      <div className="flex max-w-[180px] flex-wrap gap-1.5">
                         {isAnyComment ? (
                           <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
                             Any comment
@@ -215,14 +217,14 @@ export default function AutomationTable({
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
-                        {mode}
+                    <td className="px-3 py-4">
+                      <span title={mode.full} className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
+                        {mode.short}
                       </span>
                     </td>
-                    <td className="px-4 py-4 font-black text-slate-950 dark:text-white">{runs}</td>
-                    <td className="px-4 py-4 font-black text-slate-950 dark:text-white">{leads}</td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4 font-black text-slate-950 dark:text-white">{runs}</td>
+                    <td className="px-3 py-4 font-black text-slate-950 dark:text-white">{leads}</td>
+                    <td className="px-3 py-4">
                       <span className={[
                         "rounded-full px-2.5 py-1 text-xs font-black",
                         automation.active ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
@@ -230,12 +232,12 @@ export default function AutomationTable({
                         {automation.active ? "Live" : "Paused"}
                       </span>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-nowrap justify-end gap-1.5">
-                        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
+                    <td className="px-3 py-4">
+                      <div className="flex flex-nowrap justify-end gap-1">
+                        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           Edit
                         </Link>
-                        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
+                        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           View
                         </Link>
                         <button
@@ -246,7 +248,7 @@ export default function AutomationTable({
                                 .then(() => router.refresh());
                             });
                           }}
-                          className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                          className="whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
                         >
                           {automation.active ? "Pause" : "Activate"}
                         </button>
@@ -257,7 +259,7 @@ export default function AutomationTable({
                               void duplicateAutomation(automation.id).then(() => router.refresh());
                             });
                           }}
-                          className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                          className="hidden whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] xl:inline-block"
                         >
                           Duplicate
                         </button>
@@ -269,7 +271,7 @@ export default function AutomationTable({
                               void deleteAutomation(automation.id).then(() => router.refresh());
                             });
                           }}
-                          className="whitespace-nowrap rounded-lg border border-red-200 px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
+                          className="hidden whitespace-nowrap rounded-lg border border-red-200 px-2 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 xl:inline-block"
                         >
                           Delete
                         </button>

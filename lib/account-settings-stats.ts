@@ -1,5 +1,5 @@
-import { client } from "@/lib/prisma";
-import { formatReplyRate, MATCHED_EVENT_TYPES, REAL_COMMENT_WEBHOOK_TYPES, type DateRange } from "@/lib/dashboard-metrics";
+import { type DateRange } from "@/lib/dashboard-metrics";
+import { getUserFacingMetrics } from "@/lib/user-facing-metrics";
 
 export type AccountStatValue = {
   value: number | string;
@@ -25,106 +25,25 @@ function monthRange(now = new Date()): Required<DateRange> {
   };
 }
 
-function createdAtRange(range: DateRange) {
-  return {
-    createdAt: {
-      ...(range.gte ? { gte: range.gte } : {}),
-      ...(range.lt ? { lt: range.lt } : {}),
-    },
-  };
-}
-
 function unavailable(subtitle: string): AccountStatValue {
   return { value: "Not enabled", enabled: false, subtitle };
 }
 
 export async function getInstagramAccountSettingsStats(
   userId: string,
-  integrationId?: string,
+  _integrationId?: string,
   range: DateRange = monthRange()
 ): Promise<InstagramAccountSettingsStats> {
-  const integration = integrationId
-    ? await client.integrations.findFirst({
-        where: { id: integrationId, userId },
-        select: { pageId: true, instagramId: true, webhookAccountId: true },
-      })
-    : null;
-
-  const accountIds = [
-    integration?.pageId,
-    integration?.instagramId,
-    integration?.webhookAccountId,
-  ].filter(Boolean) as string[];
-
-  const webhookScope =
-    integrationId && accountIds.length > 0
-      ? {
-          OR: [
-            { igAccountId: { in: accountIds } },
-            { automation: { userId } },
-          ],
-        }
-      : { automation: { userId } };
-
-  const byUserAutomation = {
-    automation: { userId },
-    ...createdAtRange(range),
-  };
-
-  const [comments, matched, publicReplyLogs, publicReplyEvents, dmsOut, contacts] = await Promise.all([
-    client.webhookEvent.count({
-      where: {
-        ...webhookScope,
-        eventType: { in: [...REAL_COMMENT_WEBHOOK_TYPES] },
-        ...createdAtRange(range),
-      },
-    }),
-    client.automationEvent.count({
-      where: {
-        ...byUserAutomation,
-        eventType: { in: [...MATCHED_EVENT_TYPES] },
-      },
-    }),
-    client.messageLog.count({
-      where: {
-        ...byUserAutomation,
-        messageType: "COMMENT_REPLY",
-        status: "SENT",
-      },
-    }),
-    client.automationEvent.count({
-      where: {
-        ...byUserAutomation,
-        eventType: "PUBLIC_REPLY_SENT",
-      },
-    }),
-    client.messageLog.count({
-      where: {
-        ...byUserAutomation,
-        messageType: "DM",
-        status: "SENT",
-      },
-    }),
-    client.lead.count({
-      where: {
-        automation: { userId },
-        ...createdAtRange(range),
-      },
-    }),
-  ]);
-
-  const publicRepliesSent = publicReplyLogs + (publicReplyLogs > 0 ? 0 : publicReplyEvents);
-  // Reply rate is based on successful outbound replies divided by matched comments.
-  const replyRate = formatReplyRate(matched, publicRepliesSent + dmsOut);
+  const metrics = await getUserFacingMetrics(userId, range);
 
   return {
     followers: unavailable("Follower snapshots coming soon"),
     posts: unavailable("Media sync coming soon"),
-    comments: { value: comments, enabled: true, subtitle: "Real comment webhooks this month" },
+    comments: { value: metrics.commentsReceived, enabled: true, subtitle: "Real external comments this period" },
     removed: unavailable("Moderation not enabled"),
-    dmsIn: unavailable("DM inbox pending approval"),
-    dmsOut: { value: dmsOut, enabled: true, subtitle: "Private DMs sent this month" },
-    contacts: { value: contacts, enabled: true, subtitle: "Leads captured this month" },
-    replyRate: { value: `${replyRate}%`, enabled: true, subtitle: "Sent replies / matched comments" },
+    dmsIn: unavailable("DM webhooks require messaging approval"),
+    dmsOut: { value: metrics.dmsSent, enabled: true, subtitle: "AP3k private DMs sent" },
+    contacts: { value: metrics.leadsCaptured, enabled: true, subtitle: "Leads captured this period" },
+    replyRate: { value: `${metrics.replyRate}%`, enabled: true, subtitle: "Confirmed replies / matched comments" },
   };
 }

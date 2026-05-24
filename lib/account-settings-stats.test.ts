@@ -1,92 +1,61 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockIntegrationFindFirst = vi.fn();
-const mockWebhookEventCount = vi.fn();
-const mockAutomationEventCount = vi.fn();
-const mockMessageLogCount = vi.fn();
-const mockLeadCount = vi.fn();
+const mockGetUserFacingMetrics = vi.fn();
 
-vi.mock("@/lib/prisma", () => ({
-  client: {
-    integrations: { findFirst: (...args: any[]) => mockIntegrationFindFirst(...args) },
-    webhookEvent: { count: (...args: any[]) => mockWebhookEventCount(...args) },
-    automationEvent: { count: (...args: any[]) => mockAutomationEventCount(...args) },
-    messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
-    lead: { count: (...args: any[]) => mockLeadCount(...args) },
-  },
+vi.mock("@/lib/user-facing-metrics", () => ({
+  getUserFacingMetrics: (...args: any[]) => mockGetUserFacingMetrics(...args),
 }));
 
 import { getInstagramAccountSettingsStats } from "@/lib/account-settings-stats";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIntegrationFindFirst.mockResolvedValue({ pageId: "page-1", instagramId: "ig-1", webhookAccountId: "hook-1" });
-  mockWebhookEventCount.mockResolvedValue(0);
-  mockAutomationEventCount.mockResolvedValue(0);
-  mockMessageLogCount.mockResolvedValue(0);
-  mockLeadCount.mockResolvedValue(0);
+  mockGetUserFacingMetrics.mockResolvedValue({
+    commentsReceived: 22,
+    commentsMatched: 12,
+    publicRepliesSent: 9,
+    dmsSent: 0,
+    dmsFailed: 0,
+    dmsSkipped: 0,
+    leadsCaptured: 3,
+    replyRate: 75,
+    staticRepliesUsed: 9,
+    aiRepliesUsed: 0,
+    activeCampaigns: 1,
+    connectedAccounts: 1,
+    lastRealCommentAt: null,
+    lastPublicReplyAt: null,
+    lastDmAt: null,
+  });
 });
 
 describe("instagram account settings stats", () => {
-  it("counts comments for the current user and selected integration only", async () => {
-    mockWebhookEventCount.mockResolvedValueOnce(12);
+  it("uses the canonical user-facing metric source", async () => {
+    const range = { gte: new Date("2026-05-01T00:00:00Z"), lt: new Date("2026-06-01T00:00:00Z") };
 
-    const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
+    const stats = await getInstagramAccountSettingsStats("user-a", "integration-a", range);
 
-    expect(stats.comments.value).toBe(12);
-    expect(mockIntegrationFindFirst).toHaveBeenCalledWith({
-      where: { id: "integration-a", userId: "user-a" },
-      select: { pageId: true, instagramId: true, webhookAccountId: true },
-    });
-    expect(mockWebhookEventCount).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        eventType: { in: ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] },
-        OR: [{ igAccountId: { in: ["page-1", "ig-1", "hook-1"] } }, { automation: { userId: "user-a" } }],
-      }),
-    });
+    expect(mockGetUserFacingMetrics).toHaveBeenCalledWith("user-a", range);
+    expect(stats.comments.value).toBe(22);
   });
 
-  it("counts contacts for the current user only", async () => {
-    mockLeadCount.mockResolvedValueOnce(7);
-
+  it("maps contacts from canonical leads captured", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.contacts.value).toBe(7);
-    expect(mockLeadCount).toHaveBeenCalledWith({
-      where: expect.objectContaining({ automation: { userId: "user-a" } }),
-    });
+    expect(stats.contacts.value).toBe(3);
   });
 
-  it("counts DMs out from MessageLog DM SENT only", async () => {
-    mockMessageLogCount.mockResolvedValueOnce(0).mockResolvedValueOnce(3);
-
+  it("maps DMs out from canonical sent AP3k DMs only", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.dmsOut.value).toBe(3);
-    expect(mockMessageLogCount).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        automation: { userId: "user-a" },
-        messageType: "DM",
-        status: "SENT",
-      }),
-    });
+    expect(stats.dmsOut).toEqual({ value: 0, enabled: true, subtitle: "AP3k private DMs sent" });
   });
 
-  it("does not count failed or skipped DMs as sent", async () => {
-    await getInstagramAccountSettingsStats("user-a");
-
-    expect(mockMessageLogCount).not.toHaveBeenCalledWith({
-      where: expect.objectContaining({ messageType: "DM", status: { in: ["FAILED", "SKIPPED"] } }),
-    });
-  });
-
-  it("formats reply rate from sent replies over matched comments", async () => {
-    mockAutomationEventCount.mockResolvedValueOnce(10).mockResolvedValueOnce(0);
-    mockMessageLogCount.mockResolvedValueOnce(4).mockResolvedValueOnce(1);
-
+  it("maps reply rate from canonical confirmed replies over matched comments", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.replyRate.value).toBe("50%");
+    expect(stats.replyRate.value).toBe("75%");
+    expect(stats.replyRate.subtitle).toBe("Confirmed replies / matched comments");
   });
 
   it("returns intentional unavailable states for unsupported data sources", async () => {
@@ -95,6 +64,6 @@ describe("instagram account settings stats", () => {
     expect(stats.followers).toEqual({ value: "Not enabled", enabled: false, subtitle: "Follower snapshots coming soon" });
     expect(stats.posts).toEqual({ value: "Not enabled", enabled: false, subtitle: "Media sync coming soon" });
     expect(stats.removed).toEqual({ value: "Not enabled", enabled: false, subtitle: "Moderation not enabled" });
-    expect(stats.dmsIn).toEqual({ value: "Not enabled", enabled: false, subtitle: "DM inbox pending approval" });
+    expect(stats.dmsIn).toEqual({ value: "Not enabled", enabled: false, subtitle: "DM webhooks require messaging approval" });
   });
 });

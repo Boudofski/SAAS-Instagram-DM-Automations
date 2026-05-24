@@ -8,9 +8,9 @@ import {
   type ChangeSummary,
   getCampaignTableMetrics,
   getDashboardGreeting,
-  getUserDashboardStats,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
+import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
@@ -58,7 +58,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const [usage, dashboardStats, campaignMetrics, recentResult] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
-        getUserDashboardStats(userResult.data.id, period),
+        getUserFacingStats(userResult.data.id, period),
         getCampaignTableMetrics(userResult.data.id),
         getRecentAutomationActivity(),
       ])
@@ -248,7 +248,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           label="Messages"
           value={usage ? `${usage.staticReplies.used.toLocaleString()} / ${staticRepliesLimit}` : `${dmsSent}`}
           change={changes?.staticRepliesUsed}
-          subtitle="Static replies used"
+          subtitle="Public replies + AP3k DMs"
         />
         <AccountStatCard
           label="Contacts"
