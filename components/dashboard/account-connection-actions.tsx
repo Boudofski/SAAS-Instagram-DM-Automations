@@ -2,20 +2,25 @@
 
 import {
   getInstagramConnectUrl,
+  refreshInstagramProfileSnapshot,
   resubscribeCurrentInstagramWebhooks,
 } from "@/actions/integration";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 type Props = {
   connected: boolean;
+  integrationId?: string;
 };
 
-export default function AccountConnectionActions({ connected }: Props) {
+export default function AccountConnectionActions({ connected, integrationId }: Props) {
+  const router = useRouter();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isProfileRefreshing, setIsProfileRefreshing] = useState(false);
 
   const reconnect = async () => {
     setIsConnecting(true);
@@ -41,6 +46,26 @@ export default function AccountConnectionActions({ connected }: Props) {
     });
   };
 
+  const refreshProfile = () => {
+    if (!integrationId) return;
+    setIsProfileRefreshing(true);
+    startTransition(async () => {
+      try {
+        const result = await refreshInstagramProfileSnapshot(integrationId, { force: true });
+        if (result.status === 200 && !result.error) {
+          toast.success(result.cached ? result.message ?? "Using latest cached profile stats." : "Instagram profile stats refreshed.");
+          router.refresh();
+          return;
+        }
+        toast.error(result.error ?? "Instagram profile stats could not be refreshed.");
+      } catch {
+        toast.error("Instagram profile stats could not be refreshed.");
+      } finally {
+        setIsProfileRefreshing(false);
+      }
+    });
+  };
+
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
       <Button
@@ -53,15 +78,26 @@ export default function AccountConnectionActions({ connected }: Props) {
         {connected ? "Reconnect Instagram" : "Connect Instagram"}
       </Button>
       {connected && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={resubscribe}
-          disabled={isPending}
-          className="h-11 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-        >
-          {isPending ? "Refreshing..." : "Resubscribe webhooks"}
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={refreshProfile}
+            disabled={isProfileRefreshing}
+            className="h-11 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+          >
+            {isProfileRefreshing ? "Refreshing..." : "Refresh profile"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resubscribe}
+            disabled={isPending}
+            className="h-11 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+          >
+            {isPending ? "Refreshing..." : "Resubscribe webhooks"}
+          </Button>
+        </>
       )}
     </div>
   );

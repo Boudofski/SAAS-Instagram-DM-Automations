@@ -471,3 +471,15 @@ export const getLinkedInstagramBusinessAccount = async (
     }
   );
 };
+
+export const getInstagramBusinessProfile = async (
+  instagramBusinessAccountId: string,
+  pageToken: string
+) => {
+  return await axios.get(`${META_GRAPH_API_BASE_URL}/${instagramBusinessAccountId}`, {
+    params: {
+      fields: "id,username,profile_picture_url,followers_count,media_count,account_type",
+      access_token: pageToken,
+    },
+  });
+};

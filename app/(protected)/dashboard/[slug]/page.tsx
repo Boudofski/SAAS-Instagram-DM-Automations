@@ -10,6 +10,7 @@ import {
   getDashboardGreeting,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
+import { getInstagramSnapshotComparisonForUser } from "@/lib/instagram-profile-snapshot";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { isUnlimited, usageTone } from "@/lib/plan-limits";
@@ -55,14 +56,18 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
   const period = parseDashboardPeriod(searchParams?.period);
-  const [usage, dashboardStats, campaignMetrics, recentResult] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, recentResult, snapshotComparison] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period),
         getCampaignTableMetrics(userResult.data.id),
         getRecentAutomationActivity(),
+        getInstagramSnapshotComparisonForUser(userResult.data.id, instagram?.id, period),
       ])
-    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }];
+    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, null];
+  const profileSnapshot = snapshotComparison?.current;
+  const displayInstagramUsername = profileSnapshot?.username ?? instagram?.instagramUsername;
+  const displayProfilePictureUrl = profileSnapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const automationsWithMetrics = automations.map((automation) => ({
     ...automation,
     metrics: campaignMetrics[automation.id] ?? { runs: 0, leads: automation._count?.leads ?? 0 },
@@ -122,11 +127,11 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           tokenExpired ? "border-red-200 dark:border-red-500/35" : "border-emerald-100 dark:border-emerald-500/25",
         ].join(" ")}>
           <div className="flex min-w-0 items-center gap-3">
-            {instagram.profilePictureUrl ? (
+            {displayProfilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={instagram.profilePictureUrl}
-                alt={instagram.instagramUsername ?? "Connected Instagram account"}
+                src={displayProfilePictureUrl}
+                alt={displayInstagramUsername ?? "Connected Instagram account"}
                 className="h-14 w-14 rounded-full object-cover"
               />
             ) : (
@@ -136,7 +141,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             )}
             <div className="min-w-0">
               <p className="truncate text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                {instagram.instagramUsername ? `@${instagram.instagramUsername}` : "Instagram connected"}
+                {displayInstagramUsername ? `@${displayInstagramUsername}` : "Instagram connected"}
               </p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {tokenExpired
@@ -159,7 +164,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               {tokenExpired ? "Reconnect Instagram" : "Manage connection"}
             </Link>
             <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
-              Followers unavailable
+              {typeof profileSnapshot?.followersCount === "number"
+                ? `${profileSnapshot.followersCount.toLocaleString()} followers`
+                : "Followers unavailable"}
             </span>
           </div>
         </div>
@@ -240,9 +247,13 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         />
         <AccountStatCard
           label="Follower Growth"
-          value="Not enabled"
-          change={{ label: "—", tone: "neutral", value: null }}
-          subtitle="Follower snapshots coming soon"
+          value={
+            typeof profileSnapshot?.followersCount === "number"
+              ? profileSnapshot.followersCount.toLocaleString()
+              : "Not enabled"
+          }
+          change={snapshotComparison?.change ?? { label: "—", tone: "neutral", value: null }}
+          subtitle={typeof profileSnapshot?.followersCount === "number" ? "Followers" : "Follower snapshots coming soon"}
         />
         <AccountStatCard
           label="Messages"

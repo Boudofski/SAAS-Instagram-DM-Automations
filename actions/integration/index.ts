@@ -9,6 +9,7 @@ import {
   subscribeInstagramWebhooks,
   type EligibleInstagramAccount,
 } from "@/lib/fetch";
+import { refreshInstagramProfileSnapshotForUser } from "@/lib/instagram-profile-snapshot";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import {
@@ -407,6 +408,16 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
     });
     return { status: 500, data: formatSafeMetaError(error) || "Meta rejected the page webhook subscription request" };
   }
+};
+
+export const refreshInstagramProfileSnapshot = async (
+  integrationId: string,
+  options?: { force?: boolean }
+) => {
+  const user = await currentUser();
+  if (!user) return { status: 401, data: null, cached: false, error: "Sign in required" };
+
+  return refreshInstagramProfileSnapshotForUser(user.id, integrationId, options);
 };
 
 export const disconnectCurrentInstagramIntegration = async () => {

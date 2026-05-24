@@ -58,6 +58,27 @@ model Integrations {
   oauthLastError String?
   oauthLastErrorAt DateTime?
   oauthLastErrorSource String?
+  snapshots InstagramAccountSnapshot[]
+}
+
+model InstagramAccountSnapshot {
+  id String @id @default(cuid())
+  integrationId String @db.Uuid
+  integration Integrations @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  instagramId String?
+  username String?
+  profilePictureUrl String?
+  followersCount Int?
+  mediaCount Int?
+  accountType String?
+
+  source String @default("meta_graph")
+  fetchedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([integrationId, fetchedAt])
+  @@index([instagramId])
 }
 
 model MetaOAuthSelection {

@@ -1,4 +1,6 @@
 import { type DateRange } from "@/lib/dashboard-metrics";
+import { type DashboardPeriod } from "@/lib/dashboard-metrics";
+import { getInstagramSnapshotComparisonForUser } from "@/lib/instagram-profile-snapshot";
 import { getUserFacingMetrics } from "@/lib/user-facing-metrics";
 
 export type AccountStatValue = {
@@ -31,14 +33,29 @@ function unavailable(subtitle: string): AccountStatValue {
 
 export async function getInstagramAccountSettingsStats(
   userId: string,
-  _integrationId?: string,
-  range: DateRange = monthRange()
+  integrationId?: string,
+  range: DateRange = monthRange(),
+  period: DashboardPeriod = "month"
 ): Promise<InstagramAccountSettingsStats> {
-  const metrics = await getUserFacingMetrics(userId, range);
+  const [metrics, snapshotComparison] = await Promise.all([
+    getUserFacingMetrics(userId, range),
+    getInstagramSnapshotComparisonForUser(userId, integrationId, period),
+  ]);
+  const snapshot = snapshotComparison?.current;
+  const followerSubtitle =
+    snapshotComparison?.followerChange !== null && snapshotComparison?.followerChange !== undefined
+      ? `${snapshotComparison.followerChange >= 0 ? "+" : ""}${snapshotComparison.followerChange.toLocaleString()} this period`
+      : "No previous snapshot yet";
 
   return {
-    followers: unavailable("Follower snapshots coming soon"),
-    posts: unavailable("Media sync coming soon"),
+    followers:
+      typeof snapshot?.followersCount === "number"
+        ? { value: snapshot.followersCount, enabled: true, subtitle: followerSubtitle }
+        : unavailable("Follower snapshots coming soon"),
+    posts:
+      typeof snapshot?.mediaCount === "number"
+        ? { value: snapshot.mediaCount, enabled: true, subtitle: "Instagram media count" }
+        : unavailable("Media sync coming soon"),
     comments: { value: metrics.commentsReceived, enabled: true, subtitle: "Real external comments this period" },
     removed: unavailable("Moderation not enabled"),
     dmsIn: unavailable("DM webhooks require messaging approval"),

@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockGetUserFacingMetrics = vi.fn();
+const mockGetInstagramSnapshotComparisonForUser = vi.fn();
 
 vi.mock("@/lib/user-facing-metrics", () => ({
   getUserFacingMetrics: (...args: any[]) => mockGetUserFacingMetrics(...args),
+}));
+
+vi.mock("@/lib/instagram-profile-snapshot", () => ({
+  getInstagramSnapshotComparisonForUser: (...args: any[]) => mockGetInstagramSnapshotComparisonForUser(...args),
 }));
 
 import { getInstagramAccountSettingsStats } from "@/lib/account-settings-stats";
@@ -27,6 +32,7 @@ beforeEach(() => {
     lastPublicReplyAt: null,
     lastDmAt: null,
   });
+  mockGetInstagramSnapshotComparisonForUser.mockResolvedValue(null);
 });
 
 describe("instagram account settings stats", () => {
@@ -36,6 +42,7 @@ describe("instagram account settings stats", () => {
     const stats = await getInstagramAccountSettingsStats("user-a", "integration-a", range);
 
     expect(mockGetUserFacingMetrics).toHaveBeenCalledWith("user-a", range);
+    expect(mockGetInstagramSnapshotComparisonForUser).toHaveBeenCalledWith("user-a", "integration-a", "month");
     expect(stats.comments.value).toBe(22);
   });
 
@@ -65,5 +72,20 @@ describe("instagram account settings stats", () => {
     expect(stats.posts).toEqual({ value: "Not enabled", enabled: false, subtitle: "Media sync coming soon" });
     expect(stats.removed).toEqual({ value: "Not enabled", enabled: false, subtitle: "Moderation not enabled" });
     expect(stats.dmsIn).toEqual({ value: "Not enabled", enabled: false, subtitle: "DM webhooks require messaging approval" });
+  });
+
+  it("uses follower and post counts from the latest snapshot", async () => {
+    mockGetInstagramSnapshotComparisonForUser.mockResolvedValue({
+      current: {
+        followersCount: 12345,
+        mediaCount: 87,
+      },
+      followerChange: 25,
+    });
+
+    const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
+
+    expect(stats.followers).toEqual({ value: 12345, enabled: true, subtitle: "+25 this period" });
+    expect(stats.posts).toEqual({ value: 87, enabled: true, subtitle: "Instagram media count" });
   });
 });

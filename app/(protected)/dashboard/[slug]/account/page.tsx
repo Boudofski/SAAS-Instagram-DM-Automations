@@ -5,6 +5,11 @@ import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/a
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
+import {
+  formatSnapshotRefreshTime,
+  getInstagramSnapshotComparisonForUser,
+  getProfileSnapshotStatus,
+} from "@/lib/instagram-profile-snapshot";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
 import { AlertTriangle, CheckCircle2, ExternalLink, Lock, ShieldAlert } from "lucide-react";
 import Link from "next/link";
@@ -19,15 +24,20 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const period = parseDashboardPeriod(searchParams?.period);
   const periodRange = getPeriodRange(period);
 
-  const [stats, healthResult, usage] = user?.id
+  const [stats, healthResult, usage, snapshotComparison] = user?.id
     ? await Promise.all([
-        getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }),
+        getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, period),
         getCurrentWebhookHealth(),
         getUserMonthlyUsage(user.id),
+        getInstagramSnapshotComparisonForUser(user.id, instagram?.id, period),
       ])
-    : [null, { status: 200, data: null }, null];
+    : [null, { status: 200, data: null }, null, null];
 
   const health = healthResult.status === 200 ? healthResult.data : null;
+  const snapshot = snapshotComparison?.current;
+  const profileSnapshotStatus = getProfileSnapshotStatus(snapshot);
+  const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
+  const displayProfilePictureUrl = snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const connected = Boolean(instagram?.instagramId);
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
@@ -41,22 +51,22 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Official Meta connection</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Instagram Account</h1>
         <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
-          {instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "Connect your Instagram Business or Creator account"}
+          {displayUsername ? `@${displayUsername}` : "Connect your Instagram Business or Creator account"}
         </p>
       </div>
 
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionHeader label="Profile" />
-          <AccountConnectionActions connected={connected} />
+          <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
         </div>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-4">
-            {instagram?.profilePictureUrl ? (
+            {displayProfilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={instagram.profilePictureUrl}
-                alt={instagram.instagramUsername ?? "Instagram account"}
+                src={displayProfilePictureUrl}
+                alt={displayUsername ?? "Instagram account"}
                 className="h-20 w-20 rounded-2xl object-cover"
               />
             ) : (
@@ -66,10 +76,13 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
             )}
             <div className="min-w-0">
               <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                {instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No Instagram connected"}
+                {displayUsername ? `@${displayUsername}` : "No Instagram connected"}
               </p>
               <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
                 {instagram?.pageName ?? "Instagram Business or Creator profile"}
+              </p>
+              <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-500">
+                Profile stats: {profileSnapshotStatus.label} · {formatSnapshotRefreshTime(snapshot?.fetchedAt)}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <StatusBadge tone="pink">Official Meta connection</StatusBadge>
@@ -143,6 +156,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           />
           <HealthCard label="Last webhook" value={formatHealthDate(health?.lastWebhook?.createdAt)} ok={Boolean(health?.lastWebhook)} />
           <HealthCard label="Last comment" value={formatHealthDate(health?.lastCommentWebhook?.createdAt)} ok={Boolean(health?.lastCommentWebhook)} />
+          <HealthCard label="Profile snapshot" value={profileSnapshotStatus.label} detail={formatSnapshotRefreshTime(snapshot?.fetchedAt)} ok={profileSnapshotStatus.ok} />
           <HealthCard label="Last failure" value={lastFailure.title} detail={lastFailure.detail} ok={lastFailure.severity === "ok"} />
           <HealthCard
             label="Messaging capability"
