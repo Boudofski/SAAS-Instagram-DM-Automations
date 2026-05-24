@@ -13,14 +13,28 @@ import {
 } from "@/actions/admin/operations";
 import ThemeToggle from "@/components/global/theme-toggle";
 import {
+  AdminDataTable,
+  AdminFilterPills,
+  AdminSectionCard,
+  AdminShell,
+} from "@/components/admin/admin-layout";
+import {
+  AdminActionMenu,
+  AdminErrorSummary as InteractiveErrorSummary,
+  CopyButton,
+  ShortId,
+  type AdminRowAction,
+} from "@/components/admin/admin-interactive";
+import {
   adminEnvironmentLabel,
+  adminActionMenuConfig,
+  adminDangerZoneStatus,
+  adminTableColumns,
   classifyDeliveryError,
-  disabledAdminActionReason,
   formatAdminDate,
   getTopAdminIssue,
   sanitizeAdminPayload,
   shortenAdminId,
-  summarizeAdminError,
   stripeCustomerDashboardUrl,
 } from "@/lib/admin-control-center";
 import { requireOwnerAdmin } from "@/lib/admin";
@@ -34,7 +48,7 @@ import {
   shouldShowDevelopmentModeDeliveryBanner,
 } from "@/lib/webhook-pipeline-diagnostics";
 import Link from "next/link";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 type SearchParams = {
   q?: string;
@@ -43,6 +57,11 @@ type SearchParams = {
   testSince?: string;
   usageFilter?: string;
   userId?: string;
+  integrationFilter?: string;
+  messageFilter?: string;
+  auditStatus?: string;
+  auditAction?: string;
+  auditTarget?: string;
 };
 
 const TABS = [
@@ -66,6 +85,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   const q = searchParams?.q?.trim();
   const eventType = searchParams?.eventType?.trim();
   const usageFilter = searchParams?.usageFilter?.trim();
+  const integrationFilter = searchParams?.integrationFilter?.trim();
+  const messageFilter = searchParams?.messageFilter?.trim();
+  const auditStatus = searchParams?.auditStatus?.trim();
+  const auditAction = searchParams?.auditAction?.trim();
+  const auditTarget = searchParams?.auditTarget?.trim();
   const qUuid = q && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)
     ? q
     : null;
@@ -314,6 +338,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   );
   const usersOverReplyLimit = adminUsageSummaries.filter((usage) => usage.staticReplies.blocked).length;
   const usersNearReplyLimit = adminUsageSummaries.filter((usage) => !usage.staticReplies.blocked && usage.staticReplies.percent >= 70).length;
+  const dangerStatus = adminDangerZoneStatus();
 
   const tabHref = (id: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams({
@@ -321,6 +346,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
       ...(q ? { q } : {}),
       ...(eventType && id === "webhooks" ? { eventType } : {}),
       ...(usageFilter && id === "subscriptions" ? { usageFilter } : {}),
+      ...(integrationFilter && id === "integrations" ? { integrationFilter } : {}),
+      ...(messageFilter && id === "messages" ? { messageFilter } : {}),
+      ...(auditStatus && id === "audit" ? { auditStatus } : {}),
+      ...(auditAction && id === "audit" ? { auditAction } : {}),
+      ...(auditTarget && id === "audit" ? { auditTarget } : {}),
       ...(testSinceValid && searchParams?.testSince ? { testSince: searchParams.testSince } : {}),
       ...extra,
     });
@@ -410,16 +440,24 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
   const integrations = tab === "integrations"
     ? await client.integrations.findMany({
-        where: q ? {
-          OR: [
-            { instagramUsername: { contains: q, mode: "insensitive" } },
-            { instagramId: { contains: q } },
-            { pageId: { contains: q } },
-            { webhookAccountId: { contains: q } },
-            { businessId: { contains: q } },
-            { User: { email: { contains: q, mode: "insensitive" } } },
-          ],
-        } : undefined,
+        where: {
+          ...(q ? {
+            OR: [
+              { instagramUsername: { contains: q, mode: "insensitive" } },
+              ...(qUuid ? [{ id: qUuid }] : []),
+              { instagramId: { contains: q } },
+              { pageId: { contains: q } },
+              { webhookAccountId: { contains: q } },
+              { businessId: { contains: q } },
+              { User: { email: { contains: q, mode: "insensitive" } } },
+            ],
+          } : {}),
+          ...(integrationFilter === "connected" ? { status: "CONNECTED", reconnectRequired: false } : {}),
+          ...(integrationFilter === "reconnect" ? { reconnectRequired: true } : {}),
+          ...(integrationFilter === "disconnected" ? { status: "DISCONNECTED" } : {}),
+          ...(integrationFilter === "failed-webhook" ? { webhookSubscriptionMode: "FAILED" } : {}),
+          ...(integrationFilter === "token-missing" ? { oauthLastError: { contains: "token", mode: "insensitive" } } : {}),
+        },
         orderBy: { createdAt: "desc" },
         take: 50,
         select: {
@@ -483,9 +521,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
               { status: { contains: q, mode: "insensitive" } },
             ],
           } : {}),
+          ...(auditStatus ? { status: auditStatus } : {}),
+          ...(auditAction ? { action: { contains: auditAction, mode: "insensitive" } } : {}),
+          ...(auditTarget ? { targetType: { contains: auditTarget, mode: "insensitive" } } : {}),
         },
         orderBy: { createdAt: "desc" },
-        take: tab === "audit" ? 100 : 10,
+        take: tab === "audit" ? 100 : 20,
       })
     : [];
 
@@ -515,16 +556,24 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
   const messageLogs = tab === "messages"
     ? await client.messageLog.findMany({
-        where: q ? {
-          OR: [
-            { recipientIgId: { contains: q } },
-            { mediaId: { contains: q } },
-            { commentId: { contains: q } },
-            { errorMessage: { contains: q, mode: "insensitive" } },
-            { automation: { name: { contains: q, mode: "insensitive" } } },
-            { automation: { User: { email: { contains: q, mode: "insensitive" } } } },
-          ],
-        } : undefined,
+        where: {
+          ...(q ? {
+            OR: [
+              { recipientIgId: { contains: q } },
+              { mediaId: { contains: q } },
+              { commentId: { contains: q } },
+              { errorMessage: { contains: q, mode: "insensitive" } },
+              { automation: { name: { contains: q, mode: "insensitive" } } },
+              { automation: { User: { email: { contains: q, mode: "insensitive" } } } },
+            ],
+          } : {}),
+          ...(messageFilter === "public" ? { messageType: "COMMENT_REPLY" } : {}),
+          ...(messageFilter === "dm" ? { messageType: "DM" } : {}),
+          ...(messageFilter === "sent" ? { status: "SENT" } : {}),
+          ...(messageFilter === "failed" ? { status: "FAILED" } : {}),
+          ...(messageFilter === "skipped" ? { status: "SKIPPED" } : {}),
+          ...(messageFilter === "capability" ? { errorMessage: { contains: "dm_capability_missing" } } : {}),
+        },
         orderBy: { createdAt: "desc" },
         take: 50,
         include: { automation: { select: { name: true, User: { select: { email: true } } } } },
@@ -532,8 +581,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     : [];
 
   return (
-    <main className="ap3k-page">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/88 backdrop-blur-2xl dark:border-white/10 dark:bg-[#050816]/88">
+    <AdminShell
+      header={(
+      <header className="sticky top-0 z-30 min-w-0 border-b border-slate-200 bg-white/88 backdrop-blur-2xl dark:border-white/10 dark:bg-[#050816]/88">
         <div className="mx-auto max-w-[1500px] px-5 py-4 lg:px-8">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
@@ -571,10 +621,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           </div>
         </div>
       </header>
-
-      <div className="mx-auto grid max-w-[1500px] gap-6 px-5 py-6 lg:grid-cols-[250px_1fr] lg:px-8">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-white/10 dark:bg-white/[0.04] lg:block">
+      )}
+      sidebar={(
+          <nav className="flex max-w-full gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-white/10 dark:bg-white/[0.04] lg:block">
             {TABS.map((item) => (
               <Link
                 key={item.id}
@@ -588,9 +637,8 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
               </Link>
             ))}
           </nav>
-        </aside>
-
-        <section className="min-w-0 space-y-6">
+      )}
+    >
           {tab === "overview" && (
             <>
               <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -603,11 +651,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 <StatCard label="DMs sent 24h" value={dmsSent24h} detail={`${dmsFailed24h} failed in 24h`} tone={dmsFailed24h ? "amber" : "green"} />
                 <StatCard label="Active subscriptions" value={revenueSubscriptions} detail="Read-only Stripe visibility" />
                 <StatCard label="Static replies month" value={totalStaticRepliesThisMonth} detail="Successful public replies and DMs this month" />
-                <StatCard label="Users near limit" value={usersNearReplyLimit} detail="At least 70% of monthly replies" tone={usersNearReplyLimit ? "amber" : "green"} />
-                <StatCard label="Users over limit" value={usersOverReplyLimit} detail="Monthly replies blocked" tone={usersOverReplyLimit ? "red" : "green"} />
-                <StatCard label="Self comments skipped" value={selfCommentsSkipped24h} detail="Connected-account comments ignored in 24h" tone={selfCommentsSkipped24h ? "amber" : "green"} />
-                <StatCard label="Duplicates skipped" value={duplicateCommentsSkipped24h} detail="Repeated comment webhooks ignored in 24h" tone={duplicateCommentsSkipped24h ? "amber" : "green"} />
-                <StatCard label="Loop guard triggered" value={loopGuardTriggered24h} detail="Emergency loop protection events in 24h" tone={loopGuardTriggered24h ? "red" : "green"} />
+                <StatCard label="Users near limit" value={usersNearReplyLimit} detail="At least 70% of monthly replies" tone={usersNearReplyLimit ? "amber" : "green"} href={tabHref("subscriptions", { usageFilter: "near" })} />
+                <StatCard label="Users over limit" value={usersOverReplyLimit} detail="Monthly replies blocked" tone={usersOverReplyLimit ? "red" : "green"} href={tabHref("subscriptions", { usageFilter: "over" })} />
+                <StatCard label="Self comments skipped" value={selfCommentsSkipped24h} detail="Connected-account comments ignored in 24h" tone={selfCommentsSkipped24h ? "amber" : "green"} href={tabHref("messages", { messageFilter: "self" })} />
+                <StatCard label="Duplicates skipped" value={duplicateCommentsSkipped24h} detail="Repeated comment webhooks ignored in 24h" tone={duplicateCommentsSkipped24h ? "amber" : "green"} href={tabHref("messages", { messageFilter: "skipped" })} />
+                <StatCard label="Loop guard triggered" value={loopGuardTriggered24h} detail="Emergency loop protection events in 24h" tone={loopGuardTriggered24h ? "red" : "green"} href={tabHref("messages", { messageFilter: "skipped" })} />
                 <StatCard
                   label="Top reply campaign"
                   value={topOffendingCampaign[0]?._count?._all ?? 0}
@@ -681,15 +729,22 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     String(user._count.automations),
                     String(leads),
                     formatAdminDate(lastActivity),
-                    <div key="actions" className="space-y-2">
-                      <Link href={tabHref("users", { userId: user.id })} className="inline-flex rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50">View details</Link>
-                      {user.status === "SUSPENDED" ? (
-                        <AdminActionForm action={unsuspendUserAction} hidden={{ userId: user.id }} reasonPlaceholder="Unsuspend reason" submitLabel="Unsuspend" />
-                      ) : (
-                        <AdminActionForm action={suspendUserAction} hidden={{ userId: user.id }} reasonPlaceholder="Suspend reason" confirmation="SUSPEND" submitLabel="Suspend" danger />
-                      )}
-                      <DisabledReason label="Delete data" reason={disabledAdminActionReason("deleteUserData")} />
-                    </div>,
+                    <AdminActionMenu
+                      key="actions"
+                      viewHref={tabHref("users", { userId: user.id })}
+                      actions={adminActionMenuConfig("user", { status: user.status }).map((item): AdminRowAction => ({
+                        ...item,
+                        targetLabel: user.email,
+                        serverAction: item.id === "suspend" ? suspendUserAction : item.id === "unsuspend" ? unsuspendUserAction : undefined,
+                        hidden: { userId: user.id },
+                        impact: item.id === "suspend"
+                          ? "User will be blocked from creating or activating campaigns. Active campaigns are paused by the admin action."
+                          : item.id === "unsuspend"
+                            ? "User status will return to ACTIVE. Campaigns remain paused until explicitly activated."
+                            : item.disabledReason,
+                        danger: item.id === "suspend",
+                      }))}
+                    />,
                   ];
                 })}
                 empty="No users found."
@@ -699,17 +754,17 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
           {tab === "subscriptions" && (
             <Panel title="Subscriptions" description="Read-only subscription view. Stripe write actions are intentionally disabled in this version.">
-              <FilterPills
+              <AdminFilterPills
                 items={[
-                  ["All", tabHref("subscriptions", { usageFilter: "" })],
-                  ["Over limit", tabHref("subscriptions", { usageFilter: "over" })],
-                  ["Near limit", tabHref("subscriptions", { usageFilter: "near" })],
-                  ["Free users", tabHref("subscriptions", { usageFilter: "free" })],
-                  ["Creator users", tabHref("subscriptions", { usageFilter: "creator" })],
+                  ["All", tabHref("subscriptions", { usageFilter: "" }), !usageFilter],
+                  ["Over limit", tabHref("subscriptions", { usageFilter: "over" }), usageFilter === "over"],
+                  ["Near limit", tabHref("subscriptions", { usageFilter: "near" }), usageFilter === "near"],
+                  ["Free users", tabHref("subscriptions", { usageFilter: "free" }), usageFilter === "free"],
+                  ["Creator users", tabHref("subscriptions", { usageFilter: "creator" }), usageFilter === "creator"],
                 ]}
               />
               <DataTable
-                headers={["User", "Plan", "Static replies", "Campaigns", "Accounts", "Stripe customer", "Status", "Updated", "Stripe", "Actions"]}
+                headers={adminTableColumns("subscriptions")}
                 rows={subscriptions.filter((sub: any) => {
                   const usage = sub.User?.id ? subscriptionUsage.get(sub.User.id) : null;
                   if (usageFilter === "over") return Boolean(usage?.staticReplies.blocked);
@@ -725,13 +780,15 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   usage ? <UsageCell key="static" used={usage.staticReplies.used} limit={usage.staticReplies.limit} blocked={usage.staticReplies.blocked} /> : "Unknown",
                   usage ? <UsageCell key="campaigns" used={usage.activeCampaigns.used} limit={usage.activeCampaigns.limit} blocked={usage.activeCampaigns.blocked} /> : "Unknown",
                   usage ? <UsageCell key="accounts" used={usage.connectedAccounts.used} limit={usage.connectedAccounts.limit} blocked={usage.connectedAccounts.blocked} /> : "Unknown",
-                  <Mono key="customer">{sub.customerId ?? "No customer"}</Mono>,
+                  <span key="stripe" className="inline-flex items-center gap-2">
+                    <ShortId value={sub.customerId} empty="No customer" />
+                    {sub.customerId && stripeCustomerDashboardUrl(sub.customerId) ? (
+                      <a className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-rf-blue hover:bg-slate-50 dark:border-white/10" href={stripeCustomerDashboardUrl(sub.customerId)!} target="_blank" rel="noreferrer">Open</a>
+                    ) : null}
+                  </span>,
                   sub.plan === "PRO" ? <Badge key="active" tone="green">Active/internal PRO</Badge> : <Badge key="free" tone="slate">Free</Badge>,
                   formatAdminDate(sub.updatedAt),
-                  sub.customerId && stripeCustomerDashboardUrl(sub.customerId) ? (
-                    <a key="stripe" className="font-bold text-rf-blue hover:underline" href={stripeCustomerDashboardUrl(sub.customerId)!} target="_blank" rel="noreferrer">Open Stripe</a>
-                  ) : "No link",
-                  <DisabledActions key="actions" labels={["Cancel", "Sync", "Override plan"]} />,
+                  <AdminActionMenu key="actions" actions={adminActionMenuConfig("subscription") as AdminRowAction[]} />,
                 ];
                 })}
                 empty="No subscription records found."
@@ -741,26 +798,54 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
           {tab === "integrations" && (
             <Panel title="Instagram Integrations" description="Tokens are never displayed. Health badges use stored safe metadata and recent event signals.">
+              <AdminFilterPills
+                items={[
+                  ["All", tabHref("integrations", { integrationFilter: "" }), !integrationFilter],
+                  ["Connected", tabHref("integrations", { integrationFilter: "connected" }), integrationFilter === "connected"],
+                  ["Reconnect required", tabHref("integrations", { integrationFilter: "reconnect" }), integrationFilter === "reconnect"],
+                  ["Disconnected", tabHref("integrations", { integrationFilter: "disconnected" }), integrationFilter === "disconnected"],
+                  ["Failed webhook", tabHref("integrations", { integrationFilter: "failed-webhook" }), integrationFilter === "failed-webhook"],
+                  ["Token missing", tabHref("integrations", { integrationFilter: "token-missing" }), integrationFilter === "token-missing"],
+                ]}
+              />
               <DataTable
-                headers={["Owner", "IG account", "Page", "IG Business ID", "Webhook ID", "Status", "Subscription", "Last error", "Actions"]}
+                headers={adminTableColumns("integrations")}
                 rows={integrations.map((integration: any) => [
-                  <Identity key="owner" title={integration.User?.email ?? "Unknown user"} subtitle={integration.User?.clerkId ?? ""} />,
-                  <Identity key="ig" title={integration.instagramUsername ? `@${integration.instagramUsername}` : "No username"} subtitle={integration.igAccountSource ?? "Unknown source"} />,
-                  <Identity key="page" title={integration.pageName ?? "No page"} subtitle={integration.pageId ?? "No Page ID"} />,
-                  <Mono key="ig-id">{integration.instagramId ?? "Missing"}</Mono>,
-                  <Mono key="webhook-id">{integration.webhookAccountId ?? "Missing"}</Mono>,
+                  <Identity
+                    key="account"
+                    title={integration.pageName ?? (integration.instagramUsername ? `@${integration.instagramUsername}` : "No page")}
+                    subtitle={<span className="inline-flex flex-wrap gap-1"><ShortId value={integration.pageId} empty="No page ID" /> <ShortId value={integration.instagramId} empty="No IG ID" /></span>}
+                  />,
                   <Badge key="status" tone={integration.status === "CONNECTED" && !integration.reconnectRequired ? "green" : integration.status === "DISCONNECTED" ? "red" : "amber"}>
                     {integration.reconnectRequired ? "RECONNECT_REQUIRED" : integration.status}
                   </Badge>,
-                  <Badge key="sub" tone={integration.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "amber"}>{integration.webhookSubscriptionMode ?? "Unknown"}</Badge>,
-                  <ErrorSummary key="error" error={integration.oauthLastError ?? integration.webhookSubscriptionError} />,
-                  <div key="actions" className="space-y-2">
-                    {integration.status !== "DISCONNECTED" && (
-                      <AdminActionForm action={disconnectIntegrationAction} hidden={{ integrationId: integration.id }} reasonPlaceholder="Disconnect reason" confirmation="DISCONNECT" submitLabel="Disconnect" danger />
-                    )}
-                    <AdminActionForm action={markIntegrationReconnectRequiredAction} hidden={{ integrationId: integration.id }} reasonPlaceholder="Reconnect note" submitLabel="Reconnect required" />
-                    <AdminActionForm action={resubscribeIntegrationAction} hidden={{ integrationId: integration.id }} reasonPlaceholder="Resubscribe reason" submitLabel="Resubscribe" />
-                  </div>,
+                  <Badge key="token" tone={integration.status === "DISCONNECTED" ? "amber" : "green"}>Stored</Badge>,
+                  <Identity key="webhook" title={<Badge tone={integration.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "amber"}>{integration.webhookSubscriptionMode ?? "Unknown"}</Badge>} subtitle={<ShortId value={integration.webhookAccountId} empty="No webhook ID" />} />,
+                  formatAdminDate(integration.lastAdminActionAt ?? integration.oauthLastErrorAt ?? integration.createdAt),
+                  <InteractiveErrorSummary key="error" error={integration.oauthLastError ?? integration.webhookSubscriptionError} />,
+                  <AdminActionMenu
+                    key="actions"
+                    viewHref={tabHref("integrations", { q: integration.id })}
+                    actions={adminActionMenuConfig("integration", { status: integration.status }).map((item): AdminRowAction => ({
+                      ...item,
+                      targetLabel: integration.instagramUsername ? `@${integration.instagramUsername}` : integration.pageName ?? integration.id,
+                      serverAction:
+                        item.id === "reconnect" ? markIntegrationReconnectRequiredAction :
+                        item.id === "resubscribe" ? resubscribeIntegrationAction :
+                        item.id === "disconnect" ? disconnectIntegrationAction :
+                        undefined,
+                      hidden: { integrationId: integration.id },
+                      impact:
+                        item.id === "disconnect"
+                          ? "Integration will be marked disconnected and related campaigns will be paused. Tokens are not displayed."
+                          : item.id === "reconnect"
+                            ? "Integration will be marked reconnect-required so operations can follow up with the user."
+                            : item.id === "resubscribe"
+                              ? "AP3k will retry the stored webhook subscription flow without exposing tokens."
+                              : item.disabledReason,
+                      danger: item.id === "disconnect",
+                    }))}
+                  />,
                 ])}
                 empty="No integrations found."
               />
@@ -770,39 +855,50 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           {tab === "campaigns" && (
             <Panel title="Campaigns" description="Admin campaign inventory and delivery counters. Editing is linked/read-only here to avoid tenant confusion.">
               <DataTable
-                headers={["Owner", "Campaign", "Status", "Trigger", "Post scope", "Replies", "Private DM", "Messages", "Created", "Actions"]}
+                headers={adminTableColumns("campaigns")}
                 rows={campaigns.map((campaign: any) => {
                   const keywords = campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : campaign.keywords.map((kw: any) => kw.word).join(", ") || "No keywords";
                   const postScope = campaign.posts[0]?.postid === "ANY" ? "Any post" : campaign.posts[0]?.postid ?? "No post";
                   const publicReplyEnabled = Boolean(campaign.listener?.commentReply || campaign.listener?.commentReply2 || campaign.listener?.commentReply3);
                   return [
                     campaign.User?.email ?? "Unknown user",
-                    <Identity key="campaign" title={campaign.name} subtitle={campaign.id} />,
+                    <Identity key="campaign" title={campaign.name} subtitle={<ShortId value={campaign.id} />} />,
                     campaign.archivedAt ? <Badge key="status" tone="amber">Archived</Badge> : <Badge key="status" tone={campaign.active ? "green" : "slate"}>{campaign.active ? "Active" : "Paused"}</Badge>,
                     <Identity key="trigger" title={campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} subtitle={`${campaign.matchingMode} · ${keywords}`} />,
-                    <Mono key="post">{postScope}</Mono>,
+                    <ShortId key="post" value={postScope} empty="No post" />,
                     publicReplyEnabled ? <Badge key="reply" tone="green">Enabled</Badge> : <Badge key="reply" tone="slate">Off</Badge>,
                     campaign.sendPrivateDm === false ? <Badge key="private-dm" tone="amber">Skipped externally</Badge> : <Badge key="private-dm" tone="green">Sent by AP3k</Badge>,
                     `${campaign._count.messageLogs} logs · ${campaign._count.leads} leads`,
                     formatAdminDate(campaign.createdAt),
-                    <div key="actions" className="space-y-2">
-                      {!campaign.archivedAt && (
-                        <AdminActionForm
-                          action={setCampaignActiveAction}
-                          hidden={{ automationId: campaign.id, active: campaign.active ? "false" : "true" }}
-                          reasonPlaceholder={campaign.active ? "Pause reason" : "Activate reason"}
-                          confirmation={campaign.active ? "PAUSE" : "ACTIVATE"}
-                          submitLabel={campaign.active ? "Pause" : "Activate"}
-                          danger={campaign.active}
-                        />
-                      )}
-                      {!campaign.archivedAt && <AdminActionForm action={duplicateCampaignAction} hidden={{ automationId: campaign.id }} reasonPlaceholder="Duplicate reason" submitLabel="Duplicate" />}
-                      {!campaign.archivedAt ? (
-                        <AdminActionForm action={archiveCampaignAction} hidden={{ automationId: campaign.id }} reasonPlaceholder="Archive reason" confirmation="ARCHIVE" submitLabel="Archive" danger />
-                      ) : (
-                        <DisabledReason label="Archived" reason="Campaign is already archived." />
-                      )}
-                    </div>,
+                    <AdminActionMenu
+                      key="actions"
+                      viewHref={tabHref("campaigns", { q: campaign.id })}
+                      actions={adminActionMenuConfig("campaign", { active: campaign.active, archivedAt: campaign.archivedAt }).map((item): AdminRowAction => ({
+                        ...item,
+                        targetLabel: campaign.name,
+                        serverAction:
+                          item.id === "pause" || item.id === "activate" ? setCampaignActiveAction :
+                          item.id === "duplicate" ? duplicateCampaignAction :
+                          item.id === "archive" ? archiveCampaignAction :
+                          undefined,
+                        hidden: {
+                          automationId: campaign.id,
+                          ...(item.id === "pause" ? { active: "false" } : {}),
+                          ...(item.id === "activate" ? { active: "true" } : {}),
+                        },
+                        impact:
+                          item.id === "pause"
+                            ? "Campaign will stop processing new matching comments until reactivated."
+                            : item.id === "activate"
+                              ? "Campaign activation will respect plan limits, suspended users, and disconnected integrations."
+                              : item.id === "archive"
+                                ? "Campaign will be paused and hidden from normal campaign lists. Historical logs remain."
+                                : item.id === "duplicate"
+                                  ? "A copy will be created inactive for the same owner and configuration."
+                                  : item.disabledReason,
+                        danger: item.id === "pause" || item.id === "archive",
+                      }))}
+                    />,
                   ];
                 })}
                 empty="No campaigns found."
@@ -862,14 +958,13 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
               </Panel>
 
               <Panel title="Webhook Events">
-                <FilterPills
+                <AdminFilterPills
                   items={[
-                    ["All", tabHref("webhooks", { eventType: "" })],
-                    ["Real comments", tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" })],
-                    ["Messages", tabHref("webhooks", { eventType: "REAL_MESSAGE_EVENT" })],
-                    ["Self skipped", tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" })],
-                    ["Signature failed", tabHref("webhooks", { eventType: "SIGNATURE_FAILED" })],
-                    ["Meta test", tabHref("webhooks", { eventType: "META_TEST_EVENT" })],
+                    ["All", tabHref("webhooks", { eventType: "" }), !eventType],
+                    ["Real comments", tabHref("webhooks", { eventType: "REAL_COMMENT_EVENT" }), eventType === "REAL_COMMENT_EVENT"],
+                    ["Messages", tabHref("webhooks", { eventType: "REAL_MESSAGE_EVENT" }), eventType === "REAL_MESSAGE_EVENT"],
+                    ["Signature failed", tabHref("webhooks", { eventType: "SIGNATURE_FAILED" }), eventType === "SIGNATURE_FAILED"],
+                    ["Meta test", tabHref("webhooks", { eventType: "META_TEST_EVENT" }), eventType === "META_TEST_EVENT"],
                   ]}
                 />
                 <DataTable
@@ -883,7 +978,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                       `${String(payload.object ?? "unknown")} · ${event.field ?? String(payload.field ?? "none")}`,
                       <Identity key="ids" title={event.commentId ?? event.mediaId ?? event.igAccountId ?? event.id} subtitle={`media ${event.mediaId ?? "n/a"}`} />,
                       <StatusBadge key="status" status={event.status} />,
-                      event.errorMessage ?? String((payload as any).simulationResult ?? "None"),
+                      event.errorMessage ? <InteractiveErrorSummary key="reason" error={event.errorMessage} /> : String((payload as any).simulationResult ?? "None"),
                       <Identity key="campaign" title={event.automation?.name ?? "No campaign"} subtitle={event.automation?.User?.email ?? ""} />,
                       event.eventSource === "META_REAL" && event.automationId ? (
                         <form key="replay" action={replaySavedWebhookEvent}>
@@ -911,6 +1006,18 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           {tab === "messages" && (
             <>
               <Panel title="Safety Skips & Loop Guard" description="Ignored self-comments, duplicate webhooks, cooldown skips, and emergency loop protection are shown separately from delivery failures.">
+                <AdminFilterPills
+                  items={[
+                    ["All", tabHref("messages", { messageFilter: "" }), !messageFilter],
+                    ["Public replies", tabHref("messages", { messageFilter: "public" }), messageFilter === "public"],
+                    ["Private DMs", tabHref("messages", { messageFilter: "dm" }), messageFilter === "dm"],
+                    ["Sent", tabHref("messages", { messageFilter: "sent" }), messageFilter === "sent"],
+                    ["Failed", tabHref("messages", { messageFilter: "failed" }), messageFilter === "failed"],
+                    ["Skipped", tabHref("messages", { messageFilter: "skipped" }), messageFilter === "skipped"],
+                    ["Self-comment skipped", tabHref("messages", { messageFilter: "self" }), messageFilter === "self"],
+                    ["Capability missing", tabHref("messages", { messageFilter: "capability" }), messageFilter === "capability"],
+                  ]}
+                />
                 <DataTable
                   headers={["Time", "Owner/Campaign", "Status", "Reason", "Object IDs", "Recommendation"]}
                   rows={safetyEvents.map((event: any) => {
@@ -943,22 +1050,46 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
               <Panel title="Messages & Replies" description="Delivery logs for public replies and private DM attempts.">
                 <DataTable
-                  headers={["Time", "Owner/Campaign", "Type", "Status", "Endpoint", "Object IDs", "Error", "Action"]}
+                  headers={adminTableColumns("messages")}
                   rows={messageLogs.map((log: any) => {
                     const classified = classifyDeliveryError(log.errorMessage);
                     return [
                       formatAdminDate(log.createdAt),
                       <Identity key="campaign" title={log.automation?.name ?? "Unknown campaign"} subtitle={log.automation?.User?.email ?? ""} />,
-                      <Badge key="type" tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>,
-                      log.status === "SKIPPED" ? <Badge key="status" tone="amber">Skipped</Badge> : <StatusBadge key="status" status={log.status} />,
-                      log.messageType === "DM" ? "ig_business/messages" : "comment/media reply",
-                      <Identity key="ids" title={`comment ${log.commentId ?? "n/a"}`} subtitle={`media ${log.mediaId ?? "n/a"}`} />,
+                      <div key="type" className="space-y-1">
+                        <Badge tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>
+                        {log.status === "SKIPPED" ? <Badge tone="amber">Skipped</Badge> : <StatusBadge status={log.status} />}
+                      </div>,
+                      <Identity key="ids" title={<span className="inline-flex gap-1">comment <ShortId value={log.commentId} empty="n/a" /></span>} subtitle={<span className="inline-flex gap-1">media <ShortId value={log.mediaId} empty="n/a" /></span>} />,
                       log.status === "SKIPPED" && log.errorMessage === "external_dm_tool_enabled"
                         ? <Badge key="error" tone="amber">Skipped — external DM tool enabled</Badge>
-                        : log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "None",
-                      <DisabledActions key="actions" labels={["View details", "Copy safe error"]} />,
+                        : log.errorMessage ? <Badge key="error" tone={classified.tone}>{classified.label}</Badge> : "No delivery error",
+                      <div key="actions" className="flex items-center gap-1">
+                        <CopyButton value={log.commentId} label="Copy comment ID" />
+                        <CopyButton value={log.mediaId} label="Copy object ID" />
+                        <CopyButton value={log.errorMessage ? JSON.stringify(sanitizeAdminPayload({ error: log.errorMessage })) : null} label="Copy safe error" />
+                      </div>,
                     ];
                   })}
+                  details={(index) => {
+                    const log = messageLogs[index] as any;
+                    return (
+                      <div className="grid gap-3 p-4 md:grid-cols-2">
+                        <AdminJsonViewer title="Delivery details" value={{
+                          id: log.id,
+                          automationId: log.automationId,
+                          recipientIgId: log.recipientIgId,
+                          mediaId: log.mediaId,
+                          commentId: log.commentId,
+                          messageType: log.messageType,
+                          status: log.status,
+                          errorMessage: log.errorMessage,
+                          createdAt: log.createdAt,
+                        }} />
+                        <InteractiveErrorSummary error={log.errorMessage} />
+                      </div>
+                    );
+                  }}
                   empty="No message logs found."
                 />
               </Panel>
@@ -1010,11 +1141,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   ["pages_read_engagement", "Read Page linkage and webhook-related account information."],
                   ["business_management", "Resolve business assets during Facebook Login for Business."],
                 ].map(([permission, purpose]) => (
-                  <div key={permission} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="font-mono text-sm font-black text-slate-950">{permission}</p>
-                    <p className="mt-2 text-sm text-slate-600">{purpose}</p>
-                    <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Review evidence</p>
-                    <p className="mt-1 text-xs text-slate-600">Show account connection, comment webhook receipt, public reply attempt, and private DM result or Meta code=3.</p>
+                  <div key={permission} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="font-mono text-sm font-black text-slate-950 dark:text-white">{permission}</p>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{purpose}</p>
+                    <p className="mt-3 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Review evidence</p>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Show account connection, comment webhook receipt, public reply attempt, and private DM result or Meta code=3.</p>
                   </div>
                 ))}
               </div>
@@ -1052,10 +1183,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           {tab === "danger" && (
             <Panel title="Danger Zone / Audit Logs" description="Destructive controls are soft-first, POST-only, admin-only, typed-confirmed, and audited.">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <DangerCard title="Suspend user" status="Enabled" detail="Soft suspension pauses campaigns and blocks activation." />
-                <DangerCard title="Disconnect Instagram integration" status="Enabled" detail="Soft disconnect marks reconnect-required and pauses campaigns." />
-                <DangerCard title="Archive campaign" status="Enabled" detail="Soft archive pauses and hides from normal campaign lists." />
-                <DangerCard title="Delete user data" status="Disabled" detail="Requires export, retention, and deletion workflow." />
+                <DangerCard title="Audit log" status={dangerStatus.auditLog} detail="AdminAuditLog records success, failed, and blocked writes." />
+                <DangerCard title="Typed confirmations" status={dangerStatus.typedConfirmations} detail="Destructive actions require exact confirmation text." />
+                <DangerCard title="Soft destructive actions" status={dangerStatus.softDestructiveActions} detail="Suspension, disconnect, and archive avoid hard deletes." />
+                <DangerCard title="Hard deletes" status={dangerStatus.hardDeletes} detail="User data, integrations, and campaigns are not hard-deleted from admin." />
+                <DangerCard title="Subscription cancel" status={dangerStatus.subscriptionCancel} detail="Stripe cancellation is disabled until a safe helper exists." />
               </div>
               <Callout tone="green" title="Audit framework enabled">
                 AdminAuditLog exists and all admin write actions use the shared audit helper for SUCCESS, FAILED, and BLOCKED outcomes.
@@ -1068,12 +1200,21 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
           {tab === "audit" && (
             <Panel title="Audit Logs" description="Latest 100 admin action records. Payloads are sanitized before storage and display.">
+              <AdminFilterPills
+                items={[
+                  ["All", tabHref("audit", { auditStatus: "", auditAction: "", auditTarget: "" }), !auditStatus && !auditAction && !auditTarget],
+                  ["Success", tabHref("audit", { auditStatus: "SUCCESS" }), auditStatus === "SUCCESS"],
+                  ["Failed", tabHref("audit", { auditStatus: "FAILED" }), auditStatus === "FAILED"],
+                  ["Blocked", tabHref("audit", { auditStatus: "BLOCKED" }), auditStatus === "BLOCKED"],
+                  ["Users", tabHref("audit", { auditTarget: "User" }), auditTarget === "User"],
+                  ["Integrations", tabHref("audit", { auditTarget: "Integration" }), auditTarget === "Integration"],
+                  ["Campaigns", tabHref("audit", { auditTarget: "Automation" }), auditTarget === "Automation"],
+                ]}
+              />
               <AuditLogTable logs={auditLogs} />
             </Panel>
           )}
-        </section>
-      </div>
-    </main>
+    </AdminShell>
   );
 }
 
@@ -1095,24 +1236,19 @@ function PipelineGrid({ pipeline }: { pipeline: ReturnType<typeof buildWebhookPi
 
 function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white/92 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#101827]/90">
-      <div className="border-b border-slate-200 px-5 py-4 dark:border-white/10">
-        <h2 className="text-base font-black text-slate-950 dark:text-white">{title}</h2>
-        {description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>}
-      </div>
-      <div className="p-5">{children}</div>
-    </section>
+    <AdminSectionCard title={title} description={description}>{children}</AdminSectionCard>
   );
 }
 
-function StatCard({ label, value, detail, tone = "slate" }: { label: string; value: ReactNode; detail: string; tone?: Tone }) {
-  return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${tonePanel(tone)}`}>
+function StatCard({ label, value, detail, tone = "slate", href }: { label: string; value: ReactNode; detail: string; tone?: Tone; href?: string }) {
+  const content = (
+    <div className={`h-full rounded-xl border p-5 shadow-sm ${tonePanel(tone)} ${href ? "transition-transform hover:-translate-y-0.5" : ""}`}>
       <p className="text-3xl font-black tracking-tight">{value}</p>
-      <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-2 text-xs font-black uppercase text-slate-500 dark:text-slate-400">{label}</p>
       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{detail}</p>
     </div>
   );
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 function HealthCard({ label, value, tone = "slate" }: { label: string; value: ReactNode; tone?: Tone }) {
@@ -1147,39 +1283,7 @@ function DataTable({
   empty: string;
 }) {
   if (rows.length === 0) return <EmptyState message={empty} />;
-  return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
-      <table className="min-w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]">
-            {headers.map((header) => (
-              <th key={header} className="whitespace-nowrap px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <Fragment key={`rowgroup-${index}`}>
-              <tr className="border-b border-slate-100 align-top dark:border-white/10">
-                {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="max-w-[320px] px-3 py-3 text-slate-700 dark:text-slate-300">
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-              {details && (
-                <tr className="border-b border-slate-100 bg-slate-50/60 dark:border-white/10 dark:bg-white/[0.03]">
-                  <td colSpan={headers.length}>{details(index)}</td>
-                </tr>
-              )}
-            </Fragment>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <AdminDataTable headers={headers} rows={rows} details={details} empty={empty} />;
 }
 
 function PayloadSummary({ payload }: { payload: unknown }) {
@@ -1244,71 +1348,6 @@ function Mono({ children }: { children: ReactNode }) {
   return <span className="break-all font-mono text-xs text-slate-600 dark:text-slate-300">{children}</span>;
 }
 
-function DisabledActions({ labels }: { labels: string[] }) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {labels.map((label) => (
-        <button key={label} disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-400 dark:border-white/10 dark:bg-white/[0.04]" title="Disabled until audited admin write flow exists">
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function DisabledReason({ label, reason }: { label: string; reason: string }) {
-  return (
-    <button disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-400 dark:border-white/10 dark:bg-white/[0.04]" title={reason}>
-      {label}
-    </button>
-  );
-}
-
-function AdminActionForm({
-  action,
-  hidden,
-  reasonPlaceholder,
-  confirmation,
-  submitLabel,
-  danger = false,
-}: {
-  action: (formData: FormData) => Promise<unknown>;
-  hidden: Record<string, string>;
-  reasonPlaceholder: string;
-  confirmation?: string;
-  submitLabel: string;
-  danger?: boolean;
-}) {
-  return (
-    <form action={action as any} className="grid min-w-[180px] gap-1">
-      {Object.entries(hidden).map(([key, value]) => (
-        <input key={key} type="hidden" name={key} value={value} />
-      ))}
-      <input name="reason" required placeholder={reasonPlaceholder} className="ap3k-input min-h-8 rounded-lg px-2 text-xs" />
-      {confirmation && (
-        <input name="confirmation" required placeholder={`Type ${confirmation}`} className="ap3k-input min-h-8 rounded-lg px-2 text-xs" />
-      )}
-      <button className={`rounded-lg px-2 py-1 text-xs font-bold text-white ${danger ? "bg-red-600 hover:bg-red-700" : "bg-slate-950 hover:bg-slate-800"}`}>
-        {submitLabel}
-      </button>
-    </form>
-  );
-}
-
-function ErrorSummary({ error }: { error?: string | null }) {
-  if (!error) return <span>None</span>;
-  const classified = classifyDeliveryError(error);
-  const label = summarizeAdminError(error);
-  return (
-    <details>
-      <summary className="cursor-pointer">
-        <Badge tone={classified.tone}>{label}</Badge>
-      </summary>
-      <p className="mt-2 max-w-[520px] whitespace-pre-wrap break-words text-xs text-slate-500">{error}</p>
-    </details>
-  );
-}
-
 function AuditLogTable({ logs }: { logs: any[] }) {
   return (
     <DataTable
@@ -1344,18 +1383,6 @@ function Callout({ title, children, tone = "slate" }: { title: string; children:
     <div className={`mt-4 rounded-xl border p-4 ${tonePanel(tone)}`}>
       <p className="font-black">{title}</p>
       <p className="mt-1 text-sm leading-relaxed">{children}</p>
-    </div>
-  );
-}
-
-function FilterPills({ items }: { items: Array<[string, string]> }) {
-  return (
-    <div className="mb-4 flex flex-wrap gap-2">
-      {items.map(([label, href]) => (
-        <Link key={label} href={href} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.08]">
-          {label}
-        </Link>
-      ))}
     </div>
   );
 }

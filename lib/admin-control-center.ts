@@ -10,6 +10,23 @@ export type AdminIssueInput = {
   duplicateCommentsSkipped24h?: number;
 };
 
+export type AdminActionItem = {
+  id: string;
+  label: string;
+  targetLabel?: string;
+  confirmation?: string;
+  reasonRequired?: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
+export type AdminConfirmState = {
+  reason?: string;
+  confirmation?: string;
+  expectedConfirmation?: string;
+  reasonRequired?: boolean;
+};
+
 const SENSITIVE_KEY_PATTERN =
   /(token|secret|authorization|client_secret|access_token|page_access_token|stripe_secret|webhook_secret)/i;
 
@@ -121,10 +138,74 @@ export function shortenAdminId(value?: string | null) {
 export function disabledAdminActionReason(action: string) {
   const reasons: Record<string, string> = {
     deleteUserData: "Requires export, retention, and deletion workflow.",
+    deleteIntegration: "Integrations are soft-disconnected, not deleted.",
+    deleteCampaign: "Campaigns are archived, not hard-deleted.",
     cancelSubscription: "Stripe cancellation is disabled until a refresh/cancel helper is implemented and tested.",
     planOverride: "Plan override is disabled until an internal override model exists.",
+    refreshSubscription: "Stripe refresh is disabled until a safe refresh helper exists.",
   };
   return reasons[action] ?? "Action is not available.";
+}
+
+export function isAdminConfirmReady(state: AdminConfirmState) {
+  const reasonOk = state.reasonRequired === false || Boolean(state.reason?.trim());
+  const confirmationOk = !state.expectedConfirmation || state.confirmation?.trim() === state.expectedConfirmation;
+  return reasonOk && confirmationOk;
+}
+
+export function adminActionMenuConfig(scope: "user" | "integration" | "campaign" | "subscription", state: Record<string, unknown> = {}): AdminActionItem[] {
+  if (scope === "user") {
+    const suspended = state.status === "SUSPENDED";
+    return [
+      suspended
+        ? { id: "unsuspend", label: "Unsuspend user", confirmation: "UNSUSPEND" }
+        : { id: "suspend", label: "Suspend user", confirmation: "SUSPEND" },
+      { id: "delete-data", label: "Delete data unavailable", disabled: true, disabledReason: disabledAdminActionReason("deleteUserData") },
+    ];
+  }
+  if (scope === "integration") {
+    return [
+      { id: "reconnect", label: "Mark reconnect required", confirmation: "RECONNECT" },
+      { id: "resubscribe", label: "Resubscribe webhooks" },
+      { id: "disconnect", label: "Disconnect integration", confirmation: "DISCONNECT", disabled: state.status === "DISCONNECTED", disabledReason: "Already disconnected." },
+      { id: "delete", label: "Delete unavailable", disabled: true, disabledReason: disabledAdminActionReason("deleteIntegration") },
+    ];
+  }
+  if (scope === "campaign") {
+    const active = Boolean(state.active);
+    const archived = Boolean(state.archivedAt);
+    return [
+      { id: active ? "pause" : "activate", label: active ? "Pause campaign" : "Activate campaign", confirmation: active ? "PAUSE" : "ACTIVATE", disabled: archived, disabledReason: "Campaign is archived." },
+      { id: "duplicate", label: "Duplicate campaign", confirmation: "DUPLICATE", disabled: archived, disabledReason: "Campaign is archived." },
+      { id: "archive", label: "Archive campaign", confirmation: "ARCHIVE", disabled: archived, disabledReason: "Already archived." },
+      { id: "delete", label: "Delete unavailable", disabled: true, disabledReason: disabledAdminActionReason("deleteCampaign") },
+    ];
+  }
+  return [
+    { id: "refresh", label: "Refresh subscription unavailable", disabled: true, disabledReason: disabledAdminActionReason("refreshSubscription") },
+    { id: "cancel", label: "Cancel unavailable", disabled: true, disabledReason: disabledAdminActionReason("cancelSubscription") },
+    { id: "override", label: "Plan override unavailable", disabled: true, disabledReason: disabledAdminActionReason("planOverride") },
+  ];
+}
+
+export function adminTableColumns(section: "integrations" | "campaigns" | "subscriptions" | "messages") {
+  const columns = {
+    integrations: ["Page / IG account", "Status", "Token", "Webhook", "Last event", "Last error summary", "Actions"],
+    campaigns: ["Owner", "Campaign", "Status", "Trigger", "Post scope", "Replies", "Private DM", "Activity", "Created", "Actions"],
+    subscriptions: ["User", "Plan", "Usage", "Campaigns", "Accounts", "Stripe", "Status", "Updated", "Actions"],
+    messages: ["Time", "Owner / Campaign", "Type / Status", "Actor / Comment", "Summary", "Actions"],
+  } satisfies Record<string, string[]>;
+  return columns[section];
+}
+
+export function adminDangerZoneStatus() {
+  return {
+    auditLog: "Enabled",
+    typedConfirmations: "Enabled",
+    softDestructiveActions: "Enabled",
+    hardDeletes: "Disabled",
+    subscriptionCancel: "Disabled",
+  } as const;
 }
 
 export function getTopAdminIssue(input: AdminIssueInput) {
