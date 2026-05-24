@@ -24,7 +24,7 @@ type AutomationWithRelations = Automation & {
     subscription: Pick<Subscription, "plan"> | null;
     integrations: Pick<
       Integrations,
-      "id" | "token" | "instagramId" | "pageId" | "webhookAccountId" | "businessId" | "instagramUsername"
+      "id" | "token" | "instagramId" | "pageId" | "webhookAccountId" | "businessId" | "instagramUsername" | "status" | "reconnectRequired"
     >[];
   } | null;
 };
@@ -65,10 +65,12 @@ export const findAutomationForComment = async (
   return await client.automation.findFirst({
     where: {
       active: true,
+      archivedAt: null,
       trigger: { some: { type: "COMMENT" } },
       posts: { some: { postid: { in: [mediaId, "ANY"] } } },
       User: {
-        integrations: { some: { pageId } },
+        status: { not: "SUSPENDED" },
+        integrations: { some: { pageId, status: { not: "DISCONNECTED" }, reconnectRequired: false } },
       },
     },
     include: {
@@ -87,6 +89,8 @@ export const findAutomationForComment = async (
               webhookAccountId: true,
               businessId: true,
               instagramUsername: true,
+              status: true,
+              reconnectRequired: true,
             },
           },
         },
@@ -108,8 +112,11 @@ export const findAutomationForCommentWithReason = async (
   const activeIntegrations = await client.integrations.findMany({
     where: {
       User: {
-        automations: { some: { active: true } },
+        status: { not: "SUSPENDED" },
+        automations: { some: { active: true, archivedAt: null } },
       },
+      status: { not: "DISCONNECTED" },
+      reconnectRequired: false,
     },
     select: {
       id: true,
@@ -118,6 +125,8 @@ export const findAutomationForCommentWithReason = async (
       pageId: true,
       businessId: true,
       instagramUsername: true,
+      status: true,
+      reconnectRequired: true,
     },
   });
   // Match by any known ID field — entry.id is IG Business ID for object=instagram,
@@ -130,6 +139,9 @@ export const findAutomationForCommentWithReason = async (
         { instagramId: pageId },
         { businessId: pageId },
       ],
+      status: { not: "DISCONNECTED" },
+      reconnectRequired: false,
+      User: { status: { not: "SUSPENDED" } },
     },
     select: {
       id: true,
@@ -139,6 +151,8 @@ export const findAutomationForCommentWithReason = async (
       pageId: true,
       businessId: true,
       instagramUsername: true,
+      status: true,
+      reconnectRequired: true,
     },
   });
 
@@ -173,6 +187,7 @@ export const findAutomationForCommentWithReason = async (
   const accountAutomations = await client.automation.findMany({
     where: {
       userId: integration.userId,
+      archivedAt: null,
       trigger: { some: { type: "COMMENT" } },
     },
     include: {
@@ -191,6 +206,8 @@ export const findAutomationForCommentWithReason = async (
               webhookAccountId: true,
               businessId: true,
               instagramUsername: true,
+              status: true,
+              reconnectRequired: true,
             },
           },
         },
@@ -289,9 +306,11 @@ export const findAutomationForDM = async (
   const automations = await client.automation.findMany({
     where: {
       active: true,
+      archivedAt: null,
       trigger: { some: { type: "DM" } },
       User: {
-        integrations: { some: { pageId } },
+        status: { not: "SUSPENDED" },
+        integrations: { some: { pageId, status: { not: "DISCONNECTED" }, reconnectRequired: false } },
       },
     },
     include: {
@@ -309,6 +328,8 @@ export const findAutomationForDM = async (
               webhookAccountId: true,
               businessId: true,
               instagramUsername: true,
+              status: true,
+              reconnectRequired: true,
             },
           },
         },
@@ -333,8 +354,8 @@ export const findAutomationForDM = async (
 // ---------------------------------------------------------------------------
 
 export const findAutomationById = async (id: string) => {
-  return await client.automation.findUnique({
-    where: { id },
+  return await client.automation.findFirst({
+    where: { id, archivedAt: null },
     include: {
       listener: true,
       User: {
@@ -348,6 +369,8 @@ export const findAutomationById = async (id: string) => {
               pageId: true,
               webhookAccountId: true,
               businessId: true,
+              status: true,
+              reconnectRequired: true,
             },
           },
         },

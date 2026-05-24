@@ -37,8 +37,8 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         automation: { userId },
       },
     }),
-    client.automation.count({ where: { userId, active: true } }),
-    client.integrations.count({ where: { userId } }),
+    client.automation.count({ where: { userId, active: true, archivedAt: null } }),
+    client.integrations.count({ where: { userId, status: { not: "DISCONNECTED" } } }),
   ]);
   const [publicReplyEventFallback, dmEventFallback] = await Promise.all([
     publicReplyLogs > 0
@@ -100,7 +100,7 @@ export async function canActivateCampaign(userId: string, automationId?: string)
 
   if (automationId) {
     const existing = await client.automation.findFirst({
-      where: { id: automationId, userId, active: true },
+      where: { id: automationId, userId, active: true, archivedAt: null },
       select: { id: true },
     });
     if (existing) return { ok: true, usage };

@@ -1,13 +1,26 @@
 "use server";
 
 import { replaySavedWebhookEvent, simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
+import {
+  archiveCampaignAction,
+  disconnectIntegrationAction,
+  duplicateCampaignAction,
+  markIntegrationReconnectRequiredAction,
+  resubscribeIntegrationAction,
+  setCampaignActiveAction,
+  suspendUserAction,
+  unsuspendUserAction,
+} from "@/actions/admin/operations";
 import ThemeToggle from "@/components/global/theme-toggle";
 import {
   adminEnvironmentLabel,
   classifyDeliveryError,
+  disabledAdminActionReason,
   formatAdminDate,
   getTopAdminIssue,
   sanitizeAdminPayload,
+  shortenAdminId,
+  summarizeAdminError,
   stripeCustomerDashboardUrl,
 } from "@/lib/admin-control-center";
 import { requireOwnerAdmin } from "@/lib/admin";
@@ -29,6 +42,7 @@ type SearchParams = {
   tab?: string;
   testSince?: string;
   usageFilter?: string;
+  userId?: string;
 };
 
 const TABS = [
@@ -43,6 +57,7 @@ const TABS = [
   { id: "compliance", label: "App Review" },
   { id: "system", label: "System" },
   { id: "danger", label: "Danger Zone" },
+  { id: "audit", label: "Audit Logs" },
 ] as const;
 
 export default async function AdminPage({ searchParams }: { searchParams?: SearchParams }) {
@@ -328,7 +343,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
         take: 25,
         include: {
           subscription: true,
-          integrations: { select: { instagramUsername: true, instagramId: true, pageId: true } },
+          integrations: { select: { instagramUsername: true, instagramId: true, pageId: true, status: true, reconnectRequired: true } },
           automations: {
             select: {
               id: true,
@@ -341,6 +356,33 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
         },
       })
     : [];
+
+  const selectedUser = tab === "users" && searchParams?.userId
+    ? await client.user.findUnique({
+        where: { id: searchParams.userId },
+        include: {
+          subscription: true,
+          integrations: {
+            select: {
+              id: true,
+              instagramUsername: true,
+              instagramId: true,
+              pageId: true,
+              status: true,
+              reconnectRequired: true,
+              createdAt: true,
+            },
+          },
+          automations: {
+            where: { archivedAt: null },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+            select: { id: true, name: true, active: true, createdAt: true, _count: { select: { leads: true, messageLogs: true } } },
+          },
+          _count: { select: { automations: true, integrations: true } },
+        },
+      })
+    : null;
 
   const subscriptions = tab === "subscriptions"
     ? await client.subscription.findMany({
@@ -395,7 +437,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           webhookSubscriptionError: true,
           oauthLastError: true,
           oauthLastErrorAt: true,
-          token: true,
+          status: true,
+          disconnectedAt: true,
+          disconnectedReason: true,
+          reconnectRequired: true,
+          lastAdminNote: true,
+          lastAdminActionAt: true,
           User: { select: { email: true, clerkId: true } },
         },
       })
@@ -420,6 +467,25 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           listener: true,
           _count: { select: { leads: true, messageLogs: true, events: true } },
         },
+      })
+    : [];
+
+  const auditLogs = tab === "danger" || tab === "audit"
+    ? await client.adminAuditLog.findMany({
+        where: {
+          ...(q ? {
+            OR: [
+              { action: { contains: q, mode: "insensitive" } },
+              { adminEmail: { contains: q, mode: "insensitive" } },
+              { targetType: { contains: q, mode: "insensitive" } },
+              { targetId: { contains: q } },
+              { reason: { contains: q, mode: "insensitive" } },
+              { status: { contains: q, mode: "insensitive" } },
+            ],
+          } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: tab === "audit" ? 100 : 10,
       })
     : [];
 
@@ -474,7 +540,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-black tracking-tight">AP3k Admin</h1>
                 <Badge tone={adminEnvironmentLabel() === "Production" ? "green" : "amber"}>{adminEnvironmentLabel()}</Badge>
-                <Badge tone="slate">Read-only control center</Badge>
+                <Badge tone="green">Operational control center</Badge>
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Signed in as <span className="font-bold text-slate-800 dark:text-slate-100">{admin.email ?? admin.clerkId}</span> · Last refreshed {formatAdminDate(new Date())}
@@ -579,9 +645,28 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           )}
 
           {tab === "users" && (
-            <Panel title="Users" description="Read-only user inventory. Dangerous account actions are disabled until audit logging and typed confirmations exist.">
+            <Panel title="Users" description="Operational user controls. Suspension is soft, audited, and pauses active campaigns. Data deletion remains disabled until export/retention workflow exists.">
+              {selectedUser && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <Identity title={selectedUser.email} subtitle={`${selectedUser.firstname ?? ""} ${selectedUser.lastname ?? ""}`.trim() || selectedUser.clerkId} />
+                    <Badge tone={selectedUser.status === "SUSPENDED" ? "red" : "green"}>{selectedUser.status}</Badge>
+                  </div>
+                  <div className="mt-3 grid gap-2 md:grid-cols-4">
+                    <HealthCard label="Plan" value={selectedUser.subscription?.plan ?? "FREE"} />
+                    <HealthCard label="IG accounts" value={selectedUser._count.integrations} />
+                    <HealthCard label="Campaigns" value={selectedUser._count.automations} />
+                    <HealthCard label="Created" value={formatAdminDate(selectedUser.createdAt)} />
+                  </div>
+                  <div className="mt-3 grid gap-2 md:grid-cols-2">
+                    {selectedUser.integrations.map((integration) => (
+                      <HealthCard key={integration.id} label={integration.instagramUsername ? `@${integration.instagramUsername}` : "Instagram"} value={`${integration.status}${integration.reconnectRequired ? " · reconnect required" : ""}`} tone={integration.status === "CONNECTED" && !integration.reconnectRequired ? "green" : "amber"} />
+                    ))}
+                  </div>
+                </div>
+              )}
               <DataTable
-                headers={["User", "Clerk ID", "Plan", "Instagram", "Campaigns", "Leads", "Last activity", "Actions"]}
+                headers={["User", "Clerk ID", "Status", "Plan", "Instagram", "Campaigns", "Leads", "Last activity", "Actions"]}
                 rows={users.map((user: any) => {
                   const leads = user.automations.reduce((sum: number, automation: any) => sum + automation._count.leads, 0);
                   const lastActivity = user.automations
@@ -590,12 +675,21 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   return [
                     <Identity key="user" title={user.email} subtitle={`${user.firstname ?? ""} ${user.lastname ?? ""}`.trim() || "No profile name"} />,
                     <Mono key="clerk">{user.clerkId}</Mono>,
+                    <Badge key="status" tone={user.status === "SUSPENDED" ? "red" : "green"}>{user.status}</Badge>,
                     <Badge key="plan" tone={user.subscription?.plan === "PRO" ? "purple" : "slate"}>{user.subscription?.plan ?? "FREE"}</Badge>,
                     user.integrations[0]?.instagramUsername ? `@${user.integrations[0].instagramUsername}` : "Not connected",
                     String(user._count.automations),
                     String(leads),
                     formatAdminDate(lastActivity),
-                    <DisabledActions key="actions" labels={["View details later", "Suspend", "Delete data"]} />,
+                    <div key="actions" className="space-y-2">
+                      <Link href={tabHref("users", { userId: user.id })} className="inline-flex rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50">View details</Link>
+                      {user.status === "SUSPENDED" ? (
+                        <AdminActionForm action={unsuspendUserAction} hidden={{ userId: user.id }} reasonPlaceholder="Unsuspend reason" submitLabel="Unsuspend" />
+                      ) : (
+                        <AdminActionForm action={suspendUserAction} hidden={{ userId: user.id }} reasonPlaceholder="Suspend reason" confirmation="SUSPEND" submitLabel="Suspend" danger />
+                      )}
+                      <DisabledReason label="Delete data" reason={disabledAdminActionReason("deleteUserData")} />
+                    </div>,
                   ];
                 })}
                 empty="No users found."
@@ -648,17 +742,25 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           {tab === "integrations" && (
             <Panel title="Instagram Integrations" description="Tokens are never displayed. Health badges use stored safe metadata and recent event signals.">
               <DataTable
-                headers={["Owner", "IG account", "Page", "IG Business ID", "Webhook ID", "Token", "Subscription", "Last error", "Actions"]}
+                headers={["Owner", "IG account", "Page", "IG Business ID", "Webhook ID", "Status", "Subscription", "Last error", "Actions"]}
                 rows={integrations.map((integration: any) => [
                   <Identity key="owner" title={integration.User?.email ?? "Unknown user"} subtitle={integration.User?.clerkId ?? ""} />,
                   <Identity key="ig" title={integration.instagramUsername ? `@${integration.instagramUsername}` : "No username"} subtitle={integration.igAccountSource ?? "Unknown source"} />,
                   <Identity key="page" title={integration.pageName ?? "No page"} subtitle={integration.pageId ?? "No Page ID"} />,
                   <Mono key="ig-id">{integration.instagramId ?? "Missing"}</Mono>,
                   <Mono key="webhook-id">{integration.webhookAccountId ?? "Missing"}</Mono>,
-                  <Badge key="token" tone={integration.token ? "green" : "red"}>{integration.token ? "Stored" : "Missing"}</Badge>,
+                  <Badge key="status" tone={integration.status === "CONNECTED" && !integration.reconnectRequired ? "green" : integration.status === "DISCONNECTED" ? "red" : "amber"}>
+                    {integration.reconnectRequired ? "RECONNECT_REQUIRED" : integration.status}
+                  </Badge>,
                   <Badge key="sub" tone={integration.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "amber"}>{integration.webhookSubscriptionMode ?? "Unknown"}</Badge>,
-                  integration.oauthLastError ?? integration.webhookSubscriptionError ?? "None",
-                  <DisabledActions key="actions" labels={["Disconnect", "Reconnect required", "Resubscribe"]} />,
+                  <ErrorSummary key="error" error={integration.oauthLastError ?? integration.webhookSubscriptionError} />,
+                  <div key="actions" className="space-y-2">
+                    {integration.status !== "DISCONNECTED" && (
+                      <AdminActionForm action={disconnectIntegrationAction} hidden={{ integrationId: integration.id }} reasonPlaceholder="Disconnect reason" confirmation="DISCONNECT" submitLabel="Disconnect" danger />
+                    )}
+                    <AdminActionForm action={markIntegrationReconnectRequiredAction} hidden={{ integrationId: integration.id }} reasonPlaceholder="Reconnect note" submitLabel="Reconnect required" />
+                    <AdminActionForm action={resubscribeIntegrationAction} hidden={{ integrationId: integration.id }} reasonPlaceholder="Resubscribe reason" submitLabel="Resubscribe" />
+                  </div>,
                 ])}
                 empty="No integrations found."
               />
@@ -676,14 +778,31 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   return [
                     campaign.User?.email ?? "Unknown user",
                     <Identity key="campaign" title={campaign.name} subtitle={campaign.id} />,
-                    <Badge key="status" tone={campaign.active ? "green" : "slate"}>{campaign.active ? "Active" : "Paused"}</Badge>,
+                    campaign.archivedAt ? <Badge key="status" tone="amber">Archived</Badge> : <Badge key="status" tone={campaign.active ? "green" : "slate"}>{campaign.active ? "Active" : "Paused"}</Badge>,
                     <Identity key="trigger" title={campaign.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} subtitle={`${campaign.matchingMode} · ${keywords}`} />,
                     <Mono key="post">{postScope}</Mono>,
                     publicReplyEnabled ? <Badge key="reply" tone="green">Enabled</Badge> : <Badge key="reply" tone="slate">Off</Badge>,
                     campaign.sendPrivateDm === false ? <Badge key="private-dm" tone="amber">Skipped externally</Badge> : <Badge key="private-dm" tone="green">Sent by AP3k</Badge>,
                     `${campaign._count.messageLogs} logs · ${campaign._count.leads} leads`,
                     formatAdminDate(campaign.createdAt),
-                    <DisabledActions key="actions" labels={["Activate/pause", "Delete", "Duplicate"]} />,
+                    <div key="actions" className="space-y-2">
+                      {!campaign.archivedAt && (
+                        <AdminActionForm
+                          action={setCampaignActiveAction}
+                          hidden={{ automationId: campaign.id, active: campaign.active ? "false" : "true" }}
+                          reasonPlaceholder={campaign.active ? "Pause reason" : "Activate reason"}
+                          confirmation={campaign.active ? "PAUSE" : "ACTIVATE"}
+                          submitLabel={campaign.active ? "Pause" : "Activate"}
+                          danger={campaign.active}
+                        />
+                      )}
+                      {!campaign.archivedAt && <AdminActionForm action={duplicateCampaignAction} hidden={{ automationId: campaign.id }} reasonPlaceholder="Duplicate reason" submitLabel="Duplicate" />}
+                      {!campaign.archivedAt ? (
+                        <AdminActionForm action={archiveCampaignAction} hidden={{ automationId: campaign.id }} reasonPlaceholder="Archive reason" confirmation="ARCHIVE" submitLabel="Archive" danger />
+                      ) : (
+                        <DisabledReason label="Archived" reason="Campaign is already archived." />
+                      )}
+                    </div>,
                   ];
                 })}
                 empty="No campaigns found."
@@ -931,16 +1050,25 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           )}
 
           {tab === "danger" && (
-            <Panel title="Danger Zone / Audit Logs" description="This first version is read-only. Destructive controls are disabled until AdminAuditLog, typed confirmations, rollback/error handling, and tests are added.">
+            <Panel title="Danger Zone / Audit Logs" description="Destructive controls are soft-first, POST-only, admin-only, typed-confirmed, and audited.">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <DangerCard title="Delete user data" />
-                <DangerCard title="Disconnect Instagram integration" />
-                <DangerCard title="Delete campaign" />
-                <DangerCard title="Cancel subscription" />
+                <DangerCard title="Suspend user" status="Enabled" detail="Soft suspension pauses campaigns and blocks activation." />
+                <DangerCard title="Disconnect Instagram integration" status="Enabled" detail="Soft disconnect marks reconnect-required and pauses campaigns." />
+                <DangerCard title="Archive campaign" status="Enabled" detail="Soft archive pauses and hides from normal campaign lists." />
+                <DangerCard title="Delete user data" status="Disabled" detail="Requires export, retention, and deletion workflow." />
               </div>
-              <Callout tone="amber" title="No audit-log migration added">
-                No destructive write actions were implemented, so no AdminAuditLog migration was added in this pass.
+              <Callout tone="green" title="Audit framework enabled">
+                AdminAuditLog exists and all admin write actions use the shared audit helper for SUCCESS, FAILED, and BLOCKED outcomes.
               </Callout>
+              <div className="mt-4">
+                <AuditLogTable logs={auditLogs} />
+              </div>
+            </Panel>
+          )}
+
+          {tab === "audit" && (
+            <Panel title="Audit Logs" description="Latest 100 admin action records. Payloads are sanitized before storage and display.">
+              <AuditLogTable logs={auditLogs} />
             </Panel>
           )}
         </section>
@@ -1128,12 +1256,85 @@ function DisabledActions({ labels }: { labels: string[] }) {
   );
 }
 
-function DangerCard({ title }: { title: string }) {
+function DisabledReason({ label, reason }: { label: string; reason: string }) {
+  return (
+    <button disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-400 dark:border-white/10 dark:bg-white/[0.04]" title={reason}>
+      {label}
+    </button>
+  );
+}
+
+function AdminActionForm({
+  action,
+  hidden,
+  reasonPlaceholder,
+  confirmation,
+  submitLabel,
+  danger = false,
+}: {
+  action: (formData: FormData) => Promise<unknown>;
+  hidden: Record<string, string>;
+  reasonPlaceholder: string;
+  confirmation?: string;
+  submitLabel: string;
+  danger?: boolean;
+}) {
+  return (
+    <form action={action as any} className="grid min-w-[180px] gap-1">
+      {Object.entries(hidden).map(([key, value]) => (
+        <input key={key} type="hidden" name={key} value={value} />
+      ))}
+      <input name="reason" required placeholder={reasonPlaceholder} className="ap3k-input min-h-8 rounded-lg px-2 text-xs" />
+      {confirmation && (
+        <input name="confirmation" required placeholder={`Type ${confirmation}`} className="ap3k-input min-h-8 rounded-lg px-2 text-xs" />
+      )}
+      <button className={`rounded-lg px-2 py-1 text-xs font-bold text-white ${danger ? "bg-red-600 hover:bg-red-700" : "bg-slate-950 hover:bg-slate-800"}`}>
+        {submitLabel}
+      </button>
+    </form>
+  );
+}
+
+function ErrorSummary({ error }: { error?: string | null }) {
+  if (!error) return <span>None</span>;
+  const classified = classifyDeliveryError(error);
+  const label = summarizeAdminError(error);
+  return (
+    <details>
+      <summary className="cursor-pointer">
+        <Badge tone={classified.tone}>{label}</Badge>
+      </summary>
+      <p className="mt-2 max-w-[520px] whitespace-pre-wrap break-words text-xs text-slate-500">{error}</p>
+    </details>
+  );
+}
+
+function AuditLogTable({ logs }: { logs: any[] }) {
+  return (
+    <DataTable
+      headers={["Time", "Admin", "Action", "Target", "Status", "Reason", "Details"]}
+      rows={logs.map((log) => [
+        formatAdminDate(log.createdAt),
+        <Identity key="admin" title={log.adminEmail ?? log.adminUserId ?? "Unknown"} />,
+        <Badge key="action" tone="blue">{log.action}</Badge>,
+        <Identity key="target" title={`${log.targetType}${log.targetLabel ? ` · ${log.targetLabel}` : ""}`} subtitle={log.targetId ? shortenAdminId(log.targetId) : ""} />,
+        <Badge key="status" tone={log.status === "SUCCESS" ? "green" : log.status === "BLOCKED" ? "amber" : "red"}>{log.status}</Badge>,
+        log.reason ?? "None",
+        <AdminJsonViewer key="details" title="Details" value={{ before: log.before, after: log.after, metadata: log.metadata, error: log.error }} />,
+      ])}
+      empty="No audit logs found."
+    />
+  );
+}
+
+function DangerCard({ title, status, detail }: { title: string; status: "Enabled" | "Disabled"; detail: string }) {
   return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10">
-      <p className="font-black text-red-900 dark:text-red-200">{title}</p>
-      <p className="mt-1 text-sm text-red-700 dark:text-red-300">Disabled. Requires AdminAuditLog, typed confirmation, server admin check, rollback/error handling, and tests.</p>
-      <button disabled className="mt-4 cursor-not-allowed rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-300 dark:border-red-500/30 dark:bg-white/[0.04]">Disabled</button>
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-black text-red-900 dark:text-red-200">{title}</p>
+        <Badge tone={status === "Enabled" ? "green" : "slate"}>{status}</Badge>
+      </div>
+      <p className="mt-1 text-sm text-red-700 dark:text-red-300">{detail}</p>
     </div>
   );
 }

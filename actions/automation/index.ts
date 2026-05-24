@@ -72,6 +72,18 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
 
     if (cleanPayload.active) {
       const profile = await findUser(user.id);
+      if ((profile as any)?.status === "SUSPENDED") {
+        return {
+          status: 403,
+          data: "Your account is suspended. Contact support before creating or activating campaigns.",
+        };
+      }
+      if ((profile as any)?.integrations?.some((item: any) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+        return {
+          status: 403,
+          data: "Reconnect Instagram before activating campaigns.",
+        };
+      }
       const activation = profile?.id
         ? await canActivateCampaign(profile.id, automationId)
         : { ok: false };
@@ -206,6 +218,18 @@ export const updateAutomationName = async (
   try {
     if (data.active === true) {
       const profile = await findUser(user.id);
+      if ((profile as any)?.status === "SUSPENDED") {
+        return {
+          status: 403,
+          data: "Your account is suspended. Contact support before activating campaigns.",
+        };
+      }
+      if ((profile as any)?.integrations?.some((item: any) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+        return {
+          status: 403,
+          data: "Reconnect Instagram before activating campaigns.",
+        };
+      }
       const activation = profile?.id
         ? await canActivateCampaign(profile.id, automationId)
         : { ok: false };
@@ -356,6 +380,30 @@ export const activateAutomation = async (id: string, status: boolean) => {
   const user = await onCurrentUser();
 
   try {
+    if (status) {
+      const profile = await findUser(user.id);
+      if ((profile as any)?.status === "SUSPENDED") {
+        return {
+          status: 403,
+          data: "Your account is suspended. Contact support before activating campaigns.",
+        };
+      }
+      if ((profile as any)?.integrations?.some((item: any) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+        return {
+          status: 403,
+          data: "Reconnect Instagram before activating campaigns.",
+        };
+      }
+      const activation = profile?.id
+        ? await canActivateCampaign(profile.id, id)
+        : { ok: false };
+      if (!activation.ok) {
+        return {
+          status: 403,
+          data: "Your plan allows 1 active campaign. Pause another campaign or upgrade.",
+        };
+      }
+    }
     const activate = await updateAutomation(id, user.id, { active: status });
     if (activate) {
       return {

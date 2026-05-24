@@ -102,6 +102,31 @@ export function classifyDeliveryError(error?: string | null) {
   return { label: "Meta/API error", detail: text, tone: "amber" as const };
 }
 
+export function summarizeAdminError(error?: string | null) {
+  if (!error) return "None";
+  const classified = classifyDeliveryError(error);
+  if (error.includes("subscribed_fields")) return "Webhook field mismatch";
+  if (error.includes("code=190") || error.toLowerCase().includes("token")) return "Token expired or invalid";
+  if (error.includes("dm_capability_missing") || error.includes("code=3")) return "DM capability pending";
+  if (error.length > 160) return classified.label;
+  return classified.label === "Meta/API error" ? error : classified.label;
+}
+
+export function shortenAdminId(value?: string | null) {
+  if (!value) return "";
+  if (value.length <= 14) return value;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+}
+
+export function disabledAdminActionReason(action: string) {
+  const reasons: Record<string, string> = {
+    deleteUserData: "Requires export, retention, and deletion workflow.",
+    cancelSubscription: "Stripe cancellation is disabled until a refresh/cancel helper is implemented and tested.",
+    planOverride: "Plan override is disabled until an internal override model exists.",
+  };
+  return reasons[action] ?? "Action is not available.";
+}
+
 export function getTopAdminIssue(input: AdminIssueInput) {
   if (!input.lastPostRaw) {
     return {

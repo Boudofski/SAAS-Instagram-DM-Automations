@@ -24,6 +24,8 @@ export const findUser = async (clerkId: string) => {
           igAccountSource: true,
           instagramUsername: true,
           profilePictureUrl: true,
+          status: true,
+          reconnectRequired: true,
         },
       },
     },

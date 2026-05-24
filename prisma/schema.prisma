@@ -16,6 +16,9 @@ model User {
   email        String         @unique
   firstname    String?
   lastname     String?
+  status       String         @default("ACTIVE")
+  suspendedAt  DateTime?
+  suspendedReason String?
   createdAt    DateTime       @default(now())
   subscription Subscription?
   integrations Integrations[]
@@ -58,6 +61,12 @@ model Integrations {
   oauthLastError String?
   oauthLastErrorAt DateTime?
   oauthLastErrorSource String?
+  status String @default("CONNECTED")
+  disconnectedAt DateTime?
+  disconnectedReason String?
+  reconnectRequired Boolean @default(false)
+  lastAdminNote String?
+  lastAdminActionAt DateTime?
   snapshots InstagramAccountSnapshot[]
 }
 
@@ -100,6 +109,9 @@ model Automation {
   matchingMode MATCHING_MODE     @default(CONTAINS)
   triggerMode  String            @default("SPECIFIC_KEYWORD")
   sendPrivateDm Boolean          @default(true)
+  archivedAt   DateTime?
+  archivedByAdminEmail String?
+  archiveReason String?
   trigger      Trigger[]
   listener     Listener?
   posts        Post[]
@@ -226,6 +238,35 @@ model MessageLog {
   errorMessage  String?
   sentAt        DateTime?
   createdAt     DateTime     @default(now())
+}
+
+model AdminAuditLog {
+  id String @id @default(cuid())
+
+  adminUserId String?
+  adminEmail String?
+
+  action String
+  targetType String
+  targetId String?
+  targetLabel String?
+
+  reason String?
+  confirmation String?
+
+  before Json?
+  after Json?
+  metadata Json?
+
+  status String @default("SUCCESS")
+  error String?
+
+  createdAt DateTime @default(now())
+
+  @@index([adminUserId, createdAt])
+  @@index([adminEmail, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
 }
 
 // ---------------------------------------------------------------------------

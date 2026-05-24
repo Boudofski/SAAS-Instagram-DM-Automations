@@ -110,6 +110,7 @@ export const getAutomation = async (clerkId: string) => {
         orderBy: {
           createdAt: "asc",
         },
+        where: { archivedAt: null },
         include: {
           keywords: true,
           listener: true,
@@ -125,6 +126,7 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
   return await client.automation.findFirst({
     where: {
       id,
+      archivedAt: null,
       User: { clerkId },
     },
     include: {
@@ -148,8 +150,8 @@ export const updateAutomation = async (
   update: { name?: string; active?: boolean; matchingMode?: MATCHING_MODE }
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
-    select: { id: true },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    select: { id: true, userId: true, User: { select: { status: true, integrations: { select: { status: true, reconnectRequired: true } } } } },
   });
 
   if (!automation) {
@@ -160,6 +162,13 @@ export const updateAutomation = async (
       resourceId: automationId,
     });
     return null;
+  }
+
+  if (update.active === true) {
+    if (automation.User?.status === "SUSPENDED") return null;
+    if (automation.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+      return null;
+    }
   }
 
   return await client.automation.update({
@@ -178,7 +187,7 @@ export const updateCompleteAutomation = async (
   payload: CampaignPayload
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -270,7 +279,7 @@ export const addListener = async (
   ctaLink?: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -307,7 +316,7 @@ export const addTrigger = async (
   trigger: string[]
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -356,7 +365,7 @@ export const addKeyWords = async (
   keywords: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -389,7 +398,7 @@ export const deleteKeywordsQuery = async (
   clerkId: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -419,7 +428,7 @@ export const addPosts = async (
   }[]
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -452,7 +461,7 @@ export const getAutomationAnalytics = async (
   clerkId: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -507,7 +516,7 @@ export const getAutomationActivity = async (
   clerkId: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
     select: { id: true },
   });
 
@@ -562,6 +571,7 @@ export const getDashboardActivity = async (clerkId: string) => {
     where: { clerkId },
     select: {
       automations: {
+        where: { archivedAt: null },
         select: { id: true },
       },
     },

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyDeliveryError,
+  disabledAdminActionReason,
   getTopAdminIssue,
   sanitizeAdminPayload,
+  shortenAdminId,
+  summarizeAdminError,
   stripeCustomerDashboardUrl,
 } from "./admin-control-center";
 
@@ -50,6 +53,25 @@ describe("admin control center helpers", () => {
       "https://dashboard.stripe.com/customers/cus_123"
     );
     expect(stripeCustomerDashboardUrl(null)).toBeNull();
+  });
+
+  it("summarizes long Meta field-list errors for tables", () => {
+    expect(
+      summarizeAdminError(
+        "(#100) Param subscribed_fields[0] must be one of messages, comments, live_comments, messaging_seen, standby, story_insights, lots, of, fields"
+      )
+    ).toBe("Webhook field mismatch");
+    expect(summarizeAdminError("dm_capability_missing")).toBe("DM capability pending");
+  });
+
+  it("shortens long IDs but keeps short IDs readable", () => {
+    expect(shortenAdminId("1784140000000000007075")).toBe("178414...7075");
+    expect(shortenAdminId("abc123")).toBe("abc123");
+  });
+
+  it("explains disabled admin actions", () => {
+    expect(disabledAdminActionReason("deleteUserData")).toContain("retention");
+    expect(disabledAdminActionReason("planOverride")).toContain("disabled");
   });
 
   it("ranks the most urgent top admin issue", () => {
