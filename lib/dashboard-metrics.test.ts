@@ -45,7 +45,10 @@ import {
   getCampaignTableMetrics,
   getDashboardGreeting,
   getIntegrationHealth,
+  getPeriodRange,
+  getUserDashboardStats,
   getUserDashboardMetrics,
+  percentChange,
 } from "@/lib/dashboard-metrics";
 
 beforeEach(() => {
@@ -139,6 +142,79 @@ describe("dashboard metrics", () => {
     expect(formatReplyRate(0, 4)).toBe(0);
     expect(formatReplyRate(4, 10)).toBe(100);
     expect(formatReplyRate(4, 2)).toBe(50);
+  });
+
+  it("builds a 24h period with the previous 24h window", () => {
+    const range = getPeriodRange("24h", new Date("2026-05-24T12:00:00Z"));
+
+    expect(range.currentStart.toISOString()).toBe("2026-05-23T12:00:00.000Z");
+    expect(range.currentEnd.toISOString()).toBe("2026-05-24T12:00:00.000Z");
+    expect(range.previousStart.toISOString()).toBe("2026-05-22T12:00:00.000Z");
+    expect(range.previousEnd.toISOString()).toBe("2026-05-23T12:00:00.000Z");
+  });
+
+  it("builds a 7d period with the previous 7d window", () => {
+    const range = getPeriodRange("7d", new Date("2026-05-24T12:00:00Z"));
+
+    expect(range.currentStart.toISOString()).toBe("2026-05-17T12:00:00.000Z");
+    expect(range.previousStart.toISOString()).toBe("2026-05-10T12:00:00.000Z");
+    expect(range.previousEnd.toISOString()).toBe("2026-05-17T12:00:00.000Z");
+  });
+
+  it("builds a calendar month period with the previous month window", () => {
+    const range = getPeriodRange("month", new Date("2026-05-24T12:00:00Z"));
+
+    expect(range.currentStart.toISOString()).toBe("2026-05-01T00:00:00.000Z");
+    expect(range.currentEnd.toISOString()).toBe("2026-06-01T00:00:00.000Z");
+    expect(range.previousStart.toISOString()).toBe("2026-04-01T00:00:00.000Z");
+    expect(range.previousEnd.toISOString()).toBe("2026-05-01T00:00:00.000Z");
+  });
+
+  it("formats percent changes for positive, negative, and zero previous values", () => {
+    expect(percentChange(15, 10)).toEqual({ value: 50, label: "+50%", tone: "positive" });
+    expect(percentChange(5, 10)).toEqual({ value: -50, label: "-50%", tone: "negative" });
+    expect(percentChange(3, 0)).toEqual({ value: null, label: "New", tone: "positive" });
+    expect(percentChange(0, 0)).toEqual({ value: null, label: "—", tone: "neutral" });
+  });
+
+  it("compares current and previous period dashboard stats", async () => {
+    mockWebhookEventCount.mockResolvedValueOnce(8).mockResolvedValueOnce(3);
+    mockAutomationEventCount
+      .mockResolvedValueOnce(5)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    mockMessageLogCount
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    mockLeadCount.mockResolvedValueOnce(6).mockResolvedValueOnce(2);
+
+    const stats = await getUserDashboardStats("user-1", "7d", new Date("2026-05-24T12:00:00Z"));
+
+    expect(stats.current.commentsReceived).toBe(8);
+    expect(stats.current.commentsMatched).toBe(5);
+    expect(stats.current.leadsCaptured).toBe(6);
+    expect(stats.current.staticRepliesUsed).toBe(6);
+    expect(stats.previous.commentsReceived).toBe(3);
+    expect(stats.changes.commentsReceived).toEqual({ value: 167, label: "+167%", tone: "positive" });
+    expect(stats.changes.leadsCaptured).toEqual({ value: 200, label: "+200%", tone: "positive" });
+    expect(mockWebhookEventCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        automation: { userId: "user-1" },
+        createdAt: {
+          gte: new Date("2026-05-17T12:00:00Z"),
+          lt: new Date("2026-05-24T12:00:00Z"),
+        },
+      }),
+    });
   });
 
   it("does not return a raw Clerk ID when a name or email exists", () => {

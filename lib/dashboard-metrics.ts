@@ -3,9 +3,25 @@ import { client } from "@/lib/prisma";
 export const MATCHED_EVENT_TYPES = ["KEYWORD_MATCHED"] as const;
 export const REAL_COMMENT_WEBHOOK_TYPES = ["REAL_COMMENT_EVENT", "COMMENT_WEBHOOK_RECEIVED"] as const;
 
-type DateRange = {
+export type DateRange = {
   gte?: Date;
   lt?: Date;
+};
+
+export type DashboardPeriod = "24h" | "7d" | "month" | "30d";
+
+export type DashboardPeriodRange = {
+  currentStart: Date;
+  currentEnd: Date;
+  previousStart: Date;
+  previousEnd: Date;
+  label: string;
+};
+
+export type ChangeSummary = {
+  label: string;
+  tone: "positive" | "negative" | "neutral";
+  value: number | null;
 };
 
 export type DashboardMetrics = {
@@ -32,6 +48,19 @@ export type CampaignTableMetric = {
   leads: number;
 };
 
+export type DashboardStatsComparison = {
+  period: DashboardPeriodRange;
+  current: DashboardMetrics;
+  previous: DashboardMetrics;
+  changes: {
+    commentsReceived: ChangeSummary;
+    commentsMatched: ChangeSummary;
+    publicRepliesSent: ChangeSummary;
+    staticRepliesUsed: ChangeSummary;
+    leadsCaptured: ChangeSummary;
+  };
+};
+
 export function formatReplyRate(commentsMatched: number, repliesSent: number) {
   if (commentsMatched <= 0 || !Number.isFinite(commentsMatched) || !Number.isFinite(repliesSent)) return 0;
   return Math.min(100, Math.max(0, Math.round((repliesSent / commentsMatched) * 100)));
@@ -47,6 +76,73 @@ export function getDashboardGreeting(input: {
   if (name) return name;
   if (input.email) return input.email.split("@")[0] || "there";
   return "there";
+}
+
+export function parseDashboardPeriod(value?: string | null): DashboardPeriod {
+  return value === "24h" || value === "7d" || value === "month" || value === "30d" ? value : "month";
+}
+
+export function getPeriodRange(period: DashboardPeriod, now = new Date()): DashboardPeriodRange {
+  const currentEnd = new Date(now);
+  if (period === "24h") {
+    const currentStart = new Date(currentEnd.getTime() - 24 * 60 * 60 * 1000);
+    return {
+      currentStart,
+      currentEnd,
+      previousStart: new Date(currentStart.getTime() - 24 * 60 * 60 * 1000),
+      previousEnd: currentStart,
+      label: "Last 24h",
+    };
+  }
+  if (period === "7d") {
+    const currentStart = new Date(currentEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return {
+      currentStart,
+      currentEnd,
+      previousStart: new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000),
+      previousEnd: currentStart,
+      label: "Last 7d",
+    };
+  }
+  if (period === "30d") {
+    const currentStart = new Date(currentEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return {
+      currentStart,
+      currentEnd,
+      previousStart: new Date(currentStart.getTime() - 30 * 24 * 60 * 60 * 1000),
+      previousEnd: currentStart,
+      label: "Last 30d",
+    };
+  }
+
+  const currentStart = new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth(), 1));
+  const previousStart = new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth() - 1, 1));
+  return {
+    currentStart,
+    currentEnd: new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth() + 1, 1)),
+    previousStart,
+    previousEnd: currentStart,
+    label: currentStart.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" }) +
+      "–" +
+      new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth() + 1, 0)).toLocaleDateString("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+  };
+}
+
+export function percentChange(current: number, previous: number): ChangeSummary {
+  if (previous > 0) {
+    const value = Math.round(((current - previous) / previous) * 100);
+    return {
+      value,
+      label: `${value > 0 ? "+" : ""}${value}%`,
+      tone: value > 0 ? "positive" : value < 0 ? "negative" : "neutral",
+    };
+  }
+  if (current > 0) return { value: null, label: "New", tone: "positive" };
+  return { value: null, label: "—", tone: "neutral" };
 }
 
 function rangeWhere(range?: DateRange) {
@@ -158,6 +254,31 @@ export async function getUserDashboardMetrics(userId: string, range?: DateRange)
     lastRealCommentAt: lastRealComment?.createdAt ?? null,
     lastPublicReplyAt,
     lastDmAt: lastDm?.createdAt ?? null,
+  };
+}
+
+export async function getUserDashboardStats(
+  userId: string,
+  period: DashboardPeriod,
+  now = new Date()
+): Promise<DashboardStatsComparison> {
+  const periodRange = getPeriodRange(period, now);
+  const [current, previous] = await Promise.all([
+    getUserDashboardMetrics(userId, { gte: periodRange.currentStart, lt: periodRange.currentEnd }),
+    getUserDashboardMetrics(userId, { gte: periodRange.previousStart, lt: periodRange.previousEnd }),
+  ]);
+
+  return {
+    period: periodRange,
+    current,
+    previous,
+    changes: {
+      commentsReceived: percentChange(current.commentsReceived, previous.commentsReceived),
+      commentsMatched: percentChange(current.commentsMatched, previous.commentsMatched),
+      publicRepliesSent: percentChange(current.publicRepliesSent, previous.publicRepliesSent),
+      staticRepliesUsed: percentChange(current.staticRepliesUsed, previous.staticRepliesUsed),
+      leadsCaptured: percentChange(current.leadsCaptured, previous.leadsCaptured),
+    },
   };
 }
 

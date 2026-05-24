@@ -1,11 +1,16 @@
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import OnboardingChecklist from "@/components/global/onboarding-checklist";
-import StatCard from "@/components/global/stat-card";
 import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
-import { getCampaignTableMetrics, getDashboardGreeting, getUserDashboardMetrics } from "@/lib/dashboard-metrics";
+import {
+  type ChangeSummary,
+  getCampaignTableMetrics,
+  getDashboardGreeting,
+  getUserDashboardStats,
+  parseDashboardPeriod,
+} from "@/lib/dashboard-metrics";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
@@ -50,11 +55,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
   const period = parseDashboardPeriod(searchParams?.period);
-  const range = getDashboardPeriodRange(period);
-  const [usage, metrics, campaignMetrics, recentResult] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, recentResult] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
-        getUserDashboardMetrics(userResult.data.id, range),
+        getUserDashboardStats(userResult.data.id, period),
         getCampaignTableMetrics(userResult.data.id),
         getRecentAutomationActivity(),
       ])
@@ -65,7 +69,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   }));
   const recentActivity = recentResult.status === 200 ? groupCampaignActivity(recentResult.data as any[], { limit: 20 }) : [];
   const planLabel = usage?.planLabel ?? (userResult.data?.subscription?.plan === "PRO" ? "Creator" : "Free");
+  const metrics = dashboardStats?.current ?? null;
+  const changes = dashboardStats?.changes ?? null;
   const dmsSent = metrics?.dmsSent ?? 0;
+  const staticRepliesLimit = usage
+    ? isUnlimited(usage.staticReplies.limit)
+      ? "Unlimited"
+      : usage.staticReplies.limit.toLocaleString()
+    : "—";
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
@@ -107,34 +118,34 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       {instagram && (
         <div className={[
-          "flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between",
+          "flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm dark:bg-white/[0.04] lg:flex-row lg:items-center lg:justify-between",
           tokenExpired ? "border-red-200 dark:border-red-500/35" : "border-emerald-100 dark:border-emerald-500/25",
         ].join(" ")}>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {instagram.profilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={instagram.profilePictureUrl}
                 alt={instagram.instagramUsername ?? "Connected Instagram account"}
-                className="h-11 w-11 rounded-full object-cover"
+                className="h-14 w-14 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ap3k-gradient text-sm font-black text-white">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ap3k-gradient text-sm font-black text-white">
                 IG
               </div>
             )}
-            <div>
-              <p className="text-sm font-black text-slate-950 dark:text-white">
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                 {instagram.instagramUsername ? `@${instagram.instagramUsername}` : "Instagram connected"}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {tokenExpired
                   ? "Token expired. Reconnect Instagram before testing comments."
                   : "Ready for official comment-to-DM testing."}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               {tokenExpired ? "Reconnect" : "Connected"}
             </span>
@@ -147,29 +158,38 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             >
               {tokenExpired ? "Reconnect Instagram" : "Manage connection"}
             </Link>
+            <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
+              Followers unavailable
+            </span>
           </div>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
         {[
           ["24h", "Last 24h"],
           ["7d", "Last 7d"],
           ["month", "This month"],
+          ["30d", "Last 30d"],
         ].map(([key, label]) => (
           <Link
             key={key}
             href={`/dashboard/${params.slug}?period=${key}`}
             className={[
-              "rounded-full border px-3 py-1.5 text-xs font-black",
+              "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black",
               period === key
-                ? "border-rf-pink/40 bg-rf-pink/10 text-rf-pink"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.08]",
+                ? "bg-rf-pink/10 text-rf-pink"
+                : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
             ].join(" ")}
           >
             {label}
           </Link>
         ))}
+        </div>
+        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+          {dashboardStats?.period.label ?? "This month"}
+        </p>
       </div>
 
       {usage && (
@@ -211,12 +231,43 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <HealthPill label={hasExternalDmCampaign ? "External DM mode active" : "DM capability pending"} state="warn" />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Comments" icon="CM" value={metrics?.commentsReceived ?? 0} empty={isEmpty} />
-        <StatCard label="Messages" icon="DM" value={usage ? `${dmsSent} / ${isUnlimited(usage.staticReplies.limit) ? "Unlimited" : usage.staticReplies.limit}` : dmsSent} empty={isEmpty} />
-        <StatCard label="Contacts / Leads" icon="LD" value={metrics?.leadsCaptured ?? 0} empty={isEmpty} />
-        <StatCard label="Triggers" icon="TR" value={metrics?.commentsMatched ?? 0} empty={isEmpty} />
+      <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04] md:grid-cols-2 xl:grid-cols-6">
+        <AccountStatCard
+          label="Comments"
+          value={metrics?.commentsReceived ?? 0}
+          change={changes?.commentsReceived}
+          subtitle="Received comments"
+        />
+        <AccountStatCard
+          label="Follower Growth"
+          value="Unavailable"
+          change={{ label: "—", tone: "neutral", value: null }}
+          subtitle="Follower snapshots not enabled"
+        />
+        <AccountStatCard
+          label="Messages"
+          value={usage ? `${usage.staticReplies.used.toLocaleString()} / ${staticRepliesLimit}` : `${dmsSent}`}
+          change={changes?.staticRepliesUsed}
+          subtitle="Static replies used"
+        />
+        <AccountStatCard
+          label="Contacts"
+          value={metrics?.leadsCaptured ?? 0}
+          change={changes?.leadsCaptured}
+          subtitle="Leads captured"
+        />
+        <AccountStatCard
+          label="Triggers"
+          value={metrics?.commentsMatched ?? 0}
+          change={changes?.commentsMatched}
+          subtitle="Matched comments"
+        />
+        <AccountStatCard
+          label="Public Replies"
+          value={metrics?.publicRepliesSent ?? 0}
+          change={changes?.publicRepliesSent}
+          subtitle="Confirmed sent"
+        />
       </div>
 
       {/* Main grid */}
@@ -287,20 +338,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   );
 }
 
-function parseDashboardPeriod(value?: string) {
-  return value === "24h" || value === "7d" || value === "month" ? value : "month";
-}
-
-function getDashboardPeriodRange(period: "24h" | "7d" | "month") {
-  const now = new Date();
-  if (period === "24h") return { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000), lt: now };
-  if (period === "7d") return { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), lt: now };
-  return {
-    gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-    lt: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
-  };
-}
-
 function recentToneClass(tone: "green" | "blue" | "purple" | "amber" | "red" | "slate") {
   const tones = {
     green: "bg-emerald-500",
@@ -311,6 +348,36 @@ function recentToneClass(tone: "green" | "blue" | "purple" | "amber" | "red" | "
     slate: "bg-slate-400",
   };
   return tones[tone];
+}
+
+function AccountStatCard({
+  label,
+  value,
+  change,
+  subtitle,
+}: {
+  label: string;
+  value: string | number;
+  change?: ChangeSummary;
+  subtitle: string;
+}) {
+  const changeClass =
+    change?.tone === "positive"
+      ? "text-emerald-600 dark:text-emerald-300"
+      : change?.tone === "negative"
+        ? "text-red-500 dark:text-red-300"
+        : "text-slate-400 dark:text-slate-500";
+
+  return (
+    <div className="min-w-0 border-b border-slate-200 p-4 dark:border-white/10 md:border-r xl:border-b-0">
+      <div className="flex items-center justify-between gap-2">
+        <p className="truncate text-sm font-black text-slate-500 dark:text-slate-400">{label}</p>
+        <span className={`shrink-0 text-xs font-black ${changeClass}`}>{change?.label ?? "—"}</span>
+      </div>
+      <p className="mt-3 truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">{subtitle}</p>
+    </div>
+  );
 }
 
 function UsageMini({
