@@ -14,11 +14,11 @@ function CreateAutomation({ slug }: Props) {
   return (
     <Button
       asChild
-      className="ap3k-gradient-button h-10 rounded-xl px-3 text-white sm:px-4 lg:px-6"
+      className="ap3k-gradient-button h-10 rounded-xl px-3 text-white sm:px-4 lg:px-5"
     >
-      <Link href={href}>
+      <Link href={href} className="whitespace-nowrap">
         <AutomationDuoToneWhite />
-        <p className="lg:inline hidden">Create Campaign</p>
+        <p className="hidden sm:inline">Create Campaign</p>
       </Link>
     </Button>
   );

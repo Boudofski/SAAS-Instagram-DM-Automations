@@ -28,7 +28,12 @@ export const SIDEBAR_MENU: SIDEBAR_MENU_TYPE[] = [
   },
   {
     id: uuid(),
-    label: "integrations",
+    label: "account",
+    icon: <RocketDuoToneWhite />,
+  },
+  {
+    id: uuid(),
+    label: "billing",
     icon: <RocketDuoToneWhite />,
   },
   {

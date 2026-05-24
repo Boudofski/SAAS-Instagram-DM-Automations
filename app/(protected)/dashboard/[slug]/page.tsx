@@ -79,7 +79,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     : "—";
 
   const checklistItems = [
-    { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/integrations` },
+    { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/account` },
     { label: "Launch your first campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
     { label: "Review delivery logs", done: automations.length > 0, href: `/dashboard/${params.slug}/automation` },
   ];
@@ -153,7 +153,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               {planLabel}
             </span>
             <Link
-              href={`/dashboard/${params.slug}/integrations`}
+              href={`/dashboard/${params.slug}/account`}
               className="text-xs font-bold text-rf-pink hover:text-rf-purple"
             >
               {tokenExpired ? "Reconnect Instagram" : "Manage connection"}
@@ -240,9 +240,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         />
         <AccountStatCard
           label="Follower Growth"
-          value="Unavailable"
+          value="Not enabled"
           change={{ label: "—", tone: "neutral", value: null }}
-          subtitle="Follower snapshots not enabled"
+          subtitle="Follower snapshots coming soon"
         />
         <AccountStatCard
           label="Messages"
@@ -266,8 +266,49 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           label="Public Replies"
           value={metrics?.publicRepliesSent ?? 0}
           change={changes?.publicRepliesSent}
-          subtitle="Confirmed sent"
+          subtitle="Confirmed replies"
         />
+      </div>
+
+      <div className="ap3k-card rounded-2xl p-5">
+        <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-950 dark:text-white">Recent Activity</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Latest 20 grouped interactions on this account — comments, public replies, skipped actions, and DMs.
+            </p>
+          </div>
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
+        </div>
+        {recentActivity.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
+            No recent interactions yet.
+          </p>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-white/10">
+            {recentActivity.map((item, index) => (
+              <div key={`${item.id}-${index}`} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="flex min-w-0 gap-3">
+                  <span className={["mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full", recentToneClass(item.tone)].join(" ")} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-950 dark:text-white">
+                      {item.title}{item.actorLabel ? ` ${item.actorLabel}` : ""}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{item.subtitle}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pl-5 sm:pl-0">
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                    {item.badge}
+                  </span>
+                  <span className="shrink-0 text-xs font-bold text-slate-400">
+                    {new Date(item.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main grid */}
@@ -300,36 +341,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
         {/* Right panel */}
         <div className="flex flex-col gap-4">
-          <div className="ap3k-card rounded-2xl p-5">
-            <div className="mb-4">
-              <h2 className="text-sm font-black text-slate-950 dark:text-white">Recent Activity</h2>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Latest interactions on this account — comments, public replies, skipped actions, and DMs.
-              </p>
-            </div>
-            {recentActivity.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
-                No recent interactions yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {recentActivity.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="flex gap-3">
-                    <span className={["mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full", recentToneClass(item.tone)].join(" ")} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-black text-slate-950 dark:text-white">
-                          {item.title}{item.actorLabel ? ` ${item.actorLabel}` : ""}
-                        </p>
-                        <span className="shrink-0 text-[11px] font-bold text-slate-400">{new Date(item.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })}</span>
-                      </div>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">{item.subtitle}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
           <OnboardingChecklist items={checklistItems} />
         </div>
 
@@ -371,11 +382,11 @@ function AccountStatCard({
   return (
     <div className="min-w-0 border-b border-slate-200 p-4 dark:border-white/10 md:border-r xl:border-b-0">
       <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-sm font-black text-slate-500 dark:text-slate-400">{label}</p>
+        <p className="text-sm font-black leading-tight text-slate-500 dark:text-slate-400">{label}</p>
         <span className={`shrink-0 text-xs font-black ${changeClass}`}>{change?.label ?? "—"}</span>
       </div>
-      <p className="mt-3 truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
-      <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">{subtitle}</p>
+      <p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-1 text-xs font-bold leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>
   );
 }

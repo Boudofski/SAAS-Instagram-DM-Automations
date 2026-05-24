@@ -117,7 +117,7 @@ export default function AutomationTable({
                     <p className="font-black text-slate-950 dark:text-white">{leads}</p>
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   <ActionLink href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}>Edit</ActionLink>
                   <ActionLink href={`/dashboard/${slug}/automation/${automation.id}`}>View</ActionLink>
                   <ActionButton disabled={isPending} onClick={() => startTransition(() => { void activateAutomation(automation.id, !Boolean(automation.active)).then(() => router.refresh()); })}>
@@ -146,7 +146,7 @@ export default function AutomationTable({
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[860px] text-left">
+        <table className="w-full min-w-[980px] text-left">
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
             <tr>
               <th className="px-4 py-3">Campaign</th>
@@ -216,7 +216,7 @@ export default function AutomationTable({
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
+                      <span className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
                         {mode}
                       </span>
                     </td>
@@ -231,11 +231,11 @@ export default function AutomationTable({
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
+                      <div className="flex flex-nowrap justify-end gap-1.5">
+                        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           Edit
                         </Link>
-                        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
+                        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           View
                         </Link>
                         <button
@@ -246,7 +246,7 @@ export default function AutomationTable({
                                 .then(() => router.refresh());
                             });
                           }}
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                          className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
                         >
                           {automation.active ? "Pause" : "Activate"}
                         </button>
@@ -257,7 +257,7 @@ export default function AutomationTable({
                               void duplicateAutomation(automation.id).then(() => router.refresh());
                             });
                           }}
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                          className="whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
                         >
                           Duplicate
                         </button>
@@ -269,7 +269,7 @@ export default function AutomationTable({
                               void deleteAutomation(automation.id).then(() => router.refresh());
                             });
                           }}
-                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
+                          className="whitespace-nowrap rounded-lg border border-red-200 px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
                         >
                           Delete
                         </button>
@@ -288,7 +288,7 @@ export default function AutomationTable({
 
 function ActionLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+    <Link href={href} className="whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-center text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
       {children}
     </Link>
   );
@@ -310,7 +310,7 @@ function ActionButton({
       disabled={disabled}
       onClick={onClick}
       className={[
-        "rounded-lg border bg-white px-3 py-2 text-xs font-bold disabled:opacity-50 dark:bg-white/[0.04]",
+        "whitespace-nowrap rounded-lg border bg-white px-3 py-2 text-xs font-bold disabled:opacity-50 dark:bg-white/[0.04]",
         danger
           ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-300"
           : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300",

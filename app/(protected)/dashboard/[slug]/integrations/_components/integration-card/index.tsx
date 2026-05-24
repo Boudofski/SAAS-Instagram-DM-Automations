@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  disconnectCurrentInstagramIntegration,
   getCurrentWebhookHealth,
   getInstagramConnectUrl,
   resubscribeCurrentInstagramWebhooks,
@@ -50,22 +49,6 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
     },
   });
 
-  const disconnect = useMutation({
-    mutationKey: ["disconnect-instagram", userId],
-    mutationFn: disconnectCurrentInstagramIntegration,
-    onSuccess: async (result) => {
-      if (result.status === 200) {
-        toast.success(result.data);
-      } else {
-        toast.error(result.data ?? "Instagram disconnect failed");
-      }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["user-profile", userId] }),
-        queryClient.invalidateQueries({ queryKey: ["webhook-health", userId] }),
-      ]);
-    },
-  });
-
   const integrated = data?.data?.integrations.find((i) => i.name === strategy);
   const isInstagram = strategy === "INSTAGRAM";
 
@@ -86,17 +69,6 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
     } finally {
       setIsConnecting(false);
     }
-  };
-
-  const onDisconnect = () => {
-    if (!isInstagram || !integrated || disconnect.isPending) return;
-
-    const confirmed = window.confirm(
-      "Disconnect this Instagram account from AP3k? Existing campaigns and logs will stay, but AP3k will stop using this account token until you reconnect."
-    );
-    if (!confirmed) return;
-
-    disconnect.mutate();
   };
 
   return (
@@ -160,11 +132,10 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           <Button
             type="button"
             variant="outline"
-            onClick={onDisconnect}
-            disabled={disconnect.isPending}
-            className="min-w-36 border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300 dark:hover:bg-red-500/10"
+            disabled
+            className="min-w-36 cursor-not-allowed border-red-200 bg-white text-red-400 opacity-70 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300"
           >
-            {disconnect.isPending ? "Disconnecting..." : "Disconnect account"}
+            Contact support to disconnect
           </Button>
         )}
       </div>

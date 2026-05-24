@@ -28,8 +28,8 @@ function NavBar({ slug }: Props) {
   return (
     currentPage && (
       <div className="flex flex-col">
-        <div className="sticky top-3 z-30 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/82 p-2 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1020]/80 dark:text-slate-50 lg:justify-end">
-          <span className="lg:hidden flex items-center flex-1 gap-x-2">
+        <div className="sticky top-3 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/82 p-2 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1020]/80 dark:text-slate-50 sm:flex-nowrap lg:justify-end">
+          <span className="flex flex-1 items-center gap-x-2 lg:hidden">
             <Sheet trigger={<Menu aria-label="Open navigation" />} className="lg:hidden" side="left">
               <div className="flex h-full w-full flex-col gap-y-5 bg-[#0b1020] p-3 text-white backdrop-blur-3xl">
                 <div className="flex gap-x-2 items-center p-5 justify-center">
@@ -62,10 +62,14 @@ function NavBar({ slug }: Props) {
               </div>
             </Sheet>
           </span>
-          <Search />
-          <CreateAutomation slug={slug} />
-          <ThemeToggle compact />
-          <Notification />
+          <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 lg:max-w-sm">
+            <Search />
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <CreateAutomation slug={slug} />
+            <ThemeToggle compact />
+            <Notification />
+          </div>
         </div>
         {page !== slug && <MainBreadCrumbs page={page} slug={slug} />}
       </div>
