@@ -57,9 +57,12 @@ export type GroupedActivity = {
     commentId?: string;
     mediaId?: string;
     igUserId?: string;
+    commenterUsername?: string;
     keyword?: string;
     endpoint?: string;
     publicReplyCommentId?: string;
+    replyTextPreview?: string;
+    visibilityHelper?: string;
     error?: string;
     technicalTypes: string[];
   };
@@ -209,9 +212,9 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
 
 export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
   const display = formatActivityDisplay(item);
-  const actor = item.igUserId ? `@${item.igUserId}` : null;
-  const commentSuffix = item.commentId ? ` → comment ${truncateId(item.commentId)}` : "";
   const meta = metaRecord(item.meta);
+  const actor = actorLabel(firstString([meta.commenterUsername]), item.igUserId);
+  const commentSuffix = item.commentId ? ` → comment ${truncateId(item.commentId)}` : "";
   const replyId = typeof meta.publicReplyCommentId === "string" ? meta.publicReplyCommentId : null;
   const endpoint = typeof meta.endpoint === "string" ? meta.endpoint : null;
   const base = {
@@ -323,6 +326,8 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const statuses = new Set(items.map((item) => item.status).filter(Boolean));
   const publicReplyCommentId = firstString(metas.map((meta) => meta.publicReplyCommentId));
   const endpoint = firstString(metas.map((meta) => meta.endpoint));
+  const commenterUsername = firstString(metas.map((meta) => meta.commenterUsername));
+  const replyTextPreview = firstString(metas.map((meta) => meta.replyTextPreview ?? meta.normalizedPublicReplyText));
   const error = firstString([
     ...items.map((item) => item.errorMessage),
     ...metas.map((meta) => meta.error),
@@ -357,16 +362,23 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
     igUserId,
     keyword,
     createdAt: newest?.createdAt ?? new Date(0).toISOString(),
-    actorLabel: igUserId ? `@${igUserId}` : null,
+    actorLabel: actorLabel(commenterUsername, igUserId),
     commentText: firstString(metas.map((meta) => meta.commentText)),
     steps,
     details: {
       ...(commentId ? { commentId } : {}),
       ...(mediaId ? { mediaId } : {}),
       ...(igUserId ? { igUserId } : {}),
+      ...(commenterUsername ? { commenterUsername } : {}),
       ...(keyword ? { keyword } : {}),
       ...(endpoint ? { endpoint } : {}),
       ...(publicReplyCommentId ? { publicReplyCommentId } : {}),
+      ...(replyTextPreview ? { replyTextPreview } : {}),
+      ...(publicReplyCommentId
+        ? { visibilityHelper: "Meta confirmed the reply. If it is not visible, check the exact post, collapsed replies, or Instagram filtering." }
+        : steps.publicReply === "failed"
+        ? { visibilityHelper: "Meta did not confirm reply creation." }
+        : {}),
       ...(error ? { error } : {}),
       technicalTypes: Array.from(types),
     },
@@ -531,6 +543,16 @@ function toTime(value?: Date | string | null) {
 
 function truncateId(value: string) {
   return value.length > 12 ? `${value.slice(0, 12)}...` : value;
+}
+
+export function shortInstagramId(value: string) {
+  return value.length > 8 ? `${value.slice(0, 4)}…${value.slice(-4)}` : value;
+}
+
+function actorLabel(username: string | null, igUserId?: string | null) {
+  if (username) return `@${username.replace(/^@/, "")}`;
+  if (igUserId) return `Instagram user ${shortInstagramId(igUserId)}`;
+  return null;
 }
 
 function formatActivityTime(value: Date | string) {

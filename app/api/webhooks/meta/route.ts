@@ -336,6 +336,7 @@ async function processEntry(
           hasCommentId: Boolean(commentId),
           hasCommenterId: Boolean(commenterId),
           hasCommentText: Boolean(commentText),
+          commenterUsername,
           appearsSynthetic: isSyntheticWebhook(envelope, entry, changeItem),
         },
       });
@@ -364,6 +365,7 @@ async function processEntry(
         commenterId,
         rawCommentText: commentText,
         normalizedCommentText: normalizeMatchText(commentText),
+        commenterUsername,
       };
 
       // 1. Find active automations for this post, then select by trigger.
@@ -572,6 +574,8 @@ async function processEntry(
           storedKeywords: automation.keywords.map((keyword) => keyword.word),
           normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
           storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
+          commenterUsername,
+          commentText,
         },
       });
 
@@ -595,6 +599,8 @@ async function processEntry(
             normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
             storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
             noMatchReason: "no_keyword_match",
+            commenterUsername,
+            commentText,
           },
         });
         await updateWebhookEvent(webhookEvent.id, {
@@ -621,6 +627,8 @@ async function processEntry(
           automationName: automation.name,
           triggerMode: automation.triggerMode,
           matchingMode: automation.matchingMode,
+          commenterUsername,
+          commentText,
         },
       });
 
@@ -632,6 +640,10 @@ async function processEntry(
         mediaId,
         commentId,
         keyword: matchedKeyword,
+        meta: {
+          commenterUsername,
+          commentText,
+        },
       });
       await trackResponse(automation.id, "COMMENT");
 
@@ -1021,6 +1033,9 @@ async function processEntry(
             endpoint: publicReplyEndpoint,
             sourceCommentId: commentId,
             publicReplyCommentId,
+            commenterUsername,
+            commentText,
+            replyTextPreview: outboundPublicReplyText.slice(0, 180),
             publicReplyTextHash: hashNormalizedText(normalizeMatchText(outboundPublicReplyText)),
             normalizedPublicReplyText: normalizeMatchText(outboundPublicReplyText),
             mentionOmitted: publicReplyErrorMessage === "commenter_username_missing_mention_omitted",

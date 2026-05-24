@@ -94,7 +94,7 @@ describe("campaign activity display formatting", () => {
   it("formats recent public replies and skipped DMs cleanly", () => {
     expect(formatRecentActivity({ type: "PUBLIC_REPLY_SENT", igUserId: "tester", commentId: "180123456789" })).toMatchObject({
       title: "Public reply sent",
-      actor: "@tester",
+      actor: "Instagram user tester",
       tone: "green",
     });
     expect(formatRecentActivity({ type: "DM_SKIPPED", errorMessage: "external_dm_tool_enabled" })).toMatchObject({
@@ -108,7 +108,7 @@ describe("campaign activity display formatting", () => {
       title: "Private DM blocked by Meta",
       tone: "red",
     });
-    expect(formatRecentActivity({ type: "SELF_COMMENT_SKIPPED", igUserId: "maglobalmarketing" })).toMatchObject({
+    expect(formatRecentActivity({ type: "SELF_COMMENT_SKIPPED", igUserId: "989376730302391", meta: { commenterUsername: "maglobalmarketing" } })).toMatchObject({
       title: "Ignored self-comment",
       actor: "@maglobalmarketing",
     });
@@ -145,6 +145,46 @@ describe("campaign activity display formatting", () => {
       tone: "green",
       steps: expect.objectContaining({ commentReceived: true, triggerMatched: true, publicReply: "sent", privateDm: "off" }),
     });
+  });
+
+  it("uses commenterUsername for actor labels", () => {
+    const grouped = groupCampaignActivity([
+      event("COMMENT_RECEIVED", {
+        igUserId: "989376730302391",
+        meta: { commenterUsername: "real_user" },
+      }),
+    ]);
+
+    expect(grouped[0].actorLabel).toBe("@real_user");
+    expect(grouped[0].details.commenterUsername).toBe("real_user");
+  });
+
+  it("falls back to shortened Instagram user ID and keeps full ID in details", () => {
+    const grouped = groupCampaignActivity([
+      event("COMMENT_RECEIVED", { igUserId: "989376730302391" }),
+    ]);
+
+    expect(grouped[0].actorLabel).toBe("Instagram user 9893…2391");
+    expect(grouped[0].details.igUserId).toBe("989376730302391");
+  });
+
+  it("includes public reply metadata and visibility helper when Meta confirms reply ID", () => {
+    const grouped = groupCampaignActivity([
+      event("PUBLIC_REPLY_SENT", {
+        commentId: "reply-1",
+        meta: {
+          sourceCommentId: "comment-1",
+          publicReplyCommentId: "reply-1",
+          endpoint: "threaded_reply",
+          replyTextPreview: "Thanks, sent it.",
+        },
+      }),
+    ]);
+
+    expect(grouped[0].details.publicReplyCommentId).toBe("reply-1");
+    expect(grouped[0].details.endpoint).toBe("threaded_reply");
+    expect(grouped[0].details.replyTextPreview).toBe("Thanks, sent it.");
+    expect(grouped[0].details.visibilityHelper).toContain("Meta confirmed the reply");
   });
 
   it("groups public reply sent and DM code=3 as one partial activity", () => {

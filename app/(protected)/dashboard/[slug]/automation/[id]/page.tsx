@@ -446,13 +446,16 @@ export default async function CampaignDetailPage({ params }: Props) {
                         Details
                       </summary>
                       <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                        {item.details.visibilityHelper ? <p className="font-semibold text-slate-800 dark:text-slate-100">{item.details.visibilityHelper}</p> : null}
                         {item.details.error ? <p>{item.details.error}</p> : null}
-                        {item.details.commentId ? <p>Comment {item.details.commentId}</p> : null}
-                        {item.details.mediaId ? <p>Media {item.details.mediaId}</p> : null}
-                        {item.details.igUserId ? <p>IG user {item.details.igUserId}</p> : null}
+                        {item.details.commenterUsername ? <p>Username @{item.details.commenterUsername}</p> : null}
+                        {item.details.commentId ? <p>Source comment ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.commentId}</code></p> : null}
+                        {item.details.mediaId ? <p>Media ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.mediaId}</code></p> : null}
+                        {item.details.igUserId ? <p>Instagram user ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.igUserId}</code></p> : null}
                         {item.details.keyword ? <p>Matched keyword {item.details.keyword}</p> : null}
                         {item.details.endpoint ? <p>Endpoint {item.details.endpoint}</p> : null}
-                        {item.details.publicReplyCommentId ? <p>Meta reply ID {item.details.publicReplyCommentId}</p> : null}
+                        {item.details.publicReplyCommentId ? <p>Meta reply ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.publicReplyCommentId}</code></p> : null}
+                        {item.details.replyTextPreview ? <p>Reply preview {item.details.replyTextPreview}</p> : null}
                       </div>
                     </details>
                   </div>
