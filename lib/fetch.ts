@@ -475,7 +475,7 @@ export const getLinkedInstagramBusinessAccount = async (
 export const getInstagramBusinessProfile = async (
   instagramBusinessAccountId: string,
   pageToken: string,
-  fields = "id,username,profile_picture_url,followers_count,media_count,account_type"
+  fields = "id,username,profile_picture_url,followers_count,media_count"
 ) => {
   return await axios.get(`${META_GRAPH_API_BASE_URL}/${instagramBusinessAccountId}`, {
     params: {

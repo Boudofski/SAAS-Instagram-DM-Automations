@@ -141,7 +141,6 @@ describe("instagram profile snapshots", () => {
         profile_picture_url: "https://example.com/real.jpg",
         followers_count: 120,
         media_count: 14,
-        account_type: "CREATOR",
       },
     });
     mockCreateSnapshot.mockImplementation(async ({ data }) => snapshot({ ...data, id: "snap-new", createdAt: now }));
@@ -152,7 +151,7 @@ describe("instagram profile snapshots", () => {
     expect(mockGetInstagramBusinessProfile).toHaveBeenCalledWith(
       "ig-1",
       "page-token-secret",
-      "id,username,profile_picture_url,followers_count,media_count,account_type"
+      "id,username,profile_picture_url,followers_count,media_count"
     );
     expect(mockCreateSnapshot).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -160,7 +159,7 @@ describe("instagram profile snapshots", () => {
         profilePictureUrl: "https://example.com/real.jpg",
         followersCount: 120,
         mediaCount: 14,
-        accountType: "CREATOR",
+        accountType: null,
       }),
     });
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
@@ -276,7 +275,7 @@ describe("instagram profile snapshots", () => {
       1,
       "ig-1",
       "page-token-secret",
-      "id,username,profile_picture_url,followers_count,media_count,account_type"
+      "id,username,profile_picture_url,followers_count,media_count"
     );
     expect(mockGetInstagramBusinessProfile).toHaveBeenNthCalledWith(
       2,
@@ -347,6 +346,58 @@ describe("instagram profile snapshots", () => {
     expect(result.data?.followersCount).toBeNull();
     expect(result.data?.mediaCount).toBeNull();
     expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("account_type unsupported error does not fail fallback profile-only storage", async () => {
+    mockFindIntegrationFirst.mockResolvedValue({
+      id: "integration-a",
+      token: "page-token-secret",
+      expiresAt: new Date("2026-06-01T00:00:00Z"),
+      instagramId: "17841456116770575",
+      instagramUsername: null,
+      profilePictureUrl: null,
+      snapshots: [],
+    });
+    mockGetInstagramBusinessProfile
+      .mockRejectedValueOnce({
+        safe: { status: 400, code: 100, message: "(#100) Tried accessing nonexisting field (account_type)" },
+      })
+      .mockRejectedValueOnce({
+        safe: { status: 400, code: 100, message: "(#100) media_count is unsupported" },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          id: "17841456116770575",
+          username: "maglobalmarketing",
+          profile_picture_url: "https://example.com/maglobal.jpg",
+        },
+      });
+    mockCreateSnapshot.mockImplementation(async ({ data }) =>
+      snapshot({ ...data, id: "snap-maglobal", followersCount: null, mediaCount: null, accountType: null, createdAt: now })
+    );
+    mockUpdateIntegration.mockResolvedValue({});
+
+    const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
+
+    expect(mockCreateSnapshot).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        instagramId: "17841456116770575",
+        username: "maglobalmarketing",
+        profilePictureUrl: "https://example.com/maglobal.jpg",
+        followersCount: null,
+        mediaCount: null,
+        accountType: null,
+      }),
+    });
+    expect(result.data?.username).toBe("maglobalmarketing");
+    expect(result.data?.profilePictureUrl).toBe("https://example.com/maglobal.jpg");
+    expect(result.diagnostics?.attempts.map((attempt) => attempt.requestedFields.join(","))).toEqual([
+      "id,username,profile_picture_url,followers_count,media_count",
+      "id,username,profile_picture_url,media_count",
+      "id,username,profile_picture_url",
+    ]);
+    expect(result.diagnostics?.returnedFieldNames).toEqual(["id", "profile_picture_url", "username"]);
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
@@ -434,7 +485,7 @@ describe("instagram profile snapshots", () => {
     expect(mockGetInstagramBusinessProfile).toHaveBeenCalledWith(
       "correct-ig-id",
       "page-token-secret",
-      "id,username,profile_picture_url,followers_count,media_count,account_type"
+      "id,username,profile_picture_url,followers_count,media_count"
     );
   });
 

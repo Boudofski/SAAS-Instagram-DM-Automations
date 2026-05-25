@@ -850,7 +850,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 ])}
                 details={(index) => {
                   const integration = integrations[index] as any;
-                  const fields = "id,username,profile_picture_url,followers_count,media_count,account_type";
+                  const fields = "id,username,profile_picture_url,followers_count,media_count";
                   return (
                     <div className="grid gap-3 lg:grid-cols-2">
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">

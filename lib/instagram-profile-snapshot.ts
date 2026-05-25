@@ -11,7 +11,7 @@ import {
 const SNAPSHOT_FRESH_MS = 6 * 60 * 60 * 1000;
 const FORCE_REFRESH_LIMIT_MS = 15 * 60 * 1000;
 export const PROFILE_FIELD_SETS = [
-  ["id", "username", "profile_picture_url", "followers_count", "media_count", "account_type"],
+  ["id", "username", "profile_picture_url", "followers_count", "media_count"],
   ["id", "username", "profile_picture_url", "media_count"],
   ["id", "username", "profile_picture_url"],
 ] as const;
