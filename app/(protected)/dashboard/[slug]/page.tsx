@@ -13,7 +13,7 @@ import {
 import { getInstagramSnapshotComparisonForUser } from "@/lib/instagram-profile-snapshot";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
-import { isUnlimited, usageTone } from "@/lib/plan-limits";
+import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -201,26 +201,39 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       {usage && (
         <div className={[
-          "rounded-2xl border p-4 shadow-sm",
+          "rounded-3xl border p-5 shadow-sm",
           usage.staticReplies.blocked
             ? "border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
             : usage.staticReplies.percent >= 70
               ? "border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10"
-              : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
+              : "border-rf-pink/20 bg-gradient-to-br from-white via-pink-50/60 to-indigo-50 dark:border-rf-pink/25 dark:from-white/[0.06] dark:via-white/[0.035] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-rf-pink">Current plan</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">Plan: {usage.planLabel}</h2>
+            </div>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-300">{usage.periodLabel}</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <UsageMini label="Plan" value={usage.planLabel} />
             <UsageMini
-              label="Static replies this month"
-              value={`${usage.staticReplies.used.toLocaleString()} / ${isUnlimited(usage.staticReplies.limit) ? "Unlimited" : usage.staticReplies.limit.toLocaleString()}`}
+              label="Static replies"
+              value={formatUsageMetricValue(usage.staticReplies)}
               percent={usage.staticReplies.percent}
               blocked={usage.staticReplies.blocked}
             />
             <UsageMini
               label="Active campaigns"
-              value={`${usage.activeCampaigns.used.toLocaleString()} / ${isUnlimited(usage.activeCampaigns.limit) ? "Unlimited" : usage.activeCampaigns.limit.toLocaleString()}`}
+              value={formatUsageMetricValue(usage.activeCampaigns)}
               percent={usage.activeCampaigns.percent}
               blocked={usage.activeCampaigns.blocked}
+            />
+            <UsageMini
+              label="Connected Instagram accounts"
+              value={formatUsageMetricValue(usage.connectedAccounts)}
+              percent={usage.connectedAccounts.percent}
+              blocked={usage.connectedAccounts.blocked}
             />
           </div>
           {usage.staticReplies.blocked && (
@@ -417,7 +430,7 @@ function UsageMini({
   const bar = tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
 
   return (
-    <div>
+    <div className="rounded-2xl border border-white/60 bg-white/70 p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
       <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">{label}</p>
       <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
       {percent > 0 || blocked ? (

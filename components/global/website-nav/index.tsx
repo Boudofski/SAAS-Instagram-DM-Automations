@@ -71,7 +71,7 @@ export default async function WebsiteNav({ current }: Props) {
             href={dashboardHref ?? "/sign-up"}
             className="ap3k-gradient-button px-5 py-2 text-sm"
           >
-            {isSignedIn ? "Go to Dashboard" : "Start free"}
+            {isSignedIn ? "Dashboard" : "Start free"}
           </Link>
         </div>
         <details className="group relative md:hidden">
@@ -88,7 +88,7 @@ export default async function WebsiteNav({ current }: Props) {
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-white/10">
               <ThemeToggle compact />
               <Link href={dashboardHref ?? "/sign-up"} className="ap3k-gradient-button flex-1 px-4 py-2 text-center text-sm">
-                {isSignedIn ? "Go to Dashboard" : "Start free"}
+                {isSignedIn ? "Dashboard" : "Start free"}
               </Link>
             </div>
           </div>

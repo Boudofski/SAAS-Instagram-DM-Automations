@@ -2,8 +2,12 @@ import { FadeIn, HoverLift } from "@/components/global/motion/fade-in";
 import PricingCard from "@/components/global/pricing-card";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
+import { client } from "@/lib/prisma";
+import { currentUser } from "@clerk/nextjs/server";
 import { ArrowRight, Bot, CheckCircle2, FileCheck2, MessageCircle, Reply, ShieldCheck, Sparkles, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 const PLANS = [
   {
@@ -89,7 +93,17 @@ const STEPS = [
   ["04", "Track results", "Review matches, reply status, DM attempts, and skipped external DMs."],
 ] as const;
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const authUser = await currentUser();
+  const profile = authUser
+    ? await client.user.findUnique({
+        where: { clerkId: authUser.id },
+        select: { clerkId: true },
+      })
+    : null;
+  const redirectTo = getAuthenticatedLandingRedirect(authUser, profile);
+  if (redirectTo) redirect(redirectTo);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,0.16),transparent_28rem),radial-gradient(circle_at_82%_12%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_50%_46%,rgba(139,92,246,0.12),transparent_36rem)]" />

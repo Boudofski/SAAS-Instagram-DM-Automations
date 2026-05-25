@@ -152,10 +152,41 @@ function safeProfileStatsError(error: unknown) {
   if (message.includes("expired") || message.includes("invalid oauth") || safe.code === 190) {
     return "Reconnect Instagram to refresh profile stats.";
   }
+  if (
+    safe.code === 10 ||
+    safe.code === 100 ||
+    safe.code === 200 ||
+    message.includes("permission") ||
+    message.includes("followers_count") ||
+    message.includes("media_count")
+  ) {
+    return "Meta did not return follower/post fields. Reconnect Instagram or check account permissions.";
+  }
   if (safe.code === 4 || safe.code === 17 || safe.code === 613) {
     return "Refresh recently completed. Try again later.";
   }
   return "Instagram profile stats unavailable.";
+}
+
+export async function getInstagramSnapshotComparisonWithMissingRefresh(
+  clerkId: string,
+  userId: string,
+  integrationId: string | undefined,
+  period: DashboardPeriod,
+  now = new Date()
+): Promise<{
+  comparison: InstagramSnapshotComparison | null;
+  refresh: RefreshInstagramSnapshotResult | null;
+}> {
+  const initial = await getInstagramSnapshotComparisonForUser(userId, integrationId, period, now);
+  if (!integrationId || initial?.current) {
+    return { comparison: initial, refresh: null };
+  }
+
+  const refresh = await refreshInstagramProfileSnapshotForUser(clerkId, integrationId, { now });
+  const comparison = await getInstagramSnapshotComparisonForUser(userId, integrationId, period, now);
+
+  return { comparison, refresh };
 }
 
 export async function refreshInstagramProfileSnapshotForUser(

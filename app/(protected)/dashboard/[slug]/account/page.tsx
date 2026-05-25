@@ -7,7 +7,7 @@ import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
 import {
   formatSnapshotRefreshTime,
-  getInstagramSnapshotComparisonForUser,
+  getInstagramSnapshotComparisonWithMissingRefresh,
   getProfileSnapshotStatus,
 } from "@/lib/instagram-profile-snapshot";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
@@ -24,16 +24,20 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const period = parseDashboardPeriod(searchParams?.period);
   const periodRange = getPeriodRange(period);
 
-  const [stats, healthResult, usage, snapshotComparison] = user?.id
+  const [healthResult, usage, snapshotState] = user?.id
     ? await Promise.all([
-        getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, period),
         getCurrentWebhookHealth(),
         getUserMonthlyUsage(user.id),
-        getInstagramSnapshotComparisonForUser(user.id, instagram?.id, period),
+        getInstagramSnapshotComparisonWithMissingRefresh(user.clerkId, user.id, instagram?.id, period),
       ])
-    : [null, { status: 200, data: null }, null, null];
+    : [{ status: 200, data: null }, null, { comparison: null, refresh: null }];
+  const stats = user?.id
+    ? await getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, period)
+    : null;
 
   const health = healthResult.status === 200 ? healthResult.data : null;
+  const snapshotComparison = snapshotState.comparison;
+  const autoRefresh = snapshotState.refresh;
   const snapshot = snapshotComparison?.current ?? null;
   const profileSnapshotStatus = getProfileSnapshotStatus(snapshot);
   const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
@@ -88,7 +92,12 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
               </p>
               {connected && profileSnapshotStatus.label === "Missing" && (
                 <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
-                  Click &quot;Refresh profile&quot; above to load your Instagram followers and posts.
+                  Refresh profile to load your Instagram followers and posts.
+                </p>
+              )}
+              {connected && autoRefresh?.error && (
+                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  {autoRefresh.error}
                 </p>
               )}
               {connected && profileSnapshotStatus.label === "Partial" && (

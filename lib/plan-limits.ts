@@ -134,3 +134,12 @@ export function usageTone(percent: number, blocked: boolean): "green" | "amber" 
   if (percent >= 70) return "amber";
   return "green";
 }
+
+export function formatUsageMetricValue(metric: Pick<UsageMetric, "used" | "limit">) {
+  return `${metric.used.toLocaleString()} / ${isUnlimited(metric.limit) ? "Unlimited" : metric.limit.toLocaleString()}`;
+}
+
+export function formatConnectedAccountsHelper(planLabel: string, metric: Pick<UsageMetric, "limit">) {
+  const limit = isUnlimited(metric.limit) ? "unlimited" : metric.limit.toLocaleString();
+  return `${planLabel} supports ${limit} account${metric.limit === 1 ? "" : "s"}.`;
+}

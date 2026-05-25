@@ -26,6 +26,7 @@ vi.mock("@/lib/fetch", () => ({
 
 import {
   getInstagramSnapshotComparison,
+  getInstagramSnapshotComparisonWithMissingRefresh,
   getInstagramSnapshotComparisonForUser,
   getLatestInstagramSnapshot,
   getProfileSnapshotStatus,
@@ -41,8 +42,8 @@ function snapshot(overrides: Record<string, any> = {}) {
     instagramId: overrides.instagramId ?? "ig-1",
     username: overrides.username ?? "ap3k",
     profilePictureUrl: overrides.profilePictureUrl ?? "https://example.com/avatar.jpg",
-    followersCount: overrides.followersCount ?? 100,
-    mediaCount: overrides.mediaCount ?? 10,
+    followersCount: Object.prototype.hasOwnProperty.call(overrides, "followersCount") ? overrides.followersCount : 100,
+    mediaCount: Object.prototype.hasOwnProperty.call(overrides, "mediaCount") ? overrides.mediaCount : 10,
     accountType: overrides.accountType ?? "BUSINESS",
     source: "meta_graph",
     fetchedAt: overrides.fetchedAt ?? now,
@@ -176,7 +177,7 @@ describe("instagram profile snapshots", () => {
 
     const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
 
-    expect(result.error).toBe("Instagram profile stats unavailable.");
+    expect(result.error).toBe("Meta did not return follower/post fields. Reconnect Instagram or check account permissions.");
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
@@ -231,6 +232,38 @@ describe("instagram profile snapshots", () => {
       }),
     });
     expect(result.cached).toBe(false);
+    expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("missing snapshot triggers one safe refresh attempt and returns the refreshed snapshot", async () => {
+    mockFindIntegrationFirst
+      .mockResolvedValueOnce({ id: "integration-a" })
+      .mockResolvedValueOnce({
+        id: "integration-a",
+        token: "page-token-secret",
+        expiresAt: new Date("2026-06-01T00:00:00Z"),
+        instagramId: "ig-1",
+        instagramUsername: "olduser",
+        profilePictureUrl: null,
+        snapshots: [],
+      })
+      .mockResolvedValueOnce({ id: "integration-a" });
+    mockFindSnapshotFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(snapshot({ id: "snap-new", followersCount: 444, mediaCount: 12 }))
+      .mockResolvedValueOnce(null);
+    mockGetInstagramBusinessProfile.mockResolvedValue({
+      data: { id: "ig-1", username: "realuser", followers_count: 444, media_count: 12 },
+    });
+    mockCreateSnapshot.mockImplementation(async ({ data }) => snapshot({ ...data, id: "snap-new", createdAt: now }));
+    mockUpdateIntegration.mockResolvedValue({});
+
+    const result = await getInstagramSnapshotComparisonWithMissingRefresh("clerk-a", "user-a", "integration-a", "month", now);
+
+    expect(mockGetInstagramBusinessProfile).toHaveBeenCalledTimes(1);
+    expect(result.refresh?.cached).toBe(false);
+    expect(result.comparison?.current?.followersCount).toBe(444);
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 

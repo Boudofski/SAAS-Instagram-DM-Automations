@@ -31,6 +31,14 @@ function unavailable(subtitle: string): AccountStatValue {
   return { value: "Not enabled", enabled: false, subtitle };
 }
 
+function missingSnapshot(): AccountStatValue {
+  return { value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" };
+}
+
+function unavailableSnapshotField(subtitle: string): AccountStatValue {
+  return { value: "Unavailable", enabled: false, subtitle };
+}
+
 export async function getInstagramAccountSettingsStats(
   userId: string,
   integrationId?: string,
@@ -51,11 +59,15 @@ export async function getInstagramAccountSettingsStats(
     followers:
       typeof snapshot?.followersCount === "number"
         ? { value: snapshot.followersCount, enabled: true, subtitle: followerSubtitle }
-        : unavailable("Click Refresh profile on the Account page to load"),
+        : snapshot
+          ? unavailableSnapshotField("Meta did not return follower count")
+          : missingSnapshot(),
     posts:
       typeof snapshot?.mediaCount === "number"
         ? { value: snapshot.mediaCount, enabled: true, subtitle: "Instagram media count" }
-        : unavailable("Click Refresh profile on the Account page to load"),
+        : snapshot
+          ? unavailableSnapshotField("Meta did not return media count")
+          : missingSnapshot(),
     comments: { value: metrics.commentsReceived, enabled: true, subtitle: "Real external comments this period" },
     removed: unavailable("Moderation not enabled"),
     dmsIn: unavailable("DM webhooks require messaging approval"),

@@ -68,8 +68,8 @@ describe("instagram account settings stats", () => {
   it("returns intentional unavailable states for unsupported data sources", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.followers).toEqual({ value: "Not enabled", enabled: false, subtitle: "Click Refresh profile on the Account page to load" });
-    expect(stats.posts).toEqual({ value: "Not enabled", enabled: false, subtitle: "Click Refresh profile on the Account page to load" });
+    expect(stats.followers).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" });
+    expect(stats.posts).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" });
     expect(stats.removed).toEqual({ value: "Not enabled", enabled: false, subtitle: "Moderation not enabled" });
     expect(stats.dmsIn).toEqual({ value: "Not enabled", enabled: false, subtitle: "DM webhooks require messaging approval" });
   });
@@ -87,5 +87,20 @@ describe("instagram account settings stats", () => {
 
     expect(stats.followers).toEqual({ value: 12345, enabled: true, subtitle: "+25 this period" });
     expect(stats.posts).toEqual({ value: 87, enabled: true, subtitle: "Instagram media count" });
+  });
+
+  it("marks missing snapshot fields unavailable after a partial snapshot is stored", async () => {
+    mockGetInstagramSnapshotComparisonForUser.mockResolvedValue({
+      current: {
+        followersCount: null,
+        mediaCount: null,
+      },
+      followerChange: null,
+    });
+
+    const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
+
+    expect(stats.followers).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta did not return follower count" });
+    expect(stats.posts).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta did not return media count" });
   });
 });
