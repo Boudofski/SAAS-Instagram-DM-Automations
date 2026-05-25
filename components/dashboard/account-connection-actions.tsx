@@ -3,6 +3,7 @@
 import {
   getInstagramConnectUrl,
   refreshInstagramProfileSnapshot,
+  repairCurrentInstagramConnection,
   resubscribeCurrentInstagramWebhooks,
 } from "@/actions/integration";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,20 @@ export default function AccountConnectionActions({ connected, integrationId }: P
       const result = await resubscribeCurrentInstagramWebhooks();
       if (result.status === 200) toast.success(result.data);
       else toast.error(result.data ?? "Webhook resubscribe failed");
+    });
+  };
+
+  const repairConnection = () => {
+    startTransition(async () => {
+      const result = await repairCurrentInstagramConnection();
+      if (result.status === 200 && typeof result.data === "object") {
+        toast.success(
+          `Repair complete: ${result.data.oldIntegrationsDisabled} old integration(s) disabled, ${result.data.pausedCampaigns} campaign(s) paused.`
+        );
+        router.refresh();
+      } else {
+        toast.error(typeof result.data === "string" ? result.data : "Repair failed");
+      }
     });
   };
 
@@ -108,6 +123,15 @@ export default function AccountConnectionActions({ connected, integrationId }: P
             className="h-11 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
           >
             {isPending ? "Refreshing..." : "Resubscribe webhooks"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={repairConnection}
+            disabled={isPending}
+            className="h-11 rounded-xl border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+          >
+            Repair Instagram connection
           </Button>
         </>
       )}

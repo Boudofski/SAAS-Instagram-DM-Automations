@@ -54,8 +54,8 @@ export const updateIntegration = async (
       disconnectedAt: null,
       disconnectedReason: null,
       reconnectRequired: false,
-      lastAdminNote: null,
-      lastAdminActionAt: null,
+      lastAdminNote: "instagram_connection_refreshed",
+      lastAdminActionAt: new Date(),
     },
   });
 };

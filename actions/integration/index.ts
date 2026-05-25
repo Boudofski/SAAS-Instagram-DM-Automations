@@ -25,6 +25,8 @@ import {
   updateIntegration,
 } from "./queries";
 import { dashboardPath } from "@/lib/dashboard";
+import { planReconnectCleanup } from "@/lib/account-webhook-diagnostics";
+import { client } from "@/lib/prisma";
 
 const REQUIRED_META_BUSINESS_SCOPES = [
   "pages_show_list",
@@ -441,6 +443,101 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
     });
     return { status: 500, data: formatSafeMetaError(error) || "Meta rejected the page webhook subscription request" };
   }
+};
+
+export const repairCurrentInstagramConnection = async () => {
+  const user = await currentUser();
+  if (!user) return { status: 401, data: "Sign in required" };
+
+  const dbUser = await client.user.findUnique({
+    where: { clerkId: user.id },
+    select: {
+      id: true,
+      integrations: {
+        where: { name: "INSTAGRAM" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          userId: true,
+          instagramId: true,
+          instagramUsername: true,
+          webhookAccountId: true,
+          pageId: true,
+          businessId: true,
+          status: true,
+        },
+      },
+      automations: {
+        where: { archivedAt: null },
+        select: {
+          id: true,
+          name: true,
+          active: true,
+          userId: true,
+          posts: { select: { postid: true } },
+          User: {
+            select: {
+              integrations: {
+                where: { name: "INSTAGRAM" },
+                select: {
+                  id: true,
+                  userId: true,
+                  instagramId: true,
+                  instagramUsername: true,
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  const current = dbUser?.integrations.find((item) => item.status !== "DISCONNECTED") ?? dbUser?.integrations[0];
+  if (!dbUser || !current) return { status: 404, data: "No Instagram account is connected" };
+
+  const plan = planReconnectCleanup({
+    current,
+    integrations: dbUser.integrations,
+    campaigns: dbUser.automations,
+  });
+  const reason = "Self-service Instagram connection repair";
+  const [disabled, paused] = await client.$transaction([
+    client.integrations.updateMany({
+      where: { userId: dbUser.id, id: { in: plan.staleIntegrationIds } },
+      data: {
+        status: "DISCONNECTED",
+        disconnectedAt: new Date(),
+        disconnectedReason: reason,
+        reconnectRequired: true,
+      },
+    }),
+    client.automation.updateMany({
+      where: { userId: dbUser.id, id: { in: plan.shouldPauseCampaignIds } },
+      data: { active: false },
+    }),
+    client.integrations.update({
+      where: { id: current.id },
+      data: {
+        status: "CONNECTED",
+        reconnectRequired: false,
+        lastAdminNote: reason,
+        lastAdminActionAt: new Date(),
+      },
+    }),
+  ]);
+
+  revalidatePath("/dashboard", "layout");
+  return {
+    status: 200,
+    data: {
+      oldIntegrationsDisabled: disabled.count,
+      activeIntegrationId: current.id,
+      activeCampaignsNeedingRecreation: plan.campaignsNeedingRecreation.map((campaign) => campaign.id),
+      currentInstagramId: current.instagramId,
+      pausedCampaigns: paused.count,
+    },
+  };
 };
 
 export const refreshInstagramProfileSnapshot = async (

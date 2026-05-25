@@ -13,6 +13,8 @@ import {
 import { formatSnapshotRefreshTime, getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
+import { dashboardNoCommentDiagnosis } from "@/lib/account-webhook-diagnostics";
+import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
@@ -57,15 +59,16 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
   const period = parseDashboardPeriod(searchParams?.period);
-  const [usage, dashboardStats, campaignMetrics, recentResult, snapshotComparison] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, recentResult, snapshotComparison, accountDiagnostics] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period),
         getCampaignTableMetrics(userResult.data.id),
         getRecentAutomationActivity(),
         getInstagramSnapshotComparisonForUser(userResult.data.id, instagram?.id, period),
+        getAccountWebhookDiagnosticsForIntegration(instagram?.id),
       ])
-    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, null];
+    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, null, null];
   const profileSnapshot = snapshotComparison?.current;
   const profileSnapshotStatus = getProfileSnapshotStatus(profileSnapshot);
   const displayInstagramUsername = profileSnapshot?.username ?? instagram?.instagramUsername;
@@ -79,6 +82,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const metrics = dashboardStats?.current ?? null;
   const changes = dashboardStats?.changes ?? null;
   const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
+  const noCommentDiagnosis = dashboardNoCommentDiagnosis({
+    username: displayInstagramUsername,
+    status: accountDiagnostics?.delivery.status ?? "no_delivery",
+  });
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/account` },
@@ -291,9 +298,16 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
         </div>
         {recentActivity.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
-            No recent interactions yet.
-          </p>
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
+            {noCommentDiagnosis ? (
+              <>
+                <p>{noCommentDiagnosis.title}</p>
+                <p className="mt-1 font-semibold">{noCommentDiagnosis.detail}</p>
+              </>
+            ) : (
+              <p>No recent interactions yet.</p>
+            )}
+          </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/10">
             {recentActivity.map((item, index) => (

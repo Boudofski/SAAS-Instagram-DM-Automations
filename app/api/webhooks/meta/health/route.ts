@@ -3,6 +3,8 @@ import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 
 const WEBHOOK_ROUTE_VERSION = "2026-05-tenant-diagnostics-v2";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const hostUrl = process.env.NEXT_PUBLIC_HOST_URL ?? "https://ap3k.com";
   const diagnostics = await getMetaAdminDiagnostics();

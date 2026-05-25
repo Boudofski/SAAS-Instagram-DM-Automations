@@ -6,6 +6,7 @@ import {
   disconnectIntegrationAction,
   duplicateCampaignAction,
   markIntegrationReconnectRequiredAction,
+  repairIntegrationConnectionAction,
   resubscribeIntegrationAction,
   setCampaignActiveAction,
   suspendUserAction,
@@ -39,6 +40,10 @@ import {
 } from "@/lib/admin-control-center";
 import { requireOwnerAdmin } from "@/lib/admin";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
+import {
+  getAccountWebhookDiagnosticsForIntegration,
+  getIntegrationComparisonDiagnostics,
+} from "@/lib/account-webhook-diagnostics-db";
 import { client } from "@/lib/prisma";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { isUnlimited } from "@/lib/plan-limits";
@@ -329,6 +334,10 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     selfCommentsSkipped24h,
     duplicateCommentsSkipped24h,
   });
+  const [accountWebhookDiagnostics, integrationComparisonDiagnostics] = await Promise.all([
+    getAccountWebhookDiagnosticsForIntegration(metaDiagnostics.integration?.id),
+    getIntegrationComparisonDiagnostics("boudofi"),
+  ]);
 
   const usageUsers = await client.user.findMany({
     orderBy: { createdAt: "desc" },
@@ -1172,14 +1181,51 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
               <Panel title="Connected Account Webhook Status (@boudofi check)">
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <HealthCard label="IG Username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "None"} tone={metaDiagnostics.integration?.instagramUsername === "boudofi" ? "green" : "amber"} />
+                  <HealthCard label="Integration ID" value={accountWebhookDiagnostics?.integration.id ?? metaDiagnostics.integration?.id ?? "None"} />
+                  <HealthCard label="Owner email" value={accountWebhookDiagnostics?.integration.ownerEmail ?? metaDiagnostics.integration?.userEmail ?? "None"} />
                   <HealthCard label="Instagram ID" value={metaDiagnostics.integration?.instagramId ?? "None"} />
                   <HealthCard label="Webhook ID" value={metaDiagnostics.integration?.webhookAccountId ?? "None"} />
                   <HealthCard label="Page ID" value={metaDiagnostics.integration?.pageId ?? "None"} />
-                  <HealthCard label="Delivery state" value={metaDiagnostics.currentWebhookState} tone={metaDiagnostics.currentWebhookState === "Comment webhooks active" ? "green" : "amber"} />
-                  <HealthCard label="Last raw POST" value={formatAdminDate(metaDiagnostics.lastRawPost?.createdAt)} tone={metaDiagnostics.lastRawPost ? "green" : "amber"} />
-                  <HealthCard label="Last DM webhook" value={formatAdminDate(metaDiagnostics.lastInboundDm?.createdAt)} tone={metaDiagnostics.lastInboundDm ? "green" : "slate"} />
-                  <HealthCard label="Last Comment webhook" value={formatAdminDate(metaDiagnostics.lastRealComment?.createdAt)} tone={metaDiagnostics.lastRealComment ? "green" : "slate"} />
+                  <HealthCard label="Business ID" value={accountWebhookDiagnostics?.integration.businessId ?? metaDiagnostics.integration?.businessId ?? "None"} />
+                  <HealthCard label="Token present" value={accountWebhookDiagnostics?.integration.tokenPresent ? "Yes" : "No"} tone={accountWebhookDiagnostics?.integration.tokenPresent ? "green" : "red"} />
+                  <HealthCard label="Token expiry" value={formatAdminDate(accountWebhookDiagnostics?.integration.expiresAt ?? metaDiagnostics.integration?.expiresAt)} />
+                  <HealthCard label="Delivery state" value={accountWebhookDiagnostics?.delivery.label ?? metaDiagnostics.currentWebhookState} tone={accountWebhookDiagnostics?.delivery.status === "comments_active" ? "green" : "amber"} />
+                  <HealthCard label="Last raw POST" value={formatAdminDate(accountWebhookDiagnostics?.delivery.lastRawWebhook?.createdAt ?? metaDiagnostics.lastRawPost?.createdAt)} tone={accountWebhookDiagnostics?.delivery.lastRawWebhook ? "green" : "amber"} />
+                  <HealthCard label="Last DM webhook" value={formatAdminDate(accountWebhookDiagnostics?.delivery.lastMessagingWebhook?.createdAt ?? metaDiagnostics.lastInboundDm?.createdAt)} tone={accountWebhookDiagnostics?.delivery.lastMessagingWebhook ? "green" : "slate"} />
+                  <HealthCard label="Last Comment webhook" value={formatAdminDate(accountWebhookDiagnostics?.delivery.lastCommentWebhook?.createdAt ?? metaDiagnostics.lastRealComment?.createdAt)} tone={accountWebhookDiagnostics?.delivery.lastCommentWebhook ? "green" : "slate"} />
+                  <HealthCard label="Profile snapshot" value={accountWebhookDiagnostics?.profileSnapshot?.username ? `@${accountWebhookDiagnostics.profileSnapshot.username}` : "None"} />
+                  <HealthCard label="Last campaign media" value={accountWebhookDiagnostics?.lastCampaignMedia?.postid ?? "None"} />
+                  <HealthCard label="Active campaigns" value={String(accountWebhookDiagnostics?.activeCampaignCount ?? 0)} />
                 </div>
+                {accountWebhookDiagnostics?.delivery.status === "only_messaging_active" && (
+                  <Callout tone="amber" title="Only messaging active">
+                    Meta is delivering messaging webhooks for this IG account, but AP3k has not received a real comment webhook for it in the last 24h.
+                  </Callout>
+                )}
+                {accountWebhookDiagnostics?.campaignDiagnostics.some((item) => item.stale) && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                    <p className="font-black uppercase tracking-[0.14em]">Campaign media binding warnings</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {accountWebhookDiagnostics.campaignDiagnostics.filter((item) => item.stale).slice(0, 8).map((item) => (
+                        <li key={item.campaignId}>
+                          {item.campaignName}: media {item.postId ?? "none"} - {item.warnings.join(" ")}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {accountWebhookDiagnostics?.integration.id && (
+                  <form action={async (formData) => {
+                    "use server";
+                    await repairIntegrationConnectionAction(formData);
+                  }} className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <input type="hidden" name="integrationId" value={accountWebhookDiagnostics.integration.id} />
+                    <input type="hidden" name="reason" value="Emergency boudofi account-specific repair" />
+                    <p className="text-sm font-bold text-amber-950">Repair Instagram connection</p>
+                    <p className="mt-1 text-xs text-amber-900">Disables stale integrations for the same owner, keeps current IG ID active, pauses stale active campaigns if needed, and writes an admin audit log. No data is deleted.</p>
+                    <button className="mt-3 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run repair</button>
+                  </form>
+                )}
                 {metaDiagnostics.lastCommentWebhookDetails && (
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
                     <p className="font-bold">Last comment payload parsing:</p>
@@ -1214,6 +1260,30 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   </div>
                 </div>
               </Panel>
+
+              {integrationComparisonDiagnostics && (
+                <Panel title="Working vs failing account comparison">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {[
+                      ["Working account", integrationComparisonDiagnostics.working],
+                      ["@boudofi / failing account", integrationComparisonDiagnostics.failing],
+                    ].map(([title, item]: any) => (
+                      <div key={title} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-white/[0.04]">
+                        <p className="font-black text-slate-950 dark:text-white">{title}</p>
+                        <div className="mt-3 grid gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                          <p>Username: {item.integration.instagramUsername ? `@${item.integration.instagramUsername}` : "unknown"}</p>
+                          <p>IG ID: {item.integration.instagramId ?? "none"}</p>
+                          <p>Page ID: {item.integration.pageId ?? "none"}</p>
+                          <p>Webhook ID: {item.integration.webhookAccountId ?? "none"}</p>
+                          <p>Delivery: {item.label}</p>
+                          <p>Active campaigns: {item.activeCampaigns}</p>
+                          <p>Selected media IDs: {item.selectedMediaIds.length ? item.selectedMediaIds.join(", ") : "none"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+              )}
 
               <Panel title="Webhook Delivery Health">
                 <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">

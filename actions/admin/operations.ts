@@ -8,6 +8,7 @@ import {
   requireTypedConfirmation,
 } from "@/actions/admin/safe-actions";
 import { subscribeInstagramWebhooks, formatSafeMetaError } from "@/lib/fetch";
+import { planReconnectCleanup } from "@/lib/account-webhook-diagnostics";
 import { client } from "@/lib/prisma";
 import { canActivateCampaign } from "@/actions/usage/queries";
 import { revalidatePath } from "next/cache";
@@ -244,6 +245,129 @@ export async function resubscribeIntegrationAction(formData: FormData) {
         });
         return { before, after, result: "Webhook subscription failed." };
       }
+    },
+  });
+}
+
+export async function repairIntegrationConnectionAction(formData: FormData) {
+  const integrationId = adminFormString(formData, "integrationId");
+  const reason = adminFormString(formData, "reason") || "Repair Instagram connection";
+
+  return adminMutation({
+    action: "REPAIR_INSTAGRAM_CONNECTION",
+    targetType: "Integration",
+    targetId: integrationId,
+    reason,
+    run: async () => {
+      const current = await client.integrations.findUnique({
+        where: { id: integrationId },
+        select: {
+          id: true,
+          userId: true,
+          instagramId: true,
+          instagramUsername: true,
+          webhookAccountId: true,
+          pageId: true,
+          businessId: true,
+          status: true,
+        },
+      });
+      if (!current?.userId) throw new Error("Active integration not found.");
+
+      const [integrations, campaigns] = await Promise.all([
+        client.integrations.findMany({
+          where: { userId: current.userId, name: "INSTAGRAM" },
+          select: {
+            id: true,
+            userId: true,
+            instagramId: true,
+            instagramUsername: true,
+            webhookAccountId: true,
+            pageId: true,
+            businessId: true,
+            status: true,
+          },
+        }),
+        client.automation.findMany({
+          where: { userId: current.userId, archivedAt: null },
+          select: {
+            id: true,
+            name: true,
+            active: true,
+            userId: true,
+            posts: { select: { postid: true } },
+            User: {
+              select: {
+                integrations: {
+                  where: { name: "INSTAGRAM" },
+                  select: {
+                    id: true,
+                    userId: true,
+                    instagramId: true,
+                    instagramUsername: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ]);
+
+      const plan = planReconnectCleanup({ current, integrations, campaigns });
+      const [disabled, paused, after] = await client.$transaction([
+        client.integrations.updateMany({
+          where: { id: { in: plan.staleIntegrationIds } },
+          data: {
+            status: "DISCONNECTED",
+            disconnectedAt: new Date(),
+            disconnectedReason: reason,
+            reconnectRequired: true,
+            lastAdminNote: reason,
+            lastAdminActionAt: new Date(),
+          },
+        }),
+        client.automation.updateMany({
+          where: { id: { in: plan.shouldPauseCampaignIds } },
+          data: { active: false },
+        }),
+        client.integrations.update({
+          where: { id: current.id },
+          data: {
+            status: "CONNECTED",
+            reconnectRequired: false,
+            lastAdminNote: reason,
+            lastAdminActionAt: new Date(),
+          },
+          select: {
+            id: true,
+            instagramId: true,
+            instagramUsername: true,
+            status: true,
+            reconnectRequired: true,
+            lastAdminActionAt: true,
+          },
+        }),
+      ]);
+
+      return {
+        before: { current, staleIntegrationIds: plan.staleIntegrationIds },
+        after,
+        metadata: {
+          oldIntegrationsDisabled: disabled.count,
+          activeIntegrationId: current.id,
+          activeCampaignsNeedingRecreation: plan.campaignsNeedingRecreation.map((campaign) => campaign.id),
+          currentInstagramId: current.instagramId,
+          pausedCampaigns: paused.count,
+        },
+        result: {
+          oldIntegrationsDisabled: disabled.count,
+          activeIntegrationId: current.id,
+          activeCampaignsNeedingRecreation: plan.campaignsNeedingRecreation.map((campaign) => campaign.id),
+          currentInstagramId: current.instagramId,
+          pausedCampaigns: paused.count,
+        },
+      };
     },
   });
 }

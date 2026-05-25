@@ -639,7 +639,7 @@ function ManualMediaFallback({
         {compact ? "Can't find a post? Paste media ID or URL manually." : "No posts found. Add a media ID manually."}
       </h3>
       <p className="mt-2 text-xs leading-relaxed dark:text-slate-400 text-slate-500">
-        Paste the Instagram media ID for the post or Reel. A post URL can be saved as a reference,
+        Use media ID from the currently connected Instagram account only. Paste the Instagram media ID for the post or Reel. A post URL can be saved as a reference,
         but webhook matching is most reliable with the Meta media ID returned by Instagram.
       </p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">

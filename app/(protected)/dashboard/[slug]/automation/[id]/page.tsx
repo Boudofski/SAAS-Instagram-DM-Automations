@@ -2,6 +2,7 @@ import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/acti
 import ActiveAutomationButton from "@/components/global/active-automation-button";
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import { groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -42,6 +43,11 @@ export default async function CampaignDetailPage({ params }: Props) {
     ].filter(Boolean).length,
   });
   const groupedActivity = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
+  const connectedIntegration = automation.User?.integrations?.find((item: any) => item.status !== "DISCONNECTED") ?? automation.User?.integrations?.[0];
+  const bindingDiagnostic = buildCampaignBindingDiagnostics({
+    integration: connectedIntegration,
+    campaigns: [automation],
+  })[0];
   const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
 
   const replyRate =
@@ -112,6 +118,19 @@ export default async function CampaignDetailPage({ params }: Props) {
           >
             Resume setup
           </Link>
+        </div>
+      )}
+
+      {bindingDiagnostic?.warnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+          <p className="text-xs font-black uppercase tracking-wider">Campaign media binding warning</p>
+          <p className="mt-2">
+            Connected IG account: {connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Unknown"} / {connectedIntegration?.instagramId ?? "no IG ID"}.
+            Selected media ID: {bindingDiagnostic.postId ?? "none"}.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {bindingDiagnostic.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+          </ul>
         </div>
       )}
 

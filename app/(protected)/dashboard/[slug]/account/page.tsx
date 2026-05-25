@@ -4,6 +4,7 @@ import { getCurrentWebhookHealth } from "@/actions/integration";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
 import { canShowProfileSyncDebug, getWebhookHealthPresentation } from "@/lib/instagram-account-ux";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
+import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
 import {
@@ -28,13 +29,14 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const period = parseDashboardPeriod(searchParams?.period);
   const periodRange = getPeriodRange(period);
 
-  const [healthResult, usage, snapshotState] = user?.id
+  const [healthResult, usage, snapshotState, accountDiagnostics] = user?.id
     ? await Promise.all([
         getCurrentWebhookHealth(),
         getUserMonthlyUsage(user.id),
         getInstagramSnapshotComparisonWithMissingRefresh(user.clerkId, user.id, instagram?.id, period),
+        getAccountWebhookDiagnosticsForIntegration(instagram?.id),
       ])
-    : [{ status: 200, data: null }, null, { comparison: null, refresh: null }];
+    : [{ status: 200, data: null }, null, { comparison: null, refresh: null }, null];
   const stats = user?.id
     ? await getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, period)
     : null;
@@ -207,6 +209,13 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           />
         </div>
 
+        {accountDiagnostics?.delivery.status === "only_messaging_active" && (
+          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+            <p>No comment webhooks received for {displayUsername ? `@${displayUsername}` : "this account"} yet.</p>
+            <p className="mt-1 font-semibold">Messaging webhooks are arriving, so AP3k is connected, but comment delivery is not active.</p>
+          </div>
+        )}
+
         {usage && (
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
             <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Plan capacity</p>
@@ -215,6 +224,19 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
             </p>
           </div>
         )}
+      </section>
+
+      <section className="ap3k-card rounded-2xl p-5 sm:p-6">
+        <SectionHeader label="Connected account repair checklist" />
+        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
+          <li>Confirm {displayUsername ? `@${displayUsername}` : "the connected account"} is Professional, Business, or Creator.</li>
+          <li>Confirm it is linked to the selected Facebook Page in Meta Business.</li>
+          <li>Confirm AP3k is Live, or tester/commenter roles are accepted if Development.</li>
+          <li>Meta Developers {">"} Webhooks {">"} Instagram object {">"} comments field subscribed.</li>
+          <li>Reconnect this Instagram account after subscription changes.</li>
+          <li>Recreate campaigns using a fresh post from this account after reconnect.</li>
+          <li>Test from a different Instagram account, not the connected account itself.</li>
+        </ol>
       </section>
 
       <section className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-500/30 dark:bg-red-500/10 sm:p-6">

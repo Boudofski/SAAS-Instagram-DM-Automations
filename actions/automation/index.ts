@@ -328,7 +328,7 @@ export const getProfilePosts = async () => {
       `${baseUrl}/${connection.instagramBusinessAccountId}/media?fields=id,caption,media_url,thumbnail_url,media_type,timestamp,permalink&limit=25`,
       {
         headers: { Authorization: `Bearer ${connection.token}` },
-        next: { revalidate: 60 },
+        cache: "no-store",
       }
     );
 
