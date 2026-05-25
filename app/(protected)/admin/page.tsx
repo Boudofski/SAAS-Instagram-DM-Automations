@@ -57,6 +57,7 @@ type SearchParams = {
   testSince?: string;
   usageFilter?: string;
   userId?: string;
+  dashboardSlug?: string;
   integrationFilter?: string;
   messageFilter?: string;
   auditStatus?: string;
@@ -90,6 +91,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   const auditStatus = searchParams?.auditStatus?.trim();
   const auditAction = searchParams?.auditAction?.trim();
   const auditTarget = searchParams?.auditTarget?.trim();
+  const dashboardSlug = searchParams?.dashboardSlug?.trim();
   const qUuid = q && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)
     ? q
     : null;
@@ -339,6 +341,24 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   const usersOverReplyLimit = adminUsageSummaries.filter((usage) => usage.staticReplies.blocked).length;
   const usersNearReplyLimit = adminUsageSummaries.filter((usage) => !usage.staticReplies.blocked && usage.staticReplies.percent >= 70).length;
   const dangerStatus = adminDangerZoneStatus();
+  const tenantCheckOwner = dashboardSlug
+    ? await client.user.findUnique({
+        where: { clerkId: dashboardSlug },
+        select: { id: true, clerkId: true, email: true },
+      })
+    : null;
+  const tenantCheckCampaigns = tenantCheckOwner
+    ? await client.automation.findMany({
+        where: { archivedAt: null, User: { clerkId: tenantCheckOwner.clerkId } },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { id: true, name: true, User: { select: { clerkId: true, email: true } } },
+      })
+    : [];
+  const tenantCheckMismatch = Boolean(
+    tenantCheckOwner &&
+      tenantCheckCampaigns.some((campaign) => campaign.User?.clerkId !== tenantCheckOwner.clerkId)
+  );
 
   const tabHref = (id: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams({
@@ -678,6 +698,15 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <HealthCard label="DM capability" value={dmCapabilityMissing ? "Meta capability missing" : lastDmSent ? "DM sent" : "No success yet"} tone={dmCapabilityMissing ? "red" : lastDmSent ? "green" : "amber"} />
                     <HealthCard label="Last loop guard" value={lastLoopGuardEvent ? `${lastLoopGuardEvent.eventType} · ${formatAdminDate(lastLoopGuardEvent.createdAt)}` : "None"} tone={lastLoopGuardEvent ? "red" : "green"} />
                     <HealthCard label="Recommendation" value="Pause Any Comment campaigns until review if loop guard or self-comment skips appear." tone={loopGuardTriggered24h ? "red" : "amber"} />
+                  </div>
+                </Panel>
+
+                <Panel title="Tenant isolation check" description="Admin-only visibility for dashboard owner and scoped campaign owners. Add dashboardSlug=user_xxx to inspect a user dashboard.">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <HealthCard label="Current signed-in admin" value={admin.email ?? admin.clerkId} />
+                    <HealthCard label="Dashboard slug owner" value={tenantCheckOwner ? tenantCheckOwner.email : dashboardSlug ? "No owner found" : "No slug provided"} tone={tenantCheckOwner ? "green" : dashboardSlug ? "red" : "slate"} />
+                    <HealthCard label="Visible campaign owners" value={tenantCheckCampaigns.length ? Array.from(new Set(tenantCheckCampaigns.map((campaign) => campaign.User?.email ?? "unknown"))).join(", ") : "None"} />
+                    <HealthCard label="Mismatch warning" value={tenantCheckMismatch ? "Campaign owner differs from dashboard owner" : "No mismatch detected"} tone={tenantCheckMismatch ? "red" : "green"} />
                   </div>
                 </Panel>
 

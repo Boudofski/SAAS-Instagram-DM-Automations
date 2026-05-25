@@ -199,6 +199,12 @@ describe("comment webhook private DM toggle", () => {
     await POST(commentRequest());
 
     expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "DM_FAILED" })
+    );
+    expect(mockCreateMessageLog).not.toHaveBeenCalledWith(
+      expect.objectContaining({ messageType: "DM", status: "FAILED" })
+    );
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         automationId: campaign.id,
@@ -323,6 +329,9 @@ describe("comment webhook private DM toggle", () => {
 
     expect(mockSendCommentReply).toHaveBeenCalledOnce();
     expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "DM_FAILED" })
+    );
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: "PUBLIC_REPLY_SENT" })
     );

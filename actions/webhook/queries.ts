@@ -131,7 +131,7 @@ export const findAutomationForCommentWithReason = async (
   });
   // Match by any known ID field — entry.id is IG Business ID for object=instagram,
   // or Page ID for object=page. Try all stored ID fields to handle both shapes.
-  const integration = await client.integrations.findFirst({
+  const matchingIntegrations = await client.integrations.findMany({
     where: {
       OR: [
         { pageId },
@@ -143,6 +143,7 @@ export const findAutomationForCommentWithReason = async (
       reconnectRequired: false,
       User: { status: { not: "SUSPENDED" } },
     },
+    orderBy: { createdAt: "desc" },
     select: {
       id: true,
       userId: true,
@@ -156,7 +157,7 @@ export const findAutomationForCommentWithReason = async (
     },
   });
 
-  if (!integration?.userId) {
+  if (matchingIntegrations.length === 0 || !matchingIntegrations.some((item) => item.userId)) {
     return {
       automation: null,
       automations: [],
@@ -176,52 +177,69 @@ export const findAutomationForCommentWithReason = async (
     };
   }
 
-  // Store incoming ID as webhookAccountId so future lookups hit the fast path.
-  if (!integration.webhookAccountId || integration.webhookAccountId !== pageId) {
-    await client.integrations.update({
-      where: { id: integration.id },
-      data: { webhookAccountId: pageId },
-    });
-  }
+  await Promise.all(
+    matchingIntegrations
+      .filter((integration) => !integration.webhookAccountId || integration.webhookAccountId !== pageId)
+      .map((integration) =>
+        client.integrations.update({
+          where: { id: integration.id },
+          data: { webhookAccountId: pageId },
+        })
+      )
+  );
 
-  const accountAutomations = await client.automation.findMany({
-    where: {
-      userId: integration.userId,
-      archivedAt: null,
-      trigger: { some: { type: "COMMENT" } },
-    },
-    include: {
-      posts: true,
-      keywords: true,
-      listener: true,
-      User: {
-        select: {
-          subscription: { select: { plan: true } },
-          integrations: {
-            select: {
-              id: true,
-              token: true,
-              instagramId: true,
-              pageId: true,
-              webhookAccountId: true,
-              businessId: true,
-              instagramUsername: true,
-              status: true,
-              reconnectRequired: true,
+  const accountAutomationsByIntegration = await Promise.all(
+    matchingIntegrations
+      .filter((integration) => integration.userId)
+      .map(async (integration) => ({
+        integration,
+        automations: await client.automation.findMany({
+          where: {
+            userId: integration.userId,
+            archivedAt: null,
+            trigger: { some: { type: "COMMENT" } },
+          },
+          orderBy: { createdAt: "desc" },
+          include: {
+            posts: true,
+            keywords: true,
+            listener: true,
+            User: {
+              select: {
+                subscription: { select: { plan: true } },
+                integrations: {
+                  select: {
+                    id: true,
+                    token: true,
+                    instagramId: true,
+                    pageId: true,
+                    webhookAccountId: true,
+                    businessId: true,
+                    instagramUsername: true,
+                    status: true,
+                    reconnectRequired: true,
+                  },
+                },
+              },
             },
           },
-        },
-      },
-    },
-  });
+        }),
+      }))
+  );
 
-  const activeAutomations = accountAutomations.filter((automation) => automation.active);
-  const comparisons = accountAutomations.flatMap((automation) => {
+  const accountAutomations = accountAutomationsByIntegration.flatMap((item) =>
+    item.automations.map((automation) => ({ automation, integration: item.integration }))
+  );
+
+  const activeAutomations = accountAutomations.filter((item) => item.automation.active);
+  const comparisons = accountAutomations.flatMap(({ automation, integration }) => {
     const posts = automation.posts.length > 0 ? automation.posts : [{ postid: "" }];
     return posts.map((post) => {
       const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
       const isAnyPost = post.postid === "ANY" || normalizedStoredPostId === "ANY";
       return {
+        integrationId: integration.id,
+        integrationUserId: integration.userId,
         automationId: automation.id,
         automationName: automation.name,
         automationActive: automation.active,
@@ -240,8 +258,8 @@ export const findAutomationForCommentWithReason = async (
       };
     });
   });
-  const matchedAutomations = activeAutomations.filter((item) =>
-    item.posts.some((post) => {
+  const matchedAutomationPairs = activeAutomations.filter((item) =>
+    item.automation.posts.some((post) => {
       const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
       return (
         post.postid === "ANY" ||
@@ -250,6 +268,8 @@ export const findAutomationForCommentWithReason = async (
       );
     })
   );
+  const matchedAutomations = matchedAutomationPairs.map((item) => item.automation);
+  const matchedIntegration = matchedAutomationPairs[0]?.integration ?? matchingIntegrations[0];
 
   const diagnostics = {
     incomingMediaId: mediaId,
@@ -257,11 +277,12 @@ export const findAutomationForCommentWithReason = async (
     incomingPageId: pageId,
     allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
     allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
+    matchingIntegrationIds: matchingIntegrations.map((item) => item.id),
     matchingIntegrationFound: true,
-    matchedIntegrationId: integration.id,
-    matchedIntegrationInstagramId: integration.instagramId,
-    matchedIntegrationWebhookAccountId: integration.webhookAccountId,
-    matchedIntegrationUsername: integration.instagramUsername,
+    matchedIntegrationId: matchedIntegration?.id,
+    matchedIntegrationInstagramId: matchedIntegration?.instagramId,
+    matchedIntegrationWebhookAccountId: matchedIntegration?.webhookAccountId ?? pageId,
+    matchedIntegrationUsername: matchedIntegration?.instagramUsername,
     matchedAutomationIds: comparisons
       .filter((item) => item.automationActive && item.normalizedMatch)
       .map((item) => item.automationId),

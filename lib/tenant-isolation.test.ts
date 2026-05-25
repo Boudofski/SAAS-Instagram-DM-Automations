@@ -51,6 +51,7 @@ import {
   findAutomationForUser,
   getAutomation,
   getAutomationActivity,
+  getDashboardActivity,
   updateAutomation,
   updateCompleteAutomation,
 } from "@/actions/automation/queries";
@@ -225,6 +226,91 @@ describe("getAutomationActivity — owner scoped logs", () => {
     expect(mockAutomationEventFindMany).not.toHaveBeenCalled();
     expect(mockMessageLogFindMany).not.toHaveBeenCalled();
     expect(mockWebhookEventFindMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("getDashboardActivity — current user activity only", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("loads recent activity from the signed-in user's campaigns and connected IG account ids", async () => {
+    const now = new Date("2026-05-17T10:00:00.000Z");
+    mockUserFindUnique.mockResolvedValue({
+      automations: [{ id: AUTOMATION_A_ID }],
+      integrations: [
+        {
+          instagramId: "ig-boudofi",
+          webhookAccountId: "ig-boudofi",
+          pageId: "page-boudofi",
+          businessId: null,
+        },
+      ],
+    });
+    mockAutomationEventFindMany.mockResolvedValue([]);
+    mockMessageLogFindMany.mockResolvedValue([]);
+    mockWebhookEventFindMany.mockResolvedValue([
+      {
+        id: "webhook-1",
+        automation: { name: "Campaign A" },
+        eventType: "REAL_COMMENT_EVENT",
+        provider: "META_REAL",
+        status: "PROCESSED",
+        igUserId: "commenter-1",
+        igAccountId: "ig-boudofi",
+        mediaId: "media-1",
+        commentId: "comment-1",
+        payload: { commenterUsername: "tester" },
+        createdAt: now,
+      },
+    ]);
+
+    const result = await getDashboardActivity(USER_A_CLERK_ID);
+
+    expect(mockUserFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { clerkId: USER_A_CLERK_ID },
+      })
+    );
+    expect(mockAutomationEventFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { automationId: { in: [AUTOMATION_A_ID] } } })
+    );
+    expect(mockWebhookEventFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: expect.arrayContaining([
+            { automationId: { in: [AUTOMATION_A_ID] } },
+            {
+              igAccountId: { in: ["ig-boudofi", "page-boudofi"] },
+              eventType: { in: ["REAL_COMMENT_EVENT", "REAL_MESSAGE_EVENT"] },
+            },
+          ]),
+        },
+      })
+    );
+    expect(result[0]).toMatchObject({
+      id: "webhook-1",
+      type: "REAL_COMMENT_EVENT",
+      source: "webhook",
+      commentId: "comment-1",
+    });
+  });
+
+  it("does not query another user's automation ids for dashboard activity", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      automations: [{ id: AUTOMATION_A_ID }],
+      integrations: [],
+    });
+    mockAutomationEventFindMany.mockResolvedValue([]);
+    mockMessageLogFindMany.mockResolvedValue([]);
+    mockWebhookEventFindMany.mockResolvedValue([]);
+
+    await getDashboardActivity(USER_A_CLERK_ID);
+
+    expect(mockAutomationEventFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { automationId: { in: [AUTOMATION_A_ID] } } })
+    );
+    expect(mockAutomationEventFindMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { automationId: { in: [AUTOMATION_B_ID] } } })
+    );
   });
 });
 

@@ -43,7 +43,7 @@ function automation(overrides: Record<string, any> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockIntegrationFindMany.mockResolvedValue([
-    { id: "integration-1", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-1", businessId: null },
+    { id: "integration-1", userId: "user-1", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-1", businessId: null },
   ]);
   mockIntegrationFindFirst.mockResolvedValue({
     id: "integration-1",
@@ -99,5 +99,35 @@ describe("findAutomationForCommentWithReason", () => {
 
     expect(result.automations.map((item) => item.id)).toEqual(["keyword", "any-comment"]);
     expect((result.diagnostics as any).matchedAutomationIds).toEqual(["keyword", "any-comment"]);
+  });
+
+  it("checks every matching integration owner and prefers the newest matching account automation", async () => {
+    mockIntegrationFindMany
+      .mockResolvedValueOnce([
+        { id: "old-integration", userId: "old-user", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-1", businessId: null },
+        { id: "new-integration", userId: "new-user", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-1", businessId: null },
+      ])
+      .mockResolvedValueOnce([
+        { id: "new-integration", userId: "new-user", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-1", businessId: null },
+        { id: "old-integration", userId: "old-user", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-1", businessId: null },
+      ]);
+    mockAutomationFindMany
+      .mockResolvedValueOnce([
+        automation({ id: "new-user-campaign", posts: [{ postid: "media-1" }] }),
+      ])
+      .mockResolvedValueOnce([
+        automation({ id: "old-user-campaign", posts: [{ postid: "media-1" }] }),
+      ]);
+
+    const result = await findAutomationForCommentWithReason("media-1", "ig-1");
+
+    expect(mockAutomationFindMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ where: expect.objectContaining({ userId: "new-user" }) })
+    );
+    expect(result.automation?.id).toBe("new-user-campaign");
+    expect(result.automations.map((item) => item.id)).toEqual(["new-user-campaign", "old-user-campaign"]);
+    expect((result.diagnostics as any).matchingIntegrationIds).toEqual(["new-integration", "old-integration"]);
+    expect((result.diagnostics as any).matchedIntegrationId).toBe("new-integration");
   });
 });

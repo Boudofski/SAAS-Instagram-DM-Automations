@@ -426,7 +426,15 @@ async function processEntry(
         continue;
       }
 
-      const integrationRaw = selectIntegrationForWebhook(automation.User?.integrations, pageId);
+      const matchedIntegrationId =
+        match.diagnostics && typeof match.diagnostics === "object"
+          ? (match.diagnostics as any).matchedIntegrationId
+          : undefined;
+      const integrationRaw = selectIntegrationForWebhook(
+        automation.User?.integrations,
+        pageId,
+        matchedIntegrationId
+      );
       const selfComment = getSelfCommentReason({
         commenterId,
         commenterUsername,
@@ -1628,12 +1636,17 @@ function selectIntegrationForWebhook<T extends {
   instagramId?: string | null;
   businessId?: string | null;
   instagramUsername?: string | null;
-}>(integrations: T[] | undefined, entryId: string): T | undefined {
+}>(integrations: T[] | undefined, entryId: string, matchedIntegrationId?: string): T | undefined {
+  const byId = matchedIntegrationId
+    ? integrations?.find((integration) => integration.id === matchedIntegrationId)
+    : undefined;
+  if (byId) return byId;
+
   return integrations?.find((integration) =>
     [integration.webhookAccountId, integration.instagramId, integration.businessId, integration.pageId]
       .filter(Boolean)
       .some((id) => String(id).trim() === String(entryId).trim())
-  ) ?? integrations?.[0];
+  );
 }
 
 function normalizeAccountUsername(value?: string | null) {

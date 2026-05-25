@@ -574,11 +574,30 @@ export const getDashboardActivity = async (clerkId: string) => {
         where: { archivedAt: null },
         select: { id: true },
       },
+      integrations: {
+        where: { name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
+        select: {
+          instagramId: true,
+          webhookAccountId: true,
+          pageId: true,
+          businessId: true,
+        },
+      },
     },
   });
 
   const automationIds = user?.automations.map((automation) => automation.id) ?? [];
-  if (automationIds.length === 0) return [];
+  const integrationAccountIds = Array.from(new Set(
+    (user?.integrations ?? [])
+      .flatMap((integration) => [
+        integration.instagramId,
+        integration.webhookAccountId,
+        integration.pageId,
+        integration.businessId,
+      ])
+      .filter((value): value is string => Boolean(value))
+  ));
+  if (automationIds.length === 0 && integrationAccountIds.length === 0) return [];
 
   const [events, messageLogs, webhookEvents] = await Promise.all([
     client.automationEvent.findMany({
@@ -594,7 +613,14 @@ export const getDashboardActivity = async (clerkId: string) => {
       include: { automation: { select: { name: true } } },
     }),
     client.webhookEvent.findMany({
-      where: { automationId: { in: automationIds } },
+      where: {
+        OR: [
+          ...(automationIds.length ? [{ automationId: { in: automationIds } }] : []),
+          ...(integrationAccountIds.length
+            ? [{ igAccountId: { in: integrationAccountIds }, eventType: { in: ["REAL_COMMENT_EVENT", "REAL_MESSAGE_EVENT"] } }]
+            : []),
+        ],
+      },
       orderBy: { createdAt: "desc" },
       take: 20,
       include: { automation: { select: { name: true } } },
