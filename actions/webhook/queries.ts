@@ -1,5 +1,5 @@
 import { client } from "@/lib/prisma";
-import { matchKeywordWithMode, normalizeMatchText } from "@/lib/matching";
+import { matchKeywordWithMode, normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
 import type {
   Automation,
   Keyword,
@@ -101,14 +101,32 @@ export const findAutomationForComment = async (
 
 export const findAutomationForCommentWithReason = async (
   mediaId: string,
-  pageId: string
+  pageId: string,
+  options: {
+    object?: string;
+    igAccountId?: string | null;
+    commentText?: string;
+  } = {}
 ): Promise<{
   automation: AutomationWithRelations | null;
   automations: AutomationWithRelations[];
-  failureReason?: "no_matching_integration" | "no_active_automation_for_media";
+  failureReason?: "no_matching_integration" | "no_active_automation_for_media" | "keyword_mismatch" | "ambiguous";
   diagnostics: Prisma.InputJsonObject;
 }> => {
   const normalizedIncomingMediaId = normalizeInstagramMediaId(mediaId);
+  const incomingAccountIds = Array.from(new Set(
+    [pageId, options.igAccountId]
+      .map((value) => String(value ?? "").trim())
+      .filter(Boolean)
+  ));
+  const allowPageIdMatch = options.object !== "instagram";
+  const candidateFieldChecks = [
+    "instagramId",
+    "webhookAccountId",
+    "valueIgAccountId",
+    ...(allowPageIdMatch ? ["pageId"] : []),
+    "businessId",
+  ];
   const activeIntegrations = await client.integrations.findMany({
     where: {
       User: {
@@ -134,10 +152,10 @@ export const findAutomationForCommentWithReason = async (
   const matchingIntegrations = await client.integrations.findMany({
     where: {
       OR: [
-        { pageId },
-        { webhookAccountId: pageId },
-        { instagramId: pageId },
-        { businessId: pageId },
+        { instagramId: { in: incomingAccountIds } },
+        { webhookAccountId: { in: incomingAccountIds } },
+        { businessId: { in: incomingAccountIds } },
+        ...(allowPageIdMatch ? [{ pageId: { in: incomingAccountIds } }] : []),
       ],
       status: { not: "DISCONNECTED" },
       reconnectRequired: false,
@@ -166,9 +184,20 @@ export const findAutomationForCommentWithReason = async (
         incomingMediaId: mediaId,
         normalizedIncomingMediaId,
         incomingPageId: pageId,
+        incomingAccountIds,
+        object: options.object,
+        candidateIntegrationCount: 0,
+        candidateFieldsChecked: candidateFieldChecks,
         allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
         allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
         allActiveIntegrationPageIds: activeIntegrations.map((item) => item.pageId).filter(Boolean),
+        maskedStoredIntegrationIds: activeIntegrations.map((item) => ({
+          id: maskId(item.id),
+          instagramId: maskId(item.instagramId),
+          webhookAccountId: maskId(item.webhookAccountId),
+          pageId: maskId(item.pageId),
+        })),
+        reason: "no_integration_for_incoming_account_ids",
         matchingIntegrationFound: false,
         matchedAutomationIds: [],
         storedPostIds: [],
@@ -188,9 +217,18 @@ export const findAutomationForCommentWithReason = async (
       )
   );
 
-  const accountAutomationsByIntegration = await Promise.all(
+  const ownerIntegrations = Array.from(
     matchingIntegrations
       .filter((integration) => integration.userId)
+      .reduce((map, integration) => {
+        if (integration.userId && !map.has(integration.userId)) map.set(integration.userId, integration);
+        return map;
+      }, new Map<string, (typeof matchingIntegrations)[number]>())
+      .values()
+  );
+
+  const accountAutomationsByIntegration = await Promise.all(
+    ownerIntegrations
       .map(async (integration) => ({
         integration,
         automations: await client.automation.findMany({
@@ -237,6 +275,15 @@ export const findAutomationForCommentWithReason = async (
     return posts.map((post) => {
       const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
       const isAnyPost = post.postid === "ANY" || normalizedStoredPostId === "ANY";
+      const postMatched = isAnyPost || normalizedStoredPostId === normalizedIncomingMediaId;
+      const triggerMatched = options.commentText
+        ? resolveCommentTriggerMatch({
+            text: options.commentText,
+            keywords: automation.keywords,
+            mode: automation.matchingMode,
+            triggerMode: automation.triggerMode,
+          })
+        : "not_evaluated";
       return {
         integrationId: integration.id,
         integrationUserId: integration.userId,
@@ -252,29 +299,74 @@ export const findAutomationForCommentWithReason = async (
         incomingMediaId: mediaId,
         normalizedIncomingMediaId,
         isAnyPost,
-        normalizedMatch:
-          isAnyPost ||
-          normalizedStoredPostId === normalizedIncomingMediaId,
+        postMatched,
+        triggerMatched,
+        normalizedMatch: postMatched,
       };
     });
   });
-  const matchedAutomationPairs = activeAutomations.filter((item) =>
-    item.automation.posts.some((post) => {
-      const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
-      return (
-        post.postid === "ANY" ||
-        normalizedStoredPostId === "ANY" ||
-        normalizedStoredPostId === normalizedIncomingMediaId
-      );
-    })
-  );
-  const matchedAutomations = matchedAutomationPairs.map((item) => item.automation);
-  const matchedIntegration = matchedAutomationPairs[0]?.integration ?? matchingIntegrations[0];
+  const rankedMatches = activeAutomations.flatMap((item) => {
+    const triggerMatched = options.commentText
+      ? resolveCommentTriggerMatch({
+          text: options.commentText,
+          keywords: item.automation.keywords,
+          mode: item.automation.matchingMode,
+          triggerMode: item.automation.triggerMode,
+        })
+      : "not_evaluated";
+
+    return item.automation.posts
+      .map((post) => {
+        const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
+        const exactPost = normalizedStoredPostId === normalizedIncomingMediaId;
+        const anyPost = post.postid === "ANY" || normalizedStoredPostId === "ANY";
+        const postMatched = exactPost || anyPost;
+        const anyComment = item.automation.triggerMode === "ANY_COMMENT";
+        const triggerOk = options.commentText ? Boolean(triggerMatched) : true;
+        if (!postMatched || !triggerOk) return null;
+        const score =
+          exactPost && !anyComment ? 40 :
+          exactPost && anyComment ? 30 :
+          anyPost && !anyComment ? 20 :
+          10;
+        return {
+          ...item,
+          post,
+          exactPost,
+          anyPost,
+          triggerMatched,
+          score,
+        };
+      })
+      .filter(Boolean);
+  }) as Array<{
+    automation: AutomationWithRelations;
+    integration: (typeof matchingIntegrations)[number];
+    post: { postid: string };
+    exactPost: boolean;
+    anyPost: boolean;
+    triggerMatched: string;
+    score: number;
+  }>;
+
+  const bestScore = rankedMatches[0]
+    ? Math.max(...rankedMatches.map((item) => item.score))
+    : 0;
+  const bestMatches = rankedMatches.filter((item) => item.score === bestScore);
+  const selectedMatch = bestMatches.length === 1 ? bestMatches[0] : null;
+  const matchedAutomations = selectedMatch
+    ? [selectedMatch.automation]
+    : rankedMatches.map((item) => item.automation);
+  const matchedIntegration = selectedMatch?.integration ?? matchingIntegrations[0];
 
   const diagnostics = {
     incomingMediaId: mediaId,
     normalizedIncomingMediaId,
     incomingPageId: pageId,
+    incomingAccountIds,
+    object: options.object,
+    candidateIntegrationCount: matchingIntegrations.length,
+    candidateFieldsChecked: candidateFieldChecks,
     allActiveIntegrationInstagramIds: activeIntegrations.map((item) => item.instagramId).filter(Boolean),
     allActiveIntegrationWebhookAccountIds: activeIntegrations.map((item) => item.webhookAccountId).filter(Boolean),
     matchingIntegrationIds: matchingIntegrations.map((item) => item.id),
@@ -283,10 +375,32 @@ export const findAutomationForCommentWithReason = async (
     matchedIntegrationInstagramId: matchedIntegration?.instagramId,
     matchedIntegrationWebhookAccountId: matchedIntegration?.webhookAccountId ?? pageId,
     matchedIntegrationUsername: matchedIntegration?.instagramUsername,
+    matchedIntegrationOwnerUserId: matchedIntegration?.userId,
     matchedAutomationIds: comparisons
-      .filter((item) => item.automationActive && item.normalizedMatch)
+      .filter((item) => item.automationActive && item.postMatched && item.triggerMatched)
       .map((item) => item.automationId),
     matchedAutomationCount: matchedAutomations.length,
+    selectedAutomationId: selectedMatch?.automation.id,
+    selectedIntegrationId: selectedMatch?.integration.id,
+    ambiguous: bestMatches.length > 1,
+    activeAutomationCount: activeAutomations.length,
+    postMatchDiagnostics: comparisons.map((item) => ({
+      integrationId: item.integrationId,
+      ownerUserId: item.integrationUserId,
+      automationId: item.automationId,
+      storedPostId: item.storedPostId,
+      normalizedStoredPostId: item.normalizedStoredPostId,
+      isAnyPost: item.isAnyPost,
+      postMatched: item.postMatched,
+    })),
+    triggerMatchDiagnostics: comparisons.map((item) => ({
+      integrationId: item.integrationId,
+      ownerUserId: item.integrationUserId,
+      automationId: item.automationId,
+      triggerMode: item.triggerMode,
+      matchingMode: item.matchingMode,
+      matchedKeyword: item.triggerMatched,
+    })),
     storedPostIds: comparisons.map((item) => item.storedPostId),
     comparisons,
   };
@@ -300,17 +414,35 @@ export const findAutomationForCommentWithReason = async (
     };
   }
 
-  if (matchedAutomations.length === 0) {
+  if (bestMatches.length > 1) {
     return {
       automation: null,
       automations: [],
-      failureReason: "no_active_automation_for_media",
+      failureReason: "ambiguous",
       diagnostics,
     };
   }
 
-  return { automation: matchedAutomations[0], automations: matchedAutomations, diagnostics };
+  if (!selectedMatch) {
+    const anyPostMatched = comparisons.some((item) => item.automationActive && item.postMatched);
+    const reason = anyPostMatched ? "keyword_mismatch" : "no_active_automation_for_media";
+    return {
+      automation: null,
+      automations: [],
+      failureReason: reason,
+      diagnostics,
+    };
+  }
+
+  return { automation: selectedMatch.automation, automations: [selectedMatch.automation], diagnostics };
 };
+
+function maskId(value?: string | null) {
+  if (!value) return null;
+  const text = String(value);
+  if (text.length <= 8) return text;
+  return `${text.slice(0, 4)}...${text.slice(-4)}`;
+}
 
 // ---------------------------------------------------------------------------
 // Automation lookup — DM trigger

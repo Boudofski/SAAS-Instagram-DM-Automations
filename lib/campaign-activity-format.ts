@@ -258,7 +258,7 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
       kind: "activity",
     };
   }
-  if (item.type === "COMMENT_RECEIVED" || item.type === "REAL_COMMENT_EVENT" || item.type === "WEBHOOK_RECEIVED") {
+  if (item.type === "COMMENT_RECEIVED" || item.type === "REAL_COMMENT_EVENT" || item.type === "WEBHOOK_RECEIVED" || item.type === "COMMENT_WEBHOOK_RECEIVED") {
     return {
       ...base,
       title: "Comment received",
@@ -334,7 +334,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   ].map((value) => (typeof value === "string" ? formatLogError(value) : null)));
 
   const steps = {
-    commentReceived: types.has("COMMENT_RECEIVED") || types.has("REAL_COMMENT_EVENT") || types.has("WEBHOOK_RECEIVED"),
+    commentReceived: types.has("COMMENT_RECEIVED") || types.has("REAL_COMMENT_EVENT") || types.has("WEBHOOK_RECEIVED") || types.has("COMMENT_WEBHOOK_RECEIVED"),
     triggerMatched: types.has("KEYWORD_MATCHED"),
     publicReply: null as GroupedActivity["steps"]["publicReply"],
     privateDm: null as GroupedActivity["steps"]["privateDm"],

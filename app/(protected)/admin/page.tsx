@@ -502,7 +502,18 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           reconnectRequired: true,
           lastAdminNote: true,
           lastAdminActionAt: true,
-          User: { select: { email: true, clerkId: true } },
+          User: {
+            select: {
+              email: true,
+              clerkId: true,
+              integrations: {
+                where: { name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { instagramId: true, webhookAccountId: true, pageId: true },
+              },
+            },
+          },
         },
       })
     : [];
@@ -982,17 +993,20 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run webhook self-test</button>
                   </form>
                   <form action={simulateCommentWebhook} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <h3 className="font-black">Run simulated comment against campaign</h3>
-                    <p className="mt-1 text-sm text-slate-600">Decision-only safe mode. It never sends a real DM.</p>
+                    <h3 className="font-black">Run real payload against campaign matching</h3>
+                    <p className="mt-1 text-sm text-slate-600">Decision-only safe mode. It never calls Meta and records the selected integration, campaign, and actions.</p>
                     <div className="mt-4 grid gap-2">
-                      <select name="automationId" required className="ap3k-select min-h-10 rounded-xl px-3 text-sm">
-                        <option value="">Select campaign</option>
+                      <input name="entryId" defaultValue={(campaigns[0] as any)?.User?.integrations?.[0]?.instagramId ?? ""} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Entry ID / IG account ID" />
+                      <select name="automationId" className="ap3k-select min-h-10 rounded-xl px-3 text-sm">
+                        <option value="">Auto-select matching campaign</option>
                         {campaigns.map((campaign: any) => (
                           <option key={campaign.id} value={campaign.id}>{campaign.name} · {campaign.active ? "active" : "paused"} · {campaign.User?.email ?? "unknown"}</option>
                         ))}
                       </select>
                       <input name="mediaId" defaultValue={(campaigns[0] as any)?.posts?.[0]?.postid === "ANY" ? "ANY_TEST_MEDIA" : (campaigns[0] as any)?.posts?.[0]?.postid ?? "ANY_TEST_MEDIA"} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Media ID" />
+                      <input name="commentId" defaultValue={`sim_${Date.now()}`} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Comment ID" />
                       <input name="commenterId" defaultValue="simulated_commenter" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Commenter ID" />
+                      <input name="commenterUsername" defaultValue="simulated_user" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Commenter username" />
                       <input name="commentText" defaultValue={(campaigns[0] as any)?.keywords?.[0]?.word ?? "ai"} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Comment text" />
                     </div>
                     <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run matching simulation</button>

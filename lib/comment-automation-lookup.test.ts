@@ -63,6 +63,39 @@ describe("normalizeInstagramMediaId", () => {
 });
 
 describe("findAutomationForCommentWithReason", () => {
+  it("queries integrations by incoming entry id against instagramId and webhookAccountId", async () => {
+    mockAutomationFindMany.mockResolvedValue([
+      automation({ id: "webhook-match", posts: [{ postid: "media-1" }] }),
+    ]);
+
+    await findAutomationForCommentWithReason("media-1", "ig-1", { object: "instagram", commentText: "ai" });
+
+    expect(mockIntegrationFindMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { instagramId: { in: ["ig-1"] } },
+            { webhookAccountId: { in: ["ig-1"] } },
+          ]),
+          status: { not: "DISCONNECTED" },
+          reconnectRequired: false,
+        }),
+      })
+    );
+  });
+
+  it("does not use pageId matching for Instagram object payloads", async () => {
+    mockAutomationFindMany.mockResolvedValue([
+      automation({ id: "webhook-match", posts: [{ postid: "media-1" }] }),
+    ]);
+
+    await findAutomationForCommentWithReason("media-1", "ig-1", { object: "instagram", commentText: "ai" });
+
+    const matchCall = mockIntegrationFindMany.mock.calls[1][0];
+    expect(matchCall.where.OR).not.toContainEqual({ pageId: { in: ["ig-1"] } });
+  });
+
   it("returns ANY_COMMENT candidates with no keywords for ANY post", async () => {
     mockAutomationFindMany.mockResolvedValue([
       automation({ id: "any-comment", triggerMode: "ANY_COMMENT", keywords: [], posts: [{ postid: "ANY" }] }),
@@ -88,16 +121,16 @@ describe("findAutomationForCommentWithReason", () => {
     expect(missed.failureReason).toBe("no_active_automation_for_media");
   });
 
-  it("returns all active media-scoped candidates so triggerMode can be selected after DB lookup", async () => {
+  it("selects the best active media-scoped candidate after trigger evaluation", async () => {
     mockAutomationFindMany.mockResolvedValue([
       automation({ id: "keyword", triggerMode: "SPECIFIC_KEYWORD", keywords: [{ word: "ai" }] }),
       automation({ id: "any-comment", triggerMode: "ANY_COMMENT", keywords: [] }),
       automation({ id: "paused", active: false, triggerMode: "ANY_COMMENT", keywords: [] }),
     ]);
 
-    const result = await findAutomationForCommentWithReason("media-1", "ig-1");
+    const result = await findAutomationForCommentWithReason("media-1", "ig-1", { commentText: "ai" });
 
-    expect(result.automations.map((item) => item.id)).toEqual(["keyword", "any-comment"]);
+    expect(result.automations.map((item) => item.id)).toEqual(["keyword"]);
     expect((result.diagnostics as any).matchedAutomationIds).toEqual(["keyword", "any-comment"]);
   });
 
@@ -116,18 +149,59 @@ describe("findAutomationForCommentWithReason", () => {
         automation({ id: "new-user-campaign", posts: [{ postid: "media-1" }] }),
       ])
       .mockResolvedValueOnce([
-        automation({ id: "old-user-campaign", posts: [{ postid: "media-1" }] }),
+        automation({ id: "old-user-campaign", posts: [{ postid: "media-2" }] }),
       ]);
 
-    const result = await findAutomationForCommentWithReason("media-1", "ig-1");
+    const result = await findAutomationForCommentWithReason("media-1", "ig-1", { commentText: "ai" });
 
     expect(mockAutomationFindMany).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ where: expect.objectContaining({ userId: "new-user" }) })
     );
     expect(result.automation?.id).toBe("new-user-campaign");
-    expect(result.automations.map((item) => item.id)).toEqual(["new-user-campaign", "old-user-campaign"]);
+    expect(result.automations.map((item) => item.id)).toEqual(["new-user-campaign"]);
     expect((result.diagnostics as any).matchingIntegrationIds).toEqual(["new-integration", "old-integration"]);
     expect((result.diagnostics as any).matchedIntegrationId).toBe("new-integration");
+  });
+
+  it("returns no action when duplicate IG owners have no matching campaign", async () => {
+    mockIntegrationFindMany
+      .mockResolvedValueOnce([
+        { id: "integration-a", userId: "user-a", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-a", businessId: null },
+        { id: "integration-b", userId: "user-b", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-b", businessId: null },
+      ])
+      .mockResolvedValueOnce([
+        { id: "integration-a", userId: "user-a", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-a", businessId: null },
+        { id: "integration-b", userId: "user-b", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-b", businessId: null },
+      ]);
+    mockAutomationFindMany
+      .mockResolvedValueOnce([automation({ id: "a", posts: [{ postid: "other-media" }] })])
+      .mockResolvedValueOnce([automation({ id: "b", posts: [{ postid: "other-media" }] })]);
+
+    const result = await findAutomationForCommentWithReason("media-1", "ig-1", { object: "instagram", commentText: "ai" });
+
+    expect(result.automation).toBeNull();
+    expect(result.failureReason).toBe("no_active_automation_for_media");
+  });
+
+  it("marks duplicate IG owners as ambiguous when both match the same media and keyword", async () => {
+    mockIntegrationFindMany
+      .mockResolvedValueOnce([
+        { id: "integration-a", userId: "user-a", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-a", businessId: null },
+        { id: "integration-b", userId: "user-b", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-b", businessId: null },
+      ])
+      .mockResolvedValueOnce([
+        { id: "integration-a", userId: "user-a", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-a", businessId: null },
+        { id: "integration-b", userId: "user-b", instagramId: "ig-1", webhookAccountId: "ig-1", pageId: "page-b", businessId: null },
+      ]);
+    mockAutomationFindMany
+      .mockResolvedValueOnce([automation({ id: "a", posts: [{ postid: "media-1" }] })])
+      .mockResolvedValueOnce([automation({ id: "b", posts: [{ postid: "media-1" }] })]);
+
+    const result = await findAutomationForCommentWithReason("media-1", "ig-1", { object: "instagram", commentText: "ai" });
+
+    expect(result.automation).toBeNull();
+    expect(result.failureReason).toBe("ambiguous");
+    expect((result.diagnostics as any).ambiguous).toBe(true);
   });
 });

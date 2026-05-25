@@ -14,16 +14,14 @@ export async function simulateCommentWebhook(formData: FormData) {
   await requireOwnerAdmin();
 
   const automationId = String(formData.get("automationId") ?? "").trim();
+  const entryIdInput = String(formData.get("entryId") ?? formData.get("igAccountId") ?? "").trim();
   const mediaId = String(formData.get("mediaId") ?? "").trim() || "SIMULATED_MEDIA";
   const commentId = String(formData.get("commentId") ?? "").trim() || `sim_${Date.now()}`;
   const commenterId = String(formData.get("commenterId") ?? "").trim() || "simulated_commenter";
+  const commenterUsername = String(formData.get("commenterUsername") ?? "").trim() || "simulated_user";
   const text = String(formData.get("commentText") ?? formData.get("text") ?? "").trim() || "ai";
 
-  if (!automationId) {
-    return;
-  }
-
-  const automation = await client.automation.findUnique({
+  const automation = automationId ? await client.automation.findUnique({
     where: { id: automationId },
     include: {
       keywords: true,
@@ -43,17 +41,18 @@ export async function simulateCommentWebhook(formData: FormData) {
         },
       },
     },
-  });
+  }) : null;
 
-  if (!automation) return;
-
-  const integration = automation.User?.integrations?.[0];
+  const integration = automation?.User?.integrations?.[0];
   const pageId =
+    entryIdInput ||
+    (
     integration?.webhookAccountId ??
     integration?.instagramId ??
     integration?.businessId ??
     integration?.pageId ??
-    "SIMULATED_ACCOUNT";
+    "SIMULATED_ACCOUNT"
+    );
 
   const webhookEvent = await createWebhookEvent({
     eventSource: "SIMULATED_INTERNAL",
@@ -77,20 +76,30 @@ export async function simulateCommentWebhook(formData: FormData) {
       hasText: true,
       mediaId,
       commentId,
+      commenterId,
+      commenterUsername,
       pageId,
-      automationId,
+      automationId: automation?.id,
       rawCommentText: text,
       normalizedCommentText: normalizeMatchText(text),
     },
   });
 
-  const match = await findAutomationForCommentWithReason(mediaId, pageId);
-  const matchingCandidate = match.automations.find((candidate) => candidate.id === automation.id);
-  const matchedKeyword = matchingCandidate ? resolveCommentTriggerMatch({
+  const match = await findAutomationForCommentWithReason(mediaId, pageId, {
+    object: "instagram",
+    igAccountId: pageId,
+    commentText: text,
+  });
+  const selectedAutomation = match.automation;
+  const automationForTrigger = automation ?? selectedAutomation;
+  const matchingCandidate = automation
+    ? match.automations.find((candidate) => candidate.id === automation.id)
+    : selectedAutomation;
+  const matchedKeyword = automationForTrigger && matchingCandidate ? resolveCommentTriggerMatch({
     text,
-    keywords: automation.keywords,
-    mode: automation.matchingMode,
-    triggerMode: automation.triggerMode,
+    keywords: automationForTrigger.keywords,
+    mode: automationForTrigger.matchingMode,
+    triggerMode: automationForTrigger.triggerMode,
   }) : null;
   const noMatchReason = !matchingCandidate
     ? match.failureReason ?? "no_active_automation_for_media"
@@ -101,7 +110,7 @@ export async function simulateCommentWebhook(formData: FormData) {
   await mergeWebhookEventPayload(webhookEvent.id, {
     simulationSafeMode: true,
     sendsRealDm: false,
-    automationId: automation.id,
+    automationId: automationForTrigger?.id,
     mediaMatching: match.diagnostics,
     simulationResult: matchedKeyword ? "trigger_matched" : noMatchReason,
     integrationMatched: Boolean((match.diagnostics as any).matchingIntegrationFound),
@@ -109,15 +118,23 @@ export async function simulateCommentWebhook(formData: FormData) {
     triggerMatched: Boolean(matchedKeyword),
     matchedKeyword,
     noMatchReason,
+    selectedIntegrationId: (match.diagnostics as any).selectedIntegrationId,
+    selectedAutomationId: selectedAutomation?.id,
+    actionsThatWouldRun: selectedAutomation
+      ? {
+          publicReply: Boolean(selectedAutomation.listener?.commentReply || selectedAutomation.listener?.commentReply2 || selectedAutomation.listener?.commentReply3),
+          privateDm: selectedAutomation.sendPrivateDm !== false,
+        }
+      : { publicReply: false, privateDm: false },
     triggerMatching: {
-      automationId: automation.id,
-      automationName: automation.name,
-      automationActive: automation.active,
-      triggerMode: automation.triggerMode,
-      matchingMode: automation.matchingMode,
-      storedKeywords: automation.keywords.map((keyword) => keyword.word),
-      normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
-      storedPostIds: automation.posts.map((post) => post.postid),
+      automationId: automationForTrigger?.id,
+      automationName: automationForTrigger?.name,
+      automationActive: automationForTrigger?.active,
+      triggerMode: automationForTrigger?.triggerMode,
+      matchingMode: automationForTrigger?.matchingMode,
+      storedKeywords: automationForTrigger?.keywords.map((keyword) => keyword.word) ?? [],
+      normalizedKeywords: automationForTrigger?.keywords.map((keyword) => normalizeMatchText(keyword.word)) ?? [],
+      storedPostIds: automationForTrigger?.posts?.map((post) => post.postid) ?? [],
       matchedKeyword,
       noMatchReason,
     },

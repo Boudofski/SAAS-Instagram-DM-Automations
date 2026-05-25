@@ -280,7 +280,14 @@ describe("getDashboardActivity — current user activity only", () => {
             { automationId: { in: [AUTOMATION_A_ID] } },
             {
               igAccountId: { in: ["ig-boudofi", "page-boudofi"] },
-              eventType: { in: ["REAL_COMMENT_EVENT", "REAL_MESSAGE_EVENT"] },
+              eventType: {
+                in: expect.arrayContaining([
+                  "REAL_COMMENT_EVENT",
+                  "REAL_MESSAGE_EVENT",
+                  "COMMENT_WEBHOOK_RECEIVED",
+                  "AUTOMATION_MATCH_FAILED",
+                ]),
+              },
             },
           ]),
         },

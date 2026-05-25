@@ -209,6 +209,24 @@ export async function POST(req: NextRequest) {
     }
 
     const body = parsedBody.body;
+    try {
+      const firstEntry = Array.isArray(body?.entry) ? body.entry[0] : undefined;
+      await createWebhookEvent({
+        eventType: "WEBHOOK_POST_RECEIVED_RAW",
+        eventSource: "META_REAL",
+        status: "RECEIVED",
+        igAccountId: firstEntry?.id,
+        payload: {
+          signatureVerified: true,
+          object: body?.object,
+          entryId: firstEntry?.id,
+          entryCount: Array.isArray(body?.entry) ? body.entry.length : 0,
+          changesCount: Array.isArray(firstEntry?.changes) ? firstEntry.changes.length : 0,
+        },
+      });
+    } catch {
+      // Non-critical diagnostics
+    }
 
     // Self-test payloads must never trigger DM sends
     if (body.source === "INTERNAL_SELF_TEST") {
@@ -321,6 +339,36 @@ async function processEntry(
         change.comment_text ??
         change.message ??
         "";
+      const valueIgAccountId: string | undefined =
+        change.instagram_id ??
+        change.ig_id ??
+        change.account_id ??
+        change.media?.owner?.id ??
+        change.media?.owner_id ??
+        undefined;
+
+      await createWebhookEvent({
+        eventType: "COMMENT_WEBHOOK_RECEIVED",
+        eventSource: "META_REAL",
+        field: changeItem.field,
+        igAccountId: pageId,
+        igUserId: commenterId,
+        mediaId,
+        commentId,
+        status: "RECEIVED",
+        payload: {
+          entryId: entry?.id,
+          igAccountId: pageId,
+          valueIgAccountId,
+          mediaId,
+          commentId,
+          commenterId,
+          commenterUsername,
+          hasCommentText: Boolean(commentText),
+          object: envelope?.object,
+          changesCount: changes.length,
+        },
+      });
 
       const webhookEvent = await createWebhookEvent({
         eventType: classifyCommentWebhook(envelope, entry, changeItem),
@@ -369,7 +417,11 @@ async function processEntry(
       };
 
       // 1. Find active automations for this post, then select by trigger.
-      const match = await findAutomationForCommentWithReason(mediaId, pageId);
+      const match = await findAutomationForCommentWithReason(mediaId, pageId, {
+        object: envelope?.object,
+        igAccountId: valueIgAccountId,
+        commentText,
+      });
       const candidateAutomations = match.automations?.length
         ? match.automations
         : match.automation
@@ -413,6 +465,43 @@ async function processEntry(
       });
       if (!automation?.listener) {
         const failureReason = match.failureReason ?? "no_active_automation_for_media";
+        const matchedIntegrationId =
+          match.diagnostics && typeof match.diagnostics === "object"
+            ? (match.diagnostics as any).matchedIntegrationId
+            : undefined;
+        const matchedOwnerUserId =
+          match.diagnostics && typeof match.diagnostics === "object"
+            ? (match.diagnostics as any).matchedIntegrationOwnerUserId
+            : undefined;
+        await createWebhookEvent({
+          eventType: match.failureReason === "no_matching_integration"
+            ? "INTEGRATION_MATCH_FAILED"
+            : match.failureReason === "ambiguous"
+              ? "AMBIGUOUS_INTEGRATION_MATCH"
+              : "AUTOMATION_MATCH_FAILED",
+          eventSource: "META_REAL",
+          field: changeItem.field,
+          igAccountId: pageId,
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          status: "IGNORED",
+          errorMessage: failureReason,
+          payload: {
+            entryId: entry?.id,
+            igAccountId: pageId,
+            mediaId,
+            commentId,
+            commenterId,
+            commenterUsername,
+            commentTextPresent: Boolean(commentText),
+            commentText: commentText.slice(0, 180),
+            integrationId: matchedIntegrationId,
+            ownerUserId: matchedOwnerUserId,
+            reason: failureReason,
+            diagnostics: match.diagnostics,
+          },
+        });
         console.log("[webhook] automation match failed", {
           mediaId,
           pageId,
@@ -761,6 +850,24 @@ async function processEntry(
             sendPrivateDm: false,
           },
         });
+        await createWebhookEvent({
+          eventType: "ACTION_SKIPPED",
+          eventSource: "META_REAL",
+          field: changeItem.field,
+          automationId: automation.id,
+          igAccountId: pageId,
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          status: "PROCESSED",
+          errorMessage: "private_dm_disabled",
+          payload: {
+            publicReplyEnabled,
+            privateDmEnabled: false,
+            action: "private_dm",
+            reason: "private_dm_disabled",
+          },
+        });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
@@ -1050,6 +1157,25 @@ async function processEntry(
             ...(publicReplyErrorMessage && !publicReplySent ? { error: publicReplyErrorMessage } : {}),
           },
         });
+        await createWebhookEvent({
+          eventType: publicReplySent ? "ACTION_SENT" : "ACTION_SKIPPED",
+          eventSource: "META_REAL",
+          field: changeItem.field,
+          automationId: automation.id,
+          igAccountId: pageId,
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          status: publicReplySent ? "PROCESSED" : "FAILED",
+          errorMessage: publicReplySent ? undefined : publicReplyErrorMessage,
+          payload: {
+            action: "public_reply",
+            publicReplyEnabled,
+            privateDmEnabled,
+            publicReplyEndpoint,
+            publicReplyCommentId,
+          },
+        });
       }
 
       if (automation.sendPrivateDm === false) {
@@ -1072,6 +1198,24 @@ async function processEntry(
           meta: {
             reason: "external_dm_tool_enabled",
             sendPrivateDm: false,
+          },
+        });
+        await createWebhookEvent({
+          eventType: "ACTION_SKIPPED",
+          eventSource: "META_REAL",
+          field: changeItem.field,
+          automationId: automation.id,
+          igAccountId: pageId,
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          status: "PROCESSED",
+          errorMessage: "private_dm_disabled",
+          payload: {
+            publicReplyEnabled,
+            privateDmEnabled: false,
+            action: "private_dm",
+            reason: "private_dm_disabled",
           },
         });
         await updateWebhookEvent(webhookEvent.id, {

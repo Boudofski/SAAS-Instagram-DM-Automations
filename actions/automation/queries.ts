@@ -617,7 +617,19 @@ export const getDashboardActivity = async (clerkId: string) => {
         OR: [
           ...(automationIds.length ? [{ automationId: { in: automationIds } }] : []),
           ...(integrationAccountIds.length
-            ? [{ igAccountId: { in: integrationAccountIds }, eventType: { in: ["REAL_COMMENT_EVENT", "REAL_MESSAGE_EVENT"] } }]
+            ? [{
+                igAccountId: { in: integrationAccountIds },
+                eventType: {
+                  in: [
+                    "REAL_COMMENT_EVENT",
+                    "REAL_MESSAGE_EVENT",
+                    "COMMENT_WEBHOOK_RECEIVED",
+                    "AUTOMATION_MATCH_FAILED",
+                    "ACTION_SENT",
+                    "ACTION_SKIPPED",
+                  ],
+                },
+              }]
             : []),
         ],
       },

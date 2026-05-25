@@ -198,6 +198,14 @@ describe("comment webhook private DM toggle", () => {
 
     await POST(commentRequest());
 
+    expect(mockCreateWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "COMMENT_WEBHOOK_RECEIVED",
+        igAccountId: "ig-1",
+        mediaId: "media-1",
+        commentId: "comment-1",
+      })
+    );
     expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
     expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ eventType: "DM_FAILED" })
@@ -239,6 +247,61 @@ describe("comment webhook private DM toggle", () => {
         automationId: campaign.id,
         eventType: "DM_SENT",
         keyword: "ai",
+      })
+    );
+  });
+
+  it("logs automation match failure and sends no action when no campaign matches", async () => {
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: null,
+      automations: [],
+      failureReason: "no_active_automation_for_media",
+      diagnostics: {
+        matchingIntegrationFound: true,
+        matchedIntegrationId: "integration-1",
+        matchedIntegrationOwnerUserId: "user-1",
+        activeAutomationCount: 0,
+      },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "AUTOMATION_MATCH_FAILED",
+        status: "IGNORED",
+        errorMessage: "no_active_automation_for_media",
+        payload: expect.objectContaining({
+          integrationId: "integration-1",
+          ownerUserId: "user-1",
+        }),
+      })
+    );
+  });
+
+  it("logs ambiguous integration match and sends no reply", async () => {
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: null,
+      automations: [],
+      failureReason: "ambiguous",
+      diagnostics: {
+        matchingIntegrationFound: true,
+        ambiguous: true,
+        matchedAutomationIds: ["automation-a", "automation-b"],
+      },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "AMBIGUOUS_INTEGRATION_MATCH",
+        status: "IGNORED",
+        errorMessage: "ambiguous",
       })
     );
   });
