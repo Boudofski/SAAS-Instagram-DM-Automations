@@ -193,7 +193,7 @@ function safeProfileStatsError(error: unknown) {
     return "Meta did not return follower/post fields. Reconnect Instagram or check account permissions.";
   }
   if (safe.code === 4 || safe.code === 17 || safe.code === 613) {
-    return "Refresh recently completed. Try again later.";
+    return "Profile refreshed moments ago. Try again in a few minutes.";
   }
   return "Instagram profile stats unavailable.";
 }
@@ -372,7 +372,7 @@ export async function refreshInstagramProfileSnapshotForUser(
       status: 200,
       data: serializeInstagramSnapshot(latest),
       cached: true,
-      message: "Refresh recently completed. Try again later.",
+      message: "Profile refreshed moments ago. Try again in a few minutes.",
     };
   }
 
@@ -435,7 +435,7 @@ export async function refreshInstagramProfileSnapshotForUser(
       status: 200,
       data: serializeInstagramSnapshot(snapshot),
       cached: false,
-      message: missingCounts ? "Profile loaded. Follower/post counts were not returned by Meta." : undefined,
+      message: missingCounts ? "Instagram profile synced successfully. Follower count unavailable from Meta." : undefined,
       diagnostics,
     };
   } catch (error) {

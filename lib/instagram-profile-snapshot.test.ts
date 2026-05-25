@@ -239,7 +239,7 @@ describe("instagram profile snapshots", () => {
       }),
     });
     expect(result.cached).toBe(false);
-    expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(result.message).toBe("Instagram profile synced successfully. Follower count unavailable from Meta.");
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
@@ -285,7 +285,7 @@ describe("instagram profile snapshots", () => {
     );
     expect(result.data?.mediaCount).toBe(9);
     expect(result.data?.followersCount).toBeNull();
-    expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(result.message).toBe("Instagram profile synced successfully. Follower count unavailable from Meta.");
     expect(result.diagnostics?.returnedFieldNames).toEqual(["id", "media_count", "profile_picture_url", "username"]);
     expect(mockUpdateIntegration).toHaveBeenCalledWith({
       where: { id: "integration-a" },
@@ -345,7 +345,7 @@ describe("instagram profile snapshots", () => {
     expect(result.data?.profilePictureUrl).toBe("https://example.com/basic.jpg");
     expect(result.data?.followersCount).toBeNull();
     expect(result.data?.mediaCount).toBeNull();
-    expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(result.message).toBe("Instagram profile synced successfully. Follower count unavailable from Meta.");
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 

@@ -13,8 +13,9 @@ import {
   getProfileSnapshotStatus,
   PROFILE_FIELD_SETS,
 } from "@/lib/instagram-profile-snapshot";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
-import { AlertTriangle, CheckCircle2, ExternalLink, Lock, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, Info, Lock, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 type Props = { params: { slug: string }; searchParams?: { period?: string } };
@@ -51,6 +52,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
   const statusTone = tokenExpired ? "amber" : connected ? "green" : "slate";
+  const syncBadge = profileSnapshotDisplay.label === "Partial" ? "Partial Sync" : profileSnapshotDisplay.label === "Fresh" || profileSnapshotDisplay.label === "Stale" ? "Synced" : null;
   const lastFailure = formatUserFacingMetaError(health?.subscription?.error ?? health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
   const messagingCapability = formatUserFacingMetaError(health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
 
@@ -70,31 +72,37 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
         </div>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-center gap-5">
             {displayProfilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={displayProfilePictureUrl}
                 alt={displayUsername ?? "Instagram account"}
-                className="h-20 w-20 rounded-2xl object-cover"
+                className="h-24 w-24 rounded-3xl object-cover shadow-sm"
               />
             ) : (
-              <div className="grid h-20 w-20 place-items-center rounded-2xl bg-ap3k-gradient text-sm font-black text-white">
+              <div className="grid h-24 w-24 place-items-center rounded-3xl bg-ap3k-gradient text-base font-black text-white shadow-sm">
                 IG
               </div>
             )}
             <div className="min-w-0">
-              <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+              <p className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
                 {displayUsername ? `@${displayUsername}` : "No Instagram connected"}
               </p>
-              <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
                 {instagram?.pageName ?? "Instagram Business or Creator profile"}
               </p>
-              <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-500">
-                Profile stats: {profileSnapshotDisplay.label}
-                {profileSnapshotDisplay.label === "Partial" && " (followers unavailable)"}
-                {" · "}{formatSnapshotRefreshTime(snapshot?.fetchedAt)}
-              </p>
+              {connected && profileSnapshotDisplay.label === "Partial" ? (
+                <div className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                  <p className="font-black text-slate-950 dark:text-white">Profile connected</p>
+                  <p>Instagram profile synced successfully.</p>
+                  <p>Follower count unavailable from Meta.</p>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {connected ? "Profile connected" : "Profile not connected"} · {formatSnapshotRefreshTime(snapshot?.fetchedAt)}
+                </p>
+              )}
               {connected && profileSnapshotStatus.label === "Missing" && (
                 <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
                   Refresh profile to load your Instagram followers and posts.
@@ -113,22 +121,18 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                   Reconnect Instagram
                 </Link>
               )}
-              {connected && profileSnapshotStatus.label === "Partial" && (
-                <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
-                  Profile loaded. Follower/post counts were not returned by Meta.
-                </p>
-              )}
               {isAdmin && connected && (
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                  <p className="font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Admin Graph API Explorer test</p>
+                <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                  <summary className="cursor-pointer font-black text-slate-500 dark:text-slate-400">Profile sync debug</summary>
                   <p className="mt-1 font-mono break-all">
                     GET /{instagram?.instagramId}?fields={PROFILE_FIELD_SETS[0].join(",")}
                   </p>
-                </div>
+                </details>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <StatusBadge tone="pink">Official Meta connection</StatusBadge>
                 <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
+                {syncBadge && <StatusBadge tone={profileSnapshotDisplay.label === "Partial" ? "slate" : "green"}>{syncBadge}</StatusBadge>}
                 <StatusBadge tone="slate">{instagram?.igAccountSource ?? "CONNECTED"}</StatusBadge>
               </div>
             </div>
@@ -257,12 +261,28 @@ function SettingsStatCard({ label, stat, tone }: { label: string; stat: AccountS
     red: "text-red-500",
     slate: "text-slate-950 dark:text-white",
   }[stat.enabled ? tone : "slate"];
+  const showInfo = label === "Followers" && stat.value === "Unavailable";
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
-        {!stat.enabled && <Lock className="h-4 w-4 text-slate-400" />}
+        {showInfo ? (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400">
+                  <Info className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Meta does not expose follower count for this connection.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : !stat.enabled ? (
+          <Lock className="h-4 w-4 text-slate-400" />
+        ) : null}
       </div>
       <p className={`mt-4 text-2xl font-black tracking-tight ${valueClass}`}>{stat.value}</p>
       <p className="mt-1 text-xs font-bold leading-snug text-slate-500 dark:text-slate-400">{stat.subtitle}</p>

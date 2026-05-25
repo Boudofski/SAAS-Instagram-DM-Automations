@@ -854,7 +854,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   return (
                     <div className="grid gap-3 lg:grid-cols-2">
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                        <p className="font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Graph API Explorer test</p>
+                        <p className="font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Profile field request</p>
                         <p className="mt-2 font-mono break-all">GET /{integration.instagramId ?? "{igId}"}?fields={fields}</p>
                       </div>
                       <AdminJsonViewer title="Safe profile diagnostics" value={(integration.oauthResolutionDiagnostics as any)?.profileSnapshotRefresh ?? null} />

@@ -86,7 +86,7 @@ describe("instagram account settings stats", () => {
     const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
 
     expect(stats.followers).toEqual({ value: 12345, enabled: true, subtitle: "+25 this period" });
-    expect(stats.posts).toEqual({ value: 87, enabled: true, subtitle: "Instagram media count" });
+    expect(stats.posts).toEqual({ value: 87, enabled: true, subtitle: "Instagram posts" });
   });
 
   it("marks missing snapshot fields unavailable after a partial snapshot is stored", async () => {
@@ -100,7 +100,7 @@ describe("instagram account settings stats", () => {
 
     const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
 
-    expect(stats.followers).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta did not return follower count" });
+    expect(stats.followers).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta does not expose follower count for this connection." });
     expect(stats.posts).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta did not return media count" });
   });
 });

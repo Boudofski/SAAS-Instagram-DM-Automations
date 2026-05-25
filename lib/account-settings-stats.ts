@@ -60,11 +60,11 @@ export async function getInstagramAccountSettingsStats(
       typeof snapshot?.followersCount === "number"
         ? { value: snapshot.followersCount, enabled: true, subtitle: followerSubtitle }
         : snapshot
-          ? unavailableSnapshotField("Meta did not return follower count")
+          ? unavailableSnapshotField("Meta does not expose follower count for this connection.")
           : missingSnapshot(),
     posts:
       typeof snapshot?.mediaCount === "number"
-        ? { value: snapshot.mediaCount, enabled: true, subtitle: "Instagram media count" }
+        ? { value: snapshot.mediaCount, enabled: true, subtitle: "Instagram posts" }
         : snapshot
           ? unavailableSnapshotField("Meta did not return media count")
           : missingSnapshot(),

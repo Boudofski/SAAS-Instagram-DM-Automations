@@ -10,7 +10,7 @@ import {
   getDashboardGreeting,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
-import { getInstagramSnapshotComparisonForUser } from "@/lib/instagram-profile-snapshot";
+import { getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
@@ -66,6 +66,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       ])
     : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, null];
   const profileSnapshot = snapshotComparison?.current;
+  const profileSnapshotStatus = getProfileSnapshotStatus(profileSnapshot);
   const displayInstagramUsername = profileSnapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = profileSnapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const automationsWithMetrics = automations.map((automation) => ({
@@ -163,11 +164,19 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             >
               {tokenExpired ? "Reconnect Instagram" : "Manage connection"}
             </Link>
-            <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
-              {typeof profileSnapshot?.followersCount === "number"
-                ? `${profileSnapshot.followersCount.toLocaleString()} followers`
-                : "Followers unavailable"}
-            </span>
+            {typeof profileSnapshot?.followersCount === "number" ? (
+              <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
+                {profileSnapshot.followersCount.toLocaleString()} followers
+              </span>
+            ) : profileSnapshotStatus.label === "Partial" ? (
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                Partial profile sync
+              </span>
+            ) : (
+              <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
+                Profile sync pending
+              </span>
+            )}
           </div>
         </div>
       )}
