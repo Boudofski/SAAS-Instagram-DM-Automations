@@ -10,7 +10,8 @@ import {
   getDashboardGreeting,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
-import { getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
+import { formatSnapshotRefreshTime, getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
+import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
@@ -77,12 +78,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const planLabel = usage?.planLabel ?? (userResult.data?.subscription?.plan === "PRO" ? "Creator" : "Free");
   const metrics = dashboardStats?.current ?? null;
   const changes = dashboardStats?.changes ?? null;
-  const dmsSent = metrics?.dmsSent ?? 0;
-  const staticRepliesLimit = usage
-    ? isUnlimited(usage.staticReplies.limit)
-      ? "Unlimited"
-      : usage.staticReplies.limit.toLocaleString()
-    : "—";
+  const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/account` },
@@ -147,7 +143,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {tokenExpired
                   ? "Token expired. Reconnect Instagram before testing comments."
-                  : "Ready for official comment-to-DM testing."}
+                  : profileSnapshot?.fetchedAt
+                    ? `Profile refreshed ${formatSnapshotRefreshTime(profileSnapshot.fetchedAt)}`
+                    : "Ready for official comment-to-DM testing."}
               </p>
             </div>
           </div>
@@ -158,6 +156,11 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
               {planLabel}
             </span>
+            {profileSnapshotStatus.label === "Fresh" && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                Fresh sync
+              </span>
+            )}
             <Link
               href={`/dashboard/${params.slug}/account`}
               className="text-xs font-bold text-rf-pink hover:text-rf-purple"
@@ -261,46 +264,20 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       </div>
 
       <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04] md:grid-cols-2 xl:grid-cols-6">
-        <AccountStatCard
-          label="Comments"
-          value={metrics?.commentsReceived ?? 0}
-          change={changes?.commentsReceived}
-          subtitle="Received comments"
-        />
-        <AccountStatCard
-          label="Follower Growth"
-          value={
-            typeof profileSnapshot?.followersCount === "number"
-              ? profileSnapshot.followersCount.toLocaleString()
-              : "Not enabled"
-          }
-          change={snapshotComparison?.change ?? { label: "—", tone: "neutral", value: null }}
-          subtitle={typeof profileSnapshot?.followersCount === "number" ? "Followers" : "Follower snapshots coming soon"}
-        />
-        <AccountStatCard
-          label="Messages"
-          value={usage ? `${usage.staticReplies.used.toLocaleString()} / ${staticRepliesLimit}` : `${dmsSent}`}
-          change={changes?.staticRepliesUsed}
-          subtitle="Public replies + AP3k DMs"
-        />
-        <AccountStatCard
-          label="Contacts"
-          value={metrics?.leadsCaptured ?? 0}
-          change={changes?.leadsCaptured}
-          subtitle="Leads captured"
-        />
-        <AccountStatCard
-          label="Triggers"
-          value={metrics?.commentsMatched ?? 0}
-          change={changes?.commentsMatched}
-          subtitle="Matched comments"
-        />
-        <AccountStatCard
-          label="Public Replies"
-          value={metrics?.publicRepliesSent ?? 0}
-          change={changes?.publicRepliesSent}
-          subtitle="Confirmed replies"
-        />
+        {dashboardProfileStats.map((stat) => (
+          <AccountStatCard
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            change={
+              stat.label === "Comments" ? changes?.commentsReceived :
+              stat.label === "Contacts" ? changes?.leadsCaptured :
+              stat.label === "Static Replies" ? changes?.staticRepliesUsed :
+              stat.change
+            }
+            subtitle={stat.subtitle}
+          />
+        ))}
       </div>
 
       <div className="ap3k-card rounded-2xl p-5">

@@ -70,8 +70,8 @@ describe("instagram account settings stats", () => {
 
     expect(stats.followers).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" });
     expect(stats.posts).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" });
-    expect(stats.removed).toEqual({ value: "Not enabled", enabled: false, subtitle: "Moderation not enabled" });
-    expect(stats.dmsIn).toEqual({ value: "Not enabled", enabled: false, subtitle: "DM webhooks require messaging approval" });
+    expect(stats.removed).toEqual({ value: "Not tracked", enabled: false, subtitle: "Removed comments are not tracked in account stats" });
+    expect(stats.dmsIn).toEqual({ value: "Messaging approval required", enabled: false, subtitle: "Inbound DMs require Meta messaging approval" });
   });
 
   it("uses follower and post counts from the latest snapshot", async () => {
@@ -81,11 +81,12 @@ describe("instagram account settings stats", () => {
         mediaCount: 87,
       },
       followerChange: 25,
+      followerChangePercent: 1,
     });
 
     const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
 
-    expect(stats.followers).toEqual({ value: 12345, enabled: true, subtitle: "+25 this period" });
+    expect(stats.followers).toEqual({ value: 12345, enabled: true, subtitle: "+25 followers · +1% since last snapshot" });
     expect(stats.posts).toEqual({ value: 87, enabled: true, subtitle: "Instagram posts" });
   });
 
@@ -102,5 +103,23 @@ describe("instagram account settings stats", () => {
 
     expect(stats.followers).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta does not expose follower count for this connection." });
     expect(stats.posts).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta did not return media count" });
+  });
+
+  it("uses baseline copy when there is no previous follower snapshot", async () => {
+    mockGetInstagramSnapshotComparisonForUser.mockResolvedValue({
+      current: {
+        followersCount: 8965,
+        mediaCount: 15,
+      },
+      followerChange: null,
+    });
+
+    const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
+
+    expect(stats.followers).toEqual({
+      value: 8965,
+      enabled: true,
+      subtitle: "Baseline established. Growth tracking starts after next sync.",
+    });
   });
 });

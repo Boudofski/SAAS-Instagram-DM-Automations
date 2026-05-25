@@ -27,10 +27,6 @@ function monthRange(now = new Date()): Required<DateRange> {
   };
 }
 
-function unavailable(subtitle: string): AccountStatValue {
-  return { value: "Not enabled", enabled: false, subtitle };
-}
-
 function missingSnapshot(): AccountStatValue {
   return { value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" };
 }
@@ -52,8 +48,12 @@ export async function getInstagramAccountSettingsStats(
   const snapshot = snapshotComparison?.current;
   const followerSubtitle =
     snapshotComparison?.followerChange !== null && snapshotComparison?.followerChange !== undefined
-      ? `${snapshotComparison.followerChange >= 0 ? "+" : ""}${snapshotComparison.followerChange.toLocaleString()} this period`
-      : "No previous snapshot yet";
+      ? `${snapshotComparison.followerChange >= 0 ? "+" : ""}${snapshotComparison.followerChange.toLocaleString()} followers${
+          typeof snapshotComparison.followerChangePercent === "number"
+            ? ` · ${snapshotComparison.followerChangePercent >= 0 ? "+" : ""}${snapshotComparison.followerChangePercent}%`
+            : ""
+        } since last snapshot`
+      : "Baseline established. Growth tracking starts after next sync.";
 
   return {
     followers:
@@ -69,8 +69,8 @@ export async function getInstagramAccountSettingsStats(
           ? unavailableSnapshotField("Meta did not return media count")
           : missingSnapshot(),
     comments: { value: metrics.commentsReceived, enabled: true, subtitle: "Real external comments this period" },
-    removed: unavailable("Moderation not enabled"),
-    dmsIn: unavailable("DM webhooks require messaging approval"),
+    removed: { value: "Not tracked", enabled: false, subtitle: "Removed comments are not tracked in account stats" },
+    dmsIn: { value: "Messaging approval required", enabled: false, subtitle: "Inbound DMs require Meta messaging approval" },
     dmsOut: { value: metrics.dmsSent, enabled: true, subtitle: "AP3k private DMs sent" },
     contacts: { value: metrics.leadsCaptured, enabled: true, subtitle: "Leads captured this period" },
     replyRate: { value: `${metrics.replyRate}%`, enabled: true, subtitle: "Confirmed replies / matched comments" },

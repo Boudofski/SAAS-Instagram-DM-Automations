@@ -1,8 +1,8 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
 import { onUserInfo } from "@/actions/user";
 import { getCurrentWebhookHealth } from "@/actions/integration";
-import { isOwnerAdminIdentity } from "@/lib/admin";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
+import { canShowProfileSyncDebug, getWebhookHealthPresentation } from "@/lib/instagram-account-ux";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
@@ -48,12 +48,12 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const connected = Boolean(instagram?.instagramId);
-  const isAdmin = isOwnerAdminIdentity({ clerkId: user?.clerkId, email: user?.email });
+  const showProfileSyncDebug = canShowProfileSyncDebug({ clerkId: user?.clerkId, email: user?.email, connected });
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
   const statusTone = tokenExpired ? "amber" : connected ? "green" : "slate";
   const syncBadge = profileSnapshotDisplay.label === "Partial" ? "Partial Sync" : profileSnapshotDisplay.label === "Fresh" || profileSnapshotDisplay.label === "Stale" ? "Synced" : null;
-  const lastFailure = formatUserFacingMetaError(health?.subscription?.error ?? health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
+  const webhookHealth = getWebhookHealthPresentation(health);
   const messagingCapability = formatUserFacingMetaError(health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
 
   return (
@@ -121,7 +121,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                   Reconnect Instagram
                 </Link>
               )}
-              {isAdmin && connected && (
+              {showProfileSyncDebug && (
                 <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
                   <summary className="cursor-pointer font-black text-slate-500 dark:text-slate-400">Profile sync debug</summary>
                   <p className="mt-1 font-mono break-all">
@@ -190,20 +190,15 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <HealthCard label="OAuth valid" value={health?.oauth?.tokenUsable ? "OK" : connected ? "Check" : "Unknown"} ok={Boolean(health?.oauth?.tokenUsable)} />
           <HealthCard
-            label="Webhook subscribed"
-            value={
-              health?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED"
-                ? "Dashboard managed"
-                : health?.subscription?.subscribed
-                  ? "OK"
-                  : "Check"
-            }
-            ok={Boolean(health?.subscription?.subscribed) || health?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED"}
+            label={webhookHealth.webhook.label}
+            value={webhookHealth.webhook.value}
+            detail={webhookHealth.webhook.detail}
+            ok={webhookHealth.webhook.ok}
           />
           <HealthCard label="Last webhook" value={formatHealthDate(health?.lastWebhook?.createdAt)} ok={Boolean(health?.lastWebhook)} />
           <HealthCard label="Last comment" value={formatHealthDate(health?.lastCommentWebhook?.createdAt)} ok={Boolean(health?.lastCommentWebhook)} />
           <HealthCard label="Profile snapshot" value={profileSnapshotDisplay.label} detail={formatSnapshotRefreshTime(snapshot?.fetchedAt)} ok={profileSnapshotDisplay.ok} />
-          <HealthCard label="Last failure" value={lastFailure.title} detail={lastFailure.detail} ok={lastFailure.severity === "ok"} />
+          <HealthCard label={webhookHealth.failure.label} value={webhookHealth.failure.value} detail={webhookHealth.failure.detail} ok={webhookHealth.failure.ok} />
           <HealthCard
             label="Messaging capability"
             value={messagingCapability.title === "Private DM capability pending" ? "Pending App Review" : "Pending or approved"}

@@ -192,8 +192,9 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               ok={Boolean(health?.data?.oauth?.tokenFormatValid)}
             />
             <HealthBadge
-              label="Webhook subscribed"
+              label="Webhook status"
               ok={
+                Boolean(health?.data?.lastCommentWebhook) ||
                 Boolean(health?.data?.subscription?.subscribed) ||
                 health?.data?.subscription?.subscriptionMode === "META_DASHBOARD_MANAGED"
               }
