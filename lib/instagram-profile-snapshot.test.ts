@@ -22,6 +22,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/fetch", () => ({
   getInstagramBusinessProfile: (...args: any[]) => mockGetInstagramBusinessProfile(...args),
   getSafeMetaError: (error: any) => error?.safe ?? { message: error?.message ?? String(error) },
+  META_GRAPH_VERSION: "v25.0",
 }));
 
 import {
@@ -29,6 +30,7 @@ import {
   getInstagramSnapshotComparisonWithMissingRefresh,
   getInstagramSnapshotComparisonForUser,
   getLatestInstagramSnapshot,
+  getProfileSnapshotDisplay,
   getProfileSnapshotStatus,
   refreshInstagramProfileSnapshotForUser,
 } from "@/lib/instagram-profile-snapshot";
@@ -147,7 +149,11 @@ describe("instagram profile snapshots", () => {
 
     const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
 
-    expect(mockGetInstagramBusinessProfile).toHaveBeenCalledWith("ig-1", "page-token-secret");
+    expect(mockGetInstagramBusinessProfile).toHaveBeenCalledWith(
+      "ig-1",
+      "page-token-secret",
+      "id,username,profile_picture_url,followers_count,media_count,account_type"
+    );
     expect(mockCreateSnapshot).toHaveBeenCalledWith({
       data: expect.objectContaining({
         username: "realuser",
@@ -159,6 +165,7 @@ describe("instagram profile snapshots", () => {
     });
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
     expect(result.cached).toBe(false);
+    expect(getProfileSnapshotStatus(snapshot({ followersCount: 120, mediaCount: 14 }), now)).toEqual({ label: "Fresh", ok: true });
   });
 
   it("refresh helper handles Meta permission errors safely", async () => {
@@ -178,6 +185,7 @@ describe("instagram profile snapshots", () => {
     const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
 
     expect(result.error).toBe("Meta did not return follower/post fields. Reconnect Instagram or check account permissions.");
+    expect(result.diagnostics?.attempts).toHaveLength(3);
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
@@ -232,6 +240,144 @@ describe("instagram profile snapshots", () => {
       }),
     });
     expect(result.cached).toBe(false);
+    expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("unsupported followers_count retries a smaller field set and stores partial media snapshot", async () => {
+    mockFindIntegrationFirst.mockResolvedValue({
+      id: "integration-a",
+      token: "page-token-secret",
+      expiresAt: new Date("2026-06-01T00:00:00Z"),
+      instagramId: "ig-1",
+      instagramUsername: "olduser",
+      profilePictureUrl: null,
+      snapshots: [snapshot({ fetchedAt: new Date("2026-05-23T00:00:00Z") })],
+      oauthResolutionDiagnostics: { oauth: "kept" },
+    });
+    mockGetInstagramBusinessProfile
+      .mockRejectedValueOnce({
+        safe: { status: 400, code: 100, message: "(#100) Tried accessing nonexisting field followers_count" },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          id: "ig-1",
+          username: "mediauser",
+          profile_picture_url: "https://example.com/media.jpg",
+          media_count: 9,
+        },
+      });
+    mockCreateSnapshot.mockImplementation(async ({ data }) => snapshot({ ...data, id: "snap-media", followersCount: null, createdAt: now }));
+    mockUpdateIntegration.mockResolvedValue({});
+
+    const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
+
+    expect(mockGetInstagramBusinessProfile).toHaveBeenNthCalledWith(
+      1,
+      "ig-1",
+      "page-token-secret",
+      "id,username,profile_picture_url,followers_count,media_count,account_type"
+    );
+    expect(mockGetInstagramBusinessProfile).toHaveBeenNthCalledWith(
+      2,
+      "ig-1",
+      "page-token-secret",
+      "id,username,profile_picture_url,media_count"
+    );
+    expect(result.data?.mediaCount).toBe(9);
+    expect(result.data?.followersCount).toBeNull();
+    expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(result.diagnostics?.returnedFieldNames).toEqual(["id", "media_count", "profile_picture_url", "username"]);
+    expect(mockUpdateIntegration).toHaveBeenCalledWith({
+      where: { id: "integration-a" },
+      data: expect.objectContaining({
+        oauthResolutionDiagnostics: expect.objectContaining({
+          oauth: "kept",
+          profileSnapshotRefresh: expect.objectContaining({
+            igIdUsed: "ig-1",
+            tokenPresent: true,
+            graphApiVersion: "v25.0",
+            returnedFieldNames: ["id", "media_count", "profile_picture_url", "username"],
+          }),
+        }),
+      }),
+    });
+    expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("username and profile picture only still stores a partial snapshot", async () => {
+    mockFindIntegrationFirst.mockResolvedValue({
+      id: "integration-a",
+      token: "page-token-secret",
+      expiresAt: new Date("2026-06-01T00:00:00Z"),
+      instagramId: "ig-1",
+      instagramUsername: "olduser",
+      profilePictureUrl: null,
+      snapshots: [snapshot({ fetchedAt: new Date("2026-05-23T00:00:00Z") })],
+    });
+    mockGetInstagramBusinessProfile
+      .mockRejectedValueOnce({
+        safe: { status: 400, code: 100, message: "(#100) followers_count is unsupported" },
+      })
+      .mockRejectedValueOnce({
+        safe: { status: 400, code: 100, message: "(#100) media_count is unsupported" },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          id: "ig-1",
+          username: "basicuser",
+          profile_picture_url: "https://example.com/basic.jpg",
+        },
+      });
+    mockCreateSnapshot.mockImplementation(async ({ data }) =>
+      snapshot({ ...data, id: "snap-basic", followersCount: null, mediaCount: null, createdAt: now })
+    );
+    mockUpdateIntegration.mockResolvedValue({});
+
+    const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
+
+    expect(mockGetInstagramBusinessProfile).toHaveBeenNthCalledWith(
+      3,
+      "ig-1",
+      "page-token-secret",
+      "id,username,profile_picture_url"
+    );
+    expect(result.data?.username).toBe("basicuser");
+    expect(result.data?.profilePictureUrl).toBe("https://example.com/basic.jpg");
+    expect(result.data?.followersCount).toBeNull();
+    expect(result.data?.mediaCount).toBeNull();
+    expect(result.message).toBe("Profile loaded. Follower/post counts were not returned by Meta.");
+    expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("safe diagnostics include returned field names only", async () => {
+    mockFindIntegrationFirst.mockResolvedValue({
+      id: "integration-a",
+      token: "page-token-secret",
+      expiresAt: new Date("2026-06-01T00:00:00Z"),
+      instagramId: "ig-1",
+      instagramUsername: "olduser",
+      profilePictureUrl: null,
+      snapshots: [snapshot({ fetchedAt: new Date("2026-05-23T00:00:00Z") })],
+    });
+    mockGetInstagramBusinessProfile.mockResolvedValue({
+      data: {
+        id: "ig-1",
+        username: "realuser",
+        profile_picture_url: "https://example.com/real.jpg",
+        access_token: "should-not-be-in-diagnostics",
+      },
+    });
+    mockCreateSnapshot.mockImplementation(async ({ data }) =>
+      snapshot({ ...data, id: "snap-safe", followersCount: null, mediaCount: null, createdAt: now })
+    );
+    mockUpdateIntegration.mockResolvedValue({});
+
+    const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
+
+    expect(result.diagnostics?.returnedFieldNames).toEqual(["id", "profile_picture_url", "username"]);
+    expect(JSON.stringify(result.diagnostics)).not.toContain("realuser");
+    expect(JSON.stringify(result.diagnostics)).not.toContain("should-not-be-in-diagnostics");
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
@@ -285,7 +431,11 @@ describe("instagram profile snapshots", () => {
 
     await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
 
-    expect(mockGetInstagramBusinessProfile).toHaveBeenCalledWith("correct-ig-id", "page-token-secret");
+    expect(mockGetInstagramBusinessProfile).toHaveBeenCalledWith(
+      "correct-ig-id",
+      "page-token-secret",
+      "id,username,profile_picture_url,followers_count,media_count,account_type"
+    );
   });
 
   it("refresh helper returns missing-id error if instagramId absent", async () => {
@@ -316,9 +466,9 @@ describe("instagram profile snapshots", () => {
     expect(getProfileSnapshotStatus(partial, now)).toEqual({ label: "Partial", ok: false });
   });
 
-  it("getProfileSnapshotStatus returns Partial when only mediaCount is null", () => {
+  it("getProfileSnapshotStatus returns Partial when followers are missing", () => {
     const partial = { fetchedAt: now, followersCount: null, mediaCount: 5 };
-    expect(getProfileSnapshotStatus(partial, now)).toEqual({ label: "Fresh", ok: true });
+    expect(getProfileSnapshotStatus(partial, now)).toEqual({ label: "Partial", ok: false });
   });
 
   it("getProfileSnapshotStatus returns Fresh when snapshot has followers and is recent", () => {
@@ -330,6 +480,17 @@ describe("instagram profile snapshots", () => {
     const old = new Date(now.getTime() - 8 * 60 * 60 * 1000);
     const stale = { fetchedAt: old, followersCount: 1000, mediaCount: 20 };
     expect(getProfileSnapshotStatus(stale, now)).toEqual({ label: "Stale", ok: false });
+  });
+
+  it("profile snapshot display separates Partial from Failed", () => {
+    expect(getProfileSnapshotDisplay({ fetchedAt: now, followersCount: null, mediaCount: null }, null, now)).toEqual({
+      label: "Partial",
+      ok: false,
+    });
+    expect(getProfileSnapshotDisplay(null, { error: "Instagram profile stats unavailable." }, now)).toEqual({
+      label: "Failed",
+      ok: false,
+    });
   });
 
   it("latest snapshot query returns partial snapshot without followers", async () => {

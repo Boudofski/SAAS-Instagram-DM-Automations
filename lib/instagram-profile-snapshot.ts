@@ -1,5 +1,5 @@
 import { type InstagramAccountSnapshot } from "@prisma/client";
-import { getInstagramBusinessProfile, getSafeMetaError } from "@/lib/fetch";
+import { getInstagramBusinessProfile, getSafeMetaError, META_GRAPH_VERSION } from "@/lib/fetch";
 import { client } from "@/lib/prisma";
 import {
   type ChangeSummary,
@@ -10,6 +10,12 @@ import {
 
 const SNAPSHOT_FRESH_MS = 6 * 60 * 60 * 1000;
 const FORCE_REFRESH_LIMIT_MS = 15 * 60 * 1000;
+export const PROFILE_FIELD_SETS = [
+  ["id", "username", "profile_picture_url", "followers_count", "media_count", "account_type"],
+  ["id", "username", "profile_picture_url", "media_count"],
+  ["id", "username", "profile_picture_url"],
+] as const;
+const PROFILE_FIELD_KEYS = new Set(PROFILE_FIELD_SETS[0]);
 
 export type SerializableInstagramSnapshot = {
   id: string;
@@ -39,6 +45,21 @@ export type RefreshInstagramSnapshotResult = {
   cached: boolean;
   error?: string;
   message?: string;
+  diagnostics?: InstagramProfileFetchDiagnostics;
+};
+
+export type InstagramProfileFetchDiagnostics = {
+  igIdUsed: string | null;
+  tokenPresent: boolean;
+  requestedFields: string[];
+  returnedFieldNames: string[];
+  safeMetaError?: ReturnType<typeof getSafeMetaError>;
+  graphApiVersion: string;
+  attempts: Array<{
+    requestedFields: string[];
+    returnedFieldNames: string[];
+    safeMetaError?: ReturnType<typeof getSafeMetaError>;
+  }>;
 };
 
 type RefreshOptions = {
@@ -133,12 +154,21 @@ export function getProfileSnapshotStatus(
   now = new Date()
 ): { label: "Missing" | "Partial" | "Fresh" | "Stale"; ok: boolean } {
   if (!snapshot) return { label: "Missing", ok: false };
-  const hasStats =
-    typeof snapshot.followersCount === "number" || typeof snapshot.mediaCount === "number";
-  if (!hasStats) return { label: "Partial", ok: false };
+  const hasCompleteStats =
+    typeof snapshot.followersCount === "number" && typeof snapshot.mediaCount === "number";
+  if (!hasCompleteStats) return { label: "Partial", ok: false };
   const age = now.getTime() - snapshot.fetchedAt.getTime();
   if (age <= SNAPSHOT_FRESH_MS) return { label: "Fresh", ok: true };
   return { label: "Stale", ok: false };
+}
+
+export function getProfileSnapshotDisplay(
+  snapshot: Pick<InstagramAccountSnapshot, "fetchedAt" | "followersCount" | "mediaCount"> | null | undefined,
+  refresh?: Pick<RefreshInstagramSnapshotResult, "error"> | null,
+  now = new Date()
+): { label: "Missing" | "Partial" | "Fresh" | "Stale" | "Failed"; ok: boolean } {
+  if (!snapshot && refresh?.error) return { label: "Failed", ok: false };
+  return getProfileSnapshotStatus(snapshot, now);
 }
 
 export function formatSnapshotRefreshTime(value?: Date | string | null) {
@@ -166,6 +196,122 @@ function safeProfileStatsError(error: unknown) {
     return "Refresh recently completed. Try again later.";
   }
   return "Instagram profile stats unavailable.";
+}
+
+function isRetryableProfileFieldError(error: unknown) {
+  const safe = getSafeMetaError(error);
+  const message = String(safe.message ?? "").toLowerCase();
+  return (
+    safe.code === 10 ||
+    safe.code === 100 ||
+    safe.code === 200 ||
+    message.includes("unsupported") ||
+    message.includes("field") ||
+    message.includes("permission") ||
+    message.includes("followers_count") ||
+    message.includes("media_count")
+  );
+}
+
+function returnedFieldNames(data: unknown) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return [];
+  return Object.keys(data as Record<string, unknown>).filter((key) => PROFILE_FIELD_KEYS.has(key as any)).sort();
+}
+
+function hasAnyProfileField(data: unknown) {
+  return returnedFieldNames(data).length > 0;
+}
+
+function createDiagnostics(igIdUsed: string | null, tokenPresent: boolean): InstagramProfileFetchDiagnostics {
+  return {
+    igIdUsed,
+    tokenPresent,
+    requestedFields: [...PROFILE_FIELD_SETS[0]],
+    returnedFieldNames: [],
+    graphApiVersion: META_GRAPH_VERSION,
+    attempts: [],
+  };
+}
+
+function recordProfileFetchSuccess(
+  diagnostics: InstagramProfileFetchDiagnostics,
+  fields: readonly string[],
+  data: unknown
+) {
+  const names = returnedFieldNames(data);
+  diagnostics.requestedFields = [...fields];
+  diagnostics.returnedFieldNames = names;
+  diagnostics.safeMetaError = undefined;
+  diagnostics.attempts.push({ requestedFields: [...fields], returnedFieldNames: names });
+}
+
+function recordProfileFetchError(
+  diagnostics: InstagramProfileFetchDiagnostics,
+  fields: readonly string[],
+  error: unknown
+) {
+  const safeMetaError = getSafeMetaError(error);
+  diagnostics.requestedFields = [...fields];
+  diagnostics.returnedFieldNames = [];
+  diagnostics.safeMetaError = safeMetaError;
+  diagnostics.attempts.push({ requestedFields: [...fields], returnedFieldNames: [], safeMetaError });
+}
+
+function diagnosticJson(diagnostics: InstagramProfileFetchDiagnostics) {
+  return {
+    profileSnapshotRefresh: {
+      ...diagnostics,
+      refreshedAt: new Date().toISOString(),
+    },
+  };
+}
+
+function mergeDiagnosticJson(existing: unknown, diagnostics: InstagramProfileFetchDiagnostics) {
+  if (existing && typeof existing === "object" && !Array.isArray(existing)) {
+    return {
+      ...(existing as Record<string, unknown>),
+      ...diagnosticJson(diagnostics),
+    };
+  }
+  return diagnosticJson(diagnostics);
+}
+
+async function storeProfileFetchDiagnostics(
+  integrationId: string,
+  existing: unknown,
+  diagnostics: InstagramProfileFetchDiagnostics
+) {
+  await client.integrations.update({
+    where: { id: integrationId },
+    data: { oauthResolutionDiagnostics: mergeDiagnosticJson(existing, diagnostics) },
+  });
+}
+
+async function fetchProfileWithFallbacks(
+  instagramId: string,
+  token: string,
+  diagnostics: InstagramProfileFetchDiagnostics
+) {
+  let lastError: unknown = null;
+
+  for (let index = 0; index < PROFILE_FIELD_SETS.length; index += 1) {
+    const fields = PROFILE_FIELD_SETS[index];
+    try {
+      const response = await getInstagramBusinessProfile(instagramId, token, fields.join(","));
+      const data = response.data ?? {};
+      recordProfileFetchSuccess(diagnostics, fields, data);
+      if (hasAnyProfileField(data)) return response;
+      lastError = new Error("Meta profile response did not include profile fields.");
+    } catch (error) {
+      lastError = error;
+      recordProfileFetchError(diagnostics, fields, error);
+      if (index === PROFILE_FIELD_SETS.length - 1 || !isRetryableProfileFieldError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError ?? new Error("Instagram profile stats unavailable.");
 }
 
 export async function getInstagramSnapshotComparisonWithMissingRefresh(
@@ -204,6 +350,7 @@ export async function refreshInstagramProfileSnapshotForUser(
       instagramId: true,
       instagramUsername: true,
       profilePictureUrl: true,
+      oauthResolutionDiagnostics: true,
       snapshots: { orderBy: { fetchedAt: "desc" }, take: 1 },
     },
   });
@@ -214,6 +361,7 @@ export async function refreshInstagramProfileSnapshotForUser(
 
   const latest = integration.snapshots[0] ?? null;
   const latestAgeMs = latest ? now.getTime() - latest.fetchedAt.getTime() : Number.POSITIVE_INFINITY;
+  const diagnostics = createDiagnostics(integration.instagramId, Boolean(integration.token));
 
   if (latest && !options.force && latestAgeMs < SNAPSHOT_FRESH_MS) {
     return { status: 200, data: serializeInstagramSnapshot(latest), cached: true };
@@ -229,25 +377,29 @@ export async function refreshInstagramProfileSnapshotForUser(
   }
 
   if (!integration.instagramId || !integration.token) {
+    await storeProfileFetchDiagnostics(integration.id, integration.oauthResolutionDiagnostics, diagnostics);
     return {
       status: 404,
       data: serializeInstagramSnapshot(latest),
       cached: Boolean(latest),
       error: "Connect Instagram to enable profile stats.",
+      diagnostics,
     };
   }
 
   if (integration.expiresAt && integration.expiresAt.getTime() < now.getTime()) {
+    await storeProfileFetchDiagnostics(integration.id, integration.oauthResolutionDiagnostics, diagnostics);
     return {
       status: 401,
       data: serializeInstagramSnapshot(latest),
       cached: Boolean(latest),
       error: "Reconnect Instagram to refresh profile stats.",
+      diagnostics,
     };
   }
 
   try {
-    const profile = await getInstagramBusinessProfile(integration.instagramId, integration.token);
+    const profile = await fetchProfileWithFallbacks(integration.instagramId, integration.token, diagnostics);
     const data = profile.data ?? {};
     const snapshot = await client.instagramAccountSnapshot.create({
       data: {
@@ -271,16 +423,30 @@ export async function refreshInstagramProfileSnapshotForUser(
       data: {
         instagramUsername: snapshot.username ?? integration.instagramUsername,
         profilePictureUrl: snapshot.profilePictureUrl ?? integration.profilePictureUrl,
+        oauthResolutionDiagnostics: mergeDiagnosticJson(integration.oauthResolutionDiagnostics, diagnostics),
       },
     });
 
-    return { status: 200, data: serializeInstagramSnapshot(snapshot), cached: false };
+    console.info("[instagram-profile-refresh]", diagnostics);
+
+    const missingCounts =
+      typeof snapshot.followersCount !== "number" || typeof snapshot.mediaCount !== "number";
+    return {
+      status: 200,
+      data: serializeInstagramSnapshot(snapshot),
+      cached: false,
+      message: missingCounts ? "Profile loaded. Follower/post counts were not returned by Meta." : undefined,
+      diagnostics,
+    };
   } catch (error) {
+    await storeProfileFetchDiagnostics(integration.id, integration.oauthResolutionDiagnostics, diagnostics);
+    console.warn("[instagram-profile-refresh-failed]", diagnostics);
     return {
       status: 200,
       data: serializeInstagramSnapshot(latest),
       cached: Boolean(latest),
       error: safeProfileStatsError(error),
+      diagnostics,
     };
   }
 }

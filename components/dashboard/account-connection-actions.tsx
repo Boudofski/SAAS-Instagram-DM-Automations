@@ -57,7 +57,7 @@ export default function AccountConnectionActions({ connected, integrationId }: P
         if (result.status === 200 && !result.error) {
           const msg = result.cached
             ? result.message ?? "Using latest cached profile stats."
-            : "Instagram profile stats refreshed.";
+            : result.message ?? "Instagram profile stats refreshed.";
           toast.success(msg);
           setRefreshStatus({ ok: true, message: msg });
           router.refresh();
@@ -66,6 +66,7 @@ export default function AccountConnectionActions({ connected, integrationId }: P
         const errMsg = result.error ?? "Instagram profile stats could not be refreshed.";
         toast.error(errMsg);
         setRefreshStatus({ ok: false, message: errMsg });
+        router.refresh();
       } catch {
         const errMsg = "Instagram profile stats could not be refreshed.";
         toast.error(errMsg);

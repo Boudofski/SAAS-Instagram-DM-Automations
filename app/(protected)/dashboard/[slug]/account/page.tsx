@@ -1,6 +1,7 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
 import { onUserInfo } from "@/actions/user";
 import { getCurrentWebhookHealth } from "@/actions/integration";
+import { isOwnerAdminIdentity } from "@/lib/admin";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
@@ -8,7 +9,9 @@ import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
 import {
   formatSnapshotRefreshTime,
   getInstagramSnapshotComparisonWithMissingRefresh,
+  getProfileSnapshotDisplay,
   getProfileSnapshotStatus,
+  PROFILE_FIELD_SETS,
 } from "@/lib/instagram-profile-snapshot";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
 import { AlertTriangle, CheckCircle2, ExternalLink, Lock, ShieldAlert } from "lucide-react";
@@ -40,9 +43,11 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const autoRefresh = snapshotState.refresh;
   const snapshot = snapshotComparison?.current ?? null;
   const profileSnapshotStatus = getProfileSnapshotStatus(snapshot);
+  const profileSnapshotDisplay = getProfileSnapshotDisplay(snapshot, autoRefresh);
   const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const connected = Boolean(instagram?.instagramId);
+  const isAdmin = isOwnerAdminIdentity({ clerkId: user?.clerkId, email: user?.email });
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
   const statusTone = tokenExpired ? "amber" : connected ? "green" : "slate";
@@ -86,8 +91,8 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                 {instagram?.pageName ?? "Instagram Business or Creator profile"}
               </p>
               <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-500">
-                Profile stats: {profileSnapshotStatus.label}
-                {profileSnapshotStatus.label === "Partial" && " (followers unavailable)"}
+                Profile stats: {profileSnapshotDisplay.label}
+                {profileSnapshotDisplay.label === "Partial" && " (followers unavailable)"}
                 {" · "}{formatSnapshotRefreshTime(snapshot?.fetchedAt)}
               </p>
               {connected && profileSnapshotStatus.label === "Missing" && (
@@ -100,10 +105,26 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                   {autoRefresh.error}
                 </p>
               )}
+              {connected && profileSnapshotDisplay.label === "Failed" && (
+                <Link
+                  href="/onboarding/connect"
+                  className="mt-2 inline-flex rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+                >
+                  Reconnect Instagram
+                </Link>
+              )}
               {connected && profileSnapshotStatus.label === "Partial" && (
                 <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
-                  Profile loaded — click &quot;Refresh profile&quot; to retry loading followers and posts.
+                  Profile loaded. Follower/post counts were not returned by Meta.
                 </p>
+              )}
+              {isAdmin && connected && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                  <p className="font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Admin Graph API Explorer test</p>
+                  <p className="mt-1 font-mono break-all">
+                    GET /{instagram?.instagramId}?fields={PROFILE_FIELD_SETS[0].join(",")}
+                  </p>
+                </div>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <StatusBadge tone="pink">Official Meta connection</StatusBadge>
@@ -177,7 +198,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           />
           <HealthCard label="Last webhook" value={formatHealthDate(health?.lastWebhook?.createdAt)} ok={Boolean(health?.lastWebhook)} />
           <HealthCard label="Last comment" value={formatHealthDate(health?.lastCommentWebhook?.createdAt)} ok={Boolean(health?.lastCommentWebhook)} />
-          <HealthCard label="Profile snapshot" value={profileSnapshotStatus.label} detail={formatSnapshotRefreshTime(snapshot?.fetchedAt)} ok={profileSnapshotStatus.ok} />
+          <HealthCard label="Profile snapshot" value={profileSnapshotDisplay.label} detail={formatSnapshotRefreshTime(snapshot?.fetchedAt)} ok={profileSnapshotDisplay.ok} />
           <HealthCard label="Last failure" value={lastFailure.title} detail={lastFailure.detail} ok={lastFailure.severity === "ok"} />
           <HealthCard
             label="Messaging capability"

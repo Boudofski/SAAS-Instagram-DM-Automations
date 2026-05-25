@@ -8,20 +8,27 @@ function parseAllowlist(value?: string) {
     .filter(Boolean);
 }
 
-export async function requireOwnerAdmin() {
-  const user = await currentUser();
-  if (!user) notFound();
-
-  const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
+export function isOwnerAdminIdentity(identity: { clerkId?: string | null; email?: string | null }) {
+  const email = identity.email?.toLowerCase();
   const emailAllowlist = parseAllowlist(
     process.env.ADMIN_EMAILS || "officialabde@gmail.com"
   );
   const clerkIdAllowlist = parseAllowlist(process.env.ADMIN_CLERK_USER_IDS);
 
-  const allowedByEmail = Boolean(email && emailAllowlist.includes(email));
-  const allowedByClerkId = clerkIdAllowlist.includes(user.id.toLowerCase());
+  return Boolean(
+    (email && emailAllowlist.includes(email)) ||
+    (identity.clerkId && clerkIdAllowlist.includes(identity.clerkId.toLowerCase()))
+  );
+}
 
-  if (!allowedByEmail && !allowedByClerkId) {
+export async function requireOwnerAdmin() {
+  const user = await currentUser();
+  if (!user) notFound();
+
+  const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
+  const allowed = isOwnerAdminIdentity({ clerkId: user.id, email });
+
+  if (!allowed) {
     console.warn("[admin-denied]", {
       currentUserExists: true,
       emailMatched: false,
