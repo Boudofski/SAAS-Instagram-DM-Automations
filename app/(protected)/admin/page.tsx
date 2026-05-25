@@ -1156,33 +1156,64 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           {tab === "meta" && (
             <>
               <Panel title="Meta App Configuration">
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                   <HealthCard label="App ID" value={process.env.META_APP_ID ? "Present" : "Missing"} tone={process.env.META_APP_ID ? "green" : "red"} />
                   <HealthCard label="App secret" value={process.env.META_APP_SECRET ? "Present" : "Missing"} tone={process.env.META_APP_SECRET ? "green" : "red"} />
                   <HealthCard label="Verify token" value={process.env.META_VERIFY_TOKEN ? "Present" : "Missing"} tone={process.env.META_VERIFY_TOKEN ? "green" : "red"} />
-                  <HealthCard label="Product flow" value="Facebook Login + Page token" tone="green" />
+                  <HealthCard label="Route Version" value="2026-05-tenant-diagnostics-v2" tone="green" />
                   <HealthCard label="Webhook URL" value={`${process.env.NEXT_PUBLIC_HOST_URL ?? "https://ap3k.com"}/api/webhooks/meta`} />
                   <HealthCard label="Page token valid" value={metaDiagnostics.tokenValid ? "Yes" : "No"} tone={metaDiagnostics.tokenValid ? "green" : "red"} />
                   <HealthCard label="Comments field" value={metaDiagnostics.commentsSubscribed ? "Subscribed" : "Not confirmed"} tone={metaDiagnostics.commentsSubscribed ? "green" : "amber"} />
                   <HealthCard label="Messages field" value={metaDiagnostics.messagesSubscribed ? "Subscribed" : "Not confirmed"} tone={metaDiagnostics.messagesSubscribed ? "green" : "amber"} />
+                  <HealthCard label="Subscribed Apps" value={metaDiagnostics.subscribedAppsStatus} tone={metaDiagnostics.subscribedAppsActive ? "green" : "amber"} />
                 </div>
-                <Callout tone="amber" title="Permission family">
-                  AP3k uses Facebook Login for Business + Page tokens: instagram_basic, instagram_manage_comments, instagram_manage_messages, pages_show_list, pages_read_engagement, business_management. Do not mix instagram_business_* unless migrating to Instagram Login.
-                </Callout>
               </Panel>
 
-              <Panel title="Meta Delivery Center">
-                <div className="grid gap-3 md:grid-cols-3">
-                  <HealthCard label="GET verify" value={lastVerifyGet ? `${lastVerifyGet.status} · ${formatAdminDate(lastVerifyGet.createdAt)}` : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
-                  <HealthCard label="POST receive" value={lastPostRaw ? formatAdminDate(lastPostRaw.createdAt) : "No POST"} tone={lastPostRaw ? "green" : "red"} />
-                  <HealthCard label="Last real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
-                  <HealthCard label="Last inbound DM" value={formatAdminDate(lastInboundDm?.createdAt)} tone={lastInboundDm ? "green" : "slate"} />
-                  <HealthCard label="Public reply" value={lastPublicReplySent ? "Working" : "No success yet"} tone={lastPublicReplySent ? "green" : "amber"} />
-                  <HealthCard label="Last DM result" value={lastDmFailed?.errorMessage ?? (lastDmSent ? "Sent" : "No result")} tone={lastDmFailed ? "red" : lastDmSent ? "green" : "amber"} />
+              <Panel title="Connected Account Binding (@boudofi check)">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <HealthCard label="IG Username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "None"} tone={metaDiagnostics.integration?.instagramUsername === "boudofi" ? "green" : "amber"} />
+                  <HealthCard label="Instagram ID" value={metaDiagnostics.integration?.instagramId ?? "None"} />
+                  <HealthCard label="Webhook ID" value={metaDiagnostics.integration?.webhookAccountId ?? "None"} />
+                  <HealthCard label="Page ID" value={metaDiagnostics.integration?.pageId ?? "None"} />
+                  <HealthCard label="Business ID" value={metaDiagnostics.integration?.businessId ?? "None"} />
+                  <HealthCard label="Last Raw POST ID" value={(lastPostRaw?.payload as any)?.entryId ?? "None"} tone={(lastPostRaw?.payload as any)?.entryId === metaDiagnostics.integration?.instagramId || (lastPostRaw?.payload as any)?.entryId === metaDiagnostics.integration?.webhookAccountId ? "green" : "red"} />
                 </div>
-                <Callout tone="red" title="Code 3 explanation">
-                  If Meta returns code=3, private DM is blocked until instagram_manage_messages capability is approved or the app/tester setup allows the recipient. Public replies should still be attempted.
-                </Callout>
+                {metaDiagnostics.integration?.instagramUsername === "boudofi" && (lastPostRaw?.payload as any)?.entryId && (lastPostRaw?.payload as any)?.entryId !== metaDiagnostics.integration?.instagramId && (lastPostRaw?.payload as any)?.entryId !== metaDiagnostics.integration?.webhookAccountId && (
+                  <Callout tone="red" title="Account Mismatch Warning">
+                    Connected account is @boudofi but the last received webhook entry.id ({(lastPostRaw?.payload as any)?.entryId}) does not match its IDs. Meta might still be sending events for an old account like @maglobalmarketing.
+                  </Callout>
+                )}
+              </Panel>
+
+              <Panel title="Webhook Delivery Health">
+                <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                  <HealthCard label="Last raw POST" value={formatAdminDate(lastPostRaw?.createdAt)} tone={lastPostRaw && new Date(lastPostRaw.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 ? "green" : "red"} />
+                  <HealthCard label="GET verify" value={lastVerifyGet ? `${lastVerifyGet.status} · ${formatAdminDate(lastVerifyGet.createdAt)}` : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
+                  <HealthCard label="Last route error" value={formatAdminDate(metaDiagnostics.lastRouteError?.createdAt)} tone={metaDiagnostics.lastRouteError ? "red" : "green"} />
+                  <HealthCard label="Last Signature Valid" value={lastSignatureFailed ? "Invalid recently" : "Valid"} tone={lastSignatureFailed ? "red" : "green"} />
+                  <HealthCard label="Last real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
+                  <HealthCard label="Integration match" value={metaDiagnostics.lastIntegrationMatchFailed ? "Failed recently" : "Success"} tone={metaDiagnostics.lastIntegrationMatchFailed ? "red" : "green"} />
+                </div>
+                {!lastPostRaw || new Date(lastPostRaw.createdAt).getTime() < Date.now() - 24 * 60 * 60 * 1000 ? (
+                  <Callout tone="red" title="Delivery Alert">
+                    Meta is not delivering webhooks to AP3k production (no raw POST in last 24h).
+                  </Callout>
+                ) : null}
+              </Panel>
+
+              <Panel title="Internal diagnostics">
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <form method="POST" action="/api/admin/webhook-self-test" className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 className="font-black">Send internal webhook smoke test</h3>
+                    <p className="mt-1 text-sm text-slate-600">Simulates a real Instagram comment payload for @boudofi. Dry-run mode: matches campaigns but skips Meta API calls and DMs.</p>
+                    <div className="mt-4 grid gap-2">
+                      <input name="entryId" defaultValue={metaDiagnostics.integration?.instagramId ?? ""} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Instagram Account ID" />
+                      <input name="mediaId" defaultValue="test_media_internal" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Media ID" />
+                      <input name="commentText" defaultValue="ai" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Comment text" />
+                    </div>
+                    <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run smoke test</button>
+                  </form>
+                </div>
               </Panel>
             </>
           )}

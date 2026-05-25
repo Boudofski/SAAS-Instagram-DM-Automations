@@ -69,14 +69,17 @@ export function buildWebhookPipelineDiagnostics({
 
   const rawArrived = Boolean(lastPostRaw);
   const signaturePassed = Boolean(lastRealComment) ? true : lastSignatureFailed ? false : undefined;
-  const realCommentClassified = lastRealComment?.eventType === "REAL_COMMENT_EVENT";
+  const realCommentClassified = lastRealComment?.eventType === "REAL_COMMENT_EVENT" || lastRealComment?.eventType === "INTERNAL_SELF_TEST";
   const integrationMatched = mediaMatching?.matchingIntegrationFound === true;
   const mediaMatched = matchedAutomationIds.length > 0;
   const triggerMatched = Boolean(matchedTrigger || keywordEvent);
   const publicReplyAttempted = Boolean(publicReplyLog || publicReplyEvent);
   const dmAttempted = Boolean(dmLog || dmEvent);
 
+  const simulationResult = String(payload?.simulationResult || "");
+
   const finalReason =
+    simulationResult ||
     dmLog?.errorMessage ||
     dmEvent?.eventType ||
     publicReplyLog?.errorMessage ||

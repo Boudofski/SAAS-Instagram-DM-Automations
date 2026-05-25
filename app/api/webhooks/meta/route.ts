@@ -45,6 +45,8 @@ import {
 } from "@/lib/instagram-message-event";
 import { openai } from "@/lib/openai";
 
+const WEBHOOK_ROUTE_VERSION = "2026-05-tenant-diagnostics-v2";
+
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
 const WEBHOOK_RATE_LIMIT_MAX = 120;
 const SEND_RETRY_ATTEMPTS = 2;
@@ -114,6 +116,16 @@ export async function GET(req: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
+  // PHASE 1 — absolute first-line logging
+  console.log("AP3K_WEBHOOK_POST_ENTERED", {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    contentType: req.headers.get("content-type"),
+    userAgent: req.headers.get("user-agent"),
+    hasSignature: req.headers.has("x-hub-signature-256"),
+    routeVersion: WEBHOOK_ROUTE_VERSION,
+  });
+
   const rateKey = getRateLimitKey(req);
   if (isRateLimited(rateKey)) {
     console.warn("[webhook] request rate limited", { rateKey });
@@ -137,6 +149,7 @@ export async function POST(req: NextRequest) {
         eventSource: "META_REAL",
         status: "RECEIVED",
         payload: {
+          routeVersion: WEBHOOK_ROUTE_VERSION,
           hasSignature: Boolean(signature),
           contentLength: rawBody.length,
           rawBodyLength: rawBody.length,
@@ -152,8 +165,8 @@ export async function POST(req: NextRequest) {
           hasValueMediaId: Boolean(firstValue?.media?.id ?? firstValue?.media_id),
         },
       });
-    } catch {
-      // Non-critical — never let raw receipt logging block processing
+    } catch (err) {
+      console.error("WEBHOOK_POST_RECEIVED_RAW_FAIL", err);
     }
 
     const signatureResult = verifyMetaSignature(rawBody, signature);
@@ -161,6 +174,7 @@ export async function POST(req: NextRequest) {
     const parsedBody = parseJsonSafely(rawBody);
     console.log("[webhook] POST received", {
       ...requestMeta,
+      routeVersion: WEBHOOK_ROUTE_VERSION,
       signatureReason: signatureResult.reason,
       payloadObject: parsedBody.ok ? parsedBody.body?.object : undefined,
     });
@@ -173,6 +187,7 @@ export async function POST(req: NextRequest) {
           status: "FAILED",
           errorMessage: signatureResult.reason,
           payload: {
+            routeVersion: WEBHOOK_ROUTE_VERSION,
             hasSignature: Boolean(signature),
             signaturePrefix: "sha256",
             candidateSecretsConfigured: signatureResult.candidateSecretsConfigured,
@@ -201,6 +216,7 @@ export async function POST(req: NextRequest) {
         status: "FAILED",
         errorMessage: "invalid_json_payload",
         payload: {
+          routeVersion: WEBHOOK_ROUTE_VERSION,
           ...safeWebhookMetadata(undefined, true, undefined, undefined, requestMeta),
           parseError: parsedBody.error,
         },
@@ -209,15 +225,19 @@ export async function POST(req: NextRequest) {
     }
 
     const body = parsedBody.body;
+    const isDryRun = body.dryRun === true || body.source === "INTERNAL_SELF_TEST";
+
     try {
       const firstEntry = Array.isArray(body?.entry) ? body.entry[0] : undefined;
       await createWebhookEvent({
-        eventType: "WEBHOOK_POST_RECEIVED_RAW",
-        eventSource: "META_REAL",
-        status: "RECEIVED",
+        eventType: isDryRun ? "INTERNAL_SELF_TEST" : "WEBHOOK_POST_RECEIVED_RAW",
+        eventSource: isDryRun ? "SIMULATED_INTERNAL" : "META_REAL",
+        status: isDryRun ? "PROCESSED" : "RECEIVED",
         igAccountId: firstEntry?.id,
         payload: {
+          routeVersion: WEBHOOK_ROUTE_VERSION,
           signatureVerified: true,
+          dryRun: isDryRun,
           object: body?.object,
           entryId: firstEntry?.id,
           entryCount: Array.isArray(body?.entry) ? body.entry.length : 0,
@@ -228,15 +248,8 @@ export async function POST(req: NextRequest) {
       // Non-critical diagnostics
     }
 
-    // Self-test payloads must never trigger DM sends
-    if (body.source === "INTERNAL_SELF_TEST") {
-      await createWebhookEvent({
-        eventType: "INTERNAL_SELF_TEST",
-        eventSource: "SIMULATED_INTERNAL",
-        status: "PROCESSED",
-        igAccountId: Array.isArray(body.entry) ? body.entry[0]?.id : undefined,
-        payload: { source: "INTERNAL_SELF_TEST", signatureValid: signatureResult.verified },
-      });
+    // Self-test payloads that are not smoke tests just return early
+    if (body.source === "INTERNAL_SELF_TEST" && !body.smokeTest) {
       return ok();
     }
 
@@ -247,13 +260,16 @@ export async function POST(req: NextRequest) {
         eventSource: "META_REAL",
         status: "IGNORED",
         field: "none",
-        payload: safeWebhookMetadata(
-          body,
-          signatureResult.verified,
-          undefined,
-          undefined,
-          requestMeta
-        ),
+        payload: {
+          routeVersion: WEBHOOK_ROUTE_VERSION,
+          ...safeWebhookMetadata(
+            body,
+            signatureResult.verified,
+            undefined,
+            undefined,
+            requestMeta
+          ),
+        },
       });
       return ok();
     }
@@ -266,10 +282,26 @@ export async function POST(req: NextRequest) {
 
     return ok();
   } catch (error) {
-    // Never return 5xx to Meta — always acknowledge receipt
-    console.error("[webhook] unhandled error", {
+    // PHASE 3 — Add route error capture
+    console.error("AP3K_WEBHOOK_ROUTE_ERROR", {
       message: error instanceof Error ? error.message : String(error),
+      routeVersion: WEBHOOK_ROUTE_VERSION,
     });
+    try {
+      await createWebhookEvent({
+        eventType: "WEBHOOK_ROUTE_ERROR",
+        eventSource: "META_REAL",
+        status: "FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        payload: {
+          routeVersion: WEBHOOK_ROUTE_VERSION,
+          stack: error instanceof Error ? error.stack?.split("\n")[0] : undefined,
+        },
+      });
+    } catch {
+      // Non-critical
+    }
+    // Never return 5xx to Meta — always acknowledge receipt
     return ok();
   }
 }
@@ -662,7 +694,8 @@ async function processEntry(
         mediaId,
         commentId,
         meta: {
-          ...triggerDiagnostics,
+          ...commentDiagnostics,
+          dryRun: envelope.dryRun,
           automationId: automation.id,
           automationName: automation.name,
           automationActive: automation.active,
@@ -686,7 +719,8 @@ async function processEntry(
           commentId,
           keyword: commentText.slice(0, 100),
           meta: {
-            ...triggerDiagnostics,
+            ...commentDiagnostics,
+            dryRun: envelope.dryRun,
             automationId: automation.id,
             automationName: automation.name,
             automationActive: automation.active,
@@ -719,7 +753,8 @@ async function processEntry(
         commentId,
         keyword: matchedKeyword,
         meta: {
-          ...triggerDiagnostics,
+          ...commentDiagnostics,
+          dryRun: envelope.dryRun,
           automationId: automation.id,
           automationName: automation.name,
           triggerMode: automation.triggerMode,
@@ -740,8 +775,20 @@ async function processEntry(
         meta: {
           commenterUsername,
           commentText,
+          dryRun: envelope.dryRun,
         },
       });
+
+      if (envelope.dryRun) {
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "PROCESSED",
+          errorMessage: "dry_run_skipped_actions",
+          processedAt: new Date(),
+        });
+        continue;
+      }
+
       await trackResponse(automation.id, "COMMENT");
 
       // 4. Duplicate check — skip if we already DM'd this person for this automation

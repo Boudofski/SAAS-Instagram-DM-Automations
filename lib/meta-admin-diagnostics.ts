@@ -6,6 +6,7 @@ export async function getMetaAdminDiagnostics() {
     where: { name: "INSTAGRAM" },
     orderBy: { createdAt: "desc" },
     select: {
+      id: true,
       instagramId: true,
       webhookAccountId: true,
       pageId: true,
@@ -34,6 +35,69 @@ export async function getMetaAdminDiagnostics() {
     instagramBusinessAccountId: integration?.instagramId,
   });
 
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const [
+    lastRawPost,
+    lastSignatureFailed,
+    lastRealComment,
+    lastRouteError,
+    lastIntegrationMatchFailed,
+    lastAutomationMatchFailed,
+    simulatedEvents,
+    realMetaEvents,
+    failedSignatures,
+    ignoredPayloads,
+    keywordMatched,
+    dmSent,
+    dmFailed,
+  ] = await Promise.all([
+    client.webhookEvent.findFirst({
+      where: { eventType: "WEBHOOK_POST_RECEIVED_RAW", eventSource: "META_REAL" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "SIGNATURE_FAILED", eventSource: "META_REAL" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "REAL_COMMENT_EVENT", eventSource: "META_REAL" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "WEBHOOK_ROUTE_ERROR" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "INTEGRATION_MATCH_FAILED" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "AUTOMATION_MATCH_FAILED" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.count({
+      where: { eventSource: "SIMULATED_INTERNAL", createdAt: { gte: since } },
+    }),
+    client.webhookEvent.count({
+      where: { eventSource: "META_REAL", createdAt: { gte: since } },
+    }),
+    client.webhookEvent.count({
+      where: { eventType: "SIGNATURE_FAILED", createdAt: { gte: since } },
+    }),
+    client.webhookEvent.count({
+      where: { status: "IGNORED", createdAt: { gte: since } },
+    }),
+    client.automationEvent.count({
+      where: { eventType: "KEYWORD_MATCHED", createdAt: { gte: since } },
+    }),
+    client.messageLog.count({
+      where: { messageType: "DM", status: "SENT", createdAt: { gte: since } },
+    }),
+    client.messageLog.count({
+      where: { messageType: "DM", status: "FAILED", createdAt: { gte: since } },
+    }),
+  ]);
+
   if (!integration?.pageId || !integration.token) {
     const oauthState =
       integration?.oauthLastError ??
@@ -43,6 +107,7 @@ export async function getMetaAdminDiagnostics() {
       connected: false,
       integration: integration
         ? {
+            id: integration.id,
             instagramId: integration.instagramId,
             webhookAccountId: integration.webhookAccountId,
             pageId: integration.pageId,
@@ -70,71 +135,25 @@ export async function getMetaAdminDiagnostics() {
       appModeNote: "App mode and tester roles must be verified in Meta Developer Dashboard; Meta does not expose them through this page token health check.",
       subscribedAppsStatus: tokenHealth.subscribedAppsStatus ?? "unknown",
       tokenStatus: tokenHealth.graphValidationResult,
-      lastRealWebhookAt: null as Date | null,
-      lastFailureReason: null as string | null,
+      lastRawPost,
+      lastSignatureFailed,
+      lastRealComment,
+      lastRouteError,
+      lastIntegrationMatchFailed,
+      lastAutomationMatchFailed,
+      lastRealWebhookAt: lastRealComment?.createdAt ?? null,
+      lastFailureReason: lastRouteError?.errorMessage ?? lastSignatureFailed?.errorMessage ?? null,
       last24h: {
-        simulatedEvents: 0,
-        realMetaEvents: 0,
-        failedSignatures: 0,
-        ignoredPayloads: 0,
-        keywordMatched: 0,
-        dmSent: 0,
-        dmFailed: 0,
+        simulatedEvents,
+        realMetaEvents,
+        failedSignatures,
+        ignoredPayloads,
+        keywordMatched,
+        dmSent,
+        dmFailed,
       },
     };
   }
-
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [
-    lastRealWebhook,
-    lastFailure,
-    simulatedEvents,
-    realMetaEvents,
-    failedSignatures,
-    ignoredPayloads,
-    keywordMatched,
-    dmSent,
-    dmFailed,
-  ] = await Promise.all([
-    client.webhookEvent.findFirst({
-      where: { igAccountId: integration.pageId, eventSource: "META_REAL" },
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true },
-    }),
-    client.webhookEvent.findFirst({
-      where: {
-        igAccountId: integration.pageId,
-        OR: [
-          { status: "FAILED" },
-          { errorMessage: { not: null } },
-          { eventType: { in: ["SIGNATURE_FAILED", "PAYLOAD_INVALID"] } },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-      select: { errorMessage: true, eventType: true, status: true, createdAt: true },
-    }),
-    client.webhookEvent.count({
-      where: { eventSource: "SIMULATED_INTERNAL", createdAt: { gte: since } },
-    }),
-    client.webhookEvent.count({
-      where: { eventSource: "META_REAL", createdAt: { gte: since } },
-    }),
-    client.webhookEvent.count({
-      where: { eventType: "SIGNATURE_FAILED", createdAt: { gte: since } },
-    }),
-    client.webhookEvent.count({
-      where: { status: "IGNORED", createdAt: { gte: since } },
-    }),
-    client.automationEvent.count({
-      where: { eventType: "KEYWORD_MATCHED", createdAt: { gte: since } },
-    }),
-    client.messageLog.count({
-      where: { messageType: "DM", status: "SENT", createdAt: { gte: since } },
-    }),
-    client.messageLog.count({
-      where: { messageType: "DM", status: "FAILED", createdAt: { gte: since } },
-    }),
-  ]);
 
   const subscriptionMode = integration.webhookSubscriptionMode ?? "UNKNOWN";
 
@@ -154,6 +173,7 @@ export async function getMetaAdminDiagnostics() {
               : "oauth_success",
     subscriptionMode,
     integration: {
+      id: integration.id,
       instagramId: integration.instagramId,
       webhookAccountId: integration.webhookAccountId,
       pageId: integration.pageId,
@@ -187,10 +207,14 @@ export async function getMetaAdminDiagnostics() {
     appModeNote: "App mode and tester roles must be verified in Meta Developer Dashboard; Meta does not expose them through this page token health check.",
     subscribedAppsStatus: tokenHealth.subscribedAppsStatus ?? "unknown",
     tokenStatus: tokenHealth.graphValidationResult,
-    lastRealWebhookAt: lastRealWebhook?.createdAt ?? null,
-    lastFailureReason: lastFailure
-      ? `${lastFailure.eventType}/${lastFailure.status}: ${lastFailure.errorMessage ?? "no error message"}`
-      : null,
+    lastRawPost,
+    lastSignatureFailed,
+    lastRealComment,
+    lastRouteError,
+    lastIntegrationMatchFailed,
+    lastAutomationMatchFailed,
+    lastRealWebhookAt: lastRealComment?.createdAt ?? null,
+    lastFailureReason: lastRouteError?.errorMessage ?? lastSignatureFailed?.errorMessage ?? null,
     last24h: {
       simulatedEvents,
       realMetaEvents,
