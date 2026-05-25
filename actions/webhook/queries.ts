@@ -787,6 +787,7 @@ export const updateWebhookEvent = async (
   id: string,
   data: {
     automationId?: string;
+    eventType?: string;
     status?: string;
     errorMessage?: string;
     processedAt?: Date;

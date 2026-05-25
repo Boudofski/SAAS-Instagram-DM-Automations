@@ -40,6 +40,7 @@ export async function getMetaAdminDiagnostics() {
     lastRawPost,
     lastSignatureFailed,
     lastRealComment,
+    lastInboundDm,
     lastRouteError,
     lastIntegrationMatchFailed,
     lastAutomationMatchFailed,
@@ -61,6 +62,10 @@ export async function getMetaAdminDiagnostics() {
     }),
     client.webhookEvent.findFirst({
       where: { eventType: "REAL_COMMENT_EVENT", eventSource: "META_REAL" },
+      orderBy: { createdAt: "desc" },
+    }),
+    client.webhookEvent.findFirst({
+      where: { eventType: "REAL_MESSAGE_EVENT", eventSource: "META_REAL" },
       orderBy: { createdAt: "desc" },
     }),
     client.webhookEvent.findFirst({
@@ -97,6 +102,50 @@ export async function getMetaAdminDiagnostics() {
       where: { messageType: "DM", status: "FAILED", createdAt: { gte: since } },
     }),
   ]);
+
+  const lastCommentPayload = lastRealComment?.payload as any;
+  const lastDmPayload = lastInboundDm?.payload as any;
+
+  const currentWebhookState = !lastRawPost
+    ? "No recent webhook delivery"
+    : lastSignatureFailed && (!lastRawPost || lastSignatureFailed.createdAt > lastRawPost.createdAt)
+      ? "Signature invalid"
+      : lastRouteError && (!lastRawPost || lastRouteError.createdAt > lastRawPost.createdAt)
+        ? "Parser failing"
+        : lastRealComment
+          ? "Comment webhooks active"
+          : lastInboundDm
+            ? "Only messaging webhooks received. No comment webhook detected recently."
+            : "No recent webhook delivery";
+
+  const baseResult = {
+    lastRawPost,
+    lastSignatureFailed,
+    lastRealComment,
+    lastInboundDm,
+    lastRouteError,
+    lastIntegrationMatchFailed,
+    lastAutomationMatchFailed,
+    lastRealWebhookAt: lastRealComment?.createdAt ?? lastInboundDm?.createdAt ?? null,
+    lastFailureReason: lastRouteError?.errorMessage ?? lastSignatureFailed?.errorMessage ?? null,
+    currentWebhookState,
+    lastCommentWebhookDetails: lastRealComment ? {
+      at: lastRealComment.createdAt,
+      hasMediaId: Boolean(lastCommentPayload?.mediaId),
+      hasCommentId: Boolean(lastCommentPayload?.commentId),
+      hasText: Boolean(lastCommentPayload?.hasCommentText),
+    } : null,
+    lastMessagingWebhookAt: lastInboundDm?.createdAt ?? null,
+    last24h: {
+      simulatedEvents,
+      realMetaEvents,
+      failedSignatures,
+      ignoredPayloads,
+      keywordMatched,
+      dmSent,
+      dmFailed,
+    },
+  };
 
   if (!integration?.pageId || !integration.token) {
     const oauthState =
@@ -135,23 +184,7 @@ export async function getMetaAdminDiagnostics() {
       appModeNote: "App mode and tester roles must be verified in Meta Developer Dashboard; Meta does not expose them through this page token health check.",
       subscribedAppsStatus: tokenHealth.subscribedAppsStatus ?? "unknown",
       tokenStatus: tokenHealth.graphValidationResult,
-      lastRawPost,
-      lastSignatureFailed,
-      lastRealComment,
-      lastRouteError,
-      lastIntegrationMatchFailed,
-      lastAutomationMatchFailed,
-      lastRealWebhookAt: lastRealComment?.createdAt ?? null,
-      lastFailureReason: lastRouteError?.errorMessage ?? lastSignatureFailed?.errorMessage ?? null,
-      last24h: {
-        simulatedEvents,
-        realMetaEvents,
-        failedSignatures,
-        ignoredPayloads,
-        keywordMatched,
-        dmSent,
-        dmFailed,
-      },
+      ...baseResult,
     };
   }
 
@@ -207,22 +240,6 @@ export async function getMetaAdminDiagnostics() {
     appModeNote: "App mode and tester roles must be verified in Meta Developer Dashboard; Meta does not expose them through this page token health check.",
     subscribedAppsStatus: tokenHealth.subscribedAppsStatus ?? "unknown",
     tokenStatus: tokenHealth.graphValidationResult,
-    lastRawPost,
-    lastSignatureFailed,
-    lastRealComment,
-    lastRouteError,
-    lastIntegrationMatchFailed,
-    lastAutomationMatchFailed,
-    lastRealWebhookAt: lastRealComment?.createdAt ?? null,
-    lastFailureReason: lastRouteError?.errorMessage ?? lastSignatureFailed?.errorMessage ?? null,
-    last24h: {
-      simulatedEvents,
-      realMetaEvents,
-      failedSignatures,
-      ignoredPayloads,
-      keywordMatched,
-      dmSent,
-      dmFailed,
-    },
+    ...baseResult,
   };
 }

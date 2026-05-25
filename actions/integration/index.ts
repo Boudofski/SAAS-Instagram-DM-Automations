@@ -39,6 +39,7 @@ const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth
 
 async function attemptWebhookSubscription(pageId: string, pageToken: string) {
   const attemptedAt = new Date();
+  const requestedFields = "comments,messages";
   try {
     const subscription = await subscribeInstagramWebhooks(pageId, pageToken);
     const subscribed = subscription.status >= 200 && subscription.status < 300;
@@ -49,8 +50,16 @@ async function attemptWebhookSubscription(pageId: string, pageToken: string) {
       subscribed,
       subscriptionMode,
       status: subscription.status,
+      requestedFields,
     });
-    return { statusCode: subscription.status, subscribed, subscriptionMode, attemptedAt };
+    return {
+      statusCode: subscription.status,
+      subscribed,
+      subscriptionMode,
+      attemptedAt,
+      requestedFields,
+      result: subscribed ? "success" : `failed with status ${subscription.status}`,
+    };
   } catch (error) {
     const metaError = getSafeMetaError(error);
     const safe = formatSafeMetaError(error);
@@ -58,19 +67,26 @@ async function attemptWebhookSubscription(pageId: string, pageToken: string) {
       typeof metaError.message === "string" &&
       metaError.message.includes("pages_manage_metadata");
     const subscriptionMode = isMetaDashboardManaged ? "META_DASHBOARD_MANAGED" : "FAILED";
+
+    // Summarize unsupported field errors specifically
+    const errorMessage = typeof metaError.message === "string" ? metaError.message : "";
+    const unsupportedFields = errorMessage.includes("unsupported") ? "Subscription failed: one or more requested fields (comments, messages) may not be supported for this account or app level." : undefined;
+
     console.warn("[oauth] page webhook subscription failed", {
       endpointFamily: "facebook_graph_page",
       pageIdPresent: Boolean(pageId),
       subscribed: false,
       subscriptionMode,
       error: metaError,
+      requestedFields,
     });
     return {
       statusCode: metaError.status,
       subscribed: false,
       subscriptionMode,
-      error: safe || "page_subscribed_apps_failed",
+      error: unsupportedFields || safe || "page_subscribed_apps_failed",
       attemptedAt,
+      requestedFields,
     };
   }
 }

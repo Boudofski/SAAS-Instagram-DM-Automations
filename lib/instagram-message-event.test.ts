@@ -58,6 +58,15 @@ describe("parseMessagingItem — text messages", () => {
     expect(result.data.messageTimestamp).toBeUndefined();
   });
 
+  it("returns ok:true even if message text is missing but sender ID is present", () => {
+    const result = parseMessagingItem({ sender: { id: SENDER_ID } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.senderId).toBe(SENDER_ID);
+    expect(result.data.messageText).toBeUndefined();
+    expect(result.diagnostics.hasMessageText).toBe(false);
+  });
+
   // Messaging events must NOT carry comment or media IDs — they are separate paths
   it("does not expose comment or media ID fields (messaging vs comment path separation)", () => {
     const result = parseMessagingItem(validTextItem());

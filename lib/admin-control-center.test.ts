@@ -50,6 +50,10 @@ describe("admin control center helpers", () => {
       label: "Skipped — monthly reply limit reached",
       tone: "amber",
     });
+    expect(classifyDeliveryError("missing_required_dm_fields")).toMatchObject({
+      label: "DM webhook received",
+      tone: "amber",
+    });
   });
 
   it("keeps subscription management read-only with Stripe customer links", () => {

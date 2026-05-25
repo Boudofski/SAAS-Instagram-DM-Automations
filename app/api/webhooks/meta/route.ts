@@ -428,7 +428,13 @@ async function processEntry(
           !commenterId && "commenter_id",
           !commentText && "comment_text",
         ].filter(Boolean).join(",");
+        console.warn("[webhook] Instagram comment parse failed — missing fields", {
+          field: changeItem.field,
+          missing,
+          valueKeys: change ? Object.keys(change) : [],
+        });
         await updateWebhookEvent(webhookEvent.id, {
+          eventType: "COMMENT_PARSE_FAILED",
           status: "IGNORED",
           errorMessage: `missing_required_comment_fields:${missing}`,
           processedAt: new Date(),

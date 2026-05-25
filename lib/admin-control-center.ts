@@ -113,6 +113,13 @@ export function classifyDeliveryError(error?: string | null) {
       tone: "amber" as const,
     };
   }
+  if (text.includes("missing_required_dm_fields")) {
+    return {
+      label: "DM webhook received",
+      detail: "Instagram DM webhook received, but it is not a comment event. Comment automations require a comment webhook containing comment ID, media ID, and text.",
+      tone: "amber" as const,
+    };
+  }
   if (!text) {
     return { label: "No error", detail: "No delivery error recorded.", tone: "green" as const };
   }

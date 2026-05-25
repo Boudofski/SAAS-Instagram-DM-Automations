@@ -9,7 +9,10 @@ export async function POST(req: Request) {
   const formData = await req.formData().catch(() => new FormData());
   const customMediaId = formData.get("mediaId") as string | null;
   const customEntryId = formData.get("entryId") as string | null;
+  const customCommentId = formData.get("commentId") as string | null;
   const customText = formData.get("commentText") as string | null;
+  const customCommenterId = formData.get("commenterId") as string | null;
+  const customCommenterUsername = formData.get("commenterUsername") as string | null;
 
   const appSecret = process.env.META_APP_SECRET;
   const hostUrl = process.env.NEXT_PUBLIC_HOST_URL ?? "https://ap3k.com";
@@ -42,9 +45,12 @@ export async function POST(req: Request) {
           {
             field: "comments",
             value: {
-              id: "test_comment_internal",
+              id: customCommentId || "test_comment_internal",
               media: { id: customMediaId || "test_media_internal" },
-              from: { id: "fake_external_id", username: "tester" },
+              from: {
+                id: customCommenterId || "fake_external_id",
+                username: customCommenterUsername || "tester",
+              },
               text: customText || "ai",
             },
           },
@@ -92,7 +98,10 @@ export async function POST(req: Request) {
     details: {
       igAccountId,
       mediaId: customMediaId || "test_media_internal",
+      commentId: customCommentId || "test_comment_internal",
       text: customText || "ai",
+      commenterId: customCommenterId || "fake_external_id",
+      commenterUsername: customCommenterUsername || "tester",
     },
   });
 }

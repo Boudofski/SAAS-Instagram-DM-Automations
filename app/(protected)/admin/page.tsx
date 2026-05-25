@@ -1169,20 +1169,50 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 </div>
               </Panel>
 
-              <Panel title="Connected Account Binding (@boudofi check)">
+              <Panel title="Connected Account Webhook Status (@boudofi check)">
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <HealthCard label="IG Username" value={metaDiagnostics.integration?.instagramUsername ? `@${metaDiagnostics.integration.instagramUsername}` : "None"} tone={metaDiagnostics.integration?.instagramUsername === "boudofi" ? "green" : "amber"} />
                   <HealthCard label="Instagram ID" value={metaDiagnostics.integration?.instagramId ?? "None"} />
                   <HealthCard label="Webhook ID" value={metaDiagnostics.integration?.webhookAccountId ?? "None"} />
                   <HealthCard label="Page ID" value={metaDiagnostics.integration?.pageId ?? "None"} />
-                  <HealthCard label="Business ID" value={metaDiagnostics.integration?.businessId ?? "None"} />
-                  <HealthCard label="Last Raw POST ID" value={(lastPostRaw?.payload as any)?.entryId ?? "None"} tone={(lastPostRaw?.payload as any)?.entryId === metaDiagnostics.integration?.instagramId || (lastPostRaw?.payload as any)?.entryId === metaDiagnostics.integration?.webhookAccountId ? "green" : "red"} />
+                  <HealthCard label="Delivery state" value={metaDiagnostics.currentWebhookState} tone={metaDiagnostics.currentWebhookState === "Comment webhooks active" ? "green" : "amber"} />
+                  <HealthCard label="Last raw POST" value={formatAdminDate(metaDiagnostics.lastRawPost?.createdAt)} tone={metaDiagnostics.lastRawPost ? "green" : "amber"} />
+                  <HealthCard label="Last DM webhook" value={formatAdminDate(metaDiagnostics.lastInboundDm?.createdAt)} tone={metaDiagnostics.lastInboundDm ? "green" : "slate"} />
+                  <HealthCard label="Last Comment webhook" value={formatAdminDate(metaDiagnostics.lastRealComment?.createdAt)} tone={metaDiagnostics.lastRealComment ? "green" : "slate"} />
                 </div>
+                {metaDiagnostics.lastCommentWebhookDetails && (
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="font-bold">Last comment payload parsing:</p>
+                    <ul className="mt-1 space-y-1">
+                      <li>Media ID: {metaDiagnostics.lastCommentWebhookDetails.hasMediaId ? "✅ Present" : "❌ Missing"}</li>
+                      <li>Comment ID: {metaDiagnostics.lastCommentWebhookDetails.hasCommentId ? "✅ Present" : "❌ Missing"}</li>
+                      <li>Text: {metaDiagnostics.lastCommentWebhookDetails.hasText ? "✅ Present" : "❌ Missing"}</li>
+                    </ul>
+                  </div>
+                )}
                 {metaDiagnostics.integration?.instagramUsername === "boudofi" && (lastPostRaw?.payload as any)?.entryId && (lastPostRaw?.payload as any)?.entryId !== metaDiagnostics.integration?.instagramId && (lastPostRaw?.payload as any)?.entryId !== metaDiagnostics.integration?.webhookAccountId && (
                   <Callout tone="red" title="Account Mismatch Warning">
                     Connected account is @boudofi but the last received webhook entry.id ({(lastPostRaw?.payload as any)?.entryId}) does not match its IDs. Meta might still be sending events for an old account like @maglobalmarketing.
                   </Callout>
                 )}
+              </Panel>
+
+              <Panel title="Meta Dashboard Manual Checklist">
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">If comments are not reaching AP3k, verify these manual settings in Meta Developers:</p>
+                  <ol className="list-decimal space-y-2 pl-4 text-sm text-slate-600">
+                    <li>Meta Developers &rarr; App &rarr; Webhooks</li>
+                    <li>Object: <strong>Instagram</strong></li>
+                    <li>Ensure <strong>comments</strong> field is subscribed</li>
+                    <li>Ensure callback URL is: <code>{`${process.env.NEXT_PUBLIC_HOST_URL ?? "https://ap3k.com"}/api/webhooks/meta`}</code></li>
+                    <li>Ensure App Mode is <strong>Live</strong> (unless commenter is a developer/tester role)</li>
+                    <li>Reconnect @boudofi after subscription changes to refresh tokens</li>
+                    <li>Comment from a <strong>different account</strong> (Meta skips self-comments)</li>
+                  </ol>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                    <strong>Note:</strong> Meta dashboard managed &mdash; verify comment fields in Meta Developers.
+                  </div>
+                </div>
               </Panel>
 
               <Panel title="Webhook Delivery Health">
@@ -1201,17 +1231,38 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 ) : null}
               </Panel>
 
-              <Panel title="Internal diagnostics">
+              <Panel title="Test comment webhook simulation">
                 <div className="grid gap-4 xl:grid-cols-2">
                   <form method="POST" action="/api/admin/webhook-self-test" className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <h3 className="font-black">Send internal webhook smoke test</h3>
-                    <p className="mt-1 text-sm text-slate-600">Simulates a real Instagram comment payload for @boudofi. Dry-run mode: matches campaigns but skips Meta API calls and DMs.</p>
-                    <div className="mt-4 grid gap-2">
-                      <input name="entryId" defaultValue={metaDiagnostics.integration?.instagramId ?? ""} className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Instagram Account ID" />
-                      <input name="mediaId" defaultValue="test_media_internal" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Media ID" />
-                      <input name="commentText" defaultValue="ai" className="ap3k-input min-h-10 rounded-xl px-3 text-sm" placeholder="Comment text" />
+                    <h3 className="font-black">Dry-run simulation</h3>
+                    <p className="mt-1 text-sm text-slate-600">Simulates an Instagram comment payload. Dry-run mode: matches campaigns but skips Meta API calls and DMs.</p>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="col-span-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Instagram Account ID (entry.id)</label>
+                        <input name="entryId" defaultValue={metaDiagnostics.integration?.instagramId ?? ""} className="ap3k-input mt-1 w-full min-h-10 rounded-xl px-3 text-sm" placeholder="Instagram Account ID" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Media ID</label>
+                        <input name="mediaId" defaultValue="test_media_internal" className="ap3k-input mt-1 w-full min-h-10 rounded-xl px-3 text-sm" placeholder="Media ID" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Comment ID</label>
+                        <input name="commentId" defaultValue={`test_comment_${Date.now()}`} className="ap3k-input mt-1 w-full min-h-10 rounded-xl px-3 text-sm" placeholder="Comment ID" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Comment text</label>
+                        <input name="commentText" defaultValue="ai" className="ap3k-input mt-1 w-full min-h-10 rounded-xl px-3 text-sm" placeholder="Comment text" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Commenter ID</label>
+                        <input name="commenterId" defaultValue="fake_commenter_id" className="ap3k-input mt-1 w-full min-h-10 rounded-xl px-3 text-sm" placeholder="Commenter ID" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Commenter Username</label>
+                        <input name="commenterUsername" defaultValue="tester" className="ap3k-input mt-1 w-full min-h-10 rounded-xl px-3 text-sm" placeholder="Username" />
+                      </div>
                     </div>
-                    <button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run smoke test</button>
+                    <button className="mt-4 w-full rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">Run simulation</button>
                   </form>
                 </div>
               </Panel>
