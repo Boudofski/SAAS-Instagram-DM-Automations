@@ -10,8 +10,8 @@ export default function OnboardingConnectPage() {
           Connect your Instagram
         </h1>
         <p className="text-sm text-rf-muted leading-relaxed">
-          We need access to your posts and messages to run your automations.
-          We never post on your behalf.
+          AP3k connects through Meta&apos;s official login so it can monitor comments
+          and send approved replies for the Instagram account you choose.
         </p>
       </div>
 
@@ -21,9 +21,11 @@ export default function OnboardingConnectPage() {
         ))}
       </div>
 
-      <p className="text-xs text-center text-rf-subtle">
-        🔒 Your data is encrypted. We only request the permissions needed.
-      </p>
+      <div className="rounded-2xl border border-rf-border bg-white/[0.03] p-4 text-xs leading-relaxed text-rf-muted">
+        <p className="font-bold text-rf-text">Safe connection notes</p>
+        <p className="mt-2">We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, comments, and messaging because Instagram Business accounts are managed through Meta Pages.</p>
+        <p className="mt-2">Private DM delivery depends on Meta messaging approval. If it is pending, AP3k can still help you test comments and public replies.</p>
+      </div>
 
       <Link
         href="/onboarding/complete"

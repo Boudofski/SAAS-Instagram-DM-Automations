@@ -93,6 +93,44 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     status: accountDiagnostics?.delivery.status ?? "no_delivery",
   });
   const needsReviewCampaigns = automations.filter((automation: any) => automation.needsReview);
+  const nextAction = !instagram || tokenExpired
+    ? {
+        title: tokenExpired ? "Reconnect Instagram before testing" : "Connect Instagram to start",
+        detail: tokenExpired
+          ? "Your saved connection needs a fresh Meta login before comments or DMs can run."
+          : "AP3k needs an official Meta connection before it can listen for comments.",
+        cta: tokenExpired ? "Reconnect Instagram" : "Connect Instagram",
+        href: `/dashboard/${params.slug}/integrations`,
+      }
+    : isEmpty
+      ? {
+          title: "Create your first campaign",
+          detail: "Nothing is listening yet. Start with Any post and one keyword so you can test in under two minutes.",
+          cta: "Create campaign",
+          href: `/dashboard/${params.slug}/automation/new`,
+        }
+      : !automations.some((automation: any) => automation.active)
+        ? {
+            title: "Activate a campaign",
+            detail: "Campaigns exist, but none are live. Activate one before testing comments.",
+            cta: "Review campaigns",
+            href: `/dashboard/${params.slug}/automation`,
+          }
+        : !metrics?.lastRealCommentAt
+          ? {
+              title: "No comments received yet",
+              detail: "Comment the campaign keyword from a different Instagram account, then come back here to confirm the webhook log.",
+              cta: "Check connection",
+              href: `/dashboard/${params.slug}/account`,
+            }
+          : metrics?.leadsCaptured === 0
+            ? {
+                title: "No leads captured yet",
+                detail: "Comments are arriving. Add a clear DM CTA or lead link so matched commenters have an obvious next step.",
+                cta: "Tune campaign",
+                href: `/dashboard/${params.slug}/automation`,
+              }
+            : null;
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/account` },
@@ -107,7 +145,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Monitor comments, matched keywords, leads, and DM delivery for AP3k automations.
+            Check connection, webhook delivery, campaign status, comments, leads, and the next action to take.
           </p>
         </div>
         <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button inline-flex w-full justify-center px-5 py-2.5 text-sm sm:w-auto">
@@ -122,11 +160,11 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Turn comments into DMs automatically</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Connect Instagram, create an automation, comment a keyword from a tester account, then review logs in AP3k.
+                Connect Instagram, create a campaign, comment the keyword from a separate tester account, then review activity here.
               </p>
             </div>
             <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">
-              Create Automation
+              Create first campaign
             </Link>
           </div>
         </div>
@@ -274,11 +312,40 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       )}
 
       <div className="grid gap-3 md:grid-cols-4">
-        <HealthPill label="Instagram connected" state={instagram && !tokenExpired ? "ok" : "warn"} />
-        <HealthPill label="Comments webhook active" state={metrics?.lastRealCommentAt ? "ok" : "warn"} />
-        <HealthPill label="Public reply fallback ready" state="ok" />
-        <HealthPill label={hasExternalDmCampaign ? "External DM mode active" : "DM capability pending"} state="warn" />
+        <HealthPill
+          label="Instagram connected"
+          detail={instagram && !tokenExpired ? "Ready to listen" : "Connect or reconnect first"}
+          state={instagram && !tokenExpired ? "ok" : "warn"}
+        />
+        <HealthPill
+          label="Webhook comments"
+          detail={metrics?.lastRealCommentAt ? "Comments are arriving" : "Test with a real comment"}
+          state={metrics?.lastRealCommentAt ? "ok" : "warn"}
+        />
+        <HealthPill
+          label="Campaign status"
+          detail={automations.some((automation: any) => automation.active) ? "At least one live campaign" : "Activate a campaign"}
+          state={automations.some((automation: any) => automation.active) ? "ok" : "warn"}
+        />
+        <HealthPill
+          label={hasExternalDmCampaign ? "External DM mode" : "Private DM"}
+          detail={hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval"}
+          state={hasExternalDmCampaign ? "ok" : "warn"}
+        />
       </div>
+
+      {nextAction && (
+        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Next step</p>
+            <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">{nextAction.title}</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">{nextAction.detail}</p>
+          </div>
+          <Link href={nextAction.href} className="ap3k-gradient-button inline-flex shrink-0 justify-center px-5 py-2.5 text-sm">
+            {nextAction.cta}
+          </Link>
+        </div>
+      )}
 
       <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] dark:border-white/[0.12] dark:bg-[#111827] md:grid-cols-2 xl:grid-cols-6">
         {dashboardProfileStats.map((stat) => (
@@ -315,8 +382,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 <p className="mt-1 font-semibold">{noCommentDiagnosis.detail}</p>
               </>
             ) : (
-              <p>No recent interactions yet.</p>
+              <>
+                <p>No activity yet.</p>
+                <p className="mt-1 font-semibold">Create or activate a campaign, then comment from a separate Instagram account to generate the first log.</p>
+              </>
             )}
+            <Link href={isEmpty ? `/dashboard/${params.slug}/automation/new` : `/dashboard/${params.slug}/account`} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">
+              {isEmpty ? "Create campaign" : "Check connection"}
+            </Link>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/[0.07]">
@@ -362,7 +435,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             <EmptyState
               icon="📣"
               title="No campaigns yet"
-              description="Launch your first comment-to-DM funnel in 60 seconds. Pick a post, add keywords, write your DM."
+              description="Your account is ready, but nothing is listening for comments yet. Create one campaign, choose Any post, add a keyword, and activate."
               ctaLabel="Launch first campaign →"
               ctaHref={`/dashboard/${params.slug}/automation/new`}
             />
@@ -450,10 +523,10 @@ function UsageMini({
   );
 }
 
-function HealthPill({ label, state }: { label: string; state: "ok" | "warn" }) {
+function HealthPill({ label, detail, state }: { label: string; detail: string; state: "ok" | "warn" }) {
   return (
     <div className={[
-      "flex items-center gap-2.5 rounded-2xl border p-3.5 shadow-sm",
+      "flex items-start gap-2.5 rounded-2xl border p-3.5 shadow-sm",
       state === "ok"
         ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/25 dark:bg-emerald-500/[0.09]"
         : "border-amber-200 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-500/[0.09]",
@@ -466,12 +539,20 @@ function HealthPill({ label, state }: { label: string; state: "ok" | "warn" }) {
       ].join(" ")}>
         {state === "ok" ? "✓" : "!"}
       </span>
-      <p className={[
-        "text-xs font-black",
-        state === "ok" ? "text-emerald-800 dark:text-emerald-200" : "text-amber-900 dark:text-amber-100",
-      ].join(" ")}>
-        {label}
-      </p>
+      <div className="min-w-0">
+        <p className={[
+          "text-xs font-black",
+          state === "ok" ? "text-emerald-800 dark:text-emerald-200" : "text-amber-900 dark:text-amber-100",
+        ].join(" ")}>
+          {label}
+        </p>
+        <p className={[
+          "mt-0.5 text-[11px] font-semibold leading-snug",
+          state === "ok" ? "text-emerald-700 dark:text-emerald-300" : "text-amber-800 dark:text-amber-200",
+        ].join(" ")}>
+          {detail}
+        </p>
+      </div>
     </div>
   );
 }

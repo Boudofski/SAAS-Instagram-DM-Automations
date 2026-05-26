@@ -65,6 +65,17 @@ export default async function OnboardingWelcomePage() {
         Let&apos;s connect your Instagram →
       </Link>
 
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-muted">
+          What happens next
+        </p>
+        <ul className="mt-3 space-y-2 text-xs leading-relaxed text-rf-muted">
+          <li>1. Meta opens its official permission screen.</li>
+          <li>2. Choose the Instagram Business or Creator account that owns your posts.</li>
+          <li>3. AP3k listens for comments through Meta&apos;s API. No password sharing, no scraping.</li>
+        </ul>
+      </div>
+
       <form action={skipOnboarding}>
         <button
           type="submit"

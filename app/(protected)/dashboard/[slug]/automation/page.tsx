@@ -37,7 +37,7 @@ export default async function AutomationsPage({ params }: Props) {
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Campaigns</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {automations.length === 0
-              ? "No campaigns yet"
+              ? "No campaigns yet. Start with Any post and one keyword for the fastest test."
               : `${automations.length} campaign${automations.length !== 1 ? "s" : ""}`}
           </p>
         </div>
@@ -56,7 +56,7 @@ export default async function AutomationsPage({ params }: Props) {
             Turn comments into tracked outcomes
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Build official Instagram comment-to-reply automations, test keyword triggers, and inspect delivery logs from one clean workspace.
+            Build official Instagram comment automations, test keyword triggers, and inspect delivery logs from one clean workspace. AP3k uses Meta APIs; no scraping or password sharing.
           </p>
           <div className="mt-6 flex flex-col gap-4 sm:flex-row">
             <Link
@@ -75,7 +75,7 @@ export default async function AutomationsPage({ params }: Props) {
         <EmptyState
           icon="📣"
           title="No campaigns yet"
-          description="Launch your first comment-to-DM funnel in 60 seconds. Pick a post, add keywords, write your reply."
+          description="Nothing is listening for comments yet. Create one campaign, choose Any post, add one keyword, and activate it before testing."
           ctaLabel="Launch first campaign →"
           ctaHref={`/dashboard/${params.slug}/automation/new`}
         />

@@ -23,8 +23,8 @@ const KW_COLOURS = [
 ];
 
 const MODES: { value: MatchingMode; label: string; desc: string }[] = [
-  { value: "CONTAINS", label: "Contains",   desc: "Keyword appears anywhere in comment" },
-  { value: "EXACT",    label: "Exact match", desc: "Comment is exactly this word" },
+  { value: "CONTAINS", label: "Contains",   desc: "Best for natural comments like send the guide" },
+  { value: "EXACT",    label: "Exact match", desc: "Only when the full comment is the keyword" },
 ];
 
 export default function KeywordInput({
@@ -51,7 +51,7 @@ export default function KeywordInput({
           {
             value: "ANY_COMMENT" as const,
             label: "Any comment",
-            desc: "Trigger for every comment on the selected post scope.",
+            desc: "Trigger for every comment in the post scope. Best for small controlled launches.",
           },
         ].map((mode) => (
           <button
@@ -75,7 +75,7 @@ export default function KeywordInput({
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-bold">Every comment will trigger this automation.</p>
           <p className="mt-1 text-xs leading-relaxed text-amber-800">
-            AP3k automatically ignores your own replies to prevent loops. Use carefully with public replies and keep cooldowns in mind.
+            AP3k automatically ignores your own replies to prevent loops. Use this when every commenter should get the same response.
           </p>
         </div>
       )}
@@ -101,6 +101,11 @@ export default function KeywordInput({
           + Add
         </button>
       </div>
+      {keywords.length === 0 && (
+        <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+          Add at least one word people will comment intentionally. Example: if the post says comment GUIDE, add guide here.
+        </p>
+      )}
 
       {/* Keyword chips */}
       {keywords.length > 0 && (

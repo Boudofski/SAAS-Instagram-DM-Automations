@@ -158,7 +158,8 @@ export default function WizardPage({ params, searchParams }: Props) {
               Name it and choose a post or Reel
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              Which post do you want to run this campaign on?
+              Choose where AP3k should listen for comments. You can start broad with Any post,
+              then switch to a specific launch post later.
             </p>
             {instagram?.instagramUsername && (
               <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
@@ -216,7 +217,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-950 dark:text-white">Any post</p>
                     <p className="text-xs dark:text-slate-400 text-slate-500 mt-0.5">
-                      Trigger on comments across all posts and Reels.
+                      Fastest setup. AP3k checks comments on all posts and Reels from the connected account.
                     </p>
                   </div>
                   {data.post?.postid === "ANY" && (
@@ -266,7 +267,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 )}
 
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  Specific Post mode needs current-account media. After reconnect, refresh posts or use Any Post.
+                  Specific post mode only reacts to comments on that one post or Reel. If you reconnect Instagram, refresh posts before testing.
                 </p>
 
                 <ManualMediaFallback
@@ -296,7 +297,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               What triggers your DM?
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              Trigger on specific keywords or every comment in the selected post scope.
+              Decide which comments count. For most campaigns, use a simple keyword like guide or link so people clearly opt in.
             </p>
             <KeywordInput
               triggerMode={data.triggerMode}
@@ -320,8 +321,12 @@ export default function WizardPage({ params, searchParams }: Props) {
               Private DM settings
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              Choose whether AP3k sends the private DM or only handles matching and public replies.
+              Choose whether AP3k sends the private message through Meta, or only tracks the comment while another tool sends the DM.
             </p>
+            <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-relaxed text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100">
+              <p className="font-black">Messaging approval note</p>
+              <p className="mt-1">Meta controls private DM permissions. If approval is pending, comments can still arrive and public replies can still run, but private DMs may show as skipped or failed until Meta enables messaging.</p>
+            </div>
             <button
               type="button"
               onClick={() => update({ sendPrivateDm: !data.sendPrivateDm })}
@@ -335,7 +340,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               <span>
                 <span className="block text-sm font-bold text-slate-950 dark:text-white">Send private DM with AP3k</span>
                 <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
-                  Turn this off if another tool handles DMs.
+                  Keep on when AP3k should send the DM. Turn off only when another approved tool handles private messages.
                 </span>
               </span>
               <span
@@ -363,10 +368,10 @@ export default function WizardPage({ params, searchParams }: Props) {
               />
             ) : (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-5">
-                <p className="text-sm font-bold text-slate-950 dark:text-white">Private DM skipped</p>
+                <p className="text-sm font-bold text-slate-950 dark:text-white">External DM mode</p>
                 <p className="mt-1 text-sm dark:text-slate-400 text-slate-500">
-                  AP3k will still receive comments, match triggers, and send public replies if enabled.
-                  Private DMs are handled by your external tool.
+                  AP3k will receive comments, match triggers, log activity, and send public replies if enabled.
+                  It will not send a private DM, so make sure your external tool is active before launching.
                 </p>
               </div>
             )}
@@ -463,7 +468,8 @@ export default function WizardPage({ params, searchParams }: Props) {
               Review &amp; Activate
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              Everything look good? Hit activate and your campaign goes live instantly.
+              Confirm the account, post scope, trigger, and DM mode before going live. After activation,
+              test from a different Instagram account by commenting your keyword.
             </p>
 
             <div className="flex flex-col gap-2 mb-6">
@@ -517,6 +523,10 @@ export default function WizardPage({ params, searchParams }: Props) {
                 </ul>
               </div>
             )}
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+              <p className="font-black text-slate-950 dark:text-white">After activation</p>
+              <p className="mt-1">AP3k listens through Meta webhooks. If no DM sends, check whether the campaign is active, the comment matches this trigger, webhook comments are arriving, and Meta messaging is approved.</p>
+            </div>
 
             <button
               type="button"
@@ -567,6 +577,10 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="CTA" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Button"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No CTA"} />
             <PreviewRow label="Public reply" value={data.publicReplyEnabled ? `${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)` : "Off"} />
             <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
+          </div>
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+            <p className="font-black text-slate-950 dark:text-white">Quick test</p>
+            <p className="mt-1">Use a different Instagram account to comment. Your own account replies are ignored to prevent loops.</p>
           </div>
         </aside>
       </div>

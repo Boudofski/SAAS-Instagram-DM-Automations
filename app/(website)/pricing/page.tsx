@@ -5,11 +5,11 @@ import WebsiteNav from "@/components/global/website-nav";
 
 const PLANS = [
   {
-    tier: "Free", price: "$0", description: "Perfect for getting started",
+    tier: "Free", price: "$0", description: "For setup, testing, and your first live proof",
     ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
     features: [
-      { text: "1 active campaign", included: true },
-      { text: "Up to 50 static replies/month", included: true },
+      { text: "1 active campaign for testing", included: true },
+      { text: "50 successful replies/month", included: true },
       { text: "Keyword triggers", included: true },
       { text: "Basic analytics", included: true },
       { text: "Public reply fallback", included: true },
@@ -18,21 +18,21 @@ const PLANS = [
     ],
   },
   {
-    tier: "Creator", price: "$29", description: "For serious creators and coaches",
+    tier: "Creator", price: "$29", description: "For creators who run launches, lead magnets, and evergreen posts",
     ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
     features: [
-      { text: "Unlimited campaigns", included: true },
-      { text: "5,000 static replies/month", included: true },
+      { text: "Unlimited active campaigns", included: true },
+      { text: "5,000 successful static replies/month", included: true },
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Public reply fallback", included: true },
-      { text: "Private DM workflow after Meta approval", included: true },
+      { text: "Private DM workflow when Meta messaging is approved", included: true },
       { text: "Full analytics + leads export", included: true },
       { text: "{{variable}} personalisation", included: true },
       { text: "Priority support", included: true },
     ],
   },
   {
-    tier: "Agency", price: "$79", description: "For teams managing multiple accounts",
+    tier: "Agency", price: "$79", description: "For teams managing client accounts and repeat launches",
     ctaLabel: "Contact / coming soon", ctaHref: "/pricing", featured: false,
     features: [
       { text: "Everything in Creator", included: true },
@@ -48,7 +48,11 @@ const PLANS = [
 const FAQ = [
   {
     q: "Is it safe for my Instagram account?",
-    a: "Yes. AP3k uses the official Instagram Graph API. We never store your password and built-in duplicate prevention ensures nobody receives the same DM twice.",
+    a: "AP3k uses Meta's official Instagram Graph API. We never ask for your Instagram password, do not scrape Instagram, and include duplicate prevention so a commenter is not messaged repeatedly by the same campaign.",
+  },
+  {
+    q: "Why does private DM sending mention Meta approval?",
+    a: "Meta controls messaging permissions for Instagram professional accounts. AP3k can still listen for comments and run public replies while private messaging is pending.",
   },
   {
     q: "Can I cancel any time?",
@@ -76,8 +80,8 @@ export default function PricingPage() {
             Scale when you&apos;re ready.
           </span>
         </h1>
-        <p className="mx-auto mt-5 max-w-md text-lg leading-8 text-rf-muted">
-          No hidden fees. No contracts. Cancel any time.
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-rf-muted">
+          Free is built for proving the workflow. Creator is for real campaign volume. No hidden fees, no contracts.
         </p>
         </FadeIn>
       </section>
