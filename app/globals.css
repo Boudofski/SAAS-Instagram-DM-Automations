@@ -116,7 +116,7 @@
 
 @layer components {
   .ap3k-card {
-    @apply border border-slate-200 bg-white/90 text-slate-950 shadow-[0_1px_4px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/[0.12] dark:bg-[#111827] dark:text-slate-50 dark:shadow-ap3k-card;
+    @apply border border-slate-200 bg-white/90 text-slate-950 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.05)] backdrop-blur-xl dark:border-white/[0.12] dark:bg-[#111827] dark:text-slate-50 dark:shadow-ap3k-card;
   }
 
   .ap3k-card-hover {

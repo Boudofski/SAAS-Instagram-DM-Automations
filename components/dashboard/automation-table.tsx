@@ -94,7 +94,7 @@ export default function AutomationTable({
       {/* Mobile card layout */}
       <div className="grid gap-3 p-3 md:hidden">
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500 dark:border-white/[0.12] dark:text-slate-400">
             No campaigns match your search.
           </div>
         ) : (
@@ -249,10 +249,10 @@ export default function AutomationTable({
                       <StatusPill status={status} />
                     </td>
                     <td className="px-3 py-4">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
                         <Link
                           href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}
-                          className="ap3k-table-action"
+                          className="rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
                         >
                           {automation.needsReview || automation.stalePost ? "Review" : "Edit"}
                         </Link>
@@ -260,7 +260,7 @@ export default function AutomationTable({
                           type="button"
                           disabled={isPending}
                           onClick={() => handleActivate(automation.id, !Boolean(automation.active))}
-                          className="ap3k-table-action"
+                          className="rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
                         >
                           {automation.active ? "Pause" : "Activate"}
                         </button>
@@ -268,7 +268,7 @@ export default function AutomationTable({
                           <DropdownMenuTrigger asChild>
                             <button
                               type="button"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-white/10 dark:bg-transparent dark:text-slate-400 dark:hover:bg-white/[0.06]"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300"
                               aria-label="More actions"
                             >
                               <MoreHorizontal className="h-4 w-4" />

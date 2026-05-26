@@ -150,7 +150,8 @@ export default async function LandingPage() {
             </FadeIn>
 
             <FadeIn delay={0.12} className="relative">
-              <div className="absolute -inset-8 rounded-[2rem] bg-ap3k-gradient opacity-20 blur-3xl" />
+              <div className="absolute -inset-10 rounded-[2.5rem] bg-ap3k-gradient opacity-15 blur-[60px]" />
+              <div className="absolute -inset-6 rounded-[2rem] bg-rf-purple/25 opacity-20 blur-2xl dark:opacity-30" />
               <div className="relative animate-float-slow overflow-hidden rounded-[2rem] border border-slate-200 bg-white/85 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.14)] backdrop-blur-2xl dark:border-white/[0.12] dark:bg-rf-surface/80 dark:shadow-ap3k-card">
                 <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
                   <div className="mb-4 flex items-center gap-3">
@@ -166,7 +167,7 @@ export default async function LandingPage() {
 
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 dark:border-white/10 dark:from-[#182033] dark:via-[#111827] dark:to-[#0B1020]">
                     <div className="flex h-48 items-center justify-center bg-ap3k-radial sm:h-52">
-                      <div className="rounded-2xl border border-white/50 bg-white/55 px-5 py-4 text-center backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">
+                      <div className="rounded-2xl border border-white/60 bg-white/65 px-5 py-4 text-center backdrop-blur dark:border-white/[0.18] dark:bg-white/[0.10]">
                         <p className="text-xs font-black uppercase tracking-[0.2em] text-rf-pink">Creator drop</p>
                         <p className="mt-1 text-2xl font-black">New guide is live</p>
                       </div>
@@ -178,7 +179,7 @@ export default async function LandingPage() {
                   </div>
 
                   <div className="mt-4 space-y-3">
-                    <div className="animate-[float-slow_8s_ease-in-out_infinite] rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                    <div className="animate-[float-slow_8s_ease-in-out_infinite] rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/[0.14] dark:bg-white/[0.07]">
                       <p className="text-xs text-slate-500 dark:text-rf-muted">@sarah.creates commented</p>
                       <p className="mt-1 text-sm">
                         This is exactly what I need. <span className="rounded-lg border border-rf-pink/25 bg-rf-pink/10 px-2 py-1 text-xs font-black text-rf-pink">GUIDE</span>

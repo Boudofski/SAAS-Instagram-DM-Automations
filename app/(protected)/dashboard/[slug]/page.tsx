@@ -308,7 +308,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
         </div>
         {recentActivity.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400">
             {noCommentDiagnosis ? (
               <>
                 <p>{noCommentDiagnosis.title}</p>
@@ -319,7 +319,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/10">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.07]">
             {recentActivity.map((item, index) => (
               <div key={`${item.id}-${index}`} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="flex min-w-0 gap-3">
@@ -412,13 +412,13 @@ function AccountStatCard({
         : "text-slate-400 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-b border-slate-200 p-5 last:border-b-0 dark:border-white/10 md:border-b-0 md:border-r md:last:border-r-0">
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
-      <div className="mt-3 flex items-end justify-between gap-2">
-        <p className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
+    <div className="min-w-0 border-b border-slate-200 px-5 py-6 transition-colors last:border-b-0 hover:bg-slate-50/70 dark:border-white/10 dark:hover:bg-white/[0.025] md:border-b-0 md:border-r md:last:border-r-0">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{label}</p>
+      <div className="mt-2 flex items-end justify-between gap-2">
+        <p className="text-2xl font-black leading-none tracking-tight text-slate-950 dark:text-white">{value}</p>
         <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}>{change?.label ?? "—"}</span>
       </div>
-      <p className="mt-1 text-xs font-bold leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
+      <p className="mt-2 text-[11px] leading-tight text-slate-400 dark:text-slate-500">{subtitle}</p>
     </div>
   );
 }
