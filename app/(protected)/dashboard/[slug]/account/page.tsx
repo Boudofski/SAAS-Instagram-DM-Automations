@@ -228,20 +228,31 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
 
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <SectionHeader label="Connected account repair checklist" />
-        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
-          <li>Confirm {displayUsername ? `@${displayUsername}` : "the connected account"} is Professional, Business, or Creator.</li>
-          <li>Confirm it is linked to the selected Facebook Page in Meta Business.</li>
-          <li>Confirm AP3k is Live, or tester/commenter roles are accepted if Development.</li>
-          <li>Meta Developers {">"} Webhooks {">"} Instagram object {">"} comments field subscribed.</li>
-          <li>Reconnect this Instagram account after subscription changes.</li>
-          <li>Recreate campaigns using a fresh post from this account after reconnect.</li>
-          <li>Test from a different Instagram account, not the connected account itself.</li>
+        <ol className="mt-5 flex flex-col gap-3">
+          {[
+            `Confirm ${displayUsername ? `@${displayUsername}` : "the connected account"} is Professional, Business, or Creator.`,
+            "Confirm it is linked to the selected Facebook Page in Meta Business.",
+            "Confirm AP3k is Live, or tester/commenter roles are accepted if Development.",
+            "Meta Developers › Webhooks › Instagram object › comments field subscribed.",
+            "Reconnect this Instagram account after subscription changes.",
+            "Recreate campaigns using a fresh post from this account after reconnect.",
+            "Test from a different Instagram account, not the connected account itself.",
+          ].map((step, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-black text-slate-600 dark:bg-white/[0.08] dark:text-slate-300">
+                {i + 1}
+              </span>
+              <p className="pt-0.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{step}</p>
+            </li>
+          ))}
         </ol>
       </section>
 
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-500/30 dark:bg-red-500/10 sm:p-6">
+      <section className="rounded-2xl border border-red-200 bg-red-50/80 p-5 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-6">
         <div className="flex items-start gap-3">
-          <ShieldAlert className="mt-0.5 h-5 w-5 text-red-600 dark:text-red-300" />
+          <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200 bg-white text-red-600 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-300">
+            <ShieldAlert className="h-4.5 w-4.5" />
+          </span>
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-red-800 dark:text-red-100">

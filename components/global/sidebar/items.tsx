@@ -13,11 +13,10 @@ function Items({ page, slug }: Props) {
       key={item.id}
       href={`/dashboard/${slug}/${item.label === "home" ? "/" : item.label}`}
       className={cn(
-        "capitalize flex gap-x-2 rounded-full p-3",
-        page === item.label && "bg-[#0f0f0f]",
-        page === slug && item.label === "home"
-          ? "bg-[#0f0f0f]"
-          : "text-[#9B9CA0]"
+        "capitalize flex gap-x-2 rounded-xl px-3 py-2.5 text-sm font-bold transition-all",
+        (page === item.label || (page === slug && item.label === "home"))
+          ? "border border-pink-200 bg-gradient-to-r from-orange-50 via-pink-50 to-indigo-50 text-slate-950 dark:border-rf-pink/30 dark:bg-ap3k-gradient-soft dark:text-white"
+          : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
       )}
     >
       {item.icon}

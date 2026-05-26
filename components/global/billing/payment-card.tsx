@@ -53,16 +53,16 @@ function PaymentCard({ label, current }: Props) {
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 text-slate-950 shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
-        isActive && "border-rf-pink/35 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-slate-950 dark:border-rf-pink/40 dark:bg-[#171123] dark:bg-none dark:text-white dark:shadow-[0_18px_60px_rgba(221,42,123,0.12)]"
+        "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm dark:text-white",
+        isActive
+          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-rf-pink/40 dark:bg-[#171123] dark:shadow-[0_24px_70px_rgba(221,42,123,0.18)]"
+          : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
       )}
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-black">{plan.name}</h2>
         {isActive && (
-          <span className="rounded-full border border-rf-green/25 bg-rf-green/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-rf-green">
-            Active
-          </span>
+          <span className="ap3k-badge ap3k-badge-green">Active</span>
         )}
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
@@ -83,8 +83,10 @@ function PaymentCard({ label, current }: Props) {
         disabled={isActive || isIncludedFree || isAgency}
         className={cn(
           "mt-6 rounded-xl font-bold",
-          isActive || isIncludedFree || isAgency
-            ? "border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-300"
+          isActive
+            ? "cursor-default border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+            : isIncludedFree || isAgency
+            ? "border border-slate-200 bg-white text-slate-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-400"
             : "ap3k-gradient-button"
         )}
       >

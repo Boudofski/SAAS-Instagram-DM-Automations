@@ -164,16 +164,12 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}>
               {tokenExpired ? "Reconnect" : "Connected"}
             </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-              {planLabel}
-            </span>
+            <span className="ap3k-badge ap3k-badge-slate">{planLabel}</span>
             {profileSnapshotStatus.label === "Fresh" && (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-                Fresh sync
-              </span>
+              <span className="ap3k-badge ap3k-badge-green">Fresh sync</span>
             )}
             <Link
               href={`/dashboard/${params.slug}/account`}
@@ -186,9 +182,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 {profileSnapshot.followersCount.toLocaleString()} followers
               </span>
             ) : profileSnapshotStatus.label === "Partial" ? (
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                Partial profile sync
-              </span>
+              <span className="ap3k-badge ap3k-badge-slate">Partial profile sync</span>
             ) : (
               <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
                 Profile sync pending
@@ -338,9 +332,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pl-5 sm:pl-0">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                    {item.badge}
-                  </span>
+                  <span className="ap3k-badge ap3k-badge-slate">{item.badge}</span>
                   <span className="shrink-0 text-xs font-bold text-slate-400">
                     {new Date(item.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })}
                   </span>
@@ -420,12 +412,12 @@ function AccountStatCard({
         : "text-slate-400 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-b border-slate-200 p-4 dark:border-white/10 md:border-r xl:border-b-0">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-black leading-tight text-slate-500 dark:text-slate-400">{label}</p>
-        <span className={`shrink-0 text-xs font-black ${changeClass}`}>{change?.label ?? "—"}</span>
+    <div className="min-w-0 border-b border-slate-200 p-5 last:border-b-0 dark:border-white/10 md:border-b-0 md:border-r md:last:border-r-0">
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <div className="mt-3 flex items-end justify-between gap-2">
+        <p className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
+        <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}>{change?.label ?? "—"}</span>
       </div>
-      <p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
       <p className="mt-1 text-xs font-bold leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>
   );
@@ -460,11 +452,26 @@ function UsageMini({
 
 function HealthPill({ label, state }: { label: string; state: "ok" | "warn" }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-      <div className="flex items-center gap-2">
-        <span className={state === "ok" ? "h-2.5 w-2.5 rounded-full bg-emerald-500" : "h-2.5 w-2.5 rounded-full bg-amber-500"} />
-        <p className="text-xs font-black text-slate-950 dark:text-white">{label}</p>
-      </div>
+    <div className={[
+      "flex items-center gap-2.5 rounded-2xl border p-3.5 shadow-sm",
+      state === "ok"
+        ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/25 dark:bg-emerald-500/[0.09]"
+        : "border-amber-200 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-500/[0.09]",
+    ].join(" ")}>
+      <span className={[
+        "grid h-6 w-6 shrink-0 place-items-center rounded-lg text-[11px] font-black",
+        state === "ok"
+          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300"
+          : "bg-amber-100 text-amber-800 dark:bg-amber-500/25 dark:text-amber-200",
+      ].join(" ")}>
+        {state === "ok" ? "✓" : "!"}
+      </span>
+      <p className={[
+        "text-xs font-black",
+        state === "ok" ? "text-emerald-800 dark:text-emerald-200" : "text-amber-900 dark:text-amber-100",
+      ].join(" ")}>
+        {label}
+      </p>
     </div>
   );
 }
