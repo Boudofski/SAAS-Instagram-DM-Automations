@@ -38,7 +38,7 @@ export default function Sidebar({ slug }: Props) {
       {/* Logo */}
       <div className="border-b border-slate-200 px-5 py-5 dark:border-white/10">
         <AP3kLogo className="text-sm text-slate-950 dark:text-white" />
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/[0.12] dark:bg-white/[0.06]">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             AP3k user
           </p>
@@ -49,7 +49,7 @@ export default function Sidebar({ slug }: Props) {
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">{email}</p>
           )}
         </div>
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/[0.12] dark:bg-white/[0.06]">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             Instagram account
           </p>

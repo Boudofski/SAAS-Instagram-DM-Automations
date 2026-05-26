@@ -280,7 +280,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <HealthPill label={hasExternalDmCampaign ? "External DM mode active" : "DM capability pending"} state="warn" />
       </div>
 
-      <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04] md:grid-cols-2 xl:grid-cols-6">
+      <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] dark:border-white/[0.12] dark:bg-[#111827] md:grid-cols-2 xl:grid-cols-6">
         {dashboardProfileStats.map((stat) => (
           <AccountStatCard
             key={stat.label}
@@ -438,7 +438,7 @@ function UsageMini({
   const bar = tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
 
   return (
-    <div className="rounded-2xl border border-white/60 bg-white/70 p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm dark:border-white/[0.14] dark:bg-white/[0.07]">
       <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">{label}</p>
       <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
       {percent > 0 || blocked ? (

@@ -68,7 +68,7 @@ export default function AutomationTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] dark:border-white/[0.12] dark:bg-[#111827]">
       {showControls && (
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -171,7 +171,7 @@ export default function AutomationTable({
       {/* Desktop table */}
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full table-fixed text-left">
-          <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
+          <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
             <tr>
               <th className="w-[28%] px-4 py-3">Campaign</th>
               <th className="w-[10%] px-3 py-3">Post</th>
@@ -201,8 +201,8 @@ export default function AutomationTable({
                 const status = campaignStatus(automation);
 
                 return (
-                  <tr key={automation.id} className="text-sm text-slate-700 transition-colors hover:bg-slate-50/60 dark:text-slate-300 dark:hover:bg-white/[0.02]">
-                    <td className="px-4 py-3.5">
+                  <tr key={automation.id} className="text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         {post?.media && !isAny ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -221,12 +221,12 @@ export default function AutomationTable({
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-3.5">
+                    <td className="px-3 py-4">
                       <span className="ap3k-badge ap3k-badge-slate">
                         {isAny ? "Any" : post?.postid ? "Specific" : "Manual"}
                       </span>
                     </td>
-                    <td className="px-3 py-3.5">
+                    <td className="px-3 py-4">
                       <div className="flex max-w-[160px] flex-wrap gap-1">
                         {isAnyComment ? (
                           <span className="ap3k-badge ap3k-badge-blue">Any comment</span>
@@ -240,15 +240,15 @@ export default function AutomationTable({
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-3.5">
+                    <td className="px-3 py-4">
                       <span title={mode.full} className="ap3k-badge ap3k-badge-slate">{mode.short}</span>
                     </td>
                     <td className="px-3 py-3.5 font-black text-slate-950 dark:text-white">{runs}</td>
                     <td className="px-3 py-3.5 font-black text-slate-950 dark:text-white">{leads}</td>
-                    <td className="px-3 py-3.5">
+                    <td className="px-3 py-4">
                       <StatusPill status={status} />
                     </td>
-                    <td className="px-3 py-3.5">
+                    <td className="px-3 py-4">
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}
@@ -363,7 +363,7 @@ function CampaignBadges({ automation, compact }: { automation: any; compact?: bo
 
 function StatMini({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/[0.12] dark:bg-white/[0.06]">
       <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
       <p className="font-black text-slate-950 dark:text-white">{value}</p>
     </div>

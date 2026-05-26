@@ -22,10 +22,10 @@ export default function PricingCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-5 overflow-hidden rounded-3xl p-7",
+        "relative flex flex-col gap-5 overflow-hidden rounded-3xl p-7 transition-all duration-300",
         featured
-          ? "border border-rf-pink/35 bg-ap3k-gradient-soft shadow-ap3k-glow backdrop-blur-xl dark:border-rf-pink/35"
-          : "ap3k-card"
+          ? "border border-rf-pink/35 bg-ap3k-gradient-soft shadow-ap3k-glow backdrop-blur-xl dark:border-rf-pink/35 dark:bg-[#1e1335]"
+          : "ap3k-card hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:bg-[#141e30]"
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />

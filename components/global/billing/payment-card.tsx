@@ -55,8 +55,8 @@ function PaymentCard({ label, current }: Props) {
       className={cn(
         "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm dark:text-white",
         isActive
-          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-rf-pink/40 dark:bg-[#171123] dark:shadow-[0_24px_70px_rgba(221,42,123,0.18)]"
-          : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
+          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-rf-pink/40 dark:bg-[#1e1335] dark:shadow-[0_24px_70px_rgba(221,42,123,0.20)]"
+          : "border-slate-200 bg-white shadow-sm dark:border-white/[0.12] dark:bg-[#111827]"
       )}
     >
       <div className="flex items-center justify-between gap-3">

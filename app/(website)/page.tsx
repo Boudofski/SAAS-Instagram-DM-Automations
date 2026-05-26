@@ -127,7 +127,7 @@ export default async function LandingPage() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-                Launch Instagram comment automations that reply publicly, capture leads, and send private replies when Meta messaging is enabled.
+                Turn Instagram comments into leads automatically — using public replies, lead capture, and official Meta workflows. Private DMs available after Meta messaging approval.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -141,7 +141,7 @@ export default async function LandingPage() {
 
               <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                 {PROOF.map(([num, label, accent]) => (
-                  <div key={label} className="rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.035]">
+                  <div key={label} className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)] backdrop-blur dark:border-white/[0.12] dark:bg-[#111827]">
                     <div className={`mb-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${accent}`}>{num}</div>
                     <div className="text-xs font-bold text-slate-600 dark:text-rf-muted">{label}</div>
                   </div>
@@ -221,7 +221,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="px-4 py-20 sm:px-8 lg:px-16">
+        <section id="features" className="px-4 py-24 sm:px-8 lg:px-16">
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">Everything you need</p>
@@ -251,7 +251,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="px-4 py-20 sm:px-8 lg:px-16">
+        <section id="how-it-works" className="px-4 py-24 sm:px-8 lg:px-16">
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">How it works</p>
@@ -271,9 +271,9 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="px-4 py-16 sm:px-8 lg:px-16">
+        <section className="px-4 py-20 sm:px-8 lg:px-16">
           <div className="mx-auto max-w-6xl">
-            <FadeIn className="mb-8 text-center">
+            <FadeIn className="mb-10 text-center">
               <p className="ap3k-kicker">Trust and compliance</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Built for official Meta review.</h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">

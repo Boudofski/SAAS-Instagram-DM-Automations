@@ -217,7 +217,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         )}
 
         {usage && (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
             <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Plan capacity</p>
             <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
               {usage.planLabel} supports {usage.connectedAccounts.limit === "unlimited" ? "unlimited" : usage.connectedAccounts.limit} connected Instagram account{usage.connectedAccounts.limit === 1 ? "" : "s"}.
@@ -292,7 +292,7 @@ function SettingsStatCard({ label, stat, tone }: { label: string; stat: AccountS
   const showInfo = label === "Followers" && stat.value === "Unavailable";
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
         {showInfo ? (
@@ -330,7 +330,7 @@ function StatusBadge({ tone, children }: { tone: "green" | "amber" | "pink" | "s
 
 function MetaIdRow({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/[0.12] dark:bg-white/[0.06]">
       <span>{label}</span>
       <span className="truncate text-slate-700 dark:text-slate-200">{value ?? "Not stored"}</span>
     </div>
@@ -339,7 +339,7 @@ function MetaIdRow({ label, value }: { label: string; value?: string | null }) {
 
 function HealthCard({ label, value, detail, ok }: { label: string; value: string; detail?: string; ok: boolean }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
         {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}

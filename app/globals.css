@@ -116,11 +116,11 @@
 
 @layer components {
   .ap3k-card {
-    @apply border border-slate-200 bg-white/85 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-rf-surface/75 dark:text-slate-50 dark:shadow-ap3k-card;
+    @apply border border-slate-200 bg-white/90 text-slate-950 shadow-[0_1px_4px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/[0.12] dark:bg-[#111827] dark:text-slate-50 dark:shadow-ap3k-card;
   }
 
   .ap3k-card-hover {
-    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:shadow-ap3k-glow dark:hover:bg-rf-surface/90;
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:shadow-ap3k-glow dark:hover:bg-[#141e30];
   }
 
   .ap3k-gradient-text {
@@ -154,7 +154,7 @@
   }
 
   .ap3k-panel {
-    @apply rounded-2xl border border-slate-200 bg-white/90 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#101827] dark:shadow-ap3k-card;
+    @apply rounded-2xl border border-slate-200 bg-white/90 shadow-sm backdrop-blur dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card;
   }
 
   .ap3k-muted {
