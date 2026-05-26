@@ -17,3 +17,16 @@ export function getAuthenticatedLandingRedirect(
   if (profile?.clerkId) return dashboardPath(profile.clerkId);
   return options.onboardingPath ?? "/onboarding/connect";
 }
+
+export function getDashboardSlugRedirect(input: {
+  clerkUserId?: string | null;
+  profileClerkId?: string | null;
+  requestedSlug?: string | null;
+}) {
+  if (!input.clerkUserId) return "/sign-in";
+  if (!input.profileClerkId) return "/dashboard";
+  if (input.requestedSlug && input.requestedSlug !== input.profileClerkId) {
+    return dashboardPath(input.profileClerkId);
+  }
+  return null;
+}

@@ -1,7 +1,7 @@
 import NavBar from "@/components/global/navbar";
 import Sidebar from "@/components/global/sidebar";
-import { onUserInfo } from "@/actions/user";
-import { dashboardPath } from "@/lib/dashboard";
+import { client } from "@/lib/prisma";
+import { getDashboardSlugRedirect } from "@/lib/landing-redirect";
 import { ClerkCacheSyncer } from "@/providers/clerk-cache-syncer";
 import {
   PrefetchUserAutomation,
@@ -13,6 +13,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { Metadata } from "next";
+import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import React from "react";
 
@@ -29,22 +30,28 @@ type Props = {
 };
 
 async function Layout({ children, params }: Props) {
-  const userResult = await onUserInfo();
-  const currentClerkId = userResult.status === 200 ? userResult.data?.clerkId : null;
+  const clerkUser = await currentUser();
+  const profile = clerkUser
+    ? await client.user.findUnique({
+        where: { clerkId: clerkUser.id },
+        select: { clerkId: true },
+      })
+    : null;
+  const redirectTo = getDashboardSlugRedirect({
+    clerkUserId: clerkUser?.id,
+    profileClerkId: profile?.clerkId,
+    requestedSlug: params.slug,
+  });
 
-  if (!currentClerkId) {
-    redirect("/sign-in");
-  }
-
-  if (params.slug !== currentClerkId) {
+  if (redirectTo) {
     console.warn("[tenant-denied]", {
       route: "/dashboard/[slug]",
-      currentUserExists: true,
+      currentUserExists: Boolean(clerkUser?.id),
       targetResourceExists: Boolean(params.slug),
-      ownershipMatch: false,
+      ownershipMatch: Boolean(profile?.clerkId && params.slug === profile.clerkId),
       resource: "DashboardSlug",
     });
-    redirect(dashboardPath(currentClerkId));
+    redirect(redirectTo);
   }
 
   const query = new QueryClient();
