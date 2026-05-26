@@ -34,6 +34,9 @@ model Subscription {
   plan       SUBSCRIPTION_PLAN @default(FREE)
   updatedAt  DateTime          @default(now())
   customerId String?           @unique
+  staticReplyLimitOverride Int?
+  staticReplyCreditsCurrentMonth Int @default(0)
+  usageEnforcedFrom DateTime?
 }
 
 model Integrations {

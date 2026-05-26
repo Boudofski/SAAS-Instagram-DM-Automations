@@ -29,7 +29,14 @@ import {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.unstubAllEnvs();
-  mockUserFindUnique.mockResolvedValue({ subscription: { plan: "FREE" } });
+  mockUserFindUnique.mockResolvedValue({
+    subscription: {
+      plan: "FREE",
+      staticReplyLimitOverride: null,
+      staticReplyCreditsCurrentMonth: 0,
+      usageEnforcedFrom: null,
+    },
+  });
   mockMessageLogCount.mockResolvedValue(0);
   mockAutomationEventCount.mockResolvedValue(0);
   mockAutomationCount.mockResolvedValue(0);
@@ -94,6 +101,45 @@ describe("usage query helpers", () => {
     expect(result.reason).toBe("static_reply_limit_reached");
   });
 
+  it("uses admin static reply limit overrides", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        staticReplyLimitOverride: 100,
+        staticReplyCreditsCurrentMonth: 25,
+        usageEnforcedFrom: null,
+      },
+    });
+    mockMessageLogCount.mockResolvedValueOnce(50).mockResolvedValueOnce(0);
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(usage.staticReplies.limit).toBe(125);
+    expect(usage.staticReplies.blocked).toBe(false);
+  });
+
+  it("uses per-subscription usage enforcement reset date", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        staticReplyLimitOverride: null,
+        staticReplyCreditsCurrentMonth: 0,
+        usageEnforcedFrom: new Date("2026-05-24T10:00:00Z"),
+      },
+    });
+
+    await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(mockMessageLogCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        createdAt: {
+          gte: new Date("2026-05-24T10:00:00Z"),
+          lt: new Date("2026-06-01T00:00:00Z"),
+        },
+      }),
+    });
+  });
+
   it("falls back to sent automation events when message logs are missing", async () => {
     mockMessageLogCount.mockResolvedValue(0);
     mockAutomationEventCount.mockResolvedValueOnce(2).mockResolvedValueOnce(3);
@@ -134,7 +180,14 @@ describe("usage query helpers", () => {
   });
 
   it("allows Creator active campaigns", async () => {
-    mockUserFindUnique.mockResolvedValue({ subscription: { plan: "PRO" } });
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "PRO",
+        staticReplyLimitOverride: null,
+        staticReplyCreditsCurrentMonth: 0,
+        usageEnforcedFrom: null,
+      },
+    });
     mockAutomationCount.mockResolvedValue(12);
 
     const result = await canActivateCampaign("user-1");

@@ -32,6 +32,14 @@ type ServerAction = (formData: FormData) => Promise<unknown>;
 export type AdminRowAction = AdminActionItem & {
   serverAction?: ServerAction;
   hidden?: Record<string, string>;
+  fields?: Array<{
+    name: string;
+    label: string;
+    type?: "text" | "number" | "select";
+    placeholder?: string;
+    defaultValue?: string;
+    options?: Array<{ label: string; value: string }>;
+  }>;
   impact?: string;
   danger?: boolean;
 };
@@ -71,10 +79,10 @@ export function AdminActionMenu({
             <div key={action.id}>
               {index > 0 && action.danger && <DropdownMenuSeparator />}
               <DropdownMenuItem
-                disabled={action.disabled}
+                disabled={action.disabled && !action.serverAction}
                 onSelect={(event) => {
                   event.preventDefault();
-                  if (action.disabled || !action.serverAction) return;
+                  if (!action.serverAction) return;
                   setSelected(action);
                   setOpen(true);
                 }}
@@ -113,6 +121,7 @@ function AdminConfirmDialog({
   const router = useRouter();
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [result, setResult] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const ready = useMemo(
@@ -125,6 +134,7 @@ function AdminConfirmDialog({
   const reset = () => {
     setReason("");
     setConfirmation("");
+    setFieldValues({});
     setResult(null);
     onDone();
   };
@@ -170,6 +180,33 @@ function AdminConfirmDialog({
               />
             </label>
           )}
+          {action.fields?.map((field) => {
+            const value = fieldValues[field.name] ?? field.defaultValue ?? "";
+            return (
+              <label key={field.name} className="grid gap-1 text-sm font-bold">
+                {field.label}
+                {field.type === "select" ? (
+                  <select
+                    value={value}
+                    onChange={(event) => setFieldValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-slate-400 dark:border-white/10 dark:bg-white/[0.04]"
+                  >
+                    {(field.options ?? []).map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={field.type ?? "text"}
+                    value={value}
+                    onChange={(event) => setFieldValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-slate-400 dark:border-white/10 dark:bg-white/[0.04]"
+                    placeholder={field.placeholder}
+                  />
+                )}
+              </label>
+            );
+          })}
           {result && <p className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">{result}</p>}
         </div>
         <DialogFooter>
@@ -187,6 +224,10 @@ function AdminConfirmDialog({
               if (!action.serverAction) return;
               const formData = new FormData();
               Object.entries(action.hidden ?? {}).forEach(([key, value]) => formData.set(key, value));
+              Object.entries(fieldValues).forEach(([key, value]) => formData.set(key, value));
+              action.fields?.forEach((field) => {
+                if (!formData.has(field.name) && field.defaultValue !== undefined) formData.set(field.name, field.defaultValue);
+              });
               formData.set("reason", reason);
               if (action.confirmation) formData.set("confirmation", confirmation);
               startTransition(async () => {
@@ -265,4 +306,3 @@ export function AdminErrorSummary({ error }: { error?: string | null }) {
     </details>
   );
 }
-

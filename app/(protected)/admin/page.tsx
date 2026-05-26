@@ -2,14 +2,24 @@
 
 import { replaySavedWebhookEvent, simulateCommentWebhook } from "@/actions/admin/webhook-simulation";
 import {
+  addStaticReplyCreditsAction,
   archiveCampaignAction,
+  blockedAdminAction,
+  changeUserPlanAction,
+  clearCampaignNeedsReviewAction,
+  clearIntegrationSafeErrorAction,
   disconnectIntegrationAction,
   duplicateCampaignAction,
   markIntegrationReconnectRequiredAction,
+  markCampaignNeedsReviewAction,
   repairIntegrationConnectionAction,
+  refreshIntegrationProfileSnapshotAction,
+  refreshStripeSubscriptionAction,
   resubscribeIntegrationAction,
+  resetUsageEnforcementAction,
   setCampaignActiveAction,
   suspendUserAction,
+  updateStaticReplyLimitAction,
   unsuspendUserAction,
 } from "@/actions/admin/operations";
 import ThemeToggle from "@/components/global/theme-toggle";
@@ -313,7 +323,6 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
         select: { name: true, User: { select: { email: true } } },
       })
     : null;
-
   const lastPipeline = buildWebhookPipelineDiagnostics({
     lastPostRaw,
     lastSignatureFailed,
@@ -442,6 +451,14 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
         },
       })
     : null;
+  const selectedUserUsage = selectedUser?.id ? await getUserMonthlyUsage(selectedUser.id) : null;
+  const selectedUserAuditLogs = selectedUser?.id
+    ? await client.adminAuditLog.findMany({
+        where: { targetType: "User", targetId: selectedUser.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      })
+    : [];
 
   const subscriptions = tab === "subscriptions"
     ? await client.subscription.findMany({
@@ -454,7 +471,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
         } : undefined,
         orderBy: { updatedAt: "desc" },
         take: 50,
-          include: { User: { select: { id: true, email: true, clerkId: true } } },
+        include: { User: { select: { id: true, email: true, clerkId: true, status: true } } },
       })
     : [];
   const subscriptionUsage = tab === "subscriptions"
@@ -750,8 +767,13 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <Identity title={selectedUser.email} subtitle={`${selectedUser.firstname ?? ""} ${selectedUser.lastname ?? ""}`.trim() || selectedUser.clerkId} />
                     <Badge tone={selectedUser.status === "SUSPENDED" ? "red" : "green"}>{selectedUser.status}</Badge>
                   </div>
-                  <div className="mt-3 grid gap-2 md:grid-cols-4">
+                  <div className="mt-3 grid gap-2 md:grid-cols-5">
                     <HealthCard label="Plan" value={selectedUser.subscription?.plan ?? "FREE"} />
+                    <HealthCard
+                      label="Static replies"
+                      value={selectedUserUsage ? `${selectedUserUsage.staticReplies.used.toLocaleString()} / ${isUnlimited(selectedUserUsage.staticReplies.limit) ? "Unlimited" : selectedUserUsage.staticReplies.limit.toLocaleString()}` : "Unknown"}
+                      tone={selectedUserUsage?.staticReplies.blocked ? "red" : "slate"}
+                    />
                     <HealthCard label="IG accounts" value={selectedUser._count.integrations} />
                     <HealthCard label="Campaigns" value={selectedUser._count.automations} />
                     <HealthCard label="Created" value={formatAdminDate(selectedUser.createdAt)} />
@@ -761,6 +783,18 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                       <HealthCard key={integration.id} label={integration.instagramUsername ? `@${integration.instagramUsername}` : "Instagram"} value={`${integration.status}${integration.reconnectRequired ? " · reconnect required" : ""}`} tone={integration.status === "CONNECTED" && !integration.reconnectRequired ? "green" : "amber"} />
                     ))}
                   </div>
+                  {selectedUserAuditLogs.length > 0 && (
+                    <div className="mt-3 rounded-xl border border-blue-200 bg-white/60 p-3 dark:border-blue-500/30 dark:bg-white/[0.04]">
+                      <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700 dark:text-blue-200">Recent admin history</p>
+                      <div className="mt-2 grid gap-2">
+                        {selectedUserAuditLogs.map((log) => (
+                          <p key={log.id} className="text-xs font-semibold text-blue-950 dark:text-blue-100">
+                            {formatAdminDate(log.createdAt)} · {log.action} · {log.status} · {log.reason ?? "No reason"}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               <DataTable
@@ -785,8 +819,20 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                       actions={adminActionMenuConfig("user", { status: user.status }).map((item): AdminRowAction => ({
                         ...item,
                         targetLabel: user.email,
-                        serverAction: item.id === "suspend" ? suspendUserAction : item.id === "unsuspend" ? unsuspendUserAction : undefined,
-                        hidden: { userId: user.id },
+                        serverAction:
+                          item.id === "suspend" ? suspendUserAction :
+                          item.id === "unsuspend" ? unsuspendUserAction :
+                          item.id === "delete-data" ? blockedAdminAction :
+                          undefined,
+                        hidden: {
+                          userId: user.id,
+                          ...(item.id === "delete-data" ? {
+                            action: "DELETE_USER_DATA_BLOCKED",
+                            targetType: "User",
+                            targetId: user.id,
+                            disabledReason: "Hard delete is disabled. Suspend access or build export/anonymize workflow first.",
+                          } : {}),
+                        },
                         impact: item.id === "suspend"
                           ? "User will be blocked from creating or activating campaigns. Active campaigns are paused by the admin action."
                           : item.id === "unsuspend"
@@ -803,7 +849,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           )}
 
           {tab === "subscriptions" && (
-            <Panel title="Subscriptions" description="Read-only subscription view. Stripe write actions are intentionally disabled in this version.">
+            <Panel title="Subscriptions" description="Admin-only internal subscription controls. Plan and reply-limit overrides are audited; Stripe cancellation remains disabled.">
               <AdminFilterPills
                 items={[
                   ["All", tabHref("subscriptions", { usageFilter: "" }), !usageFilter],
@@ -824,10 +870,23 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   return true;
                 }).map((sub: any) => {
                   const usage = sub.User?.id ? subscriptionUsage.get(sub.User.id) : null;
+                  const planLabel = sub.plan === "PRO" ? "Creator" : "Free";
+                  const overrideLabel = typeof sub.staticReplyLimitOverride === "number"
+                    ? `${sub.staticReplyLimitOverride.toLocaleString()} override`
+                    : "Plan default";
+                  const creditsLabel = (sub.staticReplyCreditsCurrentMonth ?? 0) > 0
+                    ? `+${sub.staticReplyCreditsCurrentMonth.toLocaleString()} credits`
+                    : "No extra credits";
+                  const stripeRefreshDisabled = !sub.customerId || !process.env.STRIPE_SECRET_KEY;
                   return [
                   <Identity key="user" title={sub.User?.email ?? "Unknown user"} subtitle={sub.User?.clerkId ?? "No Clerk ID"} />,
-                  <Badge key="plan" tone={sub.plan === "PRO" ? "purple" : "slate"}>{sub.plan === "PRO" ? "Creator" : "Free"}</Badge>,
-                  usage ? <UsageCell key="static" used={usage.staticReplies.used} limit={usage.staticReplies.limit} blocked={usage.staticReplies.blocked} /> : "Unknown",
+                  <Identity key="plan" title={<Badge tone={sub.plan === "PRO" ? "purple" : "slate"}>{planLabel}</Badge>} subtitle="Internal plan state" />,
+                  usage ? (
+                    <div key="static" className="space-y-1">
+                      <UsageCell used={usage.staticReplies.used} limit={usage.staticReplies.limit} blocked={usage.staticReplies.blocked} />
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{overrideLabel} · {creditsLabel}</p>
+                    </div>
+                  ) : "Unknown",
                   usage ? <UsageCell key="campaigns" used={usage.activeCampaigns.used} limit={usage.activeCampaigns.limit} blocked={usage.activeCampaigns.blocked} /> : "Unknown",
                   usage ? <UsageCell key="accounts" used={usage.connectedAccounts.used} limit={usage.connectedAccounts.limit} blocked={usage.connectedAccounts.blocked} /> : "Unknown",
                   <span key="stripe" className="inline-flex items-center gap-2">
@@ -838,9 +897,107 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   </span>,
                   sub.plan === "PRO" ? <Badge key="active" tone="green">Active/internal PRO</Badge> : <Badge key="free" tone="slate">Free</Badge>,
                   formatAdminDate(sub.updatedAt),
-                  <AdminActionMenu key="actions" actions={adminActionMenuConfig("subscription") as AdminRowAction[]} />,
+                  <AdminActionMenu
+                    key="actions"
+                    viewHref={tabHref("subscriptions", { q: sub.User?.email ?? sub.customerId ?? sub.id })}
+                    actions={adminActionMenuConfig("subscription").map((item): AdminRowAction => ({
+                      ...item,
+                      targetLabel: sub.User?.email ?? sub.id,
+                      serverAction:
+                        item.id === "change-plan" ? changeUserPlanAction :
+                        item.id === "update-limit" ? updateStaticReplyLimitAction :
+                        item.id === "add-credits" ? addStaticReplyCreditsAction :
+                        item.id === "reset-usage" ? resetUsageEnforcementAction :
+                        item.id === "refresh-stripe" ? refreshStripeSubscriptionAction :
+                        item.id === "cancel" ? blockedAdminAction :
+                        undefined,
+                      hidden: {
+                        subscriptionId: sub.id,
+                        ...(item.id === "cancel" ? {
+                          action: "CANCEL_STRIPE_SUBSCRIPTION_BLOCKED",
+                          targetType: "Subscription",
+                          targetId: sub.id,
+                          disabledReason: "Stripe cancellation requires the billing workflow. Use internal plan override to downgrade immediately.",
+                        } : {}),
+                      },
+                      fields:
+                        item.id === "change-plan" ? [{
+                          name: "plan",
+                          label: "New internal plan",
+                          type: "select",
+                          defaultValue: sub.plan,
+                          options: [
+                            { label: "Free", value: "FREE" },
+                            { label: "Creator", value: "PRO" },
+                          ],
+                        }] :
+                        item.id === "update-limit" ? [
+                          {
+                            name: "limitMode",
+                            label: "Limit mode",
+                            type: "select",
+                            defaultValue: typeof sub.staticReplyLimitOverride === "number" ? "override" : "default",
+                            options: [
+                              { label: "Plan default", value: "default" },
+                              { label: "Override", value: "override" },
+                            ],
+                          },
+                          {
+                            name: "staticReplyLimitOverride",
+                            label: "Monthly static reply limit",
+                            type: "number",
+                            defaultValue: String(sub.staticReplyLimitOverride ?? usage?.staticReplies.limit ?? 5000),
+                            placeholder: "10000",
+                          },
+                        ] :
+                        item.id === "add-credits" ? [{
+                          name: "credits",
+                          label: "Current-month extra replies",
+                          type: "number",
+                          placeholder: "500",
+                        }] : undefined,
+                      disabled: item.disabled || (item.id === "refresh-stripe" && stripeRefreshDisabled),
+                      disabledReason: item.id === "refresh-stripe" && stripeRefreshDisabled
+                        ? (sub.customerId ? "STRIPE_SECRET_KEY is not configured." : "No Stripe customer ID.")
+                        : item.disabledReason,
+                      impact:
+                        item.id === "change-plan"
+                          ? "Internal-only override. This updates AP3k plan enforcement but does not write to Stripe."
+                          : item.id === "update-limit"
+                            ? "Changes the effective monthly static reply cap for this user. Reset to plan default by choosing Plan default."
+                            : item.id === "add-credits"
+                              ? "Adds extra static replies for the current month only."
+                              : item.id === "reset-usage"
+                                ? "Sets usage enforcement from now and clears current-month extra credits. Historical logs remain."
+                                : item.id === "refresh-stripe"
+                                  ? "Fetches sanitized Stripe subscription status. No Stripe writes are performed."
+                                  : item.id === "cancel"
+                                    ? "Stripe cancellation is blocked here. Use internal plan override to downgrade immediately."
+                                    : item.disabledReason,
+                      danger: item.id === "reset-usage" || item.id === "cancel",
+                    }))}
+                  />,
                 ];
                 })}
+                details={(index) => {
+                  const sub = subscriptions.filter((item: any) => {
+                    const usage = item.User?.id ? subscriptionUsage.get(item.User.id) : null;
+                    if (usageFilter === "over") return Boolean(usage?.staticReplies.blocked);
+                    if (usageFilter === "near") return Boolean(usage && !usage.staticReplies.blocked && usage.staticReplies.percent >= 70);
+                    if (usageFilter === "free") return item.plan === "FREE";
+                    if (usageFilter === "creator") return item.plan === "PRO";
+                    return true;
+                  })[index] as any;
+                  const usage = sub?.User?.id ? subscriptionUsage.get(sub.User.id) : null;
+                  return (
+                    <div className="grid gap-3 lg:grid-cols-4">
+                      <HealthCard label="User status" value={sub.User?.status ?? "Unknown"} tone={sub.User?.status === "SUSPENDED" ? "red" : "green"} />
+                      <HealthCard label="Override" value={typeof sub.staticReplyLimitOverride === "number" ? sub.staticReplyLimitOverride.toLocaleString() : "Plan default"} />
+                      <HealthCard label="Credits" value={(sub.staticReplyCreditsCurrentMonth ?? 0).toLocaleString()} />
+                      <HealthCard label="Enforced from" value={formatAdminDate(sub.usageEnforcedFrom ?? usage?.enforcementStart)} />
+                    </div>
+                  );
+                }}
                 empty="No subscription records found."
               />
             </Panel>
@@ -882,9 +1039,21 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                       serverAction:
                         item.id === "reconnect" ? markIntegrationReconnectRequiredAction :
                         item.id === "resubscribe" ? resubscribeIntegrationAction :
+                        item.id === "refresh-snapshot" ? refreshIntegrationProfileSnapshotAction :
+                        item.id === "repair" ? repairIntegrationConnectionAction :
+                        item.id === "clear-error" ? clearIntegrationSafeErrorAction :
                         item.id === "disconnect" ? disconnectIntegrationAction :
+                        item.id === "delete" ? blockedAdminAction :
                         undefined,
-                      hidden: { integrationId: integration.id },
+                      hidden: {
+                        integrationId: integration.id,
+                        ...(item.id === "delete" ? {
+                          action: "DELETE_INTEGRATION_BLOCKED",
+                          targetType: "Integration",
+                          targetId: integration.id,
+                          disabledReason: "Integration hard delete is disabled. Use soft disconnect.",
+                        } : {}),
+                      },
                       impact:
                         item.id === "disconnect"
                           ? "Integration will be marked disconnected and related campaigns will be paused. Tokens are not displayed."
@@ -892,8 +1061,14 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                             ? "Integration will be marked reconnect-required so operations can follow up with the user."
                             : item.id === "resubscribe"
                               ? "AP3k will retry the stored webhook subscription flow without exposing tokens."
+                              : item.id === "refresh-snapshot"
+                                ? "Fetches public profile fields through the stored Meta token and saves a sanitized snapshot."
+                                : item.id === "repair"
+                                  ? "Soft-disables stale duplicate integrations for the owner and keeps the current account active."
+                                  : item.id === "clear-error"
+                                    ? "Clears stored safe error summaries only when the connection is currently operational."
                               : item.disabledReason,
-                      danger: item.id === "disconnect",
+                      danger: item.id === "disconnect" || item.id === "delete",
                     }))}
                   />,
                 ])}
@@ -936,18 +1111,27 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <AdminActionMenu
                       key="actions"
                       viewHref={tabHref("campaigns", { q: campaign.id })}
-                      actions={adminActionMenuConfig("campaign", { active: campaign.active, archivedAt: campaign.archivedAt }).map((item): AdminRowAction => ({
+                      actions={adminActionMenuConfig("campaign", { active: campaign.active, archivedAt: campaign.archivedAt, needsReview: campaign.needsReview }).map((item): AdminRowAction => ({
                         ...item,
                         targetLabel: campaign.name,
                         serverAction:
                           item.id === "pause" || item.id === "activate" ? setCampaignActiveAction :
                           item.id === "duplicate" ? duplicateCampaignAction :
+                          item.id === "needs-review" ? markCampaignNeedsReviewAction :
+                          item.id === "clear-review" ? clearCampaignNeedsReviewAction :
                           item.id === "archive" ? archiveCampaignAction :
+                          item.id === "delete" ? blockedAdminAction :
                           undefined,
                         hidden: {
                           automationId: campaign.id,
                           ...(item.id === "pause" ? { active: "false" } : {}),
                           ...(item.id === "activate" ? { active: "true" } : {}),
+                          ...(item.id === "delete" ? {
+                            action: "DELETE_CAMPAIGN_BLOCKED",
+                            targetType: "Automation",
+                            targetId: campaign.id,
+                            disabledReason: "Campaign hard delete is disabled. Archive the campaign instead.",
+                          } : {}),
                         },
                         impact:
                           item.id === "pause"
@@ -958,8 +1142,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                                 ? "Campaign will be paused and hidden from normal campaign lists. Historical logs remain."
                                 : item.id === "duplicate"
                                   ? "A copy will be created inactive for the same owner and configuration."
+                                  : item.id === "needs-review"
+                                    ? "Campaign will be paused and flagged for owner/admin review before reactivation."
+                                    : item.id === "clear-review"
+                                      ? "Clears the review flag only after integration repair. The campaign remains paused."
                                   : item.disabledReason,
-                        danger: item.id === "pause" || item.id === "archive",
+                        danger: item.id === "pause" || item.id === "archive" || item.id === "delete",
                       }))}
                     />,
                   ];
@@ -1397,6 +1585,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 <DangerCard title="Soft destructive actions" status={dangerStatus.softDestructiveActions} detail="Suspension, disconnect, and archive avoid hard deletes." />
                 <DangerCard title="Hard deletes" status={dangerStatus.hardDeletes} detail="User data, integrations, and campaigns are not hard-deleted from admin." />
                 <DangerCard title="Subscription cancel" status={dangerStatus.subscriptionCancel} detail="Stripe cancellation is disabled until a safe helper exists." />
+                <DangerCard title="Token exposure" status={dangerStatus.tokenExposure} detail="Tokens and secrets are redacted from tables, details, and audit payloads." />
               </div>
               <Callout tone="green" title="Audit framework enabled">
                 AdminAuditLog exists and all admin write actions use the shared audit helper for SUCCESS, FAILED, and BLOCKED outcomes.
@@ -1515,11 +1704,15 @@ function PayloadSummary({ payload }: { payload: unknown }) {
 }
 
 function AdminJsonViewer({ title, value }: { title: string; value: unknown }) {
+  const sanitized = sanitizeAdminPayload(value);
   return (
     <details className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
       <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{title}</summary>
+      <div className="mt-3 flex justify-end">
+        <CopyButton value={JSON.stringify(sanitized)} label="Copy sanitized JSON" />
+      </div>
       <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
-        {JSON.stringify(sanitizeAdminPayload(value), null, 2)}
+        {JSON.stringify(sanitized, null, 2)}
       </pre>
     </details>
   );
@@ -1568,10 +1761,25 @@ function AuditLogTable({ logs }: { logs: any[] }) {
         <Identity key="target" title={`${log.targetType}${log.targetLabel ? ` · ${log.targetLabel}` : ""}`} subtitle={log.targetId ? shortenAdminId(log.targetId) : ""} />,
         <Badge key="status" tone={log.status === "SUCCESS" ? "green" : log.status === "BLOCKED" ? "amber" : "red"}>{log.status}</Badge>,
         log.reason ?? "None",
-        <AdminJsonViewer key="details" title="Details" value={{ before: log.before, after: log.after, metadata: log.metadata, error: log.error }} />,
+        <AuditDetails key="details" log={log} />,
       ])}
       empty="No audit logs found."
     />
+  );
+}
+
+function AuditDetails({ log }: { log: any }) {
+  return (
+    <details className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+      <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Diff</summary>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <AdminJsonViewer title="Before" value={log.before ?? {}} />
+        <AdminJsonViewer title="After" value={log.after ?? {}} />
+      </div>
+      <div className="mt-3">
+        <AdminJsonViewer title="Metadata / error" value={{ metadata: log.metadata, error: log.error }} />
+      </div>
+    </details>
   );
 }
 

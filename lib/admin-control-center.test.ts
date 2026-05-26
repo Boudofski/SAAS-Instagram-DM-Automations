@@ -79,7 +79,7 @@ describe("admin control center helpers", () => {
 
   it("explains disabled admin actions", () => {
     expect(disabledAdminActionReason("deleteUserData")).toContain("retention");
-    expect(disabledAdminActionReason("planOverride")).toContain("disabled");
+    expect(disabledAdminActionReason("planOverride")).toContain("Agency");
   });
 
   it("returns action menu config with enabled and disabled actions", () => {
@@ -98,6 +98,12 @@ describe("admin control center helpers", () => {
     });
     expect(adminActionMenuConfig("user").find((item) => item.id === "suspend")).toMatchObject({
       confirmation: "SUSPEND",
+    });
+    expect(adminActionMenuConfig("subscription").find((item) => item.id === "change-plan")).toMatchObject({
+      confirmation: "CHANGE_PLAN",
+    });
+    expect(adminActionMenuConfig("subscription").find((item) => item.id === "update-limit")).toMatchObject({
+      confirmation: "UPDATE_LIMIT",
     });
   });
 
@@ -127,6 +133,7 @@ describe("admin control center helpers", () => {
       typedConfirmations: "Enabled",
       hardDeletes: "Disabled",
       subscriptionCancel: "Disabled",
+      tokenExposure: "Disabled",
     });
   });
 

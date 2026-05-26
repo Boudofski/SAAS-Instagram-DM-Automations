@@ -148,8 +148,8 @@ export function disabledAdminActionReason(action: string) {
     deleteIntegration: "Integrations are soft-disconnected, not deleted.",
     deleteCampaign: "Campaigns are archived, not hard-deleted.",
     cancelSubscription: "Stripe cancellation is disabled until a refresh/cancel helper is implemented and tested.",
-    planOverride: "Plan override is disabled until an internal override model exists.",
-    refreshSubscription: "Stripe refresh is disabled until a safe refresh helper exists.",
+    planOverride: "Agency/custom plans require a dedicated schema and billing workflow. Free and Creator internal overrides are available.",
+    refreshSubscription: "Stripe refresh requires a Stripe customer ID and STRIPE_SECRET_KEY. It fetches sanitized status only.",
   };
   return reasons[action] ?? "Action is not available.";
 }
@@ -174,6 +174,9 @@ export function adminActionMenuConfig(scope: "user" | "integration" | "campaign"
     return [
       { id: "reconnect", label: "Mark reconnect required", confirmation: "RECONNECT" },
       { id: "resubscribe", label: "Resubscribe webhooks" },
+      { id: "refresh-snapshot", label: "Refresh profile snapshot" },
+      { id: "repair", label: "Repair connection state" },
+      { id: "clear-error", label: "Clear old safe error" },
       { id: "disconnect", label: "Disconnect integration", confirmation: "DISCONNECT", disabled: state.status === "DISCONNECTED", disabledReason: "Already disconnected." },
       { id: "delete", label: "Delete unavailable", disabled: true, disabledReason: disabledAdminActionReason("deleteIntegration") },
     ];
@@ -184,14 +187,21 @@ export function adminActionMenuConfig(scope: "user" | "integration" | "campaign"
     return [
       { id: active ? "pause" : "activate", label: active ? "Pause campaign" : "Activate campaign", confirmation: active ? "PAUSE" : "ACTIVATE", disabled: archived, disabledReason: "Campaign is archived." },
       { id: "duplicate", label: "Duplicate campaign", confirmation: "DUPLICATE", disabled: archived, disabledReason: "Campaign is archived." },
+      state.needsReview
+        ? { id: "clear-review", label: "Clear needs review", confirmation: "CLEAR_REVIEW", disabled: archived, disabledReason: "Campaign is archived." }
+        : { id: "needs-review", label: "Mark needs review", disabled: archived, disabledReason: "Campaign is archived." },
       { id: "archive", label: "Archive campaign", confirmation: "ARCHIVE", disabled: archived, disabledReason: "Already archived." },
       { id: "delete", label: "Delete unavailable", disabled: true, disabledReason: disabledAdminActionReason("deleteCampaign") },
     ];
   }
   return [
-    { id: "refresh", label: "Refresh subscription unavailable", disabled: true, disabledReason: disabledAdminActionReason("refreshSubscription") },
-    { id: "cancel", label: "Cancel unavailable", disabled: true, disabledReason: disabledAdminActionReason("cancelSubscription") },
-    { id: "override", label: "Plan override unavailable", disabled: true, disabledReason: disabledAdminActionReason("planOverride") },
+    { id: "change-plan", label: "Internal plan override", confirmation: "CHANGE_PLAN" },
+    { id: "update-limit", label: "Update static reply limit", confirmation: "UPDATE_LIMIT" },
+    { id: "add-credits", label: "Add reply credits", confirmation: "ADD_CREDITS" },
+    { id: "reset-usage", label: "Reset usage enforcement", confirmation: "RESET_USAGE" },
+    { id: "refresh-stripe", label: "Refresh Stripe status" },
+    { id: "cancel", label: "Cancel unavailable", confirmation: "CANCEL", disabledReason: disabledAdminActionReason("cancelSubscription") },
+    { id: "agency", label: "Agency/custom unavailable", disabled: true, disabledReason: disabledAdminActionReason("planOverride") },
   ];
 }
 
@@ -212,6 +222,7 @@ export function adminDangerZoneStatus() {
     softDestructiveActions: "Enabled",
     hardDeletes: "Disabled",
     subscriptionCancel: "Disabled",
+    tokenExposure: "Disabled",
   } as const;
 }
 

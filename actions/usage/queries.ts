@@ -3,29 +3,56 @@ import {
   getCurrentUsagePeriod,
   getPlanLabel,
   getPlanLimits,
+  isUnlimited,
   makeUsageMetric,
+  type PlanLimit,
   type ProductPlan,
   type UsageSummary,
 } from "@/lib/plan-limits";
+
+function maxDate(a: Date, b?: Date | null) {
+  if (!b) return a;
+  return b > a ? b : a;
+}
+
+function effectiveStaticReplyLimit(base: PlanLimit, override?: number | null, credits = 0): PlanLimit {
+  const positiveCredits = Math.max(0, credits);
+  if (typeof override === "number") return Math.max(0, override) + positiveCredits;
+  if (isUnlimited(base)) return base;
+  return base + positiveCredits;
+}
 
 export async function getUserMonthlyUsage(userId: string, date = new Date()): Promise<UsageSummary> {
   const period = getCurrentUsagePeriod(date);
   const user = await client.user.findUnique({
     where: { id: userId },
     select: {
-      subscription: { select: { plan: true } },
+      subscription: {
+        select: {
+          plan: true,
+          staticReplyLimitOverride: true,
+          staticReplyCreditsCurrentMonth: true,
+          usageEnforcedFrom: true,
+        },
+      },
     },
   });
 
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
+  const enforcementStart = maxDate(period.enforcementStart, user?.subscription?.usageEnforcedFrom);
+  const staticReplyLimit = effectiveStaticReplyLimit(
+    limits.staticRepliesPerMonth,
+    user?.subscription?.staticReplyLimitOverride,
+    user?.subscription?.staticReplyCreditsCurrentMonth ?? 0
+  );
 
   const [publicReplyLogs, dmLogs, activeCampaigns, connectedAccounts] = await Promise.all([
     client.messageLog.count({
       where: {
         status: "SENT",
         messageType: "COMMENT_REPLY",
-        createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+        createdAt: { gte: enforcementStart, lt: period.monthEnd },
         automation: { userId },
       },
     }),
@@ -33,7 +60,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       where: {
         status: "SENT",
         messageType: "DM",
-        createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+        createdAt: { gte: enforcementStart, lt: period.monthEnd },
         automation: { userId },
       },
     }),
@@ -46,7 +73,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       : client.automationEvent.count({
           where: {
             eventType: "PUBLIC_REPLY_SENT",
-            createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+            createdAt: { gte: enforcementStart, lt: period.monthEnd },
             automation: { userId },
           },
         }),
@@ -55,7 +82,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       : client.automationEvent.count({
           where: {
             eventType: "DM_SENT",
-            createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+            createdAt: { gte: enforcementStart, lt: period.monthEnd },
             automation: { userId },
           },
         }),
@@ -68,8 +95,8 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     periodLabel: period.periodLabel,
     periodStart: period.monthStart,
     periodEnd: period.monthEnd,
-    enforcementStart: period.enforcementStart,
-    staticReplies: makeUsageMetric(staticReplies, limits.staticRepliesPerMonth),
+    enforcementStart,
+    staticReplies: makeUsageMetric(staticReplies, staticReplyLimit),
     aiReplies: makeUsageMetric(0, limits.aiRepliesPerMonth),
     activeCampaigns: makeUsageMetric(activeCampaigns, limits.activeCampaigns),
     connectedAccounts: makeUsageMetric(connectedAccounts, limits.connectedInstagramAccounts),
