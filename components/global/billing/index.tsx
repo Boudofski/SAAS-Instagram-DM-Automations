@@ -13,13 +13,13 @@ function Billing({ current = "FREE", usage }: Props) {
 
   return (
     <div className="flex w-full flex-col gap-5">
-      <div className="ap3k-panel p-6">
+      <div>
         <p className="ap3k-kicker">Billing</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-          AP3k plans
+        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+          Plans &amp; Usage
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-          Free is for testing. Creator is the paid workspace plan for serious campaigns. Agency remains available from pricing for multi-account teams.
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          Free for testing. Creator for serious campaigns. Agency for multi-account teams.
         </p>
       </div>
       {usage && (

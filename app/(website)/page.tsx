@@ -1,4 +1,4 @@
-import { FadeIn, HoverLift } from "@/components/global/motion/fade-in";
+import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
 import PricingCard from "@/components/global/pricing-card";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
@@ -80,10 +80,10 @@ const EXAMPLES = [
 ] as const;
 
 const PROOF = [
-  ["Real-time", "Meta webhook processing"],
-  ["Fallback", "Public reply delivery path"],
-  ["Diagnostics", "Campaign and admin logs"],
-  ["Review-ready", "Safe Meta evidence"],
+  ["Real-time", "Meta webhook processing", "bg-rf-orange/10 text-rf-orange"],
+  ["Fallback", "Public reply delivery path", "bg-rf-pink/10 text-rf-magenta"],
+  ["Diagnostics", "Campaign and admin logs", "bg-rf-purple/10 text-rf-purple"],
+  ["Review-ready", "Safe Meta evidence", "bg-rf-indigo/10 text-rf-indigo"],
 ] as const;
 
 const STEPS = [
@@ -140,10 +140,10 @@ export default async function LandingPage() {
               </div>
 
               <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                {PROOF.map(([num, label]) => (
+                {PROOF.map(([num, label, accent]) => (
                   <div key={label} className="rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.035]">
-                    <div className="text-lg font-black tracking-tight sm:text-xl">{num}</div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-rf-muted">{label}</div>
+                    <div className={`mb-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${accent}`}>{num}</div>
+                    <div className="text-xs font-bold text-slate-600 dark:text-rf-muted">{label}</div>
                   </div>
                 ))}
               </div>
@@ -232,11 +232,11 @@ export default async function LandingPage() {
                 Pick your post, add keywords, write public replies, and enable private reply workflows when Meta messaging is approved.
               </p>
             </FadeIn>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((f, index) => {
+            <StaggerContainer className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f) => {
                 const Icon = f.icon;
                 return (
-                  <FadeIn key={f.title} delay={index * 0.04}>
+                  <StaggerItem key={f.title}>
                     <div className="ap3k-card ap3k-card-hover h-full rounded-3xl p-6">
                       <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft text-rf-pink">
                         <Icon className="h-5 w-5" />
@@ -244,10 +244,10 @@ export default async function LandingPage() {
                       <h3 className="font-black text-slate-950 dark:text-rf-text">{f.title}</h3>
                       <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{f.desc}</p>
                     </div>
-                  </FadeIn>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
@@ -257,35 +257,46 @@ export default async function LandingPage() {
               <p className="ap3k-kicker">How it works</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">From comment to tracked outcome.</h2>
             </FadeIn>
-            <div className="grid gap-4 md:grid-cols-4">
+            <StaggerContainer className="grid gap-4 md:grid-cols-4">
               {STEPS.map(([num, title, desc]) => (
-                <div key={num} className="ap3k-panel p-5">
-                  <p className="font-mono text-xs font-black text-rf-pink">{num}</p>
-                  <h3 className="mt-4 font-black">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{desc}</p>
-                </div>
+                <StaggerItem key={num}>
+                  <div className="ap3k-panel p-5">
+                    <p className="font-mono text-xs font-black text-rf-pink">{num}</p>
+                    <h3 className="mt-4 font-black text-slate-900 dark:text-white">{title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{desc}</p>
+                  </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
         <section className="px-4 py-16 sm:px-8 lg:px-16">
-          <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="ap3k-panel p-6">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="mb-8 text-center">
               <p className="ap3k-kicker">Trust and compliance</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">Built for official Meta review flows.</h2>
-              <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
-                AP3k uses Facebook Login for Business and official Meta APIs. No scraping, no password sharing, no hidden browser automation.
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Built for official Meta review.</h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
+                No scraping, no password sharing, no hidden browser automation. AP3k uses Facebook Login for Business and official Meta APIs throughout.
               </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {["Official Meta API flow", "Facebook Login for Business", "Public privacy and terms pages", "Data deletion instructions"].map((item) => (
-                <div key={item} className="ap3k-panel flex items-center gap-3 p-4">
-                  <CheckCircle2 className="h-5 w-5 text-rf-green" />
-                  <span className="text-sm font-bold">{item}</span>
-                </div>
+            </FadeIn>
+            <StaggerContainer className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "Official Meta API flow", icon: CheckCircle2 },
+                { label: "Facebook Login for Business", icon: CheckCircle2 },
+                { label: "Public privacy and terms pages", icon: CheckCircle2 },
+                { label: "Data deletion instructions", icon: CheckCircle2 },
+              ].map(({ label, icon: Icon }) => (
+                <StaggerItem key={label}>
+                  <div className="ap3k-panel flex items-center gap-3 p-4">
+                    <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-rf-green/10 dark:text-rf-green">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{label}</span>
+                  </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
