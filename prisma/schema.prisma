@@ -109,6 +109,8 @@ model Automation {
   matchingMode MATCHING_MODE     @default(CONTAINS)
   triggerMode  String            @default("SPECIFIC_KEYWORD")
   sendPrivateDm Boolean          @default(true)
+  needsReview  Boolean           @default(false)
+  reviewReason String?
   archivedAt   DateTime?
   archivedByAdminEmail String?
   archiveReason String?

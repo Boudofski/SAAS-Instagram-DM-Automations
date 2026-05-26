@@ -10,6 +10,8 @@ import {
 } from "@/lib/campaign-save";
 import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
 import { canActivateCampaign } from "@/actions/usage/queries";
+import { client } from "@/lib/prisma";
+import { refreshInstagramProfileSnapshotForUser } from "@/lib/instagram-profile-snapshot";
 import {
   addKeyWords,
   addListener,
@@ -83,6 +85,27 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
           status: 403,
           data: "Reconnect Instagram before activating campaigns.",
         };
+      }
+      if (!(profile as any)?.integrations?.some((item: any) => item.token && item.instagramId && item.status === "CONNECTED")) {
+        return {
+          status: 403,
+          data: "Connect Instagram before activating campaigns.",
+        };
+      }
+      if (automationId) {
+        const existing = await client.automation.findFirst({
+          where: { id: automationId, User: { clerkId: user.id }, archivedAt: null },
+          select: { needsReview: true, reviewReason: true },
+        });
+        if (existing?.needsReview) {
+          const repaired = await validatePostForReviewedCampaign(profile?.integrations, cleanPayload.post.postid);
+          if (!repaired.ok) {
+            return {
+              status: 403,
+              data: repaired.message,
+            };
+          }
+        }
       }
       const activation = profile?.id
         ? await canActivateCampaign(profile.id, automationId)
@@ -228,6 +251,22 @@ export const updateAutomationName = async (
         return {
           status: 403,
           data: "Reconnect Instagram before activating campaigns.",
+        };
+      }
+      if (!(profile as any)?.integrations?.some((item: any) => item.token && item.instagramId && item.status === "CONNECTED")) {
+        return {
+          status: 403,
+          data: "Connect Instagram before activating campaigns.",
+        };
+      }
+      const existing = await client.automation.findFirst({
+        where: { id: automationId, User: { clerkId: user.id }, archivedAt: null },
+        select: { needsReview: true, reviewReason: true },
+      });
+      if (existing?.needsReview) {
+        return {
+          status: 403,
+          data: existing.reviewReason ?? "Review this campaign before activating.",
         };
       }
       const activation = profile?.id
@@ -382,6 +421,16 @@ export const activateAutomation = async (id: string, status: boolean) => {
   try {
     if (status) {
       const profile = await findUser(user.id);
+      const existing = await client.automation.findFirst({
+        where: { id, User: { clerkId: user.id }, archivedAt: null },
+        select: { needsReview: true, reviewReason: true },
+      });
+      if (existing?.needsReview) {
+        return {
+          status: 403,
+          data: existing.reviewReason ?? "Review this campaign before activating.",
+        };
+      }
       if ((profile as any)?.status === "SUSPENDED") {
         return {
           status: 403,
@@ -392,6 +441,12 @@ export const activateAutomation = async (id: string, status: boolean) => {
         return {
           status: 403,
           data: "Reconnect Instagram before activating campaigns.",
+        };
+      }
+      if (!(profile as any)?.integrations?.some((item: any) => item.token && item.instagramId && item.status === "CONNECTED")) {
+        return {
+          status: 403,
+          data: "Connect Instagram before activating campaigns.",
         };
       }
       const activation = profile?.id
@@ -416,6 +471,87 @@ export const activateAutomation = async (id: string, status: boolean) => {
     return { status: 500, data: "Failed to activate automation" };
   }
 };
+
+export const repairCampaign = async (automationId: string) => {
+  const user = await onCurrentUser();
+
+  try {
+    const [automation, profile] = await Promise.all([
+      client.automation.findFirst({
+        where: { id: automationId, User: { clerkId: user.id }, archivedAt: null },
+        include: { posts: true, keywords: true, listener: true },
+      }),
+      findUser(user.id),
+    ]);
+    if (!automation) return { status: 404, data: "Campaign not found" };
+    const integrationId = profile?.integrations?.[0]?.id;
+    if (integrationId) {
+      try {
+        await refreshInstagramProfileSnapshotForUser(user.id, integrationId, { force: true });
+      } catch {
+        // Profile refresh is helpful for repair, but media validation below decides the outcome.
+      }
+    }
+
+    const postId = automation.posts[0]?.postid;
+    const validAction = Boolean(
+      automation.sendPrivateDm !== false && automation.listener?.prompt?.trim()
+    ) || Boolean(
+      automation.listener?.commentReply?.trim() ||
+      automation.listener?.commentReply2?.trim() ||
+      automation.listener?.commentReply3?.trim()
+    );
+    const validTrigger = automation.triggerMode === "ANY_COMMENT" || automation.keywords.some((keyword) => keyword.word.trim());
+    if (!validAction || !validTrigger) {
+      return { status: 403, data: "Campaign is missing trigger or reply settings." };
+    }
+
+    const postValidation = await validatePostForReviewedCampaign(profile?.integrations, postId);
+    if (!postValidation.ok) {
+      return { status: 409, data: postValidation.message };
+    }
+
+    await client.automation.update({
+      where: { id: automation.id },
+      data: { needsReview: false, reviewReason: null },
+    });
+    return { status: 200, data: "Campaign repaired. You can activate it now." };
+  } catch {
+    return { status: 500, data: "Could not repair campaign." };
+  }
+};
+
+async function validatePostForReviewedCampaign(integrations: any[] | undefined, postId?: string | null) {
+  if (!postId) {
+    return { ok: false, message: "Choose Any Post or a current-account post before reactivating." };
+  }
+  if (postId === "ANY") return { ok: true, message: "Any Post remains valid." };
+
+  const connection = resolveInstagramMediaConnection(integrations);
+  if (!connection.ok) {
+    return { ok: false, message: "Reconnect Instagram before reviewing this campaign." };
+  }
+
+  try {
+    const baseUrl = process.env.INSTAGRAM_BASE_URL || "https://graph.facebook.com/v20.0";
+    const response = await fetch(
+      `${baseUrl}/${connection.instagramBusinessAccountId}/media?fields=id&limit=100`,
+      { headers: { Authorization: `Bearer ${connection.token}` }, cache: "no-store" }
+    );
+    const parsed = await response.json();
+    const ids = Array.isArray(parsed?.data) ? parsed.data.map((item: any) => String(item.id)) : [];
+    if (response.ok && ids.includes(postId)) return { ok: true, message: "Selected post belongs to current account." };
+    return {
+      ok: false,
+      message: "Selected post is not in the current Instagram account media list. Choose Any Post or a fresh current-account post.",
+    };
+  } catch {
+    return {
+      ok: false,
+      message: "Could not verify selected post ownership. Choose Any Post or a fresh current-account post.",
+    };
+  }
+}
 
 export const getAutomationStats = async (automationId: string) => {
   const user = await onCurrentUser();

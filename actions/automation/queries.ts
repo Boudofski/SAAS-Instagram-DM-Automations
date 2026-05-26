@@ -67,6 +67,8 @@ export const createCompleteAutomation = async (
         create: {
           name: payload.name,
           active: payload.active,
+          needsReview: false,
+          reviewReason: null,
           matchingMode: payload.matchingMode,
           triggerMode: payload.triggerMode,
           sendPrivateDm: payload.sendPrivateDm,
@@ -151,7 +153,7 @@ export const updateAutomation = async (
 ) => {
   const automation = await client.automation.findFirst({
     where: { id: automationId, archivedAt: null, User: { clerkId } },
-    select: { id: true, userId: true, User: { select: { status: true, integrations: { select: { status: true, reconnectRequired: true } } } } },
+    select: { id: true, userId: true, needsReview: true, reviewReason: true, User: { select: { status: true, integrations: { select: { status: true, reconnectRequired: true } } } } },
   });
 
   if (!automation) {
@@ -165,6 +167,7 @@ export const updateAutomation = async (
   }
 
   if (update.active === true) {
+    if (automation.needsReview) return null;
     if (automation.User?.status === "SUSPENDED") return null;
     if (automation.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
       return null;
@@ -175,8 +178,9 @@ export const updateAutomation = async (
     where: { id: automation.id },
     data: {
       name: update.name,
-      active: update.active,
-      matchingMode: update.matchingMode,
+        active: update.active,
+        ...(update.active === true ? { needsReview: false, reviewReason: null } : {}),
+        matchingMode: update.matchingMode,
     },
   });
 };
@@ -204,6 +208,8 @@ export const updateCompleteAutomation = async (
       data: {
         name: payload.name,
         active: payload.active,
+        needsReview: false,
+        reviewReason: null,
         matchingMode: payload.matchingMode,
         triggerMode: payload.triggerMode,
         sendPrivateDm: payload.sendPrivateDm,

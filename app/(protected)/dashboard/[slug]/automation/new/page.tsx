@@ -6,7 +6,7 @@ import KeywordInput from "@/components/global/keyword-input";
 import PostPicker from "@/components/global/post-picker";
 import WizardStepper from "@/components/global/wizard-stepper";
 import type { StepStatus } from "@/components/global/wizard-stepper";
-import { useQueryAutomationPosts, useQueryUser } from "@/hooks/user-queries";
+import { useQueryAutomationPosts, useQueryUser, useQueryWebhookHealth } from "@/hooks/user-queries";
 import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { isWeakPublicReply } from "@/lib/campaign-activity-format";
@@ -40,6 +40,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   const editId = searchParams?.edit;
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts, isFetching: postsFetching } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
+  const { data: webhookHealth } = useQueryWebhookHealth();
   const { data: editing } = useQueryAutomations(editId ?? "", Boolean(editId));
   const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
@@ -54,6 +55,16 @@ export default function WizardPage({ params, searchParams }: Props) {
 
   const postList: any[] = posts?.data?.data ?? [];
   const hasInstagramConnection = (user?.data?.integrations?.length ?? 0) > 0;
+  const instagram = user?.data?.integrations?.[0];
+  const messagingCapabilityPending = data.sendPrivateDm && (
+    webhookHealth?.data?.lastFailure?.errorMessage?.includes("dm_capability_missing") ||
+    webhookHealth?.data?.lastFailure?.errorMessage?.includes("code=3")
+  );
+  const reviewWarnings = [
+    data.post?.postid && data.post.postid !== "ANY" ? "Specific Post mode needs media from the currently connected Instagram account." : null,
+    data.sendPrivateDm === false ? "External DM mode: AP3k will not send private DMs." : null,
+    messagingCapabilityPending ? "Private DM is enabled, but Meta messaging capability may still be pending." : null,
+  ].filter(Boolean) as string[];
 
   useEffect(() => {
     if (!editId || loadedEdit || editing?.status !== 200 || !editing.data) return;
@@ -149,6 +160,11 @@ export default function WizardPage({ params, searchParams }: Props) {
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Which post do you want to run this campaign on?
             </p>
+            {instagram?.instagramUsername && (
+              <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
+                Current account: @{instagram.instagramUsername}. Specific posts shown here are refreshed from this account only.
+              </p>
+            )}
             <div className="mb-6">
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
                 Campaign name
@@ -245,9 +261,13 @@ export default function WizardPage({ params, searchParams }: Props) {
                           },
                         })
                       }
-                    />
+                  />
                   </div>
                 )}
+
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                  Specific Post mode needs current-account media. After reconnect, refresh posts or use Any Post.
+                </p>
 
                 <ManualMediaFallback
                   value={manualMedia}
@@ -450,7 +470,9 @@ export default function WizardPage({ params, searchParams }: Props) {
               {(
                 [
                   { label: "Name",         value: data.campaignName || "Untitled campaign",                                           step: 1 as const },
+                  { label: "Account",      value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account connected", step: 1 as const },
                   { label: "Post",         value: data.post?.postid === "ANY" ? "Any post" : (data.post?.caption?.slice(0, 60) ?? "Selected post"), step: 1 as const },
+                  { label: "Post scope",   value: data.post?.postid === "ANY" ? "Any Post" : data.post?.postid ? `Selected post ID ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger",      value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword",           step: 2 as const },
                   { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.join(", "),   step: 2 as const },
                   { label: "Private DM",   value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally",             step: 3 as const },
@@ -486,6 +508,14 @@ export default function WizardPage({ params, searchParams }: Props) {
                             rounded-lg px-4 py-3 mb-4">
                 {error}
               </p>
+            )}
+            {reviewWarnings.length > 0 && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                <p className="font-black">Health warnings</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {reviewWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+                </ul>
+              </div>
             )}
 
             <button
@@ -529,6 +559,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           </h2>
           <div className="mt-4 space-y-3 text-sm">
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
+            <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} />
             <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.join(", ") : "None yet"} />
             <PreviewRow label="Private DM" value={data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />

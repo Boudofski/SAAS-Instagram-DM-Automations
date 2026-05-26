@@ -83,6 +83,7 @@ export default function AutomationTable({
             const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
             const isAnyComment = automation.triggerMode === "ANY_COMMENT";
             const mode = getCampaignModeLabel(automation.sendPrivateDm === false);
+            const status = campaignStatus(automation);
             return (
               <article key={automation.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-[#101827]">
                 <div className="flex items-start gap-3">
@@ -102,13 +103,9 @@ export default function AutomationTable({
                       {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword"} · {mode.full}
                     </p>
                   </div>
-                  <span className={[
-                    "shrink-0 rounded-full px-2.5 py-1 text-xs font-black",
-                    automation.active ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-                  ].join(" ")}>
-                    {automation.active ? "Live" : "Paused"}
-                  </span>
+                  <StatusPill status={status} />
                 </div>
+                <CampaignBadges automation={automation} />
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
                     <p className="text-xs text-slate-500 dark:text-slate-400">Runs</p>
@@ -120,7 +117,9 @@ export default function AutomationTable({
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <ActionLink href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}>Edit</ActionLink>
+                  <ActionLink href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}>
+                    {automation.needsReview || automation.stalePost ? "Review campaign" : "Edit"}
+                  </ActionLink>
                   <ActionLink href={`/dashboard/${slug}/automation/${automation.id}`}>View</ActionLink>
                   <ActionButton disabled={isPending} onClick={() => startTransition(() => { void activateAutomation(automation.id, !Boolean(automation.active)).then(() => router.refresh()); })}>
                     {automation.active ? "Pause" : "Activate"}
@@ -176,6 +175,7 @@ export default function AutomationTable({
                 const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
                 const isAnyComment = automation.triggerMode === "ANY_COMMENT";
                 const mode = getCampaignModeLabel(automation.sendPrivateDm === false);
+                const status = campaignStatus(automation);
 
                 return (
                   <tr key={automation.id} className="text-sm text-slate-700 dark:text-slate-300">
@@ -196,6 +196,7 @@ export default function AutomationTable({
                           <p className="text-xs text-slate-500 dark:text-slate-400">
                             {mode.full}
                           </p>
+                          <CampaignBadges automation={automation} compact />
                         </div>
                       </div>
                     </td>
@@ -225,17 +226,12 @@ export default function AutomationTable({
                     <td className="px-3 py-4 font-black text-slate-950 dark:text-white">{runs}</td>
                     <td className="px-3 py-4 font-black text-slate-950 dark:text-white">{leads}</td>
                     <td className="px-3 py-4">
-                      <span className={[
-                        "rounded-full px-2.5 py-1 text-xs font-black",
-                        automation.active ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-                      ].join(" ")}>
-                        {automation.active ? "Live" : "Paused"}
-                      </span>
+                      <StatusPill status={status} />
                     </td>
                     <td className="px-3 py-4">
                       <div className="flex flex-wrap justify-end gap-1.5">
                         <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
-                          Edit
+                          {automation.needsReview || automation.stalePost ? "Review campaign" : "Edit"}
                         </Link>
                         <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="whitespace-nowrap rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                           View
@@ -284,6 +280,57 @@ export default function AutomationTable({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function campaignStatus(automation: any) {
+  if (automation.archivedAt) return "Archived";
+  if (automation.needsReview) return "Needs review";
+  if (!automation.listener || !automation.posts?.length) return "Draft";
+  return automation.active ? "Live" : "Paused";
+}
+
+function StatusPill({ status }: { status: string }) {
+  const classes =
+    status === "Live"
+      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+      : status === "Needs review"
+        ? "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+        : status === "Draft"
+          ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+          : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300";
+  return <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${classes}`}>{status}</span>;
+}
+
+function CampaignBadges({ automation, compact }: { automation: any; compact?: boolean }) {
+  const hasPublicReply = Boolean(
+    automation.listener?.commentReply ||
+    automation.listener?.commentReply2 ||
+    automation.listener?.commentReply3
+  );
+  const badges = [
+    automation.currentAccountLabel ? { label: automation.currentAccountLabel, tone: "slate" } : null,
+    automation.stalePost ? { label: "Stale post", tone: "red" } : null,
+    automation.needsReview ? { label: "Needs review", tone: "red" } : null,
+    automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : { label: "AP3k DM", tone: "green" },
+    { label: hasPublicReply ? "Public reply on" : "Public reply off", tone: hasPublicReply ? "blue" : "slate" },
+  ].filter(Boolean) as { label: string; tone: string }[];
+
+  return (
+    <div className={compact ? "mt-1 flex flex-wrap gap-1" : "mt-3 flex flex-wrap gap-1.5"}>
+      {badges.map((badge) => (
+        <span key={badge.label} className={[
+          "rounded-full border px-2 py-0.5 text-[10px] font-black uppercase",
+          badge.tone === "red" ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300" :
+          badge.tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" :
+          badge.tone === "green" ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" :
+          badge.tone === "blue" ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200" :
+          "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
+        ].join(" ")}>
+          {badge.label}
+        </span>
+      ))}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import EmptyState from "@/components/global/empty-state";
 import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import { getCampaignTableMetrics } from "@/lib/dashboard-metrics";
+import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import Link from "next/link";
 
 type Props = { params: { slug: string } };
@@ -16,9 +17,16 @@ export default async function AutomationsPage({ params }: Props) {
   const metrics = userResult.status === 200 && userResult.data?.id
     ? await getCampaignTableMetrics(userResult.data.id)
     : {};
+  const currentIntegration = userResult.status === 200 ? userResult.data?.integrations?.[0] : null;
+  const bindingDiagnostics = buildCampaignBindingDiagnostics({
+    integration: currentIntegration,
+    campaigns: automations as any[],
+  });
   const automationsWithMetrics = automations.map((automation: any) => ({
     ...automation,
     metrics: metrics[automation.id] ?? { runs: 0, leads: automation._count?.leads ?? 0 },
+    currentAccountLabel: currentIntegration?.instagramUsername ? `@${currentIntegration.instagramUsername}` : "Current account",
+    stalePost: bindingDiagnostics.find((item) => item.campaignId === automation.id)?.stale ?? false,
   }));
 
   return (

@@ -13,7 +13,7 @@ import {
 import { formatSnapshotRefreshTime, getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
-import { dashboardNoCommentDiagnosis } from "@/lib/account-webhook-diagnostics";
+import { buildCampaignBindingDiagnostics, dashboardNoCommentDiagnosis } from "@/lib/account-webhook-diagnostics";
 import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
 import { groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
@@ -73,9 +73,15 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const profileSnapshotStatus = getProfileSnapshotStatus(profileSnapshot);
   const displayInstagramUsername = profileSnapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = profileSnapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
+  const bindingDiagnostics = buildCampaignBindingDiagnostics({
+    integration: instagram,
+    campaigns: automations as any[],
+  });
   const automationsWithMetrics = automations.map((automation) => ({
     ...automation,
     metrics: campaignMetrics[automation.id] ?? { runs: 0, leads: automation._count?.leads ?? 0 },
+    currentAccountLabel: displayInstagramUsername ? `@${displayInstagramUsername}` : "Current account",
+    stalePost: bindingDiagnostics.find((item) => item.campaignId === automation.id)?.stale ?? false,
   }));
   const recentActivity = recentResult.status === 200 ? groupCampaignActivity(recentResult.data as any[], { limit: 20 }) : [];
   const planLabel = usage?.planLabel ?? (userResult.data?.subscription?.plan === "PRO" ? "Creator" : "Free");
@@ -86,6 +92,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     username: displayInstagramUsername,
     status: accountDiagnostics?.delivery.status ?? "no_delivery",
   });
+  const needsReviewCampaigns = automations.filter((automation: any) => automation.needsReview);
 
   const checklistItems = [
     { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/account` },
@@ -188,6 +195,15 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {needsReviewCampaigns.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+          <p>Instagram account changed. Review campaigns before reactivating.</p>
+          <p className="mt-1 font-semibold">
+            {needsReviewCampaigns[0]?.reviewReason ?? "Some campaigns were paused and marked Needs review after reconnect."}
+          </p>
         </div>
       )}
 

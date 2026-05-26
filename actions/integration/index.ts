@@ -26,6 +26,7 @@ import {
 } from "./queries";
 import { dashboardPath } from "@/lib/dashboard";
 import { planReconnectCleanup } from "@/lib/account-webhook-diagnostics";
+import { planReconnectCampaignImpact } from "@/lib/campaign-health";
 import { client } from "@/lib/prisma";
 
 const REQUIRED_META_BUSINESS_SCOPES = [
@@ -91,6 +92,50 @@ async function attemptWebhookSubscription(pageId: string, pageToken: string) {
       requestedFields,
     };
   }
+}
+
+async function applyReconnectCampaignImpact(input: {
+  clerkId: string;
+  previousInstagramId?: string | null;
+  previousUsername?: string | null;
+  nextInstagramId?: string | null;
+  nextUsername?: string | null;
+}) {
+  const dbUser = await client.user.findUnique({
+    where: { clerkId: input.clerkId },
+    select: {
+      id: true,
+      automations: {
+        where: { archivedAt: null },
+        select: { id: true, active: true, posts: { select: { postid: true } } },
+      },
+    },
+  });
+  if (!dbUser) return null;
+
+  const impact = planReconnectCampaignImpact({
+    previousInstagramId: input.previousInstagramId,
+    previousUsername: input.previousUsername,
+    nextInstagramId: input.nextInstagramId,
+    nextUsername: input.nextUsername,
+    campaigns: dbUser.automations,
+  });
+  if (!impact.changed || impact.affectedCampaignIds.length === 0) return impact;
+
+  await client.automation.updateMany({
+    where: { userId: dbUser.id, id: { in: impact.affectedCampaignIds } },
+    data: {
+      active: false,
+      needsReview: true,
+      reviewReason: impact.reason,
+    },
+  });
+  console.log("[oauth] reconnect impact applied", {
+    accountChanged: impact.changed,
+    affectedCampaigns: impact.affectedCampaignIds.length,
+    pausedCampaigns: impact.pauseCampaignIds.length,
+  });
+  return impact;
 }
 
 function getOAuthClientId() {
@@ -308,6 +353,13 @@ export const onIntegrate = async (code: string) => {
     );
 
     if (existing) {
+      const reconnectImpact = await applyReconnectCampaignImpact({
+        clerkId: user.id,
+        previousInstagramId: existing.instagramId,
+        previousUsername: existing.instagramUsername,
+        nextInstagramId: resolved.instagramBusinessAccountId,
+        nextUsername: resolved.instagramUsername,
+      });
       const update = await updateIntegration(
         resolved.pageAccessToken,
         new Date(expireDate),
@@ -341,6 +393,7 @@ export const onIntegrate = async (code: string) => {
           lastname: user.lastName,
           clerkId: user.id,
           integrationId: update.id,
+          reconnectImpact,
         },
       };
     }
@@ -626,6 +679,13 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
     const expireDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
     if (existing) {
+      await applyReconnectCampaignImpact({
+        clerkId: user.id,
+        previousInstagramId: existing.instagramId,
+        previousUsername: existing.instagramUsername,
+        nextInstagramId: selected.instagramBusinessAccountId,
+        nextUsername: selected.instagramUsername,
+      });
       await updateIntegration(
         selected.pageAccessToken,
         expireDate,

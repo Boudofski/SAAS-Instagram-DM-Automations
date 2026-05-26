@@ -4,6 +4,7 @@ import {
   getProfilePosts,
 } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
+import { getCurrentWebhookHealth } from "@/actions/integration";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 
@@ -41,6 +42,15 @@ export const useQueryAutomationPosts = () => {
   return useQuery({
     queryKey: ["instagram-media", userId],
     queryFn: fetchPosts,
+    enabled: Boolean(userId),
+  });
+};
+
+export const useQueryWebhookHealth = () => {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ["webhook-health", userId],
+    queryFn: getCurrentWebhookHealth,
     enabled: Boolean(userId),
   });
 };

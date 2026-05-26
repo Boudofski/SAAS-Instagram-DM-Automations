@@ -3,6 +3,8 @@ import ActiveAutomationButton from "@/components/global/active-automation-button
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
+import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
+import { assessCampaignSetupHealth } from "@/lib/campaign-health";
 import { groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,6 +51,24 @@ export default async function CampaignDetailPage({ params }: Props) {
     campaigns: [automation],
   })[0];
   const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
+  const accountDiagnostics = connectedIntegration?.id
+    ? await getAccountWebhookDiagnosticsForIntegration(connectedIntegration.id)
+    : null;
+  const health = assessCampaignSetupHealth({
+    connectedAccount: connectedIntegration ? {
+      id: connectedIntegration.id,
+      username: connectedIntegration.instagramUsername,
+      instagramId: connectedIntegration.instagramId,
+      status: connectedIntegration.status,
+      tokenPresent: Boolean(connectedIntegration.token),
+      reconnectRequired: connectedIntegration.reconnectRequired,
+    } : null,
+    campaign: automation,
+    webhookStatus: accountDiagnostics?.delivery.status,
+    messagingCapabilityPending: accountDiagnostics?.delivery.status === "only_messaging_active",
+  });
+  const lastRealComment = activity.find((item: any) => item.type === "REAL_COMMENT_EVENT" || item.type === "COMMENT_WEBHOOK_RECEIVED");
+  const lastAction = activity.find((item: any) => String(item.type).includes("SENT") || String(item.type).includes("FAILED") || item.status === "SENT" || item.status === "FAILED");
 
   const replyRate =
     stats && stats.commentsReceived > 0
@@ -80,17 +100,61 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div className="flex items-center gap-2 mt-2">
             <Badge
               className={
-                automation.active
+                health.status === "Live"
                   ? "bg-rf-green/10 text-rf-green border-rf-green/25"
-                  : "bg-rf-amber/10 text-rf-amber border-rf-amber/25"
+                  : health.status === "Needs review"
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : health.status === "Draft"
+                      ? "border-blue-200 bg-blue-50 text-blue-700"
+                      : "bg-rf-amber/10 text-rf-amber border-rf-amber/25"
               }
               variant="outline"
             >
-              {automation.active ? "● Live" : "● Paused"}
+              ● {health.status}
             </Badge>
           </div>
         </div>
-        <ActiveAutomationButton id={params.id} />
+        <ActiveAutomationButton
+          id={params.id}
+          disabled={!health.okToActivate && !automation.active}
+          disabledReason={!health.okToActivate && !automation.active ? health.blockers[0] : null}
+          showRepair={Boolean(automation.needsReview)}
+        />
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Campaign health</p>
+            <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">{health.status}</h2>
+          </div>
+          {health.okToActivate ? <Badge className="w-fit border-emerald-200 bg-emerald-50 text-emerald-700">Activation ready</Badge> : <Badge className="w-fit border-amber-200 bg-amber-50 text-amber-800">Review required</Badge>}
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <HealthRow label="Connected account" value={connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Not connected"} ok={Boolean(connectedIntegration?.instagramId)} />
+          <HealthRow label="Selected post/media" value={automation.posts?.[0]?.postid === "ANY" ? "Any Post" : `${automation.posts?.[0]?.postid ?? "Missing"} · ${health.selectedPostStatus}`} ok={health.selectedPostStatus !== "stale" && health.selectedPostStatus !== "missing"} />
+          <HealthRow label="Trigger" value={isAnyComment ? "Any comment" : automation.keywords?.length ? "Keyword configured" : "Missing keyword"} ok={isAnyComment || Boolean(automation.keywords?.length)} />
+          <HealthRow label="Public reply" value={hasPublicReply ? "On" : "Off"} ok={hasPublicReply || sendPrivateDm} />
+          <HealthRow label="Private DM" value={sendPrivateDm ? "AP3k DM" : "External DM mode"} ok={!sendPrivateDm || Boolean(automation.listener?.prompt)} />
+          <HealthRow label="Last real comment" value={lastRealComment ? new Date(lastRealComment.createdAt).toLocaleString() : "None yet"} ok={Boolean(lastRealComment)} />
+          <HealthRow label="Last action result" value={lastAction ? `${lastAction.type}${lastAction.status ? ` · ${lastAction.status}` : ""}` : "None yet"} ok={!lastAction || lastAction.status !== "FAILED"} />
+        </div>
+        {(health.blockers.length > 0 || health.warnings.length > 0) && (
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {health.blockers.length > 0 && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100">
+                <p className="font-black">Blocked</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">{health.blockers.map((item) => <li key={item}>{item}</li>)}</ul>
+              </div>
+            )}
+            {health.warnings.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                <p className="font-black">Warnings</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">{health.warnings.map((item) => <li key={item}>{item}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {isIncomplete && (
@@ -201,7 +265,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             Settings
           </p>
           <div className="mt-5 space-y-4">
-            <SettingsRow label="Status" value={automation.active ? "Live" : "Paused"} />
+            <SettingsRow label="Status" value={health.status} />
             <SettingsRow label="Trigger mode" value={isAnyComment ? "Any comment" : "Specific keyword"} />
             <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
             <SettingsRow label="Public reply" value={modeLabels.publicReply} />
@@ -529,6 +593,15 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
+    </div>
+  );
+}
+
+function HealthRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className={["mt-1 text-sm font-black", ok ? "text-slate-950 dark:text-white" : "text-amber-700 dark:text-amber-300"].join(" ")}>{value}</p>
     </div>
   );
 }

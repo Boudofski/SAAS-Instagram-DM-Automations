@@ -395,6 +395,7 @@ export async function setCampaignActiveAction(formData: FormData) {
       });
       if (!before) throw new Error("Campaign not found.");
       if (desired) {
+        if (before.needsReview) throw new Error(before.reviewReason ?? "Campaign needs review before activation.");
         if (before.archivedAt) throw new Error("Archived campaigns cannot be activated.");
         if (before.User?.status === "SUSPENDED") throw new Error("Suspended users cannot activate campaigns.");
         if (before.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
@@ -436,6 +437,8 @@ export async function duplicateCampaignAction(formData: FormData) {
           userId: before.userId,
           name: `${before.name || "Untitled campaign"} copy`,
           active: false,
+          needsReview: false,
+          reviewReason: null,
           matchingMode: before.matchingMode,
           triggerMode: before.triggerMode,
           sendPrivateDm: before.sendPrivateDm,
