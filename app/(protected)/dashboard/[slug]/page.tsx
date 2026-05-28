@@ -15,7 +15,8 @@ import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { buildCampaignBindingDiagnostics, dashboardNoCommentDiagnosis } from "@/lib/account-webhook-diagnostics";
 import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
-import { groupCampaignActivity } from "@/lib/campaign-activity-format";
+import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -53,6 +54,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       : [];
 
   const isEmpty = automations.length === 0;
+  const appReviewMode = isAppReviewMode();
   const instagram = userResult.data?.integrations?.[0];
   const tokenExpired =
     instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now();
@@ -83,7 +85,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     currentAccountLabel: displayInstagramUsername ? `@${displayInstagramUsername}` : "Current account",
     stalePost: bindingDiagnostics.find((item) => item.campaignId === automation.id)?.stale ?? false,
   }));
-  const recentActivity = recentResult.status === 200 ? groupCampaignActivity(recentResult.data as any[], { limit: 20 }) : [];
+  const groupedActivity = recentResult.status === 200 ? groupCampaignActivity(recentResult.data as any[], { limit: 20 }) : [];
+  const recentActivity = appReviewMode ? filterAppReviewActivity(groupedActivity, 20) : groupedActivity;
   const planLabel = usage?.planLabel ?? (userResult.data?.subscription?.plan === "PRO" ? "Creator" : "Free");
   const metrics = dashboardStats?.current ?? null;
   const changes = dashboardStats?.changes ?? null;
@@ -145,7 +148,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Check connection, webhook delivery, campaign status, comments, leads, and the next action to take.
+            {appReviewMode
+              ? "Check your Instagram connection, active campaigns, real comments, public replies, and captured leads."
+              : "Check connection, webhook delivery, campaign status, comments, leads, and the next action to take."}
           </p>
         </div>
         <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button inline-flex w-full justify-center px-5 py-2.5 text-sm sm:w-auto">
@@ -328,8 +333,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           state={automations.some((automation: any) => automation.active) ? "ok" : "warn"}
         />
         <HealthPill
-          label={hasExternalDmCampaign ? "External DM mode" : "Private DM"}
-          detail={hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval"}
+          label={appReviewMode ? "Public replies" : hasExternalDmCampaign ? "External DM mode" : "Private DM"}
+          detail={appReviewMode ? "Private replies pending Meta approval" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval"}
           state={hasExternalDmCampaign ? "ok" : "warn"}
         />
       </div>
@@ -369,7 +374,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-950 dark:text-white">Recent Activity</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Latest 20 grouped interactions on this account — comments, public replies, skipped actions, and DMs.
+              {appReviewMode
+                ? "Review-friendly activity: comments received, triggers matched, public replies sent, and leads captured."
+                : "Latest 20 grouped interactions on this account — comments, public replies, skipped actions, and DMs."}
             </p>
           </div>
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>

@@ -314,6 +314,35 @@ export function groupCampaignActivity(
     .slice(0, options.limit ?? 20);
 }
 
+export function isAppReviewFriendlyActivity(item: GroupedActivity) {
+  const text = `${item.title} ${item.subtitle} ${item.badge}`.toLowerCase();
+  const blockedTerms = [
+    "no trigger",
+    "skipped",
+    "failed",
+    "blocked",
+    "ignored",
+    "duplicate",
+    "capability",
+    "private dm",
+    "monthly reply limit",
+    "loop guard",
+  ];
+
+  if (blockedTerms.some((term) => text.includes(term))) return false;
+  return (
+    item.steps.commentReceived ||
+    item.steps.triggerMatched ||
+    item.steps.publicReply === "sent" ||
+    item.tone === "green" ||
+    item.tone === "blue"
+  );
+}
+
+export function filterAppReviewActivity(items: GroupedActivity[], limit = 20) {
+  return items.filter(isAppReviewFriendlyActivity).slice(0, limit);
+}
+
 function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabled?: boolean): GroupedActivity {
   const newest = [...items].sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt))[0];
   const metas = items.map((item) => metaRecord(item.meta));

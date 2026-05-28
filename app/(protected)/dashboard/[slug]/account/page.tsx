@@ -16,6 +16,7 @@ import {
 } from "@/lib/instagram-profile-snapshot";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { AlertTriangle, CheckCircle2, ExternalLink, Info, Lock, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
@@ -25,6 +26,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const instagram = user?.integrations?.[0];
+  const appReviewMode = isAppReviewMode();
   const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
   const period = parseDashboardPeriod(searchParams?.period);
   const periodRange = getPeriodRange(period);
@@ -50,7 +52,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const connected = Boolean(instagram?.instagramId);
-  const showProfileSyncDebug = canShowProfileSyncDebug({ clerkId: user?.clerkId, email: user?.email, connected });
+  const showProfileSyncDebug = !appReviewMode && canShowProfileSyncDebug({ clerkId: user?.clerkId, email: user?.email, connected });
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
   const statusTone = tokenExpired ? "amber" : connected ? "green" : "slate";
@@ -71,7 +73,15 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionHeader label="Profile" />
-          <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
+          {appReviewMode ? (
+            !connected && (
+              <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm">
+                Connect Instagram
+              </Link>
+            )
+          ) : (
+            <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
+          )}
         </div>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-5">
@@ -139,14 +149,30 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
               </div>
             </div>
           </div>
-          <div className="grid gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 sm:min-w-[260px]">
-            <MetaIdRow label="Instagram ID" value={instagram?.instagramId} />
-            <MetaIdRow label="Page ID" value={instagram?.pageId} />
-            <MetaIdRow label="Business ID" value={instagram?.businessId} />
-          </div>
+          {!appReviewMode && (
+            <div className="grid gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 sm:min-w-[260px]">
+              <MetaIdRow label="Instagram ID" value={instagram?.instagramId} />
+              <MetaIdRow label="Page ID" value={instagram?.pageId} />
+              <MetaIdRow label="Business ID" value={instagram?.businessId} />
+            </div>
+          )}
         </div>
       </section>
 
+      {appReviewMode && (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ReviewStatusCard label="Instagram connected" value={connected ? "Connected" : "Connect Instagram"} ok={connected} />
+          <ReviewStatusCard label="Comments active" value={connected ? "Ready to receive comments" : "Connect first"} ok={connected} />
+          <ReviewStatusCard label="Public replies active" value="Available with comment campaigns" ok={connected} />
+          <ReviewStatusCard
+            label="Private replies pending Meta approval"
+            value="Your Instagram account is connected. AP3k can receive comments and send public replies. Private replies become available after Meta approves Instagram messaging."
+            ok={false}
+          />
+        </section>
+      )}
+
+      {!appReviewMode && (
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionHeader label="Stats" helper={`Real AP3k activity for this account · ${periodRange.label}. Unavailable metrics are not estimated.`} />
@@ -171,7 +197,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           )}
         </div>
       </section>
+      )}
 
+      {!appReviewMode && (
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -225,7 +253,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           </div>
         )}
       </section>
+      )}
 
+      {!appReviewMode && (
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <SectionHeader label="Connected account repair checklist" />
         <ol className="mt-5 flex flex-col gap-3">
@@ -247,7 +277,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           ))}
         </ol>
       </section>
+      )}
 
+      {!appReviewMode && (
       <section className="rounded-2xl border border-red-200 bg-red-50/80 p-5 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-6">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200 bg-white text-red-600 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-300">
@@ -268,6 +300,19 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           </div>
         </div>
       </section>
+      )}
+    </div>
+  );
+}
+
+function ReviewStatusCard({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.05]">
+      <div className="mb-3 flex items-center gap-2">
+        <span className={["h-2.5 w-2.5 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500"].join(" ")} />
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      </div>
+      <p className="text-sm font-bold leading-relaxed text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }

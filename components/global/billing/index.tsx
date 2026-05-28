@@ -1,6 +1,7 @@
 "use client";
 
 import { formatConnectedAccountsHelper, formatUsageMetricValue, isUnlimited, usageTone, type UsageSummary } from "@/lib/plan-limits";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import PaymentCard from "./payment-card";
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
 
 function Billing({ current = "FREE", usage }: Props) {
   const planLabel = usage?.planLabel ?? (current === "PRO" ? "Creator" : "Free");
+  const appReviewMode = isAppReviewMode();
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -19,7 +21,9 @@ function Billing({ current = "FREE", usage }: Props) {
           Plans &amp; Usage
         </h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          Free for testing. Creator for serious campaigns. Agency for multi-account teams.
+          {appReviewMode
+            ? "Free is for testing. Creator is for production campaigns."
+            : "Free for testing. Creator for serious campaigns. Agency for multi-account teams."}
         </p>
       </div>
       {usage && (
@@ -54,10 +58,10 @@ function Billing({ current = "FREE", usage }: Props) {
           )}
         </div>
       )}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className={appReviewMode ? "grid gap-5 lg:grid-cols-2" : "grid gap-5 lg:grid-cols-3"}>
         <PaymentCard label="FREE" current={current} />
         <PaymentCard label="PRO" current={current} />
-        <PaymentCard label="AGENCY" current={current} />
+        {!appReviewMode && <PaymentCard label="AGENCY" current={current} />}
       </div>
     </div>
   );

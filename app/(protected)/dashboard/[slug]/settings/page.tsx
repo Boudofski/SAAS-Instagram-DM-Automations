@@ -1,6 +1,7 @@
 import ThemeToggle from "@/components/global/theme-toggle";
 import { onUserInfo } from "@/actions/user";
 import { getAccountDangerZoneState, getEmailSettingsState, getMcpAccessTokenState, getPasswordSettingsState } from "@/lib/settings-safety";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { SignOutButton } from "@clerk/nextjs";
 import { KeyRound, Lock, Mail, Palette, ShieldAlert, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
@@ -12,6 +13,7 @@ async function SettingsPage() {
   const passwordState = getPasswordSettingsState();
   const mcpState = getMcpAccessTokenState();
   const dangerState = getAccountDangerZoneState();
+  const appReviewMode = isAppReviewMode();
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -64,6 +66,7 @@ async function SettingsPage() {
         </div>
       </SettingsSection>
 
+      {!appReviewMode && (
       <SettingsSection icon={<Sparkles className="h-4.5 w-4.5" />} label="MCP / Personal Access Tokens">
         <div className="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/[0.07] sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -75,6 +78,7 @@ async function SettingsPage() {
           <span className="ap3k-badge ap3k-badge-amber shrink-0">{mcpState.badge}</span>
         </div>
       </SettingsSection>
+      )}
 
       <section className="rounded-2xl border border-red-200 bg-red-50/80 p-5 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-6">
         <div className="flex items-start gap-3">

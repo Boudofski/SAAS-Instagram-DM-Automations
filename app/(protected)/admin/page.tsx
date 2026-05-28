@@ -39,6 +39,7 @@ import {
   stripeCustomerDashboardUrl,
 } from "@/lib/admin-control-center";
 import { requireOwnerAdmin } from "@/lib/admin";
+import { APP_REVIEW_SUBMISSION_NOTES } from "@/lib/app-review-mode";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
 import {
   getAccountWebhookDiagnosticsForIntegration,
@@ -1355,6 +1356,10 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{purpose}</p>
                     <p className="mt-3 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Review evidence</p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Show account connection, comment webhook receipt, public reply attempt, and private DM result or Meta code=3.</p>
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
+                      <p className="font-black">Meta submission notes</p>
+                      <p className="mt-1">{APP_REVIEW_SUBMISSION_NOTES}</p>
+                    </div>
                   </div>
                 ))}
               </div>

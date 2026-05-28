@@ -2,6 +2,7 @@ import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/g
 import PricingCard from "@/components/global/pricing-card";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
@@ -94,6 +95,7 @@ const STEPS = [
 ] as const;
 
 export default async function LandingPage() {
+  const appReviewMode = isAppReviewMode();
   const authUser = await currentUser();
   const profile = authUser
     ? await client.user.findUnique({
@@ -103,6 +105,39 @@ export default async function LandingPage() {
     : null;
   const redirectTo = getAuthenticatedLandingRedirect(authUser, profile);
   if (redirectTo) redirect(redirectTo);
+
+  const plans = appReviewMode ? PLANS.filter((plan) => plan.tier !== "Agency") : PLANS;
+  const features = appReviewMode
+    ? [
+        { icon: MessageCircle, title: "Official Meta Login", desc: "Connect an Instagram Business or Creator account through Meta Login." },
+        { icon: Sparkles, title: "Comment automation", desc: "Receive real Instagram comments and match campaign keywords." },
+        { icon: Reply, title: "Public replies", desc: "Send public replies through official Meta APIs." },
+        { icon: TrendingUp, title: "Lead capture", desc: "Track matched commenters and campaign activity inside AP3k." },
+      ] as const
+    : FEATURES;
+  const proof = appReviewMode
+    ? [
+        ["Meta Login", "Official Meta Login", "bg-rf-orange/10 text-rf-orange"],
+        ["Instagram", "Business/Creator connection", "bg-rf-pink/10 text-rf-magenta"],
+        ["Replies", "Public replies", "bg-rf-purple/10 text-rf-purple"],
+        ["Tracking", "Activity and leads", "bg-rf-indigo/10 text-rf-indigo"],
+      ] as const
+    : PROOF;
+  const steps = appReviewMode
+    ? [
+        ["01", "Connect Instagram", "Use Official Meta Login for an Instagram Business or Creator account."],
+        ["02", "Create a campaign", "Choose a post, add a keyword trigger, and enable public reply mode."],
+        ["03", "Test a real comment", "Comment from another Instagram account so AP3k receives the event."],
+        ["04", "Track results", "Confirm public reply sent, activity recorded, and lead captured."],
+      ] as const
+    : STEPS;
+  const examples = appReviewMode
+    ? [
+        { comment: "GUIDE", action: "Public reply sent and lead captured", color: "text-rf-pink" },
+        { comment: "PRICE", action: "Pricing interest tracked with a public reply", color: "text-rf-purple" },
+        { comment: "BOOK", action: "Booking interest captured as a lead", color: "text-rf-blue" },
+      ] as const
+    : EXAMPLES;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
@@ -127,7 +162,9 @@ export default async function LandingPage() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-                Turn Instagram comments into leads automatically — using public replies, lead capture, and official Meta workflows. Private DMs available after Meta messaging approval.
+                {appReviewMode
+                  ? "Launch Instagram comment automations that receive real comments, match keywords, send public replies, and capture leads through official Meta APIs."
+                  : "Turn Instagram comments into leads automatically — using public replies, lead capture, and official Meta workflows. Private DMs available after Meta messaging approval."}
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -140,7 +177,7 @@ export default async function LandingPage() {
               </div>
 
               <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                {PROOF.map(([num, label, accent]) => (
+                {proof.map(([num, label, accent]) => (
                   <div key={label} className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)] backdrop-blur dark:border-white/[0.12] dark:bg-[#111827]">
                     <div className={`mb-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${accent}`}>{num}</div>
                     <div className="text-xs font-bold text-slate-600 dark:text-rf-muted">{label}</div>
@@ -190,7 +227,9 @@ export default async function LandingPage() {
                         <MessageCircle className="h-4 w-4" /> Public reply sent
                       </div>
                       <p className="text-sm leading-relaxed">
-                        Hey Sarah, the guide is ready. Private replies can follow when Meta messaging is enabled.
+                        {appReviewMode
+                          ? "Hey Sarah, the guide is ready. We captured your request."
+                          : "Hey Sarah, the guide is ready. Private replies can follow when Meta messaging is enabled."}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 rounded-2xl border border-rf-green/20 bg-rf-green/10 p-4">
@@ -209,7 +248,7 @@ export default async function LandingPage() {
 
         <section className="border-y border-slate-200 bg-white/50 px-4 py-8 backdrop-blur dark:border-white/10 dark:bg-rf-surface/40 sm:px-8 lg:px-16">
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
-            {EXAMPLES.map((ex) => (
+            {examples.map((ex) => (
               <HoverLift key={ex.comment}>
                 <div className="ap3k-card rounded-2xl p-5">
                   <span className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-sm font-black ${ex.color}`}>
@@ -230,11 +269,13 @@ export default async function LandingPage() {
                 Smooth automation for creators who move fast.
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-rf-muted">
-                Pick your post, add keywords, write public replies, and enable private reply workflows when Meta messaging is approved.
+                {appReviewMode
+                  ? "Pick your post, add keywords, send public replies, and track campaign activity."
+                  : "Pick your post, add keywords, write public replies, and enable private reply workflows when Meta messaging is approved."}
               </p>
             </FadeIn>
             <StaggerContainer className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((f) => {
+              {features.map((f) => {
                 const Icon = f.icon;
                 return (
                   <StaggerItem key={f.title}>
@@ -259,7 +300,7 @@ export default async function LandingPage() {
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">From comment to tracked outcome.</h2>
             </FadeIn>
             <StaggerContainer className="grid gap-4 md:grid-cols-4">
-              {STEPS.map(([num, title, desc]) => (
+              {steps.map(([num, title, desc]) => (
                 <StaggerItem key={num}>
                   <div className="ap3k-panel p-5">
                     <p className="font-mono text-xs font-black text-rf-pink">{num}</p>
@@ -276,7 +317,7 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-10 text-center">
               <p className="ap3k-kicker">Trust and compliance</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Built for official Meta review.</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Built with official Meta APIs.</h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
                 No scraping, no password sharing, no hidden browser automation. AP3k uses Facebook Login for Business and official Meta APIs throughout.
               </p>
@@ -311,7 +352,7 @@ export default async function LandingPage() {
               <p className="mt-4 text-slate-600 dark:text-rf-muted">No hidden fees. Cancel any time.</p>
             </FadeIn>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {PLANS.map((p, index) => (
+              {plans.map((p, index) => (
                 <FadeIn key={p.tier} delay={index * 0.05}>
                   <PricingCard {...p} />
                 </FadeIn>

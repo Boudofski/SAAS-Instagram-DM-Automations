@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,7 @@ export default function AutomationTable({
   const [sort, setSort] = useState<"newest" | "active" | "name">("newest");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const appReviewMode = isAppReviewMode();
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -104,7 +106,7 @@ export default function AutomationTable({
             const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
             const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
             const isAnyComment = automation.triggerMode === "ANY_COMMENT";
-            const mode = getCampaignModeLabel(automation.sendPrivateDm === false);
+            const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode);
             const status = campaignStatus(automation);
             return (
               <article key={automation.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-[#101827]">
@@ -127,7 +129,7 @@ export default function AutomationTable({
                   </div>
                   <StatusPill status={status} />
                 </div>
-                <CampaignBadges automation={automation} />
+                <CampaignBadges automation={automation} appReviewMode={appReviewMode} />
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                   <StatMini label="Runs" value={runs} />
                   <StatMini label="Leads" value={leads} />
@@ -176,7 +178,7 @@ export default function AutomationTable({
               <th className="w-[28%] px-4 py-3">Campaign</th>
               <th className="w-[10%] px-3 py-3">Post</th>
               <th className="w-[18%] px-3 py-3">Trigger</th>
-              <th className="w-[9%] px-3 py-3">Mode</th>
+              <th className="w-[9%] px-3 py-3">{appReviewMode ? "Reply" : "Mode"}</th>
               <th className="w-[7%] px-3 py-3">Runs</th>
               <th className="w-[7%] px-3 py-3">Leads</th>
               <th className="w-[8%] px-3 py-3">Status</th>
@@ -197,7 +199,7 @@ export default function AutomationTable({
                 const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
                 const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
                 const isAnyComment = automation.triggerMode === "ANY_COMMENT";
-                const mode = getCampaignModeLabel(automation.sendPrivateDm === false);
+                const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode);
                 const status = campaignStatus(automation);
 
                 return (
@@ -217,7 +219,7 @@ export default function AutomationTable({
                             {automation.name || "Untitled campaign"}
                           </Link>
                           <p className="truncate text-xs text-slate-500 dark:text-slate-400">{mode.full}</p>
-                          <CampaignBadges automation={automation} compact />
+                          <CampaignBadges automation={automation} compact appReviewMode={appReviewMode} />
                         </div>
                       </div>
                     </td>
@@ -328,7 +330,7 @@ function StatusPill({ status }: { status: string }) {
   return <span className={`ap3k-badge ${classes}`}>{status}</span>;
 }
 
-function CampaignBadges({ automation, compact }: { automation: any; compact?: boolean }) {
+function CampaignBadges({ automation, compact, appReviewMode = isAppReviewMode() }: { automation: any; compact?: boolean; appReviewMode?: boolean }) {
   const hasPublicReply = Boolean(
     automation.listener?.commentReply ||
     automation.listener?.commentReply2 ||
@@ -338,7 +340,9 @@ function CampaignBadges({ automation, compact }: { automation: any; compact?: bo
     automation.currentAccountLabel ? { label: automation.currentAccountLabel, tone: "slate" } : null,
     automation.stalePost ? { label: "Stale post", tone: "red" } : null,
     automation.needsReview ? { label: "Needs review", tone: "red" } : null,
-    automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : { label: "AP3k DM", tone: "green" },
+    appReviewMode
+      ? { label: "Public reply active", tone: "green" }
+      : automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : { label: "AP3k DM", tone: "green" },
     { label: hasPublicReply ? "Public reply on" : "Public reply off", tone: hasPublicReply ? "blue" : "slate" },
   ].filter(Boolean) as { label: string; tone: string }[];
 
