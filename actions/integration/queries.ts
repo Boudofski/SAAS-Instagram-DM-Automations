@@ -107,13 +107,13 @@ export const recordIntegrationOAuthError = async (
   });
 };
 
-export const deleteIntegrationForUser = async (clerkId: string) => {
+export const softDisconnectIntegrationForUser = async (clerkId: string) => {
   const user = await client.user.findUnique({
     where: { clerkId },
     select: {
       id: true,
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
         take: 1,
         select: { id: true, pageId: true, instagramId: true },
       },
@@ -121,17 +121,36 @@ export const deleteIntegrationForUser = async (clerkId: string) => {
   });
 
   const integration = user?.integrations[0];
-  if (!integration) return null;
+  if (!user || !integration) return null;
 
-  console.log("[oauth] disconnect instagram integration", {
+  console.log("[oauth] soft disconnect instagram integration", {
     hasPageId: Boolean(integration.pageId),
     hasInstagramBusinessAccountId: Boolean(integration.instagramId),
   });
 
-  return await client.integrations.delete({
-    where: { id: integration.id },
-    select: { id: true },
-  });
+  const reason = "User disconnected Instagram from AP3k";
+  const [updated, paused] = await client.$transaction([
+    client.integrations.update({
+      where: { id: integration.id },
+      data: {
+        status: "DISCONNECTED",
+        disconnectedAt: new Date(),
+        disconnectedReason: reason,
+        reconnectRequired: false,
+      },
+      select: { id: true },
+    }),
+    client.automation.updateMany({
+      where: { userId: user.id, archivedAt: null, active: true },
+      data: {
+        active: false,
+        needsReview: true,
+        reviewReason: "Instagram account disconnected.",
+      },
+    }),
+  ]);
+
+  return { ...updated, pausedCampaigns: paused.count };
 };
 
 export const createMetaOAuthSelection = async (

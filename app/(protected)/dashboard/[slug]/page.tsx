@@ -1,5 +1,6 @@
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
+import LocalTime from "@/components/global/local-time";
 import OnboardingChecklist from "@/components/global/onboarding-checklist";
 import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
@@ -10,13 +11,14 @@ import {
   getDashboardGreeting,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
-import { formatSnapshotRefreshTime, getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
+import { getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { buildCampaignBindingDiagnostics, dashboardNoCommentDiagnosis } from "@/lib/account-webhook-diagnostics";
 import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
 import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -100,7 +102,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     ? {
         title: tokenExpired ? "Reconnect Instagram before testing" : "Connect Instagram to start",
         detail: tokenExpired
-          ? "Your saved connection needs a fresh Meta login before comments or DMs can run."
+          ? appReviewMode
+            ? "Your saved connection needs a fresh Meta login before comments and public replies can run."
+            : "Your saved connection needs a fresh Meta login before comments or DMs can run."
           : "AP3k needs an official Meta connection before it can listen for comments.",
         cta: tokenExpired ? "Reconnect Instagram" : "Connect Instagram",
         href: `/dashboard/${params.slug}/integrations`,
@@ -122,7 +126,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         : !metrics?.lastRealCommentAt
           ? {
               title: "No comments received yet",
-              detail: "Comment the campaign keyword from a different Instagram account, then come back here to confirm the webhook log.",
+              detail: appReviewMode
+                ? "Comment the campaign keyword from a different Instagram account, then come back here to confirm the activity log."
+                : "Comment the campaign keyword from a different Instagram account, then come back here to confirm the webhook log.",
               cta: "Check connection",
               href: `/dashboard/${params.slug}/account`,
             }
@@ -163,7 +169,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Turn comments into DMs automatically</h2>
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                {appReviewMode ? "Turn comments into leads with public replies" : "Turn comments into DMs automatically"}
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 Connect Instagram, create a campaign, comment the keyword from a separate tester account, then review activity here.
               </p>
@@ -201,7 +209,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 {tokenExpired
                   ? "Token expired. Reconnect Instagram before testing comments."
                   : profileSnapshot?.fetchedAt
-                    ? `Profile refreshed ${formatSnapshotRefreshTime(profileSnapshot.fetchedAt)}`
+                    ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
                     : "Ready for official comment-to-DM testing."}
               </p>
             </div>
@@ -408,13 +416,13 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                     <p className="truncate text-sm font-black text-slate-950 dark:text-white">
                       {item.title}{item.actorLabel ? ` ${item.actorLabel}` : ""}
                     </p>
-                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{item.subtitle}</p>
+                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{formatAppReviewActivitySubtitle(item.subtitle, appReviewMode)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pl-5 sm:pl-0">
                   <span className="ap3k-badge ap3k-badge-slate">{item.badge}</span>
                   <span className="shrink-0 text-xs font-bold text-slate-400">
-                    {new Date(item.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })}
+                    <LocalTime value={item.createdAt} mode="time" />
                   </span>
                 </div>
               </div>

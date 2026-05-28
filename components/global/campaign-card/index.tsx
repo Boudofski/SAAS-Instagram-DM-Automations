@@ -1,6 +1,8 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -32,6 +34,7 @@ export default function CampaignCard({
   const safeName = name?.trim() || "Untitled campaign";
   const isActive = Boolean(active);
   const safeDmCount = typeof dmCount === "number" ? dmCount : 0;
+  const appReviewMode = isAppReviewMode();
 
   return (
     <Link
@@ -65,7 +68,7 @@ export default function CampaignCard({
                   KW_COLOURS[i % KW_COLOURS.length]
                 )}
               >
-                {kw.word}
+                {formatKeywordDisplay(kw.word, appReviewMode)}
               </span>
             ))
           )}
@@ -76,7 +79,7 @@ export default function CampaignCard({
       <div className="flex gap-4 flex-shrink-0 text-left sm:text-right">
         <div>
           <p className="text-base font-black text-rf-text">{safeDmCount}</p>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-rf-muted">DMs</p>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-rf-muted">{appReviewMode ? "Replies" : "DMs"}</p>
         </div>
         {leadCount !== undefined && (
           <div>

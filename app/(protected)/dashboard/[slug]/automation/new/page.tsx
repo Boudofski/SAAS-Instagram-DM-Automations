@@ -11,6 +11,7 @@ import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { isWeakPublicReply } from "@/lib/campaign-activity-format";
+import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -454,7 +455,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               {(
                 [
                   { field: "publicReply",  label: "Reply 1", placeholder: "e.g. Sending you the link now! 📩" },
-                  { field: "publicReply2", label: "Reply 2", placeholder: "e.g. Check your DMs! I just sent it 👀" },
+                  { field: "publicReply2", label: "Reply 2", placeholder: appReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Check your DMs! I just sent it 👀" },
                   { field: "publicReply3", label: "Reply 3", placeholder: "e.g. Done! Look for my message 🎁" },
                 ] as const
               ).map(({ field, label, placeholder }) => (
@@ -508,7 +509,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Post",         value: data.post?.postid === "ANY" ? "Any post" : (data.post?.caption?.slice(0, 60) ?? "Selected post"), step: 1 as const },
                   { label: "Post scope",   value: data.post?.postid === "ANY" ? "Any Post" : data.post?.postid ? `Selected post ID ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger",      value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword",           step: 2 as const },
-                  { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.join(", "),   step: 2 as const },
+                  { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "),   step: 2 as const },
                   ...(appReviewMode
                     ? [{ label: "Reply mode", value: "Public reply mode", step: 3 as const }]
                     : [{ label: "Private DM", value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally", step: 3 as const }]),
@@ -601,7 +602,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
             <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} />
-            <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.join(", ") : "None yet"} />
+            <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", ") : "None yet"} />
             {appReviewMode ? (
               <PreviewRow label="Reply mode" value="Public reply mode" />
             ) : (

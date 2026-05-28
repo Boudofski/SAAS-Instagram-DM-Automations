@@ -1,4 +1,6 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
+import ReviewDisconnectInstagramButton from "@/components/dashboard/review-disconnect-instagram-button";
+import LocalTime from "@/components/global/local-time";
 import { onUserInfo } from "@/actions/user";
 import { getCurrentWebhookHealth } from "@/actions/integration";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
@@ -8,7 +10,6 @@ import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhoo
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
 import {
-  formatSnapshotRefreshTime,
   getInstagramSnapshotComparisonWithMissingRefresh,
   getProfileSnapshotDisplay,
   getProfileSnapshotStatus,
@@ -74,7 +75,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionHeader label="Profile" />
           {appReviewMode ? (
-            !connected && (
+            connected ? (
+              <ReviewDisconnectInstagramButton />
+            ) : (
               <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm">
                 Connect Instagram
               </Link>
@@ -112,7 +115,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                 </div>
               ) : (
                 <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
-                  {connected ? "Profile connected" : "Profile not connected"} · {formatSnapshotRefreshTime(snapshot?.fetchedAt)}
+                  {connected ? "Profile connected" : "Profile not connected"} · <LocalTime value={snapshot?.fetchedAt} empty="Never refreshed" />
                 </p>
               )}
               {connected && profileSnapshotStatus.label === "Missing" && (
@@ -222,7 +225,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           />
           <HealthCard label="Last webhook" value={formatHealthDate(health?.lastWebhook?.createdAt)} ok={Boolean(health?.lastWebhook)} />
           <HealthCard label="Last comment" value={formatHealthDate(health?.lastCommentWebhook?.createdAt)} ok={Boolean(health?.lastCommentWebhook)} />
-          <HealthCard label="Profile snapshot" value={profileSnapshotDisplay.label} detail={formatSnapshotRefreshTime(snapshot?.fetchedAt)} ok={profileSnapshotDisplay.ok} />
+          <HealthCard label="Profile snapshot" value={profileSnapshotDisplay.label} detail={<LocalTime value={snapshot?.fetchedAt} empty="Never refreshed" />} ok={profileSnapshotDisplay.ok} />
           <HealthCard label={webhookHealth.failure.label} value={webhookHealth.failure.value} detail={webhookHealth.failure.detail} ok={webhookHealth.failure.ok} />
           <HealthCard
             label="Messaging capability"
@@ -377,7 +380,7 @@ function MetaIdRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function HealthCard({ label, value, detail, ok }: { label: string; value: string; detail?: string; ok: boolean }) {
+function HealthCard({ label, value, detail, ok }: { label: string; value: React.ReactNode; detail?: React.ReactNode; ok: boolean }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
       <div className="flex items-center justify-between gap-2">
@@ -392,7 +395,7 @@ function HealthCard({ label, value, detail, ok }: { label: string; value: string
 
 function formatHealthDate(value?: Date | string | null) {
   if (!value) return "None yet";
-  return new Date(value).toLocaleString();
+  return <LocalTime value={value} />;
 }
 
 function PeriodSelector({ slug, active }: { slug: string; active: string }) {

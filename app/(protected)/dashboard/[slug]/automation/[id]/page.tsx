@@ -1,12 +1,15 @@
 import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/actions/automation";
 import ActiveAutomationButton from "@/components/global/active-automation-button";
+import LocalTime from "@/components/global/local-time";
 import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { assessCampaignSetupHealth } from "@/lib/campaign-health";
 import { filterAppReviewActivity, groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
+import { formatKeywordDisplay } from "@/lib/keyword-display";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -121,7 +124,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           id={params.id}
           disabled={!health.okToActivate && !automation.active}
           disabledReason={!health.okToActivate && !automation.active ? health.blockers[0] : null}
-          showRepair={Boolean(automation.needsReview)}
+          showRepair={!appReviewMode && Boolean(automation.needsReview)}
         />
       </div>
 
@@ -139,7 +142,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <HealthRow label="Trigger" value={isAnyComment ? "Any comment" : automation.keywords?.length ? "Keyword configured" : "Missing keyword"} ok={isAnyComment || Boolean(automation.keywords?.length)} />
           <HealthRow label="Public reply" value={hasPublicReply ? "On" : "Off"} ok={hasPublicReply || sendPrivateDm} />
           {!appReviewMode && <HealthRow label="Private DM" value={sendPrivateDm ? "AP3k DM" : "External DM mode"} ok={!sendPrivateDm || Boolean(automation.listener?.prompt)} />}
-          <HealthRow label="Last real comment" value={lastRealComment ? new Date(lastRealComment.createdAt).toLocaleString() : "None yet"} ok={Boolean(lastRealComment)} />
+          <HealthRow label="Last real comment" value={lastRealComment ? <LocalTime value={lastRealComment.createdAt} /> : "None yet"} ok={Boolean(lastRealComment)} />
           {!appReviewMode && <HealthRow label="Last action result" value={lastAction ? `${lastAction.type}${lastAction.status ? ` · ${lastAction.status}` : ""}` : "None yet"} ok={!lastAction || lastAction.status !== "FAILED"} />}
         </div>
         {(health.blockers.length > 0 || health.warnings.length > 0) && (
@@ -238,7 +241,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 isAnyComment
                   ? "Every comment triggers this campaign."
                   : automation.keywords?.length
-                  ? automation.keywords.map((keyword: any) => keyword.word).join(", ")
+                  ? automation.keywords.map((keyword: any) => formatKeywordDisplay(String(keyword.word ?? ""), appReviewMode)).join(", ")
                   : "No keywords configured."
               }
               tone="pink"
@@ -378,7 +381,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                        "bg-rf-amber/10 text-rf-amber border-rf-amber/20"][i % 4],
                     ].join(" ")}
                   >
-                    {kw.word}
+                    {formatKeywordDisplay(String(kw.word ?? ""), appReviewMode)}
                   </span>
                 ))
               ) : (
@@ -516,7 +519,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                      {item.actorLabel ? `${item.actorLabel} · ` : ""}{item.subtitle}
+                      {item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, appReviewMode)}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <StepPill label="Comment" active={item.steps.commentReceived} />
@@ -525,7 +528,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                       {!appReviewMode && <StepPill label="DM" state={item.steps.privateDm} />}
                     </div>
                     <p className="mt-2 text-xs dark:text-slate-400 text-slate-500">
-                      {new Date(item.createdAt).toLocaleString()}
+                      <LocalTime value={item.createdAt} />
                     </p>
                     {!appReviewMode && <details className="mt-2 group">
                       <summary className="cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
@@ -600,7 +603,7 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function HealthRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+function HealthRow({ label, value, ok }: { label: string; value: React.ReactNode; ok: boolean }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
       <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</p>

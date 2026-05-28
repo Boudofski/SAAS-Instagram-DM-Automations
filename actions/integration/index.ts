@@ -16,12 +16,12 @@ import { revalidatePath } from "next/cache";
 import {
   createIntegration,
   createMetaOAuthSelection,
-  deleteIntegrationForUser,
   deleteMetaOAuthSelection,
   getLatestMetaOAuthSelection,
   getIntegrations,
   getWebhookHealthForUser,
   recordIntegrationOAuthError,
+  softDisconnectIntegrationForUser,
   updateIntegration,
 } from "./queries";
 import { dashboardPath } from "@/lib/dashboard";
@@ -612,11 +612,12 @@ export const disconnectCurrentInstagramIntegration = async () => {
   if (!user) return { status: 401, data: "Sign in required" };
 
   try {
-    const deleted = await deleteIntegrationForUser(user.id);
-    if (!deleted) {
+    const disconnected = await softDisconnectIntegrationForUser(user.id);
+    if (!disconnected) {
       return { status: 404, data: "No Instagram account is connected" };
     }
 
+    revalidatePath("/dashboard", "layout");
     return { status: 200, data: "Instagram account disconnected" };
   } catch (error) {
     console.error("[oauth] disconnect instagram integration failed", {

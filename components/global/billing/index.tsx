@@ -1,5 +1,6 @@
 "use client";
 
+import LocalTime from "@/components/global/local-time";
 import { formatConnectedAccountsHelper, formatUsageMetricValue, isUnlimited, usageTone, type UsageSummary } from "@/lib/plan-limits";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import PaymentCard from "./payment-card";
@@ -41,7 +42,7 @@ function Billing({ current = "FREE", usage }: Props) {
               </p>
             </div>
             <div className="w-fit rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-xs font-black text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
-              Enforcement from {new Date(usage.enforcementStart).toLocaleDateString()}
+              Enforcement from <LocalTime value={usage.enforcementStart} mode="date" />
             </div>
           </div>
           <div className="mt-6 grid gap-4 lg:grid-cols-3">

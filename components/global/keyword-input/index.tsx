@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { useState } from "react";
 
 type MatchingMode = "EXACT" | "CONTAINS";
@@ -31,6 +33,7 @@ export default function KeywordInput({
   triggerMode, keywords, matchingMode, onTriggerModeChange, onAdd, onRemove, onModeChange,
 }: Props) {
   const [value, setValue] = useState("");
+  const appReviewMode = isAppReviewMode();
 
   const handleAdd = () => {
     const w = value.trim().toLowerCase();
@@ -118,7 +121,7 @@ export default function KeywordInput({
                 KW_COLOURS[i % KW_COLOURS.length]
               )}
             >
-              {kw}
+              {formatKeywordDisplay(kw, appReviewMode)}
               <button
                 type="button"
                 onClick={() => onRemove(kw)}

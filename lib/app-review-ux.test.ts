@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { filterAppReviewActivity, groupCampaignActivity } from "./campaign-activity-format";
 import { getCampaignModeLabel } from "./campaign-mode-label";
+import { formatAppReviewActivitySubtitle } from "./app-review-activity-copy";
+import { formatKeywordDisplay } from "./keyword-display";
 
 const root = process.cwd();
 
@@ -73,6 +75,33 @@ describe("App Review-safe UX", () => {
     expect(campaignNew).toContain("Public reply mode");
     expect(campaignNew).toContain("AP3k listens for matching comments, sends public replies, and tracks leads.");
     expect(sidebar).toContain("Unlock more public replies and campaigns");
+  });
+
+  it("clarifies keyword triggers and exposes clean account disconnect in review mode", () => {
+    const account = readRepoFile("app/(protected)/dashboard/[slug]/account/page.tsx");
+    const disconnect = readRepoFile("components/dashboard/review-disconnect-instagram-button.tsx");
+    const integrationQueries = readRepoFile("actions/integration/queries.ts");
+
+    expect(formatKeywordDisplay("AI", true)).toBe("Keyword: ai");
+    expect(formatAppReviewActivitySubtitle('Trigger matched "AI"', true)).toBe('Trigger matched keyword "ai"');
+    expect(account).toContain("ReviewDisconnectInstagramButton");
+    expect(disconnect).toContain("Disconnect Instagram");
+    expect(disconnect).toContain("Remove this Instagram account from AP3k.");
+    expect(integrationQueries).toContain("softDisconnectIntegrationForUser");
+    expect(integrationQueries).toContain('status: "DISCONNECTED"');
+    expect(integrationQueries).not.toContain("client.integrations.delete");
+  });
+
+  it("uses browser-local timestamp rendering for dashboard timestamps", () => {
+    const localTime = readRepoFile("components/global/local-time.tsx");
+    const dashboard = readRepoFile("app/(protected)/dashboard/[slug]/page.tsx");
+    const account = readRepoFile("app/(protected)/dashboard/[slug]/account/page.tsx");
+    const detail = readRepoFile("app/(protected)/dashboard/[slug]/automation/[id]/page.tsx");
+
+    expect(localTime).toContain("date.toLocaleString(undefined");
+    expect(dashboard).toContain("<LocalTime value={item.createdAt} mode=\"time\" />");
+    expect(account).toContain("<LocalTime value={snapshot?.fetchedAt} empty=\"Never refreshed\" />");
+    expect(detail).toContain("<LocalTime value={item.createdAt} />");
   });
 });
 

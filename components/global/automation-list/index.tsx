@@ -1,10 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import LocalTime from "@/components/global/local-time";
 import { useMutationDataState } from "@/hooks/use-mutation-data";
 import { usePath } from "@/hooks/user-nav";
 import { useQueryAutomation } from "@/hooks/user-queries";
-import { cn, getMonth } from "@/lib/utils";
+import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatKeywordDisplay } from "@/lib/keyword-display";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useMemo } from "react";
 import CreateAutomation from "../create-automation";
@@ -12,6 +15,7 @@ import CreateAutomation from "../create-automation";
 type Props = {};
 
 function AutomationList({}: Props) {
+  const appReviewMode = isAppReviewMode();
   const { data } = useQueryAutomation();
 
   const { latestVariable } = useMutationDataState(["create-automation"]);
@@ -69,7 +73,7 @@ function AutomationList({}: Props) {
                           "bg-keyword-red/15 border-2 border-keyword-red"
                       )}
                     >
-                      {keyword.word}
+                      {formatKeywordDisplay(String(keyword.word ?? ""), appReviewMode)}
                     </div>
                   ))
                 }
@@ -82,11 +86,7 @@ function AutomationList({}: Props) {
           </div>
           <div className="flex flex-col justify-between">
             <p className="capitalize text-sm font-light text-[#9B9CA0]">
-              {getMonth(automation.createdAt.getUTCMonth() + 1)}{" "}
-              {automation.createdAt.getUTCDate() === 1
-                ? `${automation.createdAt.getUTCDate()}st`
-                : `${automation.createdAt.getUTCDate()}th`}{" "}
-              {automation.createdAt.getUTCFullYear()}
+              <LocalTime value={automation.createdAt} mode="date" />
             </p>
 
             <Button className="bg-background-80 hover:bg-background-80 text-white">

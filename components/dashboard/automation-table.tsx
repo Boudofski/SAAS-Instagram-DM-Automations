@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -124,7 +125,7 @@ export default function AutomationTable({
                       {automation.name || "Untitled campaign"}
                     </Link>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword"} · {mode.full}
+                      {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword trigger"} · {mode.full}
                     </p>
                   </div>
                   <StatusPill status={status} />
@@ -234,7 +235,7 @@ export default function AutomationTable({
                           <span className="ap3k-badge ap3k-badge-blue">Any comment</span>
                         ) : (automation.keywords ?? []).slice(0, 2).map((keyword: any) => (
                           <span key={keyword.id ?? keyword.word} className="ap3k-badge ap3k-badge-pink">
-                            {keyword.word}
+                            {formatKeywordDisplay(String(keyword.word ?? ""), appReviewMode)}
                           </span>
                         ))}
                         {!isAnyComment && (automation.keywords ?? []).length > 2 && (
