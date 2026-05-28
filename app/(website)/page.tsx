@@ -41,7 +41,7 @@ const PLANS = [
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Full analytics + leads export", included: true },
       { text: "{{variable}} personalisation", included: true },
-      { text: "Private DM workflow after Meta approval", included: true },
+      { text: "Public reply campaigns", included: true },
       { text: "Priority support", included: true },
     ],
   },
@@ -106,7 +106,38 @@ export default async function LandingPage() {
   const redirectTo = getAuthenticatedLandingRedirect(authUser, profile);
   if (redirectTo) redirect(redirectTo);
 
-  const plans = appReviewMode ? PLANS.filter((plan) => plan.tier !== "Agency") : PLANS;
+  const plans = appReviewMode
+    ? [
+        {
+          tier: "Free",
+          price: "$0",
+          description: "Perfect for testing comment automation",
+          ctaLabel: "Get started free",
+          ctaHref: "/sign-up",
+          featured: false,
+          features: [
+            { text: "1 active campaign", included: true },
+            { text: "50 public replies/month", included: true },
+            { text: "Keyword triggers", included: true },
+            { text: "Basic analytics", included: true },
+          ],
+        },
+        {
+          tier: "Creator",
+          price: "$29",
+          description: "For production campaigns",
+          ctaLabel: "Start Creator plan",
+          ctaHref: "/payment?plan=creator",
+          featured: true,
+          features: [
+            { text: "Unlimited campaigns", included: true },
+            { text: "5,000 public replies/month", included: true },
+            { text: "Lead export", included: true },
+            { text: "Activity tracking", included: true },
+          ],
+        },
+      ] as const
+    : PLANS;
   const features = appReviewMode
     ? [
         { icon: MessageCircle, title: "Official Meta Login", desc: "Connect an Instagram Business or Creator account through Meta Login." },
@@ -319,7 +350,9 @@ export default async function LandingPage() {
               <p className="ap3k-kicker">Trust and compliance</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Built with official Meta APIs.</h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
-                No scraping, no password sharing, no hidden browser automation. AP3k uses Facebook Login for Business and official Meta APIs throughout.
+                {appReviewMode
+                  ? "AP3k uses Official Meta Login and official Meta APIs for Instagram Business and Creator accounts."
+                  : "No scraping, no password sharing, no hidden browser automation. AP3k uses Facebook Login for Business and official Meta APIs throughout."}
               </p>
             </FadeIn>
             <StaggerContainer className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

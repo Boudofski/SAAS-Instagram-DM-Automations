@@ -218,7 +218,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               href={`/dashboard/${params.slug}/account`}
               className="text-xs font-bold text-rf-pink hover:text-rf-purple"
             >
-              {tokenExpired ? "Reconnect Instagram" : "Manage connection"}
+              {tokenExpired ? "Reconnect Instagram" : appReviewMode ? "Account connected" : "Manage connection"}
             </Link>
             {typeof profileSnapshot?.followersCount === "number" ? (
               <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
@@ -323,7 +323,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           state={instagram && !tokenExpired ? "ok" : "warn"}
         />
         <HealthPill
-          label="Webhook comments"
+          label={appReviewMode ? "Comments active" : "Webhook comments"}
           detail={metrics?.lastRealCommentAt ? "Comments are arriving" : "Test with a real comment"}
           state={metrics?.lastRealCommentAt ? "ok" : "warn"}
         />
@@ -334,7 +334,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         />
         <HealthPill
           label={appReviewMode ? "Public replies" : hasExternalDmCampaign ? "External DM mode" : "Private DM"}
-          detail={appReviewMode ? "Private replies pending Meta approval" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval"}
+          detail={appReviewMode ? "Public replies active" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval"}
           state={hasExternalDmCampaign ? "ok" : "warn"}
         />
       </div>

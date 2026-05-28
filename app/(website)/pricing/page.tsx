@@ -2,6 +2,7 @@ import PricingCard from "@/components/global/pricing-card";
 import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 
 const PLANS = [
   {
@@ -65,6 +66,39 @@ const FAQ = [
 ] as const;
 
 export default function PricingPage() {
+  const appReviewMode = isAppReviewMode();
+  const plans = appReviewMode
+    ? [
+        {
+          tier: "Free", price: "$0", description: "For testing Instagram comment automation",
+          ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
+          features: [
+            { text: "1 active campaign for testing", included: true },
+            { text: "50 public replies/month", included: true },
+            { text: "Keyword triggers", included: true },
+            { text: "Basic analytics", included: true },
+          ],
+        },
+        {
+          tier: "Creator", price: "$29", description: "For production campaigns with public reply volume",
+          ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
+          features: [
+            { text: "Unlimited active campaigns", included: true },
+            { text: "5,000 public replies/month", included: true },
+            { text: "Lead export", included: true },
+            { text: "Analytics", included: true },
+          ],
+        },
+      ] as const
+    : PLANS;
+  const faq = appReviewMode
+    ? FAQ.filter((item) => !item.q.toLowerCase().includes("private dm")).map((item) =>
+        item.q === "What's the reply limit on Free?"
+          ? { ...item, a: "50 successful public replies per month across 1 active campaign. Failed or skipped actions do not count." }
+          : item
+      )
+    : FAQ;
+
   return (
     <div className="relative min-h-screen overflow-hidden text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
@@ -88,8 +122,8 @@ export default function PricingPage() {
 
       {/* Plans */}
       <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20 sm:px-8 lg:px-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PLANS.map((p, index) => (
+        <div className={appReviewMode ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "grid grid-cols-1 md:grid-cols-3 gap-6"}>
+          {plans.map((p, index) => (
             <FadeIn key={p.tier} delay={index * 0.05}>
               <PricingCard {...p} />
             </FadeIn>
@@ -101,7 +135,7 @@ export default function PricingPage() {
       <section className="relative z-10 mx-auto max-w-2xl px-4 pb-20 sm:px-8 lg:px-0">
         <h2 className="mb-8 text-center text-xl font-black">Common questions</h2>
         <div className="flex flex-col gap-4">
-          {FAQ.map((f) => (
+          {faq.map((f) => (
             <div key={f.q} className="ap3k-card rounded-2xl p-5">
               <h3 className="text-sm font-black text-rf-text mb-2">{f.q}</h3>
               <p className="text-sm text-rf-muted leading-relaxed">{f.a}</p>

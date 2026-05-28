@@ -7,6 +7,7 @@ import {
 } from "@/actions/integration";
 import { onUserInfo } from "@/actions/user";
 import { Button } from "@/components/ui/button";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
@@ -23,6 +24,7 @@ type Props = {
 function IntegrationCard({ title, description, icon, strategy }: Props) {
   const [isConnecting, setIsConnecting] = React.useState(false);
   const { userId } = useAuth();
+  const appReviewMode = isAppReviewMode();
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -102,10 +104,12 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
                   ? `@${integrated.instagramUsername}`
                   : "Instagram connected"}
               </p>
-              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                IG business ID: {integrated.instagramId}
-              </p>
-              {integrated.pageId && (
+              {!appReviewMode && (
+                <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                  IG business ID: {integrated.instagramId}
+                </p>
+              )}
+              {!appReviewMode && integrated.pageId && (
                 <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                   Page ID: {integrated.pageId}
                 </p>
@@ -122,7 +126,7 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
         >
           {integrated ? "Reconnect Instagram" : isConnecting ? "Connecting..." : "Connect Instagram"}
         </Button>
-        {integrated && (
+        {integrated && !appReviewMode && (
           <Button
             type="button"
             variant="outline"
@@ -144,7 +148,12 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
           </Button>
         )}
       </div>
-      {integrated && (
+      {integrated && appReviewMode && (
+        <div className="w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100 lg:col-span-3">
+          Instagram connected. Comments and public replies are ready for campaigns.
+        </div>
+      )}
+      {integrated && !appReviewMode && (
         <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300 lg:col-span-3">
           <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             Webhook health

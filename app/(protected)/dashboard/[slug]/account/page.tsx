@@ -164,11 +164,6 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           <ReviewStatusCard label="Instagram connected" value={connected ? "Connected" : "Connect Instagram"} ok={connected} />
           <ReviewStatusCard label="Comments active" value={connected ? "Ready to receive comments" : "Connect first"} ok={connected} />
           <ReviewStatusCard label="Public replies active" value="Available with comment campaigns" ok={connected} />
-          <ReviewStatusCard
-            label="Private replies pending Meta approval"
-            value="Your Instagram account is connected. AP3k can receive comments and send public replies. Private replies become available after Meta approves Instagram messaging."
-            ok={false}
-          />
         </section>
       )}
 

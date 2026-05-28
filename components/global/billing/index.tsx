@@ -35,7 +35,9 @@ function Billing({ current = "FREE", usage }: Props) {
                 Plan: {planLabel}
               </h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                {usage.periodLabel} usage. Successful static public replies and private DMs count toward your monthly limit.
+                {appReviewMode
+                  ? `${usage.periodLabel} usage. Successful public replies count toward your monthly limit.`
+                  : `${usage.periodLabel} usage. Successful static public replies and private DMs count toward your monthly limit.`}
               </p>
             </div>
             <div className="w-fit rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-xs font-black text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">

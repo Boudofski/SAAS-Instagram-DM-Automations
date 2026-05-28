@@ -16,7 +16,10 @@ describe("App Review-safe UX", () => {
 
     expect(source).toContain("Profile sync debug");
     expect(source).toContain("const showProfileSyncDebug = !appReviewMode");
-    expect(source).toContain("Your Instagram account is connected. AP3k can receive comments and send public replies.");
+    expect(source).toContain('ReviewStatusCard label="Instagram connected"');
+    expect(source).toContain('ReviewStatusCard label="Comments active"');
+    expect(source).toContain('ReviewStatusCard label="Public replies active"');
+    expect(source).not.toContain("Private replies pending Meta approval");
   });
 
   it("filters failed and skipped technical activity from review-mode recent activity", () => {
@@ -55,7 +58,21 @@ describe("App Review-safe UX", () => {
 
     expect(source).toContain("Official Meta Login");
     expect(source).toContain("Launch Instagram comment automations that receive real comments");
-    expect(source).toContain("appReviewMode ? PLANS.filter");
+    expect(source).toContain("Connect Instagram");
+    expect(source).toContain("Send public replies");
+  });
+
+  it("uses review-safe billing and campaign wording in review mode", () => {
+    const billing = readRepoFile("components/global/billing/index.tsx");
+    const paymentCard = readRepoFile("components/global/billing/payment-card.tsx");
+    const campaignNew = readRepoFile("app/(protected)/dashboard/[slug]/automation/new/page.tsx");
+    const sidebar = readRepoFile("components/global/sidebar/index.tsx");
+
+    expect(billing).toContain("Successful public replies count toward your monthly limit.");
+    expect(paymentCard).toContain("5,000 public replies/month");
+    expect(campaignNew).toContain("Public reply mode");
+    expect(campaignNew).toContain("AP3k listens for matching comments, sends public replies, and tracks leads.");
+    expect(sidebar).toContain("Unlock more public replies and campaigns");
   });
 });
 

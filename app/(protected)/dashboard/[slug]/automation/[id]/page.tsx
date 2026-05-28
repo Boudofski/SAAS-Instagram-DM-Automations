@@ -4,8 +4,9 @@ import StatCard from "@/components/global/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { assessCampaignSetupHealth } from "@/lib/campaign-health";
-import { groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
+import { filterAppReviewActivity, groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -17,6 +18,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 }
 
 export default async function CampaignDetailPage({ params }: Props) {
+  const appReviewMode = isAppReviewMode();
   const [automationResult, statsResult] = await Promise.all([
     getAutomationInfo(params.id),
     getAutomationStats(params.id),
@@ -44,13 +46,14 @@ export default async function CampaignDetailPage({ params }: Props) {
       automation.listener?.commentReply3,
     ].filter(Boolean).length,
   });
-  const groupedActivity = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
+  const allGroupedActivity = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
+  const groupedActivity = appReviewMode ? filterAppReviewActivity(allGroupedActivity, 20) : allGroupedActivity;
   const connectedIntegration = automation.User?.integrations?.find((item: any) => item.status !== "DISCONNECTED") ?? automation.User?.integrations?.[0];
   const bindingDiagnostic = buildCampaignBindingDiagnostics({
     integration: connectedIntegration,
     campaigns: [automation],
   })[0];
-  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
+  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (!appReviewMode && sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
   const accountDiagnostics = connectedIntegration?.id
     ? await getAccountWebhookDiagnosticsForIntegration(connectedIntegration.id)
     : null;
@@ -135,9 +138,9 @@ export default async function CampaignDetailPage({ params }: Props) {
           <HealthRow label="Selected post/media" value={automation.posts?.[0]?.postid === "ANY" ? "Any Post" : `${automation.posts?.[0]?.postid ?? "Missing"} · ${health.selectedPostStatus}`} ok={health.selectedPostStatus !== "stale" && health.selectedPostStatus !== "missing"} />
           <HealthRow label="Trigger" value={isAnyComment ? "Any comment" : automation.keywords?.length ? "Keyword configured" : "Missing keyword"} ok={isAnyComment || Boolean(automation.keywords?.length)} />
           <HealthRow label="Public reply" value={hasPublicReply ? "On" : "Off"} ok={hasPublicReply || sendPrivateDm} />
-          <HealthRow label="Private DM" value={sendPrivateDm ? "AP3k DM" : "External DM mode"} ok={!sendPrivateDm || Boolean(automation.listener?.prompt)} />
+          {!appReviewMode && <HealthRow label="Private DM" value={sendPrivateDm ? "AP3k DM" : "External DM mode"} ok={!sendPrivateDm || Boolean(automation.listener?.prompt)} />}
           <HealthRow label="Last real comment" value={lastRealComment ? new Date(lastRealComment.createdAt).toLocaleString() : "None yet"} ok={Boolean(lastRealComment)} />
-          <HealthRow label="Last action result" value={lastAction ? `${lastAction.type}${lastAction.status ? ` · ${lastAction.status}` : ""}` : "None yet"} ok={!lastAction || lastAction.status !== "FAILED"} />
+          {!appReviewMode && <HealthRow label="Last action result" value={lastAction ? `${lastAction.type}${lastAction.status ? ` · ${lastAction.status}` : ""}` : "None yet"} ok={!lastAction || lastAction.status !== "FAILED"} />}
         </div>
         {(health.blockers.length > 0 || health.warnings.length > 0) && (
           <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -168,8 +171,8 @@ export default async function CampaignDetailPage({ params }: Props) {
               {[
                 !automation.posts?.length && "a post",
                 !isAnyComment && !automation.keywords?.length && "keywords",
-                sendPrivateDm && !automation.listener?.prompt && "a DM message",
-                !sendPrivateDm && !hasPublicReply && "a public reply or private DM",
+                !appReviewMode && sendPrivateDm && !automation.listener?.prompt && "a DM message",
+                !sendPrivateDm && !hasPublicReply && "a public reply",
               ]
                 .filter(Boolean)
                 .join(", ")}
@@ -203,10 +206,10 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-                AutoDM flow
+                {appReviewMode ? "Comment automation flow" : "AutoDM flow"}
               </p>
               <h2 className="mt-1 text-xl font-black">
-                When comments match, AP3k {sendPrivateDm ? "sends the configured replies" : "handles public replies only"}
+                {appReviewMode ? "When comments match, AP3k sends a public reply and tracks the lead" : <>When comments match, AP3k {sendPrivateDm ? "sends the configured replies" : "handles public replies only"}</>}
               </h2>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-xs font-bold dark:text-slate-400 text-slate-500">
@@ -249,13 +252,13 @@ export default async function CampaignDetailPage({ params }: Props) {
                 tone="purple"
                 disabled={!hasPublicReply}
               />
-              <FlowNode
+              {!appReviewMode && <FlowNode
                 label="Action"
                 title={sendPrivateDm ? "Send Message" : "Private DM Off"}
                 body={sendPrivateDm ? (automation.listener?.prompt || "No private DM configured.") : "Off — external tool handles private messages."}
                 tone="blue"
                 disabled={!sendPrivateDm}
-              />
+              />}
             </div>
           </div>
         </div>
@@ -269,7 +272,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Trigger mode" value={isAnyComment ? "Any comment" : "Specific keyword"} />
             <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
             <SettingsRow label="Public reply" value={modeLabels.publicReply} />
-            <SettingsRow label="Private DM" value={modeLabels.privateDm} />
+            {!appReviewMode && <SettingsRow label="Private DM" value={modeLabels.privateDm} />}
             <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />
             <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />
             <SettingsRow label="Settings source" value="Saved database state" />
@@ -283,19 +286,19 @@ export default async function CampaignDetailPage({ params }: Props) {
         </aside>
       </div>
 
-      <div className="ap3k-card mb-8 rounded-2xl p-4">
+      {!appReviewMode && <div className="ap3k-card mb-8 rounded-2xl p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-blue">
           Reviewer test script
         </p>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{getReviewerTestCopy(sendPrivateDm)}</p>
-      </div>
+      </div>}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard
-          label="DMs sent"
-          icon="✉️"
-          value={stats?.dmsSent ?? automation.listener?.dmCount ?? 0}
+          label={appReviewMode ? "Public replies" : "DMs sent"}
+          icon={appReviewMode ? "↩" : "✉️"}
+          value={appReviewMode ? (stats?.repliesSent ?? 0) : (stats?.dmsSent ?? automation.listener?.dmCount ?? 0)}
         />
         <StatCard
           label="Leads captured"
@@ -385,7 +388,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
 
           {/* DM preview */}
-          {automation.listener && sendPrivateDm && (
+          {!appReviewMode && automation.listener && sendPrivateDm && (
             <div>
               <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">
                 DM message
@@ -410,7 +413,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               )}
             </div>
           )}
-          {automation.listener && !sendPrivateDm && (
+          {!appReviewMode && automation.listener && !sendPrivateDm && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-4">
               <p className="text-xs font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
                 Private DM
@@ -481,7 +484,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div>
             <h2 className="text-sm font-bold text-slate-950 dark:text-white">Recent activity</h2>
             <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
-              Latest 20 comment interactions. Technical diagnostics are available in Admin.
+              {appReviewMode ? "Comments received, triggers matched, public replies sent, and leads captured." : "Latest 20 comment interactions. Technical diagnostics are available in Admin."}
             </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
@@ -519,12 +522,12 @@ export default async function CampaignDetailPage({ params }: Props) {
                       <StepPill label="Comment" active={item.steps.commentReceived} />
                       <StepPill label="Trigger" active={item.steps.triggerMatched} />
                       <StepPill label="Public reply" state={item.steps.publicReply} />
-                      <StepPill label="DM" state={item.steps.privateDm} />
+                      {!appReviewMode && <StepPill label="DM" state={item.steps.privateDm} />}
                     </div>
                     <p className="mt-2 text-xs dark:text-slate-400 text-slate-500">
                       {new Date(item.createdAt).toLocaleString()}
                     </p>
-                    <details className="mt-2 group">
+                    {!appReviewMode && <details className="mt-2 group">
                       <summary className="cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
                         Details
                       </summary>
@@ -540,7 +543,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                         {item.details.publicReplyCommentId ? <p>Meta reply ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.publicReplyCommentId}</code></p> : null}
                         {item.details.replyTextPreview ? <p>Reply preview {item.details.replyTextPreview}</p> : null}
                       </div>
-                    </details>
+                    </details>}
                   </div>
                 </div>
               ))}

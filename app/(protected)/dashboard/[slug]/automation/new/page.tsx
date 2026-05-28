@@ -9,6 +9,7 @@ import type { StepStatus } from "@/components/global/wizard-stepper";
 import { useQueryAutomationPosts, useQueryUser, useQueryWebhookHealth } from "@/hooks/user-queries";
 import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { isWeakPublicReply } from "@/lib/campaign-activity-format";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -35,7 +36,17 @@ const STEP_TIPS = [
   "Review everything. You can pause or edit this campaign at any time.",
 ];
 
+const REVIEW_STEP_LABELS = ["Choose post", "Trigger", "Public reply mode", "Public reply", "Review & Activate"];
+const REVIEW_STEP_TIPS = [
+  "Pick the post or Reel you want to run this campaign on.",
+  "Choose a keyword trigger or run on every comment.",
+  "Use public reply mode for App Review.",
+  "Write a clear public reply.",
+  "Review everything before going live.",
+];
+
 export default function WizardPage({ params, searchParams }: Props) {
+  const appReviewMode = isAppReviewMode();
   const { slug } = params;
   const editId = searchParams?.edit;
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts, isFetching: postsFetching } = useQueryAutomationPosts();
@@ -48,7 +59,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } =
     useWizard(slug, editId);
 
-  const steps = STEP_LABELS.map((label, i) => ({
+  const steps = (appReviewMode ? REVIEW_STEP_LABELS : STEP_LABELS).map((label, i) => ({
     label,
     status: (i + 1 < step ? "done" : i + 1 === step ? "active" : "todo") as StepStatus,
   }));
@@ -62,9 +73,15 @@ export default function WizardPage({ params, searchParams }: Props) {
   );
   const reviewWarnings = [
     data.post?.postid && data.post.postid !== "ANY" ? "Specific Post mode needs media from the currently connected Instagram account." : null,
-    data.sendPrivateDm === false ? "External DM mode: AP3k will not send private DMs." : null,
-    messagingCapabilityPending ? "Private DM is enabled, but Meta messaging capability may still be pending." : null,
+    !appReviewMode && data.sendPrivateDm === false ? "External DM mode: AP3k will not send private DMs." : null,
+    !appReviewMode && messagingCapabilityPending ? "Private DM is enabled, but Meta messaging capability may still be pending." : null,
   ].filter(Boolean) as string[];
+
+  useEffect(() => {
+    if (appReviewMode && data.sendPrivateDm) {
+      update({ sendPrivateDm: false, publicReplyEnabled: true });
+    }
+  }, [appReviewMode, data.sendPrivateDm, update]);
 
   useEffect(() => {
     if (!editId || loadedEdit || editing?.status !== 200 || !editing.data) return;
@@ -185,7 +202,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               <EmptyState
                 icon="🔗"
                 title="Connect Instagram first"
-                description="AP3k needs an official Instagram connection before it can listen for comments or send private replies."
+                description="AP3k needs an official Instagram connection before it can listen for comments."
                 ctaLabel="Connect Instagram"
                 ctaHref={`/dashboard/${slug}/integrations`}
               />
@@ -294,7 +311,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               Step 2 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              What triggers your DM?
+              {appReviewMode ? "What triggers the public reply?" : "What triggers your DM?"}
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Decide which comments count. For most campaigns, use a simple keyword like guide or link so people clearly opt in.
@@ -318,11 +335,20 @@ export default function WizardPage({ params, searchParams }: Props) {
               Step 3 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              Private DM settings
+              {appReviewMode ? "Public reply mode" : "Private DM settings"}
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              Choose whether AP3k sends the private message through Meta, or only tracks the comment while another tool sends the DM.
+              {appReviewMode
+                ? "AP3k will receive comments, match your trigger, send a public reply, and track the lead."
+                : "Choose whether AP3k sends the private message through Meta, or only tracks the comment while another tool sends the DM."}
             </p>
+            {appReviewMode ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-relaxed text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
+                <p className="font-black">Public reply mode</p>
+                <p className="mt-1">This campaign uses Instagram comments, keyword matching, public replies, and lead tracking.</p>
+              </div>
+            ) : (
+            <>
             <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-relaxed text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100">
               <p className="font-black">Messaging approval note</p>
               <p className="mt-1">Meta controls private DM permissions. If approval is pending, comments can still arrive and public replies can still run, but private DMs may show as skipped or failed until Meta enables messaging.</p>
@@ -375,6 +401,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                 </p>
               </div>
             )}
+            </>
+            )}
           </div>
         )}
 
@@ -404,7 +432,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               <span>
                 <span className="block text-sm font-bold text-slate-950 dark:text-white">Send public reply</span>
                 <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
-                  Reply publicly before the private DM. Turn off to skip public replies.
+                  {appReviewMode ? "Reply publicly when a comment matches your trigger." : "Reply publicly before the private DM. Turn off to skip public replies."}
                 </span>
               </span>
               <span
@@ -468,7 +496,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               Review &amp; Activate
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              Confirm the account, post scope, trigger, and DM mode before going live. After activation,
+              Confirm the account, post scope, trigger, and reply mode before going live. After activation,
               test from a different Instagram account by commenting your keyword.
             </p>
 
@@ -481,11 +509,13 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Post scope",   value: data.post?.postid === "ANY" ? "Any Post" : data.post?.postid ? `Selected post ID ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger",      value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword",           step: 2 as const },
                   { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.join(", "),   step: 2 as const },
-                  { label: "Private DM",   value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally",             step: 3 as const },
-                  ...(data.sendPrivateDm && data.dmMessage
+                  ...(appReviewMode
+                    ? [{ label: "Reply mode", value: "Public reply mode", step: 3 as const }]
+                    : [{ label: "Private DM", value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally", step: 3 as const }]),
+                  ...(!appReviewMode && data.sendPrivateDm && data.dmMessage
                     ? [{ label: "DM message", value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""), step: 3 as const }]
                     : []),
-                  ...(data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink)
+                  ...(!appReviewMode && data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink)
                     ? [{ label: "CTA button", value: `${data.ctaButtonTitle || "Link"} -> ${data.ctaLink || "url"}`, step: 3 as const }]
                     : []),
                   { label: "Public reply", value: data.publicReplyEnabled && [data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length > 0
@@ -525,7 +555,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             )}
             <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
               <p className="font-black text-slate-950 dark:text-white">After activation</p>
-              <p className="mt-1">AP3k listens through Meta webhooks. If no DM sends, check whether the campaign is active, the comment matches this trigger, webhook comments are arriving, and Meta messaging is approved.</p>
+              <p className="mt-1">{appReviewMode ? "AP3k listens for matching comments, sends public replies, and tracks leads." : "AP3k listens through Meta webhooks. If no DM sends, check whether the campaign is active, the comment matches this trigger, webhook comments are arriving, and Meta messaging is approved."}</p>
             </div>
 
             <button
@@ -541,7 +571,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               <span>
                 <span className="block text-sm font-bold text-slate-950 dark:text-white">Active campaign</span>
                 <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
-                  When enabled, AP3k listens for matching comments, sends public replies, and {data.sendPrivateDm ? "sends the configured DM." : "skips private DM sending."}
+                  {appReviewMode ? "When enabled, AP3k listens for matching comments, sends public replies, and tracks leads." : <>When enabled, AP3k listens for matching comments, sends public replies, and {data.sendPrivateDm ? "sends the configured DM." : "skips private DM sending."}</>}
                 </span>
               </span>
               <span
@@ -572,9 +602,15 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} />
             <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.join(", ") : "None yet"} />
-            <PreviewRow label="Private DM" value={data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />
-            <PreviewRow label="DM" value={data.sendPrivateDm ? data.dmMessage || "Write your primary DM" : "Handled by external tool"} />
-            <PreviewRow label="CTA" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Button"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No CTA"} />
+            {appReviewMode ? (
+              <PreviewRow label="Reply mode" value="Public reply mode" />
+            ) : (
+              <>
+                <PreviewRow label="Private DM" value={data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />
+                <PreviewRow label="DM" value={data.sendPrivateDm ? data.dmMessage || "Write your primary DM" : "Handled by external tool"} />
+                <PreviewRow label="CTA" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Button"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No CTA"} />
+              </>
+            )}
             <PreviewRow label="Public reply" value={data.publicReplyEnabled ? `${[data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length} variation(s)` : "Off"} />
             <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
           </div>
@@ -589,7 +625,7 @@ export default function WizardPage({ params, searchParams }: Props) {
       <div className="sticky bottom-0 border-t border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] px-4 py-4
                       flex items-center justify-between backdrop-blur-xl sm:px-10">
         <p className="text-xs dark:text-slate-400 text-slate-500 hidden sm:block">
-          {STEP_TIPS[step - 1]}
+          {(appReviewMode ? REVIEW_STEP_TIPS : STEP_TIPS)[step - 1]}
         </p>
         <div className="flex items-center gap-3 ml-auto">
           {step > 1 && (

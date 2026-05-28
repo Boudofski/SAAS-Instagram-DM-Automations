@@ -9,6 +9,7 @@ import { CreditCard, Home, Instagram, Megaphone, Settings } from "lucide-react";
 import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 
 const NAV = [
   { icon: Home, label: "Home",         segment: "" },
@@ -21,6 +22,7 @@ const NAV = [
 type Props = { slug: string };
 
 export default function Sidebar({ slug }: Props) {
+  const appReviewMode = isAppReviewMode();
   const { page } = usePath();
   const { data } = useQueryUser();
   const { user } = useUser();
@@ -114,7 +116,7 @@ export default function Sidebar({ slug }: Props) {
             <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
             <p className="relative mb-1 text-xs font-black text-slate-950 dark:text-white">Upgrade to Creator</p>
             <p className="mb-3 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-              Unlock AI replies &amp; unlimited campaigns
+              {appReviewMode ? "Unlock more public replies and campaigns" : "Unlock AI replies & unlimited campaigns"}
             </p>
             <Link
               href="/payment"

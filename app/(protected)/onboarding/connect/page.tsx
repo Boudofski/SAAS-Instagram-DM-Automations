@@ -1,8 +1,11 @@
 import { INTEGRATION_CARDS } from "@/constants/integrations";
 import IntegrationCard from "@/app/(protected)/dashboard/[slug]/integrations/_components/integration-card";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import Link from "next/link";
 
 export default function OnboardingConnectPage() {
+  const appReviewMode = isAppReviewMode();
+
   return (
     <div>
       <div className="text-center mb-8">
@@ -23,8 +26,14 @@ export default function OnboardingConnectPage() {
 
       <div className="rounded-2xl border border-rf-border bg-white/[0.03] p-4 text-xs leading-relaxed text-rf-muted">
         <p className="font-bold text-rf-text">Safe connection notes</p>
-        <p className="mt-2">We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, comments, and messaging because Instagram Business accounts are managed through Meta Pages.</p>
-        <p className="mt-2">Private DM delivery depends on Meta messaging approval. If it is pending, AP3k can still help you test comments and public replies.</p>
+        <p className="mt-2">
+          {appReviewMode
+            ? "We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, and comments because Instagram Business accounts are managed through Meta Pages."
+            : "We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, comments, and messaging because Instagram Business accounts are managed through Meta Pages."}
+        </p>
+        {!appReviewMode && (
+          <p className="mt-2">Private DM delivery depends on Meta messaging approval. If it is pending, AP3k can still help you test comments and public replies.</p>
+        )}
       </div>
 
       <Link

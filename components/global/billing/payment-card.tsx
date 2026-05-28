@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { cn } from "@/lib/utils";
 import { CircleCheck } from "lucide-react";
 import Link from "next/link";
@@ -39,6 +40,12 @@ const PLAN_COPY = {
 
 function PaymentCard({ label, current }: Props) {
   const plan = PLAN_COPY[label];
+  const appReviewMode = isAppReviewMode();
+  const features = appReviewMode && label === "PRO"
+    ? ["Unlimited campaigns", "5,000 public replies/month", "Lead export", "Analytics"]
+    : appReviewMode && label === "FREE"
+      ? ["1 active campaign", "50 public replies/month", "Keyword triggers", "Basic analytics"]
+      : plan.features;
   const isActive = label === current;
   const isAgency = label === "AGENCY";
   const isIncludedFree = label === "FREE" && current === "PRO";
@@ -71,7 +78,7 @@ function PaymentCard({ label, current }: Props) {
         <span className="text-sm text-slate-500 dark:text-rf-muted">{plan.period}</span>
       </div>
       <div className="mt-5 flex flex-1 flex-col gap-2.5">
-        {plan.features.map((feature) => (
+        {features.map((feature) => (
           <p key={feature} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300">
             <CircleCheck className="h-4 w-4 flex-shrink-0 text-rf-green" />
             {feature}
