@@ -99,7 +99,7 @@ function Page({ searchParams }: PageProps) {
 
           <div className="rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-              First successful test
+              {appReviewMode ? "Quick setup guide" : "First successful test"}
             </p>
             <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2 lg:grid-cols-1">
               {[
@@ -119,7 +119,11 @@ function Page({ searchParams }: PageProps) {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-relaxed text-slate-600 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-300">
           <p className="font-black text-slate-950 dark:text-white">Official Meta workflow</p>
-          <p className="mt-2">AP3k redirects you to Meta, stores the returned access token, and connects your Instagram Business or Creator account through official Meta APIs.</p>
+          <p className="mt-2">
+            {appReviewMode
+              ? "AP3k connects your Instagram Business or Creator account securely through official Meta APIs."
+              : "AP3k redirects you to Meta, stores the returned access token, and connects your Instagram Business or Creator account through official Meta APIs."}
+          </p>
           {!appReviewMode && (
             <p className="mt-2">Private DM sending is available only when Meta messaging permissions are approved. Until then, use public replies and activity logs to verify comment matching.</p>
           )}

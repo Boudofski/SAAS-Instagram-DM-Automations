@@ -85,8 +85,8 @@ describe("App Review-safe UX", () => {
     expect(formatKeywordDisplay("AI", true)).toBe("Keyword: ai");
     expect(formatAppReviewActivitySubtitle('Trigger matched "AI"', true)).toBe('Trigger matched keyword "ai"');
     expect(account).toContain("ReviewDisconnectInstagramButton");
-    expect(disconnect).toContain("Disconnect Instagram");
-    expect(disconnect).toContain("Remove this Instagram account from AP3k.");
+    expect(disconnect).toContain("Remove connection");
+    expect(disconnect).toContain("Remove Instagram connection?");
     expect(integrationQueries).toContain("softDisconnectIntegrationForUser");
     expect(integrationQueries).toContain('status: "DISCONNECTED"');
     expect(integrationQueries).not.toContain("client.integrations.delete");

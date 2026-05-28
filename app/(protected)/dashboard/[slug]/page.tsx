@@ -129,13 +129,15 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               detail: appReviewMode
                 ? "Comment the campaign keyword from a different Instagram account, then come back here to confirm the activity log."
                 : "Comment the campaign keyword from a different Instagram account, then come back here to confirm the webhook log.",
-              cta: "Check connection",
+              cta: appReviewMode ? "View account" : "Check connection",
               href: `/dashboard/${params.slug}/account`,
             }
           : metrics?.leadsCaptured === 0
             ? {
                 title: "No leads captured yet",
-                detail: "Comments are arriving. Add a clear DM CTA or lead link so matched commenters have an obvious next step.",
+                detail: appReviewMode
+                  ? "Comments are arriving. Add a lead link so matched commenters can take the next step."
+                  : "Comments are arriving. Add a clear DM CTA or lead link so matched commenters have an obvious next step.",
                 cta: "Tune campaign",
                 href: `/dashboard/${params.slug}/automation`,
               }
@@ -210,7 +212,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                   ? "Token expired. Reconnect Instagram before testing comments."
                   : profileSnapshot?.fetchedAt
                     ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
-                    : "Ready for official comment-to-DM testing."}
+                    : appReviewMode ? "Ready to receive Instagram comments." : "Ready for official comment-to-DM testing."}
               </p>
             </div>
           </div>
@@ -403,7 +405,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               </>
             )}
             <Link href={isEmpty ? `/dashboard/${params.slug}/automation/new` : `/dashboard/${params.slug}/account`} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">
-              {isEmpty ? "Create campaign" : "Check connection"}
+              {isEmpty ? "Create campaign" : appReviewMode ? "View account" : "Check connection"}
             </Link>
           </div>
         ) : (

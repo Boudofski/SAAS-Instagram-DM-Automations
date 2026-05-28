@@ -276,9 +276,11 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
             <SettingsRow label="Public reply" value={modeLabels.publicReply} />
             {!appReviewMode && <SettingsRow label="Private DM" value={modeLabels.privateDm} />}
-            <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />
-            <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />
-            <SettingsRow label="Settings source" value="Saved database state" />
+            {!appReviewMode && <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />}
+            {appReviewMode
+              ? <SettingsRow label="Mode" value={sendPrivateDm ? "Comment automation" : "Public reply"} />
+              : <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />}
+            {!appReviewMode && <SettingsRow label="Settings source" value="Saved database state" />}
           </div>
           <Link
             href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`}
