@@ -82,6 +82,7 @@ async function Page({ searchParams }: PageProps) {
   const appReviewMode = isAppReviewMode();
   const user = await onUserInfo();
   const instagram = getCanonicalInstagramIntegration(user.status === 200 ? user.data?.integrations : null);
+  const oauthSaveFailed = Boolean(error);
   const errorMessage = error
     ? appReviewMode
       ? reviewSafeInstagramOAuthErrorMessage(error)
@@ -97,7 +98,7 @@ async function Page({ searchParams }: PageProps) {
             </p>
             {instagram && (
               <p className="mt-2 font-semibold">
-                The new Instagram account could not be saved. Your current connected account was not changed.
+                New Instagram connection could not be saved. Your current connected account remains{instagram.instagramUsername ? ` @${instagram.instagramUsername}` : " unchanged"}.
               </p>
             )}
             {!appReviewMode && ERROR_STEPS[error] && (
@@ -156,11 +157,11 @@ async function Page({ searchParams }: PageProps) {
         </div>
 
         {INTEGRATION_CARDS.map((card, index) => (
-          <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} />
+          <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} oauthSaveFailed={oauthSaveFailed} />
         ))}
         {error && instagram && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
-            Current connected account{instagram.instagramUsername ? `: @${instagram.instagramUsername}` : ""}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
+            Current saved connection{instagram.instagramUsername ? `: @${instagram.instagramUsername}` : ""}
           </div>
         )}
     </div>

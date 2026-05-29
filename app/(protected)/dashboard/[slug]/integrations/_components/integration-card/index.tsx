@@ -24,9 +24,10 @@ type Props = {
   surface?: "dashboard" | "onboarding";
   continueHref?: string;
   canonicalConnected?: boolean;
+  oauthSaveFailed?: boolean;
 };
 
-function IntegrationCard({ title, description, icon, strategy, surface = "dashboard", continueHref, canonicalConnected }: Props) {
+function IntegrationCard({ title, description, icon, strategy, surface = "dashboard", continueHref, canonicalConnected, oauthSaveFailed = false }: Props) {
   const [isConnecting, setIsConnecting] = React.useState(false);
   const { userId } = useAuth();
   const appReviewMode = isAppReviewMode();
@@ -188,9 +189,14 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
           )}
         </div>
       </div>
-      {connected && appReviewMode && (
+      {connected && appReviewMode && !oauthSaveFailed && (
         <div className="mt-5 w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-relaxed text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           Instagram connected. Comments and public replies are ready for campaigns.
+        </div>
+      )}
+      {connected && appReviewMode && oauthSaveFailed && (
+        <div className="mt-5 w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
+          Current saved connection{displayIntegration?.instagramUsername ? `: @${displayIntegration.instagramUsername}` : ""}.
         </div>
       )}
       {connected && !appReviewMode && (

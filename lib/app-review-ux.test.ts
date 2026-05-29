@@ -119,6 +119,11 @@ describe("App Review-safe UX", () => {
 
     expect(dashboard).toContain("getCanonicalInstagramIntegration");
     expect(dashboard).toContain("const instagramDisconnected = !instagramConnected");
+    expect(dashboard).toContain("const activeCampaigns = automations.filter");
+    expect(dashboard).toContain("automation.active && !automation.needsReview && !automation.archivedAt");
+    expect(dashboard).toContain("const hasNeedsReviewCampaign");
+    expect(dashboard).toContain("Review required");
+    expect(dashboard).toContain("Paused until campaign is activated/reviewed");
     expect(dashboard).toContain("Instagram account disconnected");
     expect(dashboard).toContain("Instagram account changed. Review campaigns before reactivating.");
     expect(sidebar).toContain("getCanonicalInstagramIntegration");
@@ -161,6 +166,7 @@ describe("App Review-safe UX", () => {
     const complete = readRepoFile("app/(protected)/onboarding/complete/page.tsx");
     const layout = readRepoFile("app/(protected)/onboarding/layout.tsx");
     const integrationCard = readRepoFile("app/(protected)/dashboard/[slug]/integrations/_components/integration-card/index.tsx");
+    const integrationsPage = readRepoFile("app/(protected)/dashboard/[slug]/integrations/page.tsx");
 
     expect(onboarding).toContain("getCanonicalInstagramIntegration");
     expect(onboarding).toContain("const connected = Boolean(instagram)");
@@ -193,6 +199,11 @@ describe("App Review-safe UX", () => {
     expect(integrationCard).toContain("Instagram connected");
     expect(integrationCard).toContain("AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account.");
     expect(integrationCard).toContain("Create my first campaign");
+    expect(integrationCard).toContain("!oauthSaveFailed");
+    expect(integrationCard).toContain("Current saved connection");
+    expect(integrationsPage).toContain("const oauthSaveFailed = Boolean(error)");
+    expect(integrationsPage).toContain("New Instagram connection could not be saved. Your current connected account remains");
+    expect(integrationsPage).toContain("oauthSaveFailed={oauthSaveFailed}");
     expect(integrationCard).toContain("flex w-full flex-col gap-5 sm:flex-row");
     expect(integrationCard).toContain("w-14 shrink-0");
     expect(integrationCard).toContain("sm:w-auto sm:min-w-52");

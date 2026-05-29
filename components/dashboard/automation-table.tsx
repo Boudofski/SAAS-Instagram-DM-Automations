@@ -172,18 +172,18 @@ export default function AutomationTable({
       </div>
 
       {/* Desktop table */}
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden overflow-x-auto md:block xl:overflow-x-visible">
         <table className="w-full table-fixed text-left">
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
             <tr>
-              <th className="w-[28%] px-4 py-3">Campaign</th>
-              <th className="w-[10%] px-3 py-3">Post</th>
-              <th className="w-[18%] px-3 py-3">Trigger</th>
-              <th className="w-[9%] px-3 py-3">{appReviewMode ? "Reply" : "Mode"}</th>
-              <th className="w-[7%] px-3 py-3">Runs</th>
-              <th className="w-[7%] px-3 py-3">Leads</th>
-              <th className="w-[8%] px-3 py-3">Status</th>
-              <th className="w-[13%] px-3 py-3 text-right">Actions</th>
+              <th className="w-[30%] px-3 py-3">Campaign</th>
+              <th className="w-[8%] px-2 py-3">Post</th>
+              <th className="w-[18%] px-2 py-3">Trigger</th>
+              <th className="w-[8%] px-2 py-3">{appReviewMode ? "Reply" : "Mode"}</th>
+              <th className="w-[6%] px-2 py-3">Runs</th>
+              <th className="w-[6%] px-2 py-3">Leads</th>
+              <th className="w-[10%] px-2 py-3">Status</th>
+              <th className="w-[14%] px-2 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/10">
@@ -205,13 +205,13 @@ export default function AutomationTable({
 
                 return (
                   <tr key={automation.id} className="text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 py-4">
+                      <div className="flex min-w-0 items-center gap-2">
                         {post?.media && !isAny ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={post.media} alt={post.caption ?? automation.name ?? "Campaign"} className="h-10 w-10 flex-shrink-0 rounded-xl object-cover" />
+                          <img src={post.media} alt={post.caption ?? automation.name ?? "Campaign"} className="h-9 w-9 flex-shrink-0 rounded-xl object-cover" />
                         ) : (
-                          <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300">
+                          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300">
                             AP
                           </div>
                         )}
@@ -224,12 +224,12 @@ export default function AutomationTable({
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-2 py-4">
                       <span className="ap3k-badge ap3k-badge-slate">
                         {isAny ? "Any" : post?.postid ? "Specific" : "Manual"}
                       </span>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-2 py-4">
                       <div className="flex max-w-[160px] flex-wrap gap-1">
                         {isAnyComment ? (
                           <span className="ap3k-badge ap3k-badge-blue">Any comment</span>
@@ -243,19 +243,19 @@ export default function AutomationTable({
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-2 py-4">
                       <span title={mode.full} className="ap3k-badge ap3k-badge-slate">{mode.short}</span>
                     </td>
-                    <td className="px-3 py-3.5 font-black text-slate-950 dark:text-white">{runs}</td>
-                    <td className="px-3 py-3.5 font-black text-slate-950 dark:text-white">{leads}</td>
-                    <td className="px-3 py-4">
+                    <td className="px-2 py-3.5 font-black text-slate-950 dark:text-white">{runs}</td>
+                    <td className="px-2 py-3.5 font-black text-slate-950 dark:text-white">{leads}</td>
+                    <td className="px-2 py-4">
                       <StatusPill status={status} />
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-2 py-4">
                       <div className="inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
                         <Link
                           href={`/dashboard/${slug}/automation/new?edit=${automation.id}`}
-                          className="rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
+                          className="rounded-[9px] px-2 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
                         >
                           {automation.needsReview || automation.stalePost ? "Review" : "Edit"}
                         </Link>
@@ -263,7 +263,7 @@ export default function AutomationTable({
                           type="button"
                           disabled={isPending}
                           onClick={() => handleActivate(automation.id, !Boolean(automation.active))}
-                          className="rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
+                          className="rounded-[9px] px-2 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
                         >
                           {automation.active ? "Pause" : "Activate"}
                         </button>
@@ -342,7 +342,7 @@ function CampaignBadges({ automation, compact, appReviewMode = isAppReviewMode()
     automation.stalePost ? { label: "Stale post", tone: "red" } : null,
     automation.needsReview ? { label: "Needs review", tone: "red" } : null,
     appReviewMode
-      ? { label: "Public reply active", tone: "green" }
+      ? { label: automation.active && !automation.needsReview ? "Public reply active" : "Public reply paused", tone: automation.active && !automation.needsReview ? "green" : "amber" }
       : automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : { label: "AP3k DM", tone: "green" },
     { label: hasPublicReply ? "Public reply on" : "Public reply off", tone: hasPublicReply ? "blue" : "slate" },
   ].filter(Boolean) as { label: string; tone: string }[];

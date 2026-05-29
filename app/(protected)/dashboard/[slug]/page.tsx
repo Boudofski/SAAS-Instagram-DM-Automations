@@ -102,6 +102,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     status: accountDiagnostics?.delivery.status ?? "no_delivery",
   });
   const needsReviewCampaigns = automations.filter((automation: any) => automation.needsReview);
+  const activeCampaigns = automations.filter((automation: any) => automation.active && !automation.needsReview && !automation.archivedAt);
+  const hasActiveCampaign = activeCampaigns.length > 0;
+  const hasNeedsReviewCampaign = needsReviewCampaigns.length > 0;
   const instagramDisconnected = !instagramConnected;
   const nextAction = instagramDisconnected || tokenExpired
     ? {
@@ -121,10 +124,12 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           cta: "Create campaign",
           href: `/dashboard/${params.slug}/automation/new`,
         }
-      : !automations.some((automation: any) => automation.active)
+      : !hasActiveCampaign
         ? {
             title: "Activate a campaign",
-            detail: "Campaigns exist, but none are live. Activate one before testing comments.",
+            detail: hasNeedsReviewCampaign
+              ? "Campaigns need review before comments and public replies can run."
+              : "Campaigns exist, but none are live. Activate one before testing comments.",
             cta: "Review campaigns",
             href: `/dashboard/${params.slug}/automation`,
           }
@@ -348,13 +353,13 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         />
         <HealthPill
           label="Campaign status"
-          detail={automations.some((automation: any) => automation.active) ? "At least one live campaign" : "Activate a campaign"}
-          state={automations.some((automation: any) => automation.active) ? "ok" : "warn"}
+          detail={hasActiveCampaign ? "At least one live campaign" : hasNeedsReviewCampaign ? "Review required" : "Activate a campaign"}
+          state={hasActiveCampaign ? "ok" : "warn"}
         />
         <HealthPill
           label={appReviewMode ? "Public replies" : hasExternalDmCampaign ? "External DM mode" : "Private DM"}
-          detail={appReviewMode ? "Public replies active" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval"}
-          state={hasExternalDmCampaign ? "ok" : "warn"}
+          detail={hasActiveCampaign ? (appReviewMode ? "Public replies active" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval") : "Paused until campaign is activated/reviewed"}
+          state={hasActiveCampaign ? "ok" : "warn"}
         />
       </div>
 
