@@ -8,8 +8,10 @@ import {
 import { onUserInfo } from "@/actions/user";
 import { Button } from "@/components/ui/button";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import React from "react";
 import { toast } from "sonner";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
@@ -19,9 +21,11 @@ type Props = {
   description: string;
   icon: React.ReactNode;
   strategy: "INSTAGRAM" | "CRM";
+  surface?: "dashboard" | "onboarding";
+  continueHref?: string;
 };
 
-function IntegrationCard({ title, description, icon, strategy }: Props) {
+function IntegrationCard({ title, description, icon, strategy, surface = "dashboard", continueHref }: Props) {
   const [isConnecting, setIsConnecting] = React.useState(false);
   const { userId } = useAuth();
   const appReviewMode = isAppReviewMode();
@@ -52,8 +56,18 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
     },
   });
 
-  const integrated = data?.data?.integrations.find((i) => i.name === strategy);
+  const integrated = strategy === "INSTAGRAM"
+    ? getCanonicalInstagramIntegration(data?.data?.integrations)
+    : data?.data?.integrations.find((i: any) => i.name === strategy);
   const isInstagram = strategy === "INSTAGRAM";
+  const onboarding = surface === "onboarding";
+  const connected = Boolean(integrated);
+  const displayTitle = onboarding && connected ? "Instagram connected" : title;
+  const displayDescription = onboarding
+    ? connected
+      ? "This account is ready for comment-triggered public replies."
+      : "Connect your Instagram Business or Creator account to receive comments and send public replies."
+    : description;
   const lastFailure = formatUserFacingMetaError(
     health?.data?.subscription?.error ?? health?.data?.lastFailure?.errorMessage,
     health?.data?.lastFailure?.eventType
@@ -79,27 +93,32 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
   };
 
   return (
-    <div className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white lg:grid-cols-[auto_minmax(0,1fr)_auto]">
-      <div className="hidden sm:block">{icon}</div>
-      <div className="flex min-w-0 flex-col">
-        <h3 className="text-xl font-black">{title}</h3>
-        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">{description}</p>
-        {integrated?.instagramId && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
+    <div className={[
+      "w-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
+      onboarding ? "sm:p-6" : "",
+    ].join(" ")}>
+      <div className="flex w-full flex-col gap-5 md:flex-row md:items-start">
+        <div className="flex shrink-0 items-center justify-center self-start">{icon}</div>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="text-xl font-black leading-tight sm:text-2xl">{displayTitle}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">{displayDescription}</p>
+          {integrated?.instagramId && (
+          <div className="mt-4 flex min-w-0 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
             {integrated.profilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={integrated.profilePictureUrl}
                 alt={integrated.instagramUsername ?? "Connected Instagram account"}
-                className="h-9 w-9 rounded-full object-cover"
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-ap3k-gradient text-xs font-black text-white">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ap3k-gradient text-xs font-black text-white">
                 IG
               </div>
             )}
             <div className="min-w-0">
-              <p className="truncate text-xs font-bold text-rf-green">
+              <p className="truncate text-sm font-black text-rf-green">
                 {integrated.instagramUsername
                   ? `@${integrated.instagramUsername}`
                   : "Instagram connected"}
@@ -116,45 +135,64 @@ function IntegrationCard({ title, description, icon, strategy }: Props) {
               )}
             </div>
           </div>
-        )}
+          )}
+        </div>
+
+        <div className="flex w-full flex-col gap-2 md:w-auto md:min-w-44">
+          {onboarding && connected && continueHref ? (
+            <Link href={continueHref} className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-center text-sm font-black text-white">
+              Continue
+            </Link>
+          ) : (
+            <Button
+              onClick={onConnect}
+              disabled={!isInstagram || isConnecting}
+              className="ap3k-gradient-button min-h-11 w-full px-4 text-white disabled:opacity-60"
+            >
+              {connected ? "Reconnect Instagram" : isConnecting ? "Connecting..." : "Connect Instagram"}
+            </Button>
+          )}
+          {onboarding && connected && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onConnect}
+              disabled={!isInstagram || isConnecting}
+              className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+            >
+              {isConnecting ? "Connecting..." : "Reconnect Instagram"}
+            </Button>
+          )}
+          {connected && !appReviewMode && !onboarding && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => resubscribe.mutate()}
+              disabled={resubscribe.isPending}
+              className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+            >
+              {resubscribe.isPending ? "Resubscribing..." : "Resubscribe webhooks"}
+            </Button>
+          )}
+          {connected && !appReviewMode && !onboarding && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              className="min-h-11 w-full cursor-not-allowed border-red-200 bg-white px-4 text-sm font-bold text-red-400 opacity-70 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300"
+            >
+              Contact support to disconnect
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto lg:flex-col">
-        <Button
-          onClick={onConnect}
-          disabled={!isInstagram || isConnecting}
-          className="ap3k-gradient-button min-w-36 text-white disabled:opacity-60"
-        >
-          {integrated ? "Reconnect Instagram" : isConnecting ? "Connecting..." : "Connect Instagram"}
-        </Button>
-        {integrated && !appReviewMode && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => resubscribe.mutate()}
-            disabled={resubscribe.isPending}
-            className="min-w-36 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-          >
-            {resubscribe.isPending ? "Resubscribing..." : "Resubscribe webhooks"}
-          </Button>
-        )}
-        {integrated && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="min-w-36 cursor-not-allowed border-red-200 bg-white text-red-400 opacity-70 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300"
-          >
-            Contact support to disconnect
-          </Button>
-        )}
-      </div>
-      {integrated && appReviewMode && (
-        <div className="w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100 lg:col-span-3">
+      {connected && appReviewMode && (
+        <div className="mt-5 w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-relaxed text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           Instagram connected. Comments and public replies are ready for campaigns.
         </div>
       )}
-      {integrated && !appReviewMode && (
-        <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300 lg:col-span-3">
+      {connected && !appReviewMode && (
+        <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300">
           <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             Webhook health
           </p>

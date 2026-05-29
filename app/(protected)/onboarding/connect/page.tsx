@@ -12,15 +12,16 @@ export default function OnboardingConnectPage() {
         <h1 className="text-2xl font-extrabold tracking-tight mb-2">
           Connect your Instagram
         </h1>
-        <p className="text-sm text-rf-muted leading-relaxed">
-          AP3k connects through Meta&apos;s official login so it can monitor comments
-          and send approved replies for the Instagram account you choose.
+        <p className="mx-auto max-w-xl text-sm text-rf-muted leading-relaxed">
+          {appReviewMode
+            ? "AP3k connects through Meta's official login so it can receive Instagram comments, send public replies, and track campaign activity for the account you choose."
+            : "AP3k connects through Meta's official login so it can receive Instagram comments, send public replies, and track campaign activity for the account you choose."}
         </p>
       </div>
 
-      <div className="bg-rf-surface border border-rf-border rounded-2xl p-6 mb-4">
+      <div className="mb-4 rounded-2xl border border-rf-border bg-[#0f172a]/70 p-4 sm:p-6">
         {INTEGRATION_CARDS.map((card, i) => (
-          <IntegrationCard key={i} {...card} />
+          <IntegrationCard key={i} {...card} surface="onboarding" continueHref="/onboarding/complete" />
         ))}
       </div>
 
@@ -36,12 +37,14 @@ export default function OnboardingConnectPage() {
         )}
       </div>
 
-      <Link
-        href="/onboarding/complete"
-        className="block mt-6 text-center text-xs text-rf-muted hover:text-rf-text transition-colors"
-      >
-        Already connected? Continue →
-      </Link>
+      {!appReviewMode && (
+        <Link
+          href="/onboarding/complete"
+          className="block mt-6 text-center text-xs text-rf-muted hover:text-rf-text transition-colors"
+        >
+          Already connected? Continue →
+        </Link>
+      )}
     </div>
   );
 }

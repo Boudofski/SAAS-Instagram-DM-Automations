@@ -141,6 +141,25 @@ describe("App Review-safe UX", () => {
     expect(integrationQueries).not.toContain("client.integrations.delete");
   });
 
+  it("keeps onboarding connect review-safe and responsive", () => {
+    const onboarding = readRepoFile("app/(protected)/onboarding/connect/page.tsx");
+    const layout = readRepoFile("app/(protected)/onboarding/layout.tsx");
+    const integrationCard = readRepoFile("app/(protected)/dashboard/[slug]/integrations/_components/integration-card/index.tsx");
+
+    expect(onboarding).toContain("receive Instagram comments, send public replies");
+    expect(onboarding).toContain("Safe connection notes");
+    expect(onboarding).toContain('surface="onboarding"');
+    expect(onboarding).not.toContain("approved replies");
+    expect(onboarding).not.toContain("Contact support to disconnect");
+    expect(layout).toContain("max-w-2xl");
+    expect(integrationCard).toContain("Instagram connected");
+    expect(integrationCard).toContain("This account is ready for comment-triggered public replies.");
+    expect(integrationCard).toContain("Continue");
+    expect(integrationCard).toContain("flex w-full flex-col gap-5 md:flex-row");
+    expect(integrationCard).toContain("md:w-auto md:min-w-44");
+    expect(integrationCard).toContain("!appReviewMode && !onboarding");
+  });
+
   it("uses browser-local timestamp rendering for dashboard timestamps", () => {
     const localTime = readRepoFile("components/global/local-time.tsx");
     const dashboard = readRepoFile("app/(protected)/dashboard/[slug]/page.tsx");
