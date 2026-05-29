@@ -159,11 +159,6 @@ async function Page({ searchParams }: PageProps) {
         {INTEGRATION_CARDS.map((card, index) => (
           <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} oauthSaveFailed={oauthSaveFailed} />
         ))}
-        {error && instagram && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
-            Current saved connection{instagram.instagramUsername ? `: @${instagram.instagramUsername}` : ""}
-          </div>
-        )}
     </div>
   );
 }

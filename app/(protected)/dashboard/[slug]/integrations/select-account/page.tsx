@@ -18,17 +18,17 @@ async function Page({ params }: Props) {
   }
 
   return (
-    <div className="flex justify-center p-4 text-slate-950 sm:p-6 lg:p-8">
+    <div className="flex justify-center p-4 text-slate-950 dark:text-slate-50 sm:p-6 lg:p-8">
       <div className="w-full max-w-5xl">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
             Select Instagram account
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
             Choose the account AP3k should connect
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-            AP3k found multiple Facebook Pages with linked Instagram accounts. Select the Page and Instagram account that owns the media you want to automate.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Select the Instagram account AP3k should use for comment automation.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ async function Page({ params }: Props) {
             <form
               key={account.pageId}
               action={selectPendingInstagramAccount}
-              className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
             >
               <input type="hidden" name="pageId" value={account.pageId} />
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -58,16 +58,15 @@ async function Page({ params }: Props) {
                     <p className="text-lg font-black">
                       @{account.instagramUsername ?? "unknown"}
                     </p>
-                    <p className="text-sm font-bold text-slate-700">
-                      Page: {account.pageName ?? "Unnamed Page"}
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      {account.pageName ?? "Instagram Business account"}
                     </p>
-                    <div className="mt-2 grid gap-1 text-xs text-slate-500 sm:grid-cols-2">
-                      <span>Page ID: {account.pageId}</span>
-                      <span>IG Business ID: {account.instagramBusinessAccountId}</span>
-                      <span>Source: {account.igAccountSource ?? "unknown"}</span>
-                      <span>
-                        Tasks: {account.tasks.length ? account.tasks.join(", ") : "not returned"}
-                      </span>
+                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      <span>Official Meta connection</span>
+                      <span>·</span>
+                      <span>Instagram Business account</span>
+                      <span>·</span>
+                      <span>Permissions granted through official Meta access</span>
                     </div>
                   </div>
                 </div>
