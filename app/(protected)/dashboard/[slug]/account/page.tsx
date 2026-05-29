@@ -1,5 +1,5 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
-import ReviewDisconnectInstagramButton from "@/components/dashboard/review-disconnect-instagram-button";
+import ReviewInstagramAccountProfile from "@/components/dashboard/review-instagram-account-profile";
 import LocalTime from "@/components/global/local-time";
 import { onUserInfo } from "@/actions/user";
 import { getCurrentWebhookHealth } from "@/actions/integration";
@@ -68,24 +68,25 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Official Meta connection</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Instagram Account</h1>
         <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
-          {displayUsername ? `@${displayUsername}` : "Connect your Instagram Business or Creator account"}
+          {appReviewMode
+            ? connected ? "Official Meta account" : "Connect your Instagram Business or Creator account"
+            : displayUsername ? `@${displayUsername}` : "Connect your Instagram Business or Creator account"}
         </p>
       </div>
 
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
+        {appReviewMode ? (
+          <ReviewInstagramAccountProfile
+            connected={connected}
+            displayUsername={displayUsername}
+            displayProfilePictureUrl={displayProfilePictureUrl}
+            pageName={instagram?.pageName}
+          />
+        ) : (
+        <>
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionHeader label="Profile" />
-          {appReviewMode ? (
-            connected ? (
-              <ReviewDisconnectInstagramButton />
-            ) : (
-              <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm">
-                Connect Instagram
-              </Link>
-            )
-          ) : (
-            <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
-          )}
+          <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
         </div>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-5">
@@ -167,6 +168,8 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
             </div>
           )}
         </div>
+        </>
+        )}
       </section>
 
       {appReviewMode && (

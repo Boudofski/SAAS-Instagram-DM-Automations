@@ -620,13 +620,16 @@ export const disconnectCurrentInstagramIntegration = async () => {
     revalidatePath("/dashboard", "layout");
     revalidatePath(`/dashboard/${user.id}`);
     revalidatePath(`/dashboard/${user.id}/account`);
+    revalidatePath(`/dashboard/${user.id}/integrations`);
     revalidatePath(`/dashboard/${user.id}/automation`);
+    revalidatePath(`/dashboard/${user.id}/automation`, "layout");
+    revalidatePath("/onboarding/connect");
     return { status: 200, data: "Instagram account disconnected" };
   } catch (error) {
     console.error("[oauth] disconnect instagram integration failed", {
       message: error instanceof Error ? error.message : String(error),
     });
-    return { status: 500, data: "Instagram account could not be disconnected" };
+    return { status: 500, data: "Instagram connection could not be removed. Please try again." };
   }
 };
 

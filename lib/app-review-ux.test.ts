@@ -84,7 +84,7 @@ describe("App Review-safe UX", () => {
 
     expect(formatKeywordDisplay("AI", true)).toBe("Keyword: ai");
     expect(formatAppReviewActivitySubtitle('Trigger matched "AI"', true)).toBe('Trigger matched keyword "ai"');
-    expect(account).toContain("ReviewDisconnectInstagramButton");
+    expect(account).toContain("ReviewInstagramAccountProfile");
     expect(account).toContain("getCanonicalInstagramIntegration");
     expect(account).toContain("isCanonicalInstagramConnected");
     expect(account).toContain("No Instagram account connected");
@@ -115,6 +115,7 @@ describe("App Review-safe UX", () => {
     const dashboard = readRepoFile("app/(protected)/dashboard/[slug]/page.tsx");
     const sidebar = readRepoFile("components/global/sidebar/index.tsx");
     const account = readRepoFile("app/(protected)/dashboard/[slug]/account/page.tsx");
+    const reviewAccountProfile = readRepoFile("components/dashboard/review-instagram-account-profile.tsx");
 
     expect(dashboard).toContain("getCanonicalInstagramIntegration");
     expect(dashboard).toContain("const instagramDisconnected = !instagramConnected");
@@ -124,6 +125,9 @@ describe("App Review-safe UX", () => {
     expect(sidebar).toContain("Connect to start");
     expect(account).toContain("connected && <StatusBadge");
     expect(account).toContain("connected && syncBadge");
+    expect(account).toContain("ReviewInstagramAccountProfile");
+    expect(reviewAccountProfile).toContain("const liveConnected = connected && !removed");
+    expect(reviewAccountProfile).toContain("No Instagram account connected");
   });
 
   it("refreshes client and server state after review-mode disconnect", () => {
@@ -132,11 +136,22 @@ describe("App Review-safe UX", () => {
     const integrationQueries = readRepoFile("actions/integration/queries.ts");
 
     expect(disconnectButton).toContain("queryClient.invalidateQueries");
+    expect(disconnectButton).toContain("queryClient.setQueriesData");
+    expect(disconnectButton).toContain("setRemoved(true)");
+    expect(disconnectButton).toContain("onDisconnected?.()");
     expect(disconnectButton).toContain('[\"user-profile\"]');
+    expect(disconnectButton).toContain('[\"user-integrations\"]');
+    expect(disconnectButton).toContain('[\"instagram-integration\"]');
     expect(disconnectButton).toContain('[\"user-automation\"]');
+    expect(disconnectButton).toContain('[\"instagram-media\"]');
+    expect(disconnectButton).toContain('[\"webhook-health\"]');
+    expect(disconnectButton).toContain('[\"onboarding-connect\"]');
+    expect(disconnectButton).toContain("Instagram connection could not be removed. Please try again.");
     expect(integrationAction).toContain('revalidatePath("/dashboard", "layout")');
     expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/account`)');
+    expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/integrations`)');
     expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/automation`)');
+    expect(integrationAction).toContain('revalidatePath("/onboarding/connect")');
     expect(integrationQueries).toContain("getCanonicalInstagramIntegration");
     expect(integrationQueries).not.toContain("client.integrations.delete");
   });
@@ -146,17 +161,32 @@ describe("App Review-safe UX", () => {
     const layout = readRepoFile("app/(protected)/onboarding/layout.tsx");
     const integrationCard = readRepoFile("app/(protected)/dashboard/[slug]/integrations/_components/integration-card/index.tsx");
 
+    expect(onboarding).toContain("getCanonicalInstagramIntegration");
+    expect(onboarding).toContain("const connected = Boolean(instagram)");
+    expect(onboarding).toContain("Instagram connected");
+    expect(onboarding).toContain("Create my first campaign");
+    expect(onboarding).toContain("Explore dashboard");
     expect(onboarding).toContain("receive Instagram comments, send public replies");
     expect(onboarding).toContain("Safe connection notes");
     expect(onboarding).toContain('surface="onboarding"');
+    expect(onboarding).not.toContain("You're all set");
+    expect(onboarding).not.toContain("You’re all set");
+    expect(onboarding).not.toMatch(/\bDMs?\b/i);
+    expect(onboarding).not.toMatch(/\bprivate\b/i);
+    expect(onboarding).not.toMatch(/\bmessaging\b/i);
+    expect(onboarding).not.toMatch(/\bwebhook\b/i);
+    expect(onboarding).not.toMatch(/\btoken\b/i);
+    expect(onboarding).not.toMatch(/\bdiagnostic\b/i);
+    expect(onboarding).not.toMatch(/\bdebug\b/i);
     expect(onboarding).not.toContain("approved replies");
     expect(onboarding).not.toContain("Contact support to disconnect");
     expect(layout).toContain("max-w-2xl");
     expect(integrationCard).toContain("Instagram connected");
-    expect(integrationCard).toContain("This account is ready for comment-triggered public replies.");
-    expect(integrationCard).toContain("Continue");
-    expect(integrationCard).toContain("flex w-full flex-col gap-5 md:flex-row");
-    expect(integrationCard).toContain("md:w-auto md:min-w-44");
+    expect(integrationCard).toContain("AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account.");
+    expect(integrationCard).toContain("Create my first campaign");
+    expect(integrationCard).toContain("flex w-full flex-col gap-5 sm:flex-row");
+    expect(integrationCard).toContain("w-14 shrink-0");
+    expect(integrationCard).toContain("sm:w-auto sm:min-w-52");
     expect(integrationCard).toContain("!appReviewMode && !onboarding");
   });
 

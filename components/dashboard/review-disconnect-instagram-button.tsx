@@ -1,36 +1,66 @@
 "use client";
 
 import { disconnectCurrentInstagramIntegration } from "@/actions/integration";
+import { isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-export default function ReviewDisconnectInstagramButton() {
+type Props = {
+  onDisconnected?: () => void;
+};
+
+const DISCONNECT_QUERY_KEYS = [
+  ["user-profile"],
+  ["user-integrations"],
+  ["instagram-integration"],
+  ["instagram-media"],
+  ["user-automation"],
+  ["webhook-health"],
+  ["onboarding-connect"],
+];
+
+export default function ReviewDisconnectInstagramButton({ onDisconnected }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const disconnect = () => {
     startTransition(async () => {
       const result = await disconnectCurrentInstagramIntegration();
       if (result.status === 200) {
+        setRemoved(true);
         setMessage("Connection removed.");
         setShowConfirm(false);
+        onDisconnected?.();
+        queryClient.setQueriesData({ queryKey: ["user-profile"] }, markInstagramDisconnected);
+        queryClient.setQueriesData({ queryKey: ["user-integrations"] }, markInstagramDisconnected);
+        queryClient.setQueriesData({ queryKey: ["instagram-integration"] }, markInstagramDisconnected);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["user-profile"] }),
-          queryClient.invalidateQueries({ queryKey: ["user-automation"] }),
-          queryClient.invalidateQueries({ queryKey: ["instagram-media"] }),
-          queryClient.invalidateQueries({ queryKey: ["webhook-health"] }),
+          ...DISCONNECT_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+          queryClient.invalidateQueries({ queryKey: ["automation-info"] }),
         ]);
         router.refresh();
         return;
       }
-      setMessage(typeof result.data === "string" ? result.data : "Could not remove connection.");
+      setMessage("Instagram connection could not be removed. Please try again.");
       setShowConfirm(false);
     });
   };
+
+  if (removed) {
+    return (
+      <div className="flex flex-col items-start gap-2 sm:items-end">
+        <p className="text-sm font-black text-slate-950 dark:text-white">Instagram not connected</p>
+        <p className="max-w-[260px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
+          Connection removed. Campaign history is preserved.
+        </p>
+      </div>
+    );
+  }
 
   if (showConfirm) {
     return (
@@ -79,4 +109,38 @@ export default function ReviewDisconnectInstagramButton() {
       )}
     </div>
   );
+}
+
+function markInstagramDisconnected<T>(old: T): T {
+  if (!old || typeof old !== "object") return old;
+
+  const root = old as any;
+  const integrations = root?.data?.integrations ?? root?.integrations;
+  if (!Array.isArray(integrations)) return old;
+
+  const nextIntegrations = integrations.map((integration: any) =>
+    isCanonicalInstagramConnected(integration)
+      ? {
+          ...integration,
+          status: "DISCONNECTED",
+          reconnectRequired: false,
+          tokenPresent: false,
+        }
+      : integration
+  );
+
+  if (root?.data?.integrations) {
+    return {
+      ...root,
+      data: {
+        ...root.data,
+        integrations: nextIntegrations,
+      },
+    };
+  }
+
+  return {
+    ...root,
+    integrations: nextIntegrations,
+  };
 }

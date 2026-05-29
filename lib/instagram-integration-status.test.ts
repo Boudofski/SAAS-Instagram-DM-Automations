@@ -18,6 +18,7 @@ describe("canonical Instagram integration status", () => {
   it("uses CONNECTED status, an Instagram id, and reconnect state as the canonical connected source", () => {
     expect(isCanonicalInstagramConnected(connected)).toBe(true);
     expect(isCanonicalInstagramConnected({ ...connected, status: "DISCONNECTED" })).toBe(false);
+    expect(isCanonicalInstagramConnected({ ...connected, name: "CRM" })).toBe(false);
     expect(isCanonicalInstagramConnected({ ...connected, instagramId: null })).toBe(false);
     expect(isCanonicalInstagramConnected({ ...connected, reconnectRequired: true })).toBe(false);
     expect(isCanonicalInstagramConnected({ ...connected, tokenPresent: false })).toBe(false);

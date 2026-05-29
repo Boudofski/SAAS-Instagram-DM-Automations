@@ -65,8 +65,8 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
   const displayTitle = onboarding && connected ? "Instagram connected" : title;
   const displayDescription = onboarding
     ? connected
-      ? "This account is ready for comment-triggered public replies."
-      : "Connect your Instagram Business or Creator account to receive comments and send public replies."
+      ? "AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account."
+      : "AP3k connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."
     : description;
   const lastFailure = formatUserFacingMetaError(
     health?.data?.subscription?.error ?? health?.data?.lastFailure?.errorMessage,
@@ -97,8 +97,8 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
       "w-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
       onboarding ? "sm:p-6" : "",
     ].join(" ")}>
-      <div className="flex w-full flex-col gap-5 md:flex-row md:items-start">
-        <div className="flex shrink-0 items-center justify-center self-start">{icon}</div>
+      <div className="flex w-full flex-col gap-5 sm:flex-row sm:items-start">
+        <div className="flex w-14 shrink-0 items-center justify-center self-start">{icon}</div>
 
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-black leading-tight sm:text-2xl">{displayTitle}</h3>
@@ -138,10 +138,10 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-2 md:w-auto md:min-w-44">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-52 sm:flex-wrap">
           {onboarding && connected && continueHref ? (
             <Link href={continueHref} className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-center text-sm font-black text-white">
-              Continue
+              Create my first campaign
             </Link>
           ) : (
             <Button
