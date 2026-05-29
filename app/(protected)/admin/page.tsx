@@ -32,12 +32,12 @@ import {
   adminDangerZoneStatus,
   adminTableColumns,
   classifyDeliveryError,
-  formatAdminDate,
   getTopAdminIssue,
   sanitizeAdminPayload,
   shortenAdminId,
   stripeCustomerDashboardUrl,
 } from "@/lib/admin-control-center";
+import LocalTime from "@/components/global/local-time";
 import { requireOwnerAdmin } from "@/lib/admin";
 import { APP_REVIEW_SUBMISSION_NOTES } from "@/lib/app-review-mode";
 import { getMetaAdminDiagnostics } from "@/lib/meta-admin-diagnostics";
@@ -635,7 +635,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 <Badge tone="green">Operational control center</Badge>
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Signed in as <span className="font-bold text-slate-800 dark:text-slate-100">{admin.email ?? admin.clerkId}</span> · Last refreshed {formatAdminDate(new Date())}
+                Signed in as <span className="font-bold text-slate-800 dark:text-slate-100">{admin.email ?? admin.clerkId}</span> · Last refreshed <LocalTime value={new Date()} empty="Never" />
               </p>
             </div>
             <form className="flex w-full flex-col gap-2 sm:flex-row xl:max-w-3xl">
@@ -714,11 +714,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <HealthCard label="Meta webhook delivery" value={lastPostRaw ? "Receiving POSTs" : "No raw POST yet"} tone={lastPostRaw ? "green" : "red"} />
-                    <HealthCard label="Last real comment" value={lastRealComment ? `${lastRealComment.status} · ${formatAdminDate(lastRealComment.createdAt)}` : "None"} tone={lastRealComment ? "green" : "amber"} />
-                    <HealthCard label="Public reply status" value={lastPublicReplySent ? `Working · ${formatAdminDate(lastPublicReplySent.createdAt)}` : "No sent reply yet"} tone={lastPublicReplySent ? "green" : "slate"} />
+                    <HealthCard label="Last real comment" value={lastRealComment ? <>{lastRealComment.status} · <LocalTime value={lastRealComment.createdAt} empty="Never" /></> : "None"} tone={lastRealComment ? "green" : "amber"} />
+                    <HealthCard label="Public reply status" value={lastPublicReplySent ? <>Working · <LocalTime value={lastPublicReplySent.createdAt} empty="Never" /></> : "No sent reply yet"} tone={lastPublicReplySent ? "green" : "slate"} />
                     <HealthCard label="DM capability" value={dmCapabilityMissing ? "Meta capability missing" : lastDmSent ? "DM sent" : "No success yet"} tone={dmCapabilityMissing ? "red" : lastDmSent ? "green" : "amber"} />
-                    <HealthCard label="Last loop guard" value={lastLoopGuardEvent ? `${lastLoopGuardEvent.eventType} · ${formatAdminDate(lastLoopGuardEvent.createdAt)}` : "None"} tone={lastLoopGuardEvent ? "red" : "green"} />
-                    <HealthCard label="Recommendation" value="Pause Any Comment campaigns until review if loop guard or self-comment skips appear." tone={loopGuardTriggered24h ? "red" : "amber"} />
+                    <HealthCard label="Last loop guard" value={lastLoopGuardEvent ? <>{lastLoopGuardEvent.eventType} · <LocalTime value={lastLoopGuardEvent.createdAt} empty="Never" /></> : "None"} tone={lastLoopGuardEvent ? "red" : "green"} />
+                    <HealthCard label="Recommendation" value="Review repeated loop-guard events. Valid external comments should continue processing." tone={loopGuardTriggered24h ? "red" : "amber"} />
                   </div>
                 </Panel>
 
@@ -755,7 +755,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <HealthCard label="Plan" value={selectedUser.subscription?.plan ?? "FREE"} />
                     <HealthCard label="IG accounts" value={selectedUser._count.integrations} />
                     <HealthCard label="Campaigns" value={selectedUser._count.automations} />
-                    <HealthCard label="Created" value={formatAdminDate(selectedUser.createdAt)} />
+                    <HealthCard label="Created" value={<LocalTime value={selectedUser.createdAt} empty="Never" />} />
                   </div>
                   <div className="mt-3 grid gap-2 md:grid-cols-2">
                     {selectedUser.integrations.map((integration) => (
@@ -779,7 +779,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     user.integrations[0]?.instagramUsername ? `@${user.integrations[0].instagramUsername}` : "Not connected",
                     String(user._count.automations),
                     String(leads),
-                    formatAdminDate(lastActivity),
+                    <LocalTime key="time" value={lastActivity} empty="Never" />,
                     <AdminActionMenu
                       key="actions"
                       viewHref={tabHref("users", { userId: user.id })}
@@ -838,7 +838,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     ) : null}
                   </span>,
                   sub.plan === "PRO" ? <Badge key="active" tone="green">Active/internal PRO</Badge> : <Badge key="free" tone="slate">Free</Badge>,
-                  formatAdminDate(sub.updatedAt),
+                  <LocalTime key="time" value={sub.updatedAt} empty="Never" />,
                   <AdminActionMenu key="actions" actions={adminActionMenuConfig("subscription") as AdminRowAction[]} />,
                 ];
                 })}
@@ -872,7 +872,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   </Badge>,
                   <Badge key="token" tone={integration.status === "DISCONNECTED" ? "amber" : "green"}>Stored</Badge>,
                   <Identity key="webhook" title={<Badge tone={integration.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "amber"}>{integration.webhookSubscriptionMode ?? "Unknown"}</Badge>} subtitle={<ShortId value={integration.webhookAccountId} empty="No webhook ID" />} />,
-                  formatAdminDate(integration.lastAdminActionAt ?? integration.oauthLastErrorAt ?? integration.createdAt),
+                  <LocalTime key="time" value={integration.lastAdminActionAt ?? integration.oauthLastErrorAt ?? integration.createdAt} empty="Never" />,
                   <InteractiveErrorSummary key="error" error={integration.oauthLastError ?? integration.webhookSubscriptionError} />,
                   <AdminActionMenu
                     key="actions"
@@ -933,7 +933,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     publicReplyEnabled ? <Badge key="reply" tone="green">Enabled</Badge> : <Badge key="reply" tone="slate">Off</Badge>,
                     campaign.sendPrivateDm === false ? <Badge key="private-dm" tone="amber">Skipped externally</Badge> : <Badge key="private-dm" tone="green">Sent by AP3k</Badge>,
                     `${campaign._count.messageLogs} logs · ${campaign._count.leads} leads`,
-                    formatAdminDate(campaign.createdAt),
+                    <LocalTime key="time" value={campaign.createdAt} empty="Never" />,
                     <AdminActionMenu
                       key="actions"
                       viewHref={tabHref("campaigns", { q: campaign.id })}
@@ -974,12 +974,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             <>
               <Panel title="Webhook Diagnostics">
                 <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-                  <HealthCard label="Last raw POST" value={formatAdminDate(lastPostRaw?.createdAt)} tone={lastPostRaw ? "green" : "red"} />
-                  <HealthCard label="GET verify" value={lastVerifyGet ? `${lastVerifyGet.status} · ${formatAdminDate(lastVerifyGet.createdAt)}` : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
+                  <HealthCard label="Last raw POST" value={<LocalTime value={lastPostRaw?.createdAt} empty="Never" />} tone={lastPostRaw ? "green" : "red"} />
+                  <HealthCard label="GET verify" value={lastVerifyGet ? <>{lastVerifyGet.status} · <LocalTime value={lastVerifyGet.createdAt} empty="Never" /></> : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
                   <HealthCard label="Signature failures 24h" value={String(signatureFailures24h)} tone={signatureFailures24h ? "red" : "green"} />
-                  <HealthCard label="Real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
-                  <HealthCard label="Inbound DM" value={formatAdminDate(lastInboundDm?.createdAt)} tone={lastInboundDm ? "green" : "slate"} />
-                  <HealthCard label="Internal self-test" value={formatAdminDate(lastSimulated?.createdAt)} tone={lastSimulated ? "green" : "slate"} />
+                  <HealthCard label="Real comment" value={<LocalTime value={lastRealComment?.createdAt} empty="Never" />} tone={lastRealComment ? "green" : "amber"} />
+                  <HealthCard label="Inbound DM" value={<LocalTime value={lastInboundDm?.createdAt} empty="Never" />} tone={lastInboundDm ? "green" : "slate"} />
+                  <HealthCard label="Internal self-test" value={<LocalTime value={lastSimulated?.createdAt} empty="Never" />} tone={lastSimulated ? "green" : "slate"} />
                   <HealthCard label="Self skipped 24h" value={String(selfCommentsSkipped24h)} tone={selfCommentsSkipped24h ? "amber" : "green"} />
                   <HealthCard label="Duplicate skipped 24h" value={String(duplicateCommentsSkipped24h)} tone={duplicateCommentsSkipped24h ? "amber" : "green"} />
                   <HealthCard label="Loop guard 24h" value={String(loopGuardTriggered24h)} tone={loopGuardTriggered24h ? "red" : "green"} />
@@ -1039,7 +1039,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   rows={webhookEvents.map((event: any) => {
                     const payload = event.payload && typeof event.payload === "object" ? event.payload as Record<string, unknown> : {};
                     return [
-                      formatAdminDate(event.createdAt),
+                      <LocalTime key="time" value={event.createdAt} empty="Never" />,
                       <Badge key="source" tone={event.eventSource === "META_REAL" ? "green" : "blue"}>{event.eventSource}</Badge>,
                       <EventBadge key="event" eventType={event.eventType} />,
                       `${String(payload.object ?? "unknown")} · ${event.field ?? String(payload.field ?? "none")}`,
@@ -1091,7 +1091,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     const meta = event.meta && typeof event.meta === "object" ? event.meta as Record<string, unknown> : {};
                     const reason = String(meta.reason ?? event.eventType);
                     return [
-                      formatAdminDate(event.createdAt),
+                      <LocalTime key="time" value={event.createdAt} empty="Never" />,
                       <Identity key="campaign" title={event.automation?.name ?? "Unknown campaign"} subtitle={event.automation?.User?.email ?? ""} />,
                       <EventBadge key="event" eventType={event.eventType} />,
                       reason === "self_comment_author"
@@ -1108,7 +1108,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                       <Identity key="ids" title={`comment ${event.commentId ?? "n/a"}`} subtitle={`media ${event.mediaId ?? "n/a"}`} />,
                       event.eventType === "LOOP_GUARD_PAUSED_CAMPAIGN"
                         ? "Campaign auto-paused by loop guard"
-                        : "Pause Any Comment campaigns until review if counts rise.",
+                        : "Review repeated loop-guard events. Valid external comments should continue processing.",
                     ];
                   })}
                   empty="No safety skip events found."
@@ -1121,7 +1121,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   rows={messageLogs.map((log: any) => {
                     const classified = classifyDeliveryError(log.errorMessage);
                     return [
-                      formatAdminDate(log.createdAt),
+                      <LocalTime key="time" value={log.createdAt} empty="Never" />,
                       <Identity key="campaign" title={log.automation?.name ?? "Unknown campaign"} subtitle={log.automation?.User?.email ?? ""} />,
                       <div key="type" className="space-y-1">
                         <Badge tone={log.messageType === "DM" ? "purple" : "blue"}>{log.messageType === "DM" ? "PRIVATE_DM" : "PUBLIC_REPLY"}</Badge>
@@ -1189,11 +1189,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   <HealthCard label="Page ID" value={metaDiagnostics.integration?.pageId ?? "None"} />
                   <HealthCard label="Business ID" value={accountWebhookDiagnostics?.integration.businessId ?? metaDiagnostics.integration?.businessId ?? "None"} />
                   <HealthCard label="Token present" value={accountWebhookDiagnostics?.integration.tokenPresent ? "Yes" : "No"} tone={accountWebhookDiagnostics?.integration.tokenPresent ? "green" : "red"} />
-                  <HealthCard label="Token expiry" value={formatAdminDate(accountWebhookDiagnostics?.integration.expiresAt ?? metaDiagnostics.integration?.expiresAt)} />
+                  <HealthCard label="Token expiry" value={<LocalTime value={accountWebhookDiagnostics?.integration.expiresAt ?? metaDiagnostics.integration?.expiresAt} empty="Never" />} />
                   <HealthCard label="Delivery state" value={accountWebhookDiagnostics?.delivery.label ?? metaDiagnostics.currentWebhookState} tone={accountWebhookDiagnostics?.delivery.status === "comments_active" ? "green" : "amber"} />
-                  <HealthCard label="Last raw POST" value={formatAdminDate(accountWebhookDiagnostics?.delivery.lastRawWebhook?.createdAt ?? metaDiagnostics.lastRawPost?.createdAt)} tone={accountWebhookDiagnostics?.delivery.lastRawWebhook ? "green" : "amber"} />
-                  <HealthCard label="Last DM webhook" value={formatAdminDate(accountWebhookDiagnostics?.delivery.lastMessagingWebhook?.createdAt ?? metaDiagnostics.lastInboundDm?.createdAt)} tone={accountWebhookDiagnostics?.delivery.lastMessagingWebhook ? "green" : "slate"} />
-                  <HealthCard label="Last Comment webhook" value={formatAdminDate(accountWebhookDiagnostics?.delivery.lastCommentWebhook?.createdAt ?? metaDiagnostics.lastRealComment?.createdAt)} tone={accountWebhookDiagnostics?.delivery.lastCommentWebhook ? "green" : "slate"} />
+                  <HealthCard label="Last raw POST" value={<LocalTime value={accountWebhookDiagnostics?.delivery.lastRawWebhook?.createdAt ?? metaDiagnostics.lastRawPost?.createdAt} empty="Never" />} tone={accountWebhookDiagnostics?.delivery.lastRawWebhook ? "green" : "amber"} />
+                  <HealthCard label="Last DM webhook" value={<LocalTime value={accountWebhookDiagnostics?.delivery.lastMessagingWebhook?.createdAt ?? metaDiagnostics.lastInboundDm?.createdAt} empty="Never" />} tone={accountWebhookDiagnostics?.delivery.lastMessagingWebhook ? "green" : "slate"} />
+                  <HealthCard label="Last Comment webhook" value={<LocalTime value={accountWebhookDiagnostics?.delivery.lastCommentWebhook?.createdAt ?? metaDiagnostics.lastRealComment?.createdAt} empty="Never" />} tone={accountWebhookDiagnostics?.delivery.lastCommentWebhook ? "green" : "slate"} />
                   <HealthCard label="Profile snapshot" value={accountWebhookDiagnostics?.profileSnapshot?.username ? `@${accountWebhookDiagnostics.profileSnapshot.username}` : "None"} />
                   <HealthCard label="Last campaign media" value={accountWebhookDiagnostics?.lastCampaignMedia?.postid ?? "None"} />
                   <HealthCard label="Active campaigns" value={String(accountWebhookDiagnostics?.activeCampaignCount ?? 0)} />
@@ -1288,11 +1288,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
               <Panel title="Webhook Delivery Health">
                 <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-                  <HealthCard label="Last raw POST" value={formatAdminDate(lastPostRaw?.createdAt)} tone={lastPostRaw && new Date(lastPostRaw.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 ? "green" : "red"} />
-                  <HealthCard label="GET verify" value={lastVerifyGet ? `${lastVerifyGet.status} · ${formatAdminDate(lastVerifyGet.createdAt)}` : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
-                  <HealthCard label="Last route error" value={formatAdminDate(metaDiagnostics.lastRouteError?.createdAt)} tone={metaDiagnostics.lastRouteError ? "red" : "green"} />
+                  <HealthCard label="Last raw POST" value={<LocalTime value={lastPostRaw?.createdAt} empty="Never" />} tone={lastPostRaw && new Date(lastPostRaw.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000 ? "green" : "red"} />
+                  <HealthCard label="GET verify" value={lastVerifyGet ? <>{lastVerifyGet.status} · <LocalTime value={lastVerifyGet.createdAt} empty="Never" /></> : "Never"} tone={lastVerifyGet?.status === "PROCESSED" ? "green" : "amber"} />
+                  <HealthCard label="Last route error" value={<LocalTime value={metaDiagnostics.lastRouteError?.createdAt} empty="Never" />} tone={metaDiagnostics.lastRouteError ? "red" : "green"} />
                   <HealthCard label="Last Signature Valid" value={lastSignatureFailed ? "Invalid recently" : "Valid"} tone={lastSignatureFailed ? "red" : "green"} />
-                  <HealthCard label="Last real comment" value={formatAdminDate(lastRealComment?.createdAt)} tone={lastRealComment ? "green" : "amber"} />
+                  <HealthCard label="Last real comment" value={<LocalTime value={lastRealComment?.createdAt} empty="Never" />} tone={lastRealComment ? "green" : "amber"} />
                   <HealthCard label="Integration match" value={metaDiagnostics.lastIntegrationMatchFailed ? "Failed recently" : "Success"} tone={metaDiagnostics.lastIntegrationMatchFailed ? "red" : "green"} />
                 </div>
                 {!lastPostRaw || new Date(lastPostRaw.createdAt).getTime() < Date.now() - 24 * 60 * 60 * 1000 ? (
@@ -1567,7 +1567,7 @@ function AuditLogTable({ logs }: { logs: any[] }) {
     <DataTable
       headers={["Time", "Admin", "Action", "Target", "Status", "Reason", "Details"]}
       rows={logs.map((log) => [
-        formatAdminDate(log.createdAt),
+        <LocalTime key="time" value={log.createdAt} empty="Never" />,
         <Identity key="admin" title={log.adminEmail ?? log.adminUserId ?? "Unknown"} />,
         <Badge key="action" tone="blue">{log.action}</Badge>,
         <Identity key="target" title={`${log.targetType}${log.targetLabel ? ` · ${log.targetLabel}` : ""}`} subtitle={log.targetId ? shortenAdminId(log.targetId) : ""} />,

@@ -221,6 +221,54 @@ describe("App Review-safe UX", () => {
     expect(account).toContain("<LocalTime value={snapshot?.fetchedAt} empty=\"Never refreshed\" />");
     expect(detail).toContain("<LocalTime value={item.createdAt} />");
   });
+
+  it("loop guard never pauses campaigns in app review mode", () => {
+    const route = readRepoFile("app/api/webhooks/meta/route.ts");
+
+    // Rate-limit loop guard pause requires review-mode guard
+    expect(route).toContain("LOOP_GUARD_PAUSE_THRESHOLD && !isAppReviewMode()");
+    // Self-comment pause is also review-mode guarded and keyword-campaign safe
+    expect(route).toContain('automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()');
+    // Neither pause site is unguarded (old form must not exist)
+    expect(route).not.toContain("LOOP_GUARD_PAUSE_THRESHOLD) {");
+    // Both pause sites call pauseAutomationForLoopGuard only inside the guard
+    const guardedBlock = route.split("LOOP_GUARD_PAUSE_THRESHOLD && !isAppReviewMode()")[1] ?? "";
+    expect(guardedBlock.indexOf("pauseAutomationForLoopGuard")).toBeLessThan(
+      guardedBlock.indexOf("LOOP_GUARD_PAUSE_THRESHOLD") === -1
+        ? Infinity
+        : guardedBlock.indexOf("LOOP_GUARD_PAUSE_THRESHOLD")
+    );
+  });
+
+  it("loop guard does not pause keyword campaigns for self-comments", () => {
+    const route = readRepoFile("app/api/webhooks/meta/route.ts");
+
+    // Self-comment auto-pause is scoped to ANY_COMMENT only — keyword campaigns are safe
+    expect(route).toContain('automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()');
+    // The actual threshold check appears only after the ANY_COMMENT+review guard
+    const guardPos = route.indexOf('automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()');
+    const thresholdCheckPos = route.indexOf("recentSelfCommentSkips >= SELF_COMMENT_PAUSE_THRESHOLD");
+    expect(guardPos).toBeGreaterThan(-1);
+    expect(thresholdCheckPos).toBeGreaterThan(guardPos);
+  });
+
+  it("uses browser-local time rendering in admin dashboard", () => {
+    const admin = readRepoFile("app/(protected)/admin/page.tsx");
+
+    // No server-side formatAdminDate calls remain in the admin page render
+    expect(admin).not.toContain("formatAdminDate(");
+    // Admin imports LocalTime for client-side rendering
+    expect(admin).toContain('import LocalTime from "@/components/global/local-time"');
+    // Key table time columns use LocalTime (key prop present)
+    expect(admin).toContain('value={event.createdAt} empty="Never"');
+    expect(admin).toContain('value={log.createdAt} empty="Never"');
+    // Webhook health panels use LocalTime
+    expect(admin).toContain('value={lastPostRaw?.createdAt} empty="Never"');
+    expect(admin).toContain('value={lastRealComment?.createdAt} empty="Never"');
+    // Loop guard recommendation copy is not alarmist
+    expect(admin).not.toContain("Pause Any Comment campaigns until review");
+    expect(admin).toContain("Review repeated loop-guard events. Valid external comments should continue processing.");
+  });
 });
 
 function event(type: string, overrides: Record<string, unknown> = {}) {

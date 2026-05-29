@@ -1143,7 +1143,7 @@ async function processEntry(
             automation.id,
             new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS)
           );
-          if (recentLoopGuardEvents >= LOOP_GUARD_PAUSE_THRESHOLD) {
+          if (recentLoopGuardEvents >= LOOP_GUARD_PAUSE_THRESHOLD && !isAppReviewMode()) {
             await pauseAutomationForLoopGuard(automation.id);
             await createAutomationEvent({
               automationId: automation.id,
