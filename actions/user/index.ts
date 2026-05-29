@@ -12,7 +12,10 @@ const onboardingSkippedCookie = (clerkId: string) =>
 
 const publicUserProfile = <T extends { integrations?: any[] }>(profile: T) => ({
   ...profile,
-  integrations: profile.integrations?.map(({ token: _token, ...integration }) => integration) ?? [],
+  integrations: profile.integrations?.map(({ token, ...integration }) => ({
+    ...integration,
+    tokenPresent: typeof token === "string" && token.trim().length > 0,
+  })) ?? [],
 });
 
 export const onCurrentUser = async () => {

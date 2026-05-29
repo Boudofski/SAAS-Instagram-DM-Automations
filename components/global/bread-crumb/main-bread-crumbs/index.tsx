@@ -1,5 +1,4 @@
 import { PAGE_ICONS } from "@/constants/pages";
-import { isAppReviewMode } from "@/lib/app-review-mode";
 import React from "react";
 
 type Props = {
@@ -8,7 +7,6 @@ type Props = {
 };
 
 function MainBreadCrumbs({ page, slug }: Props) {
-  const appReviewMode = isAppReviewMode();
   const title = page === "Home" ? "Home" : page;
   const subtitle =
     page === "Home"
@@ -16,9 +14,7 @@ function MainBreadCrumbs({ page, slug }: Props) {
       : page === "integrations"
       ? "Connect Instagram and manage official account access."
       : page === "automation"
-      ? appReviewMode
-        ? "Create campaigns that match Instagram comments, send public replies, and track leads."
-        : "Create and manage comment-to-DM campaigns."
+      ? "Create and manage Instagram comment automation campaigns."
       : page === "billing"
       ? "Review plan limits, billing status, and monthly usage."
       : page === "settings"

@@ -1,5 +1,6 @@
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,30 +8,39 @@ export const metadata: Metadata = {
   description: "How AP3k handles Instagram account, automation, lead, and billing data.",
 };
 
-const sections = [
+const sections = (appReviewMode: boolean) => [
   {
     title: "Instagram Data We Collect",
     body: "AP3k collects account and profile information from Instagram only after you authorize the connection. This may include the connected Instagram account ID, username or profile identifiers made available by Meta, media identifiers needed for automations, and authorization status.",
   },
   {
     title: "Product Data We Store",
-    body: "AP3k stores automation settings, campaign keywords, selected post/media IDs, webhook events, leads, message logs, public reply configuration, account information, and subscription data needed to operate the service.",
+    body: appReviewMode
+      ? "AP3k stores automation settings, campaign keywords, selected post/media IDs, leads, public reply configuration, account information, and subscription data needed to operate the service."
+      : "AP3k stores automation settings, campaign keywords, selected post/media IDs, webhook events, leads, message logs, public reply configuration, account information, and subscription data needed to operate the service.",
   },
   {
     title: "How We Use Instagram Data",
-    body: "AP3k uses Instagram data only to provide comment-to-DM automation, public comment replies when configured, campaign analytics, lead tracking, and related account management features.",
+    body: appReviewMode
+      ? "AP3k uses Instagram data only to provide Instagram comment automation, public comment replies when configured, campaign analytics, lead tracking, and related account management features."
+      : "AP3k uses Instagram data only to provide comment-to-DM automation, public comment replies when configured, campaign analytics, lead tracking, and related account management features.",
   },
   {
     title: "What We Do Not Do",
-    body: "AP3k does not sell Instagram data. AP3k does not scrape Instagram. AP3k does not ask for Instagram passwords and does not use private Instagram APIs.",
+    body: appReviewMode
+      ? "AP3k does not sell Instagram data. AP3k does not scrape Instagram. AP3k does not ask for Instagram passwords and uses only official Meta APIs."
+      : "AP3k does not sell Instagram data. AP3k does not scrape Instagram. AP3k does not ask for Instagram passwords and does not use private Instagram APIs.",
   },
   {
     title: "Disconnect And Delete",
-    body: "You can disconnect Instagram from AP3k or request deletion of account data, automation data, leads, webhook events, and message logs by contacting support@ap3k.com.",
+    body: appReviewMode
+      ? "You can disconnect Instagram from AP3k or request deletion of account data, automation data, leads, and activity records by contacting support@ap3k.com."
+      : "You can disconnect Instagram from AP3k or request deletion of account data, automation data, leads, webhook events, and message logs by contacting support@ap3k.com.",
   },
 ];
 
 export default function PrivacyPage() {
+  const appReviewMode = isAppReviewMode();
   return (
     <div className="relative min-h-screen overflow-hidden text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-80" />
@@ -42,11 +52,11 @@ export default function PrivacyPage() {
         </h1>
         <p className="mt-4 text-sm leading-7 text-rf-muted">
           Last updated: May 14, 2026. This policy explains how AP3k uses data
-          to provide Instagram comment-to-DM automation.
+          to provide {appReviewMode ? "Instagram comment automation" : "Instagram comment-to-DM automation"}.
         </p>
 
         <div className="mt-10 space-y-4">
-          {sections.map((section) => (
+          {sections(appReviewMode).map((section) => (
             <section key={section.title} className="ap3k-card rounded-2xl p-6">
               <h2 className="text-lg font-black">{section.title}</h2>
               <p className="mt-3 text-sm leading-7 text-rf-muted">{section.body}</p>

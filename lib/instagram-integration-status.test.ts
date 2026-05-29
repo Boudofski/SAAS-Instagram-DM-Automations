@@ -11,6 +11,7 @@ const connected = {
   instagramId: "ig-connected",
   status: "CONNECTED",
   reconnectRequired: false,
+  tokenPresent: true,
 };
 
 describe("canonical Instagram integration status", () => {
@@ -19,6 +20,9 @@ describe("canonical Instagram integration status", () => {
     expect(isCanonicalInstagramConnected({ ...connected, status: "DISCONNECTED" })).toBe(false);
     expect(isCanonicalInstagramConnected({ ...connected, instagramId: null })).toBe(false);
     expect(isCanonicalInstagramConnected({ ...connected, reconnectRequired: true })).toBe(false);
+    expect(isCanonicalInstagramConnected({ ...connected, tokenPresent: false })).toBe(false);
+    expect(isCanonicalInstagramConnected({ ...connected, tokenPresent: undefined, token: "stored-token" })).toBe(true);
+    expect(isCanonicalInstagramConnected({ ...connected, tokenPresent: undefined, token: null })).toBe(false);
   });
 
   it("prefers the current connected integration over stale disconnected history", () => {

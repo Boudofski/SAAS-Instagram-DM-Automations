@@ -4,6 +4,8 @@ export type InstagramIntegrationStatusBase = {
   instagramId?: string | null;
   status?: string | null;
   reconnectRequired?: boolean | null;
+  token?: string | null;
+  tokenPresent?: boolean | null;
 };
 
 export type InstagramIntegrationStatusInput = InstagramIntegrationStatusBase | null | undefined;
@@ -13,7 +15,8 @@ export function isCanonicalInstagramConnected(integration: InstagramIntegrationS
     integration?.name === "INSTAGRAM" &&
     integration.instagramId &&
     integration.status === "CONNECTED" &&
-    !integration.reconnectRequired
+    !integration.reconnectRequired &&
+    hasUsableIntegrationToken(integration)
   );
 }
 
@@ -23,4 +26,9 @@ export function getCanonicalInstagramIntegration<T extends InstagramIntegrationS
 
 export function hasDisconnectedOrMissingInstagramIntegration(integrations?: InstagramIntegrationStatusInput[] | null) {
   return !integrations?.some(isCanonicalInstagramConnected);
+}
+
+function hasUsableIntegrationToken(integration: InstagramIntegrationStatusBase) {
+  if (typeof integration.tokenPresent === "boolean") return integration.tokenPresent;
+  return typeof integration.token === "string" && integration.token.trim().length > 0;
 }

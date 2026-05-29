@@ -614,10 +614,13 @@ export const disconnectCurrentInstagramIntegration = async () => {
   try {
     const disconnected = await softDisconnectIntegrationForUser(user.id);
     if (!disconnected) {
-      return { status: 404, data: "No Instagram account is connected" };
+      return { status: 404, data: "No Instagram account connected" };
     }
 
     revalidatePath("/dashboard", "layout");
+    revalidatePath(`/dashboard/${user.id}`);
+    revalidatePath(`/dashboard/${user.id}/account`);
+    revalidatePath(`/dashboard/${user.id}/automation`);
     return { status: 200, data: "Instagram account disconnected" };
   } catch (error) {
     console.error("[oauth] disconnect instagram integration failed", {

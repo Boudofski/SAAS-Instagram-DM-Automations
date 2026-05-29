@@ -107,17 +107,38 @@ describe("App Review-safe UX", () => {
 
     expect(campaigns).toContain("Create campaigns that match Instagram comments, send public replies, and track leads.");
     expect(campaigns).not.toContain("comment-to-DM");
-    expect(breadcrumb).toContain("isAppReviewMode");
-    expect(breadcrumb).toContain("Create campaigns that match Instagram comments, send public replies, and track leads.");
+    expect(breadcrumb).not.toContain("comment-to-DM");
+    expect(breadcrumb).toContain("Create and manage Instagram comment automation campaigns.");
   });
 
   it("keeps connected and disconnected dashboard warnings separated by canonical integration state", () => {
     const dashboard = readRepoFile("app/(protected)/dashboard/[slug]/page.tsx");
+    const sidebar = readRepoFile("components/global/sidebar/index.tsx");
+    const account = readRepoFile("app/(protected)/dashboard/[slug]/account/page.tsx");
 
     expect(dashboard).toContain("getCanonicalInstagramIntegration");
     expect(dashboard).toContain("const instagramDisconnected = !instagramConnected");
     expect(dashboard).toContain("Instagram account disconnected");
     expect(dashboard).toContain("Instagram account changed. Review campaigns before reactivating.");
+    expect(sidebar).toContain("getCanonicalInstagramIntegration");
+    expect(sidebar).toContain("Connect to start");
+    expect(account).toContain("connected && <StatusBadge");
+    expect(account).toContain("connected && syncBadge");
+  });
+
+  it("refreshes client and server state after review-mode disconnect", () => {
+    const disconnectButton = readRepoFile("components/dashboard/review-disconnect-instagram-button.tsx");
+    const integrationAction = readRepoFile("actions/integration/index.ts");
+    const integrationQueries = readRepoFile("actions/integration/queries.ts");
+
+    expect(disconnectButton).toContain("queryClient.invalidateQueries");
+    expect(disconnectButton).toContain('[\"user-profile\"]');
+    expect(disconnectButton).toContain('[\"user-automation\"]');
+    expect(integrationAction).toContain('revalidatePath("/dashboard", "layout")');
+    expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/account`)');
+    expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/automation`)');
+    expect(integrationQueries).toContain("getCanonicalInstagramIntegration");
+    expect(integrationQueries).not.toContain("client.integrations.delete");
   });
 
   it("uses browser-local timestamp rendering for dashboard timestamps", () => {

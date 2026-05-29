@@ -9,6 +9,7 @@ import {
   type RawCampaignPayload,
 } from "@/lib/campaign-save";
 import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { canActivateCampaign } from "@/actions/usage/queries";
 import { client } from "@/lib/prisma";
 import { refreshInstagramProfileSnapshotForUser } from "@/lib/instagram-profile-snapshot";
@@ -80,13 +81,13 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
           data: "Your account is suspended. Contact support before creating or activating campaigns.",
         };
       }
-      if ((profile as any)?.integrations?.some((item: any) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+      if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
         return {
           status: 403,
           data: "Reconnect Instagram before activating campaigns.",
         };
       }
-      if (!(profile as any)?.integrations?.some((item: any) => item.token && item.instagramId && item.status === "CONNECTED")) {
+      if (!getCanonicalInstagramIntegration((profile as any)?.integrations)) {
         return {
           status: 403,
           data: "Connect Instagram before activating campaigns.",
@@ -247,13 +248,13 @@ export const updateAutomationName = async (
           data: "Your account is suspended. Contact support before activating campaigns.",
         };
       }
-      if ((profile as any)?.integrations?.some((item: any) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+      if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
         return {
           status: 403,
           data: "Reconnect Instagram before activating campaigns.",
         };
       }
-      if (!(profile as any)?.integrations?.some((item: any) => item.token && item.instagramId && item.status === "CONNECTED")) {
+      if (!getCanonicalInstagramIntegration((profile as any)?.integrations)) {
         return {
           status: 403,
           data: "Connect Instagram before activating campaigns.",
@@ -437,13 +438,13 @@ export const activateAutomation = async (id: string, status: boolean) => {
           data: "Your account is suspended. Contact support before activating campaigns.",
         };
       }
-      if ((profile as any)?.integrations?.some((item: any) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+      if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
         return {
           status: 403,
           data: "Reconnect Instagram before activating campaigns.",
         };
       }
-      if (!(profile as any)?.integrations?.some((item: any) => item.token && item.instagramId && item.status === "CONNECTED")) {
+      if (!getCanonicalInstagramIntegration((profile as any)?.integrations)) {
         return {
           status: 403,
           data: "Connect Instagram before activating campaigns.",

@@ -11,6 +11,7 @@ import { useQueryAutomations } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { isWeakPublicReply } from "@/lib/campaign-activity-format";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -66,8 +67,8 @@ export default function WizardPage({ params, searchParams }: Props) {
   }));
 
   const postList: any[] = posts?.data?.data ?? [];
-  const hasInstagramConnection = (user?.data?.integrations?.length ?? 0) > 0;
-  const instagram = user?.data?.integrations?.[0];
+  const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
+  const hasInstagramConnection = Boolean(instagram);
   const messagingCapabilityPending = data.sendPrivateDm && (
     webhookHealth?.data?.lastFailure?.errorMessage?.includes("dm_capability_missing") ||
     webhookHealth?.data?.lastFailure?.errorMessage?.includes("code=3")

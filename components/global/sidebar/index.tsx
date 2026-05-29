@@ -76,7 +76,7 @@ export default function Sidebar({ slug }: Props) {
                   : "Not connected"}
               </p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {instagram ? "Official Meta connection" : "Not connected"}
+                {instagram ? "Official Meta connection" : "Connect to start"}
               </p>
             </div>
           </div>

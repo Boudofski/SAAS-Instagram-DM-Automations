@@ -2,6 +2,7 @@
 
 import { client } from "@/lib/prisma";
 import { getIntegrationHealth, REAL_COMMENT_WEBHOOK_TYPES } from "@/lib/dashboard-metrics";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
 
 export const updateIntegration = async (
@@ -113,14 +114,22 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
     select: {
       id: true,
       integrations: {
-        where: { name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
-        take: 1,
-        select: { id: true, pageId: true, instagramId: true },
+        where: { name: "INSTAGRAM" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          pageId: true,
+          instagramId: true,
+          status: true,
+          reconnectRequired: true,
+          token: true,
+        },
       },
     },
   });
 
-  const integration = user?.integrations[0];
+  const integration = getCanonicalInstagramIntegration(user?.integrations);
   if (!user || !integration) return null;
 
   console.log("[oauth] soft disconnect instagram integration", {

@@ -1,16 +1,24 @@
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Terms of Service — AP3k",
-  description: "Terms for using AP3k Instagram comment-to-DM automation.",
-};
+export function generateMetadata(): Metadata {
+  const appReviewMode = isAppReviewMode();
+  return {
+    title: "Terms of Service — AP3k",
+    description: appReviewMode
+      ? "Terms for using AP3k Instagram comment automation."
+      : "Terms for using AP3k Instagram comment-to-DM automation.",
+  };
+}
 
-const sections = [
+const sections = (appReviewMode: boolean) => [
   {
     title: "What AP3k Does",
-    body: "AP3k is an Instagram comment-to-DM automation tool. It monitors comments on Instagram posts you connect, matches configured keywords, sends automated public comment replies, and delivers private direct messages — using official Meta Graph APIs only.",
+    body: appReviewMode
+      ? "AP3k is an Instagram comment automation tool. It monitors comments on Instagram posts you connect, matches configured keywords, sends automated public comment replies, and tracks leads using official Meta Graph APIs only."
+      : "AP3k is an Instagram comment-to-DM automation tool. It monitors comments on Instagram posts you connect, matches configured keywords, sends automated public comment replies, and delivers private direct messages — using official Meta Graph APIs only.",
   },
   {
     title: "Authorized Accounts Only",
@@ -18,11 +26,15 @@ const sections = [
   },
   {
     title: "Your Responsibility for Campaigns",
-    body: "You are solely responsible for the campaigns, keywords, public replies, private messages, CTA links, offers, and claims you configure in AP3k. AP3k executes your instructions — you remain legally responsible for the content and intent of every automated message sent through your account.",
+    body: appReviewMode
+      ? "You are solely responsible for the campaigns, keywords, public replies, CTA links, offers, and claims you configure in AP3k. AP3k executes your instructions, and you remain legally responsible for the content and intent of every automated reply configured through your account."
+      : "You are solely responsible for the campaigns, keywords, public replies, private messages, CTA links, offers, and claims you configure in AP3k. AP3k executes your instructions — you remain legally responsible for the content and intent of every automated message sent through your account.",
   },
   {
     title: "Official Meta APIs Only",
-    body: "AP3k uses only official Meta Platform APIs. AP3k does not use private, undocumented, or unofficial Instagram APIs, does not scrape Instagram, and does not ask for or store your Instagram password.",
+    body: appReviewMode
+      ? "AP3k uses only official Meta Platform APIs. AP3k does not use undocumented or unofficial Instagram APIs, does not scrape Instagram, and does not ask for or store your Instagram password."
+      : "AP3k uses only official Meta Platform APIs. AP3k does not use private, undocumented, or unofficial Instagram APIs, does not scrape Instagram, and does not ask for or store your Instagram password.",
   },
   {
     title: "Platform Compliance",
@@ -30,7 +42,9 @@ const sections = [
   },
   {
     title: "Prohibited Uses",
-    body: "You may not use AP3k for spam, unsolicited mass messaging, harassment, fake engagement, coordinated inauthentic behavior, scraping, unauthorized data collection, impersonation, illegal promotions, or any use that violates Meta's or Instagram's policies or applicable law.",
+    body: appReviewMode
+      ? "You may not use AP3k for spam, harassment, fake engagement, coordinated inauthentic behavior, scraping, unauthorized data collection, impersonation, illegal promotions, or any use that violates Meta's or Instagram's policies or applicable law."
+      : "You may not use AP3k for spam, unsolicited mass messaging, harassment, fake engagement, coordinated inauthentic behavior, scraping, unauthorized data collection, impersonation, illegal promotions, or any use that violates Meta's or Instagram's policies or applicable law.",
   },
   {
     title: "Suspension and Termination",
@@ -38,7 +52,9 @@ const sections = [
   },
   {
     title: "Service Availability and Meta API Dependency",
-    body: "AP3k depends on Meta API access, permissions, app review approvals, rate limits, and Meta's platform policies. The service may change, pause, degrade, or fail as a result of Meta API limitations, permission revocations, app review outcomes, rate limiting, or technical issues beyond AP3k's control. AP3k does not guarantee uninterrupted service or delivery of any specific message.",
+    body: appReviewMode
+      ? "AP3k depends on Meta API access, permissions, app review approvals, rate limits, and Meta's platform policies. The service may change, pause, degrade, or fail as a result of Meta API limitations, permission revocations, app review outcomes, rate limiting, or technical issues beyond AP3k's control. AP3k does not guarantee uninterrupted service or delivery of any specific reply."
+      : "AP3k depends on Meta API access, permissions, app review approvals, rate limits, and Meta's platform policies. The service may change, pause, degrade, or fail as a result of Meta API limitations, permission revocations, app review outcomes, rate limiting, or technical issues beyond AP3k's control. AP3k does not guarantee uninterrupted service or delivery of any specific message.",
   },
   {
     title: "Limitation of Liability",
@@ -51,6 +67,7 @@ const sections = [
 ];
 
 export default function TermsPage() {
+  const appReviewMode = isAppReviewMode();
   return (
     <div className="relative min-h-screen overflow-hidden text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-80" />
@@ -67,7 +84,7 @@ export default function TermsPage() {
         </p>
 
         <div className="mt-10 space-y-4">
-          {sections.map((section) => (
+          {sections(appReviewMode).map((section) => (
             <section key={section.title} className="ap3k-card rounded-2xl p-6">
               <h2 className="text-lg font-black">{section.title}</h2>
               <p className="mt-3 text-sm leading-7 text-rf-muted">{section.body}</p>

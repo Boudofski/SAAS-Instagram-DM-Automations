@@ -1,11 +1,13 @@
 "use client";
 
 import { disconnectCurrentInstagramIntegration } from "@/actions/integration";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 export default function ReviewDisconnectInstagramButton() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -16,6 +18,12 @@ export default function ReviewDisconnectInstagramButton() {
       if (result.status === 200) {
         setMessage("Connection removed.");
         setShowConfirm(false);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["user-profile"] }),
+          queryClient.invalidateQueries({ queryKey: ["user-automation"] }),
+          queryClient.invalidateQueries({ queryKey: ["instagram-media"] }),
+          queryClient.invalidateQueries({ queryKey: ["webhook-health"] }),
+        ]);
         router.refresh();
         return;
       }

@@ -43,14 +43,14 @@ export const PLANS = [
   },
   {
     name: "Creator Plan",
-    description: "For creators running active comment-to-DM funnels",
+    description: "For creators running active comment automation funnels",
     price: "$29",
     features: [
       "All features from Free Plan",
       "AI-powered response generation",
       "Advanced analytics and insights",
       "Priority customer support",
-      "Unlimited campaigns and DMs",
+      "Unlimited campaigns and replies",
     ],
     cta: "Upgrade Now",
   },
