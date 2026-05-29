@@ -237,6 +237,107 @@ describe("softDisconnectIntegrationForUser", () => {
     expect(mockClient.user.update).not.toHaveBeenCalled();
   });
 
+  it("reclaims same-workspace row by businessId when instagramId is null", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [
+        {
+          id: "existing-row",
+          name: "INSTAGRAM",
+          userId: "user-1",
+          instagramId: null,
+          businessId: "biz-1",
+          pageId: "page-1",
+          instagramUsername: "myaccount",
+          status: "CONNECTED",
+          reconnectRequired: false,
+          token: "old-token",
+        },
+      ],
+    });
+    mockClient.integrations.update.mockResolvedValue({ id: "existing-row" });
+
+    // instagramId "ig-new" does not match null, but businessId "biz-1" does
+    await expect(
+      createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new", undefined, undefined, undefined, undefined, "biz-1")
+    ).resolves.toMatchObject({ integrationId: "existing-row" });
+
+    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "existing-row" },
+      data: expect.objectContaining({ status: "CONNECTED" }),
+    }));
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("reclaims same-workspace row by pageId when instagramId and businessId are null", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [
+        {
+          id: "existing-row",
+          name: "INSTAGRAM",
+          userId: "user-1",
+          instagramId: null,
+          businessId: null,
+          pageId: "page-1",
+          instagramUsername: "myaccount",
+          status: "CONNECTED",
+          reconnectRequired: false,
+          token: "old-token",
+        },
+      ],
+    });
+    mockClient.integrations.update.mockResolvedValue({ id: "existing-row" });
+
+    await expect(
+      createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new", undefined, undefined, "page-1")
+    ).resolves.toMatchObject({ integrationId: "existing-row" });
+
+    expect(mockClient.integrations.update).toHaveBeenCalled();
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("reclaims same-workspace row by username (case-insensitive) as final fallback", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [
+        {
+          id: "existing-row",
+          name: "INSTAGRAM",
+          userId: "user-1",
+          instagramId: null,
+          businessId: null,
+          pageId: null,
+          instagramUsername: "MyAccount",
+          status: "CONNECTED",
+          reconnectRequired: false,
+          token: "old-token",
+        },
+      ],
+    });
+    mockClient.integrations.update.mockResolvedValue({ id: "existing-row" });
+
+    // Username "myaccount" (lowercase) should match "MyAccount" stored in DB
+    await expect(
+      createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new", "myaccount")
+    ).resolves.toMatchObject({ integrationId: "existing-row" });
+
+    expect(mockClient.integrations.update).toHaveBeenCalled();
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
   it("classifies generic create failures as database save failures", async () => {
     mockClient.user.findUnique.mockResolvedValue({
       id: "user-1",

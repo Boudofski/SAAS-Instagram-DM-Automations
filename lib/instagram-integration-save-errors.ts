@@ -19,8 +19,12 @@ export class InstagramIntegrationSaveError extends Error {
 export function classifyInstagramIntegrationSaveError(error: unknown): InstagramIntegrationSaveFailureCode {
   if (error instanceof InstagramIntegrationSaveError) return error.code;
   const anyError = error as any;
-  if (anyError?.code === "P2002" && Array.isArray(anyError?.meta?.target) && anyError.meta.target.includes("instagramId")) {
-    return "DUPLICATE_INSTAGRAM_ACCOUNT";
+  if (anyError?.code === "P2002") {
+    const target: string[] = Array.isArray(anyError?.meta?.target) ? anyError.meta.target : [];
+    if (target.includes("instagramId") || target.includes("pageId")) {
+      return "DUPLICATE_INSTAGRAM_ACCOUNT";
+    }
+    return "DATABASE_SAVE_FAILED";
   }
   if (anyError?.message === "user_not_found") return "MISSING_LOCAL_PROFILE";
   if (anyError?.message === "invalid_page_access_token") return "TOKEN_EXCHANGE_FAILED";

@@ -641,55 +641,69 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
     return redirect(`${dashboardPath(user.id)}/integrations?integration_error=page_resolution_failed`);
   }
 
+  // redirect() throws NEXT_REDIRECT internally — if called inside a try block the
+  // catch misclassifies it as database_save_failed and then redirects to the error
+  // page even though the save succeeded. Track the error outside and redirect after.
+  let integrationError: string | null = null;
+
   try {
     const debug = await debugPageToken(selected.pageAccessToken);
     const isValid = Boolean(debug.data?.data?.is_valid);
     if (!isValid) {
       await recordIntegrationOAuthError(user.id, "page_token_missing");
-      return redirect(`${dashboardPath(user.id)}/integrations?integration_error=page_token_missing`);
-    }
+      integrationError = "page_token_missing";
+    } else {
+      const subscriptionAttempt = await attemptWebhookSubscription(
+        selected.pageId,
+        selected.pageAccessToken
+      );
+      const integration = await getIntegrations(user.id);
+      const existing = getCanonicalInstagramIntegration(integration?.integrations);
+      const expireDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
-    const subscriptionAttempt = await attemptWebhookSubscription(
-      selected.pageId,
-      selected.pageAccessToken
-    );
-    const integration = await getIntegrations(user.id);
-    const existing = getCanonicalInstagramIntegration(integration?.integrations);
-    const expireDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+      if (existing) {
+        await applyReconnectCampaignImpact({
+          clerkId: user.id,
+          previousInstagramId: existing.instagramId,
+          previousUsername: existing.instagramUsername,
+          nextInstagramId: selected.instagramBusinessAccountId,
+          nextUsername: selected.instagramUsername,
+        });
+      }
 
-    if (existing) {
-      await applyReconnectCampaignImpact({
-        clerkId: user.id,
-        previousInstagramId: existing.instagramId,
-        previousUsername: existing.instagramUsername,
-        nextInstagramId: selected.instagramBusinessAccountId,
-        nextUsername: selected.instagramUsername,
+      await createIntegration(
+        user.id,
+        selected.pageAccessToken,
+        expireDate,
+        selected.instagramBusinessAccountId,
+        selected.instagramUsername,
+        selected.profilePictureUrl,
+        selected.pageId,
+        selected.pageName,
+        selected.instagramBusinessAccountId,
+        selected.igAccountSource,
+        selected.diagnostics,
+        subscriptionAttempt
+      );
+
+      // Non-fatal cleanup — must not be able to poison the success path
+      try {
+        await deleteMetaOAuthSelection(selection.id);
+      } catch (cleanupErr) {
+        console.warn("[oauth] metaOAuthSelection cleanup failed (non-fatal)", {
+          selectionId: selection.id,
+          error: cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr),
+        });
+      }
+
+      console.log("[oauth] step selected_account_saved", {
+        selectedPageId: selected.pageId,
+        selectedPageName: selected.pageName,
+        selectedInstagramUsername: selected.instagramUsername,
+        igAccountSource: selected.igAccountSource,
+        subscribed: subscriptionAttempt.subscribed,
       });
     }
-    await createIntegration(
-      user.id,
-      selected.pageAccessToken,
-      expireDate,
-      selected.instagramBusinessAccountId,
-      selected.instagramUsername,
-      selected.profilePictureUrl,
-      selected.pageId,
-      selected.pageName,
-      selected.instagramBusinessAccountId,
-      selected.igAccountSource,
-      selected.diagnostics,
-      subscriptionAttempt
-    );
-
-    await deleteMetaOAuthSelection(selection.id);
-    console.log("[oauth] step selected_account_saved", {
-      selectedPageId: selected.pageId,
-      selectedPageName: selected.pageName,
-      selectedInstagramUsername: selected.instagramUsername,
-      igAccountSource: selected.igAccountSource,
-      subscribed: subscriptionAttempt.subscribed,
-    });
-    return redirect(`${dashboardPath(user.id)}/integrations`);
   } catch (error) {
     const saveFailure = classifyInstagramIntegrationSaveError(error);
     const errorParam = instagramOAuthErrorParamForSaveFailure(saveFailure);
@@ -698,8 +712,14 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
       saveFailure,
     });
     await recordIntegrationOAuthError(user.id, errorParam);
-    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=${errorParam}`);
+    integrationError = errorParam;
   }
+
+  // redirect() is outside the try/catch so Next.js handles NEXT_REDIRECT correctly
+  if (integrationError) {
+    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=${integrationError}`);
+  }
+  return redirect(`${dashboardPath(user.id)}/integrations`);
 };
 
 export const getCurrentWebhookHealth = async () => {

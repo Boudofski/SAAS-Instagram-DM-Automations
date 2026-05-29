@@ -260,6 +260,9 @@ export const createIntegration = async (
           name: true,
           userId: true,
           instagramId: true,
+          businessId: true,
+          pageId: true,
+          instagramUsername: true,
           status: true,
           reconnectRequired: true,
           token: true,
@@ -272,8 +275,32 @@ export const createIntegration = async (
     throw new InstagramIntegrationSaveError("MISSING_LOCAL_PROFILE", "user_not_found");
   }
 
-  const sameWorkspaceRow = user.integrations.find((integration) => integration.instagramId === instagramId);
+  // Deterministic reclaim: match by any stable identifier so reconnecting the same
+  // account always takes the UPDATE path regardless of which field was stored first.
+  const sameWorkspaceRow = user.integrations.find((integration) =>
+    (instagramId && integration.instagramId === instagramId) ||
+    (businessId && integration.businessId === businessId) ||
+    (pageId && integration.pageId === pageId) ||
+    (instagramUsername &&
+      instagramUsername.toLowerCase() === (integration.instagramUsername ?? "").toLowerCase())
+  );
+
+  console.log("[integration-save] diagnosis", {
+    userId: user.id,
+    workspaceId: user.clerkId,
+    selectedInstagramId: instagramId,
+    selectedBusinessId: businessId,
+    selectedPageId: pageId,
+    canonicalIntegrationIdFound: sameWorkspaceRow?.id ?? null,
+    sameWorkspaceFound: Boolean(sameWorkspaceRow),
+    existingInstagramIds: user.integrations.map((i) => i.instagramId),
+    existingBusinessIds: user.integrations.map((i) => i.businessId),
+    existingPageIds: user.integrations.map((i) => i.pageId),
+    existingStatuses: user.integrations.map((i) => i.status),
+  });
+
   if (sameWorkspaceRow) {
+    // Reconnect path: always UPDATE, never CREATE, always bypass plan limit.
     const update = await updateIntegration(
       token,
       expire,
@@ -288,6 +315,10 @@ export const createIntegration = async (
       resolutionDiagnostics,
       subscription
     );
+    console.log("[integration-save] reclaimed existing row", {
+      integrationId: update.id,
+      previousStatus: sameWorkspaceRow.status,
+    });
     return {
       firstname: user.firstname,
       lastname: user.lastname,
@@ -300,13 +331,27 @@ export const createIntegration = async (
     where: { instagramId },
     select: { id: true, userId: true, status: true, reconnectRequired: true, disconnectedAt: true },
   });
-  if (duplicate && duplicate.userId !== user.id) {
-    throw new InstagramIntegrationSaveError("DUPLICATE_INSTAGRAM_ACCOUNT", "instagram_account_already_connected");
-  }
+  const otherWorkspaceFound = Boolean(duplicate && duplicate.userId !== user.id);
 
   const limits = getPlanLimits((user.subscription?.plan ?? "FREE") as ProductPlan);
   const connectedCount = user.integrations.filter(isCanonicalInstagramConnected).length;
-  if (!isUnlimited(limits.connectedInstagramAccounts) && connectedCount >= limits.connectedInstagramAccounts) {
+  const planLimitBlocked = !isUnlimited(limits.connectedInstagramAccounts) && connectedCount >= limits.connectedInstagramAccounts;
+
+  console.log("[integration-save] new account path", {
+    userId: user.id,
+    workspaceId: user.clerkId,
+    selectedInstagramId: instagramId,
+    otherWorkspaceFound,
+    planLimitBlocked,
+    connectedCount,
+    planLimit: limits.connectedInstagramAccounts,
+  });
+
+  if (otherWorkspaceFound) {
+    throw new InstagramIntegrationSaveError("DUPLICATE_INSTAGRAM_ACCOUNT", "instagram_account_already_connected");
+  }
+
+  if (planLimitBlocked) {
     throw new InstagramIntegrationSaveError("PLAN_LIMIT_REACHED", "connected_instagram_account_limit_reached");
   }
 
@@ -353,6 +398,14 @@ export const createIntegration = async (
       },
     });
   } catch (error) {
+    const anyError = error as any;
+    console.error("[integration-save] create failed", {
+      userId: user.id,
+      workspaceId: user.clerkId,
+      prismaCode: anyError?.code,
+      prismaTarget: anyError?.meta?.target,
+      message: error instanceof Error ? error.message : String(error),
+    });
     throw new InstagramIntegrationSaveError(classifyInstagramIntegrationSaveError(error), "integration_save_failed");
   }
 };
