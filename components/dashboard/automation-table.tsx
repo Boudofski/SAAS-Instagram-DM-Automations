@@ -342,9 +342,16 @@ function CampaignBadges({ automation, compact, appReviewMode = isAppReviewMode()
     automation.stalePost ? { label: "Stale post", tone: "red" } : null,
     automation.needsReview ? { label: "Needs review", tone: "red" } : null,
     appReviewMode
-      ? { label: automation.active && !automation.needsReview ? "Public reply active" : "Public reply paused", tone: automation.active && !automation.needsReview ? "green" : "amber" }
+      ? {
+          label: automation.active && !automation.needsReview
+            ? "Public reply active"
+            : hasPublicReply
+              ? "Public reply configured"
+              : "Public reply paused",
+          tone: automation.active && !automation.needsReview ? "green" : "amber",
+        }
       : automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : { label: "AP3k DM", tone: "green" },
-    { label: hasPublicReply ? "Public reply on" : "Public reply off", tone: hasPublicReply ? "blue" : "slate" },
+    !appReviewMode ? { label: hasPublicReply ? "Public reply on" : "Public reply off", tone: hasPublicReply ? "blue" : "slate" } : null,
   ].filter(Boolean) as { label: string; tone: string }[];
 
   const toneMap: Record<string, string> = {

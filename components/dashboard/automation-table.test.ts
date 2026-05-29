@@ -12,7 +12,8 @@ describe("campaign table display helpers", () => {
   it("does not label needs-review campaigns as public-reply active in review mode", () => {
     const source = readFileSync(join(process.cwd(), "components/dashboard/automation-table.tsx"), "utf8");
 
-    expect(source).toContain('automation.active && !automation.needsReview ? "Public reply active" : "Public reply paused"');
+    expect(source).toContain('"Public reply configured"');
+    expect(source).toContain("!appReviewMode ? { label: hasPublicReply ? \"Public reply on\"");
     expect(source).toContain("xl:overflow-x-visible");
   });
 });
