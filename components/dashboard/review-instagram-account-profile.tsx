@@ -21,51 +21,77 @@ export default function ReviewInstagramAccountProfile({
   const liveConnected = connected && !removed;
 
   return (
-    <>
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Profile</p>
-        </div>
-        {liveConnected ? (
-          <ReviewDisconnectInstagramButton onDisconnected={() => setRemoved(true)} />
+    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+      {/* Left: profile identity */}
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        {liveConnected && displayProfilePictureUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={displayProfilePictureUrl}
+            alt={displayUsername ?? "Instagram account"}
+            className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm"
+          />
         ) : (
-          <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm">
-            Connect Instagram
-          </Link>
+          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-ap3k-gradient text-sm font-black text-white shadow-sm">
+            IG
+          </div>
         )}
-      </div>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-5">
-          {liveConnected && displayProfilePictureUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={displayProfilePictureUrl}
-              alt={displayUsername ?? "Instagram account"}
-              className="h-24 w-24 rounded-3xl object-cover shadow-sm"
-            />
-          ) : (
-            <div className="grid h-24 w-24 place-items-center rounded-3xl bg-ap3k-gradient text-base font-black text-white shadow-sm">
-              IG
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-              {liveConnected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
-            </p>
-            <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-              {liveConnected ? pageName ?? "Instagram Business or Creator profile" : "Connect Instagram to start."}
-            </p>
-            <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
-              {liveConnected ? "Profile connected" : "Connect Instagram to view profile details."}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {liveConnected && <StatusBadge tone="pink">Official Meta connection</StatusBadge>}
-              <StatusBadge tone={liveConnected ? "green" : "slate"}>{liveConnected ? "Connected" : "Not connected"}</StatusBadge>
-            </div>
+        <div className="min-w-0">
+          <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+            {liveConnected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
+          </p>
+          <p className="mt-0.5 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
+            {liveConnected ? pageName ?? "Instagram Business or Creator profile" : "Connect Instagram to start."}
+          </p>
+          <p className="mt-1.5 text-sm font-bold text-slate-600 dark:text-slate-300">
+            {liveConnected ? "Profile connected" : "Connect Instagram to view profile details."}
+          </p>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {liveConnected && <StatusBadge tone="pink">Official Meta connection</StatusBadge>}
+            <StatusBadge tone={liveConnected ? "green" : "slate"}>
+              {liveConnected ? "Connected" : "Not connected"}
+            </StatusBadge>
           </div>
         </div>
       </div>
-    </>
+
+      {/* Right: account actions panel */}
+      <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04] lg:min-w-[260px]">
+        {liveConnected ? (
+          <>
+            <div className="flex flex-col gap-2.5 pb-4">
+              <SummaryRow label="Instagram account" value="Connected" />
+              <SummaryRow label="Comments" value="Ready to receive" />
+              <SummaryRow label="Public replies" value="Available with comment campaigns" />
+            </div>
+            <div className="border-t border-slate-200 pt-4 dark:border-white/10">
+              <ReviewDisconnectInstagramButton onDisconnected={() => setRemoved(true)} />
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Connect an Instagram Business or Creator account to get started.
+            </p>
+            <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm">
+              Connect Instagram
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-100">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+        {value}
+      </span>
+    </div>
   );
 }
 

@@ -173,10 +173,10 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
       </section>
 
       {appReviewMode && (
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <ReviewStatusCard label="Instagram connected" value={connected ? "Connected" : "Connect Instagram"} ok={connected} />
-          <ReviewStatusCard label="Comments active" value={connected ? "Ready to receive comments" : "Connect first"} ok={connected} />
-          <ReviewStatusCard label="Public replies active" value="Available with comment campaigns" ok={connected} />
+        <section className="grid gap-3 sm:grid-cols-3">
+          <ReviewStatusCard label="Instagram connected" value="Connected through official Meta access." ok={connected} />
+          <ReviewStatusCard label="Comments active" value="AP3k can receive Instagram comments." ok={connected} />
+          <ReviewStatusCard label="Public replies active" value="Available with active comment campaigns." ok={connected} />
         </section>
       )}
 
@@ -316,11 +316,15 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
 function ReviewStatusCard({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.05]">
-      <div className="mb-3 flex items-center gap-2">
-        <span className={["h-2.5 w-2.5 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500"].join(" ")} />
-        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <div className="flex items-start gap-3">
+        <span className={["mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl", ok ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-amber-50 dark:bg-amber-500/10"].join(" ")}>
+          <CheckCircle2 className={["h-4 w-4", ok ? "text-emerald-500" : "text-amber-500"].join(" ")} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+          <p className="mt-1 text-sm font-bold leading-relaxed text-slate-800 dark:text-slate-100">{value}</p>
+        </div>
       </div>
-      <p className="text-sm font-bold leading-relaxed text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }
