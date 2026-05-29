@@ -5,6 +5,7 @@ import { onUserInfo } from "@/actions/user";
 import { getCampaignTableMetrics } from "@/lib/dashboard-metrics";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import Link from "next/link";
 
 type Props = { params: { slug: string } };
@@ -19,7 +20,7 @@ export default async function AutomationsPage({ params }: Props) {
   const metrics = userResult.status === 200 && userResult.data?.id
     ? await getCampaignTableMetrics(userResult.data.id)
     : {};
-  const currentIntegration = userResult.status === 200 ? userResult.data?.integrations?.[0] : null;
+  const currentIntegration = userResult.status === 200 ? getCanonicalInstagramIntegration(userResult.data?.integrations) : null;
   const bindingDiagnostics = buildCampaignBindingDiagnostics({
     integration: currentIntegration,
     campaigns: automations as any[],
@@ -38,9 +39,11 @@ export default async function AutomationsPage({ params }: Props) {
           <p className="ap3k-kicker">{appReviewMode ? "Comment Automation" : "AutoDM"}</p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Campaigns</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {automations.length === 0
-              ? "No campaigns yet. Start with Any post and one keyword for the fastest test."
-              : `${automations.length} campaign${automations.length !== 1 ? "s" : ""}`}
+            {appReviewMode
+              ? "Create campaigns that match Instagram comments, send public replies, and track leads."
+              : automations.length === 0
+                ? "No campaigns yet. Start with Any post and one keyword for the fastest test."
+                : `${automations.length} campaign${automations.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <Link

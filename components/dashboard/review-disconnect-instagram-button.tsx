@@ -29,7 +29,7 @@ export default function ReviewDisconnectInstagramButton() {
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:min-w-[280px]">
         <p className="text-sm font-black text-slate-950 dark:text-white">Remove Instagram connection?</p>
         <p className="text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
-          Campaigns will pause and your history will remain within AP3k.
+          AP3k will stop using this Instagram account. Campaign history, leads, and activity stay saved.
         </p>
         <div className="flex gap-2">
           <button
@@ -61,6 +61,9 @@ export default function ReviewDisconnectInstagramButton() {
       >
         Remove connection
       </button>
+      <p className="max-w-[260px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
+        Remove this Instagram account from AP3k. Campaign history is preserved.
+      </p>
       {message && (
         <p className="max-w-[240px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
           {message}

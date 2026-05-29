@@ -10,6 +10,7 @@ import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 
 const NAV = [
   { icon: Home, label: "Home",         segment: "" },
@@ -28,7 +29,7 @@ export default function Sidebar({ slug }: Props) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const queryClient = useQueryClient();
-  const instagram = data?.data?.integrations?.[0];
+  const instagram = getCanonicalInstagramIntegration(data?.data?.integrations);
   const displayName =
     user?.fullName ||
     user?.primaryEmailAddress?.emailAddress ||
@@ -75,7 +76,7 @@ export default function Sidebar({ slug }: Props) {
                   : "Not connected"}
               </p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {instagram ? "Official Meta connection" : "Connect to start"}
+                {instagram ? "Official Meta connection" : "Not connected"}
               </p>
             </div>
           </div>

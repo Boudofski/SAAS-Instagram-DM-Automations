@@ -18,6 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import { AlertTriangle, CheckCircle2, ExternalLink, Info, Lock, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
@@ -26,7 +27,7 @@ type Props = { params: { slug: string }; searchParams?: { period?: string } };
 export default async function InstagramAccountPage({ params, searchParams }: Props) {
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
-  const instagram = user?.integrations?.[0];
+  const instagram = getCanonicalInstagramIntegration(user?.integrations);
   const appReviewMode = isAppReviewMode();
   const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
   const period = parseDashboardPeriod(searchParams?.period);
@@ -50,9 +51,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const snapshot = snapshotComparison?.current ?? null;
   const profileSnapshotStatus = getProfileSnapshotStatus(snapshot);
   const profileSnapshotDisplay = getProfileSnapshotDisplay(snapshot, autoRefresh);
-  const displayUsername = snapshot?.username ?? instagram?.instagramUsername;
-  const displayProfilePictureUrl = snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
-  const connected = Boolean(instagram?.instagramId);
+  const connected = isCanonicalInstagramConnected(instagram);
+  const displayUsername = connected ? snapshot?.username ?? instagram?.instagramUsername : null;
+  const displayProfilePictureUrl = connected ? snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl : null;
   const showProfileSyncDebug = !appReviewMode && canShowProfileSyncDebug({ clerkId: user?.clerkId, email: user?.email, connected });
   const disconnectState = getInstagramDisconnectState(false);
   const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
@@ -102,10 +103,10 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
             )}
             <div className="min-w-0">
               <p className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-                {displayUsername ? `@${displayUsername}` : "No Instagram connected"}
+                {connected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
               </p>
               <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-                {instagram?.pageName ?? "Instagram Business or Creator profile"}
+                {connected ? instagram?.pageName ?? "Instagram Business or Creator profile" : "Connect Instagram to start."}
               </p>
               {connected && profileSnapshotDisplay.label === "Partial" ? (
                 <div className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
@@ -115,7 +116,13 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                 </div>
               ) : (
                 <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
-                  {connected ? "Profile connected" : "Profile not connected"} · <LocalTime value={snapshot?.fetchedAt} empty="Never refreshed" />
+                  {connected ? (
+                    <>
+                      Profile connected · <LocalTime value={snapshot?.fetchedAt} empty="Never refreshed" />
+                    </>
+                  ) : (
+                    "Connect Instagram to view profile details."
+                  )}
                 </p>
               )}
               {connected && profileSnapshotStatus.label === "Missing" && (
@@ -145,10 +152,10 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                 </details>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
-                <StatusBadge tone="pink">Official Meta connection</StatusBadge>
+                {connected && <StatusBadge tone="pink">Official Meta connection</StatusBadge>}
                 <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
-                {syncBadge && <StatusBadge tone={profileSnapshotDisplay.label === "Partial" ? "slate" : "green"}>{syncBadge}</StatusBadge>}
-                <StatusBadge tone="slate">{instagram?.igAccountSource ?? "CONNECTED"}</StatusBadge>
+                {connected && syncBadge && <StatusBadge tone={profileSnapshotDisplay.label === "Partial" ? "slate" : "green"}>{syncBadge}</StatusBadge>}
+                {connected && <StatusBadge tone="slate">{instagram?.igAccountSource ?? "CONNECTED"}</StatusBadge>}
               </div>
             </div>
           </div>

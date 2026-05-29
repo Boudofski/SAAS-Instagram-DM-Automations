@@ -9,6 +9,7 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { assessCampaignSetupHealth } from "@/lib/campaign-health";
 import { filterAppReviewActivity, groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -51,7 +52,7 @@ export default async function CampaignDetailPage({ params }: Props) {
   });
   const allGroupedActivity = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
   const groupedActivity = appReviewMode ? filterAppReviewActivity(allGroupedActivity, 20) : allGroupedActivity;
-  const connectedIntegration = automation.User?.integrations?.find((item: any) => item.status !== "DISCONNECTED") ?? automation.User?.integrations?.[0];
+  const connectedIntegration = getCanonicalInstagramIntegration<any>(automation.User?.integrations);
   const bindingDiagnostic = buildCampaignBindingDiagnostics({
     integration: connectedIntegration,
     campaigns: [automation],
@@ -67,12 +68,14 @@ export default async function CampaignDetailPage({ params }: Props) {
       instagramId: connectedIntegration.instagramId,
       status: connectedIntegration.status,
       tokenPresent: Boolean(connectedIntegration.token),
-      reconnectRequired: connectedIntegration.reconnectRequired,
+      reconnectRequired: Boolean(connectedIntegration.reconnectRequired),
     } : null,
     campaign: automation,
     webhookStatus: accountDiagnostics?.delivery.status,
     messagingCapabilityPending: accountDiagnostics?.delivery.status === "only_messaging_active",
   });
+  const reviewSafeHealthBlockers = appReviewMode ? health.blockers.filter(isReviewSafeHealthMessage) : health.blockers;
+  const reviewSafeHealthWarnings = appReviewMode ? health.warnings.filter(isReviewSafeHealthMessage) : health.warnings;
   const lastRealComment = activity.find((item: any) => item.type === "REAL_COMMENT_EVENT" || item.type === "COMMENT_WEBHOOK_RECEIVED");
   const lastAction = activity.find((item: any) => String(item.type).includes("SENT") || String(item.type).includes("FAILED") || item.status === "SENT" || item.status === "FAILED");
 
@@ -145,18 +148,18 @@ export default async function CampaignDetailPage({ params }: Props) {
           <HealthRow label="Last real comment" value={lastRealComment ? <LocalTime value={lastRealComment.createdAt} /> : "None yet"} ok={Boolean(lastRealComment)} />
           {!appReviewMode && <HealthRow label="Last action result" value={lastAction ? `${lastAction.type}${lastAction.status ? ` · ${lastAction.status}` : ""}` : "None yet"} ok={!lastAction || lastAction.status !== "FAILED"} />}
         </div>
-        {(health.blockers.length > 0 || health.warnings.length > 0) && (
+        {(reviewSafeHealthBlockers.length > 0 || reviewSafeHealthWarnings.length > 0) && (
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {health.blockers.length > 0 && (
+            {reviewSafeHealthBlockers.length > 0 && (
               <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100">
                 <p className="font-black">Blocked</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">{health.blockers.map((item) => <li key={item}>{item}</li>)}</ul>
+                <ul className="mt-2 list-disc space-y-1 pl-5">{reviewSafeHealthBlockers.map((item) => <li key={item}>{item}</li>)}</ul>
               </div>
             )}
-            {health.warnings.length > 0 && (
+            {reviewSafeHealthWarnings.length > 0 && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
                 <p className="font-black">Warnings</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">{health.warnings.map((item) => <li key={item}>{item}</li>)}</ul>
+                <ul className="mt-2 list-disc space-y-1 pl-5">{reviewSafeHealthWarnings.map((item) => <li key={item}>{item}</li>)}</ul>
               </div>
             )}
           </div>
@@ -603,6 +606,10 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
     </div>
   );
+}
+
+function isReviewSafeHealthMessage(message: string) {
+  return !/\b(dm|dms|private|message|messaging|webhook|token|parser|diagnostic|external dm|direct message)\b/i.test(message);
 }
 
 function HealthRow({ label, value, ok }: { label: string; value: React.ReactNode; ok: boolean }) {

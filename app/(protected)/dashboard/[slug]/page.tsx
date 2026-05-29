@@ -18,6 +18,7 @@ import { buildCampaignBindingDiagnostics, dashboardNoCommentDiagnosis } from "@/
 import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
 import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
 import Link from "next/link";
@@ -41,10 +42,12 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     cookies().get(onboardingSkippedCookie(userResult.data.clerkId))?.value ===
       "true";
 
+  const initialInstagram = getCanonicalInstagramIntegration(userResult.status === 200 ? userResult.data?.integrations : null);
+
   // Redirect to onboarding if no Instagram connected and the user has not skipped it.
   if (
     userResult.status === 200 &&
-    userResult.data?.integrations?.length === 0 &&
+    !initialInstagram &&
     !onboardingSkipped
   ) {
     redirect("/onboarding");
@@ -57,7 +60,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
   const isEmpty = automations.length === 0;
   const appReviewMode = isAppReviewMode();
-  const instagram = userResult.data?.integrations?.[0];
+  const instagram = initialInstagram;
+  const instagramConnected = isCanonicalInstagramConnected(instagram);
   const tokenExpired =
     instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now();
   const displayName = getDashboardGreeting(userResult.data ?? {});
@@ -98,7 +102,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     status: accountDiagnostics?.delivery.status ?? "no_delivery",
   });
   const needsReviewCampaigns = automations.filter((automation: any) => automation.needsReview);
-  const nextAction = !instagram || tokenExpired
+  const instagramDisconnected = !instagramConnected;
+  const nextAction = instagramDisconnected || tokenExpired
     ? {
         title: tokenExpired ? "Reconnect Instagram before testing" : "Connect Instagram to start",
         detail: tokenExpired
@@ -144,7 +149,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             : null;
 
   const checklistItems = [
-    { label: "Connect Instagram account", done: (userResult.data?.integrations?.length ?? 0) > 0, href: `/dashboard/${params.slug}/account` },
+    { label: "Connect Instagram account", done: instagramConnected, href: `/dashboard/${params.slug}/account` },
     { label: "Launch your first campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
     { label: "Review delivery logs", done: automations.length > 0, href: `/dashboard/${params.slug}/automation` },
   ];
@@ -185,7 +190,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      {instagram && (
+      {instagramConnected && instagram && (
         <div className={[
           "flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm dark:bg-white/[0.04] lg:flex-row lg:items-center lg:justify-between",
           tokenExpired ? "border-red-200 dark:border-red-500/35" : "border-emerald-100 dark:border-emerald-500/25",
@@ -247,10 +252,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       {needsReviewCampaigns.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-          <p>Instagram account changed. Review campaigns before reactivating.</p>
-          <p className="mt-1 font-semibold">
-            {needsReviewCampaigns[0]?.reviewReason ?? "Some campaigns were paused and marked Needs review after reconnect."}
-          </p>
+          {instagramDisconnected ? (
+            <>
+              <p>Instagram account disconnected</p>
+              <p className="mt-1 font-semibold">Connect Instagram before reactivating campaigns.</p>
+            </>
+          ) : (
+            <p>Instagram account changed. Review campaigns before reactivating.</p>
+          )}
         </div>
       )}
 
@@ -329,8 +338,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       <div className="grid gap-3 md:grid-cols-4">
         <HealthPill
           label="Instagram connected"
-          detail={instagram && !tokenExpired ? "Ready to listen" : "Connect or reconnect first"}
-          state={instagram && !tokenExpired ? "ok" : "warn"}
+          detail={instagramConnected && !tokenExpired ? "Ready to listen" : "Connect or reconnect first"}
+          state={instagramConnected && !tokenExpired ? "ok" : "warn"}
         />
         <HealthPill
           label={appReviewMode ? "Comments active" : "Webhook comments"}

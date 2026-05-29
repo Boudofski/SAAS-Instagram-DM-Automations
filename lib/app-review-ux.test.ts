@@ -85,11 +85,39 @@ describe("App Review-safe UX", () => {
     expect(formatKeywordDisplay("AI", true)).toBe("Keyword: ai");
     expect(formatAppReviewActivitySubtitle('Trigger matched "AI"', true)).toBe('Trigger matched keyword "ai"');
     expect(account).toContain("ReviewDisconnectInstagramButton");
+    expect(account).toContain("getCanonicalInstagramIntegration");
+    expect(account).toContain("isCanonicalInstagramConnected");
+    expect(account).toContain("No Instagram account connected");
+    expect(account).toContain("connected && syncBadge");
+    expect(account).not.toContain("No Instagram account is connected");
     expect(disconnect).toContain("Remove connection");
     expect(disconnect).toContain("Remove Instagram connection?");
+    expect(disconnect).toContain("AP3k will stop using this Instagram account. Campaign history, leads, and activity stay saved.");
+    expect(disconnect).toContain("Remove this Instagram account from AP3k. Campaign history is preserved.");
     expect(integrationQueries).toContain("softDisconnectIntegrationForUser");
     expect(integrationQueries).toContain('status: "DISCONNECTED"');
+    expect(integrationQueries).toContain("active: false");
+    expect(integrationQueries).toContain("needsReview: true");
     expect(integrationQueries).not.toContain("client.integrations.delete");
+  });
+
+  it("uses review-safe campaign page header wording", () => {
+    const campaigns = readRepoFile("app/(protected)/dashboard/[slug]/automation/page.tsx");
+    const breadcrumb = readRepoFile("components/global/bread-crumb/main-bread-crumbs/index.tsx");
+
+    expect(campaigns).toContain("Create campaigns that match Instagram comments, send public replies, and track leads.");
+    expect(campaigns).not.toContain("comment-to-DM");
+    expect(breadcrumb).toContain("isAppReviewMode");
+    expect(breadcrumb).toContain("Create campaigns that match Instagram comments, send public replies, and track leads.");
+  });
+
+  it("keeps connected and disconnected dashboard warnings separated by canonical integration state", () => {
+    const dashboard = readRepoFile("app/(protected)/dashboard/[slug]/page.tsx");
+
+    expect(dashboard).toContain("getCanonicalInstagramIntegration");
+    expect(dashboard).toContain("const instagramDisconnected = !instagramConnected");
+    expect(dashboard).toContain("Instagram account disconnected");
+    expect(dashboard).toContain("Instagram account changed. Review campaigns before reactivating.");
   });
 
   it("uses browser-local timestamp rendering for dashboard timestamps", () => {

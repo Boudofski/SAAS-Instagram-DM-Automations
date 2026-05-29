@@ -454,9 +454,9 @@ export default function WizardPage({ params, searchParams }: Props) {
             <div className="flex flex-col gap-3">
               {(
                 [
-                  { field: "publicReply",  label: "Reply 1", placeholder: "e.g. Sending you the link now! 📩" },
+                  { field: "publicReply",  label: "Reply 1", placeholder: appReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Sending you the link now! 📩" },
                   { field: "publicReply2", label: "Reply 2", placeholder: appReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Check your DMs! I just sent it 👀" },
-                  { field: "publicReply3", label: "Reply 3", placeholder: "e.g. Done! Look for my message 🎁" },
+                  { field: "publicReply3", label: "Reply 3", placeholder: appReviewMode ? "e.g. Done. You can use the link in bio." : "e.g. Done! Look for my message 🎁" },
                 ] as const
               ).map(({ field, label, placeholder }) => (
                 <div key={field}>
