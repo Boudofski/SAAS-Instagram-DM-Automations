@@ -100,7 +100,25 @@ export default async function LandingPage() {
   const profile = authUser
     ? await client.user.findUnique({
         where: { clerkId: authUser.id },
-        select: { clerkId: true },
+        select: {
+          clerkId: true,
+          integrations: {
+            where: { name: "INSTAGRAM" },
+            select: {
+              id: true,
+              name: true,
+              instagramId: true,
+              status: true,
+              reconnectRequired: true,
+              token: true,
+            },
+          },
+          automations: {
+            where: { archivedAt: null },
+            take: 1,
+            select: { id: true },
+          },
+        },
       })
     : null;
   const redirectTo = getAuthenticatedLandingRedirect(authUser, profile);

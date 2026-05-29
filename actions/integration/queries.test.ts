@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { softDisconnectIntegrationForUser } from "./queries";
+import { createIntegration, softDisconnectIntegrationForUser } from "./queries";
 import { client } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
   client: {
     user: {
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
     integrations: {
       update: vi.fn(),
+      findUnique: vi.fn(),
       delete: vi.fn(),
     },
     automation: {
@@ -27,7 +29,13 @@ describe("softDisconnectIntegrationForUser", () => {
       return Promise.all(operations);
     });
     mockClient.integrations.update.mockResolvedValue({ id: "current-integration" });
+    mockClient.integrations.findUnique.mockResolvedValue(null);
     mockClient.automation.updateMany.mockResolvedValue({ count: 2 });
+    mockClient.user.update = vi.fn().mockResolvedValue({
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+    });
   });
 
   it("soft-disconnects only the current user's canonical Instagram integration and preserves history", async () => {
@@ -115,5 +123,133 @@ describe("softDisconnectIntegrationForUser", () => {
     await expect(softDisconnectIntegrationForUser("clerk-user-1")).resolves.toBeNull();
     expect(mockClient.integrations.update).not.toHaveBeenCalled();
     expect(mockClient.automation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("reclaims a soft-disconnected same-workspace Instagram row on reconnect", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [
+        {
+          id: "soft-disconnected",
+          name: "INSTAGRAM",
+          userId: "user-1",
+          instagramId: "ig-1",
+          status: "DISCONNECTED",
+          reconnectRequired: false,
+          token: "old-token",
+        },
+      ],
+    });
+    mockClient.integrations.update.mockResolvedValue({ id: "soft-disconnected" });
+
+    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).resolves.toMatchObject({
+      integrationId: "soft-disconnected",
+    });
+
+    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "soft-disconnected" },
+      data: expect.objectContaining({
+        status: "CONNECTED",
+        disconnectedAt: null,
+        reconnectRequired: false,
+      }),
+    }));
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("updates a same-workspace current Instagram row on reconnect", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [
+        {
+          id: "current",
+          name: "INSTAGRAM",
+          userId: "user-1",
+          instagramId: "ig-1",
+          status: "CONNECTED",
+          reconnectRequired: false,
+          token: "old-token",
+        },
+      ],
+    });
+    mockClient.integrations.update.mockResolvedValue({ id: "current" });
+
+    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).resolves.toMatchObject({
+      integrationId: "current",
+    });
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("blocks duplicate active Instagram accounts in another workspace", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [],
+    });
+    mockClient.integrations.findUnique.mockResolvedValue({
+      id: "other",
+      userId: "user-2",
+      status: "CONNECTED",
+      reconnectRequired: false,
+      disconnectedAt: null,
+    });
+
+    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).rejects.toMatchObject({
+      code: "DUPLICATE_INSTAGRAM_ACCOUNT",
+    });
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("blocks plan limit before creating another Instagram connection", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [
+        {
+          id: "current",
+          name: "INSTAGRAM",
+          userId: "user-1",
+          instagramId: "ig-current",
+          status: "CONNECTED",
+          reconnectRequired: false,
+          token: "old-token",
+        },
+      ],
+    });
+
+    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new")).rejects.toMatchObject({
+      code: "PLAN_LIMIT_REACHED",
+    });
+    expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("classifies generic create failures as database save failures", async () => {
+    mockClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstname: "A",
+      lastname: "User",
+      clerkId: "clerk-user-1",
+      subscription: { plan: "FREE" },
+      integrations: [],
+    });
+    mockClient.user.update.mockRejectedValue(new Error("database down"));
+
+    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).rejects.toMatchObject({
+      code: "DATABASE_SAVE_FAILED",
+    });
   });
 });

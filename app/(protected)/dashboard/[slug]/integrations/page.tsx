@@ -1,5 +1,11 @@
 import { INTEGRATION_CARDS } from "@/constants/integrations";
+import { onUserInfo } from "@/actions/user";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
+import {
+  reviewSafeInstagramOAuthErrorMessage,
+  standardInstagramOAuthErrorMessage,
+} from "@/lib/instagram-integration-save-errors";
 import IntegrationCard from "./_components/integration-card";
 
 const ERROR_COPY: Record<string, string> = {
@@ -9,7 +15,12 @@ const ERROR_COPY: Record<string, string> = {
   ig_business_not_linked: "Meta returned Facebook Pages, but none had a linked Instagram Business account.",
   page_token_missing: "Meta returned a Page, but AP3k could not validate a Page access token for it.",
   webhook_subscription_failed: "The account connected, but AP3k could not subscribe the Facebook Page to comment/message webhooks.",
-  integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the integration.",
+  integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
+  database_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
+  duplicate_instagram_account: "This Instagram account is already connected to another AP3k workspace. Remove it there first or contact support.",
+  plan_limit_reached: "Your current plan supports one Instagram account. Remove the existing account before connecting another.",
+  missing_local_profile: "Your AP3k workspace could not be found. Sign in again and retry.",
+  profile_fetch_failed: "Instagram authorization could not be completed. Please try again.",
   provider_denied: "Instagram did not authorize the connection.",
   insufficient_developer_role: "Meta rejected the connection because this Facebook/Instagram account does not have enough role access for this app while it is in development mode.",
   missing_code: "Instagram did not return an authorization code.",
@@ -48,7 +59,12 @@ const REVIEW_ERROR_COPY: Record<string, string> = {
   ig_business_not_linked: "No Instagram Business or Creator account was linked to the selected Meta account.",
   page_token_missing: "AP3k could not validate access for the selected Instagram account.",
   webhook_subscription_failed: "Instagram connected, but comments are not ready yet. Reconnect Instagram and try again.",
-  integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the connected account.",
+  integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
+  database_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
+  duplicate_instagram_account: "This Instagram account is already connected to another AP3k workspace. Remove it there first or contact support.",
+  plan_limit_reached: "Your current plan supports one Instagram account. Remove the existing account before connecting another.",
+  missing_local_profile: "Instagram authorization could not be completed. Please try again.",
+  profile_fetch_failed: "Instagram authorization could not be completed. Please try again.",
   provider_denied: "Instagram did not authorize the connection.",
   insufficient_developer_role: "This account is not authorized to connect to this Meta app yet.",
   missing_code: "Instagram did not return an authorization code.",
@@ -61,19 +77,29 @@ type PageProps = {
   };
 };
 
-function Page({ searchParams }: PageProps) {
+async function Page({ searchParams }: PageProps) {
   const error = searchParams?.integration_error;
   const appReviewMode = isAppReviewMode();
+  const user = await onUserInfo();
+  const instagram = getCanonicalInstagramIntegration(user.status === 200 ? user.data?.integrations : null);
+  const errorMessage = error
+    ? appReviewMode
+      ? reviewSafeInstagramOAuthErrorMessage(error)
+      : standardInstagramOAuthErrorMessage(error) || ERROR_COPY[error] || ERROR_COPY.oauth_failed
+    : null;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
             <p className="font-bold">
-              {appReviewMode
-                ? REVIEW_ERROR_COPY[error] ?? REVIEW_ERROR_COPY.oauth_failed
-                : ERROR_COPY[error] ?? ERROR_COPY.oauth_failed}
+              {errorMessage}
             </p>
+            {instagram && (
+              <p className="mt-2 font-semibold">
+                The new Instagram account could not be saved. Your current connected account was not changed.
+              </p>
+            )}
             {!appReviewMode && ERROR_STEPS[error] && (
               <ul className="mt-3 list-disc space-y-1 pl-5">
                 {ERROR_STEPS[error].map((step) => (
@@ -130,8 +156,13 @@ function Page({ searchParams }: PageProps) {
         </div>
 
         {INTEGRATION_CARDS.map((card, index) => (
-          <IntegrationCard key={index} {...card} />
+          <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} />
         ))}
+        {error && instagram && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
+            Current connected account{instagram.instagramUsername ? `: @${instagram.instagramUsername}` : ""}
+          </div>
+        )}
     </div>
   );
 }

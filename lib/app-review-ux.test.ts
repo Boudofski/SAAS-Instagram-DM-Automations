@@ -158,6 +158,7 @@ describe("App Review-safe UX", () => {
 
   it("keeps onboarding connect review-safe and responsive", () => {
     const onboarding = readRepoFile("app/(protected)/onboarding/connect/page.tsx");
+    const complete = readRepoFile("app/(protected)/onboarding/complete/page.tsx");
     const layout = readRepoFile("app/(protected)/onboarding/layout.tsx");
     const integrationCard = readRepoFile("app/(protected)/dashboard/[slug]/integrations/_components/integration-card/index.tsx");
 
@@ -180,6 +181,14 @@ describe("App Review-safe UX", () => {
     expect(onboarding).not.toMatch(/\bdebug\b/i);
     expect(onboarding).not.toContain("approved replies");
     expect(onboarding).not.toContain("Contact support to disconnect");
+    expect(complete).toContain("getCanonicalInstagramIntegration");
+    expect(complete).toContain('redirect("/onboarding/connect")');
+    expect(complete).toContain("Instagram connected");
+    expect(complete).toContain("Your Instagram Business or Creator account is connected. Create a campaign to test public replies.");
+    expect(complete).toContain("Create my first campaign");
+    expect(complete).toContain("Explore dashboard");
+    expect(complete).not.toContain("You're all set");
+    expect(complete).not.toContain("You’re all set");
     expect(layout).toContain("max-w-2xl");
     expect(integrationCard).toContain("Instagram connected");
     expect(integrationCard).toContain("AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account.");

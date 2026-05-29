@@ -28,6 +28,11 @@ import { dashboardPath } from "@/lib/dashboard";
 import { planReconnectCleanup } from "@/lib/account-webhook-diagnostics";
 import { planReconnectCampaignImpact } from "@/lib/campaign-health";
 import { client } from "@/lib/prisma";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
+import {
+  classifyInstagramIntegrationSaveError,
+  instagramOAuthErrorParamForSaveFailure,
+} from "@/lib/instagram-integration-save-errors";
 
 const REQUIRED_META_BUSINESS_SCOPES = [
   "pages_show_list",
@@ -214,7 +219,7 @@ export const onIntegrate = async (code: string) => {
 
   try {
     const integration = await getIntegrations(user.id);
-    const existing = integration?.integrations[0];
+    const existing = getCanonicalInstagramIntegration(integration?.integrations);
     console.log("[oauth] step oauth_received", {
       hasCode: Boolean(code),
       hasExistingIntegration: Boolean(existing),
@@ -352,51 +357,15 @@ export const onIntegrate = async (code: string) => {
       today.getSeconds() + (tokenResult?.expiresIn ?? 60 * 24 * 60 * 60)
     );
 
-    if (existing) {
-      const reconnectImpact = await applyReconnectCampaignImpact({
+    const reconnectImpact = existing
+      ? await applyReconnectCampaignImpact({
         clerkId: user.id,
         previousInstagramId: existing.instagramId,
         previousUsername: existing.instagramUsername,
         nextInstagramId: resolved.instagramBusinessAccountId,
         nextUsername: resolved.instagramUsername,
-      });
-      const update = await updateIntegration(
-        resolved.pageAccessToken,
-        new Date(expireDate),
-        existing.id,
-        resolved.instagramBusinessAccountId,
-        resolved.instagramUsername,
-        resolved.profilePictureUrl,
-        resolved.pageId,
-        resolved.pageName,
-        resolved.instagramBusinessAccountId,
-        resolved.igAccountSource,
-        resolved.diagnostics,
-        subscriptionAttempt
-      );
-      console.log("[oauth] integration save result", {
-        integrationSaved: Boolean(update),
-        updatingExistingIntegration: true,
-        hasPageId: Boolean(resolved.pageId),
-        hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
-      });
-
-      // Seed initial profile snapshot (non-fatal — does not block OAuth redirect)
-      try {
-        await refreshInstagramProfileSnapshotForUser(user.id, existing.id, {});
-      } catch {}
-
-      return {
-        status: 200,
-        data: {
-          firstname: user.firstName,
-          lastname: user.lastName,
-          clerkId: user.id,
-          integrationId: update.id,
-          reconnectImpact,
-        },
-      };
-    }
+      })
+      : null;
 
     const create = await createIntegration(
       user.id,
@@ -414,7 +383,7 @@ export const onIntegrate = async (code: string) => {
     );
     console.log("[oauth] integration save result", {
       integrationSaved: Boolean(create),
-      updatingExistingIntegration: false,
+      updatingExistingIntegration: Boolean((create as any).integrationId),
       hasPageId: Boolean(resolved.pageId),
       hasInstagramBusinessAccountId: Boolean(resolved.instagramBusinessAccountId),
     });
@@ -422,22 +391,25 @@ export const onIntegrate = async (code: string) => {
     // Seed initial profile snapshot for newly created integration (non-fatal)
     try {
       const freshIntegrations = await getIntegrations(user.id);
-      const newIntegrationId = freshIntegrations?.integrations[0]?.id;
+      const newIntegrationId = getCanonicalInstagramIntegration(freshIntegrations?.integrations)?.id;
       if (newIntegrationId) {
         await refreshInstagramProfileSnapshotForUser(user.id, newIntegrationId, {});
       }
     } catch {}
 
-    return { status: 200, data: create };
+    return { status: 200, data: { ...create, reconnectImpact } };
   } catch (error) {
-    await recordIntegrationOAuthError(user.id, "integration_save_failed");
+    const saveFailure = classifyInstagramIntegrationSaveError(error);
+    const errorParam = instagramOAuthErrorParamForSaveFailure(saveFailure);
+    await recordIntegrationOAuthError(user.id, errorParam);
     console.error("[oauth] onIntegrate error", {
       message: error instanceof Error ? error.message : String(error),
+      saveFailure,
       integrationSaved: false,
     });
     return {
       status: 500,
-      error: "integration_save_failed",
+      error: errorParam,
       data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
     };
   }
@@ -682,7 +654,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
       selected.pageAccessToken
     );
     const integration = await getIntegrations(user.id);
-    const existing = integration?.integrations[0];
+    const existing = getCanonicalInstagramIntegration(integration?.integrations);
     const expireDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
     if (existing) {
@@ -693,36 +665,21 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
         nextInstagramId: selected.instagramBusinessAccountId,
         nextUsername: selected.instagramUsername,
       });
-      await updateIntegration(
-        selected.pageAccessToken,
-        expireDate,
-        existing.id,
-        selected.instagramBusinessAccountId,
-        selected.instagramUsername,
-        selected.profilePictureUrl,
-        selected.pageId,
-        selected.pageName,
-        selected.instagramBusinessAccountId,
-        selected.igAccountSource,
-        selected.diagnostics,
-        subscriptionAttempt
-      );
-    } else {
-      await createIntegration(
-        user.id,
-        selected.pageAccessToken,
-        expireDate,
-        selected.instagramBusinessAccountId,
-        selected.instagramUsername,
-        selected.profilePictureUrl,
-        selected.pageId,
-        selected.pageName,
-        selected.instagramBusinessAccountId,
-        selected.igAccountSource,
-        selected.diagnostics,
-        subscriptionAttempt
-      );
     }
+    await createIntegration(
+      user.id,
+      selected.pageAccessToken,
+      expireDate,
+      selected.instagramBusinessAccountId,
+      selected.instagramUsername,
+      selected.profilePictureUrl,
+      selected.pageId,
+      selected.pageName,
+      selected.instagramBusinessAccountId,
+      selected.igAccountSource,
+      selected.diagnostics,
+      subscriptionAttempt
+    );
 
     await deleteMetaOAuthSelection(selection.id);
     console.log("[oauth] step selected_account_saved", {
@@ -734,11 +691,14 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
     });
     return redirect(`${dashboardPath(user.id)}/integrations`);
   } catch (error) {
+    const saveFailure = classifyInstagramIntegrationSaveError(error);
+    const errorParam = instagramOAuthErrorParamForSaveFailure(saveFailure);
     console.error("[oauth] selected account save failed", {
       error: getSafeMetaError(error),
+      saveFailure,
     });
-    await recordIntegrationOAuthError(user.id, "integration_save_failed");
-    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=integration_save_failed`);
+    await recordIntegrationOAuthError(user.id, errorParam);
+    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=${errorParam}`);
   }
 };
 

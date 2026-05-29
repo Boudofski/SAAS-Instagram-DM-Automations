@@ -23,9 +23,10 @@ type Props = {
   strategy: "INSTAGRAM" | "CRM";
   surface?: "dashboard" | "onboarding";
   continueHref?: string;
+  canonicalConnected?: boolean;
 };
 
-function IntegrationCard({ title, description, icon, strategy, surface = "dashboard", continueHref }: Props) {
+function IntegrationCard({ title, description, icon, strategy, surface = "dashboard", continueHref, canonicalConnected }: Props) {
   const [isConnecting, setIsConnecting] = React.useState(false);
   const { userId } = useAuth();
   const appReviewMode = isAppReviewMode();
@@ -61,7 +62,8 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
     : data?.data?.integrations.find((i: any) => i.name === strategy);
   const isInstagram = strategy === "INSTAGRAM";
   const onboarding = surface === "onboarding";
-  const connected = Boolean(integrated);
+  const connected = typeof canonicalConnected === "boolean" ? canonicalConnected : Boolean(integrated);
+  const displayIntegration = connected ? integrated : null;
   const displayTitle = onboarding && connected ? "Instagram connected" : title;
   const displayDescription = onboarding
     ? connected
@@ -103,13 +105,13 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-black leading-tight sm:text-2xl">{displayTitle}</h3>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">{displayDescription}</p>
-          {integrated?.instagramId && (
+          {displayIntegration?.instagramId && (
           <div className="mt-4 flex min-w-0 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
-            {integrated.profilePictureUrl ? (
+            {displayIntegration.profilePictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={integrated.profilePictureUrl}
-                alt={integrated.instagramUsername ?? "Connected Instagram account"}
+                src={displayIntegration.profilePictureUrl}
+                alt={displayIntegration.instagramUsername ?? "Connected Instagram account"}
                 className="h-12 w-12 shrink-0 rounded-full object-cover"
               />
             ) : (
@@ -119,18 +121,18 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
             )}
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-rf-green">
-                {integrated.instagramUsername
-                  ? `@${integrated.instagramUsername}`
+                {displayIntegration.instagramUsername
+                  ? `@${displayIntegration.instagramUsername}`
                   : "Instagram connected"}
               </p>
               {!appReviewMode && (
                 <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                  IG business ID: {integrated.instagramId}
+                  IG business ID: {displayIntegration.instagramId}
                 </p>
               )}
-              {!appReviewMode && integrated.pageId && (
+              {!appReviewMode && displayIntegration.pageId && (
                 <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                  Page ID: {integrated.pageId}
+                  Page ID: {displayIntegration.pageId}
                 </p>
               )}
             </div>
@@ -196,7 +198,7 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
           <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             Webhook health
           </p>
-          {integrated?.instagramId && health?.data?.oauth?.reconnectRequired && (
+          {displayIntegration?.instagramId && health?.data?.oauth?.reconnectRequired && (
             <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
               <p className="font-bold">Reconnect Instagram</p>
               <p className="mt-1 leading-relaxed">

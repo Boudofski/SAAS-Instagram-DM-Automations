@@ -2,8 +2,13 @@
 
 import { client } from "@/lib/prisma";
 import { getIntegrationHealth, REAL_COMMENT_WEBHOOK_TYPES } from "@/lib/dashboard-metrics";
-import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
+import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
+import { getPlanLimits, isUnlimited, type ProductPlan } from "@/lib/plan-limits";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
+import {
+  classifyInstagramIntegrationSaveError,
+  InstagramIntegrationSaveError,
+} from "@/lib/instagram-integration-save-errors";
 
 export const updateIntegration = async (
   token: string,
@@ -236,51 +241,122 @@ export const createIntegration = async (
   }
 ) => {
   if (typeof token !== "string" || token.trim().length < 20) {
-    throw new Error("invalid_page_access_token");
+    throw new InstagramIntegrationSaveError("TOKEN_EXCHANGE_FAILED", "invalid_page_access_token");
   }
 
-  return await client.user.update({
-    where: {
-      clerkId,
-    },
-    data: {
-      integrations: {
-        create: {
-          token,
-          expiresAt: expire,
-          instagramId,
-          webhookAccountId: pageId,
-          pageId,
-          pageName,
-          businessId,
-          instagramUsername,
-          profilePictureUrl,
-          igAccountSource,
-          oauthResolutionDiagnostics: resolutionDiagnostics as any,
-          webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
-          webhookSubscriptionStatusCode: subscription?.statusCode,
-          webhookSubscriptionSubscribed: subscription?.subscribed,
-          webhookSubscriptionMode: subscription?.subscriptionMode,
-          webhookSubscriptionError: subscription?.error,
-          oauthLastError: null,
-          oauthLastErrorAt: null,
-          oauthLastErrorSource: null,
-          status: "CONNECTED",
-          reconnectRequired: false,
-          disconnectedAt: null,
-          disconnectedReason: null,
-          lastAdminNote: null,
-          lastAdminActionAt: null,
-        },
-      },
-    },
+  const user = await client.user.findUnique({
+    where: { clerkId },
     select: {
+      id: true,
       firstname: true,
       lastname: true,
       clerkId: true,
+      subscription: { select: { plan: true } },
+      integrations: {
+        where: { name: "INSTAGRAM" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          instagramId: true,
+          status: true,
+          reconnectRequired: true,
+          token: true,
+        },
+      },
     },
   });
+
+  if (!user) {
+    throw new InstagramIntegrationSaveError("MISSING_LOCAL_PROFILE", "user_not_found");
+  }
+
+  const sameWorkspaceRow = user.integrations.find((integration) => integration.instagramId === instagramId);
+  if (sameWorkspaceRow) {
+    const update = await updateIntegration(
+      token,
+      expire,
+      sameWorkspaceRow.id,
+      instagramId,
+      instagramUsername,
+      profilePictureUrl,
+      pageId,
+      pageName,
+      businessId,
+      igAccountSource,
+      resolutionDiagnostics,
+      subscription
+    );
+    return {
+      firstname: user.firstname,
+      lastname: user.lastname,
+      clerkId: user.clerkId,
+      integrationId: update.id,
+    };
+  }
+
+  const duplicate = await client.integrations.findUnique({
+    where: { instagramId },
+    select: { id: true, userId: true, status: true, reconnectRequired: true, disconnectedAt: true },
+  });
+  if (duplicate && duplicate.userId !== user.id) {
+    throw new InstagramIntegrationSaveError("DUPLICATE_INSTAGRAM_ACCOUNT", "instagram_account_already_connected");
+  }
+
+  const limits = getPlanLimits((user.subscription?.plan ?? "FREE") as ProductPlan);
+  const connectedCount = user.integrations.filter(isCanonicalInstagramConnected).length;
+  if (!isUnlimited(limits.connectedInstagramAccounts) && connectedCount >= limits.connectedInstagramAccounts) {
+    throw new InstagramIntegrationSaveError("PLAN_LIMIT_REACHED", "connected_instagram_account_limit_reached");
+  }
+
+  try {
+    return await client.user.update({
+      where: {
+        clerkId,
+      },
+      data: {
+        integrations: {
+          create: {
+            token,
+            expiresAt: expire,
+            instagramId,
+            webhookAccountId: pageId,
+            pageId,
+            pageName,
+            businessId,
+            instagramUsername,
+            profilePictureUrl,
+            igAccountSource,
+            oauthResolutionDiagnostics: resolutionDiagnostics as any,
+            webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
+            webhookSubscriptionStatusCode: subscription?.statusCode,
+            webhookSubscriptionSubscribed: subscription?.subscribed,
+            webhookSubscriptionMode: subscription?.subscriptionMode,
+            webhookSubscriptionError: subscription?.error,
+            oauthLastError: null,
+            oauthLastErrorAt: null,
+            oauthLastErrorSource: null,
+            status: "CONNECTED",
+            reconnectRequired: false,
+            disconnectedAt: null,
+            disconnectedReason: null,
+            lastAdminNote: null,
+            lastAdminActionAt: null,
+          },
+        },
+      },
+      select: {
+        firstname: true,
+        lastname: true,
+        clerkId: true,
+      },
+    });
+  } catch (error) {
+    throw new InstagramIntegrationSaveError(classifyInstagramIntegrationSaveError(error), "integration_save_failed");
+  }
 };
+
 
 export const getWebhookHealthForUser = async (clerkId: string) => {
   const user = await client.user.findUnique({

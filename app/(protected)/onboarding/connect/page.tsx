@@ -59,7 +59,7 @@ export default async function OnboardingConnectPage() {
       ) : (
         <div className="mx-auto mb-4 w-full max-w-3xl rounded-2xl border border-rf-border bg-[#0f172a]/70 p-4 sm:p-6">
           {INTEGRATION_CARDS.map((card, i) => (
-            <IntegrationCard key={i} {...card} surface="onboarding" continueHref="/onboarding/complete" />
+            <IntegrationCard key={i} {...card} surface="onboarding" continueHref="/onboarding/complete" canonicalConnected={false} />
           ))}
         </div>
       )}

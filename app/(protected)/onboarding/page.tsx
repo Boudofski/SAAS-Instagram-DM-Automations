@@ -1,5 +1,6 @@
 import { onUserInfo, skipOnboarding } from "@/actions/user";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -12,7 +13,9 @@ export default async function OnboardingWelcomePage() {
   const appReviewMode = isAppReviewMode();
   const user = await onUserInfo();
 
-  if (user.status === 200 && user.data?.integrations?.length) {
+  const instagram = getCanonicalInstagramIntegration(user.status === 200 ? user.data?.integrations : null);
+
+  if (instagram) {
     redirect("/onboarding/complete");
   }
 
@@ -44,7 +47,7 @@ export default async function OnboardingWelcomePage() {
         {[
           { icon: "💬", label: "Comment" },
           { icon: "→", label: null },
-          { icon: "✉️", label: appReviewMode ? "Reply sent" : "DM sent" },
+          { icon: "✉️", label: "Reply sent" },
           { icon: "→", label: null },
           { icon: "🎯", label: "Lead captured" },
         ].map((item, i) => item.label ? (
