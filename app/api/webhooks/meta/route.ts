@@ -11,6 +11,7 @@ import {
   countRecentPublicReplies,
   hasRecentHandledCommenter,
   countLoopGuardEvents,
+  countRecentSelfCommentSkips,
   pauseAutomationForLoopGuard,
   createMessageLog,
   upsertLead,
@@ -22,6 +23,7 @@ import {
   getChatHistory,
   trackResponse,
 } from "@/actions/webhook/queries";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { verifyMetaSignature } from "@/lib/webhook-signature";
 import { normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
 import {
@@ -56,7 +58,11 @@ const LOOP_GUARD_MEDIA_WINDOW_MS = 10 * 60 * 1000;
 const LOOP_GUARD_AUTOMATION_WINDOW_MS = 60 * 60 * 1000;
 const MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M = 5;
 const MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR = 50;
-const LOOP_GUARD_PAUSE_THRESHOLD_1H = 3;
+// Pause requires 5 loop-guard triggers within the same 10-minute window (not 3 in 1h).
+// Tighter window prevents false positives during normal App Review testing.
+const LOOP_GUARD_PAUSE_THRESHOLD = 5;
+// ANY_COMMENT campaigns only: pause if self-comment skip rate exceeds this within 10 min.
+const SELF_COMMENT_PAUSE_THRESHOLD = 3;
 const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 
 // ---------------------------------------------------------------------------
@@ -596,6 +602,33 @@ async function processEntry(
             mediaId,
           },
         });
+
+        // Any Comment campaigns can loop if the account owner comments on their own post.
+        // Pause only when self-comment skips accumulate past the threshold within 10 min.
+        // Skip this in App Review Mode (self-comments are expected during reviewer testing).
+        // Keyword campaigns are intentional; never pause them for self-comment activity.
+        if (automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()) {
+          const recentSelfCommentSkips = await countRecentSelfCommentSkips(
+            automation.id,
+            new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS)
+          );
+          if (recentSelfCommentSkips >= SELF_COMMENT_PAUSE_THRESHOLD) {
+            await pauseAutomationForLoopGuard(automation.id);
+            await createAutomationEvent({
+              automationId: automation.id,
+              eventType: "LOOP_GUARD_PAUSED_CAMPAIGN",
+              igUserId: commenterId,
+              mediaId,
+              commentId,
+              meta: {
+                reason: "repeated_self_comment_skips",
+                message: "Campaign auto-paused: repeated self-comment skips detected.",
+                recentSelfCommentSkips,
+              },
+            });
+          }
+        }
+
         continue;
       }
 
@@ -1106,11 +1139,11 @@ async function processEntry(
               recommendation: "Loop guard triggered - campaign paused recommended.",
             },
           });
-          const loopGuardEvents1h = await countLoopGuardEvents(
+          const recentLoopGuardEvents = await countLoopGuardEvents(
             automation.id,
-            new Date(Date.now() - LOOP_GUARD_AUTOMATION_WINDOW_MS)
+            new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS)
           );
-          if (loopGuardEvents1h >= LOOP_GUARD_PAUSE_THRESHOLD_1H) {
+          if (recentLoopGuardEvents >= LOOP_GUARD_PAUSE_THRESHOLD) {
             await pauseAutomationForLoopGuard(automation.id);
             await createAutomationEvent({
               automationId: automation.id,
@@ -1122,7 +1155,7 @@ async function processEntry(
               meta: {
                 reason: "automation_rate_limit_loop_guard",
                 message: "Campaign auto-paused because AP3k detected a self-reply loop.",
-                loopGuardEvents1h,
+                recentLoopGuardEvents,
               },
             });
           }

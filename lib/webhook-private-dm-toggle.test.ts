@@ -13,7 +13,9 @@ const mockHasRecentAp3kReplyTextMatch = vi.fn();
 const mockCountRecentPublicReplies = vi.fn();
 const mockHasRecentHandledCommenter = vi.fn();
 const mockCountLoopGuardEvents = vi.fn();
+const mockCountRecentSelfCommentSkips = vi.fn();
 const mockPauseAutomationForLoopGuard = vi.fn();
+const mockIsAppReviewMode = vi.fn();
 const mockCanSendStaticReply = vi.fn();
 const mockUpsertLead = vi.fn();
 const mockTrackResponse = vi.fn();
@@ -32,6 +34,7 @@ vi.mock("@/actions/webhook/queries", () => ({
   countRecentPublicReplies: (...args: any[]) => mockCountRecentPublicReplies(...args),
   hasRecentHandledCommenter: (...args: any[]) => mockHasRecentHandledCommenter(...args),
   countLoopGuardEvents: (...args: any[]) => mockCountLoopGuardEvents(...args),
+  countRecentSelfCommentSkips: (...args: any[]) => mockCountRecentSelfCommentSkips(...args),
   pauseAutomationForLoopGuard: (...args: any[]) => mockPauseAutomationForLoopGuard(...args),
   createMessageLog: (...args: any[]) => mockCreateMessageLog(...args),
   upsertLead: (...args: any[]) => mockUpsertLead(...args),
@@ -79,6 +82,10 @@ vi.mock("@/lib/openai", () => ({
 
 vi.mock("@/actions/usage/queries", () => ({
   canSendStaticReply: (...args: any[]) => mockCanSendStaticReply(...args),
+}));
+
+vi.mock("@/lib/app-review-mode", () => ({
+  isAppReviewMode: () => mockIsAppReviewMode(),
 }));
 
 import { POST } from "@/app/api/webhooks/meta/route";
@@ -167,7 +174,9 @@ beforeEach(() => {
   mockCountRecentPublicReplies.mockResolvedValue(0);
   mockHasRecentHandledCommenter.mockResolvedValue(false);
   mockCountLoopGuardEvents.mockResolvedValue(0);
+  mockCountRecentSelfCommentSkips.mockResolvedValue(0);
   mockPauseAutomationForLoopGuard.mockResolvedValue({});
+  mockIsAppReviewMode.mockReturnValue(false);
   mockCanSendStaticReply.mockResolvedValue({
     ok: true,
     usage: {
@@ -557,12 +566,12 @@ describe("comment webhook private DM toggle", () => {
     );
   });
 
-  it("triggers loop guard and auto-pauses after repeated loop guard events", async () => {
+  it("triggers loop guard and auto-pauses only after 5+ loop guard events in 10 minutes", async () => {
     const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
     mockCountRecentPublicReplies.mockImplementation((input: any) =>
       input.mediaId ? Promise.resolve(5) : Promise.resolve(50)
     );
-    mockCountLoopGuardEvents.mockResolvedValue(3);
+    mockCountLoopGuardEvents.mockResolvedValue(5);
     mockFindAutomationForCommentWithReason.mockResolvedValue({
       automation: campaign,
       automations: [campaign],
@@ -581,7 +590,10 @@ describe("comment webhook private DM toggle", () => {
       })
     );
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: "LOOP_GUARD_PAUSED_CAMPAIGN" })
+      expect.objectContaining({
+        eventType: "LOOP_GUARD_PAUSED_CAMPAIGN",
+        meta: expect.objectContaining({ reason: "automation_rate_limit_loop_guard" }),
+      })
     );
   });
 
@@ -629,5 +641,144 @@ describe("comment webhook private DM toggle", () => {
         errorMessage: "static_reply_limit_reached",
       })
     );
+  });
+});
+
+describe("loop guard threshold behavior", () => {
+  it("does not pause campaign for a single self-comment skip", async () => {
+    const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
+    mockCountRecentSelfCommentSkips.mockResolvedValue(1);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    // Comment from the connected account's own Instagram ID
+    await POST(commentRequest({ commenterId: "ig-1", text: "self comment" }));
+
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "SELF_COMMENT_SKIPPED",
+        meta: expect.objectContaining({ reason: "self_comment_author" }),
+      })
+    );
+  });
+
+  it("does not pause campaign for a duplicate webhook skip", async () => {
+    const campaign = automation(true);
+    mockHasProcessedCommentWebhook.mockResolvedValue(true);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "DUPLICATE_SKIPPED" })
+    );
+  });
+
+  it("pauses an ANY_COMMENT campaign after 3+ self-comment skips within 10 minutes", async () => {
+    const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
+    mockCountRecentSelfCommentSkips.mockResolvedValue(3);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ commenterId: "ig-1", text: "self comment" }));
+
+    expect(mockPauseAutomationForLoopGuard).toHaveBeenCalledWith(campaign.id);
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "LOOP_GUARD_PAUSED_CAMPAIGN",
+        meta: expect.objectContaining({ reason: "repeated_self_comment_skips" }),
+      })
+    );
+  });
+
+  it("does not pause campaign when loop guard count is below the 5-event threshold", async () => {
+    const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
+    mockCountRecentPublicReplies.mockImplementation((input: any) =>
+      input.mediaId ? Promise.resolve(5) : Promise.resolve(50)
+    );
+    mockCountLoopGuardEvents.mockResolvedValue(4);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ text: "new comment" }));
+
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "LOOP_GUARD_TRIGGERED" })
+    );
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
+  });
+
+  it("does not pause a keyword campaign for self-comment or no-match activity", async () => {
+    // SPECIFIC_KEYWORD campaign — even with many self-comment skips the campaign must not pause
+    const campaign = automation(true, { triggerMode: "SPECIFIC_KEYWORD", keywords: [{ word: "ai" }] });
+    mockCountRecentSelfCommentSkips.mockResolvedValue(10);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ commenterId: "ig-1", text: "ai" }));
+
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
+    // Audit event still recorded
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "SELF_COMMENT_SKIPPED" })
+    );
+  });
+
+  it("still records SELF_COMMENT_SKIPPED and DUPLICATE_SKIPPED audit events below threshold", async () => {
+    const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
+    mockCountRecentSelfCommentSkips.mockResolvedValue(2);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ commenterId: "ig-1", text: "testing" }));
+
+    // Audit event written
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "SELF_COMMENT_SKIPPED" })
+    );
+    // But no pause
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
+  });
+
+  it("in App Review Mode, does not auto-pause for self-comment skips even when threshold is met", async () => {
+    mockIsAppReviewMode.mockReturnValue(true);
+    const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
+    // Well above the self-comment threshold
+    mockCountRecentSelfCommentSkips.mockResolvedValue(10);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ commenterId: "ig-1", text: "testing" }));
+
+    // Audit event still written
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "SELF_COMMENT_SKIPPED" })
+    );
+    // No auto-pause in review mode
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
   });
 });

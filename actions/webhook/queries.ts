@@ -698,6 +698,16 @@ export const countLoopGuardEvents = async (automationId: string, since: Date) =>
   });
 };
 
+export const countRecentSelfCommentSkips = async (automationId: string, since: Date) => {
+  return await client.automationEvent.count({
+    where: {
+      automationId,
+      eventType: "SELF_COMMENT_SKIPPED",
+      createdAt: { gte: since },
+    },
+  });
+};
+
 export const pauseAutomationForLoopGuard = async (automationId: string) => {
   return await client.automation.update({
     where: { id: automationId },
