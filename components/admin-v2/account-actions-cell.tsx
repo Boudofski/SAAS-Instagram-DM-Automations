@@ -71,7 +71,7 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
       const fd = new FormData();
       fd.set("integrationId", integrationId);
       fd.set("reason", reason);
-      if (activeModal === "disconnect") fd.set("confirmation", confirmation);
+      if (activeModal === "disconnect" || activeModal === "pause") fd.set("confirmation", confirmation);
 
       const result = await ACTION_FNS[activeModal](fd);
       if (result.status === 200) {
@@ -104,6 +104,12 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
             <h2 className="mt-1 text-lg font-black text-white">{ACTION_LABELS[activeModal]}</h2>
             <p className="mt-1 text-xs text-slate-400">{label}</p>
 
+            {activeModal === "disconnect" && (
+              <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-900/20 px-3 py-2 text-[11px] text-amber-300">
+                Disconnecting an account does not pause campaigns. Campaigns may fail until the account reconnects. Consider pausing campaigns for this account.
+              </p>
+            )}
+
             {successMsg ? (
               <>
                 <p className="mt-4 rounded-lg bg-green-900/30 px-3 py-2 text-sm text-green-300">{successMsg}</p>
@@ -126,16 +132,16 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
                   />
                 </div>
 
-                {activeModal === "disconnect" && (
+                {(activeModal === "disconnect" || activeModal === "pause") && (
                   <div>
                     <label className="mb-1 block text-[11px] font-semibold text-amber-400">
-                      Type DISCONNECT to confirm
+                      {activeModal === "disconnect" ? "Type DISCONNECT to confirm" : "Type PAUSE to continue"}
                     </label>
                     <input
                       type="text"
                       value={confirmation}
                       onChange={(e) => setConfirmation(e.target.value)}
-                      placeholder="DISCONNECT"
+                      placeholder={activeModal === "disconnect" ? "DISCONNECT" : "PAUSE"}
                       className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
                   </div>

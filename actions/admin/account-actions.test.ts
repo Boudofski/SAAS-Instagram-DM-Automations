@@ -105,10 +105,13 @@ describe("adminRefreshProfileSnapshotAction", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("calls Meta Graph API with instagramId in URL and writes snapshot on success", async () => {
+  it("calls Meta Graph API with instagramId in URL, token in Authorization header (not URL), and writes snapshot", async () => {
     const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
     expect(result.status).toBe(200);
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("ig-123"));
+    const [fetchUrl, fetchOptions] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(fetchUrl).toContain("ig-123");
+    expect(fetchUrl).not.toContain("EAA_test_token"); // token must NOT appear in URL
+    expect((fetchOptions?.headers as Record<string, string>)?.Authorization).toMatch(/^Bearer /);
     expect(mockSnapshotCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ integrationId: "int-1", source: "admin_refresh", followersCount: 500 }),
@@ -276,31 +279,43 @@ describe("adminPauseCampaignsForAccountAction", () => {
 
   it("blocks non-admin callers", async () => {
     mockRequireOwnerAdmin.mockRejectedValue(new Error("Unauthorized"));
-    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason" }));
+    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason", confirmation: "PAUSE" }));
     expect(result.status).toBe(403);
+  });
+
+  it("returns 400 when typed confirmation is wrong (case-sensitive)", async () => {
+    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason", confirmation: "pause" }));
+    expect(result.status).toBe(400);
+    expect(String(result.data)).toContain("PAUSE");
+    expect(mockAutomationUpdateMany).not.toHaveBeenCalled();
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "ADMIN_PAUSE_ACCOUNT_CAMPAIGNS", status: "BLOCKED" }),
+      })
+    );
   });
 
   it("returns 404 when integration not found", async () => {
     mockIntegrationsFindUnique.mockResolvedValue(null);
-    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "none", reason: "Valid reason" }));
+    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "none", reason: "Valid reason", confirmation: "PAUSE" }));
     expect(result.status).toBe(404);
   });
 
   it("returns 400 when integration has no userId", async () => {
     mockIntegrationsFindUnique.mockResolvedValue(integration({ userId: null }));
-    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason" }));
+    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason", confirmation: "PAUSE" }));
     expect(result.status).toBe(400);
   });
 
   it("returns 400 when no active campaigns found", async () => {
     mockAutomationUpdateMany.mockResolvedValue({ count: 0 });
-    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason" }));
+    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Valid reason", confirmation: "PAUSE" }));
     expect(result.status).toBe(400);
     expect(String(result.data).toLowerCase()).toContain("no active");
   });
 
   it("pauses all active non-archived campaigns and writes SUCCESS audit log with count", async () => {
-    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Health review" }));
+    const result = await adminPauseCampaignsForAccountAction(form({ integrationId: "int-1", reason: "Health review", confirmation: "PAUSE" }));
     expect(result.status).toBe(200);
     expect(mockAutomationUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({

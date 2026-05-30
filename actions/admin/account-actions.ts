@@ -58,7 +58,7 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     return { status: 404 as const, data: !row ? "Integration not found." : "No Instagram ID on this account." };
   }
 
-  const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=id,username,profile_picture_url,followers_count,media_count,account_type&access_token=${row.token}`;
+  const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=id,username,profile_picture_url,followers_count,media_count,account_type`;
 
   let apiData: {
     id: string;
@@ -70,7 +70,7 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
   };
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${row.token}` } });
     if (!res.ok) throw new Error(`Meta API returned HTTP ${res.status}`);
     apiData = await res.json();
   } catch (error) {
@@ -232,6 +232,7 @@ export async function adminSoftDisconnectAction(formData: FormData) {
 export async function adminPauseCampaignsForAccountAction(formData: FormData) {
   const integrationId = adminFormString(formData, "integrationId");
   const reason = adminFormString(formData, "reason");
+  const confirmation = adminFormString(formData, "confirmation");
 
   if (reason.length < MIN_REASON) {
     return { status: 400 as const, data: "Reason must be at least 5 characters." };
@@ -242,6 +243,11 @@ export async function adminPauseCampaignsForAccountAction(formData: FormData) {
     admin = await requireAdminAction();
   } catch {
     return { status: 403 as const, data: "Unauthorized." };
+  }
+
+  if (confirmation !== "PAUSE") {
+    await createAdminAuditLog({ admin, action: "ADMIN_PAUSE_ACCOUNT_CAMPAIGNS", targetType: "INTEGRATION", targetId: integrationId, reason, confirmation, status: "BLOCKED", error: "Typed confirmation mismatch. Expected PAUSE." });
+    return { status: 400 as const, data: "Type PAUSE to confirm this action." };
   }
 
   const row = await client.integrations.findUnique({
