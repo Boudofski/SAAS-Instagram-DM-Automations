@@ -1,6 +1,7 @@
 import { getAdminV2ReplyTemplates } from "@/lib/admin-v2/queries";
 import { V2Table } from "@/components/admin-v2/v2-table";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
+import { ReplyEditModal } from "@/components/admin-v2/reply-edit-modal";
 
 export default async function AdminV2RepliesPage() {
   const templates = await getAdminV2ReplyTemplates(0);
@@ -16,6 +17,16 @@ export default async function AdminV2RepliesPage() {
     <p key="r1" className="max-w-[220px] truncate text-[11px] text-slate-300">{t.reply1 ?? "—"}</p>,
     <p key="r2" className="max-w-[220px] truncate text-[11px] text-slate-400">{t.reply2 ?? "—"}</p>,
     <p key="r3" className="max-w-[220px] truncate text-[11px] text-slate-400">{t.reply3 ?? "—"}</p>,
+    <ReplyEditModal
+      key="actions"
+      campaignId={t.campaignId}
+      campaignName={t.campaignName}
+      initialReplies={{
+        commentReply: t.reply1,
+        commentReply2: t.reply2,
+        commentReply3: t.reply3,
+      }}
+    />,
   ]);
 
   return (
@@ -33,7 +44,7 @@ export default async function AdminV2RepliesPage() {
         </div>
       ) : (
         <V2Table
-          headers={["Campaign", "Status", "Reply variant 1", "Reply variant 2", "Reply variant 3"]}
+          headers={["Campaign", "Status", "Reply variant 1", "Reply variant 2", "Reply variant 3", "Actions"]}
           rows={rows}
           empty="No reply templates found."
         />
