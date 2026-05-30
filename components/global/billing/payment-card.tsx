@@ -62,7 +62,7 @@ function PaymentCard({ label, current }: Props) {
       className={cn(
         "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm dark:text-white",
         isActive
-          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-rf-pink/40 dark:bg-[#1e1335] dark:shadow-[0_24px_70px_rgba(221,42,123,0.20)]"
+          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-pink-500/30 dark:bg-gradient-to-br dark:from-[#151827] dark:via-[#1b1023] dark:to-[#2a1230] dark:shadow-[0_24px_70px_rgba(221,42,123,0.20)]"
           : "border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-white/[0.12] dark:bg-[#111827] dark:hover:bg-[#141e30]"
       )}
     >
@@ -72,10 +72,10 @@ function PaymentCard({ label, current }: Props) {
           <span className="ap3k-badge ap3k-badge-green">Active</span>
         )}
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
+      <p className={cn("mt-2 text-sm leading-relaxed text-slate-600", isActive ? "dark:text-slate-300" : "dark:text-slate-400")}>{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
         <span className="text-4xl font-black tracking-tight">{plan.price}</span>
-        <span className="text-sm text-slate-500 dark:text-rf-muted">{plan.period}</span>
+        <span className={cn("text-sm text-slate-500", isActive ? "dark:text-slate-300" : "dark:text-rf-muted")}>{plan.period}</span>
       </div>
       <div className="mt-5 flex flex-1 flex-col gap-2.5">
         {features.map((feature) => (
@@ -91,7 +91,7 @@ function PaymentCard({ label, current }: Props) {
         className={cn(
           "mt-6 rounded-xl font-bold",
           isActive
-            ? "cursor-default border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+            ? "cursor-default border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300"
             : isIncludedFree || isAgency
             ? "border border-slate-200 bg-white text-slate-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-400"
             : "ap3k-gradient-button"
