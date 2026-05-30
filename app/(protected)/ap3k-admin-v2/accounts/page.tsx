@@ -2,6 +2,7 @@ import { getAdminV2Accounts, getAdminV2AccountCount } from "@/lib/admin-v2/queri
 import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge, accountHealth } from "@/components/admin-v2/v2-badge";
 import { AdvancedPanel } from "@/components/admin-v2/advanced-panel";
+import { AccountActionsCell } from "@/components/admin-v2/account-actions-cell";
 import LocalTime from "@/components/global/local-time";
 
 type Props = { searchParams?: { page?: string } };
@@ -44,6 +45,13 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
           <p>Business ID: {a.businessId ?? "—"}</p>
         </div>
       </AdvancedPanel>,
+      <AccountActionsCell
+        key="actions"
+        integrationId={a.id}
+        instagramUsername={a.instagramUsername}
+        status={a.status}
+        reconnectRequired={a.reconnectRequired}
+      />,
     ];
   });
 
@@ -60,7 +68,7 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
         </p>
       </div>
       <V2Table
-        headers={["Account", "Owner", "Health", "Webhook", "Last error", "Connected", "Meta IDs"]}
+        headers={["Account", "Owner", "Health", "Webhook", "Last error", "Connected", "Meta IDs", "Actions"]}
         rows={rows}
         empty="No accounts found."
       />
