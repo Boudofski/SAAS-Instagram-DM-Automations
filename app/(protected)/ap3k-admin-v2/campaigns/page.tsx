@@ -6,18 +6,11 @@ import LocalTime from "@/components/global/local-time";
 
 type Props = { searchParams?: { page?: string } };
 
-function campaignStatusTone(c: AdminV2Campaign) {
-  if (c.archivedAt) return "slate" as const;
-  if (c.needsReview) return "amber" as const;
-  if (c.active) return "green" as const;
-  return "red" as const;
-}
-
-function campaignStatusLabel(c: AdminV2Campaign) {
-  if (c.archivedAt) return "Archived";
-  if (c.needsReview) return "Needs review";
-  if (c.active) return "Active";
-  return "Paused";
+function campaignHealth(c: AdminV2Campaign): { label: string; tone: "green" | "amber" | "red" | "slate" } {
+  if (c.archivedAt) return { label: "Archived", tone: "slate" };
+  if (c.needsReview) return { label: "Needs review", tone: "amber" };
+  if (c.active) return { label: "Active", tone: "green" };
+  return { label: "Paused", tone: "red" };
 }
 
 export default async function AdminV2CampaignsPage({ searchParams }: Props) {
@@ -27,35 +20,40 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
     getAdminV2CampaignCount(),
   ]);
 
-  const rows = campaigns.map((c) => [
-    <div key="name" className="min-w-0">
-      <p className="max-w-[200px] truncate font-bold text-slate-200">{c.name}</p>
-      <p className="text-[11px] text-slate-500">{c.ownerEmail ?? "—"}</p>
-    </div>,
-    <V2Badge key="status" tone={campaignStatusTone(c)}>
-      {campaignStatusLabel(c)}
-    </V2Badge>,
-    <div key="trigger" className="text-[11px]">
-      <p className="text-slate-300">
-        {c.triggerMode === "ANY_COMMENT" ? "Any comment" : "Keyword"}
-      </p>
-      {c.keywords.length > 0 && (
-        <p className="text-slate-500">
-          {c.keywords.slice(0, 2).join(", ")}
-          {c.keywords.length > 2 ? "…" : ""}
-        </p>
-      )}
-    </div>,
-    <span key="scope" className="text-[11px] text-slate-400">{c.postScope}</span>,
-    <V2Badge key="reply" tone={c.hasPublicReply ? "blue" : "slate"}>
-      {c.hasPublicReply ? "Reply on" : "No reply"}
-    </V2Badge>,
-    <span key="replies" className="tabular-nums text-slate-300">{c.replyCount}</span>,
-    <span key="leads" className="tabular-nums text-slate-300">{c.leadCount}</span>,
-    <span key="created" className="text-[11px] text-slate-500">
-      <LocalTime value={c.createdAt} mode="date" />
-    </span>,
-  ]);
+  const rows = campaigns.map((c) => {
+    const health = campaignHealth(c);
+    const keyword =
+      c.triggerMode === "ANY_COMMENT"
+        ? <span key="kw" className="text-slate-500 italic text-[11px]">Any comment</span>
+        : c.keywords.length > 0
+        ? <span key="kw" className="text-[11px] text-slate-300">{c.keywords.slice(0, 2).join(", ")}{c.keywords.length > 2 ? "…" : ""}</span>
+        : <span key="kw" className="text-slate-600 text-[11px]">—</span>;
+
+    return [
+      <div key="name" className="min-w-0">
+        <p className="max-w-[180px] truncate font-bold text-slate-200">{c.name}</p>
+        <p className="text-[11px] text-slate-500">{c.ownerEmail ?? "—"}</p>
+      </div>,
+      <V2Badge key="status" tone={health.tone}>{health.label}</V2Badge>,
+      keyword,
+      <span key="scope" className="text-[11px] text-slate-400">{c.postScope}</span>,
+      <V2Badge key="reply" tone={c.hasPublicReply ? "blue" : "slate"}>
+        {c.hasPublicReply ? "Reply on" : "No reply"}
+      </V2Badge>,
+      <span key="replies" className="tabular-nums text-slate-300">{c.replyCount}</span>,
+      <span key="leads" className="tabular-nums text-slate-300">{c.leadCount}</span>,
+      c.lastActivity ? (
+        <span key="last" className="text-[11px] text-slate-400"><LocalTime value={c.lastActivity} /></span>
+      ) : (
+        <span key="last" className="text-[11px] text-slate-600">No activity</span>
+      ),
+      c.needsReview && c.reviewReason ? (
+        <span key="reason" className="max-w-[160px] truncate text-[11px] text-amber-400">{c.reviewReason}</span>
+      ) : (
+        <span key="reason" className="text-[11px] text-slate-600">—</span>
+      ),
+    ];
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,7 +65,7 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
         </h1>
       </div>
       <V2Table
-        headers={["Campaign", "Status", "Trigger", "Post scope", "Public reply", "Replies", "Leads", "Created"]}
+        headers={["Campaign", "Health", "Keyword", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason"]}
         rows={rows}
         empty="No campaigns found."
       />

@@ -21,10 +21,8 @@ export default async function AdminV2RepliesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">
-          Reply Templates / Campaign Replies
-        </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">Public Reply Variants</h1>
+        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">Replies</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">Replies (Templates &amp; Usage)</h1>
         <p className="mt-1 text-xs text-slate-500">
           Sourced from campaign listener configurations. No separate reply template model exists.
         </p>

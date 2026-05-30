@@ -33,3 +33,15 @@ export function eventTone(eventType: string): Tone {
   if (eventType === "COMMENT_RECEIVED" || eventType === "WEBHOOK_RECEIVED") return "blue";
   return "slate";
 }
+
+export function accountHealth(account: {
+  status: string;
+  reconnectRequired: boolean;
+  expiresAt: Date | null;
+  oauthLastError: string | null;
+}): { label: "Healthy" | "Needs attention" | "Broken"; tone: Tone } {
+  const tokenExpired = Boolean(account.expiresAt && new Date(account.expiresAt).getTime() < Date.now());
+  if (account.status === "DISCONNECTED" || tokenExpired) return { label: "Broken", tone: "red" };
+  if (account.reconnectRequired || account.oauthLastError) return { label: "Needs attention", tone: "amber" };
+  return { label: "Healthy", tone: "green" };
+}

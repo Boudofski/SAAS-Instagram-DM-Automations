@@ -25,6 +25,9 @@ export type AdminV2User = {
   instagramUsername: string | null;
   integrationStatus: string | null;
   automationCount: number;
+  repliesToday: number;
+  leadsToday: number;
+  lastActivity: Date | null;
 };
 
 export type AdminV2Account = {
@@ -49,6 +52,7 @@ export type AdminV2Campaign = {
   name: string;
   active: boolean;
   needsReview: boolean;
+  reviewReason: string | null;
   archivedAt: Date | null;
   triggerMode: string;
   matchingMode: string;
@@ -59,6 +63,12 @@ export type AdminV2Campaign = {
   hasPublicReply: boolean;
   replyCount: number;
   leadCount: number;
+  lastActivity: Date | null;
+};
+
+export type AdminV2SystemHealth = {
+  attentionAccounts: number;
+  campaignsNeedingReview: number;
 };
 
 export type AdminV2ReplyTemplate = {
@@ -116,7 +126,31 @@ export async function getAdminV2Stats(): Promise<AdminV2Stats> {
   return { totalUsers, connectedAccounts, activeCampaigns, repliesToday, leadsToday, failedToday };
 }
 
+// 2 parallelized count queries — runs in parallel with getAdminV2Stats on the overview page.
+export async function getAdminV2SystemHealth(): Promise<AdminV2SystemHealth> {
+  const now = new Date();
+  const [attentionAccounts, campaignsNeedingReview] = await Promise.all([
+    client.integrations.count({
+      where: {
+        OR: [
+          { status: "DISCONNECTED" },
+          { reconnectRequired: true },
+          { expiresAt: { lt: now } },
+        ],
+      },
+    }),
+    client.automation.count({
+      where: { needsReview: true, archivedAt: null },
+    }),
+  ]);
+  return { attentionAccounts, campaignsNeedingReview };
+}
+
+// 1 query with nested selects — replies/leads/lastActivity computed in JS, no N+1.
 export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
   const rows = await client.user.findMany({
     take: LIST_LIMIT,
     skip: page * LIST_LIMIT,
@@ -135,21 +169,50 @@ export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
         take: 1,
       },
       _count: { select: { automations: true } },
+      automations: {
+        select: {
+          messageLogs: {
+            where: { messageType: "COMMENT_REPLY", status: "SENT", createdAt: { gte: startOfDay } },
+            select: { id: true },
+          },
+          leads: {
+            where: { createdAt: { gte: startOfDay } },
+            select: { id: true },
+          },
+          events: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { createdAt: true },
+          },
+        },
+      },
     },
   });
 
-  return rows.map((u) => ({
-    id: u.id,
-    email: u.email,
-    firstname: u.firstname,
-    lastname: u.lastname,
-    status: u.status,
-    createdAt: u.createdAt,
-    plan: u.subscription?.plan ?? "FREE",
-    instagramUsername: u.integrations[0]?.instagramUsername ?? null,
-    integrationStatus: u.integrations[0]?.status ?? null,
-    automationCount: u._count.automations,
-  }));
+  return rows.map((u) => {
+    const repliesToday = u.automations.reduce((sum, a) => sum + a.messageLogs.length, 0);
+    const leadsToday = u.automations.reduce((sum, a) => sum + a.leads.length, 0);
+    const lastActivity =
+      u.automations
+        .flatMap((a) => a.events.map((e) => e.createdAt))
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+
+    return {
+      id: u.id,
+      email: u.email,
+      firstname: u.firstname,
+      lastname: u.lastname,
+      status: u.status,
+      createdAt: u.createdAt,
+      plan: u.subscription?.plan ?? "FREE",
+      instagramUsername: u.integrations[0]?.instagramUsername ?? null,
+      integrationStatus: u.integrations[0]?.status ?? null,
+      automationCount: u._count.automations,
+      repliesToday,
+      leadsToday,
+      lastActivity,
+    };
+  });
 }
 
 export async function getAdminV2UserCount(): Promise<number> {
@@ -201,6 +264,7 @@ export async function getAdminV2AccountCount(): Promise<number> {
   return client.integrations.count();
 }
 
+// 1 query with nested events for lastActivity — no N+1.
 export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> {
   const rows = await client.automation.findMany({
     take: LIST_LIMIT,
@@ -211,6 +275,7 @@ export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> 
       name: true,
       active: true,
       needsReview: true,
+      reviewReason: true,
       archivedAt: true,
       triggerMode: true,
       matchingMode: true,
@@ -218,8 +283,13 @@ export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> 
       User: { select: { email: true } },
       keywords: { select: { word: true }, take: 3 },
       posts: { select: { postid: true }, take: 1 },
-      listener: { select: { commentReply: true, commentReply2: true, commentReply3: true } },
+      listener: { select: { commentReply: true } },
       _count: { select: { messageLogs: true, leads: true } },
+      events: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true },
+      },
     },
   });
 
@@ -228,6 +298,7 @@ export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> 
     name: c.name,
     active: c.active,
     needsReview: c.needsReview,
+    reviewReason: c.reviewReason,
     archivedAt: c.archivedAt,
     triggerMode: c.triggerMode,
     matchingMode: c.matchingMode,
@@ -238,6 +309,7 @@ export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> 
     hasPublicReply: Boolean(c.listener?.commentReply),
     replyCount: c._count.messageLogs,
     leadCount: c._count.leads,
+    lastActivity: c.events[0]?.createdAt ?? null,
   }));
 }
 

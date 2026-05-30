@@ -1,6 +1,6 @@
 import { getAdminV2Accounts, getAdminV2AccountCount } from "@/lib/admin-v2/queries";
 import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
-import { V2Badge, statusTone } from "@/components/admin-v2/v2-badge";
+import { V2Badge, accountHealth } from "@/components/admin-v2/v2-badge";
 import { AdvancedPanel } from "@/components/admin-v2/advanced-panel";
 import LocalTime from "@/components/global/local-time";
 
@@ -13,44 +13,39 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
     getAdminV2AccountCount(),
   ]);
 
-  const rows = accounts.map((a) => [
-    <div key="ig" className="min-w-0">
-      <p className="font-bold text-slate-200">
-        {a.instagramUsername ? `@${a.instagramUsername}` : "Unknown"}
-      </p>
-      {a.pageName && <p className="text-[11px] text-slate-500">{a.pageName}</p>}
-    </div>,
-    <span key="owner" className="text-[11px] text-slate-400">{a.ownerEmail ?? "—"}</span>,
-    <div key="status" className="flex flex-col gap-1">
-      <V2Badge tone={statusTone(a.status)}>{a.status}</V2Badge>
-      {a.reconnectRequired && <V2Badge tone="amber">Reconnect required</V2Badge>}
-    </div>,
-    <div key="token" className="text-[11px]">
-      {a.expiresAt ? (
-        <span className={new Date(a.expiresAt) < new Date() ? "text-red-400" : "text-emerald-400"}>
-          {new Date(a.expiresAt) < new Date() ? "Expired" : "Valid"}
-        </span>
+  const rows = accounts.map((a) => {
+    const health = accountHealth(a);
+    return [
+      <div key="ig" className="min-w-0">
+        <p className="font-bold text-slate-200">
+          {a.instagramUsername ? `@${a.instagramUsername}` : "Unknown"}
+        </p>
+        {a.pageName && <p className="text-[11px] text-slate-500">{a.pageName}</p>}
+      </div>,
+      <span key="owner" className="text-[11px] text-slate-400">{a.ownerEmail ?? "—"}</span>,
+      <V2Badge key="health" tone={health.tone}>{health.label}</V2Badge>,
+      <div key="webhook" className="text-[11px]">
+        <V2Badge tone={a.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "slate"}>
+          {a.webhookSubscriptionMode ?? "Unknown"}
+        </V2Badge>
+      </div>,
+      a.oauthLastError ? (
+        <span key="error" className="max-w-[180px] truncate text-[11px] text-amber-400">{a.oauthLastError}</span>
       ) : (
-        <span className="text-slate-600">Unknown</span>
-      )}
-    </div>,
-    <span key="webhook" className="text-[11px] text-slate-400">
-      {a.webhookSubscriptionMode ?? "—"}
-    </span>,
-    <span key="error" className="max-w-[180px] truncate text-[11px] text-red-400">
-      {a.oauthLastError ?? "—"}
-    </span>,
-    <span key="created" className="text-[11px] text-slate-500">
-      <LocalTime value={a.createdAt} mode="date" />
-    </span>,
-    <AdvancedPanel key="ids" label="Meta IDs">
-      <div className="flex flex-col gap-1 font-mono text-[11px] text-slate-400">
-        <p>IG ID: {a.instagramId ?? "—"}</p>
-        <p>Page ID: {a.pageId ?? "—"}</p>
-        <p>Business ID: {a.businessId ?? "—"}</p>
-      </div>
-    </AdvancedPanel>,
-  ]);
+        <span key="error" className="text-[11px] text-slate-600">—</span>
+      ),
+      <span key="created" className="text-[11px] text-slate-500">
+        <LocalTime value={a.createdAt} mode="date" />
+      </span>,
+      <AdvancedPanel key="ids" label="Meta IDs (internal)">
+        <div className="flex flex-col gap-1 font-mono text-[11px] text-slate-400">
+          <p>IG ID: {a.instagramId ?? "—"}</p>
+          <p>Page ID: {a.pageId ?? "—"}</p>
+          <p>Business ID: {a.businessId ?? "—"}</p>
+        </div>
+      </AdvancedPanel>,
+    ];
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -65,7 +60,7 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
         </p>
       </div>
       <V2Table
-        headers={["Account", "Owner", "Status", "Token validity", "Webhook mode", "Last error", "Connected", "Meta IDs"]}
+        headers={["Account", "Owner", "Health", "Webhook", "Last error", "Connected", "Meta IDs"]}
         rows={rows}
         empty="No accounts found."
       />

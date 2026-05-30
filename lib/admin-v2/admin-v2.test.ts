@@ -114,3 +114,144 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
     expect(root_).toContain('redirect("/ap3k-admin-v2/overview")');
   });
 });
+
+describe("Admin v2 — Phase 1.5 operator UX", () => {
+  it("no write operations anywhere in the query layer", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    expect(queries).not.toContain(".create(");
+    expect(queries).not.toContain(".update(");
+    expect(queries).not.toContain(".delete(");
+    expect(queries).not.toContain(".upsert(");
+  });
+
+  it("getAdminV2SystemHealth exists and uses 2-query Promise.all", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    expect(queries).toContain("getAdminV2SystemHealth");
+    expect(queries).toContain("AdminV2SystemHealth");
+    expect(queries).toContain("attentionAccounts");
+    expect(queries).toContain("campaignsNeedingReview");
+  });
+
+  it("AdminV2User type includes Phase 1.5 enrichment fields", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    expect(queries).toContain("repliesToday: number");
+    expect(queries).toContain("leadsToday: number");
+    expect(queries).toContain("lastActivity: Date | null");
+  });
+
+  it("AdminV2Campaign type includes reviewReason and lastActivity", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    expect(queries).toContain("reviewReason: string | null");
+  });
+
+  it("getAdminV2Users uses nested select for enrichment — no N+1", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    // Single findMany, not a loop of per-user queries
+    const findManyMatches = queries.match(/client\.user\.findMany/g) ?? [];
+    expect(findManyMatches).toHaveLength(1);
+    // Nested messageLogs and events inside automations
+    expect(queries).toContain("messageLogs:");
+    expect(queries).toContain("leads:");
+  });
+
+  it("getAdminV2Campaigns uses nested events for lastActivity — no N+1", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    expect(queries).toContain("reviewReason: true");
+    // events nested in campaign select
+    const eventsAfterCampaigns = queries.split("getAdminV2Campaigns")[1] ?? "";
+    expect(eventsAfterCampaigns.indexOf("events:")).toBeLessThan(
+      eventsAfterCampaigns.indexOf("getAdminV2CampaignCount")
+    );
+  });
+
+  it("shared labels file exports humanError and humanEvent", () => {
+    const labels = read("lib/admin-v2/labels.ts");
+    expect(labels).toContain("export function humanError");
+    expect(labels).toContain("export function humanEvent");
+    expect(labels).toContain("HUMAN_ERROR");
+    expect(labels).toContain("HUMAN_EVENT");
+    // Key human-readable entries present
+    expect(labels).toContain("Self-comment: comment from the connected Instagram account");
+    expect(labels).toContain("Rate limit: too many replies");
+  });
+
+  it("account health function exposes three tiers", () => {
+    const badge = read("components/admin-v2/v2-badge.tsx");
+    expect(badge).toContain("accountHealth");
+    expect(badge).toContain('"Healthy"');
+    expect(badge).toContain('"Needs attention"');
+    expect(badge).toContain('"Broken"');
+  });
+
+  it("overview page has System Health section", () => {
+    const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
+    expect(overview).toContain("System Health");
+    expect(overview).toContain("getAdminV2SystemHealth");
+  });
+
+  it("overview Requires Attention section links to diagnostics", () => {
+    const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
+    expect(overview).toContain("Requires Attention");
+    expect(overview).toContain("/ap3k-admin-v2/diagnostics");
+    expect(overview).toContain("View diagnostics");
+  });
+
+  it("overview activity filters out WEBHOOK_RECEIVED noise", () => {
+    const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
+    expect(overview).toContain("WEBHOOK_RECEIVED");
+    expect(overview).toContain(".filter(");
+    expect(overview).toContain(".slice(0, 30)");
+  });
+
+  it("campaigns page shows health, last activity, and pause reason", () => {
+    const campaigns = read("app/(protected)/ap3k-admin-v2/campaigns/page.tsx");
+    expect(campaigns).toContain("campaignHealth");
+    expect(campaigns).toContain("lastActivity");
+    expect(campaigns).toContain("reviewReason");
+    expect(campaigns).toContain("Pause reason");
+  });
+
+  it("accounts page uses accountHealth for status column", () => {
+    const accounts = read("app/(protected)/ap3k-admin-v2/accounts/page.tsx");
+    expect(accounts).toContain("accountHealth");
+    expect(accounts).toContain("Meta IDs (internal)");
+    // Raw status badge replaced by health label
+    expect(accounts).not.toContain('"CONNECTED"');
+    expect(accounts).not.toContain('"DISCONNECTED"');
+  });
+
+  it("users page shows replies today, leads today, last activity columns", () => {
+    const users = read("app/(protected)/ap3k-admin-v2/users/page.tsx");
+    expect(users).toContain("repliesToday");
+    expect(users).toContain("leadsToday");
+    expect(users).toContain("lastActivity");
+    expect(users).toContain("Replies today");
+    expect(users).toContain("Leads today");
+    expect(users).toContain("Last activity");
+  });
+
+  it("replies page uses approved title", () => {
+    const replies = read("app/(protected)/ap3k-admin-v2/replies/page.tsx");
+    expect(replies).toContain("Replies (Templates");
+    // Nav label remains "Replies" not "Reply Library"
+    const nav = read("components/admin-v2/nav.tsx");
+    expect(nav).toContain('label: "Replies"');
+    expect(nav).not.toContain("Reply Library");
+  });
+
+  it("diagnostics page uses humanError for readable error labels", () => {
+    const diag = read("app/(protected)/ap3k-admin-v2/diagnostics/page.tsx");
+    expect(diag).toContain("humanError");
+    expect(diag).toContain("humanEvent");
+    expect(diag).toContain("AdvancedPanel");
+    expect(diag).toContain("Raw code");
+  });
+
+  it("activity page uses shared humanEvent from labels", () => {
+    const activity = read("app/(protected)/ap3k-admin-v2/activity/page.tsx");
+    expect(activity).toContain('from "@/lib/admin-v2/labels"');
+    expect(activity).toContain("humanEvent");
+    // No longer has local HUMAN_EVENT map
+    expect(activity).not.toContain("const HUMAN_EVENT");
+  });
+});

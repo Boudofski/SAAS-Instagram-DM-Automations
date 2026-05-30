@@ -29,13 +29,15 @@ export default async function AdminV2UsersPage({ searchParams }: Props) {
     ) : (
       <span key="ig" className="text-slate-600">Not connected</span>
     ),
-    <span key="campaigns" className="tabular-nums text-slate-300">
-      {u.automationCount}
-    </span>,
+    <span key="campaigns" className="tabular-nums text-slate-300">{u.automationCount}</span>,
+    <span key="replies" className="tabular-nums text-slate-300">{u.repliesToday}</span>,
+    <span key="leads" className="tabular-nums text-slate-300">{u.leadsToday}</span>,
+    u.lastActivity ? (
+      <span key="last" className="text-[11px] text-slate-400"><LocalTime value={u.lastActivity} /></span>
+    ) : (
+      <span key="last" className="text-[11px] text-slate-600">No activity</span>
+    ),
     <V2Badge key="status" tone={statusTone(u.status)}>{u.status}</V2Badge>,
-    <span key="created" className="text-[11px] text-slate-500">
-      <LocalTime value={u.createdAt} mode="date" />
-    </span>,
   ]);
 
   return (
@@ -48,7 +50,7 @@ export default async function AdminV2UsersPage({ searchParams }: Props) {
         </h1>
       </div>
       <V2Table
-        headers={["User", "Plan", "Instagram", "Campaigns", "Status", "Joined"]}
+        headers={["User", "Plan", "Instagram", "Campaigns", "Replies today", "Leads today", "Last activity", "Status"]}
         rows={rows}
         empty="No users found."
       />
