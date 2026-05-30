@@ -3,6 +3,7 @@ import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import type { AdminV2Campaign } from "@/lib/admin-v2/queries";
 import LocalTime from "@/components/global/local-time";
+import { CampaignActionsCell } from "@/components/admin-v2/campaign-action-modal";
 
 type Props = { searchParams?: { page?: string } };
 
@@ -52,6 +53,14 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
       ) : (
         <span key="reason" className="text-[11px] text-slate-600">—</span>
       ),
+      <CampaignActionsCell
+        key="actions"
+        campaignId={c.id}
+        campaignName={c.name}
+        active={c.active}
+        needsReview={c.needsReview}
+        archivedAt={c.archivedAt}
+      />,
     ];
   });
 
@@ -65,7 +74,7 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
         </h1>
       </div>
       <V2Table
-        headers={["Campaign", "Health", "Keyword", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason"]}
+        headers={["Campaign", "Health", "Keyword", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason", "Actions"]}
         rows={rows}
         empty="No campaigns found."
       />
