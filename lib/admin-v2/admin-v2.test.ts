@@ -255,3 +255,98 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
     expect(activity).not.toContain("const HUMAN_EVENT");
   });
 });
+
+describe("Admin v2 — Phase 2D.1 Plan & Billing user detail", () => {
+  it("queries.ts exports getAdminV2UserDetail and AdminV2UserDetail type shape", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    expect(queries).toContain("getAdminV2UserDetail");
+    expect(queries).toContain("AdminV2UserDetail");
+    expect(queries).toContain("clerkId: string");
+    expect(queries).toContain("customerId: string | null");
+    expect(queries).toContain("totalCampaigns: number");
+    expect(queries).toContain("campaignsNeedingReview: number");
+    expect(queries).toContain("lastActivity: Date | null");
+  });
+
+  it("getAdminV2UserDetail never selects the token field", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    const afterDetail = queries.split("getAdminV2UserDetail")[1] ?? "";
+    const lines = afterDetail.split("\n").filter((line) => {
+      const trimmed = line.trim();
+      return trimmed.startsWith("token:") || trimmed === "token,";
+    });
+    expect(lines).toHaveLength(0);
+  });
+
+  it("getAdminV2UserDetail uses a single findUnique — no N+1", () => {
+    const queries = read("lib/admin-v2/queries.ts");
+    const afterDetail = queries.split("async function getAdminV2UserDetail")[1] ?? "";
+    const findUniqueMatches = (afterDetail.split("async function")[0].match(/\.findUnique\(/g) ?? []).length;
+    expect(findUniqueMatches).toBe(1);
+  });
+
+  it("user detail page does not call requireOwnerAdmin — layout covers it", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).not.toContain("requireOwnerAdmin");
+  });
+
+  it("user detail page imports getUserMonthlyUsage for canonical usage data", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("getUserMonthlyUsage");
+    expect(page).toContain('from "@/actions/usage/queries"');
+  });
+
+  it("user detail page shows plan label using getPlanLabel", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("getPlanLabel");
+  });
+
+  it("user detail page shows usage bar for static replies", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("UsageBar");
+    expect(page).toContain("staticReplies");
+  });
+
+  it("user detail page shows campaign totals including needsReview", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("totalCampaigns");
+    expect(page).toContain("campaignsNeedingReview");
+  });
+
+  it("user detail page shows 'No external billing record' when no Stripe customer", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("No external billing record");
+  });
+
+  it("user detail page shows Stripe customer exists when customerId present", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("Stripe customer exists");
+  });
+
+  it("user detail page wraps Stripe call in try/catch — safe on missing key", () => {
+    const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(page).toContain("stripe.subscriptions.list");
+    expect(page).toContain("} catch {");
+  });
+
+  it("UsageBar component exists with percent and tone props", () => {
+    const bar = read("components/admin-v2/usage-bar.tsx");
+    expect(bar).toContain("percent");
+    expect(bar).toContain("tone");
+    expect(bar).toContain("bg-emerald-500");
+    expect(bar).toContain("bg-amber-500");
+    expect(bar).toContain("bg-red-500");
+  });
+
+  it("users list page has View details link to user detail route", () => {
+    const users = read("app/(protected)/ap3k-admin-v2/users/page.tsx");
+    expect(users).toContain("View details");
+    expect(users).toContain("/ap3k-admin-v2/users/");
+  });
+
+  it("formatUsageMetricValue shows used / limit — unlimited shows Unlimited", () => {
+    const src = read("lib/plan-limits.ts");
+    expect(src).toContain("formatUsageMetricValue");
+    expect(src).toContain('"Unlimited"');
+  });
+});

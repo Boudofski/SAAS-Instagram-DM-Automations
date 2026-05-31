@@ -101,6 +101,24 @@ export type AdminV2WebhookEvent = {
   campaignName: string | null;
 };
 
+export type AdminV2UserDetail = {
+  id: string;
+  clerkId: string;
+  email: string;
+  firstname: string | null;
+  lastname: string | null;
+  status: string;
+  suspendedAt: Date | null;
+  suspendedReason: string | null;
+  createdAt: Date;
+  plan: string;
+  customerId: string | null;
+  totalCampaigns: number;
+  activeCampaigns: number;
+  campaignsNeedingReview: number;
+  lastActivity: Date | null;
+};
+
 export async function getAdminV2Stats(): Promise<AdminV2Stats> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -439,4 +457,63 @@ export async function getAdminV2LoopGuardEvents(): Promise<AdminV2ActivityEvent[
 
 export async function getAdminV2RecentActivity(): Promise<AdminV2ActivityEvent[]> {
   return getAdminV2Activity(0);
+}
+
+// SECURITY: token field is intentionally NOT selected here or anywhere in admin-v2.
+export async function getAdminV2UserDetail(userId: string): Promise<AdminV2UserDetail | null> {
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      clerkId: true,
+      email: true,
+      firstname: true,
+      lastname: true,
+      status: true,
+      suspendedAt: true,
+      suspendedReason: true,
+      createdAt: true,
+      subscription: { select: { plan: true, customerId: true } },
+      automations: {
+        where: { archivedAt: null },
+        select: {
+          active: true,
+          needsReview: true,
+          events: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { createdAt: true },
+          },
+        },
+      },
+      // integrations intentionally not selected — token must never appear in admin-v2
+    },
+  });
+
+  if (!user) return null;
+
+  const activeCampaigns = user.automations.filter((a) => a.active).length;
+  const campaignsNeedingReview = user.automations.filter((a) => a.needsReview).length;
+  const lastActivity =
+    user.automations
+      .flatMap((a) => a.events.map((e) => e.createdAt))
+      .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+
+  return {
+    id: user.id,
+    clerkId: user.clerkId,
+    email: user.email,
+    firstname: user.firstname,
+    lastname: user.lastname,
+    status: user.status,
+    suspendedAt: user.suspendedAt,
+    suspendedReason: user.suspendedReason ?? null,
+    createdAt: user.createdAt,
+    plan: user.subscription?.plan ?? "FREE",
+    customerId: user.subscription?.customerId ?? null,
+    totalCampaigns: user.automations.length,
+    activeCampaigns,
+    campaignsNeedingReview,
+    lastActivity,
+  };
 }
