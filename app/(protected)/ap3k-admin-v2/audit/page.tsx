@@ -310,10 +310,10 @@ function AuditLogRows({
       <tr className={stripe}>
         <td colSpan={8} className="border-b border-white/[0.04] px-4 pb-2 pt-0">
           <details>
-            <summary className="cursor-pointer text-[10px] text-slate-600 hover:text-slate-400">
+            <summary className="cursor-pointer text-[10px] text-slate-500 hover:text-slate-300">
               ▶ View details
             </summary>
-            <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl bg-white/[0.03] p-3 sm:grid-cols-2">
+            <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl bg-white/[0.05] p-3 sm:grid-cols-2">
               {log.reason && (
                 <DetailBlock label="Reason" value={log.reason} />
               )}
@@ -372,7 +372,7 @@ function DetailBlock({
     <div>
       <p
         className={`text-[10px] font-black uppercase tracking-wider ${
-          tone === "red" ? "text-red-600" : "text-slate-600"
+          tone === "red" ? "text-red-500" : "text-slate-500"
         }`}
       >
         {label}
@@ -380,9 +380,9 @@ function DetailBlock({
       <div
         className={`mt-0.5 text-[11px] ${
           mono
-            ? "overflow-x-auto rounded bg-black/20 p-1.5 font-mono whitespace-pre"
+            ? "overflow-x-auto rounded bg-black/30 p-1.5 font-mono whitespace-pre"
             : "whitespace-pre-wrap"
-        } ${tone === "red" ? "text-red-400" : "text-slate-400"}`}
+        } ${tone === "red" ? "text-red-300" : mono ? "text-slate-200" : "text-slate-300"}`}
       >
         {value}
       </div>
