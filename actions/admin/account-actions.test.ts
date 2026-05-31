@@ -5,6 +5,7 @@ const mockAuditCreate = vi.fn();
 const mockIntegrationsFindUnique = vi.fn();
 const mockIntegrationsUpdate = vi.fn();
 const mockSnapshotCreate = vi.fn();
+const mockSnapshotFindFirst = vi.fn();
 const mockAutomationUpdateMany = vi.fn();
 const mockRevalidatePath = vi.fn();
 const mockFetch = vi.fn();
@@ -21,6 +22,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     instagramAccountSnapshot: {
       create: (...args: any[]) => mockSnapshotCreate(...args),
+      findFirst: (...args: any[]) => mockSnapshotFindFirst(...args),
     },
     automation: {
       updateMany: (...args: any[]) => mockAutomationUpdateMany(...args),
@@ -85,6 +87,8 @@ describe("adminRefreshProfileSnapshotAction", () => {
         account_type: "BUSINESS",
       }),
     });
+    // Default: no previous snapshot (first-ever refresh)
+    mockSnapshotFindFirst.mockResolvedValue(null);
   });
 
   it("rejects reason shorter than 5 characters", async () => {
@@ -192,28 +196,85 @@ describe("adminRefreshProfileSnapshotAction", () => {
     expect(String(result.data)).not.toContain("EAA_test_token");
   });
 
-  it("optional stats fetch failure still returns 200 with basic profile saved", async () => {
+  it("optional stats failure with no previous snapshot writes null counts and returns 200", async () => {
+    // No previous snapshot
+    mockSnapshotFindFirst.mockResolvedValue(null);
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "ig-123", username: "test_user", profile_picture_url: "https://example.com/pic.jpg" }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({}) });
+    const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    expect(result.status).toBe(200);
+    expect(mockSnapshotCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ username: "test_user", followersCount: null, mediaCount: null }),
+      })
+    );
+  });
+
+  it("optional stats failure preserves previous followersCount and mediaCount from latest snapshot", async () => {
+    mockSnapshotFindFirst.mockResolvedValue({ followersCount: 1200, mediaCount: 45, accountType: "BUSINESS" });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "ig-123", username: "test_user", profile_picture_url: "https://example.com/pic.jpg" }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({}) });
+    const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    expect(result.status).toBe(200);
+    expect(mockSnapshotCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          followersCount: 1200,
+          mediaCount: 45,
+          accountType: "BUSINESS",
+          source: "admin_refresh_partial",
+        }),
+      })
+    );
+  });
+
+  it("optional stats null does not overwrite previous counts — fresh null values fall back to previous snapshot", async () => {
+    mockSnapshotFindFirst.mockResolvedValue({ followersCount: 800, mediaCount: 30, accountType: null });
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ id: "ig-123", username: "test_user", profile_picture_url: "https://example.com/pic.jpg" }),
       })
       .mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ error: { code: 100, message: "Field not available" } }),
+        ok: true,
+        // Stats endpoint returns but without followers_count (omitted field, treated as undefined)
+        json: async () => ({ id: "ig-123" }),
       });
     const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
     expect(result.status).toBe(200);
     expect(mockSnapshotCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          username: "test_user",
-          followersCount: null,
-          mediaCount: null,
-          accountType: null,
-        }),
+        data: expect.objectContaining({ followersCount: 800, mediaCount: 30 }),
       })
+    );
+  });
+
+  it("returns partial-sync warning message when stats are preserved from previous snapshot", async () => {
+    mockSnapshotFindFirst.mockResolvedValue({ followersCount: 500, mediaCount: 20, accountType: "BUSINESS" });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "ig-123", username: "test_user", profile_picture_url: "https://example.com/pic.jpg" }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({}) });
+    const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    expect(result.status).toBe(200);
+    expect(String(result.data).toLowerCase()).toContain("previous");
+  });
+
+  it("full success uses source admin_refresh (not partial) when stats fetch succeeds", async () => {
+    const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    expect(result.status).toBe(200);
+    expect(mockSnapshotCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ source: "admin_refresh" }) })
     );
   });
 

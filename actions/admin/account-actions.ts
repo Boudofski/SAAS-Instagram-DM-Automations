@@ -120,15 +120,36 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     return { status: 500 as const, data: safeError(error) };
   }
 
+  // Read previous snapshot before any write so we can preserve stats on partial failure.
+  // This prevents a failed stats fetch from displacing real follower/media counts in the
+  // user dashboard (dashboard reads getLatestInstagramSnapshot which returns the newest row).
+  const prevSnapshot = await client.instagramAccountSnapshot.findFirst({
+    where: { integrationId },
+    orderBy: { fetchedAt: "desc" },
+    select: { followersCount: true, mediaCount: true, accountType: true },
+  });
+
   // Step 2: Fetch optional stats. Failure is silently tolerated — snapshot is still written.
   let statsData: { followers_count?: number; media_count?: number; account_type?: string } = {};
+  let statsPartial = false;
   try {
     const statsUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=followers_count,media_count,account_type`;
     const statsRes = await fetch(statsUrl, { headers: authHeader });
-    if (statsRes.ok) statsData = await statsRes.json();
+    if (statsRes.ok) {
+      statsData = await statsRes.json();
+    } else {
+      statsPartial = true;
+    }
   } catch {
-    // optional — silently ignored
+    statsPartial = true;
   }
+
+  // Derive final stat values: live data > previous snapshot > null.
+  // Never write null over an existing real value — that would break dashboard display.
+  const followersCount = statsData.followers_count ?? prevSnapshot?.followersCount ?? null;
+  const mediaCount = statsData.media_count ?? prevSnapshot?.mediaCount ?? null;
+  const accountType = statsData.account_type ?? prevSnapshot?.accountType ?? null;
+  const statsPreserved = statsPartial && (followersCount !== null || mediaCount !== null);
 
   try {
     await client.instagramAccountSnapshot.create({
@@ -137,10 +158,10 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
         instagramId: basicData.id,
         username: basicData.username ?? null,
         profilePictureUrl: basicData.profile_picture_url ?? null,
-        followersCount: statsData.followers_count ?? null,
-        mediaCount: statsData.media_count ?? null,
-        accountType: statsData.account_type ?? null,
-        source: "admin_refresh",
+        followersCount,
+        mediaCount,
+        accountType,
+        source: statsPreserved ? "admin_refresh_partial" : "admin_refresh",
       },
     });
 
@@ -157,12 +178,15 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     await createAdminAuditLog({
       admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason,
       before: { instagramUsername: row.instagramUsername, profilePictureUrl: row.profilePictureUrl },
-      after: { username: basicData.username, followersCount: statsData.followers_count ?? null },
+      after: { username: basicData.username, followersCount, statsSource: statsPreserved ? "preserved_from_previous_snapshot" : "live_meta_api" },
       status: "SUCCESS",
     });
 
     for (const path of V2_PATHS) revalidatePath(path);
-    return { status: 200 as const, data: "Profile snapshot refreshed." };
+    const message = statsPreserved
+      ? "Profile updated. Stats not refreshed — showing previous values."
+      : "Profile snapshot refreshed.";
+    return { status: 200 as const, data: message };
   } catch (error) {
     await createAdminAuditLog({ admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason, status: "FAILED", error: safeError(error) });
     return { status: 500 as const, data: safeError(error) };
