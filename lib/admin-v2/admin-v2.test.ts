@@ -365,10 +365,10 @@ describe("Admin v2 — Phase 2D.2 suspend/reactivate", () => {
     expect(src).toContain("ADMIN_USER_REACTIVATED");
   });
 
-  it("user-actions.ts does not import stripe or modify plans", () => {
+  it("user-actions.ts does not import stripe (manual plan change via subscription is allowed)", () => {
     const src = read("actions/admin/user-actions.ts");
     expect(src).not.toContain('from "@/lib/stripe"');
-    expect(src).not.toContain("subscription");
+    // subscription is now allowed for manual plan changes
   });
 
   it("user-actions.ts uses createAdminAuditLog for all actions", () => {
