@@ -13,19 +13,22 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const user = await client.user.findUnique({
     where: { id: userId },
     select: {
-      subscription: { select: { plan: true } },
+      subscription: { select: { plan: true, usageResetAt: true } },
     },
   });
 
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
 
+  const resetAt = user?.subscription?.usageResetAt;
+  const effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
+
   const [publicReplyLogs, dmLogs, activeCampaigns, connectedAccounts] = await Promise.all([
     client.messageLog.count({
       where: {
         status: "SENT",
         messageType: "COMMENT_REPLY",
-        createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+        createdAt: { gte: effectiveStart, lt: period.monthEnd },
         automation: { userId },
       },
     }),
@@ -33,7 +36,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       where: {
         status: "SENT",
         messageType: "DM",
-        createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+        createdAt: { gte: effectiveStart, lt: period.monthEnd },
         automation: { userId },
       },
     }),
@@ -46,7 +49,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       : client.automationEvent.count({
           where: {
             eventType: "PUBLIC_REPLY_SENT",
-            createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+            createdAt: { gte: effectiveStart, lt: period.monthEnd },
             automation: { userId },
           },
         }),
@@ -55,7 +58,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       : client.automationEvent.count({
           where: {
             eventType: "DM_SENT",
-            createdAt: { gte: period.enforcementStart, lt: period.monthEnd },
+            createdAt: { gte: effectiveStart, lt: period.monthEnd },
             automation: { userId },
           },
         }),

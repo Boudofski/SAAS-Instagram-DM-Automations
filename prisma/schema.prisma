@@ -34,6 +34,7 @@ model Subscription {
   plan       SUBSCRIPTION_PLAN @default(FREE)
   updatedAt  DateTime          @default(now())
   customerId String?           @unique
+  usageResetAt DateTime?
 }
 
 model Integrations {

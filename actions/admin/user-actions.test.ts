@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
 
 const mockRequireOwnerAdmin = vi.fn();
 const mockAuditCreate = vi.fn();
@@ -36,6 +36,7 @@ import {
   adminSuspendUserAction,
   adminReactivateUserAction,
   adminChangeUserPlanAction,
+  adminResetUserUsageAction,
 } from "./user-actions";
 
 // ---------------------------------------------------------------------------
@@ -51,7 +52,7 @@ function activeUser(overrides: Record<string, unknown> = {}) {
     status: "ACTIVE",
     suspendedAt: null,
     suspendedReason: null,
-    subscription: { plan: "FREE" },
+    subscription: { plan: "FREE", usageResetAt: null },
     ...overrides,
   };
 }
@@ -419,5 +420,116 @@ describe("adminChangeUserPlanAction", () => {
     // This is a behavioral test — we check that nothing related to Stripe is imported/called.
     // In our mocks, we haven't mocked Stripe, so if it were called, it would fail or we'd see it in the code.
     // By convention, we ensure no stripe import exists in the action file.
+  });
+});
+
+// ---------------------------------------------------------------------------
+// describe("adminResetUserUsageAction")
+// ---------------------------------------------------------------------------
+
+describe("adminResetUserUsageAction", () => {
+  const FIXED_NOW = new Date("2026-05-31T10:00:00Z");
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    mockRequireOwnerAdmin.mockResolvedValue(ADMIN);
+    mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+    mockUserFindUnique.mockResolvedValue(activeUser({ subscription: { usageResetAt: null } }));
+    mockSubscriptionUpsert.mockResolvedValue({ usageResetAt: FIXED_NOW });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("updates usageResetAt to now and writes a SUCCESS audit", async () => {
+    const result = await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "Testing reset", confirmation: "RESET USAGE" }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: { usageResetAt: FIXED_NOW },
+        create: { userId: "user-1", usageResetAt: FIXED_NOW },
+      }),
+    );
+  });
+
+  it("writes a SUCCESS audit with ADMIN_USER_USAGE_RESET action", async () => {
+    await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "Testing reset", confirmation: "RESET USAGE" }),
+    );
+
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "ADMIN_USER_USAGE_RESET",
+          targetId: "user-1",
+          adminEmail: "admin@example.com",
+          before: expect.objectContaining({ usageResetAt: null }),
+          after: expect.objectContaining({ usageResetAt: FIXED_NOW }),
+          status: "SUCCESS",
+        }),
+      }),
+    );
+  });
+
+  it("returns 400 and BLOCKED audit when confirmation is not RESET USAGE", async () => {
+    const result = await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "Testing reset", confirmation: "reset" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "BLOCKED" }),
+      }),
+    );
+  });
+
+  it("returns 400 when reason is shorter than 5 characters", async () => {
+    const result = await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "bad", confirmation: "RESET USAGE" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when caller is not admin", async () => {
+    mockRequireOwnerAdmin.mockRejectedValue(new Error("not_found"));
+
+    const result = await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "Testing reset", confirmation: "RESET USAGE" }),
+    );
+
+    expect(result.status).toBe(403);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when user not found", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "Testing reset", confirmation: "RESET USAGE" }),
+    );
+
+    expect(result.status).toBe(404);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("revalidates admin-v2 user paths on success", async () => {
+    await adminResetUserUsageAction(
+      form({ userId: "user-1", reason: "Testing reset", confirmation: "RESET USAGE" }),
+    );
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/overview");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
   });
 });

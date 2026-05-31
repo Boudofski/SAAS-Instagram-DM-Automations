@@ -5,6 +5,7 @@ import {
   adminSuspendUserAction,
   adminReactivateUserAction,
   adminChangeUserPlanAction,
+  adminResetUserUsageAction,
 } from "@/actions/admin/user-actions";
 
 type Props = {
@@ -14,7 +15,7 @@ type Props = {
   plan?: string;
 };
 
-type ModalKey = "suspend" | "reactivate" | "change_plan";
+type ModalKey = "suspend" | "reactivate" | "change_plan" | "reset_usage";
 
 export function UserActionsPanel({ userId, email, status, plan }: Props) {
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
@@ -59,7 +60,9 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
       const fd = new FormData();
       fd.set("userId", userId);
       fd.set("reason", reason);
-      if (activeModal === "suspend") fd.set("confirmation", confirmation);
+      if (activeModal === "suspend" || activeModal === "reset_usage") {
+        fd.set("confirmation", confirmation);
+      }
       if (activeModal === "change_plan") fd.set("plan", selectedPlan);
 
       const action =
@@ -67,7 +70,9 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
           ? adminSuspendUserAction
           : activeModal === "reactivate"
             ? adminReactivateUserAction
-            : adminChangeUserPlanAction;
+            : activeModal === "change_plan"
+              ? adminChangeUserPlanAction
+              : adminResetUserUsageAction;
 
       const result = await action(fd);
       if (result.status === 200) {
@@ -108,6 +113,13 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
         >
           Change plan
         </button>
+
+        <button
+          onClick={() => openModal("reset_usage")}
+          className="rounded-lg bg-amber-900/40 px-4 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-900/60 hover:text-amber-200 transition-colors"
+        >
+          Reset usage
+        </button>
       </div>
 
       {activeModal && (
@@ -121,7 +133,9 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
                 ? "Suspend user"
                 : activeModal === "reactivate"
                   ? "Reactivate user"
-                  : "Change user plan"}
+                  : activeModal === "change_plan"
+                    ? "Change user plan"
+                    : "Reset monthly usage"}
             </h2>
             <p className="mt-1 text-xs text-slate-400">{email}</p>
 
@@ -134,6 +148,12 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
             {activeModal === "change_plan" && (
               <p className="mt-3 rounded-lg border border-pink-500/20 bg-pink-900/20 px-3 py-2 text-[11px] text-pink-300">
                 Manual plan changes affect AP3k internal access only. Stripe billing is not modified.
+              </p>
+            )}
+
+            {activeModal === "reset_usage" && (
+              <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-900/20 px-3 py-2 text-[11px] text-amber-300">
+                This resets this user’s displayed current monthly reply usage from this moment forward. It does not delete logs, campaigns, integrations, invoices, or Stripe data.
               </p>
             )}
 
@@ -195,6 +215,21 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
                   </div>
                 )}
 
+                {activeModal === "reset_usage" && (
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-amber-400">
+                      Type RESET USAGE to confirm
+                    </label>
+                    <input
+                      type="text"
+                      value={confirmation}
+                      onChange={(e) => setConfirmation(e.target.value)}
+                      placeholder="RESET USAGE"
+                      className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
+                  </div>
+                )}
+
                 {error && (
                   <p role="alert" className="rounded-lg bg-red-900/30 px-3 py-2 text-xs text-red-300">
                     {error}
@@ -210,7 +245,9 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
                         ? "flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                         : activeModal === "reactivate"
                           ? "flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                          : "flex-1 rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700 disabled:opacity-50"
+                          : activeModal === "change_plan"
+                            ? "flex-1 rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700 disabled:opacity-50"
+                            : "flex-1 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
                     }
                   >
                     {isPending
@@ -219,7 +256,9 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
                         ? "Suspend user"
                         : activeModal === "reactivate"
                           ? "Reactivate user"
-                          : "Change plan"}
+                          : activeModal === "change_plan"
+                            ? "Change plan"
+                            : "Reset usage"}
                   </button>
                   <button
                     type="button"

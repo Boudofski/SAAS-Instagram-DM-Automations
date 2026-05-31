@@ -31,6 +31,7 @@ const SENSITIVE_KEY_PATTERN =
   /(token|secret|authorization|client_secret|access_token|page_access_token|stripe_secret|webhook_secret)/i;
 
 export function sanitizeAdminPayload(value: unknown): unknown {
+  if (value instanceof Date) return value;
   if (Array.isArray(value)) return value.map((item) => sanitizeAdminPayload(item));
   if (!value || typeof value !== "object") return value;
 

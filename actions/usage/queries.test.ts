@@ -141,4 +141,25 @@ describe("usage query helpers", () => {
 
     expect(result.ok).toBe(true);
   });
+
+  it("respects usageResetAt if it is after enforcementStart", async () => {
+    vi.stubEnv("USAGE_LIMITS_ENFORCED_FROM", "2026-05-23T00:00:00Z");
+    const resetAt = new Date("2026-05-24T00:00:00Z");
+    mockUserFindUnique.mockResolvedValue({
+      subscription: { plan: "FREE", usageResetAt: resetAt },
+    });
+
+    await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(mockMessageLogCount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: {
+            gte: resetAt,
+            lt: new Date("2026-06-01T00:00:00Z"),
+          },
+        }),
+      })
+    );
+  });
 });

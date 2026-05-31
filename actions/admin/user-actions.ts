@@ -293,3 +293,104 @@ export async function adminChangeUserPlanAction(formData: FormData) {
     return { status: 500 as const, data: safeError(error) };
   }
 }
+
+export async function adminResetUserUsageAction(formData: FormData) {
+  const userId = adminFormString(formData, "userId");
+  const reason = adminFormString(formData, "reason");
+  const confirmation = adminFormString(formData, "confirmation");
+
+  if (reason.length < MIN_REASON) {
+    return { status: 400 as const, data: "Reason must be at least 5 characters." };
+  }
+
+  let admin: Awaited<ReturnType<typeof requireAdminAction>>;
+  try {
+    admin = await requireAdminAction();
+  } catch {
+    return { status: 403 as const, data: "Unauthorized." };
+  }
+
+  if (confirmation !== "RESET USAGE") {
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_USER_USAGE_RESET",
+      targetType: "User",
+      targetId: userId,
+      reason,
+      confirmation,
+      status: "BLOCKED",
+      error: "Typed confirmation mismatch.",
+    });
+    return { status: 400 as const, data: "Type RESET USAGE to confirm this action." };
+  }
+
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      subscription: {
+        select: {
+          usageResetAt: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_USER_USAGE_RESET",
+      targetType: "User",
+      targetId: userId,
+      reason,
+      status: "FAILED",
+      error: "User not found.",
+    });
+    return { status: 404 as const, data: "User not found." };
+  }
+
+  try {
+    const now = new Date();
+    const updated = await client.subscription.upsert({
+      where: { userId },
+      update: { usageResetAt: now },
+      create: { userId, usageResetAt: now },
+    });
+
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_USER_USAGE_RESET",
+      targetType: "User",
+      targetId: userId,
+      targetLabel: user.email,
+      reason,
+      confirmation,
+      before: { usageResetAt: user.subscription?.usageResetAt },
+      after: { usageResetAt: updated.usageResetAt },
+      status: "SUCCESS",
+    });
+
+    for (const path of userPaths(userId)) {
+      revalidatePath(path);
+    }
+
+    return {
+      status: 200 as const,
+      data: "User monthly usage reset. Displayed counts now start from this moment forward.",
+    };
+  } catch (error) {
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_USER_USAGE_RESET",
+      targetType: "User",
+      targetId: userId,
+      targetLabel: user.email,
+      reason,
+      before: { usageResetAt: user.subscription?.usageResetAt },
+      status: "FAILED",
+      error: safeError(error),
+    });
+    return { status: 500 as const, data: safeError(error) };
+  }
+}
