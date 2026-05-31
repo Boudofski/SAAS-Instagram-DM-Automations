@@ -311,7 +311,7 @@ function AuditLogRows({
         <td colSpan={8} className="border-b border-white/[0.04] px-4 pb-2 pt-0">
           <details>
             <summary className="cursor-pointer text-[10px] text-slate-600 hover:text-slate-400">
-              ▶ full detail
+              ▶ View details
             </summary>
             <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl bg-white/[0.03] p-3 sm:grid-cols-2">
               {log.reason && (
@@ -346,9 +346,8 @@ function AuditLogRows({
                 <DetailBlock label="Target ID" value={log.targetId} mono />
               )}
               <DetailBlock
-                label="Timestamp (UTC)"
-                value={log.createdAt.toISOString()}
-                mono
+                label="Timestamp"
+                value={<LocalTime value={log.createdAt} />}
               />
             </div>
           </details>
@@ -365,7 +364,7 @@ function DetailBlock({
   tone,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   mono?: boolean;
   tone?: "red";
 }) {
@@ -378,13 +377,15 @@ function DetailBlock({
       >
         {label}
       </p>
-      <pre
-        className={`mt-0.5 whitespace-pre-wrap break-all text-[11px] ${
-          mono ? "font-mono" : ""
+      <div
+        className={`mt-0.5 text-[11px] ${
+          mono
+            ? "overflow-x-auto rounded bg-black/20 p-1.5 font-mono whitespace-pre"
+            : "whitespace-pre-wrap"
         } ${tone === "red" ? "text-red-400" : "text-slate-400"}`}
       >
         {value}
-      </pre>
+      </div>
     </div>
   );
 }
