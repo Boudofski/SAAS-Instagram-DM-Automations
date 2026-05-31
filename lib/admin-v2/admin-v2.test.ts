@@ -351,3 +351,56 @@ describe("Admin v2 — Phase 2D.1 Plan & Billing user detail", () => {
     expect(src).toContain('"Unlimited"');
   });
 });
+
+describe("Admin v2 — Phase 2D.2 suspend/reactivate", () => {
+  it("user-actions.ts exports adminSuspendUserAction and adminReactivateUserAction", () => {
+    const src = read("actions/admin/user-actions.ts");
+    expect(src).toContain("adminSuspendUserAction");
+    expect(src).toContain("adminReactivateUserAction");
+  });
+
+  it("user-actions.ts uses ADMIN_USER_SUSPENDED and ADMIN_USER_REACTIVATED action names", () => {
+    const src = read("actions/admin/user-actions.ts");
+    expect(src).toContain("ADMIN_USER_SUSPENDED");
+    expect(src).toContain("ADMIN_USER_REACTIVATED");
+  });
+
+  it("user-actions.ts does not import stripe or modify plans", () => {
+    const src = read("actions/admin/user-actions.ts");
+    expect(src).not.toContain('from "@/lib/stripe"');
+    expect(src).not.toContain("subscription");
+  });
+
+  it("user-actions.ts uses createAdminAuditLog for all actions", () => {
+    const src = read("actions/admin/user-actions.ts");
+    expect(src).toContain("createAdminAuditLog");
+  });
+
+  it("user-actions.ts never selects token field", () => {
+    const src = read("actions/admin/user-actions.ts");
+    const lines = src.split("\n").filter((line) => {
+      const trimmed = line.trim();
+      return trimmed.startsWith("token:") || trimmed === "token,";
+    });
+    expect(lines).toHaveLength(0);
+  });
+
+  it("UserActionsPanel exists with suspend and reactivate modals", () => {
+    const src = read("components/admin-v2/user-actions-panel.tsx");
+    expect(src).toContain("suspend");
+    expect(src).toContain("reactivate");
+    expect(src).toContain("SUSPEND");
+    expect(src).toContain("Reactivate user");
+  });
+
+  it("user detail page imports and renders UserActionsPanel", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(src).toContain("UserActionsPanel");
+    expect(src).toContain('from "@/components/admin-v2/user-actions-panel"');
+  });
+
+  it("user detail page does not call requireOwnerAdmin — layout covers it", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(src).not.toContain("requireOwnerAdmin");
+  });
+});

@@ -1,0 +1,313 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockRequireOwnerAdmin = vi.fn();
+const mockAuditCreate = vi.fn();
+const mockUserFindUnique = vi.fn();
+const mockUserUpdate = vi.fn();
+const mockAutomationUpdateMany = vi.fn();
+const mockRevalidatePath = vi.fn();
+
+vi.mock("@/lib/admin", () => ({
+  requireOwnerAdmin: (...args: unknown[]) => mockRequireOwnerAdmin(...args),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  client: {
+    adminAuditLog: { create: (...args: unknown[]) => mockAuditCreate(...args) },
+    user: {
+      findUnique: (...args: unknown[]) => mockUserFindUnique(...args),
+      update: (...args: unknown[]) => mockUserUpdate(...args),
+    },
+    automation: {
+      updateMany: (...args: unknown[]) => mockAutomationUpdateMany(...args),
+    },
+  },
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
+}));
+
+import {
+  adminSuspendUserAction,
+  adminReactivateUserAction,
+} from "./user-actions";
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+const ADMIN = { clerkId: "clerk_admin", email: "admin@example.com" };
+
+function activeUser(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "user-1",
+    email: "user@example.com",
+    status: "ACTIVE",
+    suspendedAt: null,
+    suspendedReason: null,
+    ...overrides,
+  };
+}
+
+function form(fields: Record<string, string>) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+  return fd;
+}
+
+// ---------------------------------------------------------------------------
+// describe("adminSuspendUserAction")
+// ---------------------------------------------------------------------------
+
+describe("adminSuspendUserAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequireOwnerAdmin.mockResolvedValue(ADMIN);
+    mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+    mockUserFindUnique.mockResolvedValue(activeUser());
+    mockUserUpdate.mockResolvedValue(
+      activeUser({
+        status: "SUSPENDED",
+        suspendedAt: new Date(),
+        suspendedReason: "abuse report",
+      }),
+    );
+    mockAutomationUpdateMany.mockResolvedValue({ count: 2 });
+  });
+
+  it("suspends the user and writes a SUCCESS audit", async () => {
+    const result = await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "user-1" },
+        data: expect.objectContaining({
+          status: "SUSPENDED",
+          suspendedReason: "abuse report",
+        }),
+      }),
+    );
+  });
+
+  it("pauses all active campaigns for the user", async () => {
+    await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(mockAutomationUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1", active: true },
+        data: { active: false },
+      }),
+    );
+  });
+
+  it("writes a SUCCESS audit with ADMIN_USER_SUSPENDED action", async () => {
+    await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "ADMIN_USER_SUSPENDED",
+          targetId: "user-1",
+          adminEmail: "admin@example.com",
+          status: "SUCCESS",
+        }),
+      }),
+    );
+  });
+
+  it("includes paused campaign count in success message", async () => {
+    mockAutomationUpdateMany.mockResolvedValue({ count: 3 });
+
+    const result = await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(String(result.data)).toContain("3");
+  });
+
+  it("returns 400 and BLOCKED audit when confirmation is not SUSPEND", async () => {
+    const result = await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "suspend" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "BLOCKED" }),
+      }),
+    );
+  });
+
+  it("returns 400 when reason is shorter than 5 characters — no DB calls", async () => {
+    const result = await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "bad", confirmation: "SUSPEND" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when caller is not admin", async () => {
+    mockRequireOwnerAdmin.mockRejectedValue(new Error("not_found"));
+
+    const result = await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(result.status).toBe(403);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when user not found", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(result.status).toBe(404);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("revalidates admin-v2 user paths on success", async () => {
+    await adminSuspendUserAction(
+      form({ userId: "user-1", reason: "abuse report", confirmation: "SUSPEND" }),
+    );
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/overview");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// describe("adminReactivateUserAction")
+// ---------------------------------------------------------------------------
+
+describe("adminReactivateUserAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequireOwnerAdmin.mockResolvedValue(ADMIN);
+    mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+    mockUserFindUnique.mockResolvedValue(
+      activeUser({ status: "SUSPENDED", suspendedAt: new Date(), suspendedReason: "abuse" }),
+    );
+    mockUserUpdate.mockResolvedValue(
+      activeUser({ status: "ACTIVE", suspendedAt: null, suspendedReason: null }),
+    );
+  });
+
+  it("clears SUSPENDED status and nulls suspendedAt and suspendedReason", async () => {
+    const result = await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "user-1" },
+        data: expect.objectContaining({
+          status: "ACTIVE",
+          suspendedAt: null,
+          suspendedReason: null,
+        }),
+      }),
+    );
+  });
+
+  it("does NOT call automation.updateMany — campaigns stay paused", async () => {
+    await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(mockAutomationUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("writes a SUCCESS audit with ADMIN_USER_REACTIVATED action", async () => {
+    await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "ADMIN_USER_REACTIVATED",
+          targetId: "user-1",
+          adminEmail: "admin@example.com",
+          status: "SUCCESS",
+        }),
+      }),
+    );
+  });
+
+  it("success message mentions campaigns remain paused", async () => {
+    const result = await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(String(result.data).toLowerCase()).toContain("paused");
+  });
+
+  it("does not require typed confirmation — reason only", async () => {
+    // No confirmation field — should still succeed
+    const result = await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(result.status).toBe(200);
+  });
+
+  it("returns 400 when reason is shorter than 5 characters", async () => {
+    const result = await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "ok" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when caller is not admin", async () => {
+    mockRequireOwnerAdmin.mockRejectedValue(new Error("not_found"));
+
+    const result = await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(result.status).toBe(403);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when user not found", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(result.status).toBe(404);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("revalidates admin-v2 user paths on success", async () => {
+    await adminReactivateUserAction(
+      form({ userId: "user-1", reason: "issue resolved" }),
+    );
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/overview");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
+  });
+});

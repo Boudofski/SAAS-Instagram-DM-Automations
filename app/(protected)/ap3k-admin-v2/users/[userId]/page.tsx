@@ -4,6 +4,7 @@ import { getAdminV2UserDetail } from "@/lib/admin-v2/queries";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { V2Badge, statusTone } from "@/components/admin-v2/v2-badge";
 import { UsageBar } from "@/components/admin-v2/usage-bar";
+import { UserActionsPanel } from "@/components/admin-v2/user-actions-panel";
 import {
   usageTone,
   formatUsageMetricValue,
@@ -222,6 +223,12 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
           </p>
         </div>
       )}
+
+      <UserActionsPanel
+        userId={user.id}
+        email={user.email}
+        status={user.status}
+      />
     </div>
   );
 }
