@@ -72,6 +72,8 @@ describe("adminRefreshProfileSnapshotAction", () => {
     mockIntegrationsFindUnique.mockResolvedValue(integration());
     mockSnapshotCreate.mockResolvedValue({ id: "snap-1" });
     mockIntegrationsUpdate.mockResolvedValue({ id: "int-1" });
+    // Ensure once-queue is clear, then set default: both basic + stats succeed
+    mockFetch.mockReset();
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -105,13 +107,23 @@ describe("adminRefreshProfileSnapshotAction", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("calls Meta Graph API with instagramId in URL, token in Authorization header (not URL), and writes snapshot", async () => {
+  it("first fetch uses only basic fields, second uses only stats fields, token in Bearer header not URL", async () => {
     const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
     expect(result.status).toBe(200);
-    const [fetchUrl, fetchOptions] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(fetchUrl).toContain("ig-123");
-    expect(fetchUrl).not.toContain("EAA_test_token"); // token must NOT appear in URL
-    expect((fetchOptions?.headers as Record<string, string>)?.Authorization).toMatch(/^Bearer /);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const [basicUrl, basicOpts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const [statsUrl] = mockFetch.mock.calls[1] as [string, RequestInit];
+    // Basic URL contains id/username/profile_picture_url but NOT optional fields
+    expect(basicUrl).toContain("ig-123");
+    expect(basicUrl).toContain("username");
+    expect(basicUrl).not.toContain("followers_count");
+    expect(basicUrl).not.toContain("EAA_test_token");
+    expect((basicOpts?.headers as Record<string, string>)?.Authorization).toMatch(/^Bearer /);
+    // Stats URL contains optional fields
+    expect(statsUrl).toContain("followers_count");
+    expect(statsUrl).toContain("media_count");
+    expect(statsUrl).toContain("account_type");
+    // Snapshot written with data from both calls
     expect(mockSnapshotCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ integrationId: "int-1", source: "admin_refresh", followersCount: 500 }),
@@ -119,18 +131,90 @@ describe("adminRefreshProfileSnapshotAction", () => {
     );
   });
 
-  it("audit log before/after does not contain the token", async () => {
+  it("audit SUCCESS log does not contain the token", async () => {
     await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
-    const callArg = mockAuditCreate.mock.calls[0][0];
-    const serialized = JSON.stringify(callArg);
+    const serialized = JSON.stringify(mockAuditCreate.mock.calls);
     expect(serialized).not.toContain("EAA_test_token");
   });
 
-  it("returns 500 when Meta API returns non-ok status", async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 400 });
+  it("returns 500 with safe Meta error details when basic fetch returns non-2xx", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: { code: 190, error_subcode: 463, type: "OAuthException", message: "Error validating access token" },
+      }),
+    });
     const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
     expect(result.status).toBe(500);
+    expect(String(result.data)).toContain("400");
+    expect(String(result.data)).toContain("190");
+    expect(String(result.data)).toContain("OAuthException");
     expect(mockSnapshotCreate).not.toHaveBeenCalled();
+  });
+
+  it("stores Meta error code, subcode, type, sanitized message in FAILED audit after field", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: { code: 190, error_subcode: 463, type: "OAuthException", message: "Error validating access token: Session has expired" },
+      }),
+    });
+    await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          after: expect.objectContaining({
+            httpStatus: 400,
+            metaCode: 190,
+            metaSubcode: 463,
+            metaType: "OAuthException",
+          }),
+        }),
+      })
+    );
+  });
+
+  it("redacts EAA token patterns from Meta error messages in audit log and user response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: { code: 190, type: "OAuthException", message: "Token EAAsecretabc123 is invalid" },
+      }),
+    });
+    const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    const serialized = JSON.stringify(mockAuditCreate.mock.calls);
+    expect(serialized).not.toContain("EAAsecretabc123");
+    expect(String(result.data)).not.toContain("EAAsecretabc123");
+    expect(String(result.data)).not.toContain("EAA_test_token");
+  });
+
+  it("optional stats fetch failure still returns 200 with basic profile saved", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "ig-123", username: "test_user", profile_picture_url: "https://example.com/pic.jpg" }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: { code: 100, message: "Field not available" } }),
+      });
+    const result = await adminRefreshProfileSnapshotAction(form({ integrationId: "int-1", reason: "Refreshing data" }));
+    expect(result.status).toBe(200);
+    expect(mockSnapshotCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          username: "test_user",
+          followersCount: null,
+          mediaCount: null,
+          accountType: null,
+        }),
+      })
+    );
   });
 
   it("does not update integration status or reconnectRequired", async () => {

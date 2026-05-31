@@ -21,6 +21,44 @@ function safeError(e: unknown) {
   return e instanceof Error ? e.message : String(e);
 }
 
+type MetaErrorDetails = {
+  httpStatus: number;
+  metaCode?: number;
+  metaSubcode?: number;
+  metaType?: string;
+  metaMessage?: string;
+};
+
+function sanitizeMetaMessage(msg: string): string {
+  return msg.replace(/EAA[A-Za-z0-9]+/g, "[token]").slice(0, 200);
+}
+
+async function parseMetaError(res: Response): Promise<MetaErrorDetails> {
+  const details: MetaErrorDetails = { httpStatus: res.status };
+  try {
+    const body = await res.json();
+    const err = body?.error;
+    if (err && typeof err === "object") {
+      if (typeof err.code === "number") details.metaCode = err.code;
+      if (typeof err.error_subcode === "number") details.metaSubcode = err.error_subcode;
+      if (typeof err.type === "string") details.metaType = err.type.slice(0, 64);
+      if (typeof err.message === "string") details.metaMessage = sanitizeMetaMessage(err.message);
+    }
+  } catch {
+    // response body not parseable
+  }
+  return details;
+}
+
+function buildUserSafeError(err: MetaErrorDetails): string {
+  const parts: string[] = [`Meta API error HTTP ${err.httpStatus}`];
+  if (err.metaCode !== undefined) parts.push(`code ${err.metaCode}`);
+  if (err.metaSubcode !== undefined) parts.push(`subcode ${err.metaSubcode}`);
+  if (err.metaType) parts.push(`type: ${err.metaType}`);
+  if (err.metaMessage) parts.push(err.metaMessage);
+  return parts.join(" — ");
+}
+
 // ---------------------------------------------------------------------------
 // Action 1: Refresh Profile Snapshot
 // Token is read server-side only for Meta Graph API call — never returned,
@@ -58,36 +96,50 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     return { status: 404 as const, data: !row ? "Integration not found." : "No Instagram ID on this account." };
   }
 
-  const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=id,username,profile_picture_url,followers_count,media_count,account_type`;
+  const authHeader = { Authorization: `Bearer ${row.token}` };
 
-  let apiData: {
-    id: string;
-    username?: string;
-    profile_picture_url?: string;
-    followers_count?: number;
-    media_count?: number;
-    account_type?: string;
-  };
+  // Step 1: Fetch basic profile fields. Failure here aborts the whole action.
+  const basicUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=id,username,profile_picture_url`;
+  let basicData: { id: string; username?: string; profile_picture_url?: string };
 
   try {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${row.token}` } });
-    if (!res.ok) throw new Error(`Meta API returned HTTP ${res.status}`);
-    apiData = await res.json();
+    const res = await fetch(basicUrl, { headers: authHeader });
+    if (!res.ok) {
+      const metaError = await parseMetaError(res);
+      await createAdminAuditLog({
+        admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId,
+        reason, before: { instagramUsername: row.instagramUsername },
+        after: metaError,
+        status: "FAILED", error: buildUserSafeError(metaError),
+      });
+      return { status: 500 as const, data: buildUserSafeError(metaError) };
+    }
+    basicData = await res.json();
   } catch (error) {
     await createAdminAuditLog({ admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason, before: { instagramUsername: row.instagramUsername }, status: "FAILED", error: safeError(error) });
     return { status: 500 as const, data: safeError(error) };
+  }
+
+  // Step 2: Fetch optional stats. Failure is silently tolerated — snapshot is still written.
+  let statsData: { followers_count?: number; media_count?: number; account_type?: string } = {};
+  try {
+    const statsUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=followers_count,media_count,account_type`;
+    const statsRes = await fetch(statsUrl, { headers: authHeader });
+    if (statsRes.ok) statsData = await statsRes.json();
+  } catch {
+    // optional — silently ignored
   }
 
   try {
     await client.instagramAccountSnapshot.create({
       data: {
         integrationId,
-        instagramId: apiData.id,
-        username: apiData.username ?? null,
-        profilePictureUrl: apiData.profile_picture_url ?? null,
-        followersCount: apiData.followers_count ?? null,
-        mediaCount: apiData.media_count ?? null,
-        accountType: apiData.account_type ?? null,
+        instagramId: basicData.id,
+        username: basicData.username ?? null,
+        profilePictureUrl: basicData.profile_picture_url ?? null,
+        followersCount: statsData.followers_count ?? null,
+        mediaCount: statsData.media_count ?? null,
+        accountType: statsData.account_type ?? null,
         source: "admin_refresh",
       },
     });
@@ -95,8 +147,8 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     await client.integrations.update({
       where: { id: integrationId },
       data: {
-        instagramUsername: apiData.username ?? row.instagramUsername,
-        profilePictureUrl: apiData.profile_picture_url ?? row.profilePictureUrl,
+        instagramUsername: basicData.username ?? row.instagramUsername,
+        profilePictureUrl: basicData.profile_picture_url ?? row.profilePictureUrl,
         lastAdminNote: reason,
         lastAdminActionAt: new Date(),
       },
@@ -105,7 +157,7 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     await createAdminAuditLog({
       admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason,
       before: { instagramUsername: row.instagramUsername, profilePictureUrl: row.profilePictureUrl },
-      after: { username: apiData.username, followersCount: apiData.followers_count },
+      after: { username: basicData.username, followersCount: statsData.followers_count ?? null },
       status: "SUCCESS",
     });
 
