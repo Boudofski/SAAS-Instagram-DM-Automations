@@ -36,6 +36,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
       "app/(protected)/ap3k-admin-v2/replies/page.tsx",
       "app/(protected)/ap3k-admin-v2/activity/page.tsx",
       "app/(protected)/ap3k-admin-v2/diagnostics/page.tsx",
+      "app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx",
     ];
     for (const p of pages) {
       const src = read(p);
