@@ -5,11 +5,11 @@ import {
   adminFormString,
   createAdminAuditLog,
 } from "@/actions/admin/safe-actions";
+import { getInstagramBusinessProfile } from "@/lib/fetch";
 import { client } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 const MIN_REASON = 5;
-const META_GRAPH_VERSION = "v21.0";
 
 const V2_PATHS = [
   "/ap3k-admin-v2/accounts",
@@ -33,21 +33,28 @@ function sanitizeMetaMessage(msg: string): string {
   return msg.replace(/EAA[A-Za-z0-9]+/g, "[token]").slice(0, 200);
 }
 
-async function parseMetaError(res: Response): Promise<MetaErrorDetails> {
-  const details: MetaErrorDetails = { httpStatus: res.status };
-  try {
-    const body = await res.json();
-    const err = body?.error;
-    if (err && typeof err === "object") {
-      if (typeof err.code === "number") details.metaCode = err.code;
-      if (typeof err.error_subcode === "number") details.metaSubcode = err.error_subcode;
-      if (typeof err.type === "string") details.metaType = err.type.slice(0, 64);
-      if (typeof err.message === "string") details.metaMessage = sanitizeMetaMessage(err.message);
-    }
-  } catch {
-    // response body not parseable
-  }
-  return details;
+// Parses axios errors from getInstagramBusinessProfile — never touches error.config (no token leak).
+function parseAxiosMetaError(error: unknown): MetaErrorDetails {
+  const axErr = error as { response?: { status?: number; data?: { error?: Record<string, unknown> } } };
+  const httpStatus = axErr?.response?.status ?? 0;
+  const err = axErr?.response?.data?.error ?? {};
+  return {
+    httpStatus,
+    metaCode: typeof err.code === "number" ? (err.code as number) : undefined,
+    metaSubcode: typeof err.error_subcode === "number" ? (err.error_subcode as number) : undefined,
+    metaType: typeof err.type === "string" ? (err.type as string).slice(0, 64) : undefined,
+    metaMessage: typeof err.message === "string" ? sanitizeMetaMessage(err.message as string) : undefined,
+  };
+}
+
+// Mirrors isRetryableProfileFieldError in lib/instagram-profile-snapshot.ts.
+// Returns true when Meta rejects because followers_count/media_count are unavailable
+// for this account — we can retry without those fields.
+function isFieldUnavailableError(error: unknown): boolean {
+  const msg =
+    (error as { response?: { data?: { error?: { message?: string } } } })
+      ?.response?.data?.error?.message ?? "";
+  return msg.includes("followers_count") || msg.includes("media_count");
 }
 
 function buildUserSafeError(err: MetaErrorDetails): string {
@@ -58,6 +65,11 @@ function buildUserSafeError(err: MetaErrorDetails): string {
   if (err.metaMessage) parts.push(err.metaMessage);
   return parts.join(" — ");
 }
+
+// Field sets matching lib/instagram-profile-snapshot.ts PROFILE_FIELD_SETS.
+// account_type is intentionally excluded — it is not in the working field set.
+const ALL_PROFILE_FIELDS = "id,username,profile_picture_url,followers_count,media_count";
+const BASIC_PROFILE_FIELDS = "id,username,profile_picture_url";
 
 // ---------------------------------------------------------------------------
 // Action 1: Refresh Profile Snapshot
@@ -96,71 +108,66 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     return { status: 404 as const, data: !row ? "Integration not found." : "No Instagram ID on this account." };
   }
 
-  const authHeader = { Authorization: `Bearer ${row.token}` };
-
-  // Step 1: Fetch basic profile fields. Failure here aborts the whole action.
-  const basicUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=id,username,profile_picture_url`;
-  let basicData: { id: string; username?: string; profile_picture_url?: string };
-
-  try {
-    const res = await fetch(basicUrl, { headers: authHeader });
-    if (!res.ok) {
-      const metaError = await parseMetaError(res);
-      await createAdminAuditLog({
-        admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId,
-        reason, before: { instagramUsername: row.instagramUsername },
-        after: metaError,
-        status: "FAILED", error: buildUserSafeError(metaError),
-      });
-      return { status: 500 as const, data: buildUserSafeError(metaError) };
-    }
-    basicData = await res.json();
-  } catch (error) {
-    await createAdminAuditLog({ admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason, before: { instagramUsername: row.instagramUsername }, status: "FAILED", error: safeError(error) });
-    return { status: 500 as const, data: safeError(error) };
-  }
-
-  // Read previous snapshot before any write so we can preserve stats on partial failure.
-  // This prevents a failed stats fetch from displacing real follower/media counts in the
-  // user dashboard (dashboard reads getLatestInstagramSnapshot which returns the newest row).
+  // Read previous snapshot before any write so we can preserve stats when Meta cannot
+  // return them. Dashboard reads getLatestInstagramSnapshot (newest row by fetchedAt),
+  // so writing null counts would displace real historical values.
   const prevSnapshot = await client.instagramAccountSnapshot.findFirst({
     where: { integrationId },
     orderBy: { fetchedAt: "desc" },
-    select: { followersCount: true, mediaCount: true, accountType: true },
+    select: { followersCount: true, mediaCount: true },
   });
 
-  // Step 2: Fetch optional stats. Failure is silently tolerated — snapshot is still written.
-  let statsData: { followers_count?: number; media_count?: number; account_type?: string } = {};
-  let statsPartial = false;
+  // Fetch profile using the same getInstagramBusinessProfile helper as the auto-refresh
+  // (correct API version, access_token query param, working field set).
+  // Strategy: try all fields first; if Meta rejects followers_count/media_count for this
+  // account, retry with basic fields only (mirrors PROFILE_FIELD_SETS fallback).
+  type ProfileData = { id: string; username?: string; profile_picture_url?: string; followers_count?: number; media_count?: number };
+  let profileData: ProfileData;
+  let usedFallbackFields = false;
+
   try {
-    const statsUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/${row.instagramId}?fields=followers_count,media_count,account_type`;
-    const statsRes = await fetch(statsUrl, { headers: authHeader });
-    if (statsRes.ok) {
-      statsData = await statsRes.json();
+    const res = await getInstagramBusinessProfile(row.instagramId, row.token, ALL_PROFILE_FIELDS);
+    profileData = res.data as ProfileData;
+  } catch (firstError) {
+    if (isFieldUnavailableError(firstError)) {
+      // followers_count/media_count not available for this account — retry without them
+      try {
+        const basicRes = await getInstagramBusinessProfile(row.instagramId, row.token, BASIC_PROFILE_FIELDS);
+        profileData = basicRes.data as ProfileData;
+        usedFallbackFields = true;
+      } catch (basicError) {
+        const metaError = parseAxiosMetaError(basicError);
+        await createAdminAuditLog({ admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason, before: { instagramUsername: row.instagramUsername }, after: metaError, status: "FAILED", error: buildUserSafeError(metaError) });
+        return { status: 500 as const, data: buildUserSafeError(metaError) };
+      }
     } else {
-      statsPartial = true;
+      const metaError = parseAxiosMetaError(firstError);
+      await createAdminAuditLog({ admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason, before: { instagramUsername: row.instagramUsername }, after: metaError, status: "FAILED", error: buildUserSafeError(metaError) });
+      return { status: 500 as const, data: buildUserSafeError(metaError) };
     }
-  } catch {
-    statsPartial = true;
   }
 
-  // Derive final stat values: live data > previous snapshot > null.
-  // Never write null over an existing real value — that would break dashboard display.
-  const followersCount = statsData.followers_count ?? prevSnapshot?.followersCount ?? null;
-  const mediaCount = statsData.media_count ?? prevSnapshot?.mediaCount ?? null;
-  const accountType = statsData.account_type ?? prevSnapshot?.accountType ?? null;
-  const statsPreserved = statsPartial && (followersCount !== null || mediaCount !== null);
+  // Derive final stat values: live > previous snapshot > null.
+  // Never overwrite a real historical value with null.
+  const followersCount = typeof profileData.followers_count === "number"
+    ? profileData.followers_count
+    : (prevSnapshot?.followersCount ?? null);
+  const mediaCount = typeof profileData.media_count === "number"
+    ? profileData.media_count
+    : (prevSnapshot?.mediaCount ?? null);
+  const usedLiveStats = typeof profileData.followers_count === "number" && typeof profileData.media_count === "number";
+  const statsPreserved = !usedLiveStats && (followersCount !== null || mediaCount !== null);
 
   try {
     await client.instagramAccountSnapshot.create({
       data: {
         integrationId,
-        instagramId: basicData.id,
-        username: basicData.username ?? null,
-        profilePictureUrl: basicData.profile_picture_url ?? null,
+        instagramId: profileData.id,
+        username: profileData.username ?? null,
+        profilePictureUrl: profileData.profile_picture_url ?? null,
         followersCount,
         mediaCount,
-        accountType,
+        accountType: null,
         source: statsPreserved ? "admin_refresh_partial" : "admin_refresh",
       },
     });
@@ -168,8 +175,8 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     await client.integrations.update({
       where: { id: integrationId },
       data: {
-        instagramUsername: basicData.username ?? row.instagramUsername,
-        profilePictureUrl: basicData.profile_picture_url ?? row.profilePictureUrl,
+        instagramUsername: profileData.username ?? row.instagramUsername,
+        profilePictureUrl: profileData.profile_picture_url ?? row.profilePictureUrl,
         lastAdminNote: reason,
         lastAdminActionAt: new Date(),
       },
@@ -177,8 +184,8 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
 
     await createAdminAuditLog({
       admin, action: "ADMIN_REFRESH_PROFILE_SNAPSHOT", targetType: "INTEGRATION", targetId: integrationId, reason,
-      before: { instagramUsername: row.instagramUsername, profilePictureUrl: row.profilePictureUrl },
-      after: { username: basicData.username, followersCount, statsSource: statsPreserved ? "preserved_from_previous_snapshot" : "live_meta_api" },
+      before: { instagramUsername: row.instagramUsername },
+      after: { username: profileData.username, followersCount, statsSource: statsPreserved ? "preserved_from_previous_snapshot" : "live_meta_api" },
       status: "SUCCESS",
     });
 
