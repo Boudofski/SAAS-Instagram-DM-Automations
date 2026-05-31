@@ -4,20 +4,23 @@ import { type FormEvent, useState, useTransition } from "react";
 import {
   adminSuspendUserAction,
   adminReactivateUserAction,
+  adminChangeUserPlanAction,
 } from "@/actions/admin/user-actions";
 
 type Props = {
   userId: string;
   email: string;
   status: string;
+  plan?: string;
 };
 
-type ModalKey = "suspend" | "reactivate";
+type ModalKey = "suspend" | "reactivate" | "change_plan";
 
-export function UserActionsPanel({ userId, email, status }: Props) {
+export function UserActionsPanel({ userId, email, status, plan }: Props) {
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState<"FREE" | "PRO">("FREE");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -28,6 +31,9 @@ export function UserActionsPanel({ userId, email, status }: Props) {
     setActiveModal(modal);
     setReason("");
     setConfirmation("");
+    if (modal === "change_plan") {
+      setSelectedPlan(plan === "PRO" ? "PRO" : "FREE");
+    }
     setError(null);
     setSuccessMsg(null);
   }
@@ -54,11 +60,14 @@ export function UserActionsPanel({ userId, email, status }: Props) {
       fd.set("userId", userId);
       fd.set("reason", reason);
       if (activeModal === "suspend") fd.set("confirmation", confirmation);
+      if (activeModal === "change_plan") fd.set("plan", selectedPlan);
 
       const action =
         activeModal === "suspend"
           ? adminSuspendUserAction
-          : adminReactivateUserAction;
+          : activeModal === "reactivate"
+            ? adminReactivateUserAction
+            : adminChangeUserPlanAction;
 
       const result = await action(fd);
       if (result.status === 200) {
@@ -92,6 +101,13 @@ export function UserActionsPanel({ userId, email, status }: Props) {
             Reactivate user
           </button>
         )}
+
+        <button
+          onClick={() => openModal("change_plan")}
+          className="rounded-lg bg-pink-900/40 px-4 py-2 text-sm font-semibold text-pink-300 hover:bg-pink-900/60 hover:text-pink-200 transition-colors"
+        >
+          Change plan
+        </button>
       </div>
 
       {activeModal && (
@@ -101,13 +117,23 @@ export function UserActionsPanel({ userId, email, status }: Props) {
               Admin Action
             </p>
             <h2 className="mt-1 text-lg font-black text-white">
-              {activeModal === "suspend" ? "Suspend user" : "Reactivate user"}
+              {activeModal === "suspend"
+                ? "Suspend user"
+                : activeModal === "reactivate"
+                  ? "Reactivate user"
+                  : "Change user plan"}
             </h2>
             <p className="mt-1 text-xs text-slate-400">{email}</p>
 
             {activeModal === "suspend" && (
               <p className="mt-3 rounded-lg border border-red-500/20 bg-red-900/20 px-3 py-2 text-[11px] text-red-300">
                 Suspending pauses all active campaigns. Record, integrations, leads, and billing preserved.
+              </p>
+            )}
+
+            {activeModal === "change_plan" && (
+              <p className="mt-3 rounded-lg border border-pink-500/20 bg-pink-900/20 px-3 py-2 text-[11px] text-pink-300">
+                Manual plan changes affect AP3k internal access only. Stripe billing is not modified.
               </p>
             )}
 
@@ -125,6 +151,22 @@ export function UserActionsPanel({ userId, email, status }: Props) {
               </>
             ) : (
               <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+                {activeModal === "change_plan" && (
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-slate-400">
+                      Select Plan <span className="text-pink-400">*</span>
+                    </label>
+                    <select
+                      value={selectedPlan}
+                      onChange={(e) => setSelectedPlan(e.target.value as "FREE" | "PRO")}
+                      className="w-full rounded-lg border border-white/10 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-pink-500"
+                    >
+                      <option value="FREE">FREE</option>
+                      <option value="PRO">PRO</option>
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold text-slate-400">
                     Reason <span className="text-pink-400">*</span>
@@ -166,14 +208,18 @@ export function UserActionsPanel({ userId, email, status }: Props) {
                     className={
                       activeModal === "suspend"
                         ? "flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                        : "flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        : activeModal === "reactivate"
+                          ? "flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                          : "flex-1 rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700 disabled:opacity-50"
                     }
                   >
                     {isPending
                       ? "Processing…"
                       : activeModal === "suspend"
                         ? "Suspend user"
-                        : "Reactivate user"}
+                        : activeModal === "reactivate"
+                          ? "Reactivate user"
+                          : "Change plan"}
                   </button>
                   <button
                     type="button"

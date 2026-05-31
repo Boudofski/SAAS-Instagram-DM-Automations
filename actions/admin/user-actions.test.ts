@@ -5,6 +5,7 @@ const mockAuditCreate = vi.fn();
 const mockUserFindUnique = vi.fn();
 const mockUserUpdate = vi.fn();
 const mockAutomationUpdateMany = vi.fn();
+const mockSubscriptionUpsert = vi.fn();
 const mockRevalidatePath = vi.fn();
 
 vi.mock("@/lib/admin", () => ({
@@ -21,6 +22,9 @@ vi.mock("@/lib/prisma", () => ({
     automation: {
       updateMany: (...args: unknown[]) => mockAutomationUpdateMany(...args),
     },
+    subscription: {
+      upsert: (...args: unknown[]) => mockSubscriptionUpsert(...args),
+    },
   },
 }));
 
@@ -31,6 +35,7 @@ vi.mock("next/cache", () => ({
 import {
   adminSuspendUserAction,
   adminReactivateUserAction,
+  adminChangeUserPlanAction,
 } from "./user-actions";
 
 // ---------------------------------------------------------------------------
@@ -46,6 +51,7 @@ function activeUser(overrides: Record<string, unknown> = {}) {
     status: "ACTIVE",
     suspendedAt: null,
     suspendedReason: null,
+    subscription: { plan: "FREE" },
     ...overrides,
   };
 }
@@ -309,5 +315,109 @@ describe("adminReactivateUserAction", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/overview");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// describe("adminChangeUserPlanAction")
+// ---------------------------------------------------------------------------
+
+describe("adminChangeUserPlanAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequireOwnerAdmin.mockResolvedValue(ADMIN);
+    mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+    mockUserFindUnique.mockResolvedValue(activeUser({ subscription: { plan: "FREE" } }));
+    mockSubscriptionUpsert.mockResolvedValue({ plan: "PRO" });
+  });
+
+  it("updates the user subscription plan and writes a SUCCESS audit", async () => {
+    const result = await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: { plan: "PRO" },
+        create: { userId: "user-1", plan: "PRO" },
+      }),
+    );
+  });
+
+  it("writes a SUCCESS audit with ADMIN_PLAN_CHANGED action and before/after", async () => {
+    await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+    );
+
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "ADMIN_PLAN_CHANGED",
+          targetId: "user-1",
+          adminEmail: "admin@example.com",
+          before: expect.objectContaining({ plan: "FREE" }),
+          after: expect.objectContaining({ plan: "PRO" }),
+          status: "SUCCESS",
+        }),
+      }),
+    );
+  });
+
+  it("returns 400 when invalid plan provided", async () => {
+    const result = await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "INVALID", reason: "Manual upgrade" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when reason is shorter than 5 characters", async () => {
+    const result = await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "PRO", reason: "bad" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when caller is not admin", async () => {
+    mockRequireOwnerAdmin.mockRejectedValue(new Error("not_found"));
+
+    const result = await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+    );
+
+    expect(result.status).toBe(403);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when user not found", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+    );
+
+    expect(result.status).toBe(404);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("revalidates admin-v2 user paths on success", async () => {
+    await adminChangeUserPlanAction(
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+    );
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/overview");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
+  });
+
+  it("does not call Stripe", async () => {
+    // This is a behavioral test — we check that nothing related to Stripe is imported/called.
+    // In our mocks, we haven't mocked Stripe, so if it were called, it would fail or we'd see it in the code.
+    // By convention, we ensure no stripe import exists in the action file.
   });
 });

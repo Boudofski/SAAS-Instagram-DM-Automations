@@ -6,6 +6,7 @@ import {
   createAdminAuditLog,
 } from "@/actions/admin/safe-actions";
 import { client } from "@/lib/prisma";
+import { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 const MIN_REASON = 5;
@@ -195,6 +196,97 @@ export async function adminReactivateUserAction(formData: FormData) {
       targetLabel: user.email,
       reason,
       before: { status: user.status, suspendedAt: user.suspendedAt },
+      status: "FAILED",
+      error: safeError(error),
+    });
+    return { status: 500 as const, data: safeError(error) };
+  }
+}
+
+export async function adminChangeUserPlanAction(formData: FormData) {
+  const userId = adminFormString(formData, "userId");
+  const plan = adminFormString(formData, "plan") as SUBSCRIPTION_PLAN;
+  const reason = adminFormString(formData, "reason");
+
+  if (!["FREE", "PRO"].includes(plan)) {
+    return { status: 400 as const, data: "Invalid plan selected." };
+  }
+
+  if (reason.length < MIN_REASON) {
+    return { status: 400 as const, data: "Reason must be at least 5 characters." };
+  }
+
+  let admin: Awaited<ReturnType<typeof requireAdminAction>>;
+  try {
+    admin = await requireAdminAction();
+  } catch {
+    return { status: 403 as const, data: "Unauthorized." };
+  }
+
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      subscription: {
+        select: {
+          plan: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_PLAN_CHANGED",
+      targetType: "User",
+      targetId: userId,
+      reason,
+      status: "FAILED",
+      error: "User not found.",
+    });
+    return { status: 404 as const, data: "User not found." };
+  }
+
+  const currentPlan = user.subscription?.plan ?? "FREE";
+
+  try {
+    const updated = await client.subscription.upsert({
+      where: { userId },
+      update: { plan },
+      create: { userId, plan },
+    });
+
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_PLAN_CHANGED",
+      targetType: "User",
+      targetId: userId,
+      targetLabel: user.email,
+      reason,
+      before: { plan: currentPlan },
+      after: { plan: updated.plan },
+      status: "SUCCESS",
+    });
+
+    for (const path of userPaths(userId)) {
+      revalidatePath(path);
+    }
+
+    return {
+      status: 200 as const,
+      data: `Plan changed from ${currentPlan} to ${updated.plan}.`,
+    };
+  } catch (error) {
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_PLAN_CHANGED",
+      targetType: "User",
+      targetId: userId,
+      targetLabel: user.email,
+      reason,
+      before: { plan: currentPlan },
       status: "FAILED",
       error: safeError(error),
     });

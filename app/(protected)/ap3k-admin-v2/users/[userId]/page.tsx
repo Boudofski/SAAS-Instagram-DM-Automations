@@ -228,6 +228,7 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
         userId={user.id}
         email={user.email}
         status={user.status}
+        plan={user.plan}
       />
     </div>
   );
