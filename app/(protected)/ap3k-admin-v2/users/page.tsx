@@ -2,6 +2,7 @@ import { getAdminV2Users, getAdminV2UserCount } from "@/lib/admin-v2/queries";
 import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge, statusTone } from "@/components/admin-v2/v2-badge";
 import LocalTime from "@/components/global/local-time";
+import Link from "next/link";
 
 type Props = { searchParams?: { page?: string } };
 
@@ -38,6 +39,13 @@ export default async function AdminV2UsersPage({ searchParams }: Props) {
       <span key="last" className="text-[11px] text-slate-600">No activity</span>
     ),
     <V2Badge key="status" tone={statusTone(u.status)}>{u.status}</V2Badge>,
+    <Link
+      key="detail"
+      href={`/ap3k-admin-v2/users/${u.id}`}
+      className="text-[11px] font-bold text-pink-400 hover:text-pink-300"
+    >
+      View details →
+    </Link>,
   ]);
 
   return (
@@ -50,7 +58,7 @@ export default async function AdminV2UsersPage({ searchParams }: Props) {
         </h1>
       </div>
       <V2Table
-        headers={["User", "Plan", "Instagram", "Campaigns", "Replies today", "Leads today", "Last activity", "Status"]}
+        headers={["User", "Plan", "Instagram", "Campaigns", "Replies today", "Leads today", "Last activity", "Status", "Actions"]}
         rows={rows}
         empty="No users found."
       />
