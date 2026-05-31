@@ -35,6 +35,14 @@ model Subscription {
   updatedAt  DateTime          @default(now())
   customerId String?           @unique
   usageResetAt DateTime?
+
+  // Internal Overrides
+  monthlyReplyLimitOverride    Int?
+  activeCampaignLimitOverride  Int?
+  connectedAccountLimitOverride Int?
+  aiReplyLimitOverride         Int?
+  overrideReason               String?
+  overrideExpiresAt            DateTime?
 }
 
 model Integrations {

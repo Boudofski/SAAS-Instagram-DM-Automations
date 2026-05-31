@@ -13,12 +13,49 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const user = await client.user.findUnique({
     where: { id: userId },
     select: {
-      subscription: { select: { plan: true, usageResetAt: true } },
+      subscription: {
+        select: {
+          plan: true,
+          usageResetAt: true,
+          monthlyReplyLimitOverride: true,
+          activeCampaignLimitOverride: true,
+          connectedAccountLimitOverride: true,
+          aiReplyLimitOverride: true,
+          overrideReason: true,
+          overrideExpiresAt: true,
+        },
+      },
     },
   });
 
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
+
+  const sub = user?.subscription;
+  const isOverrideActive = !!(
+    sub?.overrideReason &&
+    (!sub.overrideExpiresAt || sub.overrideExpiresAt > date)
+  );
+
+  const staticLimit =
+    isOverrideActive && sub?.monthlyReplyLimitOverride !== null
+      ? sub.monthlyReplyLimitOverride
+      : limits.staticRepliesPerMonth;
+
+  const aiLimit =
+    isOverrideActive && sub?.aiReplyLimitOverride !== null
+      ? sub.aiReplyLimitOverride
+      : limits.aiRepliesPerMonth;
+
+  const campaignLimit =
+    isOverrideActive && sub?.activeCampaignLimitOverride !== null
+      ? sub.activeCampaignLimitOverride
+      : limits.activeCampaigns;
+
+  const accountLimit =
+    isOverrideActive && sub?.connectedAccountLimitOverride !== null
+      ? sub.connectedAccountLimitOverride
+      : limits.connectedInstagramAccounts;
 
   const resetAt = user?.subscription?.usageResetAt;
   const effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
@@ -72,10 +109,10 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     periodStart: period.monthStart,
     periodEnd: period.monthEnd,
     enforcementStart: period.enforcementStart,
-    staticReplies: makeUsageMetric(staticReplies, limits.staticRepliesPerMonth),
-    aiReplies: makeUsageMetric(0, limits.aiRepliesPerMonth),
-    activeCampaigns: makeUsageMetric(activeCampaigns, limits.activeCampaigns),
-    connectedAccounts: makeUsageMetric(connectedAccounts, limits.connectedInstagramAccounts),
+    staticReplies: makeUsageMetric(staticReplies, staticLimit),
+    aiReplies: makeUsageMetric(0, aiLimit),
+    activeCampaigns: makeUsageMetric(activeCampaigns, campaignLimit),
+    connectedAccounts: makeUsageMetric(connectedAccounts, accountLimit),
   };
 }
 

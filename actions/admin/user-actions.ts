@@ -394,3 +394,114 @@ export async function adminResetUserUsageAction(formData: FormData) {
     return { status: 500 as const, data: safeError(error) };
   }
 }
+
+export async function adminUpdateUserBillingOverridesAction(formData: FormData) {
+  const userId = adminFormString(formData, "userId");
+  const reason = adminFormString(formData, "reason");
+
+  const monthlyReplyLimitOverride = parseOverride(formData.get("monthlyReplyLimitOverride") as string);
+  const aiReplyLimitOverride = parseOverride(formData.get("aiReplyLimitOverride") as string);
+  const activeCampaignLimitOverride = parseOverride(formData.get("activeCampaignLimitOverride") as string);
+  const connectedAccountLimitOverride = parseOverride(formData.get("connectedAccountLimitOverride") as string);
+  const overrideExpiresAtRaw = formData.get("overrideExpiresAt") as string;
+  const overrideExpiresAt = overrideExpiresAtRaw ? new Date(overrideExpiresAtRaw) : null;
+
+  if (reason.length < MIN_REASON) {
+    return { status: 400 as const, data: "Reason must be at least 5 characters." };
+  }
+
+  // Validate non-negative
+  if (
+    (monthlyReplyLimitOverride !== null && monthlyReplyLimitOverride < 0) ||
+    (aiReplyLimitOverride !== null && aiReplyLimitOverride < 0) ||
+    (activeCampaignLimitOverride !== null && activeCampaignLimitOverride < 0) ||
+    (connectedAccountLimitOverride !== null && connectedAccountLimitOverride < 0)
+  ) {
+    return { status: 400 as const, data: "Overrides must be non-negative." };
+  }
+
+  let admin: Awaited<ReturnType<typeof requireAdminAction>>;
+  try {
+    admin = await requireAdminAction();
+  } catch {
+    return { status: 403 as const, data: "Unauthorized." };
+  }
+
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      subscription: {
+        select: {
+          monthlyReplyLimitOverride: true,
+          activeCampaignLimitOverride: true,
+          connectedAccountLimitOverride: true,
+          aiReplyLimitOverride: true,
+          overrideReason: true,
+          overrideExpiresAt: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return { status: 404 as const, data: "User not found." };
+  }
+
+  try {
+    const updated = await client.subscription.upsert({
+      where: { userId },
+      update: {
+        monthlyReplyLimitOverride,
+        aiReplyLimitOverride,
+        activeCampaignLimitOverride,
+        connectedAccountLimitOverride,
+        overrideReason: reason,
+        overrideExpiresAt,
+      },
+      create: {
+        userId,
+        monthlyReplyLimitOverride,
+        aiReplyLimitOverride,
+        activeCampaignLimitOverride,
+        connectedAccountLimitOverride,
+        overrideReason: reason,
+        overrideExpiresAt,
+      },
+    });
+
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_BILLING_OVERRIDES_UPDATED",
+      targetType: "User",
+      targetId: userId,
+      targetLabel: user.email,
+      reason,
+      before: user.subscription,
+      after: {
+        monthlyReplyLimitOverride: updated.monthlyReplyLimitOverride,
+        aiReplyLimitOverride: updated.aiReplyLimitOverride,
+        activeCampaignLimitOverride: updated.activeCampaignLimitOverride,
+        connectedAccountLimitOverride: updated.connectedAccountLimitOverride,
+        overrideReason: updated.overrideReason,
+        overrideExpiresAt: updated.overrideExpiresAt,
+      },
+      status: "SUCCESS",
+    });
+
+    for (const path of userPaths(userId)) {
+      revalidatePath(path);
+    }
+
+    return { status: 200 as const, data: "Internal billing overrides updated." };
+  } catch (error) {
+    return { status: 500 as const, data: safeError(error) };
+  }
+}
+
+function parseOverride(val: string | null): number | null {
+  if (val === null || val === undefined || val.trim() === "") return null;
+  const num = parseInt(val, 10);
+  return isNaN(num) ? null : num;
+}

@@ -37,6 +37,7 @@ import {
   adminReactivateUserAction,
   adminChangeUserPlanAction,
   adminResetUserUsageAction,
+  adminUpdateUserBillingOverridesAction,
 } from "./user-actions";
 
 // ---------------------------------------------------------------------------
@@ -530,6 +531,142 @@ describe("adminResetUserUsageAction", () => {
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/overview");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// describe("adminUpdateUserBillingOverridesAction")
+// ---------------------------------------------------------------------------
+
+describe("adminUpdateUserBillingOverridesAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequireOwnerAdmin.mockResolvedValue(ADMIN);
+    mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+    mockUserFindUnique.mockResolvedValue(
+      activeUser({
+        subscription: {
+          monthlyReplyLimitOverride: null,
+          activeCampaignLimitOverride: null,
+          connectedAccountLimitOverride: null,
+          aiReplyLimitOverride: null,
+          overrideReason: null,
+          overrideExpiresAt: null,
+        },
+      }),
+    );
+    mockSubscriptionUpsert.mockResolvedValue({
+      monthlyReplyLimitOverride: 1000,
+      overrideReason: "VIP partner",
+    });
+  });
+
+  it("updates overrides and writes a SUCCESS audit", async () => {
+    const result = await adminUpdateUserBillingOverridesAction(
+      form({
+        userId: "user-1",
+        reason: "VIP partner",
+        monthlyReplyLimitOverride: "1000",
+        activeCampaignLimitOverride: "5",
+      }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: expect.objectContaining({
+          monthlyReplyLimitOverride: 1000,
+          activeCampaignLimitOverride: 5,
+          overrideReason: "VIP partner",
+        }),
+      }),
+    );
+  });
+
+  it("writes a SUCCESS audit with ADMIN_BILLING_OVERRIDES_UPDATED and before/after", async () => {
+    await adminUpdateUserBillingOverridesAction(
+      form({
+        userId: "user-1",
+        reason: "VIP partner",
+        monthlyReplyLimitOverride: "1000",
+      }),
+    );
+
+    expect(mockAuditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "ADMIN_BILLING_OVERRIDES_UPDATED",
+          targetId: "user-1",
+          adminEmail: "admin@example.com",
+          before: expect.anything(),
+          after: expect.objectContaining({
+            monthlyReplyLimitOverride: 1000,
+          }),
+          status: "SUCCESS",
+        }),
+      }),
+    );
+  });
+
+  it("clears overrides when values are empty strings", async () => {
+    const result = await adminUpdateUserBillingOverridesAction(
+      form({
+        userId: "user-1",
+        reason: "Back to normal",
+        monthlyReplyLimitOverride: "",
+      }),
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          monthlyReplyLimitOverride: null,
+        }),
+      }),
+    );
+  });
+
+  it("returns 400 when reason is shorter than 5 characters", async () => {
+    const result = await adminUpdateUserBillingOverridesAction(
+      form({ userId: "user-1", reason: "test" }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when numbers are negative", async () => {
+    const result = await adminUpdateUserBillingOverridesAction(
+      form({
+        userId: "user-1",
+        reason: "error case",
+        monthlyReplyLimitOverride: "-1",
+      }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when caller is not admin", async () => {
+    mockRequireOwnerAdmin.mockRejectedValue(new Error("unauthorized"));
+
+    const result = await adminUpdateUserBillingOverridesAction(
+      form({ userId: "user-1", reason: "VIP partner" }),
+    );
+
+    expect(result.status).toBe(403);
+  });
+
+  it("revalidates paths on success", async () => {
+    await adminUpdateUserBillingOverridesAction(
+      form({ userId: "user-1", reason: "VIP partner" }),
+    );
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users/user-1");
   });
 });

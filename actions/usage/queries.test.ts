@@ -162,4 +162,38 @@ describe("usage query helpers", () => {
       })
     );
   });
+
+  it("applies active internal billing overrides", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        monthlyReplyLimitOverride: 500,
+        activeCampaignLimitOverride: 10,
+        connectedAccountLimitOverride: 5,
+        overrideReason: "Test",
+        overrideExpiresAt: null,
+      },
+    });
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(usage.staticReplies.limit).toBe(500);
+    expect(usage.activeCampaigns.limit).toBe(10);
+    expect(usage.connectedAccounts.limit).toBe(5);
+  });
+
+  it("ignores expired billing overrides", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        monthlyReplyLimitOverride: 500,
+        overrideReason: "Test",
+        overrideExpiresAt: new Date("2026-05-20T00:00:00Z"), // Expired
+      },
+    });
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(usage.staticReplies.limit).toBe(50); // Plan default
+  });
 });

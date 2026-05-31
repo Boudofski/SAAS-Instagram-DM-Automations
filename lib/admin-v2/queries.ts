@@ -117,6 +117,14 @@ export type AdminV2UserDetail = {
   activeCampaigns: number;
   campaignsNeedingReview: number;
   lastActivity: Date | null;
+
+  // Internal Overrides
+  monthlyReplyLimitOverride: number | null;
+  activeCampaignLimitOverride: number | null;
+  connectedAccountLimitOverride: number | null;
+  aiReplyLimitOverride: number | null;
+  overrideReason: string | null;
+  overrideExpiresAt: Date | null;
 };
 
 export async function getAdminV2Stats(): Promise<AdminV2Stats> {
@@ -473,7 +481,18 @@ export async function getAdminV2UserDetail(userId: string): Promise<AdminV2UserD
       suspendedAt: true,
       suspendedReason: true,
       createdAt: true,
-      subscription: { select: { plan: true, customerId: true } },
+      subscription: {
+        select: {
+          plan: true,
+          customerId: true,
+          monthlyReplyLimitOverride: true,
+          activeCampaignLimitOverride: true,
+          connectedAccountLimitOverride: true,
+          aiReplyLimitOverride: true,
+          overrideReason: true,
+          overrideExpiresAt: true,
+        },
+      },
       automations: {
         where: { archivedAt: null },
         select: {
@@ -515,5 +534,13 @@ export async function getAdminV2UserDetail(userId: string): Promise<AdminV2UserD
     activeCampaigns,
     campaignsNeedingReview,
     lastActivity,
+
+    // Internal Overrides
+    monthlyReplyLimitOverride: user.subscription?.monthlyReplyLimitOverride ?? null,
+    activeCampaignLimitOverride: user.subscription?.activeCampaignLimitOverride ?? null,
+    connectedAccountLimitOverride: user.subscription?.connectedAccountLimitOverride ?? null,
+    aiReplyLimitOverride: user.subscription?.aiReplyLimitOverride ?? null,
+    overrideReason: user.subscription?.overrideReason ?? null,
+    overrideExpiresAt: user.subscription?.overrideExpiresAt ?? null,
   };
 }

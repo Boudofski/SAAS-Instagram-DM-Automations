@@ -5,6 +5,7 @@ import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { V2Badge, statusTone } from "@/components/admin-v2/v2-badge";
 import { UsageBar } from "@/components/admin-v2/usage-bar";
 import { UserActionsPanel } from "@/components/admin-v2/user-actions-panel";
+import { InternalOverridesCard } from "@/components/admin-v2/internal-overrides-card";
 import {
   usageTone,
   formatUsageMetricValue,
@@ -223,6 +224,8 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
           </p>
         </div>
       )}
+
+      <InternalOverridesCard user={user} usage={usage} />
 
       <UserActionsPanel
         userId={user.id}
