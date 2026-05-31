@@ -37,6 +37,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
       "app/(protected)/ap3k-admin-v2/activity/page.tsx",
       "app/(protected)/ap3k-admin-v2/diagnostics/page.tsx",
       "app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx",
+      "app/(protected)/ap3k-admin-v2/audit/page.tsx",
     ];
     for (const p of pages) {
       const src = read(p);
@@ -402,5 +403,71 @@ describe("Admin v2 — Phase 2D.2 suspend/reactivate", () => {
   it("user detail page does not call requireOwnerAdmin — layout covers it", () => {
     const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
     expect(src).not.toContain("requireOwnerAdmin");
+  });
+});
+
+describe("Admin v2 — Phase 2E audit log visibility", () => {
+  it("audit page does not call requireOwnerAdmin — layout handles auth", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/audit/page.tsx");
+    expect(src).not.toContain("requireOwnerAdmin");
+  });
+
+  it("audit-queries.ts never selects the token field", () => {
+    const src = read("lib/admin-v2/audit-queries.ts");
+    const lines = src.split("\n").filter((line) => {
+      const trimmed = line.trim();
+      return trimmed.startsWith("token:") || trimmed === "token,";
+    });
+    expect(lines).toHaveLength(0);
+  });
+
+  it("audit-queries.ts is bounded — all findMany have take:", () => {
+    const src = read("lib/admin-v2/audit-queries.ts");
+    const findManyCount = (src.match(/\.findMany\(/g) ?? []).length;
+    const takeCount = (src.match(/\btake:/g) ?? []).length;
+    expect(takeCount, "every findMany must have take: to prevent unbounded queries").toBeGreaterThanOrEqual(findManyCount);
+  });
+
+  it("audit-queries.ts filters by action, targetId, and adminEmail", () => {
+    const src = read("lib/admin-v2/audit-queries.ts");
+    expect(src).toContain("filters.action");
+    expect(src).toContain("filters.targetId");
+    expect(src).toContain("filters.adminEmail");
+  });
+
+  it("audit-queries.ts sanitizes before/after/metadata via sanitizeAdminPayload", () => {
+    const src = read("lib/admin-v2/audit-queries.ts");
+    expect(src).toContain("sanitizeAdminPayload");
+  });
+
+  it("audit page references all Phase 2D action type constants", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/audit/page.tsx");
+    expect(src).toContain("ADMIN_USER_SUSPENDED");
+    expect(src).toContain("ADMIN_USER_REACTIVATED");
+    expect(src).toContain("ADMIN_USER_USAGE_RESET");
+    expect(src).toContain("ADMIN_PLAN_CHANGED");
+    expect(src).toContain("ADMIN_BILLING_OVERRIDES_UPDATED");
+  });
+
+  it("audit page has an empty state message", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/audit/page.tsx");
+    expect(src).toContain("No audit log entries found.");
+  });
+
+  it("nav.tsx includes Audit tab linking to /ap3k-admin-v2/audit", () => {
+    const src = read("components/admin-v2/nav.tsx");
+    expect(src).toContain("Audit");
+    expect(src).toContain("/ap3k-admin-v2/audit");
+  });
+
+  it("user detail page includes getAdminV2UserRecentAuditLogs and Recent audit section", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(src).toContain("getAdminV2UserRecentAuditLogs");
+    expect(src).toContain("Recent audit");
+  });
+
+  it("user detail page links to audit log filtered by this user's targetId", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(src).toContain("/ap3k-admin-v2/audit?targetId=");
   });
 });

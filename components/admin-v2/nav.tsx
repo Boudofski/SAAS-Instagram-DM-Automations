@@ -11,6 +11,7 @@ const TABS = [
   { label: "Replies", href: "/ap3k-admin-v2/replies" },
   { label: "Activity", href: "/ap3k-admin-v2/activity" },
   { label: "Diagnostics", href: "/ap3k-admin-v2/diagnostics" },
+  { label: "Audit", href: "/ap3k-admin-v2/audit" },
 ];
 
 export function AdminV2Nav({ email }: { email?: string | null }) {

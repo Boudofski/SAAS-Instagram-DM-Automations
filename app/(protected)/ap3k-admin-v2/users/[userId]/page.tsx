@@ -14,6 +14,11 @@ import {
   type ProductPlan,
 } from "@/lib/plan-limits";
 import { stripe } from "@/lib/stripe";
+import {
+  getAdminV2UserRecentAuditLogs,
+  auditActionTone,
+  auditStatusTone,
+} from "@/lib/admin-v2/audit-queries";
 import LocalTime from "@/components/global/local-time";
 
 type Props = { params: Promise<{ userId: string }> };
@@ -21,9 +26,10 @@ type Props = { params: Promise<{ userId: string }> };
 export default async function AdminV2UserDetailPage({ params }: Props) {
   const { userId } = await params;
 
-  const [user, usage] = await Promise.all([
+  const [user, usage, recentAudit] = await Promise.all([
     getAdminV2UserDetail(userId),
     getUserMonthlyUsage(userId).catch(() => null),
+    getAdminV2UserRecentAuditLogs(userId),
   ]);
 
   if (!user) notFound();
@@ -233,6 +239,56 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
         status={user.status}
         plan={user.plan}
       />
+
+      {/* Recent audit activity */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+            Recent audit activity
+          </h2>
+          <Link
+            href={`/ap3k-admin-v2/audit?targetId=${user.id}`}
+            className="text-[11px] font-bold text-pink-400 hover:text-pink-300"
+          >
+            View all audit logs →
+          </Link>
+        </div>
+        {recentAudit.length === 0 ? (
+          <p className="text-xs text-slate-600">No audit events for this user.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {recentAudit.map((log) => {
+              const actionLabel = log.action
+                .replace(/^ADMIN_/, "")
+                .replace(/_/g, " ");
+              return (
+                <li
+                  key={log.id}
+                  className="flex flex-wrap items-center gap-2 border-b border-white/[0.04] pb-2 last:border-0 last:pb-0"
+                >
+                  <V2Badge tone={auditActionTone(log.action)}>
+                    {actionLabel}
+                  </V2Badge>
+                  <V2Badge tone={auditStatusTone(log.status)}>
+                    {log.status}
+                  </V2Badge>
+                  <span className="text-[11px] text-slate-500">
+                    {log.adminEmail ?? "unknown admin"}
+                  </span>
+                  {log.reason && (
+                    <span className="text-[11px] text-slate-500">
+                      — {log.reason}
+                    </span>
+                  )}
+                  <span className="ml-auto text-[11px] text-slate-600">
+                    <LocalTime value={log.createdAt} />
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
