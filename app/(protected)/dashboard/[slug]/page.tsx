@@ -513,16 +513,16 @@ function AccountStatCard({
       ? "text-emerald-600 dark:text-emerald-300"
       : change?.tone === "negative"
         ? "text-red-500 dark:text-red-300"
-        : "text-slate-400 dark:text-slate-500";
+        : "text-slate-500 dark:text-slate-500";
 
   return (
     <div className="min-w-0 border-b border-slate-200 px-5 py-6 transition-colors last:border-b-0 hover:bg-slate-50/70 dark:border-white/10 dark:hover:bg-white/[0.025] md:border-b-0 md:border-r md:last:border-r-0">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-2">
         <p className="text-2xl font-black leading-none tracking-tight text-slate-950 dark:text-white">{value}</p>
         <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}>{change?.label ?? "—"}</span>
       </div>
-      <p className="mt-2 text-[11px] leading-tight text-slate-400 dark:text-slate-500">{subtitle}</p>
+      <p className="mt-2 text-[11px] leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>
   );
 }

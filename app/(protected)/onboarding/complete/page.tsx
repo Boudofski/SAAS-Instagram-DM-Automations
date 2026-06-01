@@ -18,7 +18,7 @@ export default async function OnboardingCompletePage() {
       <h1 className="text-2xl font-black tracking-tight mb-3">
         Instagram connected
       </h1>
-      <p className="text-rf-muted mb-10">
+      <p className="mb-10 text-slate-600 dark:text-rf-muted">
         Your Instagram Business or Creator account is connected. Create a campaign to test public replies.
       </p>
 
@@ -31,7 +31,7 @@ export default async function OnboardingCompletePage() {
 
       <Link
         href={`/dashboard/${slug}`}
-        className="block mt-3 text-xs text-rf-muted hover:text-rf-text transition-colors"
+        className="block mt-3 text-xs text-slate-500 hover:text-slate-950 transition-colors dark:text-rf-muted dark:hover:text-rf-text"
       >
         Explore dashboard
       </Link>

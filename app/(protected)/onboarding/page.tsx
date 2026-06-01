@@ -37,12 +37,11 @@ export default async function OnboardingWelcomePage() {
       <h1 className="text-3xl font-black tracking-tight mb-3">
         Welcome to AP3k, {firstName}
       </h1>
-      <p className="text-rf-muted mb-10 leading-relaxed">
+      <p className="mb-10 leading-relaxed text-slate-600 dark:text-rf-muted">
         It takes 60 seconds to set up your first campaign.<br />
         Let&apos;s connect your Instagram and launch it now.
       </p>
 
-      {/* Flow visualisation */}
       <div className="flex items-center justify-center gap-2 mb-10 flex-wrap">
         {[
           { icon: "💬", label: "Comment" },
@@ -52,11 +51,10 @@ export default async function OnboardingWelcomePage() {
           { icon: "🎯", label: "Lead captured" },
         ].map((item, i) => item.label ? (
           <div key={i} className="flex flex-col items-center gap-1">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10
-                            flex items-center justify-center text-xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-xl dark:border-white/10 dark:bg-white/[0.04]">
               {item.icon}
             </div>
-            <span className="text-[10px] text-rf-muted">{item.label}</span>
+            <span className="text-[10px] text-slate-500 dark:text-rf-muted">{item.label}</span>
           </div>
         ) : (
           <span key={i} className="text-rf-subtle text-xl mb-4">{item.icon}</span>
@@ -70,11 +68,11 @@ export default async function OnboardingWelcomePage() {
         Let&apos;s connect your Instagram →
       </Link>
 
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-muted">
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-600 dark:text-rf-muted">
           What happens next
         </p>
-        <ul className="mt-3 space-y-2 text-xs leading-relaxed text-rf-muted">
+        <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-600 dark:text-rf-muted">
           <li>1. Meta opens its official permission screen.</li>
           <li>2. Choose the Instagram Business or Creator account that owns your posts.</li>
           <li>3. AP3k listens for comments through Meta&apos;s API. No password sharing, no scraping.</li>
@@ -84,7 +82,7 @@ export default async function OnboardingWelcomePage() {
       <form action={skipOnboarding}>
         <button
           type="submit"
-          className="block w-full mt-3 text-xs text-rf-muted hover:text-rf-text transition-colors"
+          className="block w-full mt-3 text-xs text-slate-500 hover:text-slate-950 transition-colors dark:text-rf-muted dark:hover:text-rf-text"
         >
           I&apos;ll explore first
         </button>

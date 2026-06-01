@@ -146,7 +146,7 @@
   }
 
   .ap3k-kicker {
-    @apply text-xs font-black uppercase tracking-[0.2em] text-rf-pink;
+    @apply text-xs font-black uppercase tracking-[0.2em] text-pink-600 dark:text-rf-pink;
   }
 
   .ap3k-page {

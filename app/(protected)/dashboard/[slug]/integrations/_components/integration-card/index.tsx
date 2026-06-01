@@ -121,7 +121,7 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
               </div>
             )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-black text-rf-green">
+              <p className="truncate text-sm font-black text-emerald-700 dark:text-rf-green">
                 {displayIntegration.instagramUsername
                   ? `@${displayIntegration.instagramUsername}`
                   : "Instagram connected"}
