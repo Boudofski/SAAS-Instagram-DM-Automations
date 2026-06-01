@@ -13,11 +13,12 @@ type Props = {
   email: string;
   status: string;
   plan?: string;
+  hasActiveOverrides?: boolean;
 };
 
 type ModalKey = "suspend" | "reactivate" | "change_plan" | "reset_usage";
 
-export function UserActionsPanel({ userId, email, status, plan }: Props) {
+export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrides }: Props) {
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -60,7 +61,7 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
       const fd = new FormData();
       fd.set("userId", userId);
       fd.set("reason", reason);
-      if (activeModal === "suspend" || activeModal === "reset_usage") {
+      if (activeModal === "suspend" || activeModal === "reset_usage" || activeModal === "change_plan") {
         fd.set("confirmation", confirmation);
       }
       if (activeModal === "change_plan") fd.set("plan", selectedPlan);
@@ -119,6 +120,9 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
           className="rounded-lg bg-amber-900/40 px-4 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-900/60 hover:text-amber-200 transition-colors"
         >
           Reset usage
+          <span className="ml-1.5 rounded-full border border-amber-700/60 bg-amber-900/60 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-500">
+            Irreversible
+          </span>
         </button>
       </div>
 
@@ -146,9 +150,16 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
             )}
 
             {activeModal === "change_plan" && (
-              <p className="mt-3 rounded-lg border border-pink-500/20 bg-pink-900/20 px-3 py-2 text-[11px] text-pink-300">
-                Manual plan changes affect AP3k internal access only. Stripe billing is not modified.
-              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                <p className="rounded-lg border border-pink-500/20 bg-pink-900/20 px-3 py-2 text-[11px] text-pink-300">
+                  Manual plan changes affect AP3k internal access only. Stripe billing is not modified.
+                </p>
+                {hasActiveOverrides && selectedPlan === "FREE" && plan === "PRO" && (
+                  <p className="rounded-lg border border-amber-500/30 bg-amber-900/20 px-3 py-2 text-[11px] text-amber-300">
+                    ⚠ This user has active internal billing overrides. Downgrading to FREE will reduce plan-level limits. The overrides remain set and can be cleared separately.
+                  </p>
+                )}
+              </div>
             )}
 
             {activeModal === "reset_usage" && (
@@ -211,6 +222,21 @@ export function UserActionsPanel({ userId, email, status, plan }: Props) {
                       onChange={(e) => setConfirmation(e.target.value)}
                       placeholder="SUSPEND"
                       className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
+                  </div>
+                )}
+
+                {activeModal === "change_plan" && (
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-pink-400">
+                      Type CHANGE PLAN to confirm
+                    </label>
+                    <input
+                      type="text"
+                      value={confirmation}
+                      onChange={(e) => setConfirmation(e.target.value)}
+                      placeholder="CHANGE PLAN"
+                      className="w-full rounded-lg border border-pink-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-pink-500"
                     />
                   </div>
                 )}

@@ -207,6 +207,7 @@ export async function adminChangeUserPlanAction(formData: FormData) {
   const userId = adminFormString(formData, "userId");
   const plan = adminFormString(formData, "plan") as SUBSCRIPTION_PLAN;
   const reason = adminFormString(formData, "reason");
+  const confirmation = adminFormString(formData, "confirmation");
 
   if (!["FREE", "PRO"].includes(plan)) {
     return { status: 400 as const, data: "Invalid plan selected." };
@@ -221,6 +222,20 @@ export async function adminChangeUserPlanAction(formData: FormData) {
     admin = await requireAdminAction();
   } catch {
     return { status: 403 as const, data: "Unauthorized." };
+  }
+
+  if (confirmation !== "CHANGE PLAN") {
+    await createAdminAuditLog({
+      admin,
+      action: "ADMIN_PLAN_CHANGED",
+      targetType: "User",
+      targetId: userId,
+      reason,
+      confirmation,
+      status: "BLOCKED",
+      error: "Typed confirmation mismatch.",
+    });
+    return { status: 400 as const, data: "Type CHANGE PLAN to confirm." };
   }
 
   const user = await client.user.findUnique({

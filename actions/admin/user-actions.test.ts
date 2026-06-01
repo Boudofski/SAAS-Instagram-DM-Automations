@@ -335,7 +335,7 @@ describe("adminChangeUserPlanAction", () => {
 
   it("updates the user subscription plan and writes a SUCCESS audit", async () => {
     const result = await adminChangeUserPlanAction(
-      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade", confirmation: "CHANGE PLAN" }),
     );
 
     expect(result.status).toBe(200);
@@ -350,7 +350,7 @@ describe("adminChangeUserPlanAction", () => {
 
   it("writes a SUCCESS audit with ADMIN_PLAN_CHANGED action and before/after", async () => {
     await adminChangeUserPlanAction(
-      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade", confirmation: "CHANGE PLAN" }),
     );
 
     expect(mockAuditCreate).toHaveBeenCalledWith(
@@ -400,7 +400,7 @@ describe("adminChangeUserPlanAction", () => {
     mockUserFindUnique.mockResolvedValue(null);
 
     const result = await adminChangeUserPlanAction(
-      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade", confirmation: "CHANGE PLAN" }),
     );
 
     expect(result.status).toBe(404);
@@ -409,7 +409,7 @@ describe("adminChangeUserPlanAction", () => {
 
   it("revalidates admin-v2 user paths on success", async () => {
     await adminChangeUserPlanAction(
-      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade" }),
+      form({ userId: "user-1", plan: "PRO", reason: "Manual upgrade", confirmation: "CHANGE PLAN" }),
     );
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/ap3k-admin-v2/users");

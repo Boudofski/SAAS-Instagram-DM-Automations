@@ -120,6 +120,22 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
               }
             />
           )}
+          {recentAudit.length > 0 && (
+            <DetailField
+              label="Last admin action"
+              value={
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-slate-300">
+                    {recentAudit[0].action.replace(/^ADMIN_/, "").replace(/_/g, " ")}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {recentAudit[0].adminEmail ?? "unknown"} ·{" "}
+                    <LocalTime value={recentAudit[0].createdAt} />
+                  </span>
+                </div>
+              }
+            />
+          )}
         </dl>
       </div>
 
@@ -238,6 +254,10 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
         email={user.email}
         status={user.status}
         plan={user.plan}
+        hasActiveOverrides={!!(
+          user.overrideReason &&
+          (!user.overrideExpiresAt || new Date(user.overrideExpiresAt) > new Date())
+        )}
       />
 
       {/* Recent audit activity */}

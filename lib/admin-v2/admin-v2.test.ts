@@ -471,3 +471,82 @@ describe("Admin v2 — Phase 2E audit log visibility", () => {
     expect(src).toContain("/ap3k-admin-v2/audit?targetId=");
   });
 });
+
+describe("Admin v2 — Phase 2F safety & controls", () => {
+  it("action-safety.ts exports ACTION_SAFETY with all Phase 2D action types", () => {
+    const src = read("lib/admin-v2/action-safety.ts");
+    expect(src).toContain("ADMIN_USER_SUSPENDED");
+    expect(src).toContain("ADMIN_USER_REACTIVATED");
+    expect(src).toContain("ADMIN_PLAN_CHANGED");
+    expect(src).toContain("ADMIN_USER_USAGE_RESET");
+    expect(src).toContain("ADMIN_BILLING_OVERRIDES_UPDATED");
+  });
+
+  it("action-safety.ts marks ADMIN_USER_USAGE_RESET as irreversible", () => {
+    const src = read("lib/admin-v2/action-safety.ts");
+    const after = src.split("ADMIN_USER_USAGE_RESET")[1]?.split(/ADMIN_[A-Z]/)[0] ?? "";
+    expect(after).toContain("reversible: false");
+  });
+
+  it("action-safety.ts requires typed confirmation for SUSPEND, RESET USAGE, and CHANGE PLAN", () => {
+    const src = read("lib/admin-v2/action-safety.ts");
+    expect(src).toContain('"SUSPEND"');
+    expect(src).toContain('"RESET USAGE"');
+    expect(src).toContain('"CHANGE PLAN"');
+  });
+
+  it("adminChangeUserPlanAction now requires typed confirmation CHANGE PLAN", () => {
+    const src = read("actions/admin/user-actions.ts");
+    expect(src).toContain('"CHANGE PLAN"');
+    expect(src).toContain("BLOCKED");
+  });
+
+  it("UserActionsPanel sends confirmation for change_plan", () => {
+    const src = read("components/admin-v2/user-actions-panel.tsx");
+    expect(src).toContain("change_plan");
+    expect(src).toContain("CHANGE PLAN");
+  });
+
+  it("UserActionsPanel warns on plan downgrade when overrides are active", () => {
+    const src = read("components/admin-v2/user-actions-panel.tsx");
+    expect(src).toContain("hasActiveOverrides");
+    expect(src).toContain("override");
+  });
+
+  it("InternalOverridesCard warns when no expiry date is set", () => {
+    const src = read("components/admin-v2/internal-overrides-card.tsx");
+    expect(src).toContain("indefinitely");
+  });
+
+  it("user detail page passes hasActiveOverrides to UserActionsPanel", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(src).toContain("hasActiveOverrides");
+  });
+
+  it("user detail Identity card shows last admin action from recentAudit", () => {
+    const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
+    expect(src).toContain("recentAudit[0]");
+    expect(src).toContain("Last admin action");
+  });
+
+  it("UserActionsPanel marks reset_usage as irreversible in UI", () => {
+    const src = read("components/admin-v2/user-actions-panel.tsx");
+    expect(src).toContain("Irreversible");
+  });
+
+  it("permissions.ts defines owner and support roles with hasCapability", () => {
+    const src = read("lib/admin-v2/permissions.ts");
+    expect(src).toContain('"owner"');
+    expect(src).toContain('"support"');
+    expect(src).toContain("hasCapability");
+    expect(src).toContain("resolveAdminRole");
+  });
+
+  it("permissions.ts support role cannot perform mutations", () => {
+    const src = read("lib/admin-v2/permissions.ts");
+    const supportSection = src.split("SUPPORT_CAPABILITIES")[1]?.split("as const")[0] ?? "";
+    expect(supportSection).not.toContain("suspend_user");
+    expect(supportSection).not.toContain("change_plan");
+    expect(supportSection).not.toContain("reset_usage");
+  });
+});
