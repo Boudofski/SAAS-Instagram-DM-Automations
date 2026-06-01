@@ -64,7 +64,7 @@ export default async function OnboardingConnectPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 dark:border-rf-border dark:bg-white/[0.03] dark:text-rf-muted">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 dark:border-rf-border dark:bg-white/[0.06] dark:text-rf-muted">
         <p className="font-bold text-slate-900 dark:text-rf-text">Safe connection notes</p>
         <p className="mt-2">
           {appReviewMode

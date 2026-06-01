@@ -9,10 +9,13 @@ function read(rel: string) {
 }
 
 describe("light-mode contrast invariants", () => {
-  it("onboarding layout guards rf-text and rf-surface behind dark: prefix", () => {
+  it("onboarding layout uses correct dark bg (arbitrary value, not named token+opacity)", () => {
     const src = read("app/(protected)/onboarding/layout.tsx");
     expect(src).toContain("dark:text-rf-text");
-    expect(src).toContain("dark:bg-rf-surface");
+    expect(src).toContain("dark:bg-[#0f172a]/78");
+    // Named custom color + opacity modifier (bg-rf-surface/78) does not generate
+    // its Tailwind utility reliably. Always use the arbitrary hex value form.
+    expect(src).not.toContain("dark:bg-rf-surface");
   });
 
   it("ap3k-kicker uses light-mode pink override (text-pink-600 dark:text-rf-pink)", () => {
