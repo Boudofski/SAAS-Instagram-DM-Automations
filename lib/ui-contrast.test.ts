@@ -45,6 +45,46 @@ describe("light-mode contrast invariants", () => {
     }
   });
 
+  it("main-bread-crumbs uses dark: guards for rf-text and rf-muted", () => {
+    const src = read("components/global/bread-crumb/main-bread-crumbs/index.tsx");
+    expect(src).toContain("dark:text-rf-text");
+    expect(src).toContain("dark:text-rf-muted");
+    expect(src).toContain("dark:border-white/10");
+    expect(src).toContain("dark:bg-white/[0.03]");
+  });
+
+  it("onboarding-checklist uses dark: guards for rf-text and rf-muted", () => {
+    const src = read("components/global/onboarding-checklist/index.tsx");
+    for (const line of src.split("\n")) {
+      if (line.includes("text-rf-text") && !line.includes("dark:")) {
+        throw new Error(`bare text-rf-text without dark: — ${line.trim()}`);
+      }
+      if (line.includes("text-rf-muted") && !line.includes("dark:")) {
+        throw new Error(`bare text-rf-muted without dark: — ${line.trim()}`);
+      }
+    }
+  });
+
+  it("stat-card neutral delta has light-mode border and bg", () => {
+    const src = read("components/global/stat-card/index.tsx");
+    expect(src).toContain("border-slate-200");
+    expect(src).toContain("bg-slate-100");
+  });
+
+  it("ap3k-logo default text color has dark: guard", () => {
+    const src = read("components/global/ap3k-logo/index.tsx");
+    expect(src).toContain("dark:text-rf-text");
+  });
+
+  it("sidebar upgrade card uses dark: guard for rf-muted text", () => {
+    const src = read("components/global/sidebar/upgrade.tsx");
+    for (const line of src.split("\n")) {
+      if (line.includes("text-rf-muted") && !line.includes("dark:")) {
+        throw new Error(`bare text-rf-muted without dark: — ${line.trim()}`);
+      }
+    }
+  });
+
   it("dashboard page headings do not use bare text-white on h1 or h2", () => {
     const pages = [
       "app/(protected)/dashboard/[slug]/page.tsx",

@@ -17,12 +17,12 @@ export default function OnboardingChecklist({ items }: Props) {
   return (
     <div className="ap3k-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-black text-rf-text">Getting started</h3>
-        <span className="text-xs text-rf-muted">{doneCount} of {items.length} done</span>
+        <h3 className="text-sm font-black text-slate-900 dark:text-rf-text">Getting started</h3>
+        <span className="text-xs text-slate-500 dark:text-rf-muted">{doneCount} of {items.length} done</span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-white/[0.08] rounded-full mb-4 overflow-hidden">
+      <div className="h-1.5 rounded-full mb-4 overflow-hidden bg-slate-200 dark:bg-white/[0.08]">
         <div
           className="h-full rounded-full bg-ap3k-gradient transition-all duration-500"
           style={{ width: `${pct}%` }}
@@ -37,17 +37,17 @@ export default function OnboardingChecklist({ items }: Props) {
                 "w-5 h-5 rounded-[5px] flex items-center justify-center flex-shrink-0 text-[10px] font-bold",
                 item.done
                   ? "bg-rf-green text-white shadow-[0_0_18px_rgba(16,185,129,0.24)]"
-                  : "border border-white/15 bg-white/[0.03] text-rf-subtle"
+                  : "border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/15 dark:bg-white/[0.03] dark:text-rf-subtle"
               )}
             >
               {item.done ? "✓" : ""}
             </span>
             {item.href && !item.done ? (
-              <a href={item.href} className="font-semibold text-rf-pink hover:text-rf-purple">
+              <a href={item.href} className="font-semibold text-pink-600 hover:text-pink-700 dark:text-rf-pink dark:hover:text-rf-purple">
                 {item.label}
               </a>
             ) : (
-              <span className={item.done ? "text-rf-text" : "text-rf-muted"}>{item.label}</span>
+              <span className={item.done ? "text-slate-900 dark:text-rf-text" : "text-slate-600 dark:text-rf-muted"}>{item.label}</span>
             )}
           </li>
         ))}

@@ -28,7 +28,7 @@ export default function StatCard({ label, value, icon, delta, deltaDir = "neutra
             "inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full w-fit border",
             deltaDir === "up" && "bg-rf-green/10 text-rf-green",
             deltaDir === "down" && "bg-red-500/10 text-red-400",
-            deltaDir === "neutral" && "bg-white/5 text-rf-muted border-white/10"
+            deltaDir === "neutral" && "border-slate-200 bg-slate-100 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-rf-muted"
           )}
         >
           {delta}
