@@ -225,19 +225,14 @@ describe("App Review-safe UX", () => {
   it("loop guard never pauses campaigns in app review mode", () => {
     const route = readRepoFile("app/api/webhooks/meta/route.ts");
 
-    // Rate-limit loop guard pause requires review-mode guard
-    expect(route).toContain("LOOP_GUARD_PAUSE_THRESHOLD && !isAppReviewMode()");
+    // Public reply volume is diagnostic only; it must not pause or skip valid comments.
+    expect(route).not.toContain("LOOP_GUARD_PAUSE_THRESHOLD");
+    expect(route).not.toContain("automation_rate_limit_loop_guard");
     // Self-comment pause is also review-mode guarded and keyword-campaign safe
     expect(route).toContain('automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()');
-    // Neither pause site is unguarded (old form must not exist)
-    expect(route).not.toContain("LOOP_GUARD_PAUSE_THRESHOLD) {");
-    // Both pause sites call pauseAutomationForLoopGuard only inside the guard
-    const guardedBlock = route.split("LOOP_GUARD_PAUSE_THRESHOLD && !isAppReviewMode()")[1] ?? "";
-    expect(guardedBlock.indexOf("pauseAutomationForLoopGuard")).toBeLessThan(
-      guardedBlock.indexOf("LOOP_GUARD_PAUSE_THRESHOLD") === -1
-        ? Infinity
-        : guardedBlock.indexOf("LOOP_GUARD_PAUSE_THRESHOLD")
-    );
+    const pausePos = route.indexOf("await pauseAutomationForLoopGuard");
+    const selfGuardPos = route.indexOf('automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()');
+    expect(pausePos).toBeGreaterThan(selfGuardPos);
   });
 
   it("loop guard does not pause keyword campaigns for self-comments", () => {

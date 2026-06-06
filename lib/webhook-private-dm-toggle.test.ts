@@ -281,10 +281,68 @@ describe("comment webhook private DM toggle", () => {
       expect.objectContaining({
         eventType: "AUTOMATION_MATCH_FAILED",
         status: "IGNORED",
-        errorMessage: "no_active_automation_for_media",
+        errorMessage: "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH",
         payload: expect.objectContaining({
           integrationId: "integration-1",
           ownerUserId: "user-1",
+          reason: "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH",
+          wouldHaveMatchedCampaign: false,
+        }),
+      })
+    );
+  });
+
+  it("records keyword mismatch as a public reply skip reason", async () => {
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: null,
+      automations: [],
+      failureReason: "keyword_mismatch",
+      diagnostics: {
+        matchingIntegrationFound: true,
+        matchedIntegrationId: "integration-1",
+        matchedIntegrationOwnerUserId: "user-1",
+      },
+    });
+
+    await POST(commentRequest({ text: "hello" }));
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "AUTOMATION_MATCH_FAILED",
+        status: "IGNORED",
+        errorMessage: "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH",
+        payload: expect.objectContaining({
+          reason: "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH",
+          wouldHaveMatchedCampaign: true,
+          whyNoPublicReply: "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH",
+        }),
+      })
+    );
+  });
+
+  it("records media mismatch as a public reply skip reason", async () => {
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: null,
+      automations: [],
+      failureReason: "no_active_automation_for_media",
+      diagnostics: {
+        matchingIntegrationFound: true,
+        matchedIntegrationId: "integration-1",
+        matchedIntegrationOwnerUserId: "user-1",
+      },
+    });
+
+    await POST(commentRequest({ text: "ai" }));
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockCreateWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorMessage: "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH",
+        payload: expect.objectContaining({
+          reason: "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH",
+          whyNoPublicReply: "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH",
         }),
       })
     );
@@ -412,6 +470,44 @@ describe("comment webhook private DM toggle", () => {
     );
   });
 
+  it("sends public replies for different users repeating the same keyword", async () => {
+    const campaign = automation(false);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ commentId: "comment-1", commenterId: "user-1", commenterUsername: "one", text: "ai" }));
+    await POST(commentRequest({ commentId: "comment-2", commenterId: "user-2", commenterUsername: "two", text: "ai" }));
+    await POST(commentRequest({ commentId: "comment-3", commenterId: "user-3", commenterUsername: "three", text: "ai" }));
+
+    expect(mockSendCommentReply).toHaveBeenCalledTimes(3);
+    expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "LOOP_GUARD_TRIGGERED" })
+    );
+  });
+
+  it("sends public replies for the same external user using two unique comment ids", async () => {
+    const campaign = automation(false);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest({ commentId: "comment-a", commenterId: "same-user", text: "ai" }));
+    await POST(commentRequest({ commentId: "comment-b", commenterId: "same-user", text: "ai" }));
+
+    expect(mockSendCommentReply).toHaveBeenCalledTimes(2);
+    expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "COMMENT_SKIPPED",
+        meta: expect.objectContaining({ reason: "commenter_recently_handled" }),
+      })
+    );
+  });
+
   it("logs public reply failed when Meta returns success without an id", async () => {
     const campaign = automation(false);
     mockSendCommentReply.mockResolvedValue({ status: 200, data: {} });
@@ -455,7 +551,7 @@ describe("comment webhook private DM toggle", () => {
       expect.objectContaining({
         automationId: campaign.id,
         eventType: "SELF_COMMENT_SKIPPED",
-        meta: expect.objectContaining({ reason: "self_comment_author" }),
+        meta: expect.objectContaining({ reason: "PUBLIC_REPLY_SKIPPED_SELF_COMMENT" }),
       })
     );
   });
@@ -495,13 +591,13 @@ describe("comment webhook private DM toggle", () => {
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: "COMMENT_SKIPPED",
-        meta: expect.objectContaining({ reason: "ap3k_generated_comment" }),
+        meta: expect.objectContaining({ reason: "PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY" }),
       })
     );
   });
 
-  it("skips recent AP3k reply text matches on the same media", async () => {
-    const campaign = automation(true);
+  it("does not skip an external user only because their text matches a recent AP3k reply", async () => {
+    const campaign = automation(true, { keywords: [{ word: "Check your DMs" }] });
     mockHasRecentAp3kReplyTextMatch.mockResolvedValue(true);
     mockFindAutomationForCommentWithReason.mockResolvedValue({
       automation: campaign,
@@ -511,14 +607,11 @@ describe("comment webhook private DM toggle", () => {
 
     await POST(commentRequest({ text: "Check your DMs" }));
 
-    expect(mockUpsertLead).not.toHaveBeenCalled();
-    expect(mockSendCommentReply).not.toHaveBeenCalled();
-    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
-    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eventType: "COMMENT_SKIPPED",
-        meta: expect.objectContaining({ reason: "recent_ap3k_reply_text_match" }),
-      })
+    expect(mockUpsertLead).toHaveBeenCalledOnce();
+    expect(mockSendCommentReply).toHaveBeenCalledOnce();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "COMMENT_SKIPPED" })
     );
   });
 
@@ -539,12 +632,12 @@ describe("comment webhook private DM toggle", () => {
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: "DUPLICATE_SKIPPED",
-        meta: expect.objectContaining({ reason: "duplicate_comment_webhook" }),
+        meta: expect.objectContaining({ reason: "PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT" }),
       })
     );
   });
 
-  it("skips a recently handled commenter on the same media", async () => {
+  it("allows the same external user to comment the keyword twice with different comment ids", async () => {
     const campaign = automation(true);
     mockHasRecentHandledCommenter.mockResolvedValue(true);
     mockFindAutomationForCommentWithReason.mockResolvedValue({
@@ -555,18 +648,12 @@ describe("comment webhook private DM toggle", () => {
 
     await POST(commentRequest());
 
-    expect(mockUpsertLead).not.toHaveBeenCalled();
-    expect(mockSendCommentReply).not.toHaveBeenCalled();
-    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
-    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eventType: "COMMENT_SKIPPED",
-        meta: expect.objectContaining({ reason: "commenter_recently_handled" }),
-      })
-    );
+    expect(mockUpsertLead).toHaveBeenCalledOnce();
+    expect(mockSendCommentReply).toHaveBeenCalledOnce();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
   });
 
-  it("triggers loop guard and auto-pauses only after 5+ loop guard events in 10 minutes", async () => {
+  it("does not loop-guard skip valid external comments only because public reply volume is high", async () => {
     const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
     mockCountRecentPublicReplies.mockImplementation((input: any) =>
       input.mediaId ? Promise.resolve(5) : Promise.resolve(50)
@@ -580,19 +667,16 @@ describe("comment webhook private DM toggle", () => {
 
     await POST(commentRequest({ text: "new comment" }));
 
-    expect(mockSendCommentReply).not.toHaveBeenCalled();
-    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
-    expect(mockPauseAutomationForLoopGuard).toHaveBeenCalledWith(campaign.id);
+    expect(mockSendCommentReply).toHaveBeenCalledOnce();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: "LOOP_GUARD_TRIGGERED",
-        meta: expect.objectContaining({ reason: "automation_rate_limit_loop_guard" }),
-      })
-    );
-    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eventType: "LOOP_GUARD_PAUSED_CAMPAIGN",
-        meta: expect.objectContaining({ reason: "automation_rate_limit_loop_guard" }),
+        eventType: "PUBLIC_REPLY_SENT",
+        meta: expect.objectContaining({
+          reason: "PUBLIC_REPLY_SENT",
+          publicReplyVolumeExceeded: true,
+        }),
       })
     );
   });
@@ -661,7 +745,7 @@ describe("loop guard threshold behavior", () => {
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: "SELF_COMMENT_SKIPPED",
-        meta: expect.objectContaining({ reason: "self_comment_author" }),
+        meta: expect.objectContaining({ reason: "PUBLIC_REPLY_SKIPPED_SELF_COMMENT" }),
       })
     );
   });
@@ -703,7 +787,7 @@ describe("loop guard threshold behavior", () => {
     );
   });
 
-  it("does not pause campaign when loop guard count is below the 5-event threshold", async () => {
+  it("existing loop guard events do not block future valid external comments", async () => {
     const campaign = automation(true, { triggerMode: "ANY_COMMENT", keywords: [] });
     mockCountRecentPublicReplies.mockImplementation((input: any) =>
       input.mediaId ? Promise.resolve(5) : Promise.resolve(50)
@@ -717,7 +801,12 @@ describe("loop guard threshold behavior", () => {
 
     await POST(commentRequest({ text: "new comment" }));
 
+    expect(mockSendCommentReply).toHaveBeenCalledOnce();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "PUBLIC_REPLY_SENT" })
+    );
+    expect(mockCreateAutomationEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ eventType: "LOOP_GUARD_TRIGGERED" })
     );
     expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();

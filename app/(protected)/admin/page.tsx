@@ -1086,29 +1086,35 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   ]}
                 />
                 <DataTable
-                  headers={["Time", "Owner/Campaign", "Status", "Reason", "Object IDs", "Recommendation"]}
+                  headers={["Time", "Owner/Campaign", "Status", "Would this have matched campaign?", "Why no public reply?", "Object IDs", "Recommendation"]}
                   rows={safetyEvents.map((event: any) => {
                     const meta = event.meta && typeof event.meta === "object" ? event.meta as Record<string, unknown> : {};
                     const reason = String(meta.reason ?? event.eventType);
+                    const wouldHaveMatchedCampaign =
+                      typeof meta.wouldHaveMatchedCampaign === "boolean"
+                        ? meta.wouldHaveMatchedCampaign
+                        : event.eventType === "DUPLICATE_SKIPPED" || event.eventType === "SELF_COMMENT_SKIPPED";
+                    const whyNoPublicReply = String(meta.whyNoPublicReply ?? meta.reason ?? event.eventType);
                     return [
                       <LocalTime key="time" value={event.createdAt} empty="Never" />,
                       <Identity key="campaign" title={event.automation?.name ?? "Unknown campaign"} subtitle={event.automation?.User?.email ?? ""} />,
                       <EventBadge key="event" eventType={event.eventType} />,
-                      reason === "self_comment_author"
+                      <Badge key="matched" tone={wouldHaveMatchedCampaign ? "green" : "amber"}>{wouldHaveMatchedCampaign ? "Yes" : "No"}</Badge>,
+                      reason === "PUBLIC_REPLY_SKIPPED_SELF_COMMENT" || reason === "self_comment_author"
                         ? "Ignored self-comment from connected account"
-                        : reason === "duplicate_comment_webhook"
+                        : reason === "PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT" || reason === "duplicate_comment_webhook"
                           ? "Ignored duplicate webhook"
-                          : reason === "automation_rate_limit_loop_guard"
-                            ? "Loop guard skipped public reply"
-                            : reason === "commenter_recently_handled"
-                              ? "Commenter recently handled"
-                              : reason === "recent_ap3k_reply_text_match"
-                                ? "Ignored AP3k-generated reply text"
-                                : reason,
+                          : reason === "PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY" || reason === "ap3k_generated_comment"
+                            ? "Ignored AP3k-generated reply"
+                            : reason === "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH"
+                              ? "Keyword mismatch"
+                              : reason === "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH"
+                                ? "Media mismatch"
+                                : whyNoPublicReply,
                       <Identity key="ids" title={`comment ${event.commentId ?? "n/a"}`} subtitle={`media ${event.mediaId ?? "n/a"}`} />,
                       event.eventType === "LOOP_GUARD_PAUSED_CAMPAIGN"
                         ? "Campaign auto-paused by loop guard"
-                        : "Review repeated loop-guard events. Valid external comments should continue processing.",
+                        : "Safety skip only. Valid external comments continue processing.",
                     ];
                   })}
                   empty="No safety skip events found."

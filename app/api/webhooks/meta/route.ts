@@ -7,10 +7,7 @@ import {
   isDuplicate,
   hasProcessedCommentWebhook,
   hasAp3kGeneratedCommentId,
-  hasRecentAp3kReplyTextMatch,
   countRecentPublicReplies,
-  hasRecentHandledCommenter,
-  countLoopGuardEvents,
   countRecentSelfCommentSkips,
   pauseAutomationForLoopGuard,
   createMessageLog,
@@ -52,18 +49,22 @@ const WEBHOOK_ROUTE_VERSION = "2026-05-tenant-diagnostics-v2";
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
 const WEBHOOK_RATE_LIMIT_MAX = 120;
 const SEND_RETRY_ATTEMPTS = 2;
-const RECENT_REPLY_TEXT_WINDOW_MS = 10 * 60 * 1000;
-const COMMENTER_COOLDOWN_MS = 10 * 60 * 1000;
 const LOOP_GUARD_MEDIA_WINDOW_MS = 10 * 60 * 1000;
 const LOOP_GUARD_AUTOMATION_WINDOW_MS = 60 * 60 * 1000;
 const MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M = 5;
 const MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR = 50;
-// Pause requires 5 loop-guard triggers within the same 10-minute window (not 3 in 1h).
-// Tighter window prevents false positives during normal App Review testing.
-const LOOP_GUARD_PAUSE_THRESHOLD = 5;
 // ANY_COMMENT campaigns only: pause if self-comment skip rate exceeds this within 10 min.
 const SELF_COMMENT_PAUSE_THRESHOLD = 3;
 const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+const PUBLIC_REPLY_SENT_REASON = "PUBLIC_REPLY_SENT";
+const PUBLIC_REPLY_SKIPPED_SELF_COMMENT = "PUBLIC_REPLY_SKIPPED_SELF_COMMENT";
+const PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT = "PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT";
+const PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY = "PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY";
+const PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH = "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH";
+const PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH = "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH";
+const PUBLIC_REPLY_FAILED_META_API = "PUBLIC_REPLY_FAILED_META_API";
+const PUBLIC_REPLY_FAILED_RATE_LIMIT = "PUBLIC_REPLY_FAILED_RATE_LIMIT";
+const PUBLIC_REPLY_FAILED_UNKNOWN = "PUBLIC_REPLY_FAILED_UNKNOWN";
 
 // ---------------------------------------------------------------------------
 // GET — Meta webhook verification challenge
@@ -509,6 +510,12 @@ async function processEntry(
       });
       if (!automation?.listener) {
         const failureReason = match.failureReason ?? "no_active_automation_for_media";
+        const publicReplySkipReason = failureReason === "keyword_mismatch"
+          ? PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH
+          : failureReason === "no_active_automation_for_media"
+            ? PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH
+            : failureReason;
+        const wouldHaveMatchedCampaign = failureReason === "keyword_mismatch";
         const matchedIntegrationId =
           match.diagnostics && typeof match.diagnostics === "object"
             ? (match.diagnostics as any).matchedIntegrationId
@@ -530,7 +537,7 @@ async function processEntry(
           mediaId,
           commentId,
           status: "IGNORED",
-          errorMessage: failureReason,
+          errorMessage: publicReplySkipReason,
           payload: {
             entryId: entry?.id,
             igAccountId: pageId,
@@ -542,7 +549,10 @@ async function processEntry(
             commentText: commentText.slice(0, 180),
             integrationId: matchedIntegrationId,
             ownerUserId: matchedOwnerUserId,
-            reason: failureReason,
+            reason: publicReplySkipReason,
+            matchFailureReason: failureReason,
+            wouldHaveMatchedCampaign,
+            whyNoPublicReply: publicReplySkipReason,
             diagnostics: match.diagnostics,
           },
         });
@@ -553,7 +563,7 @@ async function processEntry(
         });
         await updateWebhookEvent(webhookEvent.id, {
           status: "IGNORED",
-          errorMessage: failureReason,
+          errorMessage: publicReplySkipReason,
           processedAt: new Date(),
         });
         continue;
@@ -579,7 +589,7 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "IGNORED",
-          errorMessage: "self_comment_author",
+          errorMessage: PUBLIC_REPLY_SKIPPED_SELF_COMMENT,
           processedAt: new Date(),
         });
         await createAutomationEvent({
@@ -589,7 +599,10 @@ async function processEntry(
           mediaId,
           commentId,
           meta: {
-            reason: "self_comment_author",
+            reason: PUBLIC_REPLY_SKIPPED_SELF_COMMENT,
+            legacyReason: "self_comment_author",
+            wouldHaveMatchedCampaign: Boolean(matchedKeyword),
+            whyNoPublicReply: PUBLIC_REPLY_SKIPPED_SELF_COMMENT,
             matchedBy: selfComment,
             commenterId,
             commenterUsername,
@@ -645,7 +658,10 @@ async function processEntry(
           mediaId,
           commentId,
           meta: {
-            reason: "ap3k_generated_comment",
+            reason: PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY,
+            legacyReason: "ap3k_generated_comment",
+            wouldHaveMatchedCampaign: Boolean(matchedKeyword),
+            whyNoPublicReply: PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY,
             commenterId,
             commenterUsername,
             igAccountId: pageId,
@@ -658,43 +674,7 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "IGNORED",
-          errorMessage: "ap3k_generated_comment",
-          processedAt: new Date(),
-        });
-        continue;
-      }
-
-      const normalizedIncomingCommentText = normalizeMatchText(commentText);
-      const incomingCommentTextHash = hashNormalizedText(normalizedIncomingCommentText);
-      if (await hasRecentAp3kReplyTextMatch({
-        automationId: automation.id,
-        mediaId,
-        normalizedText: normalizedIncomingCommentText,
-        textHash: incomingCommentTextHash,
-        since: new Date(Date.now() - RECENT_REPLY_TEXT_WINDOW_MS),
-      })) {
-        await createAutomationEvent({
-          automationId: automation.id,
-          eventType: "COMMENT_SKIPPED",
-          igUserId: commenterId,
-          mediaId,
-          commentId,
-          meta: {
-            reason: "recent_ap3k_reply_text_match",
-            commenterId,
-            commenterUsername,
-            igAccountId: pageId,
-            integrationId: integrationRaw?.id,
-            integrationInstagramId: integrationRaw?.instagramId,
-            commentId,
-            mediaId,
-            textHash: incomingCommentTextHash,
-          },
-        });
-        await updateWebhookEvent(webhookEvent.id, {
-          automationId: automation.id,
-          status: "IGNORED",
-          errorMessage: "recent_ap3k_reply_text_match",
+          errorMessage: PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY,
           processedAt: new Date(),
         });
         continue;
@@ -709,7 +689,10 @@ async function processEntry(
           commentId,
           keyword: matchedKeyword ?? undefined,
           meta: {
-            reason: "duplicate_comment_webhook",
+            reason: PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT,
+            legacyReason: "duplicate_comment_webhook",
+            wouldHaveMatchedCampaign: Boolean(matchedKeyword),
+            whyNoPublicReply: PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT,
             commenterId,
             commenterUsername,
             igAccountId: pageId,
@@ -720,7 +703,7 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "IGNORED",
-          errorMessage: "duplicate_comment_webhook",
+          errorMessage: PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT,
           processedAt: new Date(),
         });
         continue;
@@ -769,6 +752,9 @@ async function processEntry(
             normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
             storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
             noMatchReason: "no_keyword_match",
+            reason: PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH,
+            wouldHaveMatchedCampaign: false,
+            whyNoPublicReply: PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH,
             commenterUsername,
             commentText,
           },
@@ -776,7 +762,7 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
-          errorMessage: "no_keyword_match",
+          errorMessage: PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH,
           processedAt: new Date(),
         });
         continue;
@@ -839,43 +825,17 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { reason: "duplicate_comment_webhook" },
-        });
-        await updateWebhookEvent(webhookEvent.id, {
-          automationId: automation.id,
-          status: "PROCESSED",
-          errorMessage: "duplicate_comment_webhook",
-          processedAt: new Date(),
-        });
-        continue;
-      }
-
-      if (await hasRecentHandledCommenter({
-        automationId: automation.id,
-        commenterId,
-        mediaId,
-        since: new Date(Date.now() - COMMENTER_COOLDOWN_MS),
-      })) {
-        await createAutomationEvent({
-          automationId: automation.id,
-          eventType: "COMMENT_SKIPPED",
-          igUserId: commenterId,
-          mediaId,
-          commentId,
-          keyword: matchedKeyword,
           meta: {
-            reason: "commenter_recently_handled",
-            commenterId,
-            commenterUsername,
-            mediaId,
-            commentId,
-            cooldownMinutes: COMMENTER_COOLDOWN_MS / 60_000,
+            reason: PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT,
+            legacyReason: "duplicate_comment_webhook",
+            wouldHaveMatchedCampaign: true,
+            whyNoPublicReply: PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT,
           },
         });
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
-          status: "IGNORED",
-          errorMessage: "commenter_recently_handled",
+          status: "PROCESSED",
+          errorMessage: PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT,
           processedAt: new Date(),
         });
         continue;
@@ -910,6 +870,8 @@ async function processEntry(
           meta: {
             reason: "public_reply_disabled",
             publicReplyEnabled: false,
+            wouldHaveMatchedCampaign: true,
+            whyNoPublicReply: "public_reply_disabled",
           },
         });
       }
@@ -975,6 +937,8 @@ async function processEntry(
             keyword: matchedKeyword,
             meta: {
               reason: "static_reply_limit_reached",
+              wouldHaveMatchedCampaign: true,
+              whyNoPublicReply: "static_reply_limit_reached",
               plan: usageAllowed.usage.plan,
               used: usageAllowed.usage.staticReplies.used,
               limit: usageAllowed.usage.staticReplies.limit,
@@ -1118,55 +1082,9 @@ async function processEntry(
           automationId: automation.id,
           since: new Date(Date.now() - LOOP_GUARD_AUTOMATION_WINDOW_MS),
         });
-        const loopGuardExceeded =
+        const publicReplyVolumeExceeded =
           mediaReplyCount10m >= MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M ||
           automationReplyCount1h >= MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR;
-
-        if (loopGuardExceeded) {
-          await createAutomationEvent({
-            automationId: automation.id,
-            eventType: "LOOP_GUARD_TRIGGERED",
-            igUserId: commenterId,
-            mediaId,
-            commentId,
-            keyword: matchedKeyword,
-            meta: {
-              reason: "automation_rate_limit_loop_guard",
-              mediaReplyCount10m,
-              automationReplyCount1h,
-              maxPublicRepliesPerAutomationPerMediaPer10Minutes: MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M,
-              maxPublicRepliesPerAutomationPerHour: MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR,
-              recommendation: "Loop guard triggered - campaign paused recommended.",
-            },
-          });
-          const recentLoopGuardEvents = await countLoopGuardEvents(
-            automation.id,
-            new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS)
-          );
-          if (recentLoopGuardEvents >= LOOP_GUARD_PAUSE_THRESHOLD && !isAppReviewMode()) {
-            await pauseAutomationForLoopGuard(automation.id);
-            await createAutomationEvent({
-              automationId: automation.id,
-              eventType: "LOOP_GUARD_PAUSED_CAMPAIGN",
-              igUserId: commenterId,
-              mediaId,
-              commentId,
-              keyword: matchedKeyword,
-              meta: {
-                reason: "automation_rate_limit_loop_guard",
-                message: "Campaign auto-paused because AP3k detected a self-reply loop.",
-                recentLoopGuardEvents,
-              },
-            });
-          }
-          await updateWebhookEvent(webhookEvent.id, {
-            automationId: automation.id,
-            status: "IGNORED",
-            errorMessage: "automation_rate_limit_loop_guard",
-            processedAt: new Date(),
-          });
-          continue;
-        }
 
         let publicReplySent = false;
         let publicReplyEndpoint: "threaded_reply" | "mention_comment" = "threaded_reply";
@@ -1231,11 +1149,17 @@ async function processEntry(
           commentId: publicReplySent ? publicReplyCommentId : commentId,
           keyword: matchedKeyword,
           meta: {
+            reason: publicReplySent
+              ? PUBLIC_REPLY_SENT_REASON
+              : classifyPublicReplyFailureReason(publicReplyErrorMessage),
             endpoint: publicReplyEndpoint,
             sourceCommentId: commentId,
             publicReplyCommentId,
             commenterUsername,
             commentText,
+            publicReplyVolumeExceeded,
+            mediaReplyCount10m,
+            automationReplyCount1h,
             replyTextPreview: outboundPublicReplyText.slice(0, 180),
             publicReplyTextHash: hashNormalizedText(normalizeMatchText(outboundPublicReplyText)),
             normalizedPublicReplyText: normalizeMatchText(outboundPublicReplyText),
@@ -1948,6 +1872,28 @@ function extractMetaCreatedObjectId(response: unknown) {
   if (!data || typeof data !== "object") return undefined;
   const record = data as Record<string, unknown>;
   return typeof record.id === "string" && record.id.trim() ? record.id.trim() : undefined;
+}
+
+function classifyPublicReplyFailureReason(errorMessage?: string) {
+  if (!errorMessage) return PUBLIC_REPLY_FAILED_UNKNOWN;
+  const normalized = errorMessage.toLocaleLowerCase();
+  if (
+    normalized.includes("rate") ||
+    normalized.includes("429") ||
+    normalized.includes("too many")
+  ) {
+    return PUBLIC_REPLY_FAILED_RATE_LIMIT;
+  }
+  if (
+    normalized.includes("meta") ||
+    normalized.includes("threaded=") ||
+    normalized.includes("mention=") ||
+    normalized.includes("safe_error") ||
+    normalized.includes("capability")
+  ) {
+    return PUBLIC_REPLY_FAILED_META_API;
+  }
+  return PUBLIC_REPLY_FAILED_UNKNOWN;
 }
 
 async function withRetry<T>(operation: () => Promise<T>, attempts = SEND_RETRY_ATTEMPTS): Promise<T> {
