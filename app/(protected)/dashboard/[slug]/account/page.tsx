@@ -1,4 +1,5 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
+import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import ReviewInstagramAccountProfile from "@/components/dashboard/review-instagram-account-profile";
 import LocalTime from "@/components/global/local-time";
 import { onUserInfo } from "@/actions/user";
@@ -10,7 +11,7 @@ import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhoo
 import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
 import {
-  getInstagramSnapshotComparisonWithMissingRefresh,
+  getInstagramSnapshotComparisonWithRefresh,
   getProfileSnapshotDisplay,
   getProfileSnapshotStatus,
   PROFILE_FIELD_SETS,
@@ -37,7 +38,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
     ? await Promise.all([
         getCurrentWebhookHealth(),
         getUserMonthlyUsage(user.id),
-        getInstagramSnapshotComparisonWithMissingRefresh(user.clerkId, user.id, instagram?.id, period),
+        getInstagramSnapshotComparisonWithRefresh(user.clerkId, user.id, instagram?.id, period),
         getAccountWebhookDiagnosticsForIntegration(instagram?.id),
       ])
     : [{ status: 200, data: null }, null, { comparison: null, refresh: null }, null];
@@ -90,18 +91,12 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         </div>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-5">
-            {displayProfilePictureUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={displayProfilePictureUrl}
-                alt={displayUsername ?? "Instagram account"}
-                className="h-24 w-24 rounded-3xl object-cover shadow-sm"
-              />
-            ) : (
-              <div className="grid h-24 w-24 place-items-center rounded-3xl bg-ap3k-gradient text-base font-black text-white shadow-sm">
-                IG
-              </div>
-            )}
+            <InstagramAvatar
+              src={displayProfilePictureUrl}
+              username={displayUsername}
+              label={instagram?.pageName}
+              size="xl"
+            />
             <div className="min-w-0">
               <p className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
                 {connected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}

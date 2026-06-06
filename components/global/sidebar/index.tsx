@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePath } from "@/hooks/user-nav";
 import SubscriptionPlan from "../subscription-plan";
 import AP3kLogo from "../ap3k-logo";
+import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import { CreditCard, Home, Instagram, Megaphone, Settings } from "lucide-react";
 import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -57,18 +58,12 @@ export default function Sidebar({ slug }: Props) {
             Instagram account
           </p>
           <div className="mt-3 flex items-center gap-3">
-            {instagram?.profilePictureUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={instagram.profilePictureUrl}
-                alt={instagram.instagramUsername ?? "Instagram account"}
-                className="h-10 w-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-ap3k-gradient text-xs font-black text-white">
-                IG
-              </div>
-            )}
+            <InstagramAvatar
+              src={instagram?.profilePictureUrl}
+              username={instagram?.instagramUsername}
+              label={instagram?.pageName}
+              size="sm"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-slate-950 dark:text-white">
                 {instagram?.instagramUsername

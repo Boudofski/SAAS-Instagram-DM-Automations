@@ -2,6 +2,7 @@ import {
   getPendingInstagramAccountSelections,
   selectPendingInstagramAccount,
 } from "@/actions/integration";
+import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import { dashboardPath } from "@/lib/dashboard";
 import { redirect } from "next/navigation";
 
@@ -42,18 +43,12 @@ async function Page({ params }: Props) {
               <input type="hidden" name="pageId" value={account.pageId} />
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
-                  {account.profilePictureUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={account.profilePictureUrl}
-                      alt={account.instagramUsername ?? "Instagram account"}
-                      className="h-14 w-14 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ap3k-gradient text-sm font-black text-white">
-                      IG
-                    </div>
-                  )}
+                  <InstagramAvatar
+                    src={account.profilePictureUrl}
+                    username={account.instagramUsername}
+                    label={account.pageName}
+                    size="lg"
+                  />
                   <div className="min-w-0">
                     <p className="text-lg font-black">
                       @{account.instagramUsername ?? "unknown"}
@@ -86,4 +81,3 @@ async function Page({ params }: Props) {
 }
 
 export default Page;
-

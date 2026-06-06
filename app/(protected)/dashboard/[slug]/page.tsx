@@ -1,5 +1,6 @@
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
+import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import LocalTime from "@/components/global/local-time";
 import OnboardingChecklist from "@/components/global/onboarding-checklist";
 import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automation";
@@ -11,7 +12,7 @@ import {
   getDashboardGreeting,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
-import { getInstagramSnapshotComparisonForUser, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
+import { getInstagramSnapshotComparisonWithRefresh, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { buildCampaignBindingDiagnostics, dashboardNoCommentDiagnosis } from "@/lib/account-webhook-diagnostics";
@@ -67,16 +68,17 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const hasExternalDmCampaign = automations.some((automation: any) => automation.sendPrivateDm === false);
   const period = parseDashboardPeriod(searchParams?.period);
-  const [usage, dashboardStats, campaignMetrics, recentResult, snapshotComparison, accountDiagnostics] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, recentResult, snapshotState, accountDiagnostics] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period),
         getCampaignTableMetrics(userResult.data.id),
         getRecentAutomationActivity(),
-        getInstagramSnapshotComparisonForUser(userResult.data.id, instagram?.id, period),
+        getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period),
         getAccountWebhookDiagnosticsForIntegration(instagram?.id),
       ])
-    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, null, null];
+    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, { comparison: null, refresh: null }, null];
+  const snapshotComparison = snapshotState.comparison;
   const profileSnapshot = snapshotComparison?.current;
   const profileSnapshotStatus = getProfileSnapshotStatus(profileSnapshot);
   const displayInstagramUsername = profileSnapshot?.username ?? instagram?.instagramUsername;
@@ -201,18 +203,12 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           tokenExpired ? "border-red-200 dark:border-red-500/35" : "border-emerald-100 dark:border-emerald-500/25",
         ].join(" ")}>
           <div className="flex min-w-0 items-center gap-3">
-            {displayProfilePictureUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={displayProfilePictureUrl}
-                alt={displayInstagramUsername ?? "Connected Instagram account"}
-                className="h-14 w-14 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ap3k-gradient text-sm font-black text-white">
-                IG
-              </div>
-            )}
+            <InstagramAvatar
+              src={displayProfilePictureUrl}
+              username={displayInstagramUsername}
+              label={instagram.pageName}
+              size="lg"
+            />
             <div className="min-w-0">
               <p className="truncate text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                 {displayInstagramUsername ? `@${displayInstagramUsername}` : "Instagram connected"}

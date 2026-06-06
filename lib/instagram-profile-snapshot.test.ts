@@ -27,6 +27,7 @@ vi.mock("@/lib/fetch", () => ({
 
 import {
   getInstagramSnapshotComparison,
+  getInstagramSnapshotComparisonWithRefresh,
   getInstagramSnapshotComparisonWithMissingRefresh,
   getInstagramSnapshotComparisonForUser,
   getLatestInstagramSnapshot,
@@ -462,6 +463,58 @@ describe("instagram profile snapshots", () => {
     expect(result.refresh?.cached).toBe(false);
     expect(result.comparison?.current?.followersCount).toBe(444);
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("stale snapshot triggers one safe refresh attempt and preserves old data if refresh fails", async () => {
+    const staleSnapshot = snapshot({
+      id: "snap-stale",
+      fetchedAt: new Date("2026-05-23T00:00:00Z"),
+      followersCount: 300,
+      mediaCount: 8,
+      profilePictureUrl: "https://example.com/old.jpg",
+    });
+    mockFindIntegrationFirst
+      .mockResolvedValueOnce({ id: "integration-a" })
+      .mockResolvedValueOnce({
+        id: "integration-a",
+        token: "page-token-secret",
+        expiresAt: new Date("2026-06-01T00:00:00Z"),
+        instagramId: "ig-1",
+        instagramUsername: "olduser",
+        profilePictureUrl: "https://example.com/old.jpg",
+        oauthResolutionDiagnostics: null,
+        snapshots: [staleSnapshot],
+      })
+      .mockResolvedValueOnce({ id: "integration-a" });
+    mockFindSnapshotFirst
+      .mockResolvedValueOnce(staleSnapshot)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(staleSnapshot)
+      .mockResolvedValueOnce(null);
+    mockGetInstagramBusinessProfile.mockRejectedValue(new Error("Meta unavailable"));
+
+    const result = await getInstagramSnapshotComparisonWithRefresh("clerk-a", "user-a", "integration-a", "month", now);
+
+    expect(mockGetInstagramBusinessProfile).toHaveBeenCalledTimes(1);
+    expect(result.refresh?.cached).toBe(true);
+    expect(result.refresh?.error).toBe("Instagram profile stats unavailable.");
+    expect(result.comparison?.current?.followersCount).toBe(300);
+    expect(result.comparison?.current?.mediaCount).toBe(8);
+    expect(result.comparison?.current?.profilePictureUrl).toBe("https://example.com/old.jpg");
+  });
+
+  it("fresh snapshot does not trigger an automatic refresh", async () => {
+    const freshSnapshot = snapshot({ fetchedAt: now });
+    mockFindIntegrationFirst.mockResolvedValueOnce({ id: "integration-a" });
+    mockFindSnapshotFirst
+      .mockResolvedValueOnce(freshSnapshot)
+      .mockResolvedValueOnce(null);
+
+    const result = await getInstagramSnapshotComparisonWithRefresh("clerk-a", "user-a", "integration-a", "month", now);
+
+    expect(mockGetInstagramBusinessProfile).not.toHaveBeenCalled();
+    expect(result.refresh).toBeNull();
+    expect(result.comparison?.current?.id).toBe(freshSnapshot.id);
   });
 
   it("refresh helper uses instagramId field, not pageId", async () => {

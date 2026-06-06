@@ -314,7 +314,7 @@ async function fetchProfileWithFallbacks(
   throw lastError ?? new Error("Instagram profile stats unavailable.");
 }
 
-export async function getInstagramSnapshotComparisonWithMissingRefresh(
+export async function getInstagramSnapshotComparisonWithRefresh(
   clerkId: string,
   userId: string,
   integrationId: string | undefined,
@@ -325,7 +325,13 @@ export async function getInstagramSnapshotComparisonWithMissingRefresh(
   refresh: RefreshInstagramSnapshotResult | null;
 }> {
   const initial = await getInstagramSnapshotComparisonForUser(userId, integrationId, period, now);
-  if (!integrationId || initial?.current) {
+  if (!integrationId) {
+    return { comparison: initial, refresh: null };
+  }
+
+  const current = initial?.current ?? null;
+  const currentAgeMs = current ? now.getTime() - current.fetchedAt.getTime() : Number.POSITIVE_INFINITY;
+  if (current && currentAgeMs < SNAPSHOT_FRESH_MS) {
     return { comparison: initial, refresh: null };
   }
 
@@ -333,6 +339,16 @@ export async function getInstagramSnapshotComparisonWithMissingRefresh(
   const comparison = await getInstagramSnapshotComparisonForUser(userId, integrationId, period, now);
 
   return { comparison, refresh };
+}
+
+export async function getInstagramSnapshotComparisonWithMissingRefresh(
+  clerkId: string,
+  userId: string,
+  integrationId: string | undefined,
+  period: DashboardPeriod,
+  now = new Date()
+) {
+  return getInstagramSnapshotComparisonWithRefresh(clerkId, userId, integrationId, period, now);
 }
 
 export async function refreshInstagramProfileSnapshotForUser(

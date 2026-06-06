@@ -7,6 +7,7 @@ import {
 } from "@/actions/integration";
 import { onUserInfo } from "@/actions/user";
 import { Button } from "@/components/ui/button";
+import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { useAuth } from "@clerk/nextjs";
@@ -108,18 +109,12 @@ function IntegrationCard({ title, description, icon, strategy, surface = "dashbo
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">{displayDescription}</p>
           {displayIntegration?.instagramId && (
           <div className="mt-4 flex min-w-0 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
-            {displayIntegration.profilePictureUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={displayIntegration.profilePictureUrl}
-                alt={displayIntegration.instagramUsername ?? "Connected Instagram account"}
-                className="h-12 w-12 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ap3k-gradient text-xs font-black text-white">
-                IG
-              </div>
-            )}
+            <InstagramAvatar
+              src={displayIntegration.profilePictureUrl}
+              username={displayIntegration.instagramUsername}
+              label={displayIntegration.pageName}
+              size="md"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-emerald-700 dark:text-rf-green">
                 {displayIntegration.instagramUsername

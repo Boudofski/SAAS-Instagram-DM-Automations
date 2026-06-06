@@ -1,6 +1,7 @@
 "use client";
 
 import ReviewDisconnectInstagramButton from "@/components/dashboard/review-disconnect-instagram-button";
+import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -24,18 +25,13 @@ export default function ReviewInstagramAccountProfile({
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
       {/* Left: profile identity */}
       <div className="flex min-w-0 flex-1 items-center gap-4">
-        {liveConnected && displayProfilePictureUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={displayProfilePictureUrl}
-            alt={displayUsername ?? "Instagram account"}
-            className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm"
-          />
-        ) : (
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-ap3k-gradient text-sm font-black text-white shadow-sm">
-            IG
-          </div>
-        )}
+        <InstagramAvatar
+          src={liveConnected ? displayProfilePictureUrl : null}
+          username={displayUsername}
+          label={pageName}
+          size="lg"
+          className="rounded-2xl"
+        />
         <div className="min-w-0">
           <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">
             {liveConnected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
