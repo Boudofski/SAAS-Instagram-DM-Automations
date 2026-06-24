@@ -1,5 +1,6 @@
 import { INTEGRATION_CARDS } from "@/constants/integrations";
 import { onUserInfo } from "@/actions/user";
+import { getCurrentPageEngagementPreview } from "@/actions/integration/page-engagement";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import {
@@ -82,6 +83,9 @@ async function Page({ searchParams }: PageProps) {
   const appReviewMode = isAppReviewMode();
   const user = await onUserInfo();
   const instagram = getCanonicalInstagramIntegration(user.status === 200 ? user.data?.integrations : null);
+  const pagePreview = appReviewMode && instagram
+    ? await getCurrentPageEngagementPreview()
+    : null;
   const oauthSaveFailed = Boolean(error);
   const errorMessage = error
     ? appReviewMode
@@ -91,74 +95,108 @@ async function Page({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
-        {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
-            <p className="font-bold">
-              {errorMessage}
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+          <p className="font-bold">{errorMessage}</p>
+          {instagram && (
+            <p className="mt-2 font-semibold">
+              New Instagram connection could not be saved. Your current connected account remains{instagram.instagramUsername ? ` @${instagram.instagramUsername}` : " unchanged"}.
             </p>
-            {instagram && (
-              <p className="mt-2 font-semibold">
-                New Instagram connection could not be saved. Your current connected account remains{instagram.instagramUsername ? ` @${instagram.instagramUsername}` : " unchanged"}.
-              </p>
-            )}
-            {!appReviewMode && ERROR_STEPS[error] && (
-              <ul className="mt-3 list-disc space-y-1 pl-5">
-                {ERROR_STEPS[error].map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="ap3k-panel p-6">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-              Official Meta connection
-            </p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-              Connect Instagram
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              Connect the Business or Creator Instagram account that owns the posts AP3k should monitor. Meta may mention Facebook Pages because Instagram professional accounts are managed through Pages.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-              {appReviewMode ? "Quick setup guide" : "First successful test"}
-            </p>
-            <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2 lg:grid-cols-1">
-              {[
-                "Connect the Instagram Business or Creator account.",
-                "Create one campaign with Any post and a clear keyword.",
-                "Comment the keyword from a different Instagram account.",
-                "Check dashboard activity before changing settings.",
-              ].map((item) => (
-                <div key={item} className="flex gap-3 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.05]">
-                  <span className="mt-0.5 h-2 w-2 rounded-full bg-pink-500" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-relaxed text-slate-600 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-300">
-          <p className="font-black text-slate-950 dark:text-white">Official Meta workflow</p>
-          <p className="mt-2">
-            {appReviewMode
-              ? "AP3k connects your Instagram Business or Creator account securely through official Meta APIs."
-              : "AP3k redirects you to Meta, stores the returned access token, and connects your Instagram Business or Creator account through official Meta APIs."}
-          </p>
-          {!appReviewMode && (
-            <p className="mt-2">Private DM sending is available only when Meta messaging permissions are approved. Until then, use public replies and activity logs to verify comment matching.</p>
+          )}
+          {!appReviewMode && ERROR_STEPS[error] && (
+            <ul className="mt-3 list-disc space-y-1 pl-5">
+              {ERROR_STEPS[error].map((step) => <li key={step}>{step}</li>)}
+            </ul>
           )}
         </div>
+      )}
 
-        {INTEGRATION_CARDS.map((card, index) => (
-          <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} oauthSaveFailed={oauthSaveFailed} />
-        ))}
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="ap3k-panel p-6">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Official Meta connection</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Connect Instagram</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Connect the Business or Creator Instagram account that owns the posts AP3k should monitor. Meta may mention Facebook Pages because Instagram professional accounts are managed through Pages.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+            {appReviewMode ? "Quick setup guide" : "First successful test"}
+          </p>
+          <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2 lg:grid-cols-1">
+            {["Connect the Instagram Business or Creator account.", "Create one campaign with Any post and a clear keyword.", "Comment the keyword from a different Instagram account.", "Check dashboard activity before changing settings."].map((item) => (
+              <div key={item} className="flex gap-3 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.05]">
+                <span className="mt-0.5 h-2 w-2 rounded-full bg-pink-500" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-relaxed text-slate-600 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-300">
+        <p className="font-black text-slate-950 dark:text-white">Official Meta workflow</p>
+        <p className="mt-2">
+          {appReviewMode
+            ? "AP3k connects your Instagram Business or Creator account securely through official Meta APIs."
+            : "AP3k redirects you to Meta, stores the returned access token, and connects your Instagram Business or Creator account through official Meta APIs."}
+        </p>
+        {!appReviewMode && (
+          <p className="mt-2">Private DM sending is available only when Meta messaging permissions are approved. Until then, use public replies and activity logs to verify comment matching.</p>
+        )}
+      </div>
+
+      {appReviewMode && instagram?.pageId && (
+        <section className="rounded-3xl border-2 border-indigo-200 bg-white p-6 shadow-sm dark:border-indigo-500/30 dark:bg-white/[0.04]">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-600">Selected Facebook Page</p>
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-black">{instagram.pageName ?? "Facebook Page"}</h2>
+              <p className="mt-1 font-mono text-sm text-slate-600 dark:text-slate-300">Page ID: {instagram.pageId}</p>
+              {instagram.instagramUsername && (
+                <p className="mt-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">Linked Instagram: @{instagram.instagramUsername}</p>
+              )}
+            </div>
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+              Page-scoped connection active
+            </span>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200 pt-5 dark:border-white/10">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-600">Recent Page Content</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              Retrieved from this Page through Meta&apos;s Graph API using pages_read_engagement.
+            </p>
+
+            {pagePreview?.data?.retrievalStatus === "success" && pagePreview.data.posts.length > 0 ? (
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                {pagePreview.data.posts.map((post) => (
+                  <article key={post.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="line-clamp-4 text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
+                      {post.message ?? "Page post without text"}
+                    </p>
+                    <p className="mt-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">Post ID: {post.id}</p>
+                    {post.createdTime && (
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{new Date(post.createdTime).toLocaleString("en-US")}</p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                {pagePreview?.data?.retrievalStatus === "failed"
+                  ? "Meta did not return Page content. Reconnect and confirm pages_read_engagement access before recording the review screencast."
+                  : "No recent Page posts were returned. Publish at least one test Page post before recording the review screencast."}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {INTEGRATION_CARDS.map((card, index) => (
+        <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} oauthSaveFailed={oauthSaveFailed} />
+      ))}
     </div>
   );
 }
