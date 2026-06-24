@@ -1,5 +1,6 @@
 import { onIntegrate, recordInstagramOAuthError } from "@/actions/integration";
 import { dashboardPath } from "@/lib/dashboard";
+import { isAppReviewMode } from "@/lib/app-review-mode";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -61,6 +62,9 @@ async function Page({ searchParams }: Props) {
     const slug = user.data?.clerkId || "";
 
     if (user.status === 200) {
+      if (isAppReviewMode()) {
+        return redirect(`${dashboardPath(slug)}/integrations/confirm-page`);
+      }
       return integrationRedirect(slug);
     }
 
