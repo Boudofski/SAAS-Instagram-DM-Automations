@@ -23,13 +23,13 @@ async function Page({ params }: Props) {
       <div className="w-full max-w-5xl">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-            Select Instagram account
+            Official Meta connection
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
-            Choose the account AP3k should connect
+            Select a Facebook Page
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            Select the Instagram account AP3k should use for comment automation.
+            AP3k lists the Facebook Pages managed by the logged-in Meta user. Select the Page connected to the Instagram account you want to automate.
           </p>
         </div>
 
@@ -50,18 +50,19 @@ async function Page({ params }: Props) {
                     size="lg"
                   />
                   <div className="min-w-0">
-                    <p className="text-lg font-black">
-                      @{account.instagramUsername ?? "unknown"}
+                    <p className="text-lg font-black text-slate-950 dark:text-white">
+                      {account.pageName ?? "Unnamed Facebook Page"}
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      {account.pageName ?? "Instagram Business account"}
+                    <p className="mt-1 font-mono text-xs font-bold text-slate-600 dark:text-slate-300">
+                      Facebook Page ID: {account.pageId}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span>Official Meta connection</span>
-                      <span>·</span>
-                      <span>Instagram Business account</span>
-                      <span>·</span>
-                      <span>Permissions granted through official Meta access</span>
+                    <div className="mt-3 grid gap-1 text-xs text-slate-500 dark:text-slate-400">
+                      <span>
+                        Instagram account: {account.instagramUsername ? `@${account.instagramUsername}` : "Not available"}
+                      </span>
+                      <span className="font-mono">
+                        Instagram account ID: {account.instagramBusinessAccountId || "Not available"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -69,7 +70,7 @@ async function Page({ params }: Props) {
                   type="submit"
                   className="rounded-full bg-ap3k-gradient px-5 py-3 text-sm font-black text-white shadow-sm"
                 >
-                  Connect this account
+                  Use this Page and continue
                 </button>
               </div>
             </form>

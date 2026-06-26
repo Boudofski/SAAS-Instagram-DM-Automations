@@ -1,12 +1,15 @@
 import { INTEGRATION_CARDS } from "@/constants/integrations";
+import { getRecentSelectedFacebookPageContent } from "@/actions/integration";
 import { onUserInfo } from "@/actions/user";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { dashboardPath } from "@/lib/dashboard";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import {
   reviewSafeInstagramOAuthErrorMessage,
   standardInstagramOAuthErrorMessage,
 } from "@/lib/instagram-integration-save-errors";
 import IntegrationCard from "./_components/integration-card";
+import Link from "next/link";
 
 const ERROR_COPY: Record<string, string> = {
   auth_missing: "Instagram returned successfully, but your AP3k session was not available. Sign in again and reconnect Instagram.",
@@ -14,6 +17,7 @@ const ERROR_COPY: Record<string, string> = {
   page_resolution_failed: "Meta authorization succeeded, but AP3k could not fetch Facebook Pages. Confirm pages_show_list and pages_read_engagement are approved/enabled for this app.",
   ig_business_not_linked: "Meta returned Facebook Pages, but none had a linked Instagram Business account.",
   page_token_missing: "Meta returned a Page, but AP3k could not validate a Page access token for it.",
+  no_eligible_facebook_pages: "No eligible Facebook Pages were found for this Meta login.",
   webhook_subscription_failed: "The account connected, but AP3k could not subscribe the Facebook Page to comment/message webhooks.",
   integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
   database_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
@@ -46,6 +50,11 @@ const ERROR_STEPS: Record<string, string[]> = {
     "Reconnect and approve all requested permissions.",
     "Confirm the Facebook user has Page access in Meta Business settings.",
   ],
+  no_eligible_facebook_pages: [
+    "Use a Facebook user that manages a Facebook Page.",
+    "Link that Page to an Instagram Business or Creator account.",
+    "Confirm the Page has granted AP3k the requested Page permissions, then reconnect.",
+  ],
   webhook_subscription_failed: [
     "Reconnect or use Resubscribe Webhooks after confirming Page access.",
     "Check admin diagnostics for the safe Meta error from subscribed_apps.",
@@ -58,6 +67,7 @@ const REVIEW_ERROR_COPY: Record<string, string> = {
   page_resolution_failed: "AP3k could not find the Instagram Business or Creator account for this Meta login.",
   ig_business_not_linked: "No Instagram Business or Creator account was linked to the selected Meta account.",
   page_token_missing: "AP3k could not validate access for the selected Instagram account.",
+  no_eligible_facebook_pages: "No eligible Facebook Pages were found. The Meta user must manage a Page linked to an Instagram Business or Creator account.",
   webhook_subscription_failed: "Instagram connected, but comments are not ready yet. Reconnect Instagram and try again.",
   integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
   database_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
@@ -72,16 +82,23 @@ const REVIEW_ERROR_COPY: Record<string, string> = {
 };
 
 type PageProps = {
+  params: {
+    slug: string;
+  };
   searchParams?: {
     integration_error?: string;
   };
 };
 
-async function Page({ searchParams }: PageProps) {
+async function Page({ params, searchParams }: PageProps) {
   const error = searchParams?.integration_error;
   const appReviewMode = isAppReviewMode();
   const user = await onUserInfo();
   const instagram = getCanonicalInstagramIntegration(user.status === 200 ? user.data?.integrations : null);
+  const recentPageContent =
+    appReviewMode && instagram
+      ? await getRecentSelectedFacebookPageContent()
+      : null;
   const oauthSaveFailed = Boolean(error);
   const errorMessage = error
     ? appReviewMode
@@ -101,7 +118,7 @@ async function Page({ searchParams }: PageProps) {
                 New Instagram connection could not be saved. Your current connected account remains{instagram.instagramUsername ? ` @${instagram.instagramUsername}` : " unchanged"}.
               </p>
             )}
-            {!appReviewMode && ERROR_STEPS[error] && (
+            {(!appReviewMode || error === "no_eligible_facebook_pages") && ERROR_STEPS[error] && (
               <ul className="mt-3 list-disc space-y-1 pl-5">
                 {ERROR_STEPS[error].map((step) => (
                   <li key={step}>{step}</li>
@@ -155,6 +172,115 @@ async function Page({ searchParams }: PageProps) {
             <p className="mt-2">Private DM sending is available only when Meta messaging permissions are approved. Until then, use public replies and activity logs to verify comment matching.</p>
           )}
         </div>
+
+        {appReviewMode && instagram && (
+          <section className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                Connected Facebook Page
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                {instagram.pageName ?? "Unnamed Facebook Page"}
+              </h2>
+              <dl className="mt-5 grid gap-3 text-sm">
+                <div>
+                  <dt className="font-bold text-slate-500 dark:text-slate-400">Facebook Page ID</dt>
+                  <dd className="mt-1 break-all font-mono font-bold text-slate-950 dark:text-white">
+                    {instagram.pageId ?? "Not available"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-slate-500 dark:text-slate-400">Instagram account</dt>
+                  <dd className="mt-1 font-bold text-slate-950 dark:text-white">
+                    {instagram.instagramUsername ? `@${instagram.instagramUsername}` : "Not available"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-slate-500 dark:text-slate-400">Instagram account ID</dt>
+                  <dd className="mt-1 break-all font-mono font-bold text-slate-950 dark:text-white">
+                    {instagram.instagramId ?? "Not available"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-slate-500 dark:text-slate-400">Connection status</dt>
+                  <dd className="mt-1 font-bold text-emerald-700 dark:text-emerald-300">
+                    {instagram.status === "CONNECTED" ? "Connected" : instagram.status}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+                Recent Page Content
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                {recentPageContent?.data?.pageName ?? instagram.pageName ?? "Selected Facebook Page"}
+              </h2>
+              <p className="mt-1 break-all font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
+                Facebook Page ID: {recentPageContent?.data?.pageId ?? instagram.pageId ?? "Not available"}
+              </p>
+              <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                AP3k retrieves recent content from the selected Facebook Page to verify Page-scoped access before continuing to Instagram comment automation. This content is retrieved using pages_read_engagement.
+              </p>
+
+              {recentPageContent?.error && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+                  <p>{recentPageContent.error}</p>
+                  <p className="mt-2 break-all font-mono text-xs">
+                    Page ID: {recentPageContent.data?.pageId ?? instagram.pageId ?? "Not available"}
+                  </p>
+                </div>
+              )}
+
+              {!recentPageContent?.error && recentPageContent?.data?.posts.length === 0 && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                  Meta returned no recent posts for this Page.
+                </div>
+              )}
+
+              <div className="mt-4 grid gap-3">
+                {recentPageContent?.data?.posts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]"
+                  >
+                    <p className="break-all font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
+                      Post ID: {post.id}
+                    </p>
+                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                      Created: {new Date(post.createdTime).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                        timeZone: "UTC",
+                      })} UTC
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-slate-800 dark:text-slate-200">
+                      {post.message?.trim() || "No text content"}
+                    </p>
+                    {post.permalinkUrl && (
+                      <a
+                        href={post.permalinkUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex text-sm font-black text-pink-600 hover:underline"
+                      >
+                        Open Page post
+                      </a>
+                    )}
+                  </article>
+                ))}
+              </div>
+
+              <Link
+                href={`${dashboardPath(params.slug)}/automation/new`}
+                className="ap3k-gradient-button mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-center text-sm font-black text-white"
+              >
+                Continue to Instagram comment automation
+              </Link>
+            </div>
+          </section>
+        )}
 
         {INTEGRATION_CARDS.map((card, index) => (
           <IntegrationCard key={index} {...card} canonicalConnected={Boolean(instagram)} oauthSaveFailed={oauthSaveFailed} />

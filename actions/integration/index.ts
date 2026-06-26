@@ -5,6 +5,7 @@ import {
   generateToken,
   debugPageToken,
   getEligibleFacebookInstagramAccounts,
+  getRecentFacebookPagePosts,
   getSafeMetaError,
   subscribeInstagramWebhooks,
   type EligibleInstagramAccount,
@@ -33,6 +34,10 @@ import {
   classifyInstagramIntegrationSaveError,
   instagramOAuthErrorParamForSaveFailure,
 } from "@/lib/instagram-integration-save-errors";
+import {
+  isAppReviewMode,
+  shouldShowMetaPageSelection,
+} from "@/lib/app-review-mode";
 
 const REQUIRED_META_BUSINESS_SCOPES = [
   "pages_show_list",
@@ -253,7 +258,11 @@ export const onIntegrate = async (code: string) => {
         const hasPageToken = resolution.pageLookupAttempts.some(
           (attempt) => attempt.hasPageAccessToken
         );
-        const state = hasPageToken ? "ig_business_not_linked" : "page_token_missing";
+        const state = isAppReviewMode()
+          ? "no_eligible_facebook_pages"
+          : hasPageToken
+            ? "ig_business_not_linked"
+            : "page_token_missing";
         await recordIntegrationOAuthError(
           user.id,
           state,
@@ -273,7 +282,7 @@ export const onIntegrate = async (code: string) => {
         };
       }
 
-      if (resolution.eligibleAccounts.length > 1) {
+      if (shouldShowMetaPageSelection(resolution.eligibleAccounts.length)) {
         await createMetaOAuthSelection(
           user.id,
           resolution.eligibleAccounts,
@@ -624,6 +633,65 @@ export const getPendingInstagramAccountSelections = async () => {
       tasks: Array.isArray(account.tasks) ? account.tasks.map(String) : [],
     })),
   };
+};
+
+export const getRecentSelectedFacebookPageContent = async () => {
+  const user = await currentUser();
+  if (!user) {
+    return {
+      status: 401,
+      data: null,
+      error: "Sign in required.",
+    };
+  }
+
+  const integrations = await getIntegrations(user.id);
+  const integration = getCanonicalInstagramIntegration(integrations?.integrations);
+  const pageId = integration?.pageId ?? null;
+  const pageName = integration?.pageName ?? null;
+
+  if (!integration?.token || !pageId) {
+    return {
+      status: 404,
+      data: {
+        pageId,
+        pageName,
+        posts: [],
+      },
+      error: "No connected Facebook Page is available for content retrieval.",
+    };
+  }
+
+  try {
+    const posts = await getRecentFacebookPagePosts(pageId, integration.token);
+    return {
+      status: 200,
+      data: {
+        pageId,
+        pageName,
+        posts,
+      },
+      error: null,
+    };
+  } catch (error) {
+    const safe = getSafeMetaError(error);
+    console.warn("[meta-review] recent Page content retrieval failed", {
+      pageId,
+      status: safe.status,
+      code: safe.code,
+      subcode: safe.subcode,
+    });
+    return {
+      status: safe.status ?? 502,
+      data: {
+        pageId,
+        pageName,
+        posts: [],
+      },
+      error:
+        "Meta could not return recent Page posts. Confirm pages_read_engagement is granted for this Facebook Page.",
+    };
+  }
 };
 
 export const selectPendingInstagramAccount = async (formData: FormData) => {

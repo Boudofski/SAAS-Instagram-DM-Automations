@@ -173,6 +173,47 @@ export const subscribePageWebhooks = async (
 
 export const subscribeInstagramWebhooks = subscribePageWebhooks;
 
+export type FacebookPagePost = {
+  id: string;
+  message?: string;
+  createdTime: string;
+  permalinkUrl?: string;
+};
+
+export const getRecentFacebookPagePosts = async (
+  pageId: string,
+  pageAccessToken: string
+): Promise<FacebookPagePost[]> => {
+  const response = await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}/posts`, {
+    params: {
+      fields: "id,message,created_time,permalink_url",
+      limit: 3,
+      access_token: pageAccessToken,
+    },
+  });
+
+  const posts = Array.isArray(response.data?.data) ? response.data.data : [];
+
+  return posts.slice(0, 3).flatMap((post: any) => {
+    const id = typeof post?.id === "string" ? post.id : "";
+    const createdTime =
+      typeof post?.created_time === "string" ? post.created_time : "";
+    if (!id || !createdTime) return [];
+
+    return [
+      {
+        id,
+        message: typeof post?.message === "string" ? post.message : undefined,
+        createdTime,
+        permalinkUrl:
+          typeof post?.permalink_url === "string"
+            ? post.permalink_url
+            : undefined,
+      },
+    ];
+  });
+};
+
 function getMetaOAuthConfig() {
   const redirectUri =
     process.env.META_REDIRECT_URI ??
