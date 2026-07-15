@@ -20,6 +20,7 @@ export const updateIntegration = async (
   pageId?: string,
   pageName?: string,
   businessId?: string,
+  metaAppScopedUserId?: string | null,
   igAccountSource?: string,
   resolutionDiagnostics?: unknown,
   subscription?: {
@@ -34,6 +35,11 @@ export const updateIntegration = async (
     throw new Error("invalid_page_access_token");
   }
 
+  const normalizedMetaAppScopedUserId =
+    typeof metaAppScopedUserId === "string" && metaAppScopedUserId.trim()
+      ? metaAppScopedUserId.trim()
+      : undefined;
+
   return await client.integrations.update({
     where: { id },
     data: {
@@ -44,6 +50,9 @@ export const updateIntegration = async (
       pageId,
       pageName,
       businessId,
+      ...(normalizedMetaAppScopedUserId
+        ? { metaAppScopedUserId: normalizedMetaAppScopedUserId }
+        : {}),
       instagramUsername,
       profilePictureUrl,
       igAccountSource,
@@ -230,6 +239,7 @@ export const createIntegration = async (
   pageId?: string,
   pageName?: string,
   businessId?: string,
+  metaAppScopedUserId?: string | null,
   igAccountSource?: string,
   resolutionDiagnostics?: unknown,
   subscription?: {
@@ -261,6 +271,7 @@ export const createIntegration = async (
           userId: true,
           instagramId: true,
           businessId: true,
+          metaAppScopedUserId: true,
           pageId: true,
           instagramUsername: true,
           status: true,
@@ -311,6 +322,7 @@ export const createIntegration = async (
       pageId,
       pageName,
       businessId,
+      metaAppScopedUserId,
       igAccountSource,
       resolutionDiagnostics,
       subscription
@@ -370,6 +382,7 @@ export const createIntegration = async (
             pageId,
             pageName,
             businessId,
+            metaAppScopedUserId,
             instagramUsername,
             profilePictureUrl,
             igAccountSource,

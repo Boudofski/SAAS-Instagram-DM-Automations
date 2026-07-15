@@ -5,6 +5,7 @@ import {
   generateToken,
   debugPageToken,
   getEligibleFacebookInstagramAccounts,
+  getMetaAppScopedUserId,
   getRecentFacebookPagePosts,
   getSafeMetaError,
   subscribeInstagramWebhooks,
@@ -245,6 +246,11 @@ export const onIntegrate = async (code: string) => {
       hasUserAccessToken: true,
     });
 
+    const metaAppScopedUserId = await getMetaAppScopedUserId(userAccessToken);
+    console.log("[oauth] step app_scoped_user_lookup", {
+      foundMetaAppScopedUserId: Boolean(metaAppScopedUserId),
+    });
+
     let resolved: EligibleInstagramAccount;
     try {
       const resolution = await getEligibleFacebookInstagramAccounts(userAccessToken);
@@ -283,9 +289,13 @@ export const onIntegrate = async (code: string) => {
       }
 
       if (shouldShowMetaPageSelection(resolution.eligibleAccounts.length)) {
+        const accountsWithMetaUser = resolution.eligibleAccounts.map((account) => ({
+          ...account,
+          metaAppScopedUserId,
+        }));
         await createMetaOAuthSelection(
           user.id,
-          resolution.eligibleAccounts,
+          accountsWithMetaUser,
           new Date(Date.now() + 10 * 60 * 1000)
         );
         console.log("[oauth] step account_selection_required", {
@@ -386,6 +396,7 @@ export const onIntegrate = async (code: string) => {
       resolved.pageId,
       resolved.pageName,
       resolved.instagramBusinessAccountId,
+      metaAppScopedUserId,
       resolved.igAccountSource,
       resolved.diagnostics,
       subscriptionAttempt
@@ -448,6 +459,7 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       instagram.pageId ?? undefined,
       instagram.pageName ?? undefined,
       instagram.businessId ?? undefined,
+      instagram.metaAppScopedUserId ?? undefined,
       instagram.igAccountSource ?? undefined,
       instagram.oauthResolutionDiagnostics ?? undefined,
       subscriptionAttempt
@@ -629,6 +641,7 @@ export const getPendingInstagramAccountSelections = async () => {
       instagramBusinessAccountId: String(account.instagramBusinessAccountId ?? ""),
       instagramUsername: account.instagramUsername as string | undefined,
       profilePictureUrl: account.profilePictureUrl as string | undefined,
+      metaAppScopedUserId: account.metaAppScopedUserId as string | null | undefined,
       igAccountSource: account.igAccountSource as string | undefined,
       tasks: Array.isArray(account.tasks) ? account.tasks.map(String) : [],
     })),
@@ -749,6 +762,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
         selected.pageId,
         selected.pageName,
         selected.instagramBusinessAccountId,
+        selected.metaAppScopedUserId,
         selected.igAccountSource,
         selected.diagnostics,
         subscriptionAttempt
