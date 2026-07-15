@@ -127,9 +127,17 @@ function createFakePrisma() {
         status: "CONNECTED",
       },
     ],
-    automation: [{ id: "automation-1", userId: "user-1" }],
+    automation: [
+      { id: "automation-1", userId: "user-1", active: true, needsReview: false, reviewReason: null },
+      { id: "automation-other", userId: "user-2", active: true, needsReview: false, reviewReason: null },
+    ],
     instagramAccountSnapshot: [{ id: "snapshot-1", integrationId: "integration-1" }],
-    metaOAuthSelection: [{ id: "selection-1", userId: "user-1", accounts: [{ id: USER_ID }] }],
+    metaOAuthSelection: [
+      { id: "selection-1", userId: "user-1", accounts: [{ id: USER_ID }] },
+      { id: "selection-substring", userId: "user-1", accounts: [{ id: `${USER_ID}_suffix` }] },
+      { id: "selection-unrelated", userId: "user-2", accounts: [{ id: "other-app-user" }] },
+      { id: "selection-pending-only", userId: "user-3", accounts: [{ user: "pending-only-user" }] },
+    ],
     lead: [{ id: "lead-1", automationId: "automation-1", igUserId: "commenter-1" }],
     automationEvent: [
       { id: "event-1", automationId: "automation-1", igUserId: "commenter-1", meta: { id: USER_ID } },
@@ -182,6 +190,14 @@ function createFakePrisma() {
     automation: {
       findMany: async ({ where }: any) =>
         state.automation.filter((row) => where.userId.in.includes(row.userId)),
+      updateMany: async ({ where, data }: any) => {
+        const rows = state.automation.filter((row) =>
+          where.userId.in.includes(row.userId) &&
+          (where.active === undefined || row.active === where.active)
+        );
+        rows.forEach((row) => Object.assign(row, data));
+        return { count: rows.length };
+      },
     },
     instagramAccountSnapshot: {
       deleteMany: async ({ where }: any) =>
@@ -191,7 +207,7 @@ function createFakePrisma() {
     },
     metaOAuthSelection: {
       deleteMany: async ({ where }: any) =>
-        fakeDeleteMany(state.metaOAuthSelection, (row) => where.userId.in.includes(row.userId)),
+        fakeDeleteMany(state.metaOAuthSelection, (row) => where.id.in.includes(row.id)),
       findMany: async () => state.metaOAuthSelection,
       update: async () => null,
     },
@@ -283,6 +299,21 @@ describe("processMetaDataDeletion", () => {
     expect(state.post).toEqual([
       { id: "post-unrelated", automationId: "automation-other", postid: USER_ID },
     ]);
+    expect(state.metaOAuthSelection.map((selection) => selection.id)).toEqual([
+      "selection-substring",
+      "selection-unrelated",
+      "selection-pending-only",
+    ]);
+    expect(state.automation[0]).toMatchObject({
+      active: false,
+      needsReview: true,
+      reviewReason: "Meta data deletion request processed.",
+    });
+    expect(state.automation[1]).toMatchObject({
+      active: true,
+      needsReview: false,
+      reviewReason: null,
+    });
   });
 
   it("succeeds with no stored match", async () => {
@@ -290,8 +321,53 @@ describe("processMetaDataDeletion", () => {
 
     const summary = await processMetaDataDeletion(prisma, "missing-app-user");
 
-    expect(summary).toEqual({ matchedRecords: 0, deletedRecords: 0, anonymizedRecords: 0 });
+    expect(summary).toEqual({
+      matchedRecords: 0,
+      deletedRecords: 0,
+      anonymizedRecords: 0,
+      pausedAutomations: 0,
+    });
     expect(state.integrations[0].metaAppScopedUserId).toBe(USER_ID);
+  });
+
+  it("deletes a pending OAuth selection containing the exact app-scoped ID without an integration match", async () => {
+    const { prisma, state } = createFakePrisma();
+
+    const summary = await processMetaDataDeletion(prisma, "pending-only-user");
+
+    expect(summary).toEqual({
+      matchedRecords: 1,
+      deletedRecords: 1,
+      anonymizedRecords: 0,
+      pausedAutomations: 0,
+    });
+    expect(state.metaOAuthSelection.map((selection) => selection.id)).toEqual([
+      "selection-1",
+      "selection-substring",
+      "selection-unrelated",
+    ]);
+    expect(state.integrations[0].metaAppScopedUserId).toBe(USER_ID);
+    expect(state.automation[0].active).toBe(true);
+    expect(state.lead).toHaveLength(1);
+  });
+
+  it("does not match similar or substring pending OAuth selection IDs", async () => {
+    const { prisma, state } = createFakePrisma();
+
+    const summary = await processMetaDataDeletion(prisma, "app_scoped_user");
+
+    expect(summary).toEqual({
+      matchedRecords: 0,
+      deletedRecords: 0,
+      anonymizedRecords: 0,
+      pausedAutomations: 0,
+    });
+    expect(state.metaOAuthSelection.map((selection) => selection.id)).toEqual([
+      "selection-1",
+      "selection-substring",
+      "selection-unrelated",
+      "selection-pending-only",
+    ]);
   });
 
   it("is idempotent for repeated requests", async () => {
@@ -301,7 +377,13 @@ describe("processMetaDataDeletion", () => {
     const second = await processMetaDataDeletion(prisma, USER_ID);
 
     expect(first.matchedRecords).toBeGreaterThan(0);
-    expect(second).toEqual({ matchedRecords: 0, deletedRecords: 0, anonymizedRecords: 0 });
+    expect(first.pausedAutomations).toBe(1);
+    expect(second).toEqual({
+      matchedRecords: 0,
+      deletedRecords: 0,
+      anonymizedRecords: 0,
+      pausedAutomations: 0,
+    });
   });
 
   it("does not treat Page, Instagram, media, comment, business, or webhook IDs as app-scoped user IDs", async () => {
@@ -309,12 +391,18 @@ describe("processMetaDataDeletion", () => {
 
     const summary = await processMetaDataDeletion(prisma, "page-1");
 
-    expect(summary).toEqual({ matchedRecords: 0, deletedRecords: 0, anonymizedRecords: 0 });
+    expect(summary).toEqual({
+      matchedRecords: 0,
+      deletedRecords: 0,
+      anonymizedRecords: 0,
+      pausedAutomations: 0,
+    });
     expect(state.integrations[0].metaAppScopedUserId).toBe(USER_ID);
     expect(state.integrations[0].pageId).toBe("page-1");
     expect(state.integrations[0].instagramId).toBe("ig-business-1");
     expect(state.integrations[0].businessId).toBe("business-1");
     expect(state.integrations[0].webhookAccountId).toBe("page-1");
     expect(state.post).toHaveLength(2);
+    expect(state.metaOAuthSelection).toHaveLength(4);
   });
 });

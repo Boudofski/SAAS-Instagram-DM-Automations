@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       matchedRecords: summary.matchedRecords,
       deletedRecords: summary.deletedRecords,
       anonymizedRecords: summary.anonymizedRecords,
+      pausedAutomations: summary.pausedAutomations,
     });
 
     return NextResponse.json({

@@ -16,6 +16,7 @@ export type MetaDataDeletionSummary = {
   matchedRecords: number;
   deletedRecords: number;
   anonymizedRecords: number;
+  pausedAutomations: number;
 };
 
 function base64UrlDecode(input: string): Buffer {
@@ -117,6 +118,17 @@ export function redactJsonExactMatch(value: Prisma.JsonValue, target: string): {
   return { value, changed: false };
 }
 
+function hasExactJsonStringMatch(value: Prisma.JsonValue, target: string): boolean {
+  if (typeof value === "string") return value === target;
+  if (Array.isArray(value)) return value.some((item) => hasExactJsonStringMatch(item, target));
+  if (value && typeof value === "object") {
+    return Object.values(value).some((item) =>
+      hasExactJsonStringMatch(item as Prisma.JsonValue, target)
+    );
+  }
+  return false;
+}
+
 async function redactJsonRows<T extends { id: string }>(
   rows: T[],
   fieldName: keyof T,
@@ -146,8 +158,24 @@ export async function processMetaDataDeletion(
   let matchedRecords = 0;
   let deletedRecords = 0;
   let anonymizedRecords = 0;
+  let pausedAutomations = 0;
 
   await prisma.$transaction(async (tx) => {
+    const pendingSelections = await tx.metaOAuthSelection.findMany({
+      select: { id: true, accounts: true },
+    });
+    const matchingPendingSelectionIds = pendingSelections
+      .filter((selection) => hasExactJsonStringMatch(selection.accounts, targetUserId))
+      .map((selection) => selection.id);
+
+    if (matchingPendingSelectionIds.length) {
+      const pendingSelectionResult = await tx.metaOAuthSelection.deleteMany({
+        where: { id: { in: matchingPendingSelectionIds } },
+      });
+      matchedRecords += pendingSelectionResult.count;
+      deletedRecords += pendingSelectionResult.count;
+    }
+
     const integrationMatches = await tx.integrations.findMany({
       where: { metaAppScopedUserId: targetUserId },
       select: {
@@ -186,6 +214,21 @@ export async function processMetaDataDeletion(
         })
       : [];
     const automationIds = automations.map((automation) => automation.id);
+
+    if (userIds.length) {
+      const pauseResult = await tx.automation.updateMany({
+        where: {
+          userId: { in: userIds },
+          active: true,
+        },
+        data: {
+          active: false,
+          needsReview: true,
+          reviewReason: "Meta data deletion request processed.",
+        },
+      });
+      pausedAutomations += pauseResult.count;
+    }
 
     for (const integration of integrationMatches) {
       await tx.integrations.update({
@@ -226,14 +269,6 @@ export async function processMetaDataDeletion(
     });
     matchedRecords += snapshotResult.count;
     deletedRecords += snapshotResult.count;
-
-    if (userIds.length) {
-      const selectionResult = await tx.metaOAuthSelection.deleteMany({
-        where: { userId: { in: userIds } },
-      });
-      matchedRecords += selectionResult.count;
-      deletedRecords += selectionResult.count;
-    }
 
     if (automationIds.length) {
       const leadResult = await tx.lead.deleteMany({
@@ -404,5 +439,5 @@ export async function processMetaDataDeletion(
     anonymizedRecords += auditMetadataCount;
   });
 
-  return { matchedRecords, deletedRecords, anonymizedRecords };
+  return { matchedRecords, deletedRecords, anonymizedRecords, pausedAutomations };
 }
