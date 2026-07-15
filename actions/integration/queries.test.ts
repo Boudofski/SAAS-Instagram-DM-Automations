@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createIntegration, softDisconnectIntegrationForUser } from "./queries";
+import { createIntegration, softDisconnectIntegrationForUser, updateIntegration } from "./queries";
 import { client } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
@@ -186,6 +186,82 @@ describe("softDisconnectIntegrationForUser", () => {
       integrationId: "current",
     });
     expect(mockClient.user.update).not.toHaveBeenCalled();
+  });
+
+  it("preserves existing metaAppScopedUserId when reconnect lookup returns null", async () => {
+    await updateIntegration(
+      "x".repeat(24),
+      new Date("2026-01-01"),
+      "integration-1",
+      "ig-1",
+      undefined,
+      undefined,
+      "page-1",
+      undefined,
+      "business-1",
+      null
+    );
+
+    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.not.objectContaining({ metaAppScopedUserId: expect.anything() }),
+    }));
+  });
+
+  it("preserves existing metaAppScopedUserId when reconnect lookup returns undefined", async () => {
+    await updateIntegration(
+      "x".repeat(24),
+      new Date("2026-01-01"),
+      "integration-1",
+      "ig-1",
+      undefined,
+      undefined,
+      "page-1",
+      undefined,
+      "business-1",
+      undefined
+    );
+
+    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.not.objectContaining({ metaAppScopedUserId: expect.anything() }),
+    }));
+  });
+
+  it("preserves existing metaAppScopedUserId when reconnect lookup returns an empty string", async () => {
+    await updateIntegration(
+      "x".repeat(24),
+      new Date("2026-01-01"),
+      "integration-1",
+      "ig-1",
+      undefined,
+      undefined,
+      "page-1",
+      undefined,
+      "business-1",
+      "   "
+    );
+
+    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.not.objectContaining({ metaAppScopedUserId: expect.anything() }),
+    }));
+  });
+
+  it("persists a valid new app-scoped user ID", async () => {
+    await updateIntegration(
+      "x".repeat(24),
+      new Date("2026-01-01"),
+      "integration-1",
+      "ig-1",
+      undefined,
+      undefined,
+      "page-1",
+      undefined,
+      "business-1",
+      "  app-user-new  "
+    );
+
+    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ metaAppScopedUserId: "app-user-new" }),
+    }));
   });
 
   it("blocks duplicate active Instagram accounts in another workspace", async () => {

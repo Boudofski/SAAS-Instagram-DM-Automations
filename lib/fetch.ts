@@ -302,6 +302,7 @@ export type EligibleInstagramAccount = {
   pageName?: string;
   pageAccessToken: string;
   instagramBusinessAccountId: string;
+  metaAppScopedUserId?: string | null;
   instagramUsername?: string;
   profilePictureUrl?: string;
   igAccountSource: "instagram_business_account" | "connected_instagram_account";
@@ -446,6 +447,25 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
       return account.tasks.includes("MESSAGING") && account.tasks.includes("MODERATE");
     }),
   };
+};
+
+export const getMetaAppScopedUserId = async (userToken: string) => {
+  try {
+    const response = await axios.get(`${META_GRAPH_API_BASE_URL}/me`, {
+      params: {
+        fields: "id",
+        access_token: userToken,
+      },
+    });
+    const id = response.data?.id;
+    return typeof id === "string" && id.trim() ? id.trim() : null;
+  } catch (error) {
+    console.warn("[oauth] meta app-scoped user id lookup failed", {
+      endpointFamily: "facebook_graph_user",
+      error: getSafeMetaError(error),
+    });
+    return null;
+  }
 };
 
 export const resolveFacebookBusinessInstagramAccount = async (userToken: string) => {
