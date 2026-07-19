@@ -89,7 +89,7 @@ export default function DataDeletionPage() {
               Your Instagram account connection record, including stored Page access
               tokens and linked account identifiers
             </li>
-            <li>Automation campaigns, keywords, listeners, and settings</li>
+            <li>Campaigns, keywords, listeners, and settings</li>
             <li>Webhook diagnostic events and processing logs</li>
             <li>Lead records and message delivery logs</li>
             <li>Subscription metadata where permitted by payment records law</li>

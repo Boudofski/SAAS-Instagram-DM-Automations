@@ -130,7 +130,7 @@ export default function Search() {
 
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <div className="flex min-w-0 items-center gap-x-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-0.5 shadow-sm dark:border-white/10 dark:bg-white/[0.035]">
+      <div className="flex min-w-0 items-center gap-x-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-0.5 shadow-sm focus-within:border-pink-300 focus-within:ring-2 focus-within:ring-pink-100 dark:border-white/10 dark:bg-white/[0.035] dark:focus-within:border-rf-blue/60 dark:focus-within:ring-rf-blue/20">
         {isLoading ? (
           <Loader2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-spin text-rf-pink" />
         ) : (
@@ -182,7 +182,7 @@ export default function Search() {
                       aria-selected={activeIndex === index}
                       onMouseEnter={() => setActiveIndex(index)}
                       onClick={() => navigateTo(item)}
-                      className={`flex w-full min-w-0 flex-col rounded-xl px-3 py-2.5 text-left transition-colors ${
+                      className={`flex min-h-11 w-full min-w-0 flex-col justify-center rounded-xl px-3 py-2.5 text-left transition-colors ${
                         activeIndex === index
                           ? "bg-pink-50 text-slate-950 dark:bg-rf-pink/10 dark:text-white"
                           : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/[0.06]"

@@ -291,7 +291,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-red-800 dark:text-red-100">
-              Disconnecting removes this Instagram connection from AP3k and pauses related automations. Safe self-service disconnect is coming soon.
+              Disconnecting removes this Instagram connection from AP3k and pauses related campaigns. Safe self-service disconnect is coming soon.
             </p>
             <button
               type="button"

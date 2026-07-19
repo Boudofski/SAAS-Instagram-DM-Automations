@@ -39,7 +39,9 @@ describe("production polish UI contracts", () => {
     const sheet = source("components/global/sheet/index.tsx");
 
     expect(navbar).toContain('triggerLabel="Open navigation"');
-    expect(sheet).toContain("<SheetTrigger aria-label={triggerLabel}");
+    expect(sheet).toContain("aria-label={triggerLabel}");
+    expect(sheet).toContain("h-11 w-11");
+    expect(sheet).toContain('<SheetTitle className="sr-only">');
   });
 
   it("uses customer-facing reply and lead terminology without renaming internal metrics", () => {

@@ -67,7 +67,7 @@ async function SettingsPage() {
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-red-800 dark:text-red-200">
-              To request deletion of your AP3k account and associated data, contact support. Permanent self-service deletion is handled separately from these settings.
+              To request deletion of your AP3k account and associated data, contact support. Self-service account deletion is not available in these settings.
             </p>
             <div className="mt-4">
               <button

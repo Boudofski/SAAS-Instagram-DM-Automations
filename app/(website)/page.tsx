@@ -212,7 +212,7 @@ export default async function LandingPage() {
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
                 {appReviewMode
-                  ? "Launch Instagram comment automations that receive real comments, match keywords, send public replies, and capture leads through official Meta APIs."
+                  ? "Launch Instagram comment campaigns that receive real comments, match keywords, send public replies, and capture leads through official Meta APIs."
                   : "Turn Instagram comments into leads automatically — using public replies, lead capture, and official Meta workflows. Private DMs available after Meta messaging approval."}
               </p>
 
