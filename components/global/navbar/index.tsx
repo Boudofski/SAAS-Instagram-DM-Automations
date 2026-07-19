@@ -31,7 +31,7 @@ function NavBar({ slug }: Props) {
       <div className="flex flex-col">
         <div className="sticky top-3 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/82 p-2 text-slate-950 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1020]/80 dark:text-slate-50 sm:flex-nowrap lg:justify-end">
           <span className="flex flex-1 items-center gap-x-2 lg:hidden">
-            <Sheet trigger={<Menu aria-label="Open navigation" />} className="lg:hidden" side="left">
+            <Sheet trigger={<Menu aria-hidden="true" />} triggerLabel="Open navigation" className="lg:hidden" side="left">
               <div className="flex h-full w-full flex-col gap-y-5 bg-white p-3 text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
                 <div className="flex items-center justify-center gap-x-2 p-5">
                   <LogoSmall />

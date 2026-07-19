@@ -94,9 +94,9 @@ function UsageBar({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#101827]">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <p className="text-sm font-black text-slate-950 dark:text-white">{label}</p>
-        <p className="text-xs font-bold text-slate-500 dark:text-slate-300">
+        <p className="text-left text-xs font-bold text-slate-500 dark:text-slate-300 sm:text-right">
           {value}
         </p>
       </div>

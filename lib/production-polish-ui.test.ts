@@ -34,6 +34,14 @@ describe("production polish UI contracts", () => {
     expect(navbar).toContain("!isCampaignList && <CreateAutomation");
   });
 
+  it("labels the mobile navigation trigger on the actual button", () => {
+    const navbar = source("components/global/navbar/index.tsx");
+    const sheet = source("components/global/sheet/index.tsx");
+
+    expect(navbar).toContain('triggerLabel="Open navigation"');
+    expect(sheet).toContain("<SheetTrigger aria-label={triggerLabel}");
+  });
+
   it("uses customer-facing reply and lead terminology without renaming internal metrics", () => {
     const dashboard = source("app/(protected)/dashboard/[slug]/page.tsx");
 
