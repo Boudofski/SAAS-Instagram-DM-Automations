@@ -21,7 +21,7 @@ const PLANS = [
     features: [
       { text: "1 active campaign", included: true },
       { text: "Free for testing", included: true },
-      { text: "50 static replies/month", included: true },
+      { text: "50 public replies/month", included: true },
       { text: "Keyword triggers", included: true },
       { text: "Basic analytics", included: true },
       { text: "AI replies", included: false },
@@ -37,7 +37,7 @@ const PLANS = [
     featured: true,
     features: [
       { text: "Unlimited campaigns", included: true },
-      { text: "5,000 static replies/month", included: true },
+      { text: "5,000 public replies/month", included: true },
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Full analytics + leads export", included: true },
       { text: "{{variable}} personalisation", included: true },

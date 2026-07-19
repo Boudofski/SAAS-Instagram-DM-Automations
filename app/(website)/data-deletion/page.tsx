@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Data Deletion Instructions — AP3k",
   description:
-    "How to delete your AP3k account data, Instagram integration, campaigns, and message logs.",
+    "How to delete your AP3k account data, Instagram account connection, campaigns, and message logs.",
 };
 
 export default function DataDeletionPage() {
@@ -28,7 +28,7 @@ export default function DataDeletionPage() {
           <h2 className="text-lg font-black">Option 1 — Self-service inside AP3k</h2>
           <p className="mt-3 text-sm leading-7 text-rf-muted">
             If you have access to your AP3k account, you can immediately remove
-            your Instagram integration and its associated access token:
+            your Instagram account connection and its associated access token:
           </p>
           <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-7 text-rf-muted">
             <li>Sign in to AP3k and open your Dashboard.</li>
@@ -86,7 +86,7 @@ export default function DataDeletionPage() {
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-rf-muted">
             <li>Your AP3k user account and profile data</li>
             <li>
-              Your Instagram integration record, including stored Page access
+              Your Instagram account connection record, including stored Page access
               tokens and linked account identifiers
             </li>
             <li>Automation campaigns, keywords, listeners, and settings</li>

@@ -190,7 +190,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
               <SettingsStatCard label="Removed" stat={stats.removed} tone="red" />
               <SettingsStatCard label="DMs In" stat={stats.dmsIn} tone="blue" />
               <SettingsStatCard label="AP3k DMs Out" stat={stats.dmsOut} tone="green" />
-              <SettingsStatCard label="Contacts" stat={stats.contacts} tone="orange" />
+              <SettingsStatCard label="Leads" stat={stats.contacts} tone="orange" />
               <SettingsStatCard label="Reply Rate" stat={stats.replyRate} tone="slate" />
             </>
           ) : (

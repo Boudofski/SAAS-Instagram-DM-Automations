@@ -23,7 +23,7 @@ const PLANS = [
     ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
     features: [
       { text: "Unlimited active campaigns", included: true },
-      { text: "5,000 successful static replies/month", included: true },
+      { text: "5,000 successful public replies/month", included: true },
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Public reply fallback", included: true },
       { text: "Private DM workflow when Meta messaging is approved", included: true },
@@ -61,7 +61,7 @@ const FAQ = [
   },
   {
     q: "What's the reply limit on Free?",
-    a: "50 successful static replies per month across 1 active campaign. Successful public replies and private DMs count; failed and skipped messages do not.",
+    a: "50 successful public replies per month across 1 active campaign. Successful public replies and private DMs count; failed and skipped messages do not.",
   },
 ] as const;
 
@@ -100,7 +100,7 @@ export default function PricingPage() {
     : FAQ;
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-rf-text">
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
       <WebsiteNav current="pricing" />
 
@@ -114,7 +114,7 @@ export default function PricingPage() {
             Scale when you&apos;re ready.
           </span>
         </h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-rf-muted">
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-rf-muted">
           Free is built for proving the workflow. Creator is for real campaign volume. No hidden fees, no contracts.
         </p>
         </FadeIn>
@@ -137,8 +137,8 @@ export default function PricingPage() {
         <div className="flex flex-col gap-4">
           {faq.map((f) => (
             <div key={f.q} className="ap3k-card rounded-2xl p-5">
-              <h3 className="text-sm font-black text-rf-text mb-2">{f.q}</h3>
-              <p className="text-sm text-rf-muted leading-relaxed">{f.a}</p>
+              <h3 className="mb-2 text-sm font-black text-slate-950 dark:text-rf-text">{f.q}</h3>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{f.a}</p>
             </div>
           ))}
         </div>

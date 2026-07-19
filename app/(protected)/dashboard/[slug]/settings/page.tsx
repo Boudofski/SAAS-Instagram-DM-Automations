@@ -1,16 +1,15 @@
 import ThemeToggle from "@/components/global/theme-toggle";
+import { ManageSignInSettings } from "@/components/settings/manage-sign-in-settings";
 import { onUserInfo } from "@/actions/user";
-import { getAccountDangerZoneState, getEmailSettingsState, getMcpAccessTokenState, getPasswordSettingsState } from "@/lib/settings-safety";
+import { getAccountDangerZoneState, getEmailSettingsState, getMcpAccessTokenState } from "@/lib/settings-safety";
 import { isAppReviewMode } from "@/lib/app-review-mode";
-import { SignOutButton } from "@clerk/nextjs";
-import { KeyRound, Lock, Mail, Palette, ShieldAlert, Sparkles } from "lucide-react";
+import { LockKeyhole, Palette, ShieldAlert, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 
 async function SettingsPage() {
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const emailState = getEmailSettingsState(user?.email);
-  const passwordState = getPasswordSettingsState();
   const mcpState = getMcpAccessTokenState();
   const dangerState = getAccountDangerZoneState();
   const appReviewMode = isAppReviewMode();
@@ -20,7 +19,7 @@ async function SettingsPage() {
       <div>
         <p className="ap3k-kicker">Preferences</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Settings</h1>
-        <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Manage your AP3k account appearance and credentials.</p>
+        <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Manage your AP3k account appearance and sign-in preferences.</p>
       </div>
 
       <SettingsSection icon={<Palette className="h-4.5 w-4.5" />} label="Appearance">
@@ -33,36 +32,16 @@ async function SettingsPage() {
         </div>
       </SettingsSection>
 
-      <SettingsSection icon={<Mail className="h-4.5 w-4.5" />} label="Email">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <SettingsSection icon={<LockKeyhole className="h-4.5 w-4.5" />} label="Account & authentication">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/[0.04]">
             <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Signed-in email</p>
             <p className="mt-1 truncate text-sm font-black text-slate-800 dark:text-slate-100">{emailState.email}</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Email, password, connected sign-in methods, and account security are managed by your sign-in provider.
+            </p>
           </div>
-          <button
-            type="button"
-            disabled
-            className="h-10 cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-4 text-sm font-bold text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-500"
-          >
-            {emailState.label}
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-          Email is managed by your sign-in provider and cannot be changed here.
-        </p>
-      </SettingsSection>
-
-      <SettingsSection icon={<KeyRound className="h-4.5 w-4.5" />} label="Password">
-        <div className="grid gap-3">
-          <ReadOnlyInput label="Current password" value={passwordState.helper} />
-          <ReadOnlyInput label="New password" value="Use your provider account settings" />
-          <button
-            type="button"
-            disabled
-            className="mt-1 h-10 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-4 text-sm font-bold text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-500 sm:w-fit"
-          >
-            {passwordState.label}
-          </button>
+          <ManageSignInSettings />
         </div>
       </SettingsSection>
 
@@ -88,9 +67,9 @@ async function SettingsPage() {
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-red-800 dark:text-red-200">
-              To delete your AP3k account and associated data, contact support. Self-service deletion is not yet enabled.
+              To request deletion of your AP3k account and associated data, contact support. Permanent self-service deletion is handled separately from these settings.
             </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <div className="mt-4">
               <button
                 type="button"
                 disabled
@@ -98,14 +77,6 @@ async function SettingsPage() {
               >
                 {dangerState.label}
               </button>
-              <SignOutButton redirectUrl="/">
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-                >
-                  Sign out
-                </button>
-              </SignOutButton>
             </div>
           </div>
         </div>
@@ -135,17 +106,5 @@ function SettingsSection({
       </div>
       {children}
     </section>
-  );
-}
-
-function ReadOnlyInput({ label, value }: { label: string; value: string }) {
-  return (
-    <label className="grid gap-1.5">
-      <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</span>
-      <span className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-500">
-        <Lock className="h-3.5 w-3.5 shrink-0" />
-        {value}
-      </span>
-    </label>
   );
 }

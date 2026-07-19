@@ -22,8 +22,9 @@ type Props = {
 };
 
 function NavBar({ slug }: Props) {
-  const { page } = usePath();
+  const { page, pathname } = usePath();
   const currentPage = PAGE_BREAD_CRUMBS.includes(page) || page == slug;
+  const isCampaignList = pathname === `/dashboard/${slug}/automation`;
 
   return (
     currentPage && (
@@ -66,7 +67,7 @@ function NavBar({ slug }: Props) {
             <Search />
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            <CreateAutomation slug={slug} />
+            {!isCampaignList && <CreateAutomation slug={slug} />}
             <ThemeToggle compact />
             <Notification />
           </div>

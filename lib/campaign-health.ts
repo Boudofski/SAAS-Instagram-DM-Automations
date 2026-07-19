@@ -58,7 +58,7 @@ export function assessCampaignSetupHealth(input: CampaignHealthInput): CampaignH
 
   if (!input.connectedAccount?.instagramId) blockers.push("Connect Instagram before activating this campaign.");
   if (input.connectedAccount?.status && input.connectedAccount.status !== "CONNECTED") {
-    blockers.push("Instagram integration is not connected.");
+    blockers.push("Instagram account is not connected.");
   }
   if (input.connectedAccount?.reconnectRequired) blockers.push("Reconnect Instagram before activating this campaign.");
   if (!input.connectedAccount?.tokenPresent) blockers.push("Instagram token is missing.");

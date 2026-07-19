@@ -59,13 +59,13 @@ export default function PricingCard({
               "mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[11px] font-black",
               f.included
                 ? "bg-emerald-50 text-emerald-600 dark:bg-rf-green/12 dark:text-rf-green"
-                : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-rf-subtle"
+                : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
             )}>
               {f.included ? "✓" : "—"}
             </span>
             <span className={f.included
               ? "text-slate-700 dark:text-rf-text"
-              : "text-slate-400 line-through dark:text-rf-subtle"
+              : "text-slate-400 line-through dark:text-slate-500"
             }>
               {f.text}
             </span>

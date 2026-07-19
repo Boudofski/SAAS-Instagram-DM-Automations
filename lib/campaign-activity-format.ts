@@ -144,7 +144,7 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
 
   if (type === "COMMENT_SKIPPED" && usageLimit) {
     return {
-      label: "Skipped — monthly static reply limit reached",
+      label: "Skipped — monthly public reply limit reached",
       badge: "LIMIT",
       tone: "amber",
       detail: null,
@@ -463,7 +463,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
 
 export function formatLogError(message: string) {
   if (message.includes("static_reply_limit_reached")) {
-    return "Skipped — monthly static reply limit reached.";
+    return "Skipped — monthly public reply limit reached.";
   }
   if (isMetaCapabilityMissing(message)) {
     return "Meta blocked private DM until instagram_manage_messages capability is approved.";

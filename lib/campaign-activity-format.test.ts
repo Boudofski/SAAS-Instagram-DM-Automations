@@ -47,14 +47,14 @@ describe("campaign activity display formatting", () => {
     });
   });
 
-  it("displays static reply limit as usage limit", () => {
+  it("displays the internal static reply limit as a customer-facing public reply limit", () => {
     expect(
       formatActivityDisplay({
         type: "COMMENT_SKIPPED",
         errorMessage: "static_reply_limit_reached",
       })
     ).toMatchObject({
-      label: "Skipped — monthly static reply limit reached",
+      label: "Skipped — monthly public reply limit reached",
       badge: "LIMIT",
       tone: "amber",
     });

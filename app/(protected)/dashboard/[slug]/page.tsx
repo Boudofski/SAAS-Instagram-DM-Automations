@@ -310,7 +310,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <UsageMini label="Plan" value={usage.planLabel} />
             <UsageMini
-              label="Static replies"
+              label="Public replies"
               value={formatUsageMetricValue(usage.staticReplies)}
               percent={usage.staticReplies.percent}
               blocked={usage.staticReplies.blocked}
@@ -380,8 +380,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             value={stat.value}
             change={
               stat.label === "Comments" ? changes?.commentsReceived :
-              stat.label === "Contacts" ? changes?.leadsCaptured :
-              stat.label === "Static Replies" ? changes?.staticRepliesUsed :
+              stat.label === "Leads" ? changes?.leadsCaptured :
+              stat.label === "Public Replies" ? changes?.staticRepliesUsed :
               stat.change
             }
             subtitle={stat.subtitle}

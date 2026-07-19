@@ -138,13 +138,13 @@ export function getDashboardProfileStats(input: {
       subtitle: "Confirmed replies / matched comments",
     },
     {
-      label: "Contacts",
+      label: "Leads",
       value: input.metrics?.leadsCaptured ?? 0,
       change: undefined,
       subtitle: "Leads captured",
     },
     {
-      label: "Static Replies",
+      label: "Public Replies",
       value: input.usage ? formatUsageMetricValue(input.usage.staticReplies) : "0",
       change: undefined,
       subtitle: "Public replies + AP3k DMs",
