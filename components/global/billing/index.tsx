@@ -67,8 +67,8 @@ function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
         </div>
       )}
       <div className={appReviewMode ? "grid gap-5 lg:grid-cols-2" : "grid gap-5 lg:grid-cols-3"}>
-        <PaymentCard label="FREE" current={current} />
-        <PaymentCard label="PRO" current={current} />
+        <PaymentCard label="FREE" current={current} campaignLimit={current === "FREE" ? usage?.activeCampaigns.limit : undefined} />
+        <PaymentCard label="PRO" current={current} campaignLimit={current === "PRO" ? usage?.activeCampaigns.limit : undefined} />
         {!appReviewMode && <PaymentCard label="AGENCY" current={current} />}
       </div>
     </div>

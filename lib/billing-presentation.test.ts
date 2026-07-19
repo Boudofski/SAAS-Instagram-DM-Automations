@@ -35,4 +35,24 @@ describe("billing usage presentation", () => {
       description: "Limit reached",
     });
   });
+
+  it("shows unlimited campaign usage without remaining-count copy", () => {
+    expect(getBillingUsagePresentation(
+      { used: 1, limit: "unlimited", remaining: null, percent: 0, blocked: false }
+    )).toEqual({
+      tone: "green",
+      value: "1 / Unlimited",
+      description: "Unlimited",
+    });
+  });
+
+  it("keeps a finite effective campaign limit internally consistent", () => {
+    expect(getBillingUsagePresentation(
+      { used: 1, limit: 3, remaining: 2, percent: 33, blocked: false }
+    )).toEqual({
+      tone: "green",
+      value: "1 / 3",
+      description: "2 remaining",
+    });
+  });
 });

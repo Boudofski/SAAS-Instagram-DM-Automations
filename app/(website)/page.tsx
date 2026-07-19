@@ -3,12 +3,16 @@ import PricingCard from "@/components/global/pricing-card";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatCampaignLimitFeature, getPlanLimits } from "@/lib/plan-limits";
 import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { ArrowRight, Bot, CheckCircle2, FileCheck2, MessageCircle, Reply, ShieldCheck, Sparkles, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+const FREE_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("FREE").activeCampaigns);
+const CREATOR_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns);
 
 const PLANS = [
   {
@@ -19,7 +23,7 @@ const PLANS = [
     ctaHref: "/sign-up",
     featured: false,
     features: [
-      { text: "1 active campaign", included: true },
+      { text: FREE_CAMPAIGN_FEATURE, included: true },
       { text: "Free for testing", included: true },
       { text: "50 public replies/month", included: true },
       { text: "Keyword triggers", included: true },
@@ -36,7 +40,7 @@ const PLANS = [
     ctaHref: "/payment?plan=creator",
     featured: true,
     features: [
-      { text: "Unlimited campaigns", included: true },
+      { text: CREATOR_CAMPAIGN_FEATURE, included: true },
       { text: "5,000 public replies/month", included: true },
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Full analytics + leads export", included: true },
@@ -134,7 +138,7 @@ export default async function LandingPage() {
           ctaHref: "/sign-up",
           featured: false,
           features: [
-            { text: "1 active campaign", included: true },
+            { text: FREE_CAMPAIGN_FEATURE, included: true },
             { text: "50 public replies/month", included: true },
             { text: "Keyword triggers", included: true },
             { text: "Basic analytics", included: true },
@@ -148,7 +152,7 @@ export default async function LandingPage() {
           ctaHref: "/payment?plan=creator",
           featured: true,
           features: [
-            { text: "Unlimited campaigns", included: true },
+            { text: CREATOR_CAMPAIGN_FEATURE, included: true },
             { text: "5,000 public replies/month", included: true },
             { text: "Lead export", included: true },
             { text: "Activity tracking", included: true },

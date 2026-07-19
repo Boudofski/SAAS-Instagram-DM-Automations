@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatCampaignLimitFeature, getPlanLimits, type PlanLimit } from "@/lib/plan-limits";
 import { cn } from "@/lib/utils";
 import { CircleCheck } from "lucide-react";
 import Link from "next/link";
@@ -9,6 +10,7 @@ type PlanLabel = "FREE" | "PRO" | "AGENCY";
 type Props = {
   label: PlanLabel;
   current: "PRO" | "FREE";
+  campaignLimit?: PlanLimit;
 };
 
 const PLAN_COPY = {
@@ -17,7 +19,7 @@ const PLAN_COPY = {
     price: "$0",
     period: "/month",
     description: "For testing Instagram comment automation with one campaign.",
-    features: ["1 active campaign", "50 public replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
+    features: ["50 public replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
     href: "/pricing",
   },
   PRO: {
@@ -25,7 +27,7 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For production campaigns with higher reply volume.",
-    features: ["Unlimited campaigns", "5,000 public replies/month", "750 AI replies/month when AI is enabled", "Lead export"],
+    features: ["5,000 public replies/month", "750 AI replies/month when AI is enabled", "Lead export"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
@@ -38,14 +40,18 @@ const PLAN_COPY = {
   },
 } as const;
 
-function PaymentCard({ label, current }: Props) {
+function PaymentCard({ label, current, campaignLimit }: Props) {
   const plan = PLAN_COPY[label];
   const appReviewMode = isAppReviewMode();
+  const defaultCampaignLimit = getPlanLimits(label).activeCampaigns;
+  const campaignFeature = formatCampaignLimitFeature(campaignLimit ?? defaultCampaignLimit);
   const features = appReviewMode && label === "PRO"
-    ? ["Unlimited campaigns", "5,000 public replies/month", "Lead export", "Analytics"]
+    ? [campaignFeature, "5,000 public replies/month", "Lead export", "Analytics"]
     : appReviewMode && label === "FREE"
-      ? ["1 active campaign", "50 public replies/month", "Keyword triggers", "Basic analytics"]
-      : plan.features;
+      ? [campaignFeature, "50 public replies/month", "Keyword triggers", "Basic analytics"]
+      : label === "AGENCY"
+        ? plan.features
+        : [campaignFeature, ...plan.features];
   const isActive = label === current;
   const isAgency = label === "AGENCY";
   const isIncludedFree = label === "FREE" && current === "PRO";

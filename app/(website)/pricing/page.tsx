@@ -3,13 +3,17 @@ import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatCampaignLimitFeature, getPlanLimits } from "@/lib/plan-limits";
+
+const FREE_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("FREE").activeCampaigns);
+const CREATOR_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns);
 
 const PLANS = [
   {
     tier: "Free", price: "$0", description: "For setup, testing, and your first live proof",
     ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
     features: [
-      { text: "1 active campaign for testing", included: true },
+      { text: `${FREE_CAMPAIGN_FEATURE} for testing`, included: true },
       { text: "50 successful replies/month", included: true },
       { text: "Keyword triggers", included: true },
       { text: "Basic analytics", included: true },
@@ -22,7 +26,7 @@ const PLANS = [
     tier: "Creator", price: "$29", description: "For creators who run launches, lead magnets, and evergreen posts",
     ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
     features: [
-      { text: "Unlimited active campaigns", included: true },
+      { text: CREATOR_CAMPAIGN_FEATURE, included: true },
       { text: "5,000 successful public replies/month", included: true },
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Public reply fallback", included: true },
@@ -73,7 +77,7 @@ export default function PricingPage() {
           tier: "Free", price: "$0", description: "For testing Instagram comment automation",
           ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
           features: [
-            { text: "1 active campaign for testing", included: true },
+            { text: `${FREE_CAMPAIGN_FEATURE} for testing`, included: true },
             { text: "50 public replies/month", included: true },
             { text: "Keyword triggers", included: true },
             { text: "Basic analytics", included: true },
@@ -83,7 +87,7 @@ export default function PricingPage() {
           tier: "Creator", price: "$29", description: "For production campaigns with public reply volume",
           ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
           features: [
-            { text: "Unlimited active campaigns", included: true },
+            { text: CREATOR_CAMPAIGN_FEATURE, included: true },
             { text: "5,000 public replies/month", included: true },
             { text: "Lead export", included: true },
             { text: "Analytics", included: true },

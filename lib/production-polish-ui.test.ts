@@ -29,9 +29,37 @@ describe("production polish UI contracts", () => {
 
   it("hides the global create CTA only on the campaign list route", () => {
     const navbar = source("components/global/navbar/index.tsx");
+    const dashboard = source("app/(protected)/dashboard/[slug]/page.tsx");
 
     expect(navbar).toContain("pathname === `/dashboard/${slug}/automation`");
     expect(navbar).toContain("!isCampaignList && <CreateAutomation");
+    expect(dashboard).not.toContain("+ Create campaign");
+    expect(dashboard).toContain('ctaLabel="Launch first campaign →"');
+    expect(dashboard).toContain('href={`/dashboard/${params.slug}/automation`}');
+  });
+
+  it("uses the shared non-error account-limit presentation on Home and Billing", () => {
+    const dashboard = source("app/(protected)/dashboard/[slug]/page.tsx");
+    const billing = source("components/global/billing/index.tsx");
+
+    expect(dashboard).toContain('getBillingUsagePresentation(usage.connectedAccounts, "accounts")');
+    expect(dashboard).toContain("tone={connectedAccountPresentation?.tone}");
+    expect(billing).toContain("getBillingUsagePresentation(metric, kind, helper)");
+  });
+
+  it("derives public and authenticated campaign-limit copy from shared limits", () => {
+    const landing = source("app/(website)/page.tsx");
+    const pricing = source("app/(website)/pricing/page.tsx");
+    const billing = source("components/global/billing/index.tsx");
+    const paymentCard = source("components/global/billing/payment-card.tsx");
+
+    expect(landing).toContain('formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns)');
+    expect(pricing).toContain('formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns)');
+    expect(billing).toContain('campaignLimit={current === "PRO" ? usage?.activeCampaigns.limit : undefined}');
+    expect(paymentCard).toContain("formatCampaignLimitFeature(campaignLimit ?? defaultCampaignLimit)");
+    expect(paymentCard).toContain('appReviewMode && label === "PRO"');
+    expect(paymentCard).toContain('? [campaignFeature, "5,000 public replies/month", "Lead export", "Analytics"]');
+    expect(paymentCard).not.toContain('["Unlimited campaigns"');
   });
 
   it("labels the mobile navigation trigger on the actual button", () => {
