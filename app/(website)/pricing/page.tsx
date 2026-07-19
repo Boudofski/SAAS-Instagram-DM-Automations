@@ -57,7 +57,7 @@ const FAQ = [
   },
   {
     q: "Can I cancel any time?",
-    a: "Absolutely. No lock-in. Cancel from your settings in seconds — your campaigns pause immediately.",
+    a: "Yes. Use Manage billing on the Billing page to cancel through Stripe Customer Portal. Stripe shows when the change takes effect, and AP3k syncs the resulting plan status through the existing billing webhook.",
   },
   {
     q: "What's the reply limit on Free?",
