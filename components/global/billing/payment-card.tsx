@@ -17,7 +17,7 @@ const PLAN_COPY = {
     price: "$0",
     period: "/month",
     description: "For testing Instagram comment automation with one campaign.",
-    features: ["1 active campaign", "50 static replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
+    features: ["1 active campaign", "50 public replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
     href: "/pricing",
   },
   PRO: {
@@ -25,7 +25,7 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For production campaigns with higher reply volume.",
-    features: ["Unlimited campaigns", "5,000 static replies/month", "750 AI replies/month when AI is enabled", "Lead export"],
+    features: ["Unlimited campaigns", "5,000 public replies/month", "750 AI replies/month when AI is enabled", "Lead export"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
@@ -33,7 +33,7 @@ const PLAN_COPY = {
     price: "$79",
     period: "/month",
     description: "For teams managing multiple creator accounts.",
-    features: ["Everything in Creator", "20,000 static replies/month", "5,000 AI replies/month when AI is enabled", "Up to 10 Instagram accounts"],
+    features: ["Everything in Creator", "20,000 public replies/month", "5,000 AI replies/month when AI is enabled", "Up to 10 Instagram accounts"],
     href: "/payment?plan=agency",
   },
 } as const;

@@ -1,6 +1,7 @@
 import Billing from "@/components/global/billing";
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
+import { getStripeSecretKey } from "@/lib/stripe-config";
 
 async function BillingPage() {
   const userResult = await onUserInfo();
@@ -9,7 +10,11 @@ async function BillingPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
-      <Billing current={user?.subscription?.plan ?? "FREE"} usage={usage} />
+      <Billing
+        current={user?.subscription?.plan ?? "FREE"}
+        usage={usage}
+        canManageBilling={Boolean(user?.subscription?.customerId && getStripeSecretKey())}
+      />
     </div>
   );
 }
