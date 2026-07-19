@@ -51,4 +51,13 @@ describe("production polish UI contracts", () => {
     expect(dashboard).toContain('stat.label === "Leads"');
     expect(dashboard).toContain("usage.staticReplies");
   });
+
+  it("positions the featured pricing badge outside the clipping card layer", () => {
+    const pricingCard = source("components/global/pricing-card/index.tsx");
+
+    expect(pricingCard).toContain('<div className="relative overflow-visible">');
+    expect(pricingCard).toContain("top-0 z-20 -translate-x-1/2 -translate-y-1/2");
+    expect(pricingCard).toContain('"relative flex h-full flex-col gap-5 overflow-hidden rounded-3xl p-7 transition-all duration-300"');
+    expect(pricingCard).not.toContain("absolute -top-3");
+  });
 });
