@@ -65,11 +65,32 @@ describe("production polish UI contracts", () => {
   it("labels the mobile navigation trigger on the actual button", () => {
     const navbar = source("components/global/navbar/index.tsx");
     const sheet = source("components/global/sheet/index.tsx");
+    const sheetPrimitive = source("components/ui/sheet.tsx");
 
     expect(navbar).toContain('triggerLabel="Open navigation"');
     expect(sheet).toContain("aria-label={triggerLabel}");
     expect(sheet).toContain("h-11 w-11");
     expect(sheet).toContain('<SheetTitle className="sr-only">');
+    expect(sheet).toContain('className="overflow-x-hidden p-0"');
+    expect(sheetPrimitive).toContain("const Sheet = SheetPrimitive.Root");
+    expect(sheetPrimitive).toContain("const SheetTrigger = SheetPrimitive.Trigger");
+    expect(sheetPrimitive).toContain("<SheetPrimitive.Overlay");
+    expect(sheetPrimitive).toContain("<SheetPrimitive.Content");
+    expect(sheetPrimitive).toContain("<SheetPrimitive.Close");
+  });
+
+  it("uses AP3K branding in the authenticated mobile drawer", () => {
+    const navbar = source("components/global/navbar/index.tsx");
+    const logo = source("components/global/ap3k-logo/index.tsx");
+
+    expect(navbar).toContain('import AP3kLogo from "../ap3k-logo"');
+    expect(navbar).toContain("<AP3kLogo");
+    expect(navbar).not.toContain("LogoSmall");
+    expect(navbar).not.toContain("Slyde");
+    expect(logo).toContain("AP3K");
+    expect(logo).not.toContain("Slyde");
+    expect(navbar).not.toContain(">Profile<");
+    expect(navbar).not.toContain(">Help<");
   });
 
   it("uses customer-facing reply and lead terminology without renaming internal metrics", () => {

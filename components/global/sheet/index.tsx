@@ -26,7 +26,7 @@ function Sheet({ trigger, triggerLabel, children, className, side }: Props) {
       >
         {trigger}
       </SheetTrigger>
-      <SheetContent side={side} className="p-0">
+      <SheetContent side={side} className="overflow-x-hidden p-0">
         <SheetTitle className="sr-only">{triggerLabel}</SheetTitle>
         {children}
       </SheetContent>
