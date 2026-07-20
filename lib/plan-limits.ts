@@ -139,6 +139,12 @@ export function formatUsageMetricValue(metric: Pick<UsageMetric, "used" | "limit
   return `${metric.used.toLocaleString()} / ${isUnlimited(metric.limit) ? "Unlimited" : metric.limit.toLocaleString()}`;
 }
 
+export function formatCampaignLimitFeature(limit: PlanLimit) {
+  if (isUnlimited(limit)) return "Unlimited campaigns";
+  if (limit === 1) return "1 active campaign";
+  return `Up to ${limit.toLocaleString()} active campaigns`;
+}
+
 export function formatConnectedAccountsHelper(planLabel: string, metric: Pick<UsageMetric, "limit">) {
   const limit = isUnlimited(metric.limit) ? "unlimited" : metric.limit.toLocaleString();
   return `${planLabel} supports ${limit} account${metric.limit === 1 ? "" : "s"}.`;

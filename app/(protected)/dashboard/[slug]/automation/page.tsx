@@ -61,7 +61,7 @@ export default async function AutomationsPage({ params }: Props) {
             Turn comments into tracked outcomes
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Build official Instagram comment automations, test keyword triggers, and inspect delivery logs from one clean workspace. AP3k uses Meta APIs; no scraping or password sharing.
+            Build official Instagram comment campaigns, test keyword triggers, and inspect delivery logs from one clean workspace. AP3k uses Meta APIs; no scraping or password sharing.
           </p>
           <div className="mt-6 flex flex-col gap-4 sm:flex-row">
             <Link

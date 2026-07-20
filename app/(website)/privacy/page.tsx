@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const sections = (appReviewMode: boolean) => [
   {
     title: "Instagram Data We Collect",
-    body: "AP3k collects account and profile information from Instagram only after you authorize the connection. This may include the connected Instagram account ID, username or profile identifiers made available by Meta, media identifiers needed for automations, and authorization status.",
+    body: "AP3k collects account and profile information from Instagram only after you authorize the connection. This may include the connected Instagram account ID, username or profile identifiers made available by Meta, media identifiers needed for campaigns, and authorization status.",
   },
   {
     title: "Product Data We Store",

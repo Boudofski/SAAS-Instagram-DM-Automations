@@ -3,13 +3,17 @@ import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { formatCampaignLimitFeature, getPlanLimits } from "@/lib/plan-limits";
+
+const FREE_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("FREE").activeCampaigns);
+const CREATOR_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns);
 
 const PLANS = [
   {
     tier: "Free", price: "$0", description: "For setup, testing, and your first live proof",
     ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
     features: [
-      { text: "1 active campaign for testing", included: true },
+      { text: `${FREE_CAMPAIGN_FEATURE} for testing`, included: true },
       { text: "50 successful replies/month", included: true },
       { text: "Keyword triggers", included: true },
       { text: "Basic analytics", included: true },
@@ -22,8 +26,8 @@ const PLANS = [
     tier: "Creator", price: "$29", description: "For creators who run launches, lead magnets, and evergreen posts",
     ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
     features: [
-      { text: "Unlimited active campaigns", included: true },
-      { text: "5,000 successful static replies/month", included: true },
+      { text: CREATOR_CAMPAIGN_FEATURE, included: true },
+      { text: "5,000 successful public replies/month", included: true },
       { text: "750 AI replies/month when AI is enabled", included: true },
       { text: "Public reply fallback", included: true },
       { text: "Private DM workflow when Meta messaging is approved", included: true },
@@ -57,11 +61,11 @@ const FAQ = [
   },
   {
     q: "Can I cancel any time?",
-    a: "Absolutely. No lock-in. Cancel from your settings in seconds — your campaigns pause immediately.",
+    a: "Yes. Use Manage billing on the Billing page to cancel through Stripe Customer Portal. Stripe shows when the change takes effect, and AP3k syncs the resulting plan status through the existing billing webhook.",
   },
   {
     q: "What's the reply limit on Free?",
-    a: "50 successful static replies per month across 1 active campaign. Successful public replies and private DMs count; failed and skipped messages do not.",
+    a: "50 successful public replies per month across 1 active campaign. Successful public replies and private DMs count; failed and skipped messages do not.",
   },
 ] as const;
 
@@ -73,7 +77,7 @@ export default function PricingPage() {
           tier: "Free", price: "$0", description: "For testing Instagram comment automation",
           ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
           features: [
-            { text: "1 active campaign for testing", included: true },
+            { text: `${FREE_CAMPAIGN_FEATURE} for testing`, included: true },
             { text: "50 public replies/month", included: true },
             { text: "Keyword triggers", included: true },
             { text: "Basic analytics", included: true },
@@ -83,7 +87,7 @@ export default function PricingPage() {
           tier: "Creator", price: "$29", description: "For production campaigns with public reply volume",
           ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
           features: [
-            { text: "Unlimited active campaigns", included: true },
+            { text: CREATOR_CAMPAIGN_FEATURE, included: true },
             { text: "5,000 public replies/month", included: true },
             { text: "Lead export", included: true },
             { text: "Analytics", included: true },
@@ -100,7 +104,7 @@ export default function PricingPage() {
     : FAQ;
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-rf-text">
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
       <WebsiteNav current="pricing" />
 
@@ -114,7 +118,7 @@ export default function PricingPage() {
             Scale when you&apos;re ready.
           </span>
         </h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-rf-muted">
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-rf-muted">
           Free is built for proving the workflow. Creator is for real campaign volume. No hidden fees, no contracts.
         </p>
         </FadeIn>
@@ -137,8 +141,8 @@ export default function PricingPage() {
         <div className="flex flex-col gap-4">
           {faq.map((f) => (
             <div key={f.q} className="ap3k-card rounded-2xl p-5">
-              <h3 className="text-sm font-black text-rf-text mb-2">{f.q}</h3>
-              <p className="text-sm text-rf-muted leading-relaxed">{f.a}</p>
+              <h3 className="mb-2 text-sm font-black text-slate-950 dark:text-rf-text">{f.q}</h3>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{f.a}</p>
             </div>
           ))}
         </div>

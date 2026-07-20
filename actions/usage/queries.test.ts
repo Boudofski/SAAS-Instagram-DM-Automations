@@ -142,6 +142,24 @@ describe("usage query helpers", () => {
     expect(result.ok).toBe(true);
   });
 
+  it.each(["true", "false"])(
+    "keeps the shared Creator campaign limit in App Review mode=%s",
+    async (appReviewMode) => {
+      vi.stubEnv("NEXT_PUBLIC_APP_REVIEW_MODE", appReviewMode);
+      mockUserFindUnique.mockResolvedValue({ subscription: { plan: "PRO" } });
+      mockAutomationCount.mockResolvedValue(12);
+
+      const usage = await getUserMonthlyUsage("user-1");
+
+      expect(usage.activeCampaigns).toMatchObject({
+        used: 12,
+        limit: "unlimited",
+        remaining: null,
+        blocked: false,
+      });
+    }
+  );
+
   it("respects usageResetAt if it is after enforcementStart", async () => {
     vi.stubEnv("USAGE_LIMITS_ENFORCED_FROM", "2026-05-23T00:00:00Z");
     const resetAt = new Date("2026-05-24T00:00:00Z");

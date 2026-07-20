@@ -6,20 +6,12 @@ import { usePath } from "@/hooks/user-nav";
 import SubscriptionPlan from "../subscription-plan";
 import AP3kLogo from "../ap3k-logo";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
-import { CreditCard, Home, Instagram, Megaphone, Settings } from "lucide-react";
 import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
-
-const NAV = [
-  { icon: Home, label: "Home",         segment: "" },
-  { icon: Megaphone, label: "Campaigns",    segment: "automation" },
-  { icon: Instagram, label: "Instagram Account", segment: "account" },
-  { icon: CreditCard, label: "Billing", segment: "billing" },
-  { icon: Settings, label: "Settings",    segment: "settings" },
-] as const;
+import { PRIMARY_NAVIGATION, primaryNavigationHref } from "@/constants/menu";
 
 type Props = { slug: string };
 
@@ -80,9 +72,9 @@ export default function Sidebar({ slug }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-        {NAV.map((item) => {
+        {PRIMARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
-          const href = `/dashboard/${slug}${item.segment ? `/${item.segment}` : ""}`;
+          const href = primaryNavigationHref(slug, item.segment);
           const isActive =
             item.segment === ""
               ? page === slug || page === ""

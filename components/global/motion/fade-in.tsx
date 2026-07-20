@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import type { ReactNode } from "react";
 
 type Props = {
@@ -10,12 +10,14 @@ type Props = {
 };
 
 export function FadeIn({ children, className, delay = 0 }: Props) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={reduceMotion ? false : { opacity: 1, y: 16 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.55, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
       {children}
@@ -24,10 +26,12 @@ export function FadeIn({ children, className, delay = 0 }: Props) {
 }
 
 export function HoverLift({ children, className }: Omit<Props, "delay">) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.01 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      whileHover={reduceMotion ? undefined : { y: -4, scale: 1.01 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }}
       className={className}
     >
       {children}
@@ -46,16 +50,18 @@ const containerVariants: Variants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 1, y: 14 },
   show: { opacity: 1, y: 0 },
 };
 
 export function StaggerContainer({ children, className }: Omit<Props, "delay">) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
       variants={containerVariants}
-      initial="hidden"
-      whileInView="show"
+      initial={reduceMotion ? false : "hidden"}
+      whileInView={reduceMotion ? undefined : "show"}
       viewport={{ once: true, margin: "-40px" }}
       className={className}
     >
@@ -77,12 +83,14 @@ export function StaggerItem({ children, className }: Omit<Props, "delay">) {
 }
 
 export function ScaleIn({ children, className, delay = 0 }: Props) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      whileInView={{ opacity: 1, scale: 1 }}
+      initial={reduceMotion ? false : { opacity: 1, scale: 0.96 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
       viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
       {children}
