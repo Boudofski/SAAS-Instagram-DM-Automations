@@ -18,7 +18,7 @@ import React from "react";
 
 export const metadata: Metadata = {
   title: "Dashboard — AP3k",
-  description: "Monitor campaigns, replies, leads, and delivery logs for your Instagram comment automations.",
+  description: "Monitor campaigns, replies, leads, and delivery logs for your Instagram comment campaigns.",
 };
 
 type Props = {

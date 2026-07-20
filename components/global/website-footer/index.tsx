@@ -14,25 +14,25 @@ export default function WebsiteFooter() {
           </div>
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-rf-subtle">Product</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Product</p>
               <Link href="/#features" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Features</Link>
               <Link href="/#how-it-works" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">How it works</Link>
               <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Pricing</Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-rf-subtle">Legal</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Legal</p>
               <Link href="/privacy" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Privacy</Link>
               <Link href="/terms" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Terms</Link>
               <Link href="/data-deletion" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Data Deletion</Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-rf-subtle">Support</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Support</p>
               <a href="mailto:contact@ap3k.com" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Contact</a>
             </div>
           </div>
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
-          <p className="text-xs text-slate-400 dark:text-rf-subtle">© 2026 AP3k. Built on official Meta APIs.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-400">© 2026 AP3k. Built on official Meta APIs.</p>
         </div>
       </div>
     </footer>

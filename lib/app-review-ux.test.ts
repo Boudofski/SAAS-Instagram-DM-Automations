@@ -59,7 +59,7 @@ describe("App Review-safe UX", () => {
     const source = readRepoFile("app/(website)/page.tsx");
 
     expect(source).toContain("Official Meta Login");
-    expect(source).toContain("Launch Instagram comment automations that receive real comments");
+    expect(source).toContain("Launch Instagram comment campaigns that receive real comments");
     expect(source).toContain("Connect Instagram");
     expect(source).toContain("Send public replies");
   });

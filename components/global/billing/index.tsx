@@ -1,16 +1,18 @@
 "use client";
 
-import LocalTime from "@/components/global/local-time";
-import { formatConnectedAccountsHelper, formatUsageMetricValue, isUnlimited, usageTone, type UsageSummary } from "@/lib/plan-limits";
+import { formatConnectedAccountsHelper, isUnlimited, type UsageSummary } from "@/lib/plan-limits";
+import { getBillingUsagePresentation, type BillingMetricKind } from "@/lib/billing-presentation";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { ManageBillingButton } from "./manage-billing-button";
 import PaymentCard from "./payment-card";
 
 type Props = {
   current?: "PRO" | "FREE";
   usage?: UsageSummary;
+  canManageBilling?: boolean;
 };
 
-function Billing({ current = "FREE", usage }: Props) {
+function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
   const planLabel = usage?.planLabel ?? (current === "PRO" ? "Creator" : "Free");
   const appReviewMode = isAppReviewMode();
 
@@ -38,17 +40,20 @@ function Billing({ current = "FREE", usage }: Props) {
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {appReviewMode
                   ? `${usage.periodLabel} usage. Successful public replies count toward your monthly limit.`
-                  : `${usage.periodLabel} usage. Successful static public replies and private DMs count toward your monthly limit.`}
+                  : `${usage.periodLabel} usage. Successful public replies and private DMs count toward your monthly reply allowance.`}
               </p>
             </div>
-            <div className="w-fit rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-xs font-black text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
-              Enforcement from <LocalTime value={usage.enforcementStart} mode="date" />
+            <div className="flex flex-col items-start gap-3 md:items-end">
+              <div className="w-fit rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-xs font-black text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
+                Current billing period · Usage resets monthly
+              </div>
+              {canManageBilling && <ManageBillingButton />}
             </div>
           </div>
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <UsageBar label="Static replies" metric={usage.staticReplies} />
+            <UsageBar label="Public replies" metric={usage.staticReplies} />
             <UsageBar label="Active campaigns" metric={usage.activeCampaigns} />
-            <UsageBar label="Connected Instagram accounts" metric={usage.connectedAccounts} helper={formatConnectedAccountsHelper(planLabel, usage.connectedAccounts)} />
+            <UsageBar label="Connected Instagram accounts" metric={usage.connectedAccounts} helper={formatConnectedAccountsHelper(planLabel, usage.connectedAccounts)} kind="accounts" />
           </div>
           {current === "FREE" ? (
             <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
@@ -62,8 +67,8 @@ function Billing({ current = "FREE", usage }: Props) {
         </div>
       )}
       <div className={appReviewMode ? "grid gap-5 lg:grid-cols-2" : "grid gap-5 lg:grid-cols-3"}>
-        <PaymentCard label="FREE" current={current} />
-        <PaymentCard label="PRO" current={current} />
+        <PaymentCard label="FREE" current={current} campaignLimit={current === "FREE" ? usage?.activeCampaigns.limit : undefined} />
+        <PaymentCard label="PRO" current={current} campaignLimit={current === "PRO" ? usage?.activeCampaigns.limit : undefined} />
         {!appReviewMode && <PaymentCard label="AGENCY" current={current} />}
       </div>
     </div>
@@ -72,24 +77,34 @@ function Billing({ current = "FREE", usage }: Props) {
 
 export default Billing;
 
-function UsageBar({ label, metric, helper }: { label: string; metric: UsageSummary["staticReplies"]; helper?: string }) {
-  const tone = usageTone(metric.percent, metric.blocked);
+function UsageBar({
+  label,
+  metric,
+  helper,
+  kind = "default",
+}: {
+  label: string;
+  metric: UsageSummary["staticReplies"];
+  helper?: string;
+  kind?: BillingMetricKind;
+}) {
+  const { tone, value, description } = getBillingUsagePresentation(metric, kind, helper);
   const bar =
     tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#101827]">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <p className="text-sm font-black text-slate-950 dark:text-white">{label}</p>
-        <p className="text-xs font-bold text-slate-500 dark:text-slate-300">
-          {formatUsageMetricValue(metric)}
+        <p className="text-left text-xs font-bold text-slate-500 dark:text-slate-300 sm:text-right">
+          {value}
         </p>
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.08]">
         <div className={`h-full rounded-full ${bar}`} style={{ width: `${isUnlimited(metric.limit) ? 6 : metric.percent}%` }} />
       </div>
-      <p className={`mt-2 text-xs font-bold ${metric.blocked ? "text-red-600 dark:text-red-300" : "text-slate-500 dark:text-slate-300"}`}>
-        {helper ?? (metric.blocked ? "Limit reached" : isUnlimited(metric.limit) ? "Unlimited" : `${metric.remaining?.toLocaleString()} remaining`)}
+      <p className={`mt-2 text-xs font-bold ${tone === "red" ? "text-red-600 dark:text-red-300" : tone === "amber" ? "text-amber-700 dark:text-amber-200" : "text-slate-500 dark:text-slate-300"}`}>
+        {description}
       </p>
     </div>
   );

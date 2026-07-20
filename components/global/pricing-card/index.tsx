@@ -19,10 +19,10 @@ export default function PricingCard({
   tier, price, period = "/month", description, features,
   ctaLabel, ctaHref, featured,
 }: Props) {
-  return (
+  const card = (
     <div
       className={cn(
-        "relative flex flex-col gap-5 overflow-hidden rounded-3xl p-7 transition-all duration-300",
+        "relative flex h-full flex-col gap-5 overflow-hidden rounded-3xl p-7 transition-all duration-300",
         featured
           ? "border border-rf-pink/35 bg-ap3k-gradient-soft shadow-ap3k-glow backdrop-blur-xl dark:border-rf-pink/35 dark:bg-[#1e1335]"
           : "ap3k-card hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:bg-[#141e30]"
@@ -31,11 +31,6 @@ export default function PricingCard({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
       {featured && (
         <div className="absolute -right-16 top-8 h-32 w-32 rounded-full bg-rf-pink/20 blur-3xl" />
-      )}
-      {featured && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ap3k-gradient px-4 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-ap3k-glow">
-          Most popular
-        </div>
       )}
 
       <div className="relative">
@@ -59,13 +54,13 @@ export default function PricingCard({
               "mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[11px] font-black",
               f.included
                 ? "bg-emerald-50 text-emerald-600 dark:bg-rf-green/12 dark:text-rf-green"
-                : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-rf-subtle"
+                : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
             )}>
               {f.included ? "✓" : "—"}
             </span>
             <span className={f.included
               ? "text-slate-700 dark:text-rf-text"
-              : "text-slate-400 line-through dark:text-rf-subtle"
+              : "text-slate-400 line-through dark:text-slate-500"
             }>
               {f.text}
             </span>
@@ -85,6 +80,17 @@ export default function PricingCard({
       >
         <Link href={ctaHref}>{ctaLabel}</Link>
       </Button>
+    </div>
+  );
+
+  return (
+    <div className="relative overflow-visible">
+      {featured && (
+        <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-ap3k-gradient px-4 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-ap3k-glow">
+          Most popular
+        </div>
+      )}
+      {card}
     </div>
   );
 }

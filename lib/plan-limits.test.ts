@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  formatCampaignLimitFeature,
+  formatUsageMetricValue,
   getCurrentUsagePeriod,
   getPlanLimits,
   getUsagePercent,
@@ -43,6 +45,12 @@ describe("plan limits", () => {
     expect(getUsagePercent(9000, "unlimited")).toBe(0);
     expect(isUnlimited("unlimited")).toBe(true);
     expect(makeUsageMetric(50, 50)).toMatchObject({ remaining: 0, percent: 100, blocked: true });
+  });
+
+  it("formats Creator campaign limits from the enforcement source", () => {
+    expect(formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns)).toBe("Unlimited campaigns");
+    expect(formatCampaignLimitFeature(3)).toBe("Up to 3 active campaigns");
+    expect(formatUsageMetricValue(makeUsageMetric(1, "unlimited"))).toBe("1 / Unlimited");
   });
 
   it("classifies near and over-limit usage status", () => {

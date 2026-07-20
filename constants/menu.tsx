@@ -1,44 +1,13 @@
-import {
-  AutomationDuoToneWhite,
-  HomeDuoToneWhite,
-  RocketDuoToneWhite,
-  SettingsDuoToneWhite,
-} from "@/icons";
-import { v4 as uuid } from "uuid";
+import { CreditCard, Home, Instagram, Megaphone, Settings } from "lucide-react";
 
-type Props = {
-  label: string;
-  id: string;
-};
+export const PRIMARY_NAVIGATION = [
+  { icon: Home, label: "Home", segment: "" },
+  { icon: Megaphone, label: "Campaigns", segment: "automation" },
+  { icon: Instagram, label: "Instagram Account", segment: "account" },
+  { icon: CreditCard, label: "Billing", segment: "billing" },
+  { icon: Settings, label: "Settings", segment: "settings" },
+] as const;
 
-type SIDEBAR_MENU_TYPE = {
-  icon: React.ReactNode;
-} & Props;
-
-export const SIDEBAR_MENU: SIDEBAR_MENU_TYPE[] = [
-  {
-    id: uuid(),
-    label: "home",
-    icon: <HomeDuoToneWhite />,
-  },
-  {
-    id: uuid(),
-    label: "automation",
-    icon: <AutomationDuoToneWhite />,
-  },
-  {
-    id: uuid(),
-    label: "account",
-    icon: <RocketDuoToneWhite />,
-  },
-  {
-    id: uuid(),
-    label: "billing",
-    icon: <RocketDuoToneWhite />,
-  },
-  {
-    id: uuid(),
-    label: "settings",
-    icon: <SettingsDuoToneWhite />,
-  },
-];
+export function primaryNavigationHref(slug: string, segment: string) {
+  return `/dashboard/${slug}${segment ? `/${segment}` : ""}`;
+}

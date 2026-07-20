@@ -150,7 +150,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             {editId ? "Edit Campaign" : "New Campaign"}
           </p>
           <p className="text-xs dark:text-slate-400 text-slate-500">
-            {editId ? "Update your automation flow" : "Launch in 60 seconds"}
+            {editId ? "Update your campaign" : "Launch in 60 seconds"}
           </p>
         </div>
         <span className="text-xs dark:text-slate-400 text-slate-500 flex items-center gap-1.5">
@@ -597,7 +597,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         <aside className="h-fit rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] p-5 shadow-sm">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Preview</p>
           <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
-            {data.campaignName || (editId ? "Edit automation" : "New automation")}
+            {data.campaignName || (editId ? "Edit campaign" : "New campaign")}
           </h2>
           <div className="mt-4 space-y-3 text-sm">
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />

@@ -75,7 +75,7 @@ export default async function WebsiteNav({ current }: Props) {
           </Link>
         </div>
         <details className="group relative md:hidden">
-          <summary className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full border border-slate-200 bg-white/85 text-slate-800 shadow-sm marker:hidden dark:border-white/10 dark:bg-white/[0.06] dark:text-white">
+          <summary aria-label="Open navigation menu" className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full border border-slate-200 bg-white/85 text-slate-800 shadow-sm marker:hidden dark:border-white/10 dark:bg-white/[0.06] dark:text-white">
             <Menu className="h-4 w-4" />
           </summary>
           <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-white/10 dark:bg-[#101827]">

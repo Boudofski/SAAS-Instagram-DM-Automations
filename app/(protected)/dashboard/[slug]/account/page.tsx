@@ -190,7 +190,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
               <SettingsStatCard label="Removed" stat={stats.removed} tone="red" />
               <SettingsStatCard label="DMs In" stat={stats.dmsIn} tone="blue" />
               <SettingsStatCard label="AP3k DMs Out" stat={stats.dmsOut} tone="green" />
-              <SettingsStatCard label="Contacts" stat={stats.contacts} tone="orange" />
+              <SettingsStatCard label="Leads" stat={stats.contacts} tone="orange" />
               <SettingsStatCard label="Reply Rate" stat={stats.replyRate} tone="slate" />
             </>
           ) : (
@@ -291,7 +291,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-red-800 dark:text-red-100">
-              Disconnecting removes this Instagram connection from AP3k and pauses related automations. Safe self-service disconnect is coming soon.
+              Disconnecting removes this Instagram connection from AP3k and pauses related campaigns. Safe self-service disconnect is coming soon.
             </p>
             <button
               type="button"

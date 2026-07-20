@@ -22,6 +22,8 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
+import { getBillingUsagePresentation } from "@/lib/billing-presentation";
+import { getActivityEmptyState, getLeadEmptyState, isActivityInPeriod } from "@/lib/dashboard-consistency";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -94,10 +96,25 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     stalePost: bindingDiagnostics.find((item) => item.campaignId === automation.id)?.stale ?? false,
   }));
   const groupedActivity = recentResult.status === 200 ? groupCampaignActivity(recentResult.data as any[], { limit: 20 }) : [];
-  const recentActivity = appReviewMode ? filterAppReviewActivity(groupedActivity, 20) : groupedActivity;
+  const periodActivity = dashboardStats
+    ? groupedActivity.filter((item) => isActivityInPeriod(item.createdAt, dashboardStats.period.currentStart, dashboardStats.period.currentEnd))
+    : groupedActivity;
+  const recentActivity = appReviewMode ? filterAppReviewActivity(periodActivity, 20) : periodActivity;
   const planLabel = usage?.planLabel ?? (userResult.data?.subscription?.plan === "PRO" ? "Creator" : "Free");
   const metrics = dashboardStats?.current ?? null;
   const changes = dashboardStats?.changes ?? null;
+  const lifetimeCampaignTotals = Object.values(campaignMetrics).reduce(
+    (totals, metric) => ({ runs: totals.runs + metric.runs, leads: totals.leads + metric.leads }),
+    { runs: 0, leads: 0 }
+  );
+  const leadEmptyState = getLeadEmptyState(metrics?.leadsCaptured ?? 0, lifetimeCampaignTotals.leads);
+  const activityEmptyState = getActivityEmptyState(
+    recentActivity.length,
+    lifetimeCampaignTotals.runs + lifetimeCampaignTotals.leads + groupedActivity.length
+  );
+  const connectedAccountPresentation = usage
+    ? getBillingUsagePresentation(usage.connectedAccounts, "accounts")
+    : null;
   const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
   const noCommentDiagnosis = dashboardNoCommentDiagnosis({
     username: displayInstagramUsername,
@@ -144,9 +161,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               cta: appReviewMode ? "View account" : "Check connection",
               href: `/dashboard/${params.slug}/account`,
             }
-          : metrics?.leadsCaptured === 0
+          : leadEmptyState
             ? {
-                title: "No leads captured yet",
+                title: leadEmptyState.title,
                 detail: appReviewMode
                   ? "Comments are arriving. Add a lead link so matched commenters can take the next step."
                   : "Comments are arriving. Add a clear DM CTA or lead link so matched commenters have an obvious next step.",
@@ -163,19 +180,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            {appReviewMode
-              ? "Check your Instagram connection, active campaigns, real comments, public replies, and captured leads."
-              : "Check connection, webhook delivery, campaign status, comments, leads, and the next action to take."}
-          </p>
-        </div>
-        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button inline-flex w-full justify-center px-5 py-2.5 text-sm sm:w-auto">
-          + Create campaign
-        </Link>
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          {appReviewMode
+            ? "Check your Instagram connection, active campaigns, real comments, public replies, and captured leads."
+            : "Check connection, webhook delivery, campaign status, comments, leads, and the next action to take."}
+        </p>
       </div>
 
       {isEmpty && (
@@ -310,7 +322,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <UsageMini label="Plan" value={usage.planLabel} />
             <UsageMini
-              label="Static replies"
+              label="Public replies"
               value={formatUsageMetricValue(usage.staticReplies)}
               percent={usage.staticReplies.percent}
               blocked={usage.staticReplies.blocked}
@@ -323,9 +335,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             />
             <UsageMini
               label="Connected Instagram accounts"
-              value={formatUsageMetricValue(usage.connectedAccounts)}
+              value={connectedAccountPresentation?.value ?? formatUsageMetricValue(usage.connectedAccounts)}
               percent={usage.connectedAccounts.percent}
-              blocked={usage.connectedAccounts.blocked}
+              tone={connectedAccountPresentation?.tone}
+              description={connectedAccountPresentation?.description}
             />
           </div>
           {usage.staticReplies.blocked && (
@@ -380,8 +393,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             value={stat.value}
             change={
               stat.label === "Comments" ? changes?.commentsReceived :
-              stat.label === "Contacts" ? changes?.leadsCaptured :
-              stat.label === "Static Replies" ? changes?.staticRepliesUsed :
+              stat.label === "Leads" ? changes?.leadsCaptured :
+              stat.label === "Public Replies" ? changes?.staticRepliesUsed :
               stat.change
             }
             subtitle={stat.subtitle}
@@ -396,27 +409,33 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {appReviewMode
                 ? "Review-friendly activity: comments received, triggers matched, public replies sent, and leads captured."
-                : "Latest 20 grouped interactions on this account — comments, public replies, skipped actions, and DMs."}
+                : "Latest grouped interactions in the selected period — comments, public replies, skipped actions, and DMs."}
             </p>
           </div>
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
         </div>
         {recentActivity.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400">
-            {noCommentDiagnosis ? (
+            {activityEmptyState?.hasHistoricalData ? (
               <>
-                <p>{noCommentDiagnosis.title}</p>
-                <p className="mt-1 font-semibold">{noCommentDiagnosis.detail}</p>
+                <p>{activityEmptyState.title}</p>
+                <p className="mt-1 font-semibold">Choose another date range to review earlier campaign activity.</p>
               </>
             ) : (
               <>
-                <p>No activity yet.</p>
-                <p className="mt-1 font-semibold">Create or activate a campaign, then comment from a separate Instagram account to generate the first log.</p>
+                <p>{activityEmptyState?.title ?? "No activity yet"}</p>
+                <p className="mt-1 font-semibold">
+                  {noCommentDiagnosis
+                    ? `${noCommentDiagnosis.title}. ${noCommentDiagnosis.detail}`
+                    : "Create or activate a campaign, then comment from a separate Instagram account to generate the first log."}
+                </p>
               </>
             )}
-            <Link href={isEmpty ? `/dashboard/${params.slug}/automation/new` : `/dashboard/${params.slug}/account`} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">
-              {isEmpty ? "Create campaign" : appReviewMode ? "View account" : "Check connection"}
-            </Link>
+            {!activityEmptyState?.hasHistoricalData && (
+              <Link href={isEmpty ? `/dashboard/${params.slug}/automation/new` : `/dashboard/${params.slug}/account`} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">
+                {isEmpty ? "Create campaign" : appReviewMode ? "View account" : "Check connection"}
+              </Link>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/[0.07]">
@@ -528,14 +547,18 @@ function UsageMini({
   value,
   percent = 0,
   blocked = false,
+  tone,
+  description,
 }: {
   label: string;
   value: string;
   percent?: number;
   blocked?: boolean;
+  tone?: "green" | "amber" | "red";
+  description?: string;
 }) {
-  const tone = usageTone(percent, blocked);
-  const bar = tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
+  const resolvedTone = tone ?? usageTone(percent, blocked);
+  const bar = resolvedTone === "red" ? "bg-red-500" : resolvedTone === "amber" ? "bg-amber-500" : "bg-emerald-500";
 
   return (
     <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm dark:border-white/[0.14] dark:bg-white/[0.07]">
@@ -546,6 +569,18 @@ function UsageMini({
           <div className={`h-full ${bar}`} style={{ width: `${percent}%` }} />
         </div>
       ) : null}
+      {description && (
+        <p className={[
+          "mt-2 text-[11px] font-bold",
+          resolvedTone === "red"
+            ? "text-red-600 dark:text-red-300"
+            : resolvedTone === "amber"
+              ? "text-amber-700 dark:text-amber-200"
+              : "text-slate-500 dark:text-slate-300",
+        ].join(" ")}>
+          {description}
+        </p>
+      )}
     </div>
   );
 }
