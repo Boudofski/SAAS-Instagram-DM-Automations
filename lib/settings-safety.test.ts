@@ -24,10 +24,11 @@ describe("settings safety display states", () => {
     });
   });
 
-  it("keeps account deletion disabled by default", () => {
+  it("enables self-service account deletion with typed confirmation", () => {
     expect(getAccountDangerZoneState()).toEqual({
-      selfServiceDeleteEnabled: false,
-      label: "Contact support to delete account",
+      selfServiceDeleteEnabled: true,
+      requiresTypedConfirmation: true,
+      label: "Delete account permanently",
     });
   });
 
