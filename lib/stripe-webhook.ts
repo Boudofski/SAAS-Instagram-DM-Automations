@@ -213,17 +213,33 @@ export async function processStripeEvent(
       if (!customerId) {
         throw new StripeWebhookInputError("STRIPE_CUSTOMER_ID_MISSING");
       }
-      const resolution = await resolveStripeOwner(
-        {
-          eventType: event.type,
-          metadataClerkId: metadataClerkId(subscription.metadata),
-          customerId,
-          allowInitialCustomerBinding: false,
-        },
-        dependencies
-      );
+
+      let resolution;
+      try {
+        resolution = await resolveStripeOwner(
+          {
+            eventType: event.type,
+            metadataClerkId: metadataClerkId(subscription.metadata),
+            customerId,
+            allowInitialCustomerBinding: false,
+          },
+          dependencies
+        );
+      } catch (error) {
+        if (
+          error instanceof StripeOwnershipError &&
+          error.code === "STRIPE_OWNER_UNRESOLVED"
+        ) {
+          return {
+            outcome: "ignored" as const,
+            source: "unowned-deleted-customer" as const,
+          };
+        }
+        throw error;
+      }
+
       await dependencies.syncSubscription(resolution.owner.id, {
-        ...(customerId ? { customerId } : {}),
+        customerId,
         plan: "FREE",
       });
       return { outcome: "processed" as const, source: resolution.source };
