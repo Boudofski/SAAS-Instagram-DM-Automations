@@ -16,7 +16,15 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-export function DeleteAccountButton({ email }: { email: string }) {
+type DeleteAccountButtonProps = {
+  email: string;
+  visualOnly?: boolean;
+};
+
+export function DeleteAccountButton({
+  email,
+  visualOnly = false,
+}: DeleteAccountButtonProps) {
   const requiredConfirmation = getAccountDeletionConfirmation(email);
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +34,7 @@ export function DeleteAccountButton({ email }: { email: string }) {
     confirmation.trim().toLowerCase() === requiredConfirmation.toLowerCase();
 
   async function deleteAccount() {
-    if (!confirmationMatches || isDeleting) return;
+    if (visualOnly || !confirmationMatches || isDeleting) return;
 
     setIsDeleting(true);
     setError("");
@@ -91,6 +99,11 @@ export function DeleteAccountButton({ email }: { email: string }) {
             <span className="block font-semibold text-slate-800 dark:text-slate-200">
               This action cannot be undone.
             </span>
+            {visualOnly && (
+              <span className="block rounded-xl border border-amber-200 bg-amber-50 p-3 font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                Preview visual QA only. Account deletion is disabled on this page.
+              </span>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -120,11 +133,15 @@ export function DeleteAccountButton({ email }: { email: string }) {
           <Button
             type="button"
             variant="destructive"
-            disabled={!confirmationMatches || isDeleting}
+            disabled={visualOnly || !confirmationMatches || isDeleting}
             onClick={deleteAccount}
           >
             {isDeleting ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Trash2 aria-hidden="true" />}
-            {isDeleting ? "Deleting account…" : "Delete permanently"}
+            {visualOnly
+              ? "Preview only — deletion disabled"
+              : isDeleting
+                ? "Deleting account…"
+                : "Delete permanently"}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
