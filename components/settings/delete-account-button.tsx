@@ -109,7 +109,7 @@ export function DeleteAccountButton({
 
         <div className="space-y-2">
           <label htmlFor="delete-account-confirmation" className="text-sm font-bold">
-            Type <span className="select-all font-mono text-red-700 dark:text-red-300">{requiredConfirmation}</span>
+            Type <span className="select-all break-all font-mono text-red-700 dark:text-red-300">{requiredConfirmation}</span>
           </label>
           <Input
             id="delete-account-confirmation"
