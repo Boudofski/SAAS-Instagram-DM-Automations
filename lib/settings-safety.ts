@@ -24,8 +24,9 @@ export function getMcpAccessTokenState() {
 
 export function getAccountDangerZoneState() {
   return {
-    selfServiceDeleteEnabled: false,
-    label: "Contact support to delete account",
+    selfServiceDeleteEnabled: true,
+    requiresTypedConfirmation: true,
+    label: "Delete account permanently",
   };
 }
 
