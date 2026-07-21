@@ -1,8 +1,9 @@
-import ThemeToggle from "@/components/global/theme-toggle";
-import { ManageSignInSettings } from "@/components/settings/manage-sign-in-settings";
 import { onUserInfo } from "@/actions/user";
-import { getAccountDangerZoneState, getEmailSettingsState, getMcpAccessTokenState } from "@/lib/settings-safety";
+import ThemeToggle from "@/components/global/theme-toggle";
+import { DeleteAccountButton } from "@/components/settings/delete-account-button";
+import { ManageSignInSettings } from "@/components/settings/manage-sign-in-settings";
 import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getEmailSettingsState, getMcpAccessTokenState } from "@/lib/settings-safety";
 import { LockKeyhole, Palette, ShieldAlert, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -11,7 +12,6 @@ async function SettingsPage() {
   const user = userResult.status === 200 ? userResult.data : null;
   const emailState = getEmailSettingsState(user?.email);
   const mcpState = getMcpAccessTokenState();
-  const dangerState = getAccountDangerZoneState();
   const appReviewMode = isAppReviewMode();
 
   return (
@@ -46,17 +46,17 @@ async function SettingsPage() {
       </SettingsSection>
 
       {!appReviewMode && (
-      <SettingsSection icon={<Sparkles className="h-4.5 w-4.5" />} label="MCP / Personal Access Tokens">
-        <div className="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/[0.07] sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-black text-amber-900 dark:text-amber-200">Coming soon</p>
-            <p className="mt-1 max-w-lg text-sm leading-relaxed text-amber-800/80 dark:text-amber-300/80">
-              Connect Claude, ChatGPT, or any MCP-aware AI client directly to your AP3k account via a personal access token. Final testing in progress.
-            </p>
+        <SettingsSection icon={<Sparkles className="h-4.5 w-4.5" />} label="MCP / Personal Access Tokens">
+          <div className="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/[0.07] sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-amber-900 dark:text-amber-200">Coming soon</p>
+              <p className="mt-1 max-w-lg text-sm leading-relaxed text-amber-800/80 dark:text-amber-300/80">
+                Connect Claude, ChatGPT, or any MCP-aware AI client directly to your AP3k account via a personal access token. Final testing in progress.
+              </p>
+            </div>
+            <span className="ap3k-badge ap3k-badge-amber shrink-0">{mcpState.badge}</span>
           </div>
-          <span className="ap3k-badge ap3k-badge-amber shrink-0">{mcpState.badge}</span>
-        </div>
-      </SettingsSection>
+        </SettingsSection>
       )}
 
       <section className="rounded-2xl border border-red-200 bg-red-50/80 p-5 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-6">
@@ -67,16 +67,10 @@ async function SettingsPage() {
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-red-800 dark:text-red-200">
-              To request deletion of your AP3k account and associated data, contact support. Self-service account deletion is not available in these settings.
+              Permanently remove your AP3K campaigns, connected Instagram accounts, leads, activity, billing profile, and sign-in account. This cannot be undone.
             </p>
             <div className="mt-4">
-              <button
-                type="button"
-                disabled
-                className="cursor-not-allowed rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-400 opacity-70 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-400"
-              >
-                {dangerState.label}
-              </button>
+              <DeleteAccountButton email={emailState.email} />
             </div>
           </div>
         </div>
