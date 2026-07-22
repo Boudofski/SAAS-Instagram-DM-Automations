@@ -45,6 +45,7 @@ function provisionedUserResult(
       lastname: profile.lastname,
       clerkId: profile.clerkId,
     },
+    error: null,
   };
 }
 
@@ -58,7 +59,11 @@ export const onCurrentUser = async () => {
 export const ensureCurrentUserProfile = async () => {
   const user = await currentUser();
   if (!user) {
-    return { status: 401 as const, error: "not_authenticated" as const };
+    return {
+      status: 401 as const,
+      data: null,
+      error: "not_authenticated" as const,
+    };
   }
 
   try {
@@ -74,7 +79,11 @@ export const ensureCurrentUserProfile = async () => {
       "";
 
     if (!email) {
-      return { status: 400 as const, error: "missing_user_email" as const };
+      return {
+        status: 400 as const,
+        data: null,
+        error: "missing_user_email" as const,
+      };
     }
 
     try {
@@ -100,14 +109,22 @@ export const ensureCurrentUserProfile = async () => {
         authenticatedUserPresent: true,
         message: error instanceof Error ? error.message : String(error),
       });
-      return { status: 500 as const, error: "profile_provision_failed" as const };
+      return {
+        status: 500 as const,
+        data: null,
+        error: "profile_provision_failed" as const,
+      };
     }
   } catch (error) {
     console.error("[user-provision] AP3K profile lookup failed", {
       authenticatedUserPresent: true,
       message: error instanceof Error ? error.message : String(error),
     });
-    return { status: 500 as const, error: "profile_lookup_failed" as const };
+    return {
+      status: 500 as const,
+      data: null,
+      error: "profile_lookup_failed" as const,
+    };
   }
 };
 
