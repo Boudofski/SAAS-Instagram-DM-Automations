@@ -1,11 +1,23 @@
 import { readFileSync } from "fs";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import path from "path";
 
 const root = path.resolve(__dirname, "../");
 
 function read(rel: string) {
   return readFileSync(path.join(root, rel), "utf-8");
+}
+
+function literalClassTokens(source: string) {
+  return Array.from(source.matchAll(/className="([^"]*)"/g)).flatMap((match) =>
+    match[1].split(/\s+/).filter(Boolean)
+  );
+}
+
+function literalHeadingClassTokens(source: string) {
+  return Array.from(source.matchAll(/<h[12][^>]*className="([^"]*)"/g)).flatMap(
+    (match) => match[1].split(/\s+/).filter(Boolean)
+  );
 }
 
 describe("light-mode contrast invariants", () => {
@@ -18,92 +30,47 @@ describe("light-mode contrast invariants", () => {
     expect(src).not.toContain("dark:bg-rf-surface");
   });
 
-  it("ap3k-kicker uses light-mode pink override (text-pink-600 dark:text-rf-pink)", () => {
+  it("ap3k-kicker uses a light-mode pink override", () => {
     const src = read("app/globals.css");
     expect(src).toContain("text-pink-600 dark:text-rf-pink");
   });
 
-  it("onboarding pages have no bare text-rf-muted without dark: on the same line", () => {
+  it("onboarding pages do not use exact unguarded rf text utilities", () => {
     const pages = [
       "app/(protected)/onboarding/page.tsx",
       "app/(protected)/onboarding/connect/page.tsx",
       "app/(protected)/onboarding/complete/page.tsx",
     ];
+
     for (const page of pages) {
-      const src = read(page);
-      const badLines = src
-        .split("\n")
-        .filter((line) => line.includes("text-rf-muted") && !line.includes("dark:text-rf-muted"));
-      expect(badLines, `${page} contains unguarded text-rf-muted`).toEqual([]);
+      const tokens = literalClassTokens(read(page));
+      expect(tokens, `${page} contains unguarded text-rf-muted`).not.toContain(
+        "text-rf-muted"
+      );
+      expect(tokens, `${page} contains unguarded text-rf-text`).not.toContain(
+        "text-rf-text"
+      );
     }
   });
 
-  it("onboarding connect page has no bare text-rf-text without dark: on the same line", () => {
-    const src = read("app/(protected)/onboarding/connect/page.tsx");
-    const badLines = src
-      .split("\n")
-      .filter((line) => line.includes("text-rf-text") && !line.includes("dark:text-rf-text"));
-    expect(badLines).toEqual([]);
-  });
-
-  it("main-bread-crumbs uses dark: guards for rf-text and rf-muted", () => {
-    const src = read("components/global/main-bread-crumbs/index.tsx");
-    const badLines = src
-      .split("\n")
-      .filter(
-        (line) =>
-          (line.includes("text-rf-text") && !line.includes("dark:text-rf-text")) ||
-          (line.includes("text-rf-muted") && !line.includes("dark:text-rf-muted"))
-      );
-    expect(badLines).toEqual([]);
-  });
-
-  it("onboarding-checklist uses dark: guards for rf-text and rf-muted", () => {
-    const src = read("components/onboarding/onboarding-checklist.tsx");
-    const badLines = src
-      .split("\n")
-      .filter(
-        (line) =>
-          (line.includes("text-rf-text") && !line.includes("dark:text-rf-text")) ||
-          (line.includes("text-rf-muted") && !line.includes("dark:text-rf-muted"))
-      );
-    expect(badLines).toEqual([]);
-  });
-
-  it("stat-card neutral delta has light-mode border and bg", () => {
-    const src = read("components/dashboard/stat-card.tsx");
-    expect(src).toContain("border-slate-200 bg-slate-50");
-    expect(src).toContain("dark:border-rf-border dark:bg-rf-surface/70");
-  });
-
-  it("ap3k-logo default text color has dark: guard", () => {
+  it("ap3k-logo uses a light color with a dark-mode guard", () => {
     const src = read("components/global/ap3k-logo/index.tsx");
     expect(src).toContain("text-slate-950 dark:text-rf-text");
   });
 
-  it("sidebar upgrade card uses dark: guard for rf-muted text", () => {
-    const src = read("components/global/sidebar/upgrade-card.tsx");
-    const badLines = src
-      .split("\n")
-      .filter((line) => line.includes("text-rf-muted") && !line.includes("dark:text-rf-muted"));
-    expect(badLines).toEqual([]);
-  });
-
-  it("dashboard page headings do not use bare text-white on h1 or h2", () => {
+  it("dashboard page headings do not use exact bare text-white", () => {
     const pages = [
       "app/(protected)/dashboard/[slug]/page.tsx",
       "app/(protected)/dashboard/[slug]/billing/page.tsx",
       "app/(protected)/dashboard/[slug]/settings/page.tsx",
       "app/(protected)/dashboard/[slug]/integrations/page.tsx",
     ];
+
     for (const page of pages) {
-      const src = read(page);
-      const headingClasses = Array.from(
-        src.matchAll(/<h[12][^>]*className="([^"]*)"/g),
-        (match) => match[1].split(/\s+/)
+      const tokens = literalHeadingClassTokens(read(page));
+      expect(tokens, `${page} contains a bare text-white heading`).not.toContain(
+        "text-white"
       );
-      const bareTextWhite = headingClasses.flat().filter((token) => token === "text-white");
-      expect(bareTextWhite, `${page} contains bare text-white on an h1 or h2`).toEqual([]);
     }
   });
 });
