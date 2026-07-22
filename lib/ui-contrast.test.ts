@@ -98,7 +98,12 @@ describe("light-mode contrast invariants", () => {
     ];
     for (const page of pages) {
       const src = read(page);
-      expect(src).not.toMatch(/<h[12][^>]*className="[^"]*\btext-white\b/);
+      const headingClasses = Array.from(
+        src.matchAll(/<h[12][^>]*className="([^"]*)"/g),
+        (match) => match[1].split(/\s+/)
+      );
+      const bareTextWhite = headingClasses.flat().filter((token) => token === "text-white");
+      expect(bareTextWhite, `${page} contains bare text-white on an h1 or h2`).toEqual([]);
     }
   });
 });
