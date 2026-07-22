@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useClerk } from "@clerk/nextjs";
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +26,7 @@ export function DeleteAccountButton({
   email,
   visualOnly = false,
 }: DeleteAccountButtonProps) {
+  const clerk = useClerk();
   const requiredConfirmation = getAccountDeletionConfirmation(email);
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
@@ -53,8 +55,6 @@ export function DeleteAccountButton({
       if (!response.ok || !result?.success) {
         throw new Error(result?.error?.message || "Account deletion failed. Please try again.");
       }
-
-      window.location.assign("/?account_deleted=1");
     } catch (deletionError) {
       setError(
         deletionError instanceof Error
@@ -62,6 +62,21 @@ export function DeleteAccountButton({
           : "Account deletion failed. Please try again."
       );
       setIsDeleting(false);
+      return;
+    }
+
+    // The backend has removed the Clerk identity. Clear the browser's active
+    // Clerk session before navigating so a deleted session cannot poison SSR.
+    try {
+      await clerk.signOut({ redirectUrl: "/?account_deleted=1" });
+      return;
+    } catch {
+      try {
+        await clerk.setActive({ session: null });
+      } catch {
+        // Navigation below is the final fallback after successful deletion.
+      }
+      window.location.replace("/?account_deleted=1");
     }
   }
 

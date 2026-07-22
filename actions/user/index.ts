@@ -18,6 +18,37 @@ const publicUserProfile = <T extends { integrations?: any[] }>(profile: T) => ({
   })) ?? [],
 });
 
+function warnIfPageTokenNearExpiry(profile: Awaited<ReturnType<typeof findUser>>) {
+  const integration = profile?.integrations[0];
+  if (!integration?.expiresAt) return;
+
+  const days = Math.round(
+    (integration.expiresAt.getTime() - Date.now()) / (1000 * 3600 * 24)
+  );
+
+  if (days < 5) {
+    console.warn("[oauth] page token near expiry; reconnect required", {
+      integrationId: integration.id,
+      daysRemaining: days,
+    });
+  }
+}
+
+function provisionedUserResult(
+  status: 200 | 201,
+  profile: { firstname?: string | null; lastname?: string | null; clerkId: string }
+) {
+  return {
+    status,
+    data: {
+      firstname: profile.firstname,
+      lastname: profile.lastname,
+      clerkId: profile.clerkId,
+    },
+    error: null,
+  };
+}
+
 export const onCurrentUser = async () => {
   const user = await currentUser();
   if (!user) return redirect("/sign-in");
@@ -25,49 +56,82 @@ export const onCurrentUser = async () => {
   return user;
 };
 
-export const onboardUser = async () => {
-  const user = await onCurrentUser();
+export const ensureCurrentUserProfile = async () => {
+  const user = await currentUser();
+  if (!user) {
+    return {
+      status: 401 as const,
+      data: null,
+      error: "not_authenticated" as const,
+    };
+  }
 
   try {
     const found = await findUser(user.id);
-
     if (found) {
-      if (found.integrations.length > 0) {
-        const today = new Date();
-        const time_left =
-          found.integrations[0].expiresAt?.getTime()! - today.getTime();
+      warnIfPageTokenNearExpiry(found);
+      return provisionedUserResult(200, found);
+    }
 
-        const days = Math.round(time_left / (1000 * 3600 * 24));
+    const email =
+      user.primaryEmailAddress?.emailAddress ??
+      user.emailAddresses[0]?.emailAddress ??
+      "";
 
-        if (days < 5) {
-          console.warn("[oauth] page token near expiry; reconnect required", {
-            integrationId: found.integrations[0].id,
-            daysRemaining: days,
-          });
-        }
-      }
+    if (!email) {
       return {
-        status: 200,
-        data: {
-          firstname: found.firstname,
-          lastname: found.lastname,
-          clerkId: found.clerkId,
-        },
+        status: 400 as const,
+        data: null,
+        error: "missing_user_email" as const,
       };
     }
-    const created = await createUser(
-      user.id,
-      user.firstName!,
-      user.lastName!,
-      user.emailAddresses[0].emailAddress
-    );
 
-    console.log("🧊🧊🧊");
+    try {
+      const created = await createUser(
+        user.id,
+        user.firstName ?? "",
+        user.lastName ?? "",
+        email
+      );
 
-    return { status: 201, data: { ...created, clerkId: user.id } };
-  } catch (error: any) {
-    return { status: 500, data: error.message };
+      console.log("[user-provision] AP3K profile created", {
+        authenticatedUserPresent: true,
+      });
+      return provisionedUserResult(201, created);
+    } catch (error) {
+      // A concurrent request may have created the row between find and create.
+      const racedProfile = await findUser(user.id);
+      if (racedProfile) {
+        return provisionedUserResult(200, racedProfile);
+      }
+
+      console.error("[user-provision] AP3K profile creation failed", {
+        authenticatedUserPresent: true,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return {
+        status: 500 as const,
+        data: null,
+        error: "profile_provision_failed" as const,
+      };
+    }
+  } catch (error) {
+    console.error("[user-provision] AP3K profile lookup failed", {
+      authenticatedUserPresent: true,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      status: 500 as const,
+      data: null,
+      error: "profile_lookup_failed" as const,
+    };
   }
+};
+
+export const onboardUser = async () => {
+  const result = await ensureCurrentUserProfile();
+  if (result.status === 401) return redirect("/sign-in");
+  return result;
 };
 
 export const onUserInfo = async () => {
@@ -167,8 +231,7 @@ export const onSubscribe = async (session_id: string) => {
       });
 
       if (subscript) {
-        const slug =
-          profile?.clerkId || "";
+        const slug = profile?.clerkId || "";
         return {
           status: 200,
           dashboardPath: dashboardPath(slug),

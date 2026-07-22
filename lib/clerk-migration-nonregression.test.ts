@@ -11,7 +11,9 @@ describe("Clerk migration non-regression invariants", () => {
     const userActions = source("actions/user/index.ts");
     expect(userActions).toContain("const found = await findUser(user.id)");
     expect(userActions).toContain("const created = await createUser(");
-    expect(userActions).toContain("user.emailAddresses[0].emailAddress");
+    expect(userActions).toContain("user.id,");
+    expect(userActions).toContain("user.primaryEmailAddress?.emailAddress");
+    expect(userActions).toContain("user.emailAddresses[0]?.emailAddress");
   });
 
   it("keeps dashboard ownership resolved through Clerk ID to the original User row", () => {
