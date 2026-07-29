@@ -5,6 +5,7 @@ const mockGetIntegrations = vi.fn();
 const mockGetRecentFacebookPagePosts = vi.fn();
 const mockSoftDisconnectIntegrationForUser = vi.fn();
 const mockRevalidatePath = vi.fn();
+const mockGetCurrentWorkspaceClerkId = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: (...args: any[]) => mockCurrentUser(...args),
@@ -30,6 +31,11 @@ vi.mock("@/lib/fetch", () => ({
 
 vi.mock("@/lib/instagram-profile-snapshot", () => ({
   refreshInstagramProfileSnapshotForUser: vi.fn(),
+}));
+
+vi.mock("@/actions/user", () => ({
+  getCurrentWorkspaceClerkId: (...args: any[]) =>
+    mockGetCurrentWorkspaceClerkId(...args),
 }));
 
 vi.mock("@/lib/account-webhook-diagnostics", () => ({
@@ -65,6 +71,7 @@ describe("disconnectCurrentInstagramIntegration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCurrentUser.mockResolvedValue({ id: "clerk-user-1" });
+    mockGetCurrentWorkspaceClerkId.mockResolvedValue("clerk-user-1");
     mockSoftDisconnectIntegrationForUser.mockResolvedValue({ id: "integration-1", pausedCampaigns: 1 });
   });
 
@@ -100,6 +107,7 @@ describe("getRecentSelectedFacebookPageContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCurrentUser.mockResolvedValue({ id: "clerk-user-1" });
+    mockGetCurrentWorkspaceClerkId.mockResolvedValue("clerk-user-1");
     mockGetIntegrations.mockResolvedValue({
       integrations: [
         {
@@ -148,5 +156,17 @@ describe("getRecentSelectedFacebookPageContent", () => {
       error: null,
     });
     expect(JSON.stringify(result)).not.toContain("page-access-token");
+  });
+
+  it("uses the claimed Preview workspace identity for integration reads", async () => {
+    mockGetCurrentWorkspaceClerkId.mockResolvedValue(
+      "existing-workspace-clerk-id"
+    );
+
+    await getRecentSelectedFacebookPageContent();
+
+    expect(mockGetIntegrations).toHaveBeenCalledWith(
+      "existing-workspace-clerk-id"
+    );
   });
 });

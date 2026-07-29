@@ -13,7 +13,11 @@ vi.mock("next/navigation", () => ({
   notFound: () => mockNotFound(),
 }));
 
-import { maskSecret, requireOwnerAdmin } from "./admin";
+import {
+  isOwnerAdminIdentity,
+  maskSecret,
+  requireOwnerAdmin,
+} from "./admin";
 
 describe("requireOwnerAdmin", () => {
   beforeEach(() => {
@@ -58,6 +62,24 @@ describe("requireOwnerAdmin", () => {
 
     await expect(requireOwnerAdmin()).rejects.toThrow("not_found");
     expect(mockNotFound).toHaveBeenCalledOnce();
+  });
+
+  it("does not grant Admin V2 access to boudofski@gmail.com", () => {
+    process.env.ADMIN_EMAILS = "officialabde@gmail.com";
+    process.env.ADMIN_CLERK_USER_IDS = "";
+
+    expect(
+      isOwnerAdminIdentity({
+        clerkId: "preview_workspace_owner",
+        email: "boudofski@gmail.com",
+      })
+    ).toBe(false);
+    expect(
+      isOwnerAdminIdentity({
+        clerkId: "official_admin",
+        email: "officialabde@gmail.com",
+      })
+    ).toBe(true);
   });
 
   it("masks secrets without exposing full values", () => {

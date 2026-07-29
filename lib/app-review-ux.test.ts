@@ -153,9 +153,9 @@ describe("App Review-safe UX", () => {
     expect(disconnectButton).toContain('[\"onboarding-connect\"]');
     expect(disconnectButton).toContain("Instagram connection could not be removed. Please try again.");
     expect(integrationAction).toContain('revalidatePath("/dashboard", "layout")');
-    expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/account`)');
-    expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/integrations`)');
-    expect(integrationAction).toContain('revalidatePath(`/dashboard/${user.id}/automation`)');
+    expect(integrationAction).toContain('revalidatePath(`/dashboard/${workspaceClerkId}/account`)');
+    expect(integrationAction).toContain('revalidatePath(`/dashboard/${workspaceClerkId}/integrations`)');
+    expect(integrationAction).toContain('revalidatePath(`/dashboard/${workspaceClerkId}/automation`)');
     expect(integrationAction).toContain('revalidatePath("/onboarding/connect")');
     expect(integrationQueries).toContain("getCanonicalInstagramIntegration");
     expect(integrationQueries).not.toContain("client.integrations.delete");

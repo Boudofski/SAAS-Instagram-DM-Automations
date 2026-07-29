@@ -40,6 +40,7 @@ import {
   shouldShowMetaPageSelection,
 } from "@/lib/app-review-mode";
 import { getMetaBusinessOAuthScopes } from "@/lib/messaging-review-mode";
+import { getCurrentWorkspaceClerkId } from "@/actions/user";
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
 
@@ -216,9 +217,11 @@ export const onIntegrate = async (code: string) => {
   if (!user) {
     return { status: 401, error: "auth_missing" };
   }
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   try {
-    const integration = await getIntegrations(user.id);
+    const integration = await getIntegrations(workspaceClerkId);
     const existing = getCanonicalInstagramIntegration(integration?.integrations);
     console.log("[oauth] step oauth_received", {
       hasCode: Boolean(code),
@@ -229,11 +232,11 @@ export const onIntegrate = async (code: string) => {
     const userAccessToken = tokenResult?.accessToken;
 
     if (!userAccessToken) {
-      await recordIntegrationOAuthError(user.id, "token_exchange_failed");
+      await recordIntegrationOAuthError(workspaceClerkId, "token_exchange_failed");
       return {
         status: 401,
         error: "token_exchange_failed",
-        data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+        data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
       };
     }
     console.log("[oauth] step token_exchange_success", {
@@ -264,7 +267,7 @@ export const onIntegrate = async (code: string) => {
             ? "ig_business_not_linked"
             : "page_token_missing";
         await recordIntegrationOAuthError(
-          user.id,
+          workspaceClerkId,
           state,
           "facebook_business_oauth",
           resolutionDiagnostics
@@ -278,7 +281,7 @@ export const onIntegrate = async (code: string) => {
         return {
           status: 401,
           error: state,
-          data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+          data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
         };
       }
 
@@ -288,7 +291,7 @@ export const onIntegrate = async (code: string) => {
           metaAppScopedUserId,
         }));
         await createMetaOAuthSelection(
-          user.id,
+          workspaceClerkId,
           accountsWithMetaUser,
           new Date(Date.now() + 10 * 60 * 1000)
         );
@@ -297,7 +300,7 @@ export const onIntegrate = async (code: string) => {
         });
         return {
           status: 202,
-          data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+          data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
         };
       }
 
@@ -309,7 +312,7 @@ export const onIntegrate = async (code: string) => {
         message === "ig_business_not_linked" || message === "page_token_missing"
           ? message
           : "page_resolution_failed";
-      await recordIntegrationOAuthError(user.id, state, "facebook_business_oauth", resolutionDiagnostics);
+      await recordIntegrationOAuthError(workspaceClerkId, state, "facebook_business_oauth", resolutionDiagnostics);
       console.warn("[oauth] step page_resolution_failed", {
         state,
         resolutionDiagnostics,
@@ -318,7 +321,7 @@ export const onIntegrate = async (code: string) => {
       return {
         status: 401,
         error: state,
-        data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+        data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
       };
     }
     console.log("[oauth] step page_selected", {
@@ -338,22 +341,22 @@ export const onIntegrate = async (code: string) => {
         tokenType: debug.data?.data?.type ?? "unknown",
       });
       if (!isValid) {
-        await recordIntegrationOAuthError(user.id, "page_token_missing");
+        await recordIntegrationOAuthError(workspaceClerkId, "page_token_missing");
         return {
           status: 401,
           error: "page_token_missing",
-          data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+          data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
         };
       }
     } catch (error) {
-      await recordIntegrationOAuthError(user.id, "page_token_missing");
+      await recordIntegrationOAuthError(workspaceClerkId, "page_token_missing");
       console.warn("[oauth] step page_token_validation_failed", {
         error: getSafeMetaError(error),
       });
       return {
         status: 401,
         error: "page_token_missing",
-        data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+        data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
       };
     }
 
@@ -372,7 +375,7 @@ export const onIntegrate = async (code: string) => {
 
     const reconnectImpact = existing
       ? await applyReconnectCampaignImpact({
-        clerkId: user.id,
+        clerkId: workspaceClerkId,
         previousInstagramId: existing.instagramId,
         previousUsername: existing.instagramUsername,
         nextInstagramId: resolved.instagramBusinessAccountId,
@@ -381,7 +384,7 @@ export const onIntegrate = async (code: string) => {
       : null;
 
     const create = await createIntegration(
-      user.id,
+      workspaceClerkId,
       resolved.pageAccessToken,
       new Date(expireDate),
       resolved.instagramBusinessAccountId,
@@ -404,10 +407,10 @@ export const onIntegrate = async (code: string) => {
 
     // Seed initial profile snapshot for newly created integration (non-fatal)
     try {
-      const freshIntegrations = await getIntegrations(user.id);
+      const freshIntegrations = await getIntegrations(workspaceClerkId);
       const newIntegrationId = getCanonicalInstagramIntegration(freshIntegrations?.integrations)?.id;
       if (newIntegrationId) {
-        await refreshInstagramProfileSnapshotForUser(user.id, newIntegrationId, {});
+        await refreshInstagramProfileSnapshotForUser(workspaceClerkId, newIntegrationId, {});
       }
     } catch {}
 
@@ -415,7 +418,7 @@ export const onIntegrate = async (code: string) => {
   } catch (error) {
     const saveFailure = classifyInstagramIntegrationSaveError(error);
     const errorParam = instagramOAuthErrorParamForSaveFailure(saveFailure);
-    await recordIntegrationOAuthError(user.id, errorParam);
+    await recordIntegrationOAuthError(workspaceClerkId, errorParam);
     console.error("[oauth] onIntegrate error", {
       message: error instanceof Error ? error.message : String(error),
       saveFailure,
@@ -424,7 +427,7 @@ export const onIntegrate = async (code: string) => {
     return {
       status: 500,
       error: errorParam,
-      data: { firstname: user.firstName, lastname: user.lastName, clerkId: user.id },
+      data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
     };
   }
 };
@@ -432,9 +435,11 @@ export const onIntegrate = async (code: string) => {
 export const resubscribeCurrentInstagramWebhooks = async () => {
   const user = await currentUser();
   if (!user) return { status: 401, data: "Sign in required" };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   try {
-    const integration = await getIntegrations(user.id);
+    const integration = await getIntegrations(workspaceClerkId);
     const instagram = integration?.integrations[0];
 
     if (!instagram?.token || !instagram.pageId) {
@@ -488,9 +493,11 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
 export const repairCurrentInstagramConnection = async () => {
   const user = await currentUser();
   if (!user) return { status: 401, data: "Sign in required" };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   const dbUser = await client.user.findUnique({
-    where: { clerkId: user.id },
+    where: { clerkId: workspaceClerkId },
     select: {
       id: true,
       integrations: {
@@ -586,8 +593,10 @@ export const refreshInstagramProfileSnapshot = async (
 ) => {
   const user = await currentUser();
   if (!user) return { status: 401, data: null, cached: false, error: "Sign in required" };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
-  const result = await refreshInstagramProfileSnapshotForUser(user.id, integrationId, options);
+  const result = await refreshInstagramProfileSnapshotForUser(workspaceClerkId, integrationId, options);
   if (!result.cached) {
     revalidatePath("/dashboard", "layout");
   }
@@ -597,19 +606,21 @@ export const refreshInstagramProfileSnapshot = async (
 export const disconnectCurrentInstagramIntegration = async () => {
   const user = await currentUser();
   if (!user) return { status: 401, data: "Sign in required" };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   try {
-    const disconnected = await softDisconnectIntegrationForUser(user.id);
+    const disconnected = await softDisconnectIntegrationForUser(workspaceClerkId);
     if (!disconnected) {
       return { status: 404, data: "No Instagram account connected" };
     }
 
     revalidatePath("/dashboard", "layout");
-    revalidatePath(`/dashboard/${user.id}`);
-    revalidatePath(`/dashboard/${user.id}/account`);
-    revalidatePath(`/dashboard/${user.id}/integrations`);
-    revalidatePath(`/dashboard/${user.id}/automation`);
-    revalidatePath(`/dashboard/${user.id}/automation`, "layout");
+    revalidatePath(`/dashboard/${workspaceClerkId}`);
+    revalidatePath(`/dashboard/${workspaceClerkId}/account`);
+    revalidatePath(`/dashboard/${workspaceClerkId}/integrations`);
+    revalidatePath(`/dashboard/${workspaceClerkId}/automation`);
+    revalidatePath(`/dashboard/${workspaceClerkId}/automation`, "layout");
     revalidatePath("/onboarding/connect");
     return { status: 200, data: "Instagram account disconnected" };
   } catch (error) {
@@ -623,8 +634,10 @@ export const disconnectCurrentInstagramIntegration = async () => {
 export const getPendingInstagramAccountSelections = async () => {
   const user = await currentUser();
   if (!user) return { status: 401, data: [] };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
-  const selection = await getLatestMetaOAuthSelection(user.id);
+  const selection = await getLatestMetaOAuthSelection(workspaceClerkId);
   const accounts = Array.isArray(selection?.accounts) ? selection.accounts : [];
 
   return {
@@ -651,8 +664,10 @@ export const getRecentSelectedFacebookPageContent = async () => {
       error: "Sign in required.",
     };
   }
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
-  const integrations = await getIntegrations(user.id);
+  const integrations = await getIntegrations(workspaceClerkId);
   const integration = getCanonicalInstagramIntegration(integrations?.integrations);
   const pageId = integration?.pageId ?? null;
   const pageName = integration?.pageName ?? null;
@@ -704,16 +719,18 @@ export const getRecentSelectedFacebookPageContent = async () => {
 export const selectPendingInstagramAccount = async (formData: FormData) => {
   const user = await currentUser();
   if (!user) return redirect("/sign-in");
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   const pageId = String(formData.get("pageId") ?? "").trim();
-  const selection = await getLatestMetaOAuthSelection(user.id);
+  const selection = await getLatestMetaOAuthSelection(workspaceClerkId);
   const accounts = Array.isArray(selection?.accounts)
     ? (selection.accounts as unknown as EligibleInstagramAccount[])
     : [];
   const selected = accounts.find((account) => account.pageId === pageId);
 
   if (!selection || !selected) {
-    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=page_resolution_failed`);
+    return redirect(`${dashboardPath(workspaceClerkId)}/integrations?integration_error=page_resolution_failed`);
   }
 
   // redirect() throws NEXT_REDIRECT internally — if called inside a try block the
@@ -725,20 +742,20 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
     const debug = await debugPageToken(selected.pageAccessToken);
     const isValid = Boolean(debug.data?.data?.is_valid);
     if (!isValid) {
-      await recordIntegrationOAuthError(user.id, "page_token_missing");
+      await recordIntegrationOAuthError(workspaceClerkId, "page_token_missing");
       integrationError = "page_token_missing";
     } else {
       const subscriptionAttempt = await attemptWebhookSubscription(
         selected.pageId,
         selected.pageAccessToken
       );
-      const integration = await getIntegrations(user.id);
+      const integration = await getIntegrations(workspaceClerkId);
       const existing = getCanonicalInstagramIntegration(integration?.integrations);
       const expireDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
       if (existing) {
         await applyReconnectCampaignImpact({
-          clerkId: user.id,
+          clerkId: workspaceClerkId,
           previousInstagramId: existing.instagramId,
           previousUsername: existing.instagramUsername,
           nextInstagramId: selected.instagramBusinessAccountId,
@@ -747,7 +764,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
       }
 
       await createIntegration(
-        user.id,
+        workspaceClerkId,
         selected.pageAccessToken,
         expireDate,
         selected.instagramBusinessAccountId,
@@ -787,23 +804,25 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
       error: getSafeMetaError(error),
       saveFailure,
     });
-    await recordIntegrationOAuthError(user.id, errorParam);
+    await recordIntegrationOAuthError(workspaceClerkId, errorParam);
     integrationError = errorParam;
   }
 
   // redirect() is outside the try/catch so Next.js handles NEXT_REDIRECT correctly
   if (integrationError) {
-    return redirect(`${dashboardPath(user.id)}/integrations?integration_error=${integrationError}`);
+    return redirect(`${dashboardPath(workspaceClerkId)}/integrations?integration_error=${integrationError}`);
   }
-  return redirect(`${dashboardPath(user.id)}/integrations`);
+  return redirect(`${dashboardPath(workspaceClerkId)}/integrations`);
 };
 
 export const getCurrentWebhookHealth = async () => {
   const user = await currentUser();
   if (!user) return { status: 401, data: null };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   try {
-    return { status: 200, data: await getWebhookHealthForUser(user.id) };
+    return { status: 200, data: await getWebhookHealthForUser(workspaceClerkId) };
   } catch {
     return { status: 500, data: null };
   }
@@ -812,11 +831,13 @@ export const getCurrentWebhookHealth = async () => {
 export const recordInstagramOAuthError = async (error: string) => {
   const user = await currentUser();
   if (!user) return { status: 401 };
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   try {
-    await recordIntegrationOAuthError(user.id, error, "facebook_business_oauth");
-    return { status: 200, data: { clerkId: user.id } };
+    await recordIntegrationOAuthError(workspaceClerkId, error, "facebook_business_oauth");
+    return { status: 200, data: { clerkId: workspaceClerkId } };
   } catch {
-    return { status: 500, data: { clerkId: user.id } };
+    return { status: 500, data: { clerkId: workspaceClerkId } };
   }
 };
