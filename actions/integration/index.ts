@@ -39,15 +39,7 @@ import {
   isAppReviewMode,
   shouldShowMetaPageSelection,
 } from "@/lib/app-review-mode";
-
-const REQUIRED_META_BUSINESS_SCOPES = [
-  "pages_show_list",
-  "pages_read_engagement",
-  "business_management",
-  "instagram_basic",
-  "instagram_manage_comments",
-  "instagram_manage_messages",
-];
+import { getMetaBusinessOAuthScopes } from "@/lib/messaging-review-mode";
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
 
@@ -168,10 +160,11 @@ export async function getInstagramOAuthUrl() {
   const { clientId } = getOAuthClientId();
   if (!clientId) throw new Error("META_APP_ID is not configured");
 
+  const requiredScopes = getMetaBusinessOAuthScopes();
   const url = new URL(FACEBOOK_BUSINESS_OAUTH_URL);
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("scope", REQUIRED_META_BUSINESS_SCOPES.join(","));
+  url.searchParams.set("scope", requiredScopes.join(","));
   url.searchParams.set("response_type", "code");
   url.searchParams.set("auth_type", "rerequest");
   return url.toString();
@@ -187,14 +180,15 @@ export const getInstagramConnectUrl = async () => {
   try {
     const url = await getInstagramOAuthUrl();
     const { source } = getOAuthClientId();
+    const requestedScopes = getMetaBusinessOAuthScopes();
     console.log("[oauth] connect URL generated", {
       oauth_client_id_source: source,
       authProduct: "facebook_login_for_business",
       hasMetaAppId: Boolean(process.env.META_APP_ID),
       hasRedirectUri: Boolean(process.env.META_REDIRECT_URI),
       endpoint: FACEBOOK_BUSINESS_OAUTH_URL,
-      requestedScopes: REQUIRED_META_BUSINESS_SCOPES,
-      scopeCount: REQUIRED_META_BUSINESS_SCOPES.length,
+      requestedScopes,
+      scopeCount: requestedScopes.length,
       redirectIsProduction: process.env.META_REDIRECT_URI === "https://ap3k.com/callback/instagram",
     });
     return { status: 200, url };
