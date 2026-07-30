@@ -2,33 +2,44 @@
 
 import { client } from "@/lib/prisma";
 
+const userProfileInclude = {
+  subscription: true,
+  integrations: {
+    orderBy: { createdAt: "desc" as const },
+    select: {
+      id: true,
+      token: true,
+      expiresAt: true,
+      name: true,
+      instagramId: true,
+      pageId: true,
+      pageName: true,
+      businessId: true,
+      webhookAccountId: true,
+      igAccountSource: true,
+      instagramUsername: true,
+      profilePictureUrl: true,
+      status: true,
+      reconnectRequired: true,
+    },
+  },
+} as const;
+
 export const findUser = async (clerkId: string) => {
   return await client.user.findUnique({
     where: {
       clerkId,
     },
-    include: {
-      subscription: true,
-      integrations: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          token: true,
-          expiresAt: true,
-          name: true,
-          instagramId: true,
-          pageId: true,
-          pageName: true,
-          businessId: true,
-          webhookAccountId: true,
-          igAccountSource: true,
-          instagramUsername: true,
-          profilePictureUrl: true,
-          status: true,
-          reconnectRequired: true,
-        },
-      },
+    include: userProfileInclude,
+  });
+};
+
+export const findUserByEmail = async (email: string) => {
+  return await client.user.findUnique({
+    where: {
+      email: email.trim().toLowerCase(),
     },
+    include: userProfileInclude,
   });
 };
 

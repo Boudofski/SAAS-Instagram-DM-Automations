@@ -9,7 +9,8 @@ function source(path: string) {
 describe("Clerk migration non-regression invariants", () => {
   it("keeps normal new-user provisioning keyed by the authenticated Clerk ID", () => {
     const userActions = source("actions/user/index.ts");
-    expect(userActions).toContain("const found = await findUser(user.id)");
+    expect(userActions).toContain("const foundByClerkId = await findUser(user.id)");
+    expect(userActions).toContain("if (foundByClerkId)");
     expect(userActions).toContain("const created = await createUser(");
     expect(userActions).toContain("user.id,");
     expect(userActions).toContain("user.primaryEmailAddress?.emailAddress");
