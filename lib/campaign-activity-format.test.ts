@@ -4,9 +4,11 @@ import {
   formatRecentActivity,
   formatLogError,
   getCampaignModeLabels,
+  getMetaCapabilityPendingDisplay,
   getReviewerTestCopy,
   groupCampaignActivity,
   isWeakPublicReply,
+  META_CAPABILITY_PENDING_LABEL,
 } from "@/lib/campaign-activity-format";
 
 describe("campaign activity display formatting", () => {
@@ -75,8 +77,27 @@ describe("campaign activity display formatting", () => {
 
   it("formats Meta code=3 as capability missing", () => {
     expect(formatLogError("Meta error code=3")).toBe(
-      "Meta blocked private DM until instagram_manage_messages capability is approved."
+      META_CAPABILITY_PENDING_LABEL
     );
+    expect(
+      getMetaCapabilityPendingDisplay({
+        metaError: {
+          code: 3,
+          type: "OAuthException",
+          message:
+            "(#3) Application does not have the capability to make this API call",
+          access_token: "must-not-be-rendered",
+        },
+      })
+    ).toEqual({
+      label: "Meta capability pending approval",
+      details: {
+        code: 3,
+        type: "OAuthException",
+        message:
+          "Application does not have the capability to make this API call.",
+      },
+    });
   });
 
   it("changes reviewer copy based on private DM mode", () => {
@@ -192,7 +213,17 @@ describe("campaign activity display formatting", () => {
       event("COMMENT_RECEIVED"),
       event("KEYWORD_MATCHED", { keyword: "ai" }),
       event("PUBLIC_REPLY_SENT", { commentId: "reply-1", meta: { sourceCommentId: "comment-1", publicReplyCommentId: "reply-1" } }),
-      event("DM_FAILED", { errorMessage: "dm_capability_missing" }),
+      event("DM_FAILED", {
+        errorMessage: "dm_capability_missing",
+        meta: {
+          metaError: {
+            code: 3,
+            type: "OAuthException",
+            message:
+              "(#3) Application does not have the capability to make this API call",
+          },
+        },
+      }),
       event("REAL_COMMENT_EVENT", { status: "FAILED", errorMessage: "dm_failed: dm_capability_missing", source: "webhook" }),
     ]);
 
@@ -202,6 +233,14 @@ describe("campaign activity display formatting", () => {
       badge: "PARTIAL",
       tone: "amber",
       steps: expect.objectContaining({ publicReply: "sent", privateDm: "blocked" }),
+      details: {
+        metaError: {
+          code: 3,
+          type: "OAuthException",
+          message:
+            "Application does not have the capability to make this API call.",
+        },
+      },
     });
   });
 

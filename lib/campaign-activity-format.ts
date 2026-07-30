@@ -21,6 +21,15 @@ export type ActivityDisplay = {
   technical: boolean;
 };
 
+export const META_CAPABILITY_PENDING_LABEL =
+  "Meta capability pending approval";
+
+export type SafeMetaCapabilityDetails = {
+  code: 3;
+  type: "OAuthException";
+  message: "Application does not have the capability to make this API call.";
+};
+
 export type RecentActivityItem = {
   title: string;
   actor: string | null;
@@ -64,9 +73,38 @@ export type GroupedActivity = {
     replyTextPreview?: string;
     visibilityHelper?: string;
     error?: string;
+    metaError?: SafeMetaCapabilityDetails;
     technicalTypes: string[];
   };
 };
+
+export function getMetaCapabilityPendingDisplay(
+  input: unknown
+): {
+  label: typeof META_CAPABILITY_PENDING_LABEL;
+  details: SafeMetaCapabilityDetails;
+} | null {
+  const record = metaRecord(input);
+  const nested = metaRecord(record.metaError);
+  const candidate =
+    Object.keys(nested).length > 0 ? nested : record;
+  const code =
+    typeof candidate.code === "number"
+      ? candidate.code
+      : Number(candidate.code);
+
+  if (code !== 3) return null;
+
+  return {
+    label: META_CAPABILITY_PENDING_LABEL,
+    details: {
+      code: 3,
+      type: "OAuthException",
+      message:
+        "Application does not have the capability to make this API call.",
+    },
+  };
+}
 
 export function getCampaignModeLabels(input: {
   sendPrivateDm?: boolean | null;
@@ -357,6 +395,9 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const endpoint = firstString(metas.map((meta) => meta.endpoint));
   const commenterUsername = firstString(metas.map((meta) => meta.commenterUsername));
   const replyTextPreview = firstString(metas.map((meta) => meta.replyTextPreview ?? meta.normalizedPublicReplyText));
+  const capabilityPending = metas
+    .map((meta) => getMetaCapabilityPendingDisplay(meta))
+    .find((item) => item !== null);
   const error = firstString([
     ...items.map((item) => item.errorMessage),
     ...metas.map((meta) => meta.error),
@@ -403,6 +444,9 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
       ...(endpoint ? { endpoint } : {}),
       ...(publicReplyCommentId ? { publicReplyCommentId } : {}),
       ...(replyTextPreview ? { replyTextPreview } : {}),
+      ...(capabilityPending
+        ? { metaError: capabilityPending.details }
+        : {}),
       ...(publicReplyCommentId
         ? { visibilityHelper: "Meta confirmed the reply. If it is not visible, check the exact post, collapsed replies, or Instagram filtering." }
         : steps.publicReply === "failed"
@@ -466,7 +510,7 @@ export function formatLogError(message: string) {
     return "Skipped — monthly public reply limit reached.";
   }
   if (isMetaCapabilityMissing(message)) {
-    return "Meta blocked private DM until instagram_manage_messages capability is approved.";
+    return META_CAPABILITY_PENDING_LABEL;
   }
   return message;
 }

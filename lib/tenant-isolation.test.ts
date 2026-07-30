@@ -182,6 +182,57 @@ describe("updateCompleteAutomation — ownership check before transaction", () =
     expect(result).toBeNull();
     expect(mockTransactionFn).not.toHaveBeenCalled();
   });
+
+  it("persists sendPrivateDm and Listener.prompt for a prepared review campaign", async () => {
+    mockAutomationFindFirst.mockResolvedValue({ id: AUTOMATION_A_ID });
+    const transactionAutomationUpdate = vi
+      .fn()
+      .mockResolvedValue({ id: AUTOMATION_A_ID });
+    const transactionClient = {
+      keyword: { deleteMany: vi.fn() },
+      post: { deleteMany: vi.fn() },
+      trigger: { deleteMany: vi.fn() },
+      listener: { deleteMany: vi.fn() },
+      automation: { update: transactionAutomationUpdate },
+    };
+    mockTransactionFn.mockImplementation(
+      async (callback: (tx: typeof transactionClient) => unknown) =>
+        callback(transactionClient)
+    );
+
+    const prompt =
+      "Thanks for commenting. Here is the information you requested.";
+    await updateCompleteAutomation(AUTOMATION_A_ID, USER_A_CLERK_ID, {
+      name: "Messaging review campaign",
+      active: false,
+      matchingMode: "CONTAINS",
+      triggerMode: "SPECIFIC_KEYWORD",
+      sendPrivateDm: true,
+      post: {
+        postid: "p1",
+        media: "url",
+        mediaType: "IMAGE",
+      },
+      keywords: ["guide"],
+      listener: {
+        listener: "MESSAGE",
+        prompt,
+        commentReply: "Thanks for commenting.",
+      },
+    });
+
+    expect(transactionAutomationUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: AUTOMATION_A_ID },
+        data: expect.objectContaining({
+          sendPrivateDm: true,
+          listener: {
+            create: expect.objectContaining({ prompt }),
+          },
+        }),
+      })
+    );
+  });
 });
 
 describe("getAutomationActivity — owner scoped logs", () => {

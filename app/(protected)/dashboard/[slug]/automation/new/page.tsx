@@ -13,9 +13,14 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { isWeakPublicReply } from "@/lib/campaign-activity-format";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
+import {
+  applyMessagingReviewCampaignDefaults,
+  DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY,
+  isMessagingReviewMode,
+} from "@/lib/messaging-review-mode";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   params: { slug: string };
@@ -47,8 +52,26 @@ const REVIEW_STEP_TIPS = [
   "Review everything before going live.",
 ];
 
+const MESSAGING_REVIEW_STEP_LABELS = [
+  "Choose post",
+  "Trigger",
+  "Private reply",
+  "Public reply",
+  "Review & Activate",
+];
+
+const MESSAGING_REVIEW_STEP_TIPS = [
+  "Pick the post or Reel used for the reviewer test.",
+  "Choose the keyword a reviewer will comment.",
+  "Configure the one private reply sent after the matching comment.",
+  "Optionally configure the public comment reply.",
+  "Confirm the reviewer test campaign settings before saving.",
+];
+
 export default function WizardPage({ params, searchParams }: Props) {
   const appReviewMode = isAppReviewMode();
+  const messagingReviewMode = isMessagingReviewMode();
+  const publicReplyReviewMode = appReviewMode && !messagingReviewMode;
   const { slug } = params;
   const editId = searchParams?.edit;
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts, isFetching: postsFetching } = useQueryAutomationPosts();
@@ -57,11 +80,17 @@ export default function WizardPage({ params, searchParams }: Props) {
   const { data: editing } = useQueryAutomations(editId ?? "", Boolean(editId));
   const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
+  const initializedMessagingReviewDraft = useRef(false);
 
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } =
     useWizard(slug, editId);
 
-  const steps = (appReviewMode ? REVIEW_STEP_LABELS : STEP_LABELS).map((label, i) => ({
+  const stepLabels = publicReplyReviewMode
+    ? REVIEW_STEP_LABELS
+    : messagingReviewMode
+      ? MESSAGING_REVIEW_STEP_LABELS
+      : STEP_LABELS;
+  const steps = stepLabels.map((label, i) => ({
     label,
     status: (i + 1 < step ? "done" : i + 1 === step ? "active" : "todo") as StepStatus,
   }));
@@ -75,20 +104,54 @@ export default function WizardPage({ params, searchParams }: Props) {
   );
   const reviewWarnings = [
     data.post?.postid && data.post.postid !== "ANY" ? "Specific Post mode needs media from the currently connected Instagram account." : null,
-    !appReviewMode && data.sendPrivateDm === false ? "External DM mode: AP3k will not send private DMs." : null,
-    !appReviewMode && messagingCapabilityPending ? "Private DM is enabled, but Meta messaging capability may still be pending." : null,
+    !appReviewMode && !messagingReviewMode && data.sendPrivateDm === false ? "External DM mode: AP3k will not send private DMs." : null,
+    messagingReviewMode && messagingCapabilityPending ? "Meta capability pending approval" : null,
+    !appReviewMode && !messagingReviewMode && messagingCapabilityPending ? "Private DM is enabled, but Meta messaging capability may still be pending." : null,
   ].filter(Boolean) as string[];
 
   useEffect(() => {
-    if (appReviewMode && data.sendPrivateDm) {
+    if (publicReplyReviewMode && data.sendPrivateDm) {
       update({ sendPrivateDm: false, publicReplyEnabled: true });
     }
-  }, [appReviewMode, data.sendPrivateDm, update]);
+  }, [publicReplyReviewMode, data.sendPrivateDm, update]);
+
+  useEffect(() => {
+    if (
+      initializedMessagingReviewDraft.current ||
+      !messagingReviewMode ||
+      editId
+    ) {
+      return;
+    }
+
+    initializedMessagingReviewDraft.current = true;
+    const prepared = applyMessagingReviewCampaignDefaults(
+      { sendPrivateDm: data.sendPrivateDm, prompt: data.dmMessage },
+      true
+    );
+    update({
+      sendPrivateDm: prepared.sendPrivateDm,
+      dmMessage: prepared.prompt,
+    });
+  }, [
+    data.dmMessage,
+    data.sendPrivateDm,
+    editId,
+    messagingReviewMode,
+    update,
+  ]);
 
   useEffect(() => {
     if (!editId || loadedEdit || editing?.status !== 200 || !editing.data) return;
     const automation: any = editing.data;
     const post = automation.posts?.[0];
+    const preparedPrivateReply = applyMessagingReviewCampaignDefaults(
+      {
+        sendPrivateDm: automation.sendPrivateDm !== false,
+        prompt: automation.listener?.prompt ?? "",
+      },
+      messagingReviewMode
+    );
     update({
       campaignName: automation.name ?? "",
       active: Boolean(automation.active),
@@ -96,13 +159,13 @@ export default function WizardPage({ params, searchParams }: Props) {
       keywords: Array.isArray(automation.keywords)
         ? automation.keywords.map((keyword: any) => keyword.word).filter(Boolean)
         : [],
-      dmMessage: automation.listener?.prompt ?? "",
+      dmMessage: preparedPrivateReply.prompt,
       publicReply: automation.listener?.commentReply ?? "",
       publicReply2: automation.listener?.commentReply2 ?? "",
       publicReply3: automation.listener?.commentReply3 ?? "",
       ctaLink: automation.listener?.ctaLink ?? "",
       ctaButtonTitle: automation.listener?.ctaButtonTitle ?? "",
-      sendPrivateDm: automation.sendPrivateDm !== false,
+      sendPrivateDm: preparedPrivateReply.sendPrivateDm,
       triggerMode: automation.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
       publicReplyEnabled: Boolean(
         automation.listener?.commentReply ||
@@ -119,7 +182,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         : null,
     });
     setLoadedEdit(true);
-  }, [editId, editing, loadedEdit, update]);
+  }, [editId, editing, loadedEdit, messagingReviewMode, update]);
 
   const selectManualMedia = () => {
     const value = manualMedia.trim();
@@ -313,7 +376,11 @@ export default function WizardPage({ params, searchParams }: Props) {
               Step 2 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              {appReviewMode ? "What triggers the public reply?" : "What triggers your DM?"}
+              {publicReplyReviewMode
+                ? "What triggers the public reply?"
+                : messagingReviewMode
+                  ? "What triggers the private reply?"
+                  : "What triggers your DM?"}
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
               Decide which comments count. For most campaigns, use a simple keyword like guide or link so people clearly opt in.
@@ -337,17 +404,87 @@ export default function WizardPage({ params, searchParams }: Props) {
               Step 3 of 5
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-              {appReviewMode ? "Public reply mode" : "Private DM settings"}
+              {publicReplyReviewMode
+                ? "Public reply mode"
+                : messagingReviewMode
+                  ? "Private reply after comment"
+                  : "Private DM settings"}
             </h2>
             <p className="dark:text-slate-400 text-slate-500 text-sm mb-6">
-              {appReviewMode
+              {publicReplyReviewMode
                 ? "AP3k will receive comments, match your trigger, send a public reply, and track the lead."
-                : "Choose whether AP3k sends the private message through Meta, or only tracks the comment while another tool sends the DM."}
+                : messagingReviewMode
+                  ? "AP3k sends one private reply only after a user comments the configured keyword."
+                  : "Choose whether AP3k sends the private message through Meta, or only tracks the comment while another tool sends the DM."}
             </p>
-            {appReviewMode ? (
+            {publicReplyReviewMode ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-relaxed text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
                 <p className="font-black">Public reply mode</p>
                 <p className="mt-1">This campaign uses Instagram comments, keyword matching, public replies, and lead tracking.</p>
+              </div>
+            ) : messagingReviewMode ? (
+              <div className="space-y-5">
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={data.sendPrivateDm}
+                  onClick={() =>
+                    update({ sendPrivateDm: !data.sendPrivateDm })
+                  }
+                  className={[
+                    "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
+                    data.sendPrivateDm
+                      ? "border-rf-blue/25 bg-rf-blue/10"
+                      : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]",
+                  ].join(" ")}
+                >
+                  <span className="pr-4">
+                    <span className="block text-sm font-bold text-slate-950 dark:text-white">
+                      Send a private reply when someone comments the campaign keyword
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                      AP3k sends one private reply only after a user comments the configured keyword.
+                    </span>
+                  </span>
+                  <span
+                    className={[
+                      "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                      data.sendPrivateDm ? "bg-rf-blue" : "bg-slate-300",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={[
+                        "absolute top-1 h-4 w-4 rounded-full bg-white transition-all",
+                        data.sendPrivateDm ? "left-6" : "left-1",
+                      ].join(" ")}
+                    />
+                  </span>
+                </button>
+
+                {data.sendPrivateDm && (
+                  <div>
+                    <label
+                      htmlFor="messaging-review-private-reply"
+                      className="mb-2 block text-sm font-bold text-slate-950 dark:text-white"
+                    >
+                      Private reply message
+                    </label>
+                    <textarea
+                      id="messaging-review-private-reply"
+                      value={data.dmMessage}
+                      onChange={(event) =>
+                        update({ dmMessage: event.target.value })
+                      }
+                      placeholder={DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY}
+                      rows={5}
+                      dir="auto"
+                      className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
+                    />
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      AP3k sends one private reply only after a user comments the configured keyword.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
             <>
@@ -434,7 +571,11 @@ export default function WizardPage({ params, searchParams }: Props) {
               <span>
                 <span className="block text-sm font-bold text-slate-950 dark:text-white">Send public reply</span>
                 <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
-                  {appReviewMode ? "Reply publicly when a comment matches your trigger." : "Reply publicly before the private DM. Turn off to skip public replies."}
+                  {appReviewMode
+                    ? "Reply publicly when a comment matches your trigger."
+                    : messagingReviewMode
+                      ? "Optionally reply publicly when the campaign keyword matches."
+                      : "Reply publicly before the private DM. Turn off to skip public replies."}
                 </span>
               </span>
               <span
@@ -455,9 +596,9 @@ export default function WizardPage({ params, searchParams }: Props) {
             <div className="flex flex-col gap-3">
               {(
                 [
-                  { field: "publicReply",  label: "Reply 1", placeholder: appReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Sending you the link now! 📩" },
-                  { field: "publicReply2", label: "Reply 2", placeholder: appReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Check your DMs! I just sent it 👀" },
-                  { field: "publicReply3", label: "Reply 3", placeholder: appReviewMode ? "e.g. Done. You can use the link in bio." : "e.g. Done! Look for my message 🎁" },
+                  { field: "publicReply",  label: "Reply 1", placeholder: appReviewMode || messagingReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Sending you the link now! 📩" },
+                  { field: "publicReply2", label: "Reply 2", placeholder: appReviewMode || messagingReviewMode ? "e.g. Thanks for commenting. Here is the next step." : "e.g. Check your DMs! I just sent it 👀" },
+                  { field: "publicReply3", label: "Reply 3", placeholder: appReviewMode || messagingReviewMode ? "e.g. Done. You can use the link in bio." : "e.g. Done! Look for my message 🎁" },
                 ] as const
               ).map(({ field, label, placeholder }) => (
                 <div key={field}>
@@ -511,13 +652,20 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Post scope",   value: data.post?.postid === "ANY" ? "Any Post" : data.post?.postid ? `Selected post ID ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger",      value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword",           step: 2 as const },
                   { label: "Keywords",     value: data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "),   step: 2 as const },
-                  ...(appReviewMode
+                  ...(publicReplyReviewMode
                     ? [{ label: "Reply mode", value: "Public reply mode", step: 3 as const }]
-                    : [{ label: "Private DM", value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally", step: 3 as const }]),
-                  ...(!appReviewMode && data.sendPrivateDm && data.dmMessage
+                    : messagingReviewMode
+                      ? [
+                          { label: "Private reply", value: data.sendPrivateDm ? "Enabled" : "Disabled", step: 3 as const },
+                          ...(data.sendPrivateDm && data.dmMessage
+                            ? [{ label: "Private reply message", value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""), step: 3 as const }]
+                            : []),
+                        ]
+                      : [{ label: "Private DM", value: data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally", step: 3 as const }]),
+                  ...(!appReviewMode && !messagingReviewMode && data.sendPrivateDm && data.dmMessage
                     ? [{ label: "DM message", value: data.dmMessage.slice(0, 80) + (data.dmMessage.length > 80 ? "…" : ""), step: 3 as const }]
                     : []),
-                  ...(!appReviewMode && data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink)
+                  ...(!appReviewMode && !messagingReviewMode && data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink)
                     ? [{ label: "CTA button", value: `${data.ctaButtonTitle || "Link"} -> ${data.ctaLink || "url"}`, step: 3 as const }]
                     : []),
                   { label: "Public reply", value: data.publicReplyEnabled && [data.publicReply, data.publicReply2, data.publicReply3].filter(Boolean).length > 0
@@ -557,7 +705,13 @@ export default function WizardPage({ params, searchParams }: Props) {
             )}
             <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
               <p className="font-black text-slate-950 dark:text-white">After activation</p>
-              <p className="mt-1">{appReviewMode ? "AP3k listens for matching comments, sends public replies, and tracks leads." : "AP3k listens through Meta webhooks. If no DM sends, check whether the campaign is active, the comment matches this trigger, webhook comments are arriving, and Meta messaging is approved."}</p>
+              <p className="mt-1">
+                {publicReplyReviewMode
+                  ? "AP3k listens for matching comments, sends public replies, and tracks leads."
+                  : messagingReviewMode
+                    ? "AP3k listens for the configured keyword and attempts one private reply after the matching comment."
+                    : "AP3k listens through Meta webhooks. If no DM sends, check whether the campaign is active, the comment matches this trigger, webhook comments are arriving, and Meta messaging is approved."}
+              </p>
             </div>
 
             <button
@@ -573,7 +727,11 @@ export default function WizardPage({ params, searchParams }: Props) {
               <span>
                 <span className="block text-sm font-bold text-slate-950 dark:text-white">Active campaign</span>
                 <span className="mt-1 block text-xs dark:text-slate-400 text-slate-500">
-                  {appReviewMode ? "When enabled, AP3k listens for matching comments, sends public replies, and tracks leads." : <>When enabled, AP3k listens for matching comments, sends public replies, and {data.sendPrivateDm ? "sends the configured DM." : "skips private DM sending."}</>}
+                  {publicReplyReviewMode
+                    ? "When enabled, AP3k listens for matching comments, sends public replies, and tracks leads."
+                    : messagingReviewMode
+                      ? "When enabled, AP3k listens for matching comments and attempts the configured private reply."
+                      : <>When enabled, AP3k listens for matching comments, sends public replies, and {data.sendPrivateDm ? "sends the configured DM." : "skips private DM sending."}</>}
                 </span>
               </span>
               <span
@@ -604,8 +762,13 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : "Specific keyword"} />
             <PreviewRow label="Keywords" value={data.triggerMode === "ANY_COMMENT" ? "Every comment" : data.keywords.length ? data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", ") : "None yet"} />
-            {appReviewMode ? (
+            {publicReplyReviewMode ? (
               <PreviewRow label="Reply mode" value="Public reply mode" />
+            ) : messagingReviewMode ? (
+              <>
+                <PreviewRow label="Private reply" value={data.sendPrivateDm ? "Enabled" : "Disabled"} />
+                <PreviewRow label="Private reply message" value={data.sendPrivateDm ? data.dmMessage || DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "Disabled"} />
+              </>
             ) : (
               <>
                 <PreviewRow label="Private DM" value={data.sendPrivateDm ? "Sent by AP3k" : "Skipped / handled externally"} />
@@ -627,7 +790,11 @@ export default function WizardPage({ params, searchParams }: Props) {
       <div className="sticky bottom-0 border-t border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04] px-4 py-4
                       flex items-center justify-between backdrop-blur-xl sm:px-10">
         <p className="text-xs dark:text-slate-400 text-slate-500 hidden sm:block">
-          {(appReviewMode ? REVIEW_STEP_TIPS : STEP_TIPS)[step - 1]}
+          {(publicReplyReviewMode
+            ? REVIEW_STEP_TIPS
+            : messagingReviewMode
+              ? MESSAGING_REVIEW_STEP_TIPS
+              : STEP_TIPS)[step - 1]}
         </p>
         <div className="flex items-center gap-3 ml-auto">
           {step > 1 && (

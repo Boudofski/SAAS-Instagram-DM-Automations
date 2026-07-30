@@ -8,9 +8,16 @@ import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhoo
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { assessCampaignSetupHealth } from "@/lib/campaign-health";
-import { filterAppReviewActivity, groupCampaignActivity, getCampaignModeLabels, getReviewerTestCopy } from "@/lib/campaign-activity-format";
+import {
+  filterAppReviewActivity,
+  groupCampaignActivity,
+  getCampaignModeLabels,
+  getReviewerTestCopy,
+  META_CAPABILITY_PENDING_LABEL,
+} from "@/lib/campaign-activity-format";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
+import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -23,6 +30,8 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
 export default async function CampaignDetailPage({ params }: Props) {
   const appReviewMode = isAppReviewMode();
+  const messagingReviewMode = isMessagingReviewMode();
+  const publicReplyReviewMode = appReviewMode && !messagingReviewMode;
   const [automationResult, statsResult] = await Promise.all([
     getAutomationInfo(params.id),
     getAutomationStats(params.id),
@@ -51,13 +60,15 @@ export default async function CampaignDetailPage({ params }: Props) {
     ].filter(Boolean).length,
   });
   const allGroupedActivity = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
-  const groupedActivity = appReviewMode ? filterAppReviewActivity(allGroupedActivity, 20) : allGroupedActivity;
+  const groupedActivity = publicReplyReviewMode
+    ? filterAppReviewActivity(allGroupedActivity, 20)
+    : allGroupedActivity;
   const connectedIntegration = getCanonicalInstagramIntegration<any>(automation.User?.integrations);
   const bindingDiagnostic = buildCampaignBindingDiagnostics({
     integration: connectedIntegration,
     campaigns: [automation],
   })[0];
-  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (!appReviewMode && sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
+  const isIncomplete = !automation.listener || !automation.posts?.length || (!isAnyComment && !automation.keywords?.length) || (!publicReplyReviewMode && sendPrivateDm && !automation.listener?.prompt) || (!sendPrivateDm && !hasPublicReply);
   const accountDiagnostics = connectedIntegration?.id
     ? await getAccountWebhookDiagnosticsForIntegration(connectedIntegration.id)
     : null;
@@ -74,8 +85,8 @@ export default async function CampaignDetailPage({ params }: Props) {
     webhookStatus: accountDiagnostics?.delivery.status,
     messagingCapabilityPending: accountDiagnostics?.delivery.status === "only_messaging_active",
   });
-  const reviewSafeHealthBlockers = appReviewMode ? health.blockers.filter(isReviewSafeHealthMessage) : health.blockers;
-  const reviewSafeHealthWarnings = appReviewMode ? health.warnings.filter(isReviewSafeHealthMessage) : health.warnings;
+  const reviewSafeHealthBlockers = publicReplyReviewMode ? health.blockers.filter(isReviewSafeHealthMessage) : health.blockers;
+  const reviewSafeHealthWarnings = publicReplyReviewMode ? health.warnings.filter(isReviewSafeHealthMessage) : health.warnings;
   const lastRealComment = activity.find((item: any) => item.type === "REAL_COMMENT_EVENT" || item.type === "COMMENT_WEBHOOK_RECEIVED");
   const lastAction = activity.find((item: any) => String(item.type).includes("SENT") || String(item.type).includes("FAILED") || item.status === "SENT" || item.status === "FAILED");
 
@@ -144,7 +155,15 @@ export default async function CampaignDetailPage({ params }: Props) {
           <HealthRow label="Selected post/media" value={automation.posts?.[0]?.postid === "ANY" ? "Any Post" : `${automation.posts?.[0]?.postid ?? "Missing"} · ${health.selectedPostStatus}`} ok={health.selectedPostStatus !== "stale" && health.selectedPostStatus !== "missing"} />
           <HealthRow label="Trigger" value={isAnyComment ? "Any comment" : automation.keywords?.length ? "Keyword configured" : "Missing keyword"} ok={isAnyComment || Boolean(automation.keywords?.length)} />
           <HealthRow label="Public reply" value={hasPublicReply ? "On" : "Off"} ok={hasPublicReply || sendPrivateDm} />
-          {!appReviewMode && <HealthRow label="Private DM" value={sendPrivateDm ? "AP3k DM" : "External DM mode"} ok={!sendPrivateDm || Boolean(automation.listener?.prompt)} />}
+          {messagingReviewMode ? (
+            <HealthRow
+              label="Private reply after comment"
+              value={sendPrivateDm ? "Enabled" : "Disabled"}
+              ok={!sendPrivateDm || Boolean(automation.listener?.prompt)}
+            />
+          ) : !appReviewMode ? (
+            <HealthRow label="Private DM" value={sendPrivateDm ? "AP3k DM" : "External DM mode"} ok={!sendPrivateDm || Boolean(automation.listener?.prompt)} />
+          ) : null}
           <HealthRow label="Last real comment" value={lastRealComment ? <LocalTime value={lastRealComment.createdAt} /> : "None yet"} ok={Boolean(lastRealComment)} />
           {!appReviewMode && <HealthRow label="Last action result" value={lastAction ? `${lastAction.type}${lastAction.status ? ` · ${lastAction.status}` : ""}` : "None yet"} ok={!lastAction || lastAction.status !== "FAILED"} />}
         </div>
@@ -177,7 +196,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               {[
                 !automation.posts?.length && "a post",
                 !isAnyComment && !automation.keywords?.length && "keywords",
-                !appReviewMode && sendPrivateDm && !automation.listener?.prompt && "a DM message",
+                !publicReplyReviewMode && sendPrivateDm && !automation.listener?.prompt && (messagingReviewMode ? "a private reply message" : "a DM message"),
                 !sendPrivateDm && !hasPublicReply && "a public reply",
               ]
                 .filter(Boolean)
@@ -212,10 +231,18 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-                {appReviewMode ? "Comment automation flow" : "AutoDM flow"}
+                {publicReplyReviewMode
+                  ? "Comment automation flow"
+                  : messagingReviewMode
+                    ? "Private reply flow"
+                    : "AutoDM flow"}
               </p>
               <h2 className="mt-1 text-xl font-black">
-                {appReviewMode ? "When comments match, AP3k sends a public reply and tracks the lead" : <>When comments match, AP3k {sendPrivateDm ? "sends the configured replies" : "handles public replies only"}</>}
+                {publicReplyReviewMode
+                  ? "When comments match, AP3k sends a public reply and tracks the lead"
+                  : messagingReviewMode
+                    ? "When the campaign keyword matches, AP3k attempts one private reply"
+                    : <>When comments match, AP3k {sendPrivateDm ? "sends the configured replies" : "handles public replies only"}</>}
               </h2>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-xs font-bold dark:text-slate-400 text-slate-500">
@@ -258,10 +285,26 @@ export default async function CampaignDetailPage({ params }: Props) {
                 tone="purple"
                 disabled={!hasPublicReply}
               />
-              {!appReviewMode && <FlowNode
+              {(!appReviewMode || messagingReviewMode) && <FlowNode
                 label="Action"
-                title={sendPrivateDm ? "Send Message" : "Private DM Off"}
-                body={sendPrivateDm ? (automation.listener?.prompt || "No private DM configured.") : "Off — external tool handles private messages."}
+                title={
+                  messagingReviewMode
+                    ? sendPrivateDm
+                      ? "Private reply after comment"
+                      : "Private reply disabled"
+                    : sendPrivateDm
+                      ? "Send Message"
+                      : "Private DM Off"
+                }
+                body={
+                  messagingReviewMode
+                    ? sendPrivateDm
+                      ? automation.listener?.prompt || "No private reply message configured."
+                      : "No private reply will be attempted."
+                    : sendPrivateDm
+                      ? automation.listener?.prompt || "No private DM configured."
+                      : "Off — external tool handles private messages."
+                }
                 tone="blue"
                 disabled={!sendPrivateDm}
               />}
@@ -278,11 +321,17 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Trigger mode" value={isAnyComment ? "Any comment" : "Specific keyword"} />
             <SettingsRow label="Matching" value={isAnyComment ? "Every comment" : automation.matchingMode ?? "CONTAINS"} />
             <SettingsRow label="Public reply" value={modeLabels.publicReply} />
-            {!appReviewMode && <SettingsRow label="Private DM" value={modeLabels.privateDm} />}
+            {messagingReviewMode ? (
+              <SettingsRow label="Private reply" value={sendPrivateDm ? "Enabled" : "Disabled"} />
+            ) : !appReviewMode ? (
+              <SettingsRow label="Private DM" value={modeLabels.privateDm} />
+            ) : null}
             {!appReviewMode && <SettingsRow label="Trigger" value={automation.trigger?.[0]?.type ?? "COMMENT"} />}
-            {appReviewMode
+            {publicReplyReviewMode
               ? <SettingsRow label="Mode" value={sendPrivateDm ? "Comment automation" : "Public reply"} />
-              : <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />}
+              : messagingReviewMode
+                ? <SettingsRow label="Mode" value="Private reply after comment" />
+                : <SettingsRow label="Mode" value={automation.listener?.listener ?? "MESSAGE"} />}
             {!appReviewMode && <SettingsRow label="Settings source" value="Saved database state" />}
           </div>
           <Link
@@ -294,11 +343,15 @@ export default async function CampaignDetailPage({ params }: Props) {
         </aside>
       </div>
 
-      {!appReviewMode && <div className="ap3k-card mb-8 rounded-2xl p-4">
+      {(!appReviewMode || messagingReviewMode) && <div className="ap3k-card mb-8 rounded-2xl p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-blue">
           Reviewer test script
         </p>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{getReviewerTestCopy(sendPrivateDm)}</p>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          {messagingReviewMode
+            ? "Comment the configured keyword from a different Instagram account. AP3k records the comment, matches the keyword, and attempts one private reply."
+            : getReviewerTestCopy(sendPrivateDm)}
+        </p>
       </div>}
 
       {/* Stats */}
@@ -396,10 +449,10 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
 
           {/* DM preview */}
-          {!appReviewMode && automation.listener && sendPrivateDm && (
+          {(!appReviewMode || messagingReviewMode) && automation.listener && sendPrivateDm && (
             <div>
               <p className="text-xs dark:text-slate-400 text-slate-500 mb-2 uppercase tracking-wider font-semibold">
-                DM message
+                {messagingReviewMode ? "Private reply message" : "DM message"}
               </p>
               <div className="rounded-xl border border-rf-blue/20 bg-rf-blue/5 p-4 dark:bg-rf-blue/10">
                 <p className="text-xs text-slate-950 dark:text-white leading-relaxed whitespace-pre-wrap">
@@ -407,7 +460,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 </p>
               </div>
               {/* CTA button */}
-              {(automation.listener.ctaButtonTitle || automation.listener.ctaLink) && (
+              {!messagingReviewMode && (automation.listener.ctaButtonTitle || automation.listener.ctaLink) && (
                 <div className="mt-2 flex items-center gap-2 rounded-xl border border-rf-blue/25 bg-rf-blue/10 px-4 py-2.5">
                   <span className="text-xs font-bold text-rf-blue">
                     {automation.listener.ctaButtonTitle || "Open link"}
@@ -421,13 +474,15 @@ export default async function CampaignDetailPage({ params }: Props) {
               )}
             </div>
           )}
-          {!appReviewMode && automation.listener && !sendPrivateDm && (
+          {(!appReviewMode || messagingReviewMode) && automation.listener && !sendPrivateDm && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] p-4">
               <p className="text-xs font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
-                Private DM
+                {messagingReviewMode ? "Private reply" : "Private DM"}
               </p>
               <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-white">
-                Private DM skipped: handled by external tool
+                {messagingReviewMode
+                  ? "Private reply is disabled for this campaign."
+                  : "Private DM skipped: handled by external tool"}
               </p>
             </div>
           )}
@@ -492,7 +547,11 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div>
             <h2 className="text-sm font-bold text-slate-950 dark:text-white">Recent activity</h2>
             <p className="mt-1 text-xs dark:text-slate-400 text-slate-500">
-              {appReviewMode ? "Comments received, triggers matched, public replies sent, and leads captured." : "Latest 20 comment interactions. Technical diagnostics are available in Admin."}
+              {publicReplyReviewMode
+                ? "Comments received, triggers matched, public replies sent, and leads captured."
+                : messagingReviewMode
+                  ? "Comment receipt, keyword matching, and the resulting private reply attempt."
+                  : "Latest 20 comment interactions. Technical diagnostics are available in Admin."}
             </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-wider dark:text-slate-400 text-slate-500">
@@ -517,31 +576,67 @@ export default async function CampaignDetailPage({ params }: Props) {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold text-slate-950 dark:text-white">
-                        {item.title}
+                        {messagingReviewMode && item.steps.privateDm === "blocked"
+                          ? META_CAPABILITY_PENDING_LABEL
+                          : item.title}
                       </p>
                       <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}>
                         {item.badge}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                      {item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, appReviewMode)}
+                      {item.actorLabel ? `${item.actorLabel} · ` : ""}
+                      {messagingReviewMode && item.steps.privateDm === "blocked"
+                        ? "Private reply blocked by Meta capability until instagram_manage_messages is approved"
+                        : formatAppReviewActivitySubtitle(item.subtitle, publicReplyReviewMode)}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <StepPill label="Comment" active={item.steps.commentReceived} />
-                      <StepPill label="Trigger" active={item.steps.triggerMatched} />
-                      <StepPill label="Public reply" state={item.steps.publicReply} />
-                      {!appReviewMode && <StepPill label="DM" state={item.steps.privateDm} />}
+                      {messagingReviewMode ? (
+                        <>
+                          <StepPill label="Comment received" active={item.steps.commentReceived} />
+                          <StepPill label="Keyword matched" active={item.steps.triggerMatched} />
+                          <StepPill
+                            label="Private reply attempted"
+                            active={
+                              item.steps.privateDm === "sent" ||
+                              item.steps.privateDm === "failed" ||
+                              item.steps.privateDm === "blocked"
+                            }
+                          />
+                          {item.steps.privateDm === "blocked" && (
+                            <StepPill
+                              label="Private reply blocked by Meta capability until instagram_manage_messages is approved"
+                              state="blocked"
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <StepPill label="Comment" active={item.steps.commentReceived} />
+                          <StepPill label="Trigger" active={item.steps.triggerMatched} />
+                          <StepPill label="Public reply" state={item.steps.publicReply} />
+                          {!appReviewMode && <StepPill label="DM" state={item.steps.privateDm} />}
+                        </>
+                      )}
                     </div>
                     <p className="mt-2 text-xs dark:text-slate-400 text-slate-500">
                       <LocalTime value={item.createdAt} />
                     </p>
-                    {!appReviewMode && <details className="mt-2 group">
+                    {(!appReviewMode || messagingReviewMode) && <details className="mt-2 group">
                       <summary className="cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
                         Details
                       </summary>
                       <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
                         {item.details.visibilityHelper ? <p className="font-semibold text-slate-800 dark:text-slate-100">{item.details.visibilityHelper}</p> : null}
                         {item.details.error ? <p>{item.details.error}</p> : null}
+                        {item.details.metaError ? (
+                          <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                            <p className="font-bold">{META_CAPABILITY_PENDING_LABEL}</p>
+                            <p>code: {item.details.metaError.code}</p>
+                            <p>type: {item.details.metaError.type}</p>
+                            <p>message: {item.details.metaError.message}</p>
+                          </div>
+                        ) : null}
                         {item.details.commenterUsername ? <p>Username @{item.details.commenterUsername}</p> : null}
                         {item.details.commentId ? <p>Source comment ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.commentId}</code></p> : null}
                         {item.details.mediaId ? <p>Media ID <code className="select-all rounded bg-white px-1 dark:bg-black/20">{item.details.mediaId}</code></p> : null}
