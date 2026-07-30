@@ -237,7 +237,7 @@ describe("campaign activity display formatting", () => {
       subtitle: "Public reply sent · private reply waits for instagram_manage_messages approval",
       badge: "PENDING",
       tone: "amber",
-      steps: expect.objectContaining({ publicReply: "sent", privateDm: "blocked" }),
+      steps: expect.objectContaining({ publicReply: "sent", privateDm: "failed" }),
       details: expect.objectContaining({
         error: META_CAPABILITY_PENDING_HELPER,
       }),
