@@ -8,11 +8,12 @@ import {
   getReviewerTestCopy,
   groupCampaignActivity,
   isWeakPublicReply,
+  META_CAPABILITY_PENDING_HELPER,
   META_CAPABILITY_PENDING_LABEL,
 } from "@/lib/campaign-activity-format";
 
 describe("campaign activity display formatting", () => {
-  it("displays dm_capability_missing on real comments as partial warning", () => {
+  it("displays dm_capability_missing on real comments as a pending approval state", () => {
     expect(
       formatActivityDisplay({
         type: "REAL_COMMENT_EVENT",
@@ -20,14 +21,15 @@ describe("campaign activity display formatting", () => {
         errorMessage: "dm_failed: dm_capability_missing",
       })
     ).toMatchObject({
-      label: "Comment processed · DM blocked by Meta",
-      badge: "PARTIAL",
+      label: "Comment processed · private reply pending approval",
+      badge: "PENDING",
       tone: "amber",
+      detail: META_CAPABILITY_PENDING_HELPER,
       technical: true,
     });
   });
 
-  it("does not show DM blocked as current when private DM is off", () => {
+  it("does not show pending private reply approval as current when private DM is off", () => {
     expect(
       formatActivityDisplay({
         type: "DM_FAILED",
@@ -35,7 +37,7 @@ describe("campaign activity display formatting", () => {
         privateDmEnabled: false,
       })
     ).toMatchObject({
-      label: "Old private DM failure before DM was turned off",
+      label: "Older private reply attempt pending approval",
       badge: "OLD",
       tone: "slate",
     });
@@ -75,7 +77,7 @@ describe("campaign activity display formatting", () => {
     });
   });
 
-  it("formats Meta code=3 as capability missing", () => {
+  it("formats Meta code=3 as capability pending approval without leaking tokens", () => {
     expect(formatLogError("Meta error code=3")).toBe(
       META_CAPABILITY_PENDING_LABEL
     );
@@ -90,7 +92,7 @@ describe("campaign activity display formatting", () => {
         },
       })
     ).toEqual({
-      label: "Meta capability pending approval",
+      label: META_CAPABILITY_PENDING_LABEL,
       details: {
         code: 3,
         type: "OAuthException",
@@ -101,8 +103,8 @@ describe("campaign activity display formatting", () => {
   });
 
   it("changes reviewer copy based on private DM mode", () => {
-    expect(getReviewerTestCopy(true)).toContain("AP3k will attempt private DM through Meta");
-    expect(getReviewerTestCopy(false)).toContain("AP3k will skip private DM");
+    expect(getReviewerTestCopy(true)).toContain("AP3k attempts one private reply");
+    expect(getReviewerTestCopy(false)).toContain("AP3k will skip private reply");
   });
 
   it("displays campaign modes from saved database values", () => {
@@ -124,10 +126,12 @@ describe("campaign activity display formatting", () => {
     });
   });
 
-  it("formats recent capability failures, self-comments, triggers, and comments", () => {
+  it("formats recent capability failures as pending approval, self-comments, triggers, and comments", () => {
     expect(formatRecentActivity({ type: "DM_FAILED", errorMessage: "dm_capability_missing" })).toMatchObject({
-      title: "Private DM blocked by Meta",
-      tone: "red",
+      title: META_CAPABILITY_PENDING_LABEL,
+      subtitle: META_CAPABILITY_PENDING_HELPER,
+      tone: "amber",
+      kind: "activity",
     });
     expect(formatRecentActivity({ type: "SELF_COMMENT_SKIPPED", igUserId: "989376730302391", meta: { commenterUsername: "maglobalmarketing" } })).toMatchObject({
       title: "Ignored self-comment",
@@ -208,7 +212,7 @@ describe("campaign activity display formatting", () => {
     expect(grouped[0].details.visibilityHelper).toContain("Meta confirmed the reply");
   });
 
-  it("groups public reply sent and DM code=3 as one partial activity", () => {
+  it("groups public reply sent and DM code=3 as one pending approval activity without raw Meta details", () => {
     const grouped = groupCampaignActivity([
       event("COMMENT_RECEIVED"),
       event("KEYWORD_MATCHED", { keyword: "ai" }),
@@ -229,19 +233,17 @@ describe("campaign activity display formatting", () => {
 
     expect(grouped).toHaveLength(1);
     expect(grouped[0]).toMatchObject({
-      title: "Comment partially handled",
-      badge: "PARTIAL",
+      title: "Comment handled; private reply pending Meta approval",
+      subtitle: "Public reply sent · private reply waits for instagram_manage_messages approval",
+      badge: "PENDING",
       tone: "amber",
       steps: expect.objectContaining({ publicReply: "sent", privateDm: "blocked" }),
-      details: {
-        metaError: {
-          code: 3,
-          type: "OAuthException",
-          message:
-            "Application does not have the capability to make this API call.",
-        },
-      },
+      details: expect.objectContaining({
+        error: META_CAPABILITY_PENDING_HELPER,
+      }),
     });
+    expect(grouped[0].details.metaError).toBeUndefined();
+    expect(JSON.stringify(grouped[0])).not.toContain("OAuthException");
   });
 
   it("deduplicates repeated raw events for the same commentId", () => {
@@ -282,7 +284,7 @@ describe("campaign activity display formatting", () => {
       event("KEYWORD_MATCHED"),
       event("DM_FAILED", { errorMessage: "dm_capability_missing" }),
     ], { privateDmEnabled: false })[0]).toMatchObject({
-      title: "Older DM attempt blocked by Meta",
+      title: "Older private reply attempt pending Meta approval",
       badge: "OLD",
     });
   });
