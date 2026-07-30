@@ -22,7 +22,10 @@ export type ActivityDisplay = {
 };
 
 export const META_CAPABILITY_PENDING_LABEL =
-  "Meta capability pending approval";
+  "Private reply pending Meta approval";
+
+export const META_CAPABILITY_PENDING_HELPER =
+  "AP3k attempted the configured private reply, but Meta blocks the final send until instagram_manage_messages is approved.";
 
 export type SafeMetaCapabilityDetails = {
   code: 3;
@@ -119,8 +122,8 @@ export function getCampaignModeLabels(input: {
 
 export function getReviewerTestCopy(sendPrivateDm: boolean) {
   return sendPrivateDm
-    ? "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k will attempt private DM through Meta. If instagram_manage_messages is pending, DM may fail with capability missing."
-    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k will skip private DM. External DM tool handles the private message.";
+    ? "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k attempts one private reply after the user-initiated keyword comment. Meta approval is required for the final private reply send."
+    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k will skip private reply. External DM tool handles the private message.";
 }
 
 export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
@@ -132,30 +135,30 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
 
   if (type === "REAL_COMMENT_EVENT" && capabilityBlocked) {
     return {
-      label: "Comment processed · DM blocked by Meta",
-      badge: "PARTIAL",
+      label: "Comment processed · private reply pending approval",
+      badge: "PENDING",
       tone: "amber",
-      detail: formatLogError(text),
+      detail: META_CAPABILITY_PENDING_HELPER,
       technical: true,
     };
   }
 
   if ((type === "DM_FAILED" || type === "DM_FAILED_FAILED") && capabilityBlocked && item.privateDmEnabled === false) {
     return {
-      label: "Old private DM failure before DM was turned off",
+      label: "Older private reply attempt pending approval",
       badge: "OLD",
       tone: "slate",
-      detail: formatLogError(text),
+      detail: META_CAPABILITY_PENDING_HELPER,
       technical: false,
     };
   }
 
   if ((type === "DM_FAILED" || type === "DM_FAILED_FAILED") && capabilityBlocked) {
     return {
-      label: "Public reply sent · Private DM blocked by Meta",
-      badge: "WARNING",
+      label: META_CAPABILITY_PENDING_LABEL,
+      badge: "PENDING",
       tone: "amber",
-      detail: formatLogError(text),
+      detail: META_CAPABILITY_PENDING_HELPER,
       technical: false,
     };
   }
@@ -281,10 +284,10 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
   if ((item.type === "DM_FAILED" || item.type === "DM_FAILED_FAILED") && isMetaCapabilityMissing(activityText(item))) {
     return {
       ...base,
-      title: "Private DM blocked by Meta",
-      subtitle: `Requires instagram_manage_messages approval${commentSuffix}`,
-      tone: "red",
-      kind: "failed",
+      title: META_CAPABILITY_PENDING_LABEL,
+      subtitle: `${META_CAPABILITY_PENDING_HELPER}${commentSuffix}`,
+      tone: "amber",
+      kind: "activity",
     };
   }
   if (item.type === "KEYWORD_MATCHED") {
@@ -390,7 +393,6 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const keyword = firstString(items.map((item) => item.keyword));
   const text = items.map(activityText).join(" ");
   const types = new Set(items.map((item) => item.type));
-  const statuses = new Set(items.map((item) => item.status).filter(Boolean));
   const publicReplyCommentId = firstString(metas.map((meta) => meta.publicReplyCommentId));
   const endpoint = firstString(metas.map((meta) => meta.endpoint));
   const commenterUsername = firstString(metas.map((meta) => meta.commenterUsername));
@@ -398,10 +400,12 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const capabilityPending = metas
     .map((meta) => getMetaCapabilityPendingDisplay(meta))
     .find((item) => item !== null);
-  const error = firstString([
-    ...items.map((item) => item.errorMessage),
-    ...metas.map((meta) => meta.error),
-  ].map((value) => (typeof value === "string" ? formatLogError(value) : null)));
+  const error = capabilityPending
+    ? META_CAPABILITY_PENDING_HELPER
+    : firstString([
+        ...items.map((item) => item.errorMessage),
+        ...metas.map((meta) => meta.error),
+      ].map((value) => (typeof value === "string" ? formatLogError(value) : null)));
 
   const steps = {
     commentReceived: types.has("COMMENT_RECEIVED") || types.has("REAL_COMMENT_EVENT") || types.has("WEBHOOK_RECEIVED") || types.has("COMMENT_WEBHOOK_RECEIVED"),
@@ -444,9 +448,6 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
       ...(endpoint ? { endpoint } : {}),
       ...(publicReplyCommentId ? { publicReplyCommentId } : {}),
       ...(replyTextPreview ? { replyTextPreview } : {}),
-      ...(capabilityPending
-        ? { metaError: capabilityPending.details }
-        : {}),
       ...(publicReplyCommentId
         ? { visibilityHelper: "Meta confirmed the reply. If it is not visible, check the exact post, collapsed replies, or Instagram filtering." }
         : steps.publicReply === "failed"
@@ -472,8 +473,8 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (privateDmEnabled === false && steps.privateDm === "blocked") {
     return completeGroup(
       base,
-      "Older DM attempt blocked by Meta",
-      "Private DM is currently off; this is an older or historical event.",
+      "Older private reply attempt pending Meta approval",
+      "Private reply is currently off; this is an older or historical event.",
       "slate",
       "OLD"
     );
@@ -482,7 +483,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
     return completeGroup(base, "Comment handled successfully", "Public reply sent · Private DM skipped", "green", "SENT");
   }
   if (steps.publicReply === "sent" && steps.privateDm === "blocked") {
-    return completeGroup(base, "Comment partially handled", "Public reply sent · Private DM blocked by Meta approval", "amber", "PARTIAL");
+    return completeGroup(base, "Comment handled; private reply pending Meta approval", "Public reply sent · private reply waits for instagram_manage_messages approval", "amber", "PENDING");
   }
   if (steps.publicReply === "sent") {
     return completeGroup(base, "Public reply sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
@@ -494,10 +495,10 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
     return completeGroup(base, "Public reply failed", error ?? "Meta did not confirm the public reply.", "red", "FAILED");
   }
   if (steps.privateDm === "sent") {
-    return completeGroup(base, "Private DM sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
+    return completeGroup(base, "Private reply sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
   }
   if (steps.privateDm === "blocked") {
-    return completeGroup(base, "Private DM blocked by Meta", "Requires instagram_manage_messages approval.", "red", "FAILED");
+    return completeGroup(base, META_CAPABILITY_PENDING_LABEL, META_CAPABILITY_PENDING_HELPER, "amber", "PENDING");
   }
   if (steps.triggerMatched) {
     return completeGroup(base, "Comment matched · no outbound action", "No public reply or private DM was sent.", "slate", "SKIPPED");
