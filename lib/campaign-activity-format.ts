@@ -397,9 +397,21 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const endpoint = firstString(metas.map((meta) => meta.endpoint));
   const commenterUsername = firstString(metas.map((meta) => meta.commenterUsername));
   const replyTextPreview = firstString(metas.map((meta) => meta.replyTextPreview ?? meta.normalizedPublicReplyText));
-  const capabilityPending = metas
-    .map((meta) => getMetaCapabilityPendingDisplay(meta))
-    .find((item) => item !== null);
+  const capabilityPending =
+    metas
+      .map((meta) => getMetaCapabilityPendingDisplay(meta))
+      .find((item) => item !== null) ??
+    (isMetaCapabilityMissing(text)
+      ? {
+          label: META_CAPABILITY_PENDING_LABEL,
+          details: {
+            code: 3,
+            type: "OAuthException",
+            message:
+              "Application does not have the capability to make this API call.",
+          } as SafeMetaCapabilityDetails,
+        }
+      : null);
   const error = capabilityPending
     ? META_CAPABILITY_PENDING_HELPER
     : firstString([
@@ -426,7 +438,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (types.has("DM_SENT")) steps.privateDm = "sent";
   if (types.has("DM_SKIPPED")) steps.privateDm = text.includes("external_dm_tool_enabled") ? "off" : "skipped";
   if (types.has("DM_FAILED") || types.has("DM_FAILED_FAILED")) {
-    steps.privateDm = isMetaCapabilityMissing(text) ? "blocked" : "failed";
+    steps.privateDm = "failed";
   }
 
   const base: Omit<GroupedActivity, "title" | "subtitle" | "tone" | "badge"> = {
@@ -470,7 +482,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (steps.usageLimitReached) {
     return completeGroup(base, "Monthly reply limit reached", "No public reply or DM was sent.", "amber", "LIMIT");
   }
-  if (privateDmEnabled === false && steps.privateDm === "blocked") {
+  if (privateDmEnabled === false && capabilityPending) {
     return completeGroup(
       base,
       "Older private reply attempt pending Meta approval",
@@ -482,7 +494,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (steps.publicReply === "sent" && (steps.privateDm === "skipped" || steps.privateDm === "off")) {
     return completeGroup(base, "Comment handled successfully", "Public reply sent · Private DM skipped", "green", "SENT");
   }
-  if (steps.publicReply === "sent" && steps.privateDm === "blocked") {
+  if (steps.publicReply === "sent" && capabilityPending) {
     return completeGroup(base, "Comment handled; private reply pending Meta approval", "Public reply sent · private reply waits for instagram_manage_messages approval", "amber", "PENDING");
   }
   if (steps.publicReply === "sent") {
@@ -497,8 +509,11 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (steps.privateDm === "sent") {
     return completeGroup(base, "Private reply sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
   }
-  if (steps.privateDm === "blocked") {
+  if (capabilityPending) {
     return completeGroup(base, META_CAPABILITY_PENDING_LABEL, META_CAPABILITY_PENDING_HELPER, "amber", "PENDING");
+  }
+  if (steps.privateDm === "failed") {
+    return completeGroup(base, "Private reply could not be completed", error ?? "Meta did not confirm the private reply.", "amber", "PENDING");
   }
   if (steps.triggerMatched) {
     return completeGroup(base, "Comment matched · no outbound action", "No public reply or private DM was sent.", "slate", "SKIPPED");
