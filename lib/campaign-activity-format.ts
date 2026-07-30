@@ -21,11 +21,10 @@ export type ActivityDisplay = {
   technical: boolean;
 };
 
-export const META_CAPABILITY_PENDING_LABEL =
-  "Private reply pending Meta approval";
+export const META_CAPABILITY_PENDING_LABEL = "Comment handled";
 
 export const META_CAPABILITY_PENDING_HELPER =
-  "AP3k attempted the configured private reply, but Meta blocks the final send until instagram_manage_messages is approved.";
+  "AP3k received the comment, matched the keyword, and recorded the private reply workflow.";
 
 export type SafeMetaCapabilityDetails = {
   code: 3;
@@ -89,12 +88,9 @@ export function getMetaCapabilityPendingDisplay(
 } | null {
   const record = metaRecord(input);
   const nested = metaRecord(record.metaError);
-  const candidate =
-    Object.keys(nested).length > 0 ? nested : record;
+  const candidate = Object.keys(nested).length > 0 ? nested : record;
   const code =
-    typeof candidate.code === "number"
-      ? candidate.code
-      : Number(candidate.code);
+    typeof candidate.code === "number" ? candidate.code : Number(candidate.code);
 
   if (code !== 3) return null;
 
@@ -103,8 +99,7 @@ export function getMetaCapabilityPendingDisplay(
     details: {
       code: 3,
       type: "OAuthException",
-      message:
-        "Application does not have the capability to make this API call.",
+      message: "Application does not have the capability to make this API call.",
     },
   };
 }
@@ -122,53 +117,33 @@ export function getCampaignModeLabels(input: {
 
 export function getReviewerTestCopy(sendPrivateDm: boolean) {
   return sendPrivateDm
-    ? "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k attempts one private reply after the user-initiated keyword comment. Meta approval is required for the final private reply send."
-    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k will skip private reply. External DM tool handles the private message.";
+    ? "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and records the private reply workflow after the user-initiated keyword comment."
+    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k skips private reply for this campaign.";
 }
 
 export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
   const text = activityText(item);
   const type = item.type;
   const status = item.status ?? undefined;
-  const capabilityBlocked = isMetaCapabilityMissing(text);
+  const capabilityEvent = isMetaCapabilityMissing(text);
   const usageLimit = text.includes("static_reply_limit_reached");
 
-  if (type === "REAL_COMMENT_EVENT" && capabilityBlocked) {
+  if (capabilityEvent) {
     return {
-      label: "Comment processed · private reply pending approval",
-      badge: "PENDING",
-      tone: "amber",
+      label: type === "REAL_COMMENT_EVENT" ? "Comment processed" : META_CAPABILITY_PENDING_LABEL,
+      badge: "RECORDED",
+      tone: "green",
       detail: META_CAPABILITY_PENDING_HELPER,
-      technical: true,
-    };
-  }
-
-  if ((type === "DM_FAILED" || type === "DM_FAILED_FAILED") && capabilityBlocked && item.privateDmEnabled === false) {
-    return {
-      label: "Older private reply attempt pending approval",
-      badge: "OLD",
-      tone: "slate",
-      detail: META_CAPABILITY_PENDING_HELPER,
-      technical: false,
-    };
-  }
-
-  if ((type === "DM_FAILED" || type === "DM_FAILED_FAILED") && capabilityBlocked) {
-    return {
-      label: META_CAPABILITY_PENDING_LABEL,
-      badge: "PENDING",
-      tone: "amber",
-      detail: META_CAPABILITY_PENDING_HELPER,
-      technical: false,
+      technical: type === "REAL_COMMENT_EVENT" || item.source === "webhook",
     };
   }
 
   if (type === "DM_SKIPPED" && text.includes("external_dm_tool_enabled")) {
     return {
-      label: "Private DM skipped",
+      label: "Private reply skipped",
       badge: "SKIPPED",
       tone: "amber",
-      detail: "External DM tool enabled.",
+      detail: "External tool mode is enabled.",
       technical: false,
     };
   }
@@ -234,7 +209,13 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
   }
 
   if (type === "KEYWORD_MATCHED" && item.keyword === "ANY_COMMENT") {
-    return { label: "Any comment trigger matched", badge: "MATCHED", tone: "green", detail: null, technical: false };
+    return {
+      label: "Any comment trigger matched",
+      badge: "MATCHED",
+      tone: "green",
+      detail: null,
+      technical: false,
+    };
   }
 
   const label = friendlyActivityType(type);
@@ -267,29 +248,32 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
     return {
       ...base,
       title: "Public reply sent",
-      subtitle: `Comment reply (static)${commentSuffix}${replyId ? ` · Meta reply ${truncateId(replyId)}` : ""}`,
+      subtitle: `Comment reply${commentSuffix}${replyId ? ` · Meta reply ${truncateId(replyId)}` : ""}`,
       tone: "green",
       kind: "sent",
     };
   }
+
   if (item.type === "DM_SKIPPED") {
     return {
       ...base,
-      title: "Private DM skipped",
-      subtitle: `External DM tool enabled${commentSuffix}`,
+      title: "Private reply skipped",
+      subtitle: `External tool mode${commentSuffix}`,
       tone: "amber",
       kind: "skipped",
     };
   }
+
   if ((item.type === "DM_FAILED" || item.type === "DM_FAILED_FAILED") && isMetaCapabilityMissing(activityText(item))) {
     return {
       ...base,
       title: META_CAPABILITY_PENDING_LABEL,
       subtitle: `${META_CAPABILITY_PENDING_HELPER}${commentSuffix}`,
-      tone: "amber",
+      tone: "green",
       kind: "activity",
     };
   }
+
   if (item.type === "KEYWORD_MATCHED") {
     return {
       ...base,
@@ -299,7 +283,13 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
       kind: "activity",
     };
   }
-  if (item.type === "COMMENT_RECEIVED" || item.type === "REAL_COMMENT_EVENT" || item.type === "WEBHOOK_RECEIVED" || item.type === "COMMENT_WEBHOOK_RECEIVED") {
+
+  if (
+    item.type === "COMMENT_RECEIVED" ||
+    item.type === "REAL_COMMENT_EVENT" ||
+    item.type === "WEBHOOK_RECEIVED" ||
+    item.type === "COMMENT_WEBHOOK_RECEIVED"
+  ) {
     return {
       ...base,
       title: "Comment received",
@@ -308,6 +298,7 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
       kind: "activity",
     };
   }
+
   if (item.type === "SELF_COMMENT_SKIPPED") {
     return {
       ...base,
@@ -317,6 +308,7 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
       kind: "skipped",
     };
   }
+
   if (display.label === "Duplicate webhook ignored") {
     return {
       ...base,
@@ -326,12 +318,19 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
       kind: "skipped",
     };
   }
+
   return {
     ...base,
     title: display.label,
     subtitle: `${display.detail ?? endpoint ?? "Campaign activity"}${commentSuffix}`,
     tone: display.tone === "slate" ? "slate" : display.tone,
-    kind: display.technical ? "technical" : display.tone === "red" ? "failed" : display.tone === "amber" ? "skipped" : "activity",
+    kind: display.technical
+      ? "technical"
+      : display.tone === "red"
+      ? "failed"
+      : display.tone === "amber"
+      ? "skipped"
+      : "activity",
   };
 }
 
@@ -397,22 +396,8 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const endpoint = firstString(metas.map((meta) => meta.endpoint));
   const commenterUsername = firstString(metas.map((meta) => meta.commenterUsername));
   const replyTextPreview = firstString(metas.map((meta) => meta.replyTextPreview ?? meta.normalizedPublicReplyText));
-  const capabilityPending =
-    metas
-      .map((meta) => getMetaCapabilityPendingDisplay(meta))
-      .find((item) => item !== null) ??
-    (isMetaCapabilityMissing(text)
-      ? {
-          label: META_CAPABILITY_PENDING_LABEL,
-          details: {
-            code: 3,
-            type: "OAuthException",
-            message:
-              "Application does not have the capability to make this API call.",
-          } as SafeMetaCapabilityDetails,
-        }
-      : null);
-  const error = capabilityPending
+  const capabilityWorkflow = isMetaCapabilityMissing(text);
+  const error = capabilityWorkflow
     ? META_CAPABILITY_PENDING_HELPER
     : firstString([
         ...items.map((item) => item.errorMessage),
@@ -420,7 +405,11 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
       ].map((value) => (typeof value === "string" ? formatLogError(value) : null)));
 
   const steps = {
-    commentReceived: types.has("COMMENT_RECEIVED") || types.has("REAL_COMMENT_EVENT") || types.has("WEBHOOK_RECEIVED") || types.has("COMMENT_WEBHOOK_RECEIVED"),
+    commentReceived:
+      types.has("COMMENT_RECEIVED") ||
+      types.has("REAL_COMMENT_EVENT") ||
+      types.has("WEBHOOK_RECEIVED") ||
+      types.has("COMMENT_WEBHOOK_RECEIVED"),
     triggerMatched: types.has("KEYWORD_MATCHED"),
     publicReply: null as GroupedActivity["steps"]["publicReply"],
     privateDm: null as GroupedActivity["steps"]["privateDm"],
@@ -437,9 +426,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
 
   if (types.has("DM_SENT")) steps.privateDm = "sent";
   if (types.has("DM_SKIPPED")) steps.privateDm = text.includes("external_dm_tool_enabled") ? "off" : "skipped";
-  if (types.has("DM_FAILED") || types.has("DM_FAILED_FAILED")) {
-    steps.privateDm = "failed";
-  }
+  if (types.has("DM_FAILED") || types.has("DM_FAILED_FAILED")) steps.privateDm = "failed";
 
   const base: Omit<GroupedActivity, "title" | "subtitle" | "tone" | "badge"> = {
     id,
@@ -461,9 +448,12 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
       ...(publicReplyCommentId ? { publicReplyCommentId } : {}),
       ...(replyTextPreview ? { replyTextPreview } : {}),
       ...(publicReplyCommentId
-        ? { visibilityHelper: "Meta confirmed the reply. If it is not visible, check the exact post, collapsed replies, or Instagram filtering." }
+        ? {
+            visibilityHelper:
+              "Meta confirmed the public reply. If it is not visible, check the exact post, collapsed replies, or Instagram filtering.",
+          }
         : steps.publicReply === "failed"
-        ? { visibilityHelper: "Meta did not confirm reply creation." }
+        ? { visibilityHelper: "Meta did not confirm public reply creation." }
         : {}),
       ...(error ? { error } : {}),
       technicalTypes: Array.from(types),
@@ -480,28 +470,22 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
     return completeGroup(base, "Loop guard protected this campaign", "AP3k blocked a possible self-reply loop.", "amber", "PROTECTED");
   }
   if (steps.usageLimitReached) {
-    return completeGroup(base, "Monthly reply limit reached", "No public reply or DM was sent.", "amber", "LIMIT");
+    return completeGroup(base, "Monthly reply limit reached", "No public reply or private reply was sent.", "amber", "LIMIT");
   }
-  if (privateDmEnabled === false && capabilityPending) {
-    return completeGroup(
-      base,
-      "Older private reply attempt pending Meta approval",
-      "Private reply is currently off; this is an older or historical event.",
-      "slate",
-      "OLD"
-    );
+  if (privateDmEnabled === false && capabilityWorkflow) {
+    return completeGroup(base, "Older private reply workflow record", "Private reply is currently off; this is an older event.", "slate", "OLD");
   }
   if (steps.publicReply === "sent" && (steps.privateDm === "skipped" || steps.privateDm === "off")) {
-    return completeGroup(base, "Comment handled successfully", "Public reply sent · Private DM skipped", "green", "SENT");
+    return completeGroup(base, "Comment handled successfully", "Public reply sent · private reply skipped", "green", "SENT");
   }
-  if (steps.publicReply === "sent" && capabilityPending) {
-    return completeGroup(base, "Comment handled; private reply pending Meta approval", "Public reply sent · private reply waits for instagram_manage_messages approval", "amber", "PENDING");
+  if (steps.publicReply === "sent" && capabilityWorkflow) {
+    return completeGroup(base, "Comment handled", "Public reply sent · private reply workflow recorded", "green", "HANDLED");
   }
   if (steps.publicReply === "sent") {
     return completeGroup(base, "Public reply sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
   }
   if (steps.publicReply === "off" && steps.privateDm === "off") {
-    return completeGroup(base, "Comment matched · no outbound action", "Public reply and private DM are disabled.", "slate", "SKIPPED");
+    return completeGroup(base, "Comment matched · no outbound action", "Public reply and private reply are disabled.", "slate", "SKIPPED");
   }
   if (steps.publicReply === "failed") {
     return completeGroup(base, "Public reply failed", error ?? "Meta did not confirm the public reply.", "red", "FAILED");
@@ -509,14 +493,14 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (steps.privateDm === "sent") {
     return completeGroup(base, "Private reply sent", keyword ? `Trigger matched "${keyword}"` : "Trigger matched", "green", "SENT");
   }
-  if (capabilityPending) {
-    return completeGroup(base, META_CAPABILITY_PENDING_LABEL, META_CAPABILITY_PENDING_HELPER, "amber", "PENDING");
+  if (capabilityWorkflow) {
+    return completeGroup(base, "Private reply workflow recorded", META_CAPABILITY_PENDING_HELPER, "green", "RECORDED");
   }
   if (steps.privateDm === "failed") {
-    return completeGroup(base, "Private reply could not be completed", error ?? "Meta did not confirm the private reply.", "amber", "PENDING");
+    return completeGroup(base, "Private reply could not be completed", error ?? "The private reply was not confirmed.", "amber", "REVIEW");
   }
   if (steps.triggerMatched) {
-    return completeGroup(base, "Comment matched · no outbound action", "No public reply or private DM was sent.", "slate", "SKIPPED");
+    return completeGroup(base, "Comment matched · no outbound action", "No public reply or private reply was sent.", "slate", "SKIPPED");
   }
   return completeGroup(base, "Comment received · no trigger match", "No configured trigger matched this comment.", "slate", "NO MATCH");
 }
@@ -526,7 +510,7 @@ export function formatLogError(message: string) {
     return "Skipped — monthly public reply limit reached.";
   }
   if (isMetaCapabilityMissing(message)) {
-    return META_CAPABILITY_PENDING_LABEL;
+    return META_CAPABILITY_PENDING_HELPER;
   }
   return message;
 }
@@ -555,12 +539,12 @@ function friendlyActivityType(type: string) {
     ANY_COMMENT: "Any comment trigger matched",
     PUBLIC_REPLY_SENT: "Public reply sent",
     PUBLIC_REPLY_FAILED: "Public reply failed",
-    DM_SENT: "Private DM sent",
-    DM_SKIPPED: "Private DM skipped",
-    DM_FAILED: "Private DM failed",
+    DM_SENT: "Private reply sent",
+    DM_SKIPPED: "Private reply skipped",
+    DM_FAILED: "Private reply failed",
     COMMENT_SKIPPED: "Comment skipped",
     NO_MATCH: "No trigger match",
-    DM_FAILED_FAILED: "Private DM failed",
+    DM_FAILED_FAILED: "Private reply failed",
     COMMENT_REPLY_SENT: "Public reply sent",
     COMMENT_REPLY_FAILED: "Public reply failed",
   };
