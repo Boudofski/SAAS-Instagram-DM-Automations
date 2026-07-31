@@ -111,8 +111,9 @@ export function getDashboardProfileStats(input: {
 }) {
   const snapshot = input.snapshotComparison?.current;
   const neutralChange: ChangeSummary = { label: "—", tone: "neutral", value: null };
+  const messagingReviewMode = process.env.NEXT_PUBLIC_MESSAGING_REVIEW_MODE === "true";
 
-  return [
+  const stats = [
     {
       label: "Followers",
       value: typeof snapshot?.followersCount === "number" ? snapshot.followersCount.toLocaleString() : "Refresh profile",
@@ -147,7 +148,11 @@ export function getDashboardProfileStats(input: {
       label: "Public Replies",
       value: input.usage ? formatUsageMetricValue(input.usage.staticReplies) : "0",
       change: undefined,
-      subtitle: "Public replies + AP3k DMs",
+      subtitle: messagingReviewMode ? "Public replies tracked" : "Public replies + AP3k DMs",
     },
   ];
+
+  return messagingReviewMode
+    ? stats.filter((stat) => stat.label !== "Reply Rate")
+    : stats;
 }
