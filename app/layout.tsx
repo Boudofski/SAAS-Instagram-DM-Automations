@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
+const hideDetailsForMessagingReview = process.env.NEXT_PUBLIC_MESSAGING_REVIEW_MODE === "true";
 
 export const metadata: Metadata = {
   title: "AP3k — Instagram Comment Automation",
@@ -36,6 +37,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={jakarta.className}>
+        {hideDetailsForMessagingReview ? (
+          <style
+            dangerouslySetInnerHTML={{
+              __html: "details { display: none !important; }",
+            }}
+          />
+        ) : null}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
