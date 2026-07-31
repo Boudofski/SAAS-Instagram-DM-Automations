@@ -10,6 +10,12 @@ type Props = {
 };
 
 export default function StatCard({ label, value, icon, delta, deltaDir = "neutral", empty }: Props) {
+  const hideForMessagingReview =
+    process.env.NEXT_PUBLIC_MESSAGING_REVIEW_MODE === "true" &&
+    label.toLowerCase() === "reply rate";
+
+  if (hideForMessagingReview) return null;
+
   return (
     <div className="ap3k-card ap3k-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rf-pink/50 to-transparent" />
