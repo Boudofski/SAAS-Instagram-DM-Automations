@@ -23,7 +23,7 @@ const sections = (appReviewMode: boolean) => [
     title: "How We Use Instagram Data",
     body: appReviewMode
       ? "AP3k uses Instagram data only to provide Instagram comment automation, public comment replies when configured, campaign analytics, lead tracking, and related account management features."
-      : "AP3k uses Instagram data only to provide comment-to-DM automation, public comment replies when configured, campaign analytics, lead tracking, and related account management features.",
+      : "AP3k uses Instagram data only to provide Instagram comment automation, public comment replies, private reply workflows when configured, campaign analytics, lead tracking, and related account management features.",
   },
   {
     title: "What We Do Not Do",
@@ -42,33 +42,38 @@ const sections = (appReviewMode: boolean) => [
 export default function PrivacyPage() {
   const appReviewMode = isAppReviewMode();
   return (
-    <div className="relative min-h-screen overflow-hidden text-rf-text">
-      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-80" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_0%,rgba(249,115,22,0.10),transparent_28rem),radial-gradient(circle_at_78%_8%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_52%_42%,rgba(139,92,246,0.10),transparent_32rem)] dark:bg-ap3k-radial" />
       <WebsiteNav current="privacy" />
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-8">
-        <p className="ap3k-kicker">Legal</p>
-        <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
-          Privacy Policy
-        </h1>
-        <p className="mt-4 text-sm leading-7 text-rf-muted">
-          Last updated: May 14, 2026. This policy explains how AP3k uses data
-          to provide {appReviewMode ? "Instagram comment automation" : "Instagram comment-to-DM automation"}.
-        </p>
+        <div className="rounded-[2rem] border border-white/70 bg-white/60 p-6 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.03] sm:p-8">
+          <p className="ap3k-kicker">Legal</p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+            Privacy Policy
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
+            Last updated: May 14, 2026. This policy explains how AP3k uses data
+            to provide {appReviewMode ? "Instagram comment automation" : "Instagram comment automation and private reply workflows"}.
+          </p>
+        </div>
 
-        <div className="mt-10 space-y-4">
+        <div className="mt-8 space-y-4">
           {sections(appReviewMode).map((section) => (
-            <section key={section.title} className="ap3k-card rounded-2xl p-6">
-              <h2 className="text-lg font-black">{section.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-rf-muted">{section.body}</p>
+            <section
+              key={section.title}
+              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.10] dark:bg-[#111827] dark:shadow-ap3k-card"
+            >
+              <h2 className="text-lg font-black text-slate-950 dark:text-white">{section.title}</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-rf-muted">{section.body}</p>
             </section>
           ))}
         </div>
 
-        <div className="mt-8 rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-6">
-          <h2 className="text-lg font-black">Contact</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
+        <div className="mt-8 rounded-2xl border border-rf-pink/25 bg-gradient-to-br from-pink-50 via-white to-indigo-50 p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-rf-pink/20 dark:bg-ap3k-gradient-soft dark:from-transparent dark:via-transparent dark:to-transparent">
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">Contact</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-rf-muted">
             For privacy questions or deletion requests, contact{" "}
-            <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink">
+            <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink hover:underline">
               support@ap3k.com
             </a>.
           </p>
