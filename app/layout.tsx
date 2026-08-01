@@ -8,15 +8,15 @@ import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 const hideDetailsForMessagingReview = process.env.NEXT_PUBLIC_MESSAGING_REVIEW_MODE === "true";
+const siteDescription =
+  "AP3k turns Instagram comments into public replies, private reply workflows, leads, and tracked outcomes using official Meta APIs.";
 
 export const metadata: Metadata = {
   title: "AP3k — Instagram Comment Automation",
-  description:
-    "AP3k turns Instagram comments into public replies, leads, and tracked outcomes using official Meta APIs.",
+  description: siteDescription,
   openGraph: {
     title: "AP3k — Instagram Comment Automation",
-    description:
-      "AP3k turns Instagram comments into public replies, leads, and tracked outcomes using official Meta APIs.",
+    description: siteDescription,
     url: "https://ap3k.com",
     siteName: "AP3k",
     type: "website",
@@ -24,8 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "AP3k — Instagram Comment Automation",
-    description:
-      "AP3k turns Instagram comments into public replies, leads, and tracked outcomes using official Meta APIs.",
+    description: siteDescription,
   },
 };
 
