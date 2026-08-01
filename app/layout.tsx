@@ -40,7 +40,25 @@ export default function RootLayout({
         {hideDetailsForMessagingReview ? (
           <style
             dangerouslySetInnerHTML={{
-              __html: "details { display: none !important; }",
+              __html: `
+                details { display: none !important; }
+
+                @media (min-width: 1024px) {
+                  .lg\\:grid-cols-5 {
+                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                  }
+                }
+
+                @media (min-width: 1280px) {
+                  .xl\\:grid-cols-6 {
+                    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+                  }
+
+                  [class*="xl:grid-cols-[minmax(0,1fr)_300px]"] {
+                    grid-template-columns: minmax(0, 1fr) !important;
+                  }
+                }
+              `,
             }}
           />
         ) : null}
