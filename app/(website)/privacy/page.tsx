@@ -5,24 +5,24 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — AP3k",
-  description: "How AP3k handles Instagram account, automation, lead, and billing data.",
+  description: "How AP3k handles Instagram account, automation, lead, reply workflow, and billing data.",
 };
 
 const sections = (appReviewMode: boolean) => [
   {
     title: "Instagram Data We Collect",
-    body: "AP3k collects account and profile information from Instagram only after you authorize the connection. This may include the connected Instagram account ID, username or profile identifiers made available by Meta, media identifiers needed for campaigns, and authorization status.",
+    body: "AP3k collects account and profile information from Instagram only after you authorize the connection. This may include the connected Instagram account ID, username or profile identifiers made available by Meta, media identifiers needed for campaigns, comment identifiers needed to match campaign triggers, and authorization status.",
   },
   {
     title: "Product Data We Store",
     body: appReviewMode
-      ? "AP3k stores automation settings, campaign keywords, selected post/media IDs, leads, public reply configuration, account information, and subscription data needed to operate the service."
-      : "AP3k stores automation settings, campaign keywords, selected post/media IDs, webhook events, leads, message logs, public reply configuration, account information, and subscription data needed to operate the service.",
+      ? "AP3k stores automation settings, campaign keywords, selected post/media IDs, leads, public reply configuration, private reply after comment configuration, activity records, account information, and subscription data needed to operate the service."
+      : "AP3k stores automation settings, campaign keywords, selected post/media IDs, webhook events, leads, message logs, public reply configuration, private reply workflow configuration, account information, and subscription data needed to operate the service.",
   },
   {
     title: "How We Use Instagram Data",
     body: appReviewMode
-      ? "AP3k uses Instagram data only to provide Instagram comment automation, public comment replies when configured, campaign analytics, lead tracking, and related account management features."
+      ? "AP3k uses Instagram data only to provide Instagram comment automation, public comment replies when configured, private reply after comment workflows when configured, campaign analytics, lead tracking, and related account management features."
       : "AP3k uses Instagram data only to provide Instagram comment automation, public comment replies, private reply workflows when configured, campaign analytics, lead tracking, and related account management features.",
   },
   {
@@ -34,7 +34,7 @@ const sections = (appReviewMode: boolean) => [
   {
     title: "Disconnect And Delete",
     body: appReviewMode
-      ? "You can disconnect Instagram from AP3k or request deletion of account data, automation data, leads, and activity records by contacting support@ap3k.com."
+      ? "You can disconnect Instagram from AP3k or request deletion of account data, automation data, leads, reply workflow records, and activity records by contacting support@ap3k.com."
       : "You can disconnect Instagram from AP3k or request deletion of account data, automation data, leads, webhook events, and message logs by contacting support@ap3k.com.",
   },
 ];
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
           </h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
             Last updated: May 14, 2026. This policy explains how AP3k uses data
-            to provide {appReviewMode ? "Instagram comment automation" : "Instagram comment automation and private reply workflows"}.
+            to provide {appReviewMode ? "Instagram comment automation and private reply after comment workflows" : "Instagram comment automation and private reply workflows"}.
           </p>
         </div>
 
