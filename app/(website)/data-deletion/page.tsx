@@ -8,134 +8,123 @@ export const metadata: Metadata = {
     "How to delete your AP3k account data, Instagram account connection, campaigns, and message logs.",
 };
 
+const cardClass =
+  "rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.10] dark:bg-[#111827] dark:shadow-ap3k-card";
+const mutedClass = "text-sm leading-7 text-slate-600 dark:text-rf-muted";
+const strongClass = "font-bold text-slate-950 dark:text-white";
+
 export default function DataDeletionPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden text-rf-text">
-      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-80" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_0%,rgba(249,115,22,0.10),transparent_28rem),radial-gradient(circle_at_78%_8%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_52%_42%,rgba(139,92,246,0.10),transparent_32rem)] dark:bg-ap3k-radial" />
       <WebsiteNav current="data-deletion" />
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-8">
-        <p className="ap3k-kicker">Legal</p>
-        <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
-          Data Deletion Instructions
-        </h1>
-        <p className="mt-4 text-sm leading-7 text-rf-muted">
-          You have the right to request deletion of your AP3k account data. This
-          page explains how. No login is required to submit a deletion request.
-        </p>
-
-        {/* Self-service option */}
-        <div className="mt-10 ap3k-card rounded-2xl p-6">
-          <h2 className="text-lg font-black">Option 1 — Self-service inside AP3k</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
-            If you have access to your AP3k account, you can immediately remove
-            your Instagram account connection and its associated access token:
-          </p>
-          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-7 text-rf-muted">
-            <li>Sign in to AP3k and open your Dashboard.</li>
-            <li>
-              Go to <strong className="text-rf-text">Integrations</strong>.
-            </li>
-            <li>
-              Click <strong className="text-rf-text">Disconnect account</strong>.
-            </li>
-          </ol>
-          <p className="mt-4 text-sm leading-7 text-rf-muted">
-            Disconnecting removes your stored Page access token and unlinks your
-            Instagram Business account from AP3k immediately.
+        <div className="rounded-[2rem] border border-white/70 bg-white/60 p-6 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.03] sm:p-8">
+          <p className="ap3k-kicker">Legal</p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+            Data Deletion Instructions
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
+            You can request deletion of your AP3k account data at any time. This
+            page explains the self-service option and the email request process.
           </p>
         </div>
 
-        {/* Email request */}
-        <div className="mt-4 ap3k-card rounded-2xl p-6">
-          <h2 className="text-lg font-black">Option 2 — Email deletion request</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
-            To request full deletion of all stored data associated with your
-            account, send an email to:
-          </p>
-          <p className="mt-4">
-            <a
-              href="mailto:officialabde@gmail.com"
-              className="font-bold text-rf-pink hover:underline text-sm"
-            >
-              officialabde@gmail.com
-            </a>
-          </p>
-          <div className="mt-5 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
-            <p className="font-black text-rf-text">Required email format</p>
-            <p className="text-rf-muted">
-              <span className="font-bold text-rf-text">Subject:</span>{" "}
-              AP3k Data Deletion Request
+        <div className="mt-8 space-y-4">
+          <section className={cardClass}>
+            <h2 className="text-lg font-black text-slate-950 dark:text-white">Option 1 — Self-service inside AP3k</h2>
+            <p className={`mt-3 ${mutedClass}`}>
+              If you have access to your AP3k account, you can immediately remove
+              your Instagram account connection and its associated access token:
             </p>
-            <p className="text-rf-muted">
-              <span className="font-bold text-rf-text">Include:</span>
+            <ol className={`mt-4 list-decimal space-y-2 pl-5 ${mutedClass}`}>
+              <li>Sign in to AP3k and open your Dashboard.</li>
+              <li>
+                Go to <strong className={strongClass}>Instagram Account</strong>.
+              </li>
+              <li>
+                Click <strong className={strongClass}>Remove connection</strong>.
+              </li>
+            </ol>
+            <p className={`mt-4 ${mutedClass}`}>
+              Disconnecting removes your stored Page access token and unlinks your
+              Instagram Business or Creator account from AP3k.
             </p>
-            <ul className="list-disc space-y-1 pl-5 text-rf-muted">
-              <li>The email address associated with your AP3k account</li>
-              <li>The connected Instagram username (e.g. @yourhandle)</li>
+          </section>
+
+          <section className={cardClass}>
+            <h2 className="text-lg font-black text-slate-950 dark:text-white">Option 2 — Email deletion request</h2>
+            <p className={`mt-3 ${mutedClass}`}>
+              To request full deletion of stored data associated with your account,
+              send an email to:
+            </p>
+            <p className="mt-4">
+              <a
+                href="mailto:support@ap3k.com"
+                className="text-sm font-bold text-rf-pink hover:underline"
+              >
+                support@ap3k.com
+              </a>
+            </p>
+            <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-white/[0.04]">
+              <p className="font-black text-slate-950 dark:text-white">Required email format</p>
+              <p className="text-slate-600 dark:text-rf-muted">
+                <span className={strongClass}>Subject:</span>{" "}
+                AP3k Data Deletion Request
+              </p>
+              <p className="text-slate-600 dark:text-rf-muted">
+                <span className={strongClass}>Include:</span>
+              </p>
+              <ul className="list-disc space-y-1 pl-5 text-slate-600 dark:text-rf-muted">
+                <li>The email address associated with your AP3k account</li>
+                <li>The connected Instagram username, such as @yourhandle</li>
+              </ul>
+            </div>
+          </section>
+
+          <section className={cardClass}>
+            <h2 className="text-lg font-black text-slate-950 dark:text-white">What AP3k will delete</h2>
+            <p className={`mt-3 ${mutedClass}`}>
+              Upon a verified deletion request, AP3k will delete or anonymize,
+              where legally and technically possible:
+            </p>
+            <ul className={`mt-4 list-disc space-y-2 pl-5 ${mutedClass}`}>
+              <li>Your AP3k user account and profile data</li>
+              <li>Your Instagram account connection record, including stored Page access tokens and linked account identifiers</li>
+              <li>Campaigns, keywords, listeners, and settings</li>
+              <li>Webhook diagnostic events and processing logs</li>
+              <li>Lead records and message delivery logs</li>
+              <li>Subscription metadata where permitted by payment records law</li>
             </ul>
-          </div>
+          </section>
+
+          <section className={cardClass}>
+            <h2 className="text-lg font-black text-slate-950 dark:text-white">Records that may be retained</h2>
+            <p className={`mt-3 ${mutedClass}`}>
+              AP3k may retain minimal records where required or permitted by law
+              for security, abuse prevention, legal compliance, or payment records.
+              Retained data is held for the minimum period required and is not used
+              for any other purpose.
+            </p>
+          </section>
+
+          <section className={cardClass}>
+            <h2 className="text-lg font-black text-slate-950 dark:text-white">Processing time</h2>
+            <p className={`mt-3 ${mutedClass}`}>
+              Deletion requests are processed within a reasonable timeframe after
+              identity verification. You will receive a confirmation email once
+              deletion is complete.
+            </p>
+          </section>
         </div>
 
-        {/* What gets deleted */}
-        <div className="mt-4 ap3k-card rounded-2xl p-6">
-          <h2 className="text-lg font-black">What AP3k will delete</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
-            Upon a verified deletion request, AP3k will delete or anonymize,
-            where legally and technically possible:
-          </p>
-          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-rf-muted">
-            <li>Your AP3k user account and profile data</li>
-            <li>
-              Your Instagram account connection record, including stored Page access
-              tokens and linked account identifiers
-            </li>
-            <li>Campaigns, keywords, listeners, and settings</li>
-            <li>Webhook diagnostic events and processing logs</li>
-            <li>Lead records and message delivery logs</li>
-            <li>Subscription metadata where permitted by payment records law</li>
-          </ul>
-        </div>
-
-        {/* Retained records */}
-        <div className="mt-4 ap3k-card rounded-2xl p-6">
-          <h2 className="text-lg font-black">Records that may be retained</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
-            AP3k may retain minimal records where required or permitted by law
-            for the following purposes:
-          </p>
-          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-rf-muted">
-            <li>Security incident investigation and abuse prevention</li>
-            <li>Legal compliance obligations</li>
-            <li>Payment and billing records required by financial regulations</li>
-          </ul>
-          <p className="mt-4 text-sm leading-7 text-rf-muted">
-            Any retained data is held for the minimum period required and is not
-            used for any other purpose.
-          </p>
-        </div>
-
-        {/* Timeline */}
-        <div className="mt-4 ap3k-card rounded-2xl p-6">
-          <h2 className="text-lg font-black">Processing time</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
-            Deletion requests are processed within a reasonable timeframe after
-            identity verification. You will receive a confirmation email once
-            deletion is complete.
-          </p>
-        </div>
-
-        {/* Contact */}
-        <div className="mt-8 rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-6">
-          <h2 className="text-lg font-black">Questions</h2>
-          <p className="mt-3 text-sm leading-7 text-rf-muted">
+        <div className="mt-8 rounded-2xl border border-rf-pink/25 bg-gradient-to-br from-pink-50 via-white to-indigo-50 p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-rf-pink/20 dark:bg-ap3k-gradient-soft dark:from-transparent dark:via-transparent dark:to-transparent">
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">Questions</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-rf-muted">
             For questions about your data or this process, contact{" "}
-            <a
-              href="mailto:officialabde@gmail.com"
-              className="font-bold text-rf-pink hover:underline"
-            >
-              officialabde@gmail.com
-            </a>
-            .
+            <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink hover:underline">
+              support@ap3k.com
+            </a>.
           </p>
         </div>
       </main>
