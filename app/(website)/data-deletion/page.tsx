@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Data Deletion Instructions — AP3k",
   description:
-    "How to delete your AP3k account data, Instagram account connection, campaigns, and message logs.",
+    "How to delete your AP3k account data, Instagram account connection, campaigns, leads, and reply workflow records.",
 };
 
 const cardClass =
@@ -93,7 +93,7 @@ export default function DataDeletionPage() {
               <li>Your Instagram account connection record, including stored Page access tokens and linked account identifiers</li>
               <li>Campaigns, keywords, listeners, and settings</li>
               <li>Webhook diagnostic events and processing logs</li>
-              <li>Lead records and message delivery logs</li>
+              <li>Lead records and reply workflow records</li>
               <li>Subscription metadata where permitted by payment records law</li>
             </ul>
           </section>
