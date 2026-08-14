@@ -10,6 +10,10 @@ export const INSTAGRAM_GRAPH_VERSION =
   process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
 export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 
+function useInstagramGraphFirst() {
+  return process.env.INSTAGRAM_LOGIN_ENABLED === "true";
+}
+
 export function getSafeMetaError(error: unknown) {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
@@ -66,16 +70,24 @@ function shouldTryInstagramGraph(error: unknown): boolean {
   );
 }
 
-async function postMetaWithInstagramGraphFallback(
+async function postGraph(
   path: string,
   body: unknown,
   token: string,
   context: {
     endpointName: string;
-    legacyEndpointFamily: string;
-    instagramEndpointFamily?: string;
   }
 ) {
+  if (useInstagramGraphFirst()) {
+    console.log("[meta-api] Instagram Graph request", {
+      endpointFamily: "instagram_graph",
+      endpointName: context.endpointName,
+    });
+    return await axios.post(`${INSTAGRAM_GRAPH_API_BASE_URL}/${path}`, body, {
+      headers: graphHeaders(token),
+    });
+  }
+
   try {
     return await axios.post(`${META_GRAPH_API_BASE_URL}/${path}`, body, {
       headers: graphHeaders(token),
@@ -84,8 +96,8 @@ async function postMetaWithInstagramGraphFallback(
     if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
     console.warn("[meta-api] facebook graph request failed — trying instagram graph", {
       endpointName: context.endpointName,
-      legacyEndpointFamily: context.legacyEndpointFamily,
-      instagramEndpointFamily: context.instagramEndpointFamily ?? "instagram_graph",
+      legacyEndpointFamily: "facebook_graph_instagram_business",
+      instagramEndpointFamily: "instagram_graph",
       facebookGraphError: getSafeMetaError(facebookErr),
     });
     return await axios.post(`${INSTAGRAM_GRAPH_API_BASE_URL}/${path}`, body, {
@@ -105,22 +117,18 @@ export const sendDm = async (
   token: string
 ) => {
   console.log("[meta-api] send DM request", {
-    endpointFamily: "facebook_graph_instagram_business",
-    fallbackEndpointFamily: "instagram_graph",
+    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
     hasUserId: Boolean(userId),
     hasReceiverId: Boolean(receiverId),
   });
-  return await postMetaWithInstagramGraphFallback(
+  return await postGraph(
     `${userId}/messages`,
     {
       recipient: { id: receiverId },
       message: { text: prompt },
     },
     token,
-    {
-      endpointName: "ig_messages_direct_dm",
-      legacyEndpointFamily: "facebook_graph_instagram_business",
-    }
+    { endpointName: "ig_messages_direct_dm" }
   );
 };
 
@@ -131,78 +139,56 @@ export const sendPrivateMessage = async (
   token: string
 ) => {
   console.log("[meta-api] send private reply request", {
-    endpointFamily: "facebook_graph_instagram_business",
-    fallbackEndpointFamily: "instagram_graph",
+    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
     hasUserId: Boolean(userId),
     hasCommentId: Boolean(commentId),
   });
-  return await postMetaWithInstagramGraphFallback(
+  return await postGraph(
     `${userId}/messages`,
     {
       recipient: { comment_id: commentId },
       message: { text: message },
     },
     token,
-    {
-      endpointName: "ig_messages_private_reply",
-      legacyEndpointFamily: "facebook_graph_instagram_business",
-    }
+    { endpointName: "ig_messages_private_reply" }
   );
 };
 
-/**
- * Posts a threaded reply directly under a comment (Advanced Access).
- * Endpoint: POST /{commentId}/replies
- * Supports both legacy Facebook Login/Page tokens and new Instagram Login tokens.
- */
 export const sendCommentReply = async (
   commentId: string,
   message: string,
   token: string
 ) => {
-  console.log("[meta-api] send threaded comment reply (Advanced Access)", {
-    endpointFamily: "facebook_graph_instagram_business",
-    fallbackEndpointFamily: "instagram_graph",
+  console.log("[meta-api] send threaded comment reply", {
+    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
     accessMode: "advanced",
     endpoint: "comment_replies",
     hasCommentId: Boolean(commentId),
   });
-  return await postMetaWithInstagramGraphFallback(
+  return await postGraph(
     `${commentId}/replies`,
     { message },
     token,
-    {
-      endpointName: "comment_replies",
-      legacyEndpointFamily: "facebook_graph_instagram_business",
-    }
+    { endpointName: "comment_replies" }
   );
 };
 
-/**
- * Posts a top-level comment on a media object (Standard Access).
- * Endpoint: POST /{mediaId}/comments
- * Works as an @mention fallback when threaded replies are blocked.
- */
 export const sendMediaComment = async (
   mediaId: string,
   message: string,
   token: string
 ) => {
-  console.log("[meta-api] send media comment (Standard Access)", {
-    endpointFamily: "facebook_graph_instagram_business",
-    fallbackEndpointFamily: "instagram_graph",
+  console.log("[meta-api] send media comment", {
+    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
     accessMode: "standard",
     endpoint: "media_comments",
     hasMediaId: Boolean(mediaId),
   });
-  return await postMetaWithInstagramGraphFallback(
+  return await postGraph(
     `${mediaId}/comments`,
     { message },
     token,
-    {
-      endpointName: "media_comments",
-      legacyEndpointFamily: "facebook_graph_instagram_business",
-    }
+    { endpointName: "media_comments" }
   );
 };
 
@@ -215,8 +201,12 @@ function isSuccessfulMetaStatus(status?: number) {
 async function postSubscribedApps(
   targetId: string,
   token: string,
-  endpointFamily: "facebook_graph_page" | "facebook_graph_instagram_business"
+  endpointFamily: "instagram_graph" | "facebook_graph_page" | "facebook_graph_instagram_business"
 ) {
+  const baseUrl = endpointFamily === "instagram_graph"
+    ? INSTAGRAM_GRAPH_API_BASE_URL
+    : META_GRAPH_API_BASE_URL;
+
   console.log("[meta-api] subscribed_apps request", {
     endpointFamily,
     targetIdPresent: Boolean(targetId),
@@ -224,7 +214,7 @@ async function postSubscribedApps(
   });
 
   return await axios.post(
-    `${META_GRAPH_API_BASE_URL}/${targetId}/subscribed_apps`,
+    `${baseUrl}/${targetId}/subscribed_apps`,
     null,
     {
       params: {
@@ -264,6 +254,24 @@ export const subscribePageWebhooks = async (
   pageId: string,
   token: string
 ) => {
+  if (useInstagramGraphFirst()) {
+    try {
+      const instagramSubscription = await postSubscribedApps(pageId, token, "instagram_graph");
+      console.log("[meta-api] Instagram Graph subscribed_apps result", {
+        endpointFamily: "instagram_graph",
+        status: instagramSubscription.status,
+        subscribed: isSuccessfulMetaStatus(instagramSubscription.status),
+      });
+      return instagramSubscription;
+    } catch (error) {
+      console.warn("[meta-api] Instagram Graph subscribed_apps failed", {
+        endpointFamily: "instagram_graph",
+        error: getSafeMetaError(error),
+      });
+      throw error;
+    }
+  }
+
   let pageSubscription: Awaited<ReturnType<typeof postSubscribedApps>> | null = null;
   let pageSubscriptionError: unknown = null;
 
@@ -310,12 +318,6 @@ export const subscribePageWebhooks = async (
         pageSubscriptionStatus: pageSubscription?.status,
       });
     }
-  } else {
-    console.warn("[meta-api] linked Instagram account unavailable for webhook subscription", {
-      endpointFamily: "facebook_graph_instagram_business",
-      hasPageId: Boolean(pageId),
-      pageSubscriptionStatus: pageSubscription?.status,
-    });
   }
 
   if (pageSubscription) return pageSubscription;
@@ -658,7 +660,8 @@ export const debugPageToken = async (token: string) => {
 };
 
 export const getPageWebhookSubscriptions = async (pageId: string, pageToken: string) => {
-  return await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`, {
+  const baseUrl = useInstagramGraphFirst() ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL;
+  return await axios.get(`${baseUrl}/${pageId}/subscribed_apps`, {
     params: { access_token: pageToken },
   });
 };
@@ -689,7 +692,8 @@ export const getInstagramBusinessProfile = async (
   pageToken: string,
   fields = "id,username,profile_picture_url,followers_count,media_count"
 ) => {
-  return await axios.get(`${META_GRAPH_API_BASE_URL}/${instagramBusinessAccountId}`, {
+  const baseUrl = useInstagramGraphFirst() ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL;
+  return await axios.get(`${baseUrl}/${instagramBusinessAccountId}`, {
     params: {
       fields,
       access_token: pageToken,
