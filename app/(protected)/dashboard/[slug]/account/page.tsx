@@ -38,7 +38,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         <p className="ap3k-kicker">Instagram connection</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Instagram Account</h1>
         <p className="mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-400">
-          Connect one Instagram Business or Creator account. Campaigns and comments run through Instagram Login and Instagram Graph.
+          Connect one Instagram Business or Creator account, then run unlimited comment automation campaigns from one clean workspace.
         </p>
       </div>
 
@@ -62,9 +62,8 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
                   ) : "Connect Instagram to start receiving comments."}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="ap3k-badge ap3k-badge-blue">Instagram Login</span>
-                  <span className="ap3k-badge ap3k-badge-slate">Instagram Graph</span>
-                  {profileSnapshotDisplay.label !== "Missing" && <span className="ap3k-badge ap3k-badge-green">{profileSnapshotDisplay.label}</span>}
+                  <span className="ap3k-badge ap3k-badge-green">Comment automation ready</span>
+                  {profileSnapshotDisplay.label !== "Missing" && <span className="ap3k-badge ap3k-badge-slate">{profileSnapshotDisplay.label}</span>}
                 </div>
               </div>
             </div>
@@ -74,9 +73,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
       </section>
 
       <section className="grid animate-[ap3kDashboardRise_0.6s_ease-out_both] gap-3 md:grid-cols-3">
-        <StatusCard label="Instagram connected" value={connected && !tokenExpired ? "Ready to listen" : "Reconnect required"} ok={connected && !tokenExpired} />
+        <StatusCard label="Instagram connected" value={connected && !tokenExpired ? "Ready" : "Reconnect required"} ok={connected && !tokenExpired} />
         <StatusCard label="Comments" value={connected ? "Ready to receive" : "Connect account first"} ok={connected} />
-        <StatusCard label="Replies" value={connected ? "Available in campaigns" : "Paused"} ok={connected} />
+        <StatusCard label="Replies" value={connected ? "Ready in campaigns" : "Paused"} ok={connected} />
       </section>
 
       <section className="ap3k-card animate-[ap3kDashboardRise_0.7s_ease-out_both] rounded-3xl p-5 sm:p-6">
@@ -88,7 +87,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           </div>
           <PeriodSelector slug={params.slug} active={period} />
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {stats ? (
             <>
               <SettingsStatCard label="Followers" stat={stats.followers} />
@@ -97,11 +96,9 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
               <SettingsStatCard label="Leads" stat={stats.contacts} />
               <SettingsStatCard label="Private replies" stat={stats.dmsOut} />
               <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
-              <SettingsStatCard label="Inbound messages" stat={stats.dmsIn} />
-              <SettingsStatCard label="Removed" stat={stats.removed} />
             </>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 sm:col-span-2 xl:col-span-4">
+            <p className="rounded-xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 sm:col-span-2 xl:col-span-3">
               Connect Instagram to enable account stats.
             </p>
           )}
@@ -112,13 +109,13 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="ap3k-kicker">Connection management</p>
-            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">One account per workspace</h2>
+            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">One Instagram account per workspace</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              Reconnecting a different Instagram account replaces the current connection. Campaign history stays saved, and campaigns can be reviewed after reconnect.
+              Reconnect only when you want to replace the current Instagram account. Existing campaigns and activity stay saved.
             </p>
           </div>
           <Link href={`/dashboard/${params.slug}/integrations`} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]">
-            Open connection settings
+            Manage connection
             <ExternalLink className="h-4 w-4" />
           </Link>
         </div>
