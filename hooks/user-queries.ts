@@ -1,8 +1,8 @@
 import {
   getAllAutomation,
   getAutomationInfo,
-  getProfilePosts,
 } from "@/actions/automation";
+import { getProfilePostsPaginated } from "@/actions/automation/media";
 import { onUserInfo } from "@/actions/user";
 import { getCurrentWebhookHealth } from "@/actions/integration";
 import { useAuth } from "@clerk/nextjs";
@@ -37,10 +37,10 @@ export const useQueryUser = () => {
 
 export const useQueryAutomationPosts = () => {
   const { userId } = useAuth();
-  const fetchPosts = async () => await getProfilePosts();
+  const fetchPosts = async () => await getProfilePostsPaginated();
 
   return useQuery({
-    queryKey: ["instagram-media", userId],
+    queryKey: ["instagram-media", userId, "paginated-all"],
     queryFn: fetchPosts,
     enabled: Boolean(userId),
   });
