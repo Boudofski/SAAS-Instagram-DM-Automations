@@ -47,15 +47,12 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       ? sub.aiReplyLimitOverride
       : limits.aiRepliesPerMonth;
 
-  const campaignLimit =
-    isOverrideActive && sub?.activeCampaignLimitOverride !== null
-      ? sub.activeCampaignLimitOverride
-      : limits.activeCampaigns;
-
-  const accountLimit =
-    isOverrideActive && sub?.connectedAccountLimitOverride !== null
-      ? sub.connectedAccountLimitOverride
-      : limits.connectedInstagramAccounts;
+  // AP3k's product model is now simple: one connected Instagram account and
+  // unlimited campaigns for that account. Historical subscription overrides can
+  // still raise/lower reply quotas, but they must not reintroduce old campaign
+  // or multi-account limits in the dashboard or activation validator.
+  const campaignLimit = limits.activeCampaigns;
+  const accountLimit = limits.connectedInstagramAccounts;
 
   const resetAt = user?.subscription?.usageResetAt;
   const effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
@@ -112,7 +109,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     staticReplies: makeUsageMetric(staticReplies, staticLimit),
     aiReplies: makeUsageMetric(0, aiLimit),
     activeCampaigns: makeUsageMetric(activeCampaigns, campaignLimit),
-    connectedAccounts: makeUsageMetric(connectedAccounts, accountLimit),
+    connectedAccounts: makeUsageMetric(Math.min(connectedAccounts, 1), accountLimit),
   };
 }
 
