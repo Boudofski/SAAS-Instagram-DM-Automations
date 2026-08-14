@@ -10,7 +10,7 @@ export const INSTAGRAM_GRAPH_VERSION =
   process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
 export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 
-function useInstagramGraphFirst() {
+function shouldPreferInstagramGraph() {
   return process.env.INSTAGRAM_LOGIN_ENABLED === "true";
 }
 
@@ -74,11 +74,9 @@ async function postGraph(
   path: string,
   body: unknown,
   token: string,
-  context: {
-    endpointName: string;
-  }
+  context: { endpointName: string }
 ) {
-  if (useInstagramGraphFirst()) {
+  if (shouldPreferInstagramGraph()) {
     console.log("[meta-api] Instagram Graph request", {
       endpointFamily: "instagram_graph",
       endpointName: context.endpointName,
@@ -106,10 +104,6 @@ async function postGraph(
   }
 }
 
-export const refreshToken = async (token: string) => {
-  return exchangeLongLivedFacebookUserToken(token);
-};
-
 export const sendDm = async (
   userId: string,
   receiverId: string,
@@ -117,16 +111,13 @@ export const sendDm = async (
   token: string
 ) => {
   console.log("[meta-api] send DM request", {
-    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
+    endpointFamily: shouldPreferInstagramGraph() ? "instagram_graph" : "facebook_graph_instagram_business",
     hasUserId: Boolean(userId),
     hasReceiverId: Boolean(receiverId),
   });
   return await postGraph(
     `${userId}/messages`,
-    {
-      recipient: { id: receiverId },
-      message: { text: prompt },
-    },
+    { recipient: { id: receiverId }, message: { text: prompt } },
     token,
     { endpointName: "ig_messages_direct_dm" }
   );
@@ -139,16 +130,13 @@ export const sendPrivateMessage = async (
   token: string
 ) => {
   console.log("[meta-api] send private reply request", {
-    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
+    endpointFamily: shouldPreferInstagramGraph() ? "instagram_graph" : "facebook_graph_instagram_business",
     hasUserId: Boolean(userId),
     hasCommentId: Boolean(commentId),
   });
   return await postGraph(
     `${userId}/messages`,
-    {
-      recipient: { comment_id: commentId },
-      message: { text: message },
-    },
+    { recipient: { comment_id: commentId }, message: { text: message } },
     token,
     { endpointName: "ig_messages_private_reply" }
   );
@@ -160,7 +148,7 @@ export const sendCommentReply = async (
   token: string
 ) => {
   console.log("[meta-api] send threaded comment reply", {
-    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
+    endpointFamily: shouldPreferInstagramGraph() ? "instagram_graph" : "facebook_graph_instagram_business",
     accessMode: "advanced",
     endpoint: "comment_replies",
     hasCommentId: Boolean(commentId),
@@ -179,7 +167,7 @@ export const sendMediaComment = async (
   token: string
 ) => {
   console.log("[meta-api] send media comment", {
-    endpointFamily: useInstagramGraphFirst() ? "instagram_graph" : "facebook_graph_instagram_business",
+    endpointFamily: shouldPreferInstagramGraph() ? "instagram_graph" : "facebook_graph_instagram_business",
     accessMode: "standard",
     endpoint: "media_comments",
     hasMediaId: Boolean(mediaId),
@@ -213,22 +201,15 @@ async function postSubscribedApps(
     subscribedFields: WEBHOOK_SUBSCRIBED_FIELDS,
   });
 
-  return await axios.post(
-    `${baseUrl}/${targetId}/subscribed_apps`,
-    null,
-    {
-      params: {
-        subscribed_fields: WEBHOOK_SUBSCRIBED_FIELDS,
-        access_token: token,
-      },
-    }
-  );
+  return await axios.post(`${baseUrl}/${targetId}/subscribed_apps`, null, {
+    params: {
+      subscribed_fields: WEBHOOK_SUBSCRIBED_FIELDS,
+      access_token: token,
+    },
+  });
 }
 
-async function resolveInstagramAccountIdFromPage(
-  pageId: string,
-  pageToken: string
-) {
+async function resolveInstagramAccountIdFromPage(pageId: string, pageToken: string) {
   try {
     const page = await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}`, {
       params: {
@@ -236,9 +217,7 @@ async function resolveInstagramAccountIdFromPage(
         access_token: pageToken,
       },
     });
-    const instagramBusinessAccountId = page.data?.instagram_business_account?.id;
-    const connectedInstagramAccountId = page.data?.connected_instagram_account?.id;
-    const id = instagramBusinessAccountId ?? connectedInstagramAccountId;
+    const id = page.data?.instagram_business_account?.id ?? page.data?.connected_instagram_account?.id;
     return typeof id === "string" && id.trim() ? id.trim() : null;
   } catch (error) {
     console.warn("[meta-api] linked Instagram account lookup failed before webhook subscription", {
@@ -250,26 +229,15 @@ async function resolveInstagramAccountIdFromPage(
   }
 }
 
-export const subscribePageWebhooks = async (
-  pageId: string,
-  token: string
-) => {
-  if (useInstagramGraphFirst()) {
-    try {
-      const instagramSubscription = await postSubscribedApps(pageId, token, "instagram_graph");
-      console.log("[meta-api] Instagram Graph subscribed_apps result", {
-        endpointFamily: "instagram_graph",
-        status: instagramSubscription.status,
-        subscribed: isSuccessfulMetaStatus(instagramSubscription.status),
-      });
-      return instagramSubscription;
-    } catch (error) {
-      console.warn("[meta-api] Instagram Graph subscribed_apps failed", {
-        endpointFamily: "instagram_graph",
-        error: getSafeMetaError(error),
-      });
-      throw error;
-    }
+export const subscribePageWebhooks = async (pageId: string, token: string) => {
+  if (shouldPreferInstagramGraph()) {
+    const instagramSubscription = await postSubscribedApps(pageId, token, "instagram_graph");
+    console.log("[meta-api] Instagram Graph subscribed_apps result", {
+      endpointFamily: "instagram_graph",
+      status: instagramSubscription.status,
+      subscribed: isSuccessfulMetaStatus(instagramSubscription.status),
+    });
+    return instagramSubscription;
   }
 
   let pageSubscription: Awaited<ReturnType<typeof postSubscribedApps>> | null = null;
@@ -291,7 +259,6 @@ export const subscribePageWebhooks = async (
   }
 
   const instagramAccountId = await resolveInstagramAccountIdFromPage(pageId, token);
-
   if (instagramAccountId) {
     try {
       const instagramSubscription = await postSubscribedApps(
@@ -306,10 +273,7 @@ export const subscribePageWebhooks = async (
         subscribed: isSuccessfulMetaStatus(instagramSubscription.status),
         pageSubscriptionStatus: pageSubscription?.status,
       });
-
-      if (isSuccessfulMetaStatus(instagramSubscription.status)) {
-        return instagramSubscription;
-      }
+      if (isSuccessfulMetaStatus(instagramSubscription.status)) return instagramSubscription;
     } catch (error) {
       console.warn("[meta-api] Instagram account subscribed_apps failed", {
         endpointFamily: "facebook_graph_instagram_business",
@@ -346,24 +310,16 @@ export const getRecentFacebookPagePosts = async (
   });
 
   const posts = Array.isArray(response.data?.data) ? response.data.data : [];
-
   return posts.slice(0, 3).flatMap((post: any) => {
     const id = typeof post?.id === "string" ? post.id : "";
-    const createdTime =
-      typeof post?.created_time === "string" ? post.created_time : "";
+    const createdTime = typeof post?.created_time === "string" ? post.created_time : "";
     if (!id || !createdTime) return [];
-
-    return [
-      {
-        id,
-        message: typeof post?.message === "string" ? post.message : undefined,
-        createdTime,
-        permalinkUrl:
-          typeof post?.permalink_url === "string"
-            ? post.permalink_url
-            : undefined,
-      },
-    ];
+    return [{
+      id,
+      message: typeof post?.message === "string" ? post.message : undefined,
+      createdTime,
+      permalinkUrl: typeof post?.permalink_url === "string" ? post.permalink_url : undefined,
+    }];
   });
 };
 
@@ -374,13 +330,10 @@ function getMetaOAuthConfig() {
       ? `${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram`
       : undefined);
 
-  if (!redirectUri) {
-    throw new Error("META_REDIRECT_URI is not configured");
-  }
+  if (!redirectUri) throw new Error("META_REDIRECT_URI is not configured");
 
   const clientId = process.env.META_APP_ID;
   const clientSecret = process.env.META_APP_SECRET;
-
   if (!clientId || !clientSecret) {
     throw new Error("META_APP_ID and META_APP_SECRET are required for Facebook Business OAuth");
   }
@@ -408,23 +361,18 @@ export const exchangeLongLivedFacebookUserToken = async (shortUserToken: string)
 
   return {
     accessToken,
-    expiresIn:
-      typeof longToken.data?.expires_in === "number"
-        ? longToken.data.expires_in
-        : undefined,
+    expiresIn: typeof longToken.data?.expires_in === "number" ? longToken.data.expires_in : undefined,
   };
+};
+
+export const refreshToken = async (token: string) => {
+  return exchangeLongLivedFacebookUserToken(token);
 };
 
 export const generateToken = async (code: string) => {
   const { clientId, clientSecret, redirectUri } = getMetaOAuthConfig();
-
   const shortTokenRes = await axios.get(`${META_GRAPH_API_BASE_URL}/oauth/access_token`, {
-    params: {
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-      code,
-    },
+    params: { client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, code },
   });
 
   const shortAccessToken = assertAccessToken(shortTokenRes.data?.access_token);
@@ -435,10 +383,7 @@ export const generateToken = async (code: string) => {
     authProduct: "facebook_login_for_business",
   });
 
-  if (!shortAccessToken) {
-    console.error("[oauth] facebook code exchange failed: missing access_token");
-    return null;
-  }
+  if (!shortAccessToken) return null;
 
   const longToken = await exchangeLongLivedFacebookUserToken(shortAccessToken);
   console.log("[oauth] facebook long-lived token exchange result", {
@@ -488,20 +433,7 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
   });
 
   const pages = Array.isArray(accounts.data?.data) ? accounts.data.data : [];
-  const pageLookupAttempts: Array<{
-    pageId: string;
-    pageName?: string;
-    hasPageAccessToken: boolean;
-    status: "skipped_missing_page_token" | "ok" | "failed";
-    foundInstagramField?: "instagram_business_account" | "connected_instagram_account" | "none";
-    error?: string;
-  }> = [];
-
-  console.log("[oauth] step me/accounts_success", {
-    endpointFamily: "facebook_graph_page",
-    pageCount: pages.length,
-  });
-
+  const pageLookupAttempts: EligibleInstagramAccount["diagnostics"]["pageLookupAttempts"] = [];
   const eligibleAccounts: EligibleInstagramAccount[] = [];
 
   for (const page of pages) {
@@ -511,29 +443,19 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
     const tasks = Array.isArray(page?.tasks) ? page.tasks.map(String) : [];
 
     if (!pageId || !pageAccessToken) {
-      pageLookupAttempts.push({
-        pageId,
-        pageName,
-        hasPageAccessToken: Boolean(pageAccessToken),
-        status: "skipped_missing_page_token",
-      });
+      pageLookupAttempts.push({ pageId, pageName, hasPageAccessToken: Boolean(pageAccessToken), status: "skipped_missing_page_token" });
       continue;
     }
 
     try {
-      const directInstagramBusinessAccount = page?.instagram_business_account;
-      const directConnectedInstagramAccount = page?.connected_instagram_account;
       const pageLookup = await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}`, {
         params: {
-          fields:
-            "id,name,instagram_business_account{id,username,profile_picture_url},connected_instagram_account{id,username,profile_picture_url}",
+          fields: "id,name,instagram_business_account{id,username,profile_picture_url},connected_instagram_account{id,username,profile_picture_url}",
           access_token: pageAccessToken,
         },
       });
-      const instagramBusinessAccount =
-        pageLookup.data?.instagram_business_account ?? directInstagramBusinessAccount;
-      const connectedInstagramAccount =
-        pageLookup.data?.connected_instagram_account ?? directConnectedInstagramAccount;
+      const instagramBusinessAccount = pageLookup.data?.instagram_business_account ?? page?.instagram_business_account;
+      const connectedInstagramAccount = pageLookup.data?.connected_instagram_account ?? page?.connected_instagram_account;
       const account = instagramBusinessAccount ?? connectedInstagramAccount;
       const igAccountSource = instagramBusinessAccount
         ? ("instagram_business_account" as const)
@@ -550,15 +472,6 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
       });
 
       if (account?.id && igAccountSource) {
-        const diagnostics = {
-          pagesReturned: pages.length,
-          pageLookupAttempts,
-          foundInstagramField: igAccountSource,
-          igAccountSource,
-          selectedPageName: pageName,
-          selectedPageId: pageId,
-          selectedInstagramUsername: account.username as string | undefined,
-        };
         eligibleAccounts.push({
           pageId,
           pageName,
@@ -568,7 +481,15 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
           profilePictureUrl: account.profile_picture_url as string | undefined,
           igAccountSource,
           tasks,
-          diagnostics,
+          diagnostics: {
+            pagesReturned: pages.length,
+            pageLookupAttempts,
+            foundInstagramField: igAccountSource,
+            igAccountSource,
+            selectedPageName: pageName,
+            selectedPageId: pageId,
+            selectedInstagramUsername: account.username as string | undefined,
+          },
         });
       }
     } catch (error) {
@@ -581,16 +502,6 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
       });
     }
   }
-
-  console.log("[oauth] step page_instagram_lookup_result", {
-    pagesReturned: pages.length,
-    pageLookupAttempts: pageLookupAttempts.length,
-    eligibleAccounts: eligibleAccounts.length,
-    eligibleWithMessagingAndModerate: eligibleAccounts.filter((account) => {
-      if (!account.tasks.length) return true;
-      return account.tasks.includes("MESSAGING") && account.tasks.includes("MODERATE");
-    }).length,
-  });
 
   return {
     pagesReturned: pages.length,
@@ -605,10 +516,7 @@ export const getEligibleFacebookInstagramAccounts = async (userToken: string) =>
 export const getMetaAppScopedUserId = async (userToken: string) => {
   try {
     const response = await axios.get(`${META_GRAPH_API_BASE_URL}/me`, {
-      params: {
-        fields: "id",
-        access_token: userToken,
-      },
+      params: { fields: "id", access_token: userToken },
     });
     const id = response.data?.id;
     return typeof id === "string" && id.trim() ? id.trim() : null;
@@ -624,23 +532,12 @@ export const getMetaAppScopedUserId = async (userToken: string) => {
 export const resolveFacebookBusinessInstagramAccount = async (userToken: string) => {
   const result = await getEligibleFacebookInstagramAccounts(userToken);
   const account = result.eligibleAccounts[0];
-
   if (account) return account;
 
-  if (
-    !result.pagesReturned ||
-    result.pageLookupAttempts.every((attempt) => !attempt.hasPageAccessToken)
-  ) {
-    const error = new Error("page_token_missing");
-    (error as any).diagnostics = {
-      pagesReturned: result.pagesReturned,
-      pageLookupAttempts: result.pageLookupAttempts,
-      foundInstagramField: "none",
-    };
-    throw error;
-  }
-
-  const error = new Error("ig_business_not_linked");
+  const error = new Error(!result.pagesReturned || result.pageLookupAttempts.every((attempt) => !attempt.hasPageAccessToken)
+    ? "page_token_missing"
+    : "ig_business_not_linked"
+  );
   (error as any).diagnostics = {
     pagesReturned: result.pagesReturned,
     pageLookupAttempts: result.pageLookupAttempts,
@@ -652,15 +549,12 @@ export const resolveFacebookBusinessInstagramAccount = async (userToken: string)
 export const debugPageToken = async (token: string) => {
   const { clientId, clientSecret } = getMetaOAuthConfig();
   return await axios.get(`${META_GRAPH_API_BASE_URL}/debug_token`, {
-    params: {
-      input_token: token,
-      access_token: `${clientId}|${clientSecret}`,
-    },
+    params: { input_token: token, access_token: `${clientId}|${clientSecret}` },
   });
 };
 
 export const getPageWebhookSubscriptions = async (pageId: string, pageToken: string) => {
-  const baseUrl = useInstagramGraphFirst() ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL;
+  const baseUrl = shouldPreferInstagramGraph() ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL;
   return await axios.get(`${baseUrl}/${pageId}/subscribed_apps`, {
     params: { access_token: pageToken },
   });
@@ -672,19 +566,13 @@ export const getPageTokenPermissions = async (pageToken: string) => {
   });
 };
 
-export const getLinkedInstagramBusinessAccount = async (
-  pageId: string,
-  pageToken: string
-) => {
-  return await axios.get(
-    `${META_GRAPH_API_BASE_URL}/${pageId}`,
-    {
-      params: {
-        fields: "id,name,instagram_business_account{id,username,profile_picture_url}",
-        access_token: pageToken,
-      },
-    }
-  );
+export const getLinkedInstagramBusinessAccount = async (pageId: string, pageToken: string) => {
+  return await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}`, {
+    params: {
+      fields: "id,name,instagram_business_account{id,username,profile_picture_url}",
+      access_token: pageToken,
+    },
+  });
 };
 
 export const getInstagramBusinessProfile = async (
@@ -692,11 +580,8 @@ export const getInstagramBusinessProfile = async (
   pageToken: string,
   fields = "id,username,profile_picture_url,followers_count,media_count"
 ) => {
-  const baseUrl = useInstagramGraphFirst() ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL;
+  const baseUrl = shouldPreferInstagramGraph() ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL;
   return await axios.get(`${baseUrl}/${instagramBusinessAccountId}`, {
-    params: {
-      fields,
-      access_token: pageToken,
-    },
+    params: { fields, access_token: pageToken },
   });
 };
