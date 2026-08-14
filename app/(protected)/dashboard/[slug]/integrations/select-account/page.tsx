@@ -4,6 +4,7 @@ import {
 } from "@/actions/integration";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import { dashboardPath } from "@/lib/dashboard";
+import { isInstagramLoginEnabled } from "@/lib/instagram-login";
 import { redirect } from "next/navigation";
 
 type Props = {
@@ -11,6 +12,10 @@ type Props = {
 };
 
 async function Page({ params }: Props) {
+  if (isInstagramLoginEnabled()) {
+    redirect(`${dashboardPath(params.slug)}/integrations`);
+  }
+
   const result = await getPendingInstagramAccountSelections();
   const accounts = result.data ?? [];
 
@@ -23,13 +28,13 @@ async function Page({ params }: Props) {
       <div className="w-full max-w-5xl">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-            Official Meta connection
+            Legacy Meta connection
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
-            Select a Facebook Page
+            Select an Instagram account
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            AP3k lists the Facebook Pages managed by the logged-in Meta user. Select the Page connected to the Instagram account you want to automate.
+            This selector is only used by the legacy Facebook Login flow. The new Instagram Login flow connects the Instagram account directly and skips this step.
           </p>
         </div>
 
@@ -51,17 +56,14 @@ async function Page({ params }: Props) {
                   />
                   <div className="min-w-0">
                     <p className="text-lg font-black text-slate-950 dark:text-white">
-                      {account.pageName ?? "Unnamed Facebook Page"}
-                    </p>
-                    <p className="mt-1 font-mono text-xs font-bold text-slate-600 dark:text-slate-300">
-                      Facebook Page ID: {account.pageId}
+                      {account.instagramUsername ? `@${account.instagramUsername}` : account.pageName ?? "Instagram account"}
                     </p>
                     <div className="mt-3 grid gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span>
-                        Instagram account: {account.instagramUsername ? `@${account.instagramUsername}` : "Not available"}
-                      </span>
                       <span className="font-mono">
                         Instagram account ID: {account.instagramBusinessAccountId || "Not available"}
+                      </span>
+                      <span className="font-mono">
+                        Legacy linked Page ID: {account.pageId}
                       </span>
                     </div>
                   </div>
@@ -70,7 +72,7 @@ async function Page({ params }: Props) {
                   type="submit"
                   className="rounded-full bg-ap3k-gradient px-5 py-3 text-sm font-black text-white shadow-sm"
                 >
-                  Use this Page and continue
+                  Use this account
                 </button>
               </div>
             </form>
