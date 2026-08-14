@@ -2,7 +2,6 @@ import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import LocalTime from "@/components/global/local-time";
-import OnboardingChecklist from "@/components/global/onboarding-checklist";
 import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
@@ -21,8 +20,6 @@ import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-a
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
-import { formatUsageMetricValue, isUnlimited, usageTone } from "@/lib/plan-limits";
-import { getBillingUsagePresentation } from "@/lib/billing-presentation";
 import { getActivityEmptyState, getLeadEmptyState, isActivityInPeriod } from "@/lib/dashboard-consistency";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -112,9 +109,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     recentActivity.length,
     lifetimeCampaignTotals.runs + lifetimeCampaignTotals.leads + groupedActivity.length
   );
-  const connectedAccountPresentation = usage
-    ? getBillingUsagePresentation(usage.connectedAccounts, "accounts")
-    : null;
   const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
   const noCommentDiagnosis = dashboardNoCommentDiagnosis({
     username: displayInstagramUsername,
@@ -130,9 +124,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         title: tokenExpired ? "Reconnect Instagram before testing" : "Connect Instagram to start",
         detail: tokenExpired
           ? appReviewMode
-            ? "Your saved connection needs a fresh Meta login before comments and public replies can run."
-            : "Your saved connection needs a fresh Meta login before comments or DMs can run."
-          : "AP3k needs an official Meta connection before it can listen for comments.",
+            ? "Your saved connection needs a fresh Instagram login before comments and public replies can run."
+            : "Your saved connection needs a fresh Instagram login before comments or DMs can run."
+          : "AP3k needs an official Instagram connection before it can listen for comments.",
         cta: tokenExpired ? "Reconnect Instagram" : "Connect Instagram",
         href: `/dashboard/${params.slug}/integrations`,
       }
@@ -172,26 +166,20 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               }
             : null;
 
-  const checklistItems = [
-    { label: "Connect Instagram account", done: instagramConnected, href: `/dashboard/${params.slug}/account` },
-    { label: "Launch your first campaign", done: automations.length > 0, href: `/dashboard/${params.slug}/automation/new` },
-    { label: "Review delivery logs", done: automations.length > 0, href: `/dashboard/${params.slug}/automation` },
-  ];
-
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
-      <div>
+      <div className="animate-[ap3kDashboardRise_0.45s_ease-out_both]">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           {appReviewMode
             ? "Check your Instagram connection, active campaigns, real comments, public replies, and captured leads."
-            : "Check connection, webhook delivery, campaign status, comments, leads, and the next action to take."}
+            : "Monitor your Instagram account, live campaigns, comment activity, private replies, and leads from one clean dashboard."}
         </p>
       </div>
 
       {isEmpty && (
-        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
+        <div className="animate-[ap3kDashboardRise_0.5s_ease-out_both] overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">AP3k onboarding</p>
@@ -211,54 +199,60 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       {instagramConnected && instagram && (
         <div className={[
-          "flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm dark:bg-white/[0.04] lg:flex-row lg:items-center lg:justify-between",
-          tokenExpired ? "border-red-200 dark:border-red-500/35" : "border-emerald-100 dark:border-emerald-500/25",
+          "group animate-[ap3kDashboardRise_0.55s_ease-out_both] overflow-hidden rounded-3xl border p-5 shadow-[0_18px_80px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_90px_rgba(236,72,153,0.14)] dark:bg-white/[0.04]",
+          tokenExpired
+            ? "border-red-200 bg-red-50/80 dark:border-red-500/35 dark:bg-red-500/10"
+            : "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-pink-50 dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
-          <div className="flex min-w-0 items-center gap-3">
-            <InstagramAvatar
-              src={displayProfilePictureUrl}
-              username={displayInstagramUsername}
-              label={instagram.pageName}
-              size="lg"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                {displayInstagramUsername ? `@${displayInstagramUsername}` : "Instagram connected"}
-              </p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {tokenExpired
-                  ? "Token expired. Reconnect Instagram before testing comments."
-                  : profileSnapshot?.fetchedAt
-                    ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
-                    : appReviewMode ? "Ready to receive Instagram comments." : "Ready for official comment-to-DM testing."}
-              </p>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <InstagramAvatar
+                src={displayProfilePictureUrl}
+                username={displayInstagramUsername}
+                label={instagram.pageName}
+                size="lg"
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+                    {displayInstagramUsername ? `@${displayInstagramUsername}` : "Instagram connected"}
+                  </p>
+                  <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}>
+                    {tokenExpired ? "Reconnect" : "Connected"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  {tokenExpired
+                    ? "Token expired. Reconnect Instagram before testing comments."
+                    : profileSnapshot?.fetchedAt
+                      ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
+                      : appReviewMode ? "Ready to receive Instagram comments." : "Ready for official Instagram Graph automation."}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}>
-              {tokenExpired ? "Reconnect" : "Connected"}
-            </span>
-            <span className="ap3k-badge ap3k-badge-slate">{planLabel}</span>
-            {profileSnapshotStatus.label === "Fresh" && (
-              <span className="ap3k-badge ap3k-badge-green">Fresh sync</span>
-            )}
-            <Link
-              href={`/dashboard/${params.slug}/account`}
-              className="text-xs font-bold text-rf-pink hover:text-rf-purple"
-            >
-              {tokenExpired ? "Reconnect Instagram" : appReviewMode ? "Account connected" : "Manage connection"}
-            </Link>
-            {typeof profileSnapshot?.followersCount === "number" ? (
-              <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
-                {profileSnapshot.followersCount.toLocaleString()} followers
-              </span>
-            ) : profileSnapshotStatus.label === "Partial" ? (
-              <span className="ap3k-badge ap3k-badge-slate">Partial profile sync</span>
-            ) : (
-              <span className="w-full text-xs font-bold text-slate-500 dark:text-slate-400 lg:text-right">
-                Profile sync pending
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <span className="ap3k-badge ap3k-badge-slate">{planLabel}</span>
+              {profileSnapshotStatus.label === "Fresh" && (
+                <span className="ap3k-badge ap3k-badge-green">Fresh sync</span>
+              )}
+              {typeof profileSnapshot?.followersCount === "number" && (
+                <span className="ap3k-badge ap3k-badge-slate">
+                  {profileSnapshot.followersCount.toLocaleString()} followers
+                </span>
+              )}
+              <Link
+                href={`/dashboard/${params.slug}/account`}
+                className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15"
+              >
+                {tokenExpired ? "Reconnect Instagram" : appReviewMode ? "Account connected" : "Manage account"}
+              </Link>
+              {profileSnapshotStatus.label === "Partial" && (
+                <span className="ap3k-badge ap3k-badge-slate">Partial profile sync</span>
+              )}
+              {typeof profileSnapshot?.followersCount !== "number" && profileSnapshotStatus.label !== "Partial" && (
+                <span className="ap3k-badge ap3k-badge-slate">Profile sync pending</span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -276,7 +270,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex animate-[ap3kDashboardRise_0.6s_ease-out_both] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
         {[
           ["24h", "Last 24h"],
@@ -288,9 +282,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             key={key}
             href={`/dashboard/${params.slug}?period=${key}`}
             className={[
-              "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black",
+              "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black transition",
               period === key
-                ? "bg-rf-pink/10 text-rf-pink"
+                ? "bg-rf-pink/10 text-rf-pink shadow-sm"
                 : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
             ].join(" ")}
           >
@@ -303,53 +297,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </p>
       </div>
 
-      {usage && (
-        <div className={[
-          "rounded-3xl border p-5 shadow-sm",
-          usage.staticReplies.blocked
-            ? "border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
-            : usage.staticReplies.percent >= 70
-              ? "border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10"
-              : "border-rf-pink/20 bg-gradient-to-br from-white via-pink-50/60 to-indigo-50 dark:border-rf-pink/25 dark:from-white/[0.06] dark:via-white/[0.035] dark:to-rf-pink/[0.08]",
-        ].join(" ")}>
-          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-rf-pink">Current plan</p>
-              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">Plan: {usage.planLabel}</h2>
-            </div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-300">{usage.periodLabel}</p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <UsageMini label="Plan" value={usage.planLabel} />
-            <UsageMini
-              label="Public replies"
-              value={formatUsageMetricValue(usage.staticReplies)}
-              percent={usage.staticReplies.percent}
-              blocked={usage.staticReplies.blocked}
-            />
-            <UsageMini
-              label="Active campaigns"
-              value={formatUsageMetricValue(usage.activeCampaigns)}
-              percent={usage.activeCampaigns.percent}
-              blocked={usage.activeCampaigns.blocked}
-            />
-            <UsageMini
-              label="Connected Instagram accounts"
-              value={connectedAccountPresentation?.value ?? formatUsageMetricValue(usage.connectedAccounts)}
-              percent={usage.connectedAccounts.percent}
-              tone={connectedAccountPresentation?.tone}
-              description={connectedAccountPresentation?.description}
-            />
-          </div>
-          {usage.staticReplies.blocked && (
-            <p className="mt-3 text-sm font-bold text-red-700 dark:text-red-200">
-              Monthly reply limit reached. Campaign replies are paused until upgrade or next month.
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid animate-[ap3kDashboardRise_0.65s_ease-out_both] gap-3 md:grid-cols-4">
         <HealthPill
           label="Instagram connected"
           detail={instagramConnected && !tokenExpired ? "Ready to listen" : "Connect or reconnect first"}
@@ -362,18 +310,18 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         />
         <HealthPill
           label="Campaign status"
-          detail={hasActiveCampaign ? "At least one live campaign" : hasNeedsReviewCampaign ? "Review required" : "Activate a campaign"}
+          detail={hasActiveCampaign ? `${activeCampaigns.length} live campaign${activeCampaigns.length === 1 ? "" : "s"}` : hasNeedsReviewCampaign ? "Review required" : "Activate a campaign"}
           state={hasActiveCampaign ? "ok" : "warn"}
         />
         <HealthPill
-          label={appReviewMode ? "Public replies" : hasExternalDmCampaign ? "External DM mode" : "Private DM"}
-          detail={hasActiveCampaign ? (appReviewMode ? "Public replies active" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Requires Meta messaging approval") : "Paused until campaign is activated/reviewed"}
+          label={appReviewMode ? "Public replies" : hasExternalDmCampaign ? "External DM mode" : "Private replies"}
+          detail={hasActiveCampaign ? (appReviewMode ? "Public replies active" : hasExternalDmCampaign ? "AP3k logs, external tool sends" : "Instagram Graph active") : "Paused until campaign is activated/reviewed"}
           state={hasActiveCampaign ? "ok" : "warn"}
         />
       </div>
 
       {nextAction && (
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex animate-[ap3kDashboardRise_0.7s_ease-out_both] flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 dark:border-white/[0.12] dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Next step</p>
             <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">{nextAction.title}</h2>
@@ -385,31 +333,40 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] dark:border-white/[0.12] dark:bg-[#111827] md:grid-cols-2 xl:grid-cols-6">
-        {dashboardProfileStats.map((stat) => (
-          <AccountStatCard
-            key={stat.label}
-            label={stat.label}
-            value={stat.value}
-            change={
-              stat.label === "Comments" ? changes?.commentsReceived :
-              stat.label === "Leads" ? changes?.leadsCaptured :
-              stat.label === "Public Replies" ? changes?.staticRepliesUsed :
-              stat.change
-            }
-            subtitle={stat.subtitle}
-          />
-        ))}
-      </div>
+      <section className="animate-[ap3kDashboardRise_0.75s_ease-out_both]">
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">Account analytics</p>
+            <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Instagram performance</h2>
+          </div>
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{dashboardStats?.period.label ?? "This month"}</p>
+        </div>
+        <div className="grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] md:grid-cols-2 xl:grid-cols-6">
+          {dashboardProfileStats.map((stat) => (
+            <AccountStatCard
+              key={stat.label}
+              label={stat.label}
+              value={stat.value}
+              change={
+                stat.label === "Comments" ? changes?.commentsReceived :
+                stat.label === "Leads" ? changes?.leadsCaptured :
+                stat.label === "Public Replies" ? changes?.staticRepliesUsed :
+                stat.change
+              }
+              subtitle={stat.subtitle}
+            />
+          ))}
+        </div>
+      </section>
 
-      <div className="ap3k-card rounded-2xl p-5">
+      <div className="ap3k-card animate-[ap3kDashboardRise_0.8s_ease-out_both] rounded-3xl p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_80px_rgba(15,23,42,0.12)]">
         <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-950 dark:text-white">Recent Activity</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {appReviewMode
                 ? "Review-friendly activity: comments received, triggers matched, public replies sent, and leads captured."
-                : "Latest grouped interactions in the selected period — comments, public replies, skipped actions, and DMs."}
+                : "Latest grouped interactions in the selected period — comments, public replies, skipped actions, and private replies."}
             </p>
           </div>
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
@@ -432,7 +389,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               </>
             )}
             {!activityEmptyState?.hasHistoricalData && (
-              <Link href={isEmpty ? `/dashboard/${params.slug}/automation/new` : `/dashboard/${params.slug}/account`} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">
+              <Link href={isEmpty ? `/dashboard/${params.slug}/automation/new` : `/dashboard/${params.slug}/account`} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-950">
                 {isEmpty ? "Create campaign" : appReviewMode ? "View account" : "Check connection"}
               </Link>
             )}
@@ -440,7 +397,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/[0.07]">
             {recentActivity.map((item, index) => (
-              <div key={`${item.id}-${index}`} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div key={`${item.id}-${index}`} className="grid gap-3 rounded-2xl px-2 py-4 transition duration-200 hover:bg-slate-50/80 dark:hover:bg-white/[0.035] sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="flex min-w-0 gap-3">
                   <span className={["mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full", recentToneClass(item.tone)].join(" ")} />
                   <div className="min-w-0">
@@ -462,40 +419,32 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         )}
       </div>
 
-      {/* Main grid */}
-      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-
-        {/* Campaigns */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
+      <section className="animate-[ap3kDashboardRise_0.85s_ease-out_both]">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-pink">Campaigns</p>
             <h2 className="font-black text-slate-950 dark:text-white">Active campaigns</h2>
-            <Link
-              href={`/dashboard/${params.slug}/automation`}
-              className="text-xs font-bold text-rf-pink hover:text-rf-purple"
-            >
-              View all
-            </Link>
           </div>
-
-          {isEmpty ? (
-            <EmptyState
-              icon="📣"
-              title="No campaigns yet"
-              description="Your account is ready, but nothing is listening for comments yet. Create one campaign, choose Any post, add a keyword, and activate."
-              ctaLabel="Launch first campaign →"
-              ctaHref={`/dashboard/${params.slug}/automation/new`}
-            />
-          ) : (
-            <AutomationTable slug={params.slug} automations={automationsWithMetrics.slice(0, 8)} />
-          )}
+          <Link
+            href={`/dashboard/${params.slug}/automation`}
+            className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15"
+          >
+            View all
+          </Link>
         </div>
 
-        {/* Right panel */}
-        <div className="flex flex-col gap-4">
-          <OnboardingChecklist items={checklistItems} />
-        </div>
-
-      </div>
+        {isEmpty ? (
+          <EmptyState
+            icon="📣"
+            title="No campaigns yet"
+            description="Your account is ready, but nothing is listening for comments yet. Create one campaign, choose Any post, add a keyword, and activate."
+            ctaLabel="Launch first campaign →"
+            ctaHref={`/dashboard/${params.slug}/automation/new`}
+          />
+        ) : (
+          <AutomationTable slug={params.slug} automations={automationsWithMetrics.slice(0, 8)} />
+        )}
+      </section>
     </div>
   );
 }
@@ -531,7 +480,7 @@ function AccountStatCard({
         : "text-slate-500 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-b border-slate-200 px-5 py-6 transition-colors last:border-b-0 hover:bg-slate-50/70 dark:border-white/10 dark:hover:bg-white/[0.025] md:border-b-0 md:border-r md:last:border-r-0">
+    <div className="min-w-0 border-b border-slate-200 px-5 py-6 transition duration-200 last:border-b-0 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] md:border-b-0 md:border-r md:last:border-r-0">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-2">
         <p className="text-2xl font-black leading-none tracking-tight text-slate-950 dark:text-white">{value}</p>
@@ -542,53 +491,10 @@ function AccountStatCard({
   );
 }
 
-function UsageMini({
-  label,
-  value,
-  percent = 0,
-  blocked = false,
-  tone,
-  description,
-}: {
-  label: string;
-  value: string;
-  percent?: number;
-  blocked?: boolean;
-  tone?: "green" | "amber" | "red";
-  description?: string;
-}) {
-  const resolvedTone = tone ?? usageTone(percent, blocked);
-  const bar = resolvedTone === "red" ? "bg-red-500" : resolvedTone === "amber" ? "bg-amber-500" : "bg-emerald-500";
-
-  return (
-    <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm dark:border-white/[0.14] dark:bg-white/[0.07]">
-      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">{label}</p>
-      <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
-      {percent > 0 || blocked ? (
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.08]">
-          <div className={`h-full ${bar}`} style={{ width: `${percent}%` }} />
-        </div>
-      ) : null}
-      {description && (
-        <p className={[
-          "mt-2 text-[11px] font-bold",
-          resolvedTone === "red"
-            ? "text-red-600 dark:text-red-300"
-            : resolvedTone === "amber"
-              ? "text-amber-700 dark:text-amber-200"
-              : "text-slate-500 dark:text-slate-300",
-        ].join(" ")}>
-          {description}
-        </p>
-      )}
-    </div>
-  );
-}
-
 function HealthPill({ label, detail, state }: { label: string; detail: string; state: "ok" | "warn" }) {
   return (
     <div className={[
-      "flex items-start gap-2.5 rounded-2xl border p-3.5 shadow-sm",
+      "flex items-start gap-2.5 rounded-2xl border p-3.5 shadow-sm transition duration-300 hover:-translate-y-0.5",
       state === "ok"
         ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/25 dark:bg-emerald-500/[0.09]"
         : "border-amber-200 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-500/[0.09]",
