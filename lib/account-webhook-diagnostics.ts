@@ -197,15 +197,9 @@ export function buildCampaignBindingDiagnostics(input: {
     const warnings: string[] = [];
 
     if (postId && postId !== "ANY" && owner) {
-      if (owner.integrationId && owner.integrationId !== input.integration?.id) {
-        warnings.push("Campaign post belongs to a different integration.");
-      }
-      if (owner.userId && owner.userId !== input.integration?.userId) {
-        warnings.push("Campaign post belongs to a different user.");
-      }
-      if (owner.instagramId && owner.instagramId !== input.integration?.instagramId) {
-        warnings.push("Campaign post belongs to a different Instagram account.");
-      }
+      if (owner.integrationId && owner.integrationId !== input.integration?.id) warnings.push("Campaign post belongs to a different integration.");
+      if (owner.userId && owner.userId !== input.integration?.userId) warnings.push("Campaign post belongs to a different user.");
+      if (owner.instagramId && owner.instagramId !== input.integration?.instagramId) warnings.push("Campaign post belongs to a different Instagram account.");
     }
 
     const campaignCreatedAt = toTime(campaign.createdAt);
@@ -238,10 +232,7 @@ export function planReconnectCleanup(input: {
   const staleIntegrations = input.integrations.filter((integration) =>
     integration.id !== input.current.id &&
     integration.status !== "DISCONNECTED" &&
-    (
-      integration.instagramId !== input.current.instagramId ||
-      integration.instagramUsername !== input.current.instagramUsername
-    )
+    (integration.instagramId !== input.current.instagramId || integration.instagramUsername !== input.current.instagramUsername)
   );
   const staleIntegrationIds = new Set(staleIntegrations.map((integration) => integration.id));
   const campaignsNeedingRecreation = input.campaigns.filter((campaign) =>
@@ -252,9 +243,7 @@ export function planReconnectCleanup(input: {
     staleIntegrations,
     staleIntegrationIds: Array.from(staleIntegrationIds),
     campaignsNeedingRecreation,
-    shouldPauseCampaignIds: campaignsNeedingRecreation
-      .filter((campaign) => campaign.active)
-      .map((campaign) => campaign.id),
+    shouldPauseCampaignIds: campaignsNeedingRecreation.filter((campaign) => campaign.active).map((campaign) => campaign.id),
   };
 }
 
@@ -268,6 +257,43 @@ export function dashboardNoCommentDiagnosis(input: {
   if (delivery.status === "parser_failed") return "comment_payload_parser_failed";
   if (delivery.status === "test_only") return "meta_test_payload_only";
   return "no_real_webhook_delivery";
+}
+
+export function compareIntegrationDelivery(input: {
+  working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
+  failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
+}) {
+  const workingDelivery = classifyAccountWebhookDelivery({
+    integration: input.working.integration,
+    events: input.working.events,
+  });
+  const failingDelivery = classifyAccountWebhookDelivery({
+    integration: input.failing.integration,
+    events: input.failing.events,
+  });
+
+  return {
+    working: {
+      integration: input.working.integration,
+      delivery: workingDelivery,
+      campaigns: buildCampaignBindingDiagnostics({
+        integration: input.working.integration,
+        campaigns: input.working.campaigns,
+      }),
+    },
+    failing: {
+      integration: input.failing.integration,
+      delivery: failingDelivery,
+      campaigns: buildCampaignBindingDiagnostics({
+        integration: input.failing.integration,
+        campaigns: input.failing.campaigns,
+      }),
+    },
+    likelyCause:
+      workingDelivery.status === "comments_active" && failingDelivery.status !== "comments_active"
+        ? "webhook_subscription_or_asset_delivery"
+        : "no_clear_delivery_gap",
+  };
 }
 
 function isEventForAccount(event: AccountWebhookEventLike, accountIds: string[]) {
