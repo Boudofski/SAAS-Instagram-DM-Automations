@@ -247,10 +247,15 @@ export function planReconnectCleanup(input: {
   };
 }
 
-export function dashboardNoCommentDiagnosis(input: {
-  integration?: IntegrationLike | null;
-  events: AccountWebhookEventLike[];
-}) {
+export function dashboardNoCommentDiagnosis(input: any) {
+  if ("status" in input) {
+    if (input.status === "comments_active") return "comments_arriving";
+    if (input.status === "only_messaging_active") return "only_messaging_arriving";
+    if (input.status === "parser_failed") return "comment_payload_parser_failed";
+    if (input.status === "test_only") return "meta_test_payload_only";
+    return input.username ? "no_real_webhook_delivery" : "no_connected_account";
+  }
+
   const delivery = classifyAccountWebhookDelivery({ events: input.events, integration: input.integration });
   if (delivery.status === "comments_active") return "comments_arriving";
   if (delivery.status === "only_messaging_active") return "only_messaging_arriving";
@@ -263,31 +268,19 @@ export function compareIntegrationDelivery(input: {
   working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
   failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
 }) {
-  const workingDelivery = classifyAccountWebhookDelivery({
-    integration: input.working.integration,
-    events: input.working.events,
-  });
-  const failingDelivery = classifyAccountWebhookDelivery({
-    integration: input.failing.integration,
-    events: input.failing.events,
-  });
+  const workingDelivery = classifyAccountWebhookDelivery({ integration: input.working.integration, events: input.working.events });
+  const failingDelivery = classifyAccountWebhookDelivery({ integration: input.failing.integration, events: input.failing.events });
 
   return {
     working: {
       integration: input.working.integration,
       delivery: workingDelivery,
-      campaigns: buildCampaignBindingDiagnostics({
-        integration: input.working.integration,
-        campaigns: input.working.campaigns,
-      }),
+      campaigns: buildCampaignBindingDiagnostics({ integration: input.working.integration, campaigns: input.working.campaigns }),
     },
     failing: {
       integration: input.failing.integration,
       delivery: failingDelivery,
-      campaigns: buildCampaignBindingDiagnostics({
-        integration: input.failing.integration,
-        campaigns: input.failing.campaigns,
-      }),
+      campaigns: buildCampaignBindingDiagnostics({ integration: input.failing.integration, campaigns: input.failing.campaigns }),
     },
     likelyCause:
       workingDelivery.status === "comments_active" && failingDelivery.status !== "comments_active"
