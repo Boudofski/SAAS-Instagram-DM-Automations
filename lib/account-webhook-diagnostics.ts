@@ -119,59 +119,21 @@ export function classifyAccountWebhookDelivery(input: {
   ) ?? null;
 
   if (lastCommentWebhook) {
-    return {
-      status: "comments_active",
-      label: "Comments active",
-      detail: "Real comment webhook received for this Instagram account in the last 24h.",
-      lastRawWebhook,
-      lastMessagingWebhook,
-      lastCommentWebhook,
-      lastParserFailure,
-    };
+    return { status: "comments_active", label: "Comments active", detail: "Real comment webhook received for this Instagram account in the last 24h.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
   }
-
   if (lastParserFailure) {
-    return {
-      status: "parser_failed",
-      label: "Parser failed",
-      detail: "A comment-like payload arrived but AP3k could not extract required comment fields.",
-      lastRawWebhook,
-      lastMessagingWebhook,
-      lastCommentWebhook,
-      lastParserFailure,
-    };
+    return { status: "parser_failed", label: "Parser failed", detail: "A comment-like payload arrived but AP3k could not extract required comment fields.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
   }
-
   if (lastMessagingWebhook) {
-    return {
-      status: "only_messaging_active",
-      label: "Only messaging active",
-      detail: "Messaging webhooks are arriving, but no real comment webhook has arrived for this Instagram account in the last 24h.",
-      lastRawWebhook,
-      lastMessagingWebhook,
-      lastCommentWebhook,
-      lastParserFailure,
-    };
+    return { status: "only_messaging_active", label: "Only messaging active", detail: "Messaging webhooks are arriving, but no real comment webhook has arrived for this Instagram account in the last 24h.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
   }
-
   if (testOnly) {
-    return {
-      status: "test_only",
-      label: "Test-only",
-      detail: "Only Meta sample payloads with entryId=0 were seen; those do not prove real comment delivery.",
-      lastRawWebhook,
-      lastMessagingWebhook,
-      lastCommentWebhook,
-      lastParserFailure,
-    };
+    return { status: "test_only", label: "Test-only", detail: "Only Meta sample payloads with entryId=0 were seen; those do not prove real comment delivery.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
   }
-
   return {
     status: "no_delivery",
     label: "No delivery",
-    detail: accountIds.length
-      ? "No raw, messaging, or comment webhooks were received for this Instagram ID in the last 24h."
-      : "No connected Instagram account IDs are available for account-specific webhook matching.",
+    detail: accountIds.length ? "No raw, messaging, or comment webhooks were received for this Instagram ID in the last 24h." : "No connected Instagram account IDs are available for account-specific webhook matching.",
     lastRawWebhook,
     lastMessagingWebhook,
     lastCommentWebhook,
@@ -184,11 +146,7 @@ export function buildCampaignBindingDiagnostics(input: {
   campaigns: CampaignLike[];
   knownMediaOwners?: Record<string, { integrationId?: string | null; userId?: string | null; instagramId?: string | null }>;
 }) {
-  const reconnectTime = latestDate([
-    input.integration?.lastAdminActionAt,
-    input.integration?.webhookSubscriptionLastAttemptedAt,
-    input.integration?.createdAt,
-  ]);
+  const reconnectTime = latestDate([input.integration?.lastAdminActionAt, input.integration?.webhookSubscriptionLastAttemptedAt, input.integration?.createdAt]);
   const hasMediaOwnerIndex = Boolean(input.knownMediaOwners && Object.keys(input.knownMediaOwners).length > 0);
 
   return input.campaigns.map((campaign) => {
@@ -203,89 +161,56 @@ export function buildCampaignBindingDiagnostics(input: {
     }
 
     const campaignCreatedAt = toTime(campaign.createdAt);
-    if (postId && postId !== "ANY" && reconnectTime && campaignCreatedAt && campaignCreatedAt < reconnectTime.getTime()) {
-      warnings.push("Campaign was created before the current reconnect/subscription refresh.");
-    }
+    if (postId && postId !== "ANY" && reconnectTime && campaignCreatedAt && campaignCreatedAt < reconnectTime.getTime()) warnings.push("Campaign was created before the current reconnect/subscription refresh.");
+    if (postId && postId !== "ANY" && !owner && hasMediaOwnerIndex) warnings.push("Post ownership unknown — choose Any Post or refresh posts from the current account.");
 
-    if (postId && postId !== "ANY" && !owner && hasMediaOwnerIndex) {
-      warnings.push("Post ownership unknown — choose Any Post or refresh posts from the current account.");
-    }
-
-    return {
-      campaignId: campaign.id,
-      campaignName: campaign.name ?? "Untitled campaign",
-      active: Boolean(campaign.active),
-      postId,
-      reconnectTime,
-      owner: owner ?? null,
-      warnings,
-      stale: warnings.length > 0,
-    };
+    return { campaignId: campaign.id, campaignName: campaign.name ?? "Untitled campaign", active: Boolean(campaign.active), postId, reconnectTime, owner: owner ?? null, warnings, stale: warnings.length > 0 };
   });
 }
 
-export function planReconnectCleanup(input: {
-  current: IntegrationLike;
-  integrations: IntegrationLike[];
-  campaigns: CampaignLike[];
-}) {
-  const staleIntegrations = input.integrations.filter((integration) =>
-    integration.id !== input.current.id &&
-    integration.status !== "DISCONNECTED" &&
-    (integration.instagramId !== input.current.instagramId || integration.instagramUsername !== input.current.instagramUsername)
-  );
+export function planReconnectCleanup(input: { current: IntegrationLike; integrations: IntegrationLike[]; campaigns: CampaignLike[] }) {
+  const staleIntegrations = input.integrations.filter((integration) => integration.id !== input.current.id && integration.status !== "DISCONNECTED" && (integration.instagramId !== input.current.instagramId || integration.instagramUsername !== input.current.instagramUsername));
   const staleIntegrationIds = new Set(staleIntegrations.map((integration) => integration.id));
-  const campaignsNeedingRecreation = input.campaigns.filter((campaign) =>
-    campaign.User?.integrations?.some((integration) => staleIntegrationIds.has(integration.id))
-  );
-
-  return {
-    staleIntegrations,
-    staleIntegrationIds: Array.from(staleIntegrationIds),
-    campaignsNeedingRecreation,
-    shouldPauseCampaignIds: campaignsNeedingRecreation.filter((campaign) => campaign.active).map((campaign) => campaign.id),
-  };
+  const campaignsNeedingRecreation = input.campaigns.filter((campaign) => campaign.User?.integrations?.some((integration) => staleIntegrationIds.has(integration.id)));
+  return { staleIntegrations, staleIntegrationIds: Array.from(staleIntegrationIds), campaignsNeedingRecreation, shouldPauseCampaignIds: campaignsNeedingRecreation.filter((campaign) => campaign.active).map((campaign) => campaign.id) };
 }
 
+const DASHBOARD_DIAGNOSIS_COPY = {
+  comments_arriving: { title: "Comments are arriving", detail: "AP3k has received real comment webhooks for this Instagram account." },
+  only_messaging_arriving: { title: "Only messaging is arriving", detail: "Messaging webhooks are active, but no real comment webhook has arrived yet." },
+  comment_payload_parser_failed: { title: "Comment payload could not be parsed", detail: "Meta sent a comment-like payload, but required fields were missing." },
+  meta_test_payload_only: { title: "Only Meta test payloads seen", detail: "Sample webhook tests do not prove live Instagram comments are connected." },
+  no_real_webhook_delivery: { title: "No real comment received yet", detail: "Comment from a different Instagram account to generate the first live event." },
+  no_connected_account: { title: "Instagram is not connected", detail: "Connect Instagram before testing comment automation." },
+} as const;
+
 export function dashboardNoCommentDiagnosis(input: any) {
+  let key: keyof typeof DASHBOARD_DIAGNOSIS_COPY;
   if ("status" in input) {
-    if (input.status === "comments_active") return "comments_arriving";
-    if (input.status === "only_messaging_active") return "only_messaging_arriving";
-    if (input.status === "parser_failed") return "comment_payload_parser_failed";
-    if (input.status === "test_only") return "meta_test_payload_only";
-    return input.username ? "no_real_webhook_delivery" : "no_connected_account";
+    if (input.status === "comments_active") key = "comments_arriving";
+    else if (input.status === "only_messaging_active") key = "only_messaging_arriving";
+    else if (input.status === "parser_failed") key = "comment_payload_parser_failed";
+    else if (input.status === "test_only") key = "meta_test_payload_only";
+    else key = input.username ? "no_real_webhook_delivery" : "no_connected_account";
+    return DASHBOARD_DIAGNOSIS_COPY[key];
   }
 
   const delivery = classifyAccountWebhookDelivery({ events: input.events, integration: input.integration });
-  if (delivery.status === "comments_active") return "comments_arriving";
-  if (delivery.status === "only_messaging_active") return "only_messaging_arriving";
-  if (delivery.status === "parser_failed") return "comment_payload_parser_failed";
-  if (delivery.status === "test_only") return "meta_test_payload_only";
-  return "no_real_webhook_delivery";
+  if (delivery.status === "comments_active") key = "comments_arriving";
+  else if (delivery.status === "only_messaging_active") key = "only_messaging_arriving";
+  else if (delivery.status === "parser_failed") key = "comment_payload_parser_failed";
+  else if (delivery.status === "test_only") key = "meta_test_payload_only";
+  else key = "no_real_webhook_delivery";
+  return DASHBOARD_DIAGNOSIS_COPY[key];
 }
 
-export function compareIntegrationDelivery(input: {
-  working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
-  failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
-}) {
+export function compareIntegrationDelivery(input: { working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] }; failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] } }) {
   const workingDelivery = classifyAccountWebhookDelivery({ integration: input.working.integration, events: input.working.events });
   const failingDelivery = classifyAccountWebhookDelivery({ integration: input.failing.integration, events: input.failing.events });
-
   return {
-    working: {
-      integration: input.working.integration,
-      delivery: workingDelivery,
-      campaigns: buildCampaignBindingDiagnostics({ integration: input.working.integration, campaigns: input.working.campaigns }),
-    },
-    failing: {
-      integration: input.failing.integration,
-      delivery: failingDelivery,
-      campaigns: buildCampaignBindingDiagnostics({ integration: input.failing.integration, campaigns: input.failing.campaigns }),
-    },
-    likelyCause:
-      workingDelivery.status === "comments_active" && failingDelivery.status !== "comments_active"
-        ? "webhook_subscription_or_asset_delivery"
-        : "no_clear_delivery_gap",
+    working: { integration: input.working.integration, delivery: workingDelivery, campaigns: buildCampaignBindingDiagnostics({ integration: input.working.integration, campaigns: input.working.campaigns }) },
+    failing: { integration: input.failing.integration, delivery: failingDelivery, campaigns: buildCampaignBindingDiagnostics({ integration: input.failing.integration, campaigns: input.failing.campaigns }) },
+    likelyCause: workingDelivery.status === "comments_active" && failingDelivery.status !== "comments_active" ? "webhook_subscription_or_asset_delivery" : "no_clear_delivery_gap",
   };
 }
 
