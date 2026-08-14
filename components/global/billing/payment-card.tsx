@@ -18,24 +18,24 @@ const PLAN_COPY = {
     name: "Free",
     price: "$0",
     period: "/month",
-    description: "For testing Instagram comment automation with one campaign.",
-    features: ["50 public replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
+    description: "For testing one connected Instagram account before launch.",
+    features: ["1 Instagram account", "50 public replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
     href: "/pricing",
   },
   PRO: {
     name: "Creator",
     price: "$29",
     period: "/month",
-    description: "For production campaigns with higher reply volume.",
-    features: ["5,000 public replies/month", "750 AI replies/month when AI is enabled", "Lead export"],
+    description: "For production comment automation on one Instagram account.",
+    features: ["1 Instagram account", "5,000 public replies/month", "Unlimited campaigns", "Lead export", "Analytics"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
     name: "Agency",
     price: "$79",
     period: "/month",
-    description: "For teams managing multiple creator accounts.",
-    features: ["Everything in Creator", "20,000 public replies/month", "5,000 AI replies/month when AI is enabled", "Up to 10 Instagram accounts"],
+    description: "Coming later for multi-workspace teams.",
+    features: ["Everything in Creator", "Higher reply volume", "Team workflows"],
     href: "/payment?plan=agency",
   },
 } as const;
@@ -46,9 +46,9 @@ function PaymentCard({ label, current, campaignLimit }: Props) {
   const defaultCampaignLimit = getPlanLimits(label).activeCampaigns;
   const campaignFeature = formatCampaignLimitFeature(campaignLimit ?? defaultCampaignLimit);
   const features = appReviewMode && label === "PRO"
-    ? [campaignFeature, "5,000 public replies/month", "Lead export", "Analytics"]
+    ? ["1 Instagram account", campaignFeature, "5,000 public replies/month", "Lead export", "Analytics"]
     : appReviewMode && label === "FREE"
-      ? [campaignFeature, "50 public replies/month", "Keyword triggers", "Basic analytics"]
+      ? ["1 Instagram account", campaignFeature, "50 public replies/month", "Keyword triggers", "Basic analytics"]
       : label === "AGENCY"
         ? plan.features
         : [campaignFeature, ...plan.features];
@@ -60,16 +60,16 @@ function PaymentCard({ label, current, campaignLimit }: Props) {
     : isIncludedFree
     ? "Included"
     : isAgency
-    ? "Contact / Coming soon"
+    ? "Coming soon"
     : "Upgrade to Creator";
 
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm dark:text-white",
+        "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm transition-all duration-300 dark:text-white",
         isActive
           ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-pink-500/30 dark:bg-gradient-to-br dark:from-[#151827] dark:via-[#1b1023] dark:to-[#2a1230] dark:shadow-[0_24px_70px_rgba(221,42,123,0.20)]"
-          : "border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-white/[0.12] dark:bg-[#111827] dark:hover:bg-[#141e30]"
+          : "border-slate-200 bg-white hover:-translate-y-1 hover:border-rf-pink/30 hover:shadow-[0_18px_50px_rgba(221,42,123,0.14)] dark:border-white/[0.12] dark:bg-[#111827] dark:hover:bg-[#141e30]"
       )}
     >
       <div className="flex items-center justify-between gap-3">
