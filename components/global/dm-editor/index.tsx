@@ -29,6 +29,12 @@ type Props = {
   onCtaButtonTitleChange: (title: string) => void;
 };
 
+function compactUrl(value: string) {
+  const clean = value.trim().replace(/^https?:\/\//, "");
+  if (!clean) return "";
+  return clean.length > 42 ? `${clean.slice(0, 42)}…` : clean;
+}
+
 export default function DmEditor({
   value,
   ctaLink,
@@ -39,14 +45,15 @@ export default function DmEditor({
 }: Props) {
   const [showTemplates, setShowTemplates] = useState(false);
 
-  const insertVar = (v: string) => onChange(value + v);
+  const insertVar = (variable: string) => onChange(value + variable);
   const preview = resolveTemplate(value, PREVIEW_VARS);
-  const hasCta = ctaButtonTitle.trim() || ctaLink.trim();
+  const buttonLabel = ctaButtonTitle.trim() || "Open link";
+  const hasCta = Boolean(ctaButtonTitle.trim() || ctaLink.trim());
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
+      <div className="flex min-w-0 items-center justify-between gap-4">
+        <div className="min-w-0">
           <span className="text-sm font-semibold text-slate-950 dark:text-white">Private message</span>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
             This message is sent privately after the user comments.
@@ -55,14 +62,14 @@ export default function DmEditor({
         <button
           type="button"
           onClick={() => setShowTemplates((show) => !show)}
-          className="text-xs font-semibold text-rf-blue hover:underline"
+          className="shrink-0 text-xs font-semibold text-rf-blue hover:underline"
         >
           {showTemplates ? "Hide templates" : "⚡ Use a template"}
         </button>
       </div>
 
       {showTemplates && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           {DM_TEMPLATES.map((template) => (
             <button
               key={template.label}
@@ -85,10 +92,10 @@ export default function DmEditor({
         placeholder="Hey {{first_name}}! Here's what you asked for → {{link}}"
         rows={4}
         dir="auto"
-        className="ap3k-textarea w-full resize-none rounded-xl px-4 py-3.5 text-sm"
+        className="ap3k-textarea w-full min-w-0 resize-none rounded-xl px-4 py-3.5 text-sm"
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex min-w-0 flex-wrap gap-2">
         {VARS.map((variable) => (
           <button
             key={variable}
@@ -101,7 +108,7 @@ export default function DmEditor({
         ))}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+      <div className="flex min-w-0 flex-col gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
         <div className="flex items-center gap-2">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Button link</p>
           <span className="text-[10px] text-slate-500">optional</span>
@@ -111,29 +118,29 @@ export default function DmEditor({
           value={ctaButtonTitle}
           onChange={(event) => onCtaButtonTitleChange(event.target.value)}
           placeholder='Button text — e.g. "Get the guide"'
-          className="ap3k-input rounded-xl px-4 py-3 text-sm"
+          className="ap3k-input w-full min-w-0 rounded-xl px-4 py-3 text-sm"
         />
         <input
           type="url"
           value={ctaLink}
           onChange={(event) => onCtaLinkChange(event.target.value)}
           placeholder="Button destination URL — e.g. https://yoursite.com/guide"
-          className="ap3k-input rounded-xl px-4 py-3 text-sm"
+          className="ap3k-input w-full min-w-0 rounded-xl px-4 py-3 text-sm"
         />
         <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-300">
-          AP3k sends this as an Instagram web button when supported. The raw link is kept hidden from the message bubble.
+          AP3k sends this as an Instagram web button when supported. Long URLs are hidden from the message bubble.
         </p>
       </div>
 
       {value && (
-        <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/5 p-4">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-rf-blue/20 bg-rf-blue/5 p-4">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
             Preview
           </p>
-          <div className="flex max-w-[85%] flex-col items-start gap-2">
+          <div className="flex max-w-full flex-col items-start gap-2 sm:max-w-[85%]">
             <div
               dir="auto"
-              className="whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#101827] dark:text-slate-50"
+              className="max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#101827] dark:text-slate-50"
             >
               {preview.split("\n").map((line, index, lines) => (
                 <span key={index}>
@@ -143,14 +150,14 @@ export default function DmEditor({
               ))}
             </div>
             {hasCta && (
-              <div className="flex w-full items-center justify-center rounded-xl border border-rf-blue/30 bg-rf-blue/15 px-4 py-2.5 text-xs font-bold text-rf-blue">
-                {ctaButtonTitle || "Open link"}
+              <div className="flex w-full min-w-0 items-center justify-center overflow-hidden rounded-xl border border-rf-blue/30 bg-rf-blue/15 px-4 py-2.5 text-xs font-bold text-rf-blue">
+                <span className="truncate">{buttonLabel}</span>
               </div>
             )}
           </div>
-          {hasCta && ctaLink && (
-            <p className="mt-2 truncate text-[10px] text-slate-500 dark:text-slate-400">
-              Button destination saved privately: {ctaLink.replace(/^https?:\/\//, "")}
+          {hasCta && ctaLink.trim() && (
+            <p className="mt-2 max-w-full overflow-hidden truncate text-[10px] text-slate-500 dark:text-slate-400">
+              Button destination saved privately: {compactUrl(ctaLink)}
             </p>
           )}
         </div>
