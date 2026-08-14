@@ -2,6 +2,7 @@ export type InstagramIntegrationStatusBase = {
   id?: string | null;
   name?: string | null;
   instagramId?: string | null;
+  instagramUsername?: string | null;
   status?: string | null;
   reconnectRequired?: boolean | null;
   token?: string | null;
