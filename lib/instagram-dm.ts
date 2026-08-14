@@ -214,7 +214,7 @@ async function tryPrivateReplyOnFamily(
   }
 }
 
-async function tryPrivateReply(
+async function tryPrivateReplyOnInstagramGraph(
   igBusinessAccountId: string,
   commentId: string,
   message: InstagramMessagePayload,
@@ -222,30 +222,53 @@ async function tryPrivateReply(
 ): Promise<"ok" | "capability_error"> {
   try {
     return await tryPrivateReplyOnFamily(
+      "instagram_graph",
+      igBusinessAccountId,
+      commentId,
+      message,
+      token
+    );
+  } catch (instagramErr) {
+    if (isCapabilityError(instagramErr)) return "capability_error";
+    throw instagramErr;
+  }
+}
+
+async function tryPrivateReply(
+  igBusinessAccountId: string,
+  commentId: string,
+  message: InstagramMessagePayload,
+  token: string
+): Promise<"ok" | "capability_error"> {
+  try {
+    const facebookResult = await tryPrivateReplyOnFamily(
       "facebook_graph_instagram_business",
       igBusinessAccountId,
       commentId,
       message,
       token
     );
+
+    if (facebookResult === "ok") return "ok";
+
+    // Facebook Graph can return code=3 for Instagram Login tokens or for apps whose
+    // messaging capability is available only on graph.instagram.com. Do not stop here;
+    // try the Instagram Graph host before classifying the send as impossible.
+    console.warn("[meta-api] facebook graph private reply capability missing — trying instagram graph", {
+      endpointName: "ig_messages_private_reply",
+      facebookGraphError: {
+        code: 3,
+        message: "(#3) Application does not have the capability to make this API call",
+      },
+    });
+    return await tryPrivateReplyOnInstagramGraph(igBusinessAccountId, commentId, message, token);
   } catch (facebookErr) {
     if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
     console.warn("[meta-api] facebook graph private reply failed — trying instagram graph", {
       endpointName: "ig_messages_private_reply",
       facebookGraphError: getSafeMetaError(facebookErr),
     });
-    try {
-      return await tryPrivateReplyOnFamily(
-        "instagram_graph",
-        igBusinessAccountId,
-        commentId,
-        message,
-        token
-      );
-    } catch (instagramErr) {
-      if (isCapabilityError(instagramErr)) return "capability_error";
-      throw instagramErr;
-    }
+    return await tryPrivateReplyOnInstagramGraph(igBusinessAccountId, commentId, message, token);
   }
 }
 
@@ -277,7 +300,7 @@ async function tryDirectDmOnFamily(
   }
 }
 
-async function tryDirectDm(
+async function tryDirectDmOnInstagramGraph(
   igBusinessAccountId: string,
   commenterId: string,
   message: InstagramMessagePayload,
@@ -285,30 +308,50 @@ async function tryDirectDm(
 ): Promise<"ok" | "capability_error"> {
   try {
     return await tryDirectDmOnFamily(
+      "instagram_graph",
+      igBusinessAccountId,
+      commenterId,
+      message,
+      token
+    );
+  } catch (instagramErr) {
+    if (isCapabilityError(instagramErr)) return "capability_error";
+    throw instagramErr;
+  }
+}
+
+async function tryDirectDm(
+  igBusinessAccountId: string,
+  commenterId: string,
+  message: InstagramMessagePayload,
+  token: string
+): Promise<"ok" | "capability_error"> {
+  try {
+    const facebookResult = await tryDirectDmOnFamily(
       "facebook_graph_instagram_business",
       igBusinessAccountId,
       commenterId,
       message,
       token
     );
+
+    if (facebookResult === "ok") return "ok";
+
+    console.warn("[meta-api] facebook graph direct DM capability missing — trying instagram graph", {
+      endpointName: "ig_messages_direct_dm",
+      facebookGraphError: {
+        code: 3,
+        message: "(#3) Application does not have the capability to make this API call",
+      },
+    });
+    return await tryDirectDmOnInstagramGraph(igBusinessAccountId, commenterId, message, token);
   } catch (facebookErr) {
     if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
     console.warn("[meta-api] facebook graph direct DM failed — trying instagram graph", {
       endpointName: "ig_messages_direct_dm",
       facebookGraphError: getSafeMetaError(facebookErr),
     });
-    try {
-      return await tryDirectDmOnFamily(
-        "instagram_graph",
-        igBusinessAccountId,
-        commenterId,
-        message,
-        token
-      );
-    } catch (instagramErr) {
-      if (isCapabilityError(instagramErr)) return "capability_error";
-      throw instagramErr;
-    }
+    return await tryDirectDmOnInstagramGraph(igBusinessAccountId, commenterId, message, token);
   }
 }
 
@@ -356,7 +399,8 @@ export async function sendInstagramCommentPrivateReply(params: {
     if (primary === "ok") {
       return { ok: true, endpoint: "ig_messages_private_reply", ctaMode: preferred.ctaMode };
     }
-    // code=3 — same permission guards the fallback; skip it
+    // code=3 after both Facebook Graph and Instagram Graph — same permission guards
+    // the fallback; skip it only after both hosts were tried.
     console.warn("[meta-api] dm_capability_missing on private reply — skipping fallback", {
       endpointName: "ig_messages_private_reply",
       requiredCapabilityHint:
