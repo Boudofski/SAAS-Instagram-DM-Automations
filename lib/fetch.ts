@@ -151,24 +151,120 @@ export const sendMediaComment = async (
   );
 };
 
-export const subscribePageWebhooks = async (
-  pageId: string,
-  token: string
-) => {
+const WEBHOOK_SUBSCRIBED_FIELDS = "comments,messages";
+
+function isSuccessfulMetaStatus(status?: number) {
+  return typeof status === "number" && status >= 200 && status < 300;
+}
+
+async function postSubscribedApps(
+  targetId: string,
+  token: string,
+  endpointFamily: "facebook_graph_page" | "facebook_graph_instagram_business"
+) {
   console.log("[meta-api] subscribed_apps request", {
-    endpointFamily: "facebook_graph_page",
-    hasPageId: Boolean(pageId),
+    endpointFamily,
+    targetIdPresent: Boolean(targetId),
+    subscribedFields: WEBHOOK_SUBSCRIBED_FIELDS,
   });
+
   return await axios.post(
-    `${META_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`,
+    `${META_GRAPH_API_BASE_URL}/${targetId}/subscribed_apps`,
     null,
     {
       params: {
-        subscribed_fields: "comments,messages",
+        subscribed_fields: WEBHOOK_SUBSCRIBED_FIELDS,
         access_token: token,
       },
     }
   );
+}
+
+async function resolveInstagramAccountIdFromPage(
+  pageId: string,
+  pageToken: string
+) {
+  try {
+    const page = await axios.get(`${META_GRAPH_API_BASE_URL}/${pageId}`, {
+      params: {
+        fields: "instagram_business_account{id},connected_instagram_account{id}",
+        access_token: pageToken,
+      },
+    });
+    const instagramBusinessAccountId = page.data?.instagram_business_account?.id;
+    const connectedInstagramAccountId = page.data?.connected_instagram_account?.id;
+    const id = instagramBusinessAccountId ?? connectedInstagramAccountId;
+    return typeof id === "string" && id.trim() ? id.trim() : null;
+  } catch (error) {
+    console.warn("[meta-api] linked Instagram account lookup failed before webhook subscription", {
+      endpointFamily: "facebook_graph_page",
+      hasPageId: Boolean(pageId),
+      error: getSafeMetaError(error),
+    });
+    return null;
+  }
+}
+
+export const subscribePageWebhooks = async (
+  pageId: string,
+  token: string
+) => {
+  let pageSubscription: Awaited<ReturnType<typeof postSubscribedApps>> | null = null;
+  let pageSubscriptionError: unknown = null;
+
+  try {
+    pageSubscription = await postSubscribedApps(pageId, token, "facebook_graph_page");
+    console.log("[meta-api] page subscribed_apps result", {
+      endpointFamily: "facebook_graph_page",
+      status: pageSubscription.status,
+      subscribed: isSuccessfulMetaStatus(pageSubscription.status),
+    });
+  } catch (error) {
+    pageSubscriptionError = error;
+    console.warn("[meta-api] page subscribed_apps failed; will try linked Instagram account", {
+      endpointFamily: "facebook_graph_page",
+      error: getSafeMetaError(error),
+    });
+  }
+
+  const instagramAccountId = await resolveInstagramAccountIdFromPage(pageId, token);
+
+  if (instagramAccountId) {
+    try {
+      const instagramSubscription = await postSubscribedApps(
+        instagramAccountId,
+        token,
+        "facebook_graph_instagram_business"
+      );
+      console.log("[meta-api] Instagram account subscribed_apps result", {
+        endpointFamily: "facebook_graph_instagram_business",
+        hasInstagramAccountId: true,
+        status: instagramSubscription.status,
+        subscribed: isSuccessfulMetaStatus(instagramSubscription.status),
+        pageSubscriptionStatus: pageSubscription?.status,
+      });
+
+      if (isSuccessfulMetaStatus(instagramSubscription.status)) {
+        return instagramSubscription;
+      }
+    } catch (error) {
+      console.warn("[meta-api] Instagram account subscribed_apps failed", {
+        endpointFamily: "facebook_graph_instagram_business",
+        hasInstagramAccountId: true,
+        error: getSafeMetaError(error),
+        pageSubscriptionStatus: pageSubscription?.status,
+      });
+    }
+  } else {
+    console.warn("[meta-api] linked Instagram account unavailable for webhook subscription", {
+      endpointFamily: "facebook_graph_instagram_business",
+      hasPageId: Boolean(pageId),
+      pageSubscriptionStatus: pageSubscription?.status,
+    });
+  }
+
+  if (pageSubscription) return pageSubscription;
+  throw pageSubscriptionError ?? new Error("subscribed_apps_failed");
 };
 
 export const subscribeInstagramWebhooks = subscribePageWebhooks;
