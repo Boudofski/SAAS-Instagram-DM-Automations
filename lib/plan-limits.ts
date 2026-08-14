@@ -40,7 +40,7 @@ export const UNLIMITED_LIMIT = 999_999;
 export const PLAN_LIMITS: Record<ProductPlan, PlanLimits> = {
   FREE: {
     label: "Free",
-    activeCampaigns: 1,
+    activeCampaigns: "unlimited",
     staticRepliesPerMonth: 50,
     aiRepliesPerMonth: 0,
     connectedInstagramAccounts: 1,
@@ -63,7 +63,7 @@ export const PLAN_LIMITS: Record<ProductPlan, PlanLimits> = {
     activeCampaigns: "unlimited",
     staticRepliesPerMonth: 20_000,
     aiRepliesPerMonth: 5_000,
-    connectedInstagramAccounts: 10,
+    connectedInstagramAccounts: 1,
     publicReplyFallback: true,
     exportLeads: true,
     teamAccess: false,
@@ -140,12 +140,9 @@ export function formatUsageMetricValue(metric: Pick<UsageMetric, "used" | "limit
 }
 
 export function formatCampaignLimitFeature(limit: PlanLimit) {
-  if (isUnlimited(limit)) return "Unlimited campaigns";
-  if (limit === 1) return "1 active campaign";
-  return `Up to ${limit.toLocaleString()} active campaigns`;
+  return isUnlimited(limit) ? "Unlimited campaigns" : `Up to ${limit.toLocaleString()} active campaigns`;
 }
 
-export function formatConnectedAccountsHelper(planLabel: string, metric: Pick<UsageMetric, "limit">) {
-  const limit = isUnlimited(metric.limit) ? "unlimited" : metric.limit.toLocaleString();
-  return `${planLabel} supports ${limit} account${metric.limit === 1 ? "" : "s"}.`;
+export function formatConnectedAccountsHelper(_planLabel: string, _metric: Pick<UsageMetric, "limit">) {
+  return "AP3k supports 1 connected Instagram account and unlimited campaigns for that account.";
 }
