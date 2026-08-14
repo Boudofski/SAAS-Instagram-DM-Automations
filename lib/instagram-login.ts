@@ -19,9 +19,9 @@ const INSTAGRAM_BUSINESS_SCOPES = [
 
 export type InstagramLoginProfile = {
   id: string;
-  username?: string;
-  profilePictureUrl?: string;
-  accountType?: string;
+  username: string | undefined;
+  profilePictureUrl: string | undefined;
+  accountType: string | undefined;
 };
 
 export type InstagramLoginTokenResult = {
