@@ -25,11 +25,16 @@ type AutomationTableProps = {
   pageSize?: number;
 };
 
+type ReplySummary = {
+  label: string;
+  tone: "green" | "amber" | "slate";
+};
+
 export default function AutomationTable({
   slug,
   automations,
   showControls = true,
-  pageSize = 14,
+  pageSize = 12,
 }: AutomationTableProps) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"newest" | "active" | "name">("newest");
@@ -112,7 +117,7 @@ export default function AutomationTable({
         </div>
       )}
 
-      <div className="grid gap-3 p-3 md:hidden">
+      <div className="grid gap-3 p-3 lg:hidden">
         {paged.length === 0 ? (
           <EmptyRows />
         ) : (
@@ -132,24 +137,24 @@ export default function AutomationTable({
         )}
       </div>
 
-      <div className="hidden max-w-full overflow-x-auto md:block">
-        <table className="w-full min-w-[980px] table-fixed text-left">
+      <div className="hidden max-w-full overflow-x-auto lg:block">
+        <table className="w-full min-w-[1040px] table-fixed text-left">
           <colgroup>
-            <col className="w-[28%]" />
-            <col className="w-[7%]" />
+            <col className="w-[34%]" />
+            <col className="w-[8%]" />
             <col className="w-[16%]" />
-            <col className="w-[7%]" />
+            <col className="w-[12%]" />
             <col className="w-[6%]" />
             <col className="w-[6%]" />
-            <col className="w-[9%]" />
-            <col className="w-[21%]" />
+            <col className="w-[8%]" />
+            <col className="w-[10%]" />
           </colgroup>
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
             <tr>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-2 py-3">Post</th>
               <th className="px-2 py-3">Trigger</th>
-              <th className="px-2 py-3">{messagingReviewMode ? "Replies" : appReviewMode ? "Reply" : "Mode"}</th>
+              <th className="px-2 py-3">Replies</th>
               <th className="px-2 py-3">Runs</th>
               <th className="px-2 py-3">Leads</th>
               <th className="px-2 py-3">Status</th>
@@ -201,6 +206,8 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
   const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode, messagingReviewMode);
   const status = campaignStatus(automation);
+  const replySummary = getReplySummary(automation);
+
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-pink-300/50 hover:shadow-lg dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045]">
       <div className="flex items-start gap-3">
@@ -215,7 +222,10 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
         </div>
         <StatusPill status={status} />
       </div>
-      <CampaignBadges automation={automation} appReviewMode={appReviewMode} messagingReviewMode={messagingReviewMode} />
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {automation.currentAccountLabel && <span className="ap3k-badge ap3k-badge-slate">{automation.currentAccountLabel}</span>}
+        <ReplyPill summary={replySummary} />
+      </div>
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
         <StatMini label="Runs" value={runs} />
         <StatMini label="Leads" value={leads} />
@@ -223,7 +233,7 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
       <div className="mt-4 flex flex-wrap gap-2">
         <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="ap3k-table-action">{automation.needsReview || automation.stalePost ? "Review" : "Edit"}</Link>
         <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="ap3k-table-action">View</Link>
-        <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="ap3k-table-action">{automation.active ? "Pause" : "Activate"}</button>
+        <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="ap3k-table-action">{automation.active ? "Pause" : "Start"}</button>
         <button type="button" disabled={isPending} onClick={() => onDuplicate(automation.id)} className="ap3k-table-action">Duplicate</button>
         <button type="button" disabled={isPending} onClick={() => onDelete(automation.id)} className="ap3k-table-action-danger">Delete</button>
       </div>
@@ -239,23 +249,30 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
   const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode, messagingReviewMode);
   const status = campaignStatus(automation);
+  const replySummary = getReplySummary(automation);
 
   return (
     <tr className="text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
-      <td className="px-4 py-4">
+      <td className="px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} />
           <div className="min-w-0 flex-1">
-            <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
+            <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
               {automation.name || "Untitled campaign"}
             </Link>
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{mode.full}</p>
-            <CampaignBadges automation={automation} compact appReviewMode={appReviewMode} messagingReviewMode={messagingReviewMode} />
+            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <span className="truncate">{mode.full}</span>
+              {automation.currentAccountLabel && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 dark:bg-white/[0.07] dark:text-slate-400">
+                  {automation.currentAccountLabel}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </td>
-      <td className="px-2 py-4"><span className="ap3k-badge ap3k-badge-slate">{isAny ? "Any" : post?.postid ? "Specific" : "Manual"}</span></td>
-      <td className="px-2 py-4">
+      <td className="px-2 py-3"><span className="ap3k-badge ap3k-badge-slate">{isAny ? "Any" : post?.postid ? "Specific" : "Manual"}</span></td>
+      <td className="px-2 py-3">
         <div className="flex max-w-[150px] flex-wrap gap-1">
           {isAnyComment ? (
             <span className="ap3k-badge ap3k-badge-blue">Any comment</span>
@@ -265,12 +282,12 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
           {!isAnyComment && (automation.keywords ?? []).length > 2 && <span className="ap3k-badge ap3k-badge-slate">+{(automation.keywords ?? []).length - 2}</span>}
         </div>
       </td>
-      <td className="px-2 py-4"><span title={mode.full} className="ap3k-badge ap3k-badge-slate">{mode.short}</span></td>
-      <td className="px-2 py-3.5 font-black text-slate-950 dark:text-white">{runs}</td>
-      <td className="px-2 py-3.5 font-black text-slate-950 dark:text-white">{leads}</td>
-      <td className="px-2 py-4"><StatusPill status={status} /></td>
-      <td className="px-4 py-4 text-right">
-        <div className="ml-auto flex w-full min-w-[170px] max-w-[220px] items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
+      <td className="px-2 py-3"><ReplyPill summary={replySummary} /></td>
+      <td className="px-2 py-3 font-black text-slate-950 dark:text-white">{runs}</td>
+      <td className="px-2 py-3 font-black text-slate-950 dark:text-white">{leads}</td>
+      <td className="px-2 py-3"><StatusPill status={status} /></td>
+      <td className="px-4 py-3 text-right">
+        <div className="ml-auto inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
           <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
             Edit
           </Link>
@@ -362,71 +379,27 @@ function StatusPill({ status }: { status: string }) {
       : status === "Draft"
         ? "ap3k-badge-blue"
         : "ap3k-badge-amber";
-  return <span className={`ap3k-badge ${classes}`}>{status}</span>;
+  return <span className={`ap3k-badge whitespace-nowrap ${classes}`}>{status}</span>;
 }
 
-function CampaignBadges({
-  automation,
-  compact,
-  appReviewMode = isAppReviewMode(),
-  messagingReviewMode = isMessagingReviewMode(),
-}: {
-  automation: any;
-  compact?: boolean;
-  appReviewMode?: boolean;
-  messagingReviewMode?: boolean;
-}) {
+function getReplySummary(automation: any): ReplySummary {
   const hasPublicReply = Boolean(automation.listener?.commentReply || automation.listener?.commentReply2 || automation.listener?.commentReply3);
   const hasPrivateReply = automation.sendPrivateDm !== false && Boolean(automation.listener?.prompt);
-  const replyBadge = messagingReviewMode
-    ? {
-        label: automation.active && !automation.needsReview
-          ? hasPublicReply && hasPrivateReply
-            ? "Public + private active"
-            : hasPrivateReply
-              ? "Private reply active"
-              : hasPublicReply
-                ? "Public reply active"
-                : "Replies paused"
-          : hasPublicReply && hasPrivateReply
-            ? "Public + private configured"
-            : hasPrivateReply
-              ? "Private reply configured"
-              : hasPublicReply
-                ? "Public reply configured"
-                : "Replies paused",
-        tone: automation.active && !automation.needsReview ? "green" : "amber",
-      }
-    : appReviewMode
-      ? {
-          label: automation.active && !automation.needsReview ? "Public reply active" : hasPublicReply ? "Public reply configured" : "Public reply paused",
-          tone: automation.active && !automation.needsReview ? "green" : "amber",
-        }
-      : null;
+  const activeTone = automation.active && !automation.needsReview ? "green" : "amber";
 
-  const badges = [
-    automation.currentAccountLabel ? { label: automation.currentAccountLabel, tone: "slate" } : null,
-    automation.stalePost ? { label: "Review post", tone: "amber" } : null,
-    automation.needsReview ? { label: "Needs review", tone: "red" } : null,
-    replyBadge,
-    !appReviewMode ? (automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : null) : null,
-  ].filter(Boolean) as { label: string; tone: string }[];
+  if (hasPublicReply && hasPrivateReply) return { label: "Public + Private", tone: activeTone };
+  if (hasPublicReply) return { label: "Public only", tone: activeTone };
+  if (hasPrivateReply) return { label: "Private only", tone: activeTone };
+  return { label: "Not set", tone: "slate" };
+}
 
-  const toneMap: Record<string, string> = {
-    red: "ap3k-badge-red",
-    amber: "ap3k-badge-amber",
-    green: "ap3k-badge-green",
-    blue: "ap3k-badge-blue",
-    slate: "ap3k-badge-slate",
-  };
-
-  return (
-    <div className={compact ? "mt-1 flex flex-wrap gap-1" : "mt-3 flex flex-wrap gap-1.5"}>
-      {badges.map((badge) => (
-        <span key={badge.label} className={`ap3k-badge ${toneMap[badge.tone] ?? "ap3k-badge-slate"}`}>{badge.label}</span>
-      ))}
-    </div>
-  );
+function ReplyPill({ summary }: { summary: ReplySummary }) {
+  const toneClass = summary.tone === "green"
+    ? "ap3k-badge-green"
+    : summary.tone === "amber"
+      ? "ap3k-badge-amber"
+      : "ap3k-badge-slate";
+  return <span className={`ap3k-badge whitespace-nowrap ${toneClass}`}>{summary.label}</span>;
 }
 
 function StatMini({ label, value }: { label: string; value: number }) {
