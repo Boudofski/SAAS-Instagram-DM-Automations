@@ -28,7 +28,7 @@ function monthRange(now = new Date()): Required<DateRange> {
 }
 
 function missingSnapshot(): AccountStatValue {
-  return { value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" };
+  return { value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load Instagram stats" };
 }
 
 function unavailableSnapshotField(subtitle: string): AccountStatValue {
@@ -60,19 +60,19 @@ export async function getInstagramAccountSettingsStats(
       typeof snapshot?.followersCount === "number"
         ? { value: snapshot.followersCount, enabled: true, subtitle: followerSubtitle }
         : snapshot
-          ? unavailableSnapshotField("Meta does not expose follower count for this connection.")
+          ? unavailableSnapshotField("Follower count is not available for this profile.")
           : missingSnapshot(),
     posts:
       typeof snapshot?.mediaCount === "number"
         ? { value: snapshot.mediaCount, enabled: true, subtitle: "Instagram posts" }
         : snapshot
-          ? unavailableSnapshotField("Meta did not return media count")
+          ? unavailableSnapshotField("Media count is not available for this profile.")
           : missingSnapshot(),
-    comments: { value: metrics.commentsReceived, enabled: true, subtitle: "Real external comments this period" },
-    removed: { value: "Not tracked", enabled: false, subtitle: "Removed comments are not tracked in account stats" },
-    dmsIn: { value: "Messaging approval required", enabled: false, subtitle: "Inbound DMs require Meta messaging approval" },
-    dmsOut: { value: metrics.dmsSent, enabled: true, subtitle: "AP3k private DMs sent" },
+    comments: { value: metrics.commentsReceived, enabled: true, subtitle: "External comments this period" },
+    removed: { value: "Not shown", enabled: false, subtitle: "This dashboard focuses on comments AP3k received" },
+    dmsIn: { value: "Not used", enabled: false, subtitle: "AP3k works from comment-triggered replies" },
+    dmsOut: { value: metrics.dmsSent, enabled: true, subtitle: "Private replies sent by AP3k" },
     contacts: { value: metrics.leadsCaptured, enabled: true, subtitle: "Leads captured this period" },
-    replyRate: { value: `${metrics.replyRate}%`, enabled: true, subtitle: "Confirmed replies / matched comments" },
+    replyRate: { value: `${metrics.replyRate}%`, enabled: true, subtitle: "Replies / matched comments" },
   };
 }
