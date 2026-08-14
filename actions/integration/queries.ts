@@ -3,7 +3,6 @@
 import { client } from "@/lib/prisma";
 import { getIntegrationHealth, REAL_COMMENT_WEBHOOK_TYPES } from "@/lib/dashboard-metrics";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
-import { getPlanLimits, isUnlimited, type ProductPlan } from "@/lib/plan-limits";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
 import {
   classifyInstagramIntegrationSaveError,
@@ -261,7 +260,6 @@ export const createIntegration = async (
       firstname: true,
       lastname: true,
       clerkId: true,
-      subscription: { select: { plan: true } },
       integrations: {
         where: { name: "INSTAGRAM" },
         orderBy: { createdAt: "desc" },
@@ -286,8 +284,6 @@ export const createIntegration = async (
     throw new InstagramIntegrationSaveError("MISSING_LOCAL_PROFILE", "user_not_found");
   }
 
-  // Deterministic reclaim: match by any stable identifier so reconnecting the same
-  // account always takes the UPDATE path regardless of which field was stored first.
   const sameWorkspaceRow = user.integrations.find((integration) =>
     (instagramId && integration.instagramId === instagramId) ||
     (businessId && integration.businessId === businessId) ||
@@ -295,6 +291,9 @@ export const createIntegration = async (
     (instagramUsername &&
       instagramUsername.toLowerCase() === (integration.instagramUsername ?? "").toLowerCase())
   );
+  const canonicalWorkspaceRow = getCanonicalInstagramIntegration(user.integrations);
+  const activeWorkspaceRow = user.integrations.find(isCanonicalInstagramConnected);
+  const replacementRow = sameWorkspaceRow ?? canonicalWorkspaceRow ?? activeWorkspaceRow ?? user.integrations[0];
 
   console.log("[integration-save] diagnosis", {
     userId: user.id,
@@ -302,20 +301,20 @@ export const createIntegration = async (
     selectedInstagramId: instagramId,
     selectedBusinessId: businessId,
     selectedPageId: pageId,
-    canonicalIntegrationIdFound: sameWorkspaceRow?.id ?? null,
+    canonicalIntegrationIdFound: replacementRow?.id ?? null,
     sameWorkspaceFound: Boolean(sameWorkspaceRow),
+    oneAccountReplacement: Boolean(replacementRow && !sameWorkspaceRow),
     existingInstagramIds: user.integrations.map((i) => i.instagramId),
     existingBusinessIds: user.integrations.map((i) => i.businessId),
     existingPageIds: user.integrations.map((i) => i.pageId),
     existingStatuses: user.integrations.map((i) => i.status),
   });
 
-  if (sameWorkspaceRow) {
-    // Reconnect path: always UPDATE, never CREATE, always bypass plan limit.
+  if (replacementRow) {
     const update = await updateIntegration(
       token,
       expire,
-      sameWorkspaceRow.id,
+      replacementRow.id,
       instagramId,
       instagramUsername,
       profilePictureUrl,
@@ -327,9 +326,28 @@ export const createIntegration = async (
       resolutionDiagnostics,
       subscription
     );
-    console.log("[integration-save] reclaimed existing row", {
+
+    const staleIds = user.integrations
+      .filter((integration) => integration.id !== replacementRow.id)
+      .map((integration) => integration.id);
+
+    if (staleIds.length) {
+      await client.integrations.updateMany({
+        where: { userId: user.id, id: { in: staleIds } },
+        data: {
+          status: "DISCONNECTED",
+          disconnectedAt: new Date(),
+          disconnectedReason: "AP3k supports one active Instagram account per workspace.",
+          reconnectRequired: false,
+        },
+      });
+    }
+
+    console.log("[integration-save] saved single Instagram account", {
       integrationId: update.id,
-      previousStatus: sameWorkspaceRow.status,
+      previousStatus: replacementRow.status,
+      replacedExistingAccount: !sameWorkspaceRow,
+      disabledOtherInstagramRows: staleIds.length,
     });
     return {
       firstname: user.firstname,
@@ -345,26 +363,15 @@ export const createIntegration = async (
   });
   const otherWorkspaceFound = Boolean(duplicate && duplicate.userId !== user.id);
 
-  const limits = getPlanLimits((user.subscription?.plan ?? "FREE") as ProductPlan);
-  const connectedCount = user.integrations.filter(isCanonicalInstagramConnected).length;
-  const planLimitBlocked = !isUnlimited(limits.connectedInstagramAccounts) && connectedCount >= limits.connectedInstagramAccounts;
-
-  console.log("[integration-save] new account path", {
+  console.log("[integration-save] new single account path", {
     userId: user.id,
     workspaceId: user.clerkId,
     selectedInstagramId: instagramId,
     otherWorkspaceFound,
-    planLimitBlocked,
-    connectedCount,
-    planLimit: limits.connectedInstagramAccounts,
   });
 
   if (otherWorkspaceFound) {
     throw new InstagramIntegrationSaveError("DUPLICATE_INSTAGRAM_ACCOUNT", "instagram_account_already_connected");
-  }
-
-  if (planLimitBlocked) {
-    throw new InstagramIntegrationSaveError("PLAN_LIMIT_REACHED", "connected_instagram_account_limit_reached");
   }
 
   try {
@@ -399,8 +406,8 @@ export const createIntegration = async (
             reconnectRequired: false,
             disconnectedAt: null,
             disconnectedReason: null,
-            lastAdminNote: null,
-            lastAdminActionAt: null,
+            lastAdminNote: "single_instagram_account_created",
+            lastAdminActionAt: new Date(),
           },
         },
       },
