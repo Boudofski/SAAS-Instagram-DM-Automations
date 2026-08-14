@@ -1,5 +1,12 @@
 import { INSTAGRAM_GRAPH_API_BASE_URL, META_GRAPH_API_BASE_URL } from "@/lib/fetch";
 
+// The older media fetch path reads process.env.INSTAGRAM_BASE_URL inside server actions.
+// In direct Instagram Login mode the access token only works on graph.instagram.com,
+// so force the media host away from graph.facebook.com and toward Instagram Graph.
+if (process.env.INSTAGRAM_LOGIN_ENABLED === "true") {
+  process.env.INSTAGRAM_BASE_URL = INSTAGRAM_GRAPH_API_BASE_URL;
+}
+
 export type InstagramMediaIntegration = {
   token?: string | null;
   instagramId?: string | null;
