@@ -189,6 +189,7 @@ export function buildCampaignBindingDiagnostics(input: {
     input.integration?.webhookSubscriptionLastAttemptedAt,
     input.integration?.createdAt,
   ]);
+  const hasMediaOwnerIndex = Boolean(input.knownMediaOwners && Object.keys(input.knownMediaOwners).length > 0);
 
   return input.campaigns.map((campaign) => {
     const postId = campaign.posts?.[0]?.postid ?? null;
@@ -212,8 +213,8 @@ export function buildCampaignBindingDiagnostics(input: {
       warnings.push("Campaign was created before the current reconnect/subscription refresh.");
     }
 
-    if (postId && postId !== "ANY" && !owner) {
-      warnings.push("Post ownership unknown — recreate campaign after reconnect.");
+    if (postId && postId !== "ANY" && !owner && hasMediaOwnerIndex) {
+      warnings.push("Post ownership unknown — choose Any Post or refresh posts from the current account.");
     }
 
     return {
@@ -258,85 +259,39 @@ export function planReconnectCleanup(input: {
 }
 
 export function dashboardNoCommentDiagnosis(input: {
-  username?: string | null;
-  status: AccountWebhookStatus;
+  integration?: IntegrationLike | null;
+  events: AccountWebhookEventLike[];
 }) {
-  if (input.status !== "only_messaging_active") return null;
-  const username = input.username ? `@${input.username}` : "this Instagram account";
-  return {
-    title: `No comment webhooks received for ${username} yet.`,
-    detail: "Messaging webhooks are arriving, so AP3k is connected, but comment delivery is not active.",
-  };
-}
-
-export function compareIntegrationDelivery(input: {
-  working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
-  failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] };
-  now?: Date;
-}) {
-  const workingStatus = classifyAccountWebhookDelivery({
-    integration: input.working.integration,
-    events: input.working.events,
-    now: input.now,
-  });
-  const failingStatus = classifyAccountWebhookDelivery({
-    integration: input.failing.integration,
-    events: input.failing.events,
-    now: input.now,
-  });
-
-  return {
-    working: {
-      integration: input.working.integration,
-      status: workingStatus.status,
-      label: workingStatus.label,
-      activeCampaigns: input.working.campaigns.filter((campaign) => campaign.active).length,
-      selectedMediaIds: selectedMediaIds(input.working.campaigns),
-    },
-    failing: {
-      integration: input.failing.integration,
-      status: failingStatus.status,
-      label: failingStatus.label,
-      activeCampaigns: input.failing.campaigns.filter((campaign) => campaign.active).length,
-      selectedMediaIds: selectedMediaIds(input.failing.campaigns),
-    },
-  };
-}
-
-function selectedMediaIds(campaigns: CampaignLike[]) {
-  return campaigns
-    .flatMap((campaign) => campaign.posts ?? [])
-    .map((post) => post.postid)
-    .filter((value): value is string => Boolean(value));
+  const delivery = classifyAccountWebhookDelivery({ events: input.events, integration: input.integration });
+  if (delivery.status === "comments_active") return "comments_arriving";
+  if (delivery.status === "only_messaging_active") return "only_messaging_arriving";
+  if (delivery.status === "parser_failed") return "comment_payload_parser_failed";
+  if (delivery.status === "test_only") return "meta_test_payload_only";
+  return "no_real_webhook_delivery";
 }
 
 function isEventForAccount(event: AccountWebhookEventLike, accountIds: string[]) {
   if (!accountIds.length) return true;
+  const ids = new Set(accountIds.map(String));
+  if (event.igAccountId && ids.has(String(event.igAccountId))) return true;
   const payload = asRecord(event.payload);
-  const payloadIds = [
-    payload?.entryId,
-    payload?.firstEntryId,
-    payload?.igAccountId,
-    payload?.valueIgAccountId,
-  ].filter(Boolean).map(String);
-  return [event.igAccountId, ...payloadIds].some((value) => value && accountIds.includes(value));
+  const payloadAccountId = payload?.entryId ?? payload?.firstEntryId ?? payload?.pageId ?? payload?.igAccountId;
+  return Boolean(payloadAccountId && ids.has(String(payloadAccountId)));
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+function asRecord(value: unknown): Record<string, any> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, any>;
 }
 
-function toTime(value?: Date | string | null) {
-  if (!value) return 0;
-  const date = value instanceof Date ? value : new Date(value);
-  const time = date.getTime();
-  return Number.isNaN(time) ? 0 : time;
-}
-
-function latestDate(values: Array<Date | string | null | undefined>) {
-  const times = values.map(toTime).filter(Boolean);
+function latestDate(values: (Date | string | null | undefined)[]) {
+  const times = values.map(toTime).filter((time) => time > 0);
   if (!times.length) return null;
   return new Date(Math.max(...times));
+}
+
+function toTime(value: Date | string | null | undefined) {
+  if (!value) return 0;
+  const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
 }
