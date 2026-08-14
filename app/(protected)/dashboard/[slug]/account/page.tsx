@@ -1,26 +1,12 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
-import ReviewInstagramAccountProfile from "@/components/dashboard/review-instagram-account-profile";
 import LocalTime from "@/components/global/local-time";
 import { onUserInfo } from "@/actions/user";
-import { getCurrentWebhookHealth } from "@/actions/integration";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
-import { canShowProfileSyncDebug, getWebhookHealthPresentation } from "@/lib/instagram-account-ux";
-import { getUserMonthlyUsage } from "@/actions/usage/queries";
-import { getAccountWebhookDiagnosticsForIntegration } from "@/lib/account-webhook-diagnostics-db";
-import { getInstagramDisconnectState } from "@/lib/settings-safety";
 import { getPeriodRange, parseDashboardPeriod } from "@/lib/dashboard-metrics";
-import {
-  getInstagramSnapshotComparisonWithRefresh,
-  getProfileSnapshotDisplay,
-  getProfileSnapshotStatus,
-  PROFILE_FIELD_SETS,
-} from "@/lib/instagram-profile-snapshot";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
-import { isAppReviewMode } from "@/lib/app-review-mode";
+import { getInstagramSnapshotComparisonWithRefresh, getProfileSnapshotDisplay } from "@/lib/instagram-profile-snapshot";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
-import { AlertTriangle, CheckCircle2, ExternalLink, Info, Lock, ShieldAlert } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 type Props = { params: { slug: string }; searchParams?: { period?: string } };
@@ -29,169 +15,90 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const instagram = getCanonicalInstagramIntegration(user?.integrations);
-  const appReviewMode = isAppReviewMode();
+  const connected = isCanonicalInstagramConnected(instagram);
   const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
   const period = parseDashboardPeriod(searchParams?.period);
   const periodRange = getPeriodRange(period);
 
-  const [healthResult, usage, snapshotState, accountDiagnostics] = user?.id
+  const [snapshotState, stats] = user?.id
     ? await Promise.all([
-        getCurrentWebhookHealth(),
-        getUserMonthlyUsage(user.id),
         getInstagramSnapshotComparisonWithRefresh(user.clerkId, user.id, instagram?.id, period),
-        getAccountWebhookDiagnosticsForIntegration(instagram?.id),
+        getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, period),
       ])
-    : [{ status: 200, data: null }, null, { comparison: null, refresh: null }, null];
-  const stats = user?.id
-    ? await getInstagramAccountSettingsStats(user.id, instagram?.id, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, period)
-    : null;
+    : [{ comparison: null, refresh: null }, null];
 
-  const health = healthResult.status === 200 ? healthResult.data : null;
-  const snapshotComparison = snapshotState.comparison;
-  const autoRefresh = snapshotState.refresh;
-  const snapshot = snapshotComparison?.current ?? null;
-  const profileSnapshotStatus = getProfileSnapshotStatus(snapshot);
-  const profileSnapshotDisplay = getProfileSnapshotDisplay(snapshot, autoRefresh);
-  const connected = isCanonicalInstagramConnected(instagram);
+  const snapshot = snapshotState.comparison?.current ?? null;
+  const profileSnapshotDisplay = getProfileSnapshotDisplay(snapshot, snapshotState.refresh);
   const displayUsername = connected ? snapshot?.username ?? instagram?.instagramUsername : null;
   const displayProfilePictureUrl = connected ? snapshot?.profilePictureUrl ?? instagram?.profilePictureUrl : null;
-  const showProfileSyncDebug = !appReviewMode && canShowProfileSyncDebug({ clerkId: user?.clerkId, email: user?.email, connected });
-  const disconnectState = getInstagramDisconnectState(false);
-  const statusLabel = tokenExpired ? "Token expired" : connected ? "Connected" : "Not connected";
-  const statusTone = tokenExpired ? "amber" : connected ? "green" : "slate";
-  const syncBadge = profileSnapshotDisplay.label === "Partial" ? "Partial Sync" : profileSnapshotDisplay.label === "Fresh" || profileSnapshotDisplay.label === "Stale" ? "Synced" : null;
-  const webhookHealth = getWebhookHealthPresentation(health);
-  const messagingCapability = formatUserFacingMetaError(health?.lastFailure?.errorMessage, health?.lastFailure?.eventType);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
-      <div>
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Official Meta connection</p>
+      <div className="animate-[ap3kDashboardRise_0.45s_ease-out_both]">
+        <p className="ap3k-kicker">Instagram connection</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Instagram Account</h1>
-        <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
-          {appReviewMode
-            ? connected ? "Official Meta account" : "Connect your Instagram Business or Creator account"
-            : displayUsername ? `@${displayUsername}` : "Connect your Instagram Business or Creator account"}
+        <p className="mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-400">
+          Connect one Instagram Business or Creator account. Campaigns and comments run through Instagram Login and Instagram Graph.
         </p>
       </div>
 
-      <section className="ap3k-card rounded-2xl p-5 sm:p-6">
-        {appReviewMode ? (
-          <ReviewInstagramAccountProfile
-            connected={connected}
-            displayUsername={displayUsername}
-            displayProfilePictureUrl={displayProfilePictureUrl}
-            pageName={instagram?.pageName}
-          />
-        ) : (
-        <>
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <SectionHeader label="Profile" />
-          <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
-        </div>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-5">
-            <InstagramAvatar
-              src={displayProfilePictureUrl}
-              username={displayUsername}
-              label={instagram?.pageName}
-              size="xl"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-                {connected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
-              </p>
-              <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-                {connected ? instagram?.pageName ?? "Instagram Business or Creator profile" : "Connect Instagram to start."}
-              </p>
-              {connected && profileSnapshotDisplay.label === "Partial" ? (
-                <div className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                  <p className="font-black text-slate-950 dark:text-white">Profile connected</p>
-                  <p>Instagram profile synced successfully.</p>
-                  <p>Follower count unavailable from Meta.</p>
+      <section className="ap3k-card animate-[ap3kDashboardRise_0.55s_ease-out_both] overflow-hidden rounded-3xl p-0">
+        <div className="bg-gradient-to-br from-emerald-50 via-white to-pink-50 p-6 dark:from-emerald-500/[0.10] dark:via-white/[0.04] dark:to-rf-pink/[0.08]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-5">
+              <InstagramAvatar src={displayProfilePictureUrl} username={displayUsername} label={instagram?.pageName} size="xl" />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+                    {connected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
+                  </h2>
+                  <span className={connected && !tokenExpired ? "ap3k-badge ap3k-badge-green" : "ap3k-badge ap3k-badge-amber"}>
+                    {tokenExpired ? "Reconnect" : connected ? "Connected" : "Not connected"}
+                  </span>
                 </div>
-              ) : (
-                <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   {connected ? (
-                    <>
-                      Profile connected · <LocalTime value={snapshot?.fetchedAt} empty="Never refreshed" />
-                    </>
-                  ) : (
-                    "Connect Instagram to view profile details."
-                  )}
+                    snapshot?.fetchedAt ? <LocalTime value={snapshot.fetchedAt} prefix="Profile refreshed" /> : "Connected. Profile sync pending."
+                  ) : "Connect Instagram to start receiving comments."}
                 </p>
-              )}
-              {connected && profileSnapshotStatus.label === "Missing" && (
-                <p className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300">
-                  Refresh profile to load your Instagram followers and posts.
-                </p>
-              )}
-              {connected && autoRefresh?.error && (
-                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                  {autoRefresh.error}
-                </p>
-              )}
-              {connected && profileSnapshotDisplay.label === "Failed" && (
-                <Link
-                  href="/onboarding/connect"
-                  className="mt-2 inline-flex rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                >
-                  Reconnect Instagram
-                </Link>
-              )}
-              {showProfileSyncDebug && (
-                <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                  <summary className="cursor-pointer font-black text-slate-500 dark:text-slate-400">Profile sync debug</summary>
-                  <p className="mt-1 font-mono break-all">
-                    GET /{instagram?.instagramId}?fields={PROFILE_FIELD_SETS[0].join(",")}
-                  </p>
-                </details>
-              )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {connected && <StatusBadge tone="pink">Official Meta connection</StatusBadge>}
-                <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
-                {connected && syncBadge && <StatusBadge tone={profileSnapshotDisplay.label === "Partial" ? "slate" : "green"}>{syncBadge}</StatusBadge>}
-                {connected && <StatusBadge tone="slate">{instagram?.igAccountSource ?? "CONNECTED"}</StatusBadge>}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="ap3k-badge ap3k-badge-blue">Instagram Login</span>
+                  <span className="ap3k-badge ap3k-badge-slate">Instagram Graph</span>
+                  {profileSnapshotDisplay.label !== "Missing" && <span className="ap3k-badge ap3k-badge-green">{profileSnapshotDisplay.label}</span>}
+                </div>
               </div>
             </div>
+            <AccountConnectionActions connected={connected} integrationId={instagram?.id} />
           </div>
-          {!appReviewMode && (
-            <div className="grid gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 sm:min-w-[260px]">
-              <MetaIdRow label="Instagram ID" value={instagram?.instagramId} />
-              <MetaIdRow label="Page ID" value={instagram?.pageId} />
-              <MetaIdRow label="Business ID" value={instagram?.businessId} />
-            </div>
-          )}
         </div>
-        </>
-        )}
       </section>
 
-      {appReviewMode && (
-        <section className="grid gap-3 sm:grid-cols-3">
-          <ReviewStatusCard label="Instagram connected" value="Connected through official Meta access." ok={connected} />
-          <ReviewStatusCard label="Comments active" value="AP3k can receive Instagram comments." ok={connected} />
-          <ReviewStatusCard label="Public replies active" value="Available with active comment campaigns." ok={connected} />
-        </section>
-      )}
+      <section className="grid animate-[ap3kDashboardRise_0.6s_ease-out_both] gap-3 md:grid-cols-3">
+        <StatusCard label="Instagram connected" value={connected && !tokenExpired ? "Ready to listen" : "Reconnect required"} ok={connected && !tokenExpired} />
+        <StatusCard label="Comments" value={connected ? "Ready to receive" : "Connect account first"} ok={connected} />
+        <StatusCard label="Replies" value={connected ? "Available in campaigns" : "Paused"} ok={connected} />
+      </section>
 
-      {!appReviewMode && (
-      <section className="ap3k-card rounded-2xl p-5 sm:p-6">
+      <section className="ap3k-card animate-[ap3kDashboardRise_0.7s_ease-out_both] rounded-3xl p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <SectionHeader label="Stats" helper={`Real AP3k activity for this account · ${periodRange.label}. Unavailable metrics are not estimated.`} />
+          <div>
+            <p className="ap3k-kicker">Account analytics</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">Performance</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Real AP3k activity for this Instagram account · {periodRange.label}</p>
+          </div>
           <PeriodSelector slug={params.slug} active={period} />
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {stats ? (
             <>
-              <SettingsStatCard label="Followers" stat={stats.followers} tone="slate" />
-              <SettingsStatCard label="Posts" stat={stats.posts} tone="slate" />
-              <SettingsStatCard label="Comments" stat={stats.comments} tone="orange" />
-              <SettingsStatCard label="Removed" stat={stats.removed} tone="red" />
-              <SettingsStatCard label="DMs In" stat={stats.dmsIn} tone="blue" />
-              <SettingsStatCard label="AP3k DMs Out" stat={stats.dmsOut} tone="green" />
-              <SettingsStatCard label="Leads" stat={stats.contacts} tone="orange" />
-              <SettingsStatCard label="Reply Rate" stat={stats.replyRate} tone="slate" />
+              <SettingsStatCard label="Followers" stat={stats.followers} />
+              <SettingsStatCard label="Posts" stat={stats.posts} />
+              <SettingsStatCard label="Comments" stat={stats.comments} />
+              <SettingsStatCard label="Leads" stat={stats.contacts} />
+              <SettingsStatCard label="Private replies" stat={stats.dmsOut} />
+              <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
+              <SettingsStatCard label="Inbound messages" stat={stats.dmsIn} />
+              <SettingsStatCard label="Removed" stat={stats.removed} />
             </>
           ) : (
             <p className="rounded-xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 sm:col-span-2 xl:col-span-4">
@@ -200,235 +107,60 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           )}
         </div>
       </section>
-      )}
 
-      {!appReviewMode && (
-      <section className="ap3k-card rounded-2xl p-5 sm:p-6">
+      <section className="ap3k-card animate-[ap3kDashboardRise_0.8s_ease-out_both] rounded-3xl p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <SectionHeader label="Connection" />
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              Reconnect Instagram to refresh access tokens or restore a broken connection. Your campaigns, leads, and activity history are preserved.
+            <p className="ap3k-kicker">Connection management</p>
+            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">One account per workspace</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Reconnecting a different Instagram account replaces the current connection. Campaign history stays saved, and campaigns can be reviewed after reconnect.
             </p>
           </div>
-          <Link
-            href={`/dashboard/${params.slug}/integrations`}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-          >
-            Troubleshooting
+          <Link href={`/dashboard/${params.slug}/integrations`} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]">
+            Open connection settings
             <ExternalLink className="h-4 w-4" />
           </Link>
         </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <HealthCard label="OAuth valid" value={health?.oauth?.tokenUsable ? "OK" : connected ? "Check" : "Unknown"} ok={Boolean(health?.oauth?.tokenUsable)} />
-          <HealthCard
-            label={webhookHealth.webhook.label}
-            value={webhookHealth.webhook.value}
-            detail={webhookHealth.webhook.detail}
-            ok={webhookHealth.webhook.ok}
-          />
-          <HealthCard label="Last webhook" value={formatHealthDate(health?.lastWebhook?.createdAt)} ok={Boolean(health?.lastWebhook)} />
-          <HealthCard label="Last comment" value={formatHealthDate(health?.lastCommentWebhook?.createdAt)} ok={Boolean(health?.lastCommentWebhook)} />
-          <HealthCard label="Profile snapshot" value={profileSnapshotDisplay.label} detail={<LocalTime value={snapshot?.fetchedAt} empty="Never refreshed" />} ok={profileSnapshotDisplay.ok} />
-          <HealthCard label={webhookHealth.failure.label} value={webhookHealth.failure.value} detail={webhookHealth.failure.detail} ok={webhookHealth.failure.ok} />
-          <HealthCard
-            label="Messaging capability"
-            value={messagingCapability.title === "Private DM capability pending" ? "Pending App Review" : "Pending or approved"}
-            detail={messagingCapability.title === "Private DM capability pending" ? messagingCapability.detail : "Private replies depend on Meta messaging approval."}
-            ok={messagingCapability.title !== "Private DM capability pending"}
-          />
-        </div>
-
-        {accountDiagnostics?.delivery.status === "only_messaging_active" && (
-          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-            <p>No comment webhooks received for {displayUsername ? `@${displayUsername}` : "this account"} yet.</p>
-            <p className="mt-1 font-semibold">Messaging webhooks are arriving, so AP3k is connected, but comment delivery is not active.</p>
-          </div>
-        )}
-
-        {usage && (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Plan capacity</p>
-            <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-              {usage.planLabel} supports {usage.connectedAccounts.limit === "unlimited" ? "unlimited" : usage.connectedAccounts.limit} connected Instagram account{usage.connectedAccounts.limit === 1 ? "" : "s"}.
-            </p>
-          </div>
-        )}
       </section>
-      )}
-
-      {!appReviewMode && (
-      <section className="ap3k-card rounded-2xl p-5 sm:p-6">
-        <SectionHeader label="Connected account repair checklist" />
-        <ol className="mt-5 flex flex-col gap-3">
-          {[
-            `Confirm ${displayUsername ? `@${displayUsername}` : "the connected account"} is Professional, Business, or Creator.`,
-            "Confirm it is linked to the selected Facebook Page in Meta Business.",
-            "Confirm AP3k is Live, or tester/commenter roles are accepted if Development.",
-            "Meta Developers › Webhooks › Instagram object › comments field subscribed.",
-            "Reconnect this Instagram account after subscription changes.",
-            "Recreate campaigns using a fresh post from this account after reconnect.",
-            "Test from a different Instagram account, not the connected account itself.",
-          ].map((step, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-black text-slate-600 dark:bg-white/[0.08] dark:text-slate-300">
-                {i + 1}
-              </span>
-              <p className="pt-0.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{step}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-      )}
-
-      {!appReviewMode && (
-      <section className="rounded-2xl border border-red-200 bg-red-50/80 p-5 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-6">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200 bg-white text-red-600 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-300">
-            <ShieldAlert className="h-4.5 w-4.5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-red-800 dark:text-red-100">
-              Disconnecting removes this Instagram connection from AP3k and pauses related campaigns. Safe self-service disconnect is coming soon.
-            </p>
-            <button
-              type="button"
-              disabled
-              className="mt-4 cursor-not-allowed rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-400 opacity-70 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300"
-            >
-              {disconnectState.label}
-            </button>
-          </div>
-        </div>
-      </section>
-      )}
     </div>
   );
-}
-
-function ReviewStatusCard({ label, value, ok }: { label: string; value: string; ok: boolean }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.05]">
-      <div className="flex items-start gap-3">
-        <span className={["mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl", ok ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-amber-50 dark:bg-amber-500/10"].join(" ")}>
-          <CheckCircle2 className={["h-4 w-4", ok ? "text-emerald-500" : "text-amber-500"].join(" ")} />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
-          <p className="mt-1 text-sm font-bold leading-relaxed text-slate-800 dark:text-slate-100">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SectionHeader({ label, helper }: { label: string; helper?: string }) {
-  return (
-    <div>
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
-      {helper && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{helper}</p>}
-    </div>
-  );
-}
-
-function SettingsStatCard({ label, stat, tone }: { label: string; stat: AccountStatValue; tone: "orange" | "blue" | "green" | "red" | "slate" }) {
-  const valueClass = {
-    orange: "text-orange-500",
-    blue: "text-blue-500",
-    green: "text-emerald-500",
-    red: "text-red-500",
-    slate: "text-slate-950 dark:text-white",
-  }[stat.enabled ? tone : "slate"];
-  const showInfo = label === "Followers" && stat.value === "Unavailable";
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
-        {showInfo ? (
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400">
-                  <Info className="h-4 w-4" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Meta does not expose follower count for this connection.
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : !stat.enabled ? (
-          <Lock className="h-4 w-4 text-slate-400" />
-        ) : null}
-      </div>
-      <p className={`mt-4 text-2xl font-black tracking-tight ${valueClass}`}>{stat.value}</p>
-      <p className="mt-1 text-xs font-bold leading-snug text-slate-500 dark:text-slate-400">{stat.subtitle}</p>
-    </div>
-  );
-}
-
-function StatusBadge({ tone, children }: { tone: "green" | "amber" | "pink" | "slate"; children: React.ReactNode }) {
-  const classes = {
-    green: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
-    amber: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
-    pink: "border-pink-200 bg-pink-50 text-pink-700 dark:border-pink-500/30 dark:bg-pink-500/10 dark:text-pink-200",
-    slate: "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
-  };
-  return <span className={`rounded-full border px-2.5 py-1 text-[11px] font-black uppercase ${classes[tone]}`}>{children}</span>;
-}
-
-function MetaIdRow({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/[0.12] dark:bg-white/[0.06]">
-      <span>{label}</span>
-      <span className="truncate text-slate-700 dark:text-slate-200">{value ?? "Not stored"}</span>
-    </div>
-  );
-}
-
-function HealthCard({ label, value, detail, ok }: { label: string; value: React.ReactNode; detail?: React.ReactNode; ok: boolean }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06]">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
-        {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
-      </div>
-      <p className="mt-3 break-words text-sm font-black text-slate-800 dark:text-slate-100">{value}</p>
-      {detail && <p className="mt-1 text-xs font-bold leading-snug text-slate-500 dark:text-slate-400">{detail}</p>}
-    </div>
-  );
-}
-
-function formatHealthDate(value?: Date | string | null) {
-  if (!value) return "None yet";
-  return <LocalTime value={value} />;
 }
 
 function PeriodSelector({ slug, active }: { slug: string; active: string }) {
+  const items = [
+    ["24h", "Last 24h"],
+    ["7d", "Last 7d"],
+    ["month", "This month"],
+    ["30d", "Last 30d"],
+  ];
   return (
     <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-      {[
-        ["24h", "Last 24h"],
-        ["7d", "Last 7d"],
-        ["month", "This month"],
-        ["30d", "Last 30d"],
-      ].map(([key, label]) => (
-        <Link
-          key={key}
-          href={`/dashboard/${slug}/account?period=${key}`}
-          className={[
-            "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black",
-            active === key
-              ? "bg-rf-pink/10 text-rf-pink"
-              : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
-          ].join(" ")}
-        >
-          {label}
-        </Link>
+      {items.map(([key, label]) => (
+        <Link key={key} href={`/dashboard/${slug}/account?period=${key}`} className={["whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black transition", active === key ? "bg-rf-pink/10 text-rf-pink" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]"].join(" ")}>{label}</Link>
       ))}
+    </div>
+  );
+}
+
+function StatusCard({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className={["flex items-start gap-3 rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5", ok ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/25 dark:bg-emerald-500/[0.09]" : "border-amber-200 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-500/[0.09]"].join(" ")}>
+      <span className={["grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-black", ok ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-500/25 dark:text-amber-200"].join(" ")}>{ok ? "✓" : "!"}</span>
+      <div className="min-w-0">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">{label}</p>
+        <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function SettingsStatCard({ label, stat }: { label: string; stat: AccountStatValue }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 dark:border-white/10 dark:bg-[#101827]">
+      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className={["mt-2 text-2xl font-black tracking-tight", stat.enabled ? "text-slate-950 dark:text-white" : "text-slate-500 dark:text-slate-400"].join(" ")}>{typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}</p>
+      <p className="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">{stat.subtitle}</p>
     </div>
   );
 }
