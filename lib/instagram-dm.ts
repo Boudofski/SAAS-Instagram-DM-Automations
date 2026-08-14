@@ -1,6 +1,14 @@
 import axios from "axios";
 import { META_GRAPH_API_BASE_URL, getSafeMetaError } from "@/lib/fetch";
 
+export const INSTAGRAM_GRAPH_BASE_URL =
+  process.env.INSTAGRAM_GRAPH_BASE_URL ?? "https://graph.instagram.com";
+export const INSTAGRAM_GRAPH_VERSION =
+  process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
+export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
+
+type MessageApiFamily = "facebook_graph_instagram_business" | "instagram_graph";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -54,6 +62,28 @@ function isCapabilityError(error: unknown): boolean {
   return getSafeMetaError(error).code === 3;
 }
 
+function shouldTryInstagramGraph(error: unknown): boolean {
+  const safe = getSafeMetaError(error);
+  return Boolean(
+    safe.status === 400 ||
+    safe.status === 401 ||
+    safe.status === 403 ||
+    safe.status === 404 ||
+    safe.code === 3 ||
+    safe.code === 10 ||
+    safe.code === 100 ||
+    safe.code === 190 ||
+    safe.type === "IGApiException" ||
+    safe.type === "OAuthException"
+  );
+}
+
+function messageBaseUrl(apiFamily: MessageApiFamily) {
+  return apiFamily === "instagram_graph"
+    ? INSTAGRAM_GRAPH_API_BASE_URL
+    : META_GRAPH_API_BASE_URL;
+}
+
 function buildFinalMessage(
   message: string,
   ctaTitle?: string | null,
@@ -67,20 +97,19 @@ function buildFinalMessage(
 }
 
 // ---------------------------------------------------------------------------
-// Primary sender — POST /{ig-user-id}/messages with recipient.comment_id
-// Returns null on capability error so caller can skip fallback.
-// Throws on other axios errors so caller can try fallback.
+// Senders
 // ---------------------------------------------------------------------------
 
-async function tryPrivateReply(
+async function tryPrivateReplyOnFamily(
+  apiFamily: MessageApiFamily,
   igBusinessAccountId: string,
   commentId: string,
   text: string,
   token: string
 ): Promise<"ok" | "capability_error"> {
-  const url = `${META_GRAPH_API_BASE_URL}/${igBusinessAccountId}/messages`;
+  const url = `${messageBaseUrl(apiFamily)}/${igBusinessAccountId}/messages`;
   console.log("[meta-api] send private reply request", {
-    endpointFamily: "facebook_graph_instagram_business",
+    endpointFamily: apiFamily,
     endpointName: "ig_messages_private_reply",
     hasIgBusinessAccountId: Boolean(igBusinessAccountId),
     hasCommentId: Boolean(commentId),
@@ -98,16 +127,51 @@ async function tryPrivateReply(
   }
 }
 
-// Fallback — POST /{ig-user-id}/messages with recipient.id (direct DM)
-async function tryDirectDm(
+async function tryPrivateReply(
+  igBusinessAccountId: string,
+  commentId: string,
+  text: string,
+  token: string
+): Promise<"ok" | "capability_error"> {
+  try {
+    return await tryPrivateReplyOnFamily(
+      "facebook_graph_instagram_business",
+      igBusinessAccountId,
+      commentId,
+      text,
+      token
+    );
+  } catch (facebookErr) {
+    if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
+    console.warn("[meta-api] facebook graph private reply failed — trying instagram graph", {
+      endpointName: "ig_messages_private_reply",
+      facebookGraphError: getSafeMetaError(facebookErr),
+    });
+    try {
+      return await tryPrivateReplyOnFamily(
+        "instagram_graph",
+        igBusinessAccountId,
+        commentId,
+        text,
+        token
+      );
+    } catch (instagramErr) {
+      if (isCapabilityError(instagramErr)) return "capability_error";
+      throw instagramErr;
+    }
+  }
+}
+
+async function tryDirectDmOnFamily(
+  apiFamily: MessageApiFamily,
   igBusinessAccountId: string,
   commenterId: string,
   text: string,
   token: string
 ): Promise<"ok" | "capability_error"> {
-  const url = `${META_GRAPH_API_BASE_URL}/${igBusinessAccountId}/messages`;
+  const url = `${messageBaseUrl(apiFamily)}/${igBusinessAccountId}/messages`;
   console.log("[meta-api] send direct DM fallback request", {
-    endpointFamily: "facebook_graph_instagram_business",
+    endpointFamily: apiFamily,
     endpointName: "ig_messages_direct_dm",
     hasIgBusinessAccountId: Boolean(igBusinessAccountId),
     hasCommenterId: Boolean(commenterId),
@@ -125,6 +189,41 @@ async function tryDirectDm(
   }
 }
 
+async function tryDirectDm(
+  igBusinessAccountId: string,
+  commenterId: string,
+  text: string,
+  token: string
+): Promise<"ok" | "capability_error"> {
+  try {
+    return await tryDirectDmOnFamily(
+      "facebook_graph_instagram_business",
+      igBusinessAccountId,
+      commenterId,
+      text,
+      token
+    );
+  } catch (facebookErr) {
+    if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
+    console.warn("[meta-api] facebook graph direct DM failed — trying instagram graph", {
+      endpointName: "ig_messages_direct_dm",
+      facebookGraphError: getSafeMetaError(facebookErr),
+    });
+    try {
+      return await tryDirectDmOnFamily(
+        "instagram_graph",
+        igBusinessAccountId,
+        commenterId,
+        text,
+        token
+      );
+    } catch (instagramErr) {
+      if (isCapabilityError(instagramErr)) return "capability_error";
+      throw instagramErr;
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -138,9 +237,11 @@ async function tryDirectDm(
  * Fallback: POST /{ig-business-account-id}/messages  { recipient: { id: commenterId } }
  *   → plain direct DM, used only when primary fails for a non-capability reason.
  *
- * On Meta error code=3 ("Application does not have the capability") from either
- * attempt, returns { ok: false, reason: "dm_capability_missing" } immediately
- * without further retries — the same permission is required for both endpoints.
+ * Host compatibility:
+ * - Legacy Facebook Login/Page tokens use graph.facebook.com.
+ * - New Instagram Login tokens use graph.instagram.com.
+ * The sender tries the legacy host first, then falls back to Instagram Graph on
+ * token/host/capability-shaped errors so both integration paths can coexist.
  *
  * Never logs the token.
  */
@@ -166,7 +267,7 @@ export async function sendInstagramCommentPrivateReply(params: {
     console.warn("[meta-api] dm_capability_missing on private reply — skipping fallback", {
       endpointName: "ig_messages_private_reply",
       requiredCapabilityHint:
-        "instagram_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
+        "instagram_manage_messages or instagram_business_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
     });
     return {
       ok: false,
@@ -193,7 +294,7 @@ export async function sendInstagramCommentPrivateReply(params: {
       console.warn("[meta-api] dm_capability_missing on direct DM fallback", {
         endpointName: "ig_messages_direct_dm",
         requiredCapabilityHint:
-          "instagram_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
+          "instagram_manage_messages or instagram_business_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
       });
       return {
         ok: false,
