@@ -19,9 +19,9 @@ const INSTAGRAM_BUSINESS_SCOPES = [
 
 export type InstagramLoginProfile = {
   id: string;
-  username: string | undefined;
-  profilePictureUrl: string | undefined;
-  accountType: string | undefined;
+  username?: string;
+  profilePictureUrl?: string;
+  accountType?: string;
 };
 
 export type InstagramLoginTokenResult = {
@@ -82,7 +82,10 @@ export function getInstagramLoginOAuthUrl() {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", scopes.join(","));
-  url.searchParams.set("force_reauth", "true");
+  // Keep the user in the Instagram professional-account authorization path.
+  // Without this, Meta can intermittently bounce users into Facebook login.
+  url.searchParams.set("enable_fb_login", "0");
+  url.searchParams.set("force_authentication", "1");
 
   return url.toString();
 }
