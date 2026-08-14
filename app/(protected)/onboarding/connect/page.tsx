@@ -3,10 +3,12 @@ import IntegrationCard from "@/app/(protected)/dashboard/[slug]/integrations/_co
 import { onUserInfo } from "@/actions/user";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
+import { isInstagramLoginEnabled } from "@/lib/instagram-login";
 import Link from "next/link";
 
 export default async function OnboardingConnectPage() {
   const appReviewMode = isAppReviewMode();
+  const directInstagramLogin = isInstagramLoginEnabled();
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const instagram = getCanonicalInstagramIntegration(user?.integrations);
@@ -14,14 +16,16 @@ export default async function OnboardingConnectPage() {
 
   return (
     <div>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-extrabold tracking-tight mb-2">
+      <div className="mb-8 text-center">
+        <h1 className="mb-2 text-2xl font-extrabold tracking-tight">
           {connected ? "Instagram connected" : "Connect your Instagram"}
         </h1>
-        <p className="mx-auto max-w-xl text-sm text-slate-600 leading-relaxed dark:text-rf-muted">
+        <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
           {connected
             ? "AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account."
-            : "AP3k connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."}
+            : directInstagramLogin
+              ? "Connect your Instagram Business or Creator account directly. No Facebook Page selection or developer dashboard step is required."
+              : "AP3k connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."}
         </p>
       </div>
 
@@ -49,7 +53,7 @@ export default async function OnboardingConnectPage() {
               </Link>
               <Link
                 href="/dashboard"
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.04] dark:text-rf-muted dark:hover:bg-white/[0.08] dark:hover:text-rf-text"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.04] dark:text-rf-muted dark:hover:bg-white/[0.08] dark:hover:text-rf-text"
               >
                 Explore dashboard
               </Link>
@@ -59,7 +63,14 @@ export default async function OnboardingConnectPage() {
       ) : (
         <div className="mx-auto mb-4 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-rf-border dark:bg-[#0f172a]/70 sm:p-6">
           {INTEGRATION_CARDS.map((card, i) => (
-            <IntegrationCard key={i} {...card} surface="onboarding" continueHref="/onboarding/complete" canonicalConnected={false} />
+            <IntegrationCard
+              key={i}
+              {...card}
+              surface="onboarding"
+              continueHref="/onboarding/complete"
+              canonicalConnected={false}
+              directInstagramLogin={directInstagramLogin}
+            />
           ))}
         </div>
       )}
@@ -67,8 +78,8 @@ export default async function OnboardingConnectPage() {
       <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 dark:border-rf-border dark:bg-white/[0.06] dark:text-rf-muted">
         <p className="font-bold text-slate-900 dark:text-rf-text">Safe connection notes</p>
         <p className="mt-2">
-          {appReviewMode
-            ? "We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, and comments because Instagram Business accounts are managed through Meta Pages."
+          {directInstagramLogin
+            ? "We never ask for your Instagram password inside AP3k and we do not scrape your account. The connection happens through Instagram's official authorization screen and AP3k uses official Instagram APIs."
             : "We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, and comments because Instagram Business accounts are managed through Meta Pages."}
         </p>
         {!appReviewMode && (
@@ -79,7 +90,7 @@ export default async function OnboardingConnectPage() {
       {!appReviewMode && (
         <Link
           href="/onboarding/complete"
-          className="block mt-6 text-center text-xs text-slate-500 hover:text-slate-950 transition-colors dark:text-rf-muted dark:hover:text-rf-text"
+          className="mt-6 block text-center text-xs text-slate-500 transition-colors hover:text-slate-950 dark:text-rf-muted dark:hover:text-rf-text"
         >
           Already connected? Continue →
         </Link>
