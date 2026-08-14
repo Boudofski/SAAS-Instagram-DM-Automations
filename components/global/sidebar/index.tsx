@@ -31,7 +31,6 @@ export default function Sidebar({ slug }: Props) {
 
   return (
     <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-[260px] flex-col border-r border-slate-200 bg-white/92 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#0b1020]/92 dark:text-slate-50 lg:flex">
-      {/* Logo */}
       <div className="border-b border-slate-200 px-5 py-5 dark:border-white/10">
         <AP3kLogo className="text-sm text-slate-950 dark:text-white" />
         <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/[0.12] dark:bg-white/[0.06]">
@@ -63,15 +62,14 @@ export default function Sidebar({ slug }: Props) {
                   : "Not connected"}
               </p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {instagram ? "Official Meta connection" : "Connect to start"}
+                {instagram ? "Instagram connected" : "Connect to start"}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
+      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         {PRIMARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
           const href = primaryNavigationHref(slug, item.segment);
@@ -97,14 +95,13 @@ export default function Sidebar({ slug }: Props) {
         })}
       </nav>
 
-      {/* Upgrade card — Free tier only */}
       <SubscriptionPlan type="FREE">
         <div className="px-3 pb-4">
           <div className="relative overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4 dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
             <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
             <p className="relative mb-1 text-xs font-black text-slate-950 dark:text-white">Upgrade to Creator</p>
             <p className="mb-3 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-              {appReviewMode ? "Unlock more public replies and campaigns" : "Unlock AI replies & unlimited campaigns"}
+              {appReviewMode ? "Unlock more replies and campaigns" : "Unlock higher reply volume and unlimited campaigns"}
             </p>
             <Link
               href="/payment"
