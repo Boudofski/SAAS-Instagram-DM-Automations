@@ -1,9 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ExternalLink, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Search } from "lucide-react";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type InstagramPost = {
   id: string;
@@ -21,8 +21,11 @@ type Props = {
   onSelect: (post: InstagramPost) => void;
 };
 
+const POSTS_PER_PAGE = 14;
+
 export default function PostPicker({ posts, selected, onSelect }: Props) {
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return posts;
@@ -30,6 +33,19 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
       `${post.caption ?? ""} ${post.id}`.toLowerCase().includes(needle)
     );
   }, [posts, query]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / POSTS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const start = (currentPage - 1) * POSTS_PER_PAGE;
+  const pagedPosts = filtered.slice(start, start + POSTS_PER_PAGE);
+  const pageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, posts]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   if (posts.length === 0) {
     return (
@@ -50,8 +66,18 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
           className="ap3k-input w-full rounded-xl py-2.5 pl-9 pr-3 text-sm"
         />
       </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          Showing {filtered.length === 0 ? 0 : start + 1}-{Math.min(start + POSTS_PER_PAGE, filtered.length)} of {filtered.length} media
+        </span>
+        <span className="font-semibold text-slate-700 dark:text-slate-200">
+          Page {currentPage} of {totalPages} · 14 posts per page
+        </span>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
-      {filtered.map((post) => {
+      {pagedPosts.map((post) => {
         const isSelected = selected === post.id;
         const thumb =
           post.media_type === "VIDEO"
@@ -120,8 +146,60 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
           No posts match your search.
         </div>
       )}
+
+      {filtered.length > POSTS_PER_PAGE && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+            disabled={currentPage <= 1}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Previous
+          </button>
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {pageNumbers.map((item, index) => item === "…" ? (
+              <span key={`ellipsis-${index}`} className="px-1 text-xs text-slate-500">…</span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setPage(item)}
+                className={cn(
+                  "h-8 min-w-8 rounded-lg px-2 text-xs font-black transition-colors",
+                  currentPage === item
+                    ? "bg-rf-blue text-white shadow-[0_0_0_3px_rgba(59,130,246,0.18)]"
+                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+                )}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            disabled={currentPage >= totalPages}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+          >
+            Next <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
+}
+
+function getVisiblePageNumbers(currentPage: number, totalPages: number) {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pages: Array<number | "…"> = [1];
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+  if (start > 2) pages.push("…");
+  for (let page = start; page <= end; page += 1) pages.push(page);
+  if (end < totalPages - 1) pages.push("…");
+  pages.push(totalPages);
+  return pages;
 }
 
 function formatPostDate(value?: string) {
