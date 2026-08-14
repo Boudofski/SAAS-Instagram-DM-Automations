@@ -25,7 +25,12 @@ type AutomationTableProps = {
   pageSize?: number;
 };
 
-export default function AutomationTable({ slug, automations, showControls = true, pageSize = 14 }: AutomationTableProps) {
+export default function AutomationTable({
+  slug,
+  automations,
+  showControls = true,
+  pageSize = 14,
+}: AutomationTableProps) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"newest" | "active" | "name">("newest");
   const [page, setPage] = useState(1);
@@ -79,10 +84,10 @@ export default function AutomationTable({ slug, automations, showControls = true
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card">
+    <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card">
       {showControls && (
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -90,7 +95,7 @@ export default function AutomationTable({ slug, automations, showControls = true
               className="ap3k-input h-11 rounded-2xl pr-4"
             />
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as "newest" | "active" | "name")}
@@ -127,18 +132,28 @@ export default function AutomationTable({ slug, automations, showControls = true
         )}
       </div>
 
-      <div className="hidden overflow-x-auto md:block xl:overflow-x-visible">
-        <table className="w-full table-fixed text-left">
+      <div className="hidden max-w-full overflow-x-auto md:block">
+        <table className="w-full min-w-[980px] table-fixed text-left">
+          <colgroup>
+            <col className="w-[28%]" />
+            <col className="w-[7%]" />
+            <col className="w-[16%]" />
+            <col className="w-[7%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[9%]" />
+            <col className="w-[21%]" />
+          </colgroup>
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
             <tr>
-              <th className="w-[32%] px-4 py-3">Campaign</th>
-              <th className="w-[9%] px-2 py-3">Post</th>
-              <th className="w-[18%] px-2 py-3">Trigger</th>
-              <th className="w-[9%] px-2 py-3">{messagingReviewMode ? "Replies" : appReviewMode ? "Reply" : "Mode"}</th>
-              <th className="w-[7%] px-2 py-3">Runs</th>
-              <th className="w-[7%] px-2 py-3">Leads</th>
-              <th className="w-[9%] px-2 py-3">Status</th>
-              <th className="w-[9%] px-3 py-3 text-right">Actions</th>
+              <th className="px-4 py-3">Campaign</th>
+              <th className="px-2 py-3">Post</th>
+              <th className="px-2 py-3">Trigger</th>
+              <th className="px-2 py-3">{messagingReviewMode ? "Replies" : appReviewMode ? "Reply" : "Mode"}</th>
+              <th className="px-2 py-3">Runs</th>
+              <th className="px-2 py-3">Leads</th>
+              <th className="px-2 py-3">Status</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/10">
@@ -230,7 +245,7 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
       <td className="px-4 py-4">
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
               {automation.name || "Untitled campaign"}
             </Link>
@@ -241,7 +256,7 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
       </td>
       <td className="px-2 py-4"><span className="ap3k-badge ap3k-badge-slate">{isAny ? "Any" : post?.postid ? "Specific" : "Manual"}</span></td>
       <td className="px-2 py-4">
-        <div className="flex max-w-[170px] flex-wrap gap-1">
+        <div className="flex max-w-[150px] flex-wrap gap-1">
           {isAnyComment ? (
             <span className="ap3k-badge ap3k-badge-blue">Any comment</span>
           ) : (automation.keywords ?? []).slice(0, 2).map((keyword: any) => (
@@ -254,17 +269,17 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
       <td className="px-2 py-3.5 font-black text-slate-950 dark:text-white">{runs}</td>
       <td className="px-2 py-3.5 font-black text-slate-950 dark:text-white">{leads}</td>
       <td className="px-2 py-4"><StatusPill status={status} /></td>
-      <td className="px-3 py-4 text-right">
-        <div className="inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
-          <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="rounded-[9px] px-2 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
-            {automation.needsReview || automation.stalePost ? "Review" : "Edit"}
+      <td className="px-4 py-4 text-right">
+        <div className="ml-auto flex w-full min-w-[170px] max-w-[220px] items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
+          <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
+            Edit
           </Link>
-          <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="rounded-[9px] px-2 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
-            {automation.active ? "Pause" : "Activate"}
+          <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
+            {automation.active ? "Pause" : "Start"}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300" aria-label="More actions">
+              <button type="button" className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300" aria-label="More actions">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
@@ -394,8 +409,7 @@ function CampaignBadges({
     automation.stalePost ? { label: "Review post", tone: "amber" } : null,
     automation.needsReview ? { label: "Needs review", tone: "red" } : null,
     replyBadge,
-    !appReviewMode ? (automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : { label: "AP3k DM", tone: "green" }) : null,
-    !appReviewMode ? { label: hasPublicReply ? "Public reply on" : "Public reply off", tone: hasPublicReply ? "blue" : "slate" } : null,
+    !appReviewMode ? (automation.sendPrivateDm === false ? { label: "External DM", tone: "amber" } : null) : null,
   ].filter(Boolean) as { label: string; tone: string }[];
 
   const toneMap: Record<string, string> = {
