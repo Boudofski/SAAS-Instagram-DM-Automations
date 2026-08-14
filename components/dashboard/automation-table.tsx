@@ -27,6 +27,7 @@ type AutomationTableProps = {
 
 type ReplySummary = {
   label: string;
+  compactLabel: string;
   tone: "green" | "amber" | "slate";
 };
 
@@ -91,7 +92,7 @@ export default function AutomationTable({
   return (
     <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card">
       {showControls && (
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 xl:flex-row xl:items-center">
           <div className="relative min-w-0 flex-1">
             <Input
               value={query}
@@ -117,7 +118,7 @@ export default function AutomationTable({
         </div>
       )}
 
-      <div className="grid gap-3 p-3 lg:hidden">
+      <div className="grid gap-3 p-3 xl:hidden">
         {paged.length === 0 ? (
           <EmptyRows />
         ) : (
@@ -137,52 +138,36 @@ export default function AutomationTable({
         )}
       </div>
 
-      <div className="hidden max-w-full overflow-x-auto lg:block">
-        <table className="w-full min-w-[1040px] table-fixed text-left">
-          <colgroup>
-            <col className="w-[34%]" />
-            <col className="w-[8%]" />
-            <col className="w-[16%]" />
-            <col className="w-[12%]" />
-            <col className="w-[6%]" />
-            <col className="w-[6%]" />
-            <col className="w-[8%]" />
-            <col className="w-[10%]" />
-          </colgroup>
-          <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
-            <tr>
-              <th className="px-4 py-3">Campaign</th>
-              <th className="px-2 py-3">Post</th>
-              <th className="px-2 py-3">Trigger</th>
-              <th className="px-2 py-3">Replies</th>
-              <th className="px-2 py-3">Runs</th>
-              <th className="px-2 py-3">Leads</th>
-              <th className="px-2 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/10">
-            {paged.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-10"><EmptyRows /></td>
-              </tr>
-            ) : (
-              paged.map((automation) => (
-                <CampaignTableRow
-                  key={automation.id}
-                  slug={slug}
-                  automation={automation}
-                  appReviewMode={appReviewMode}
-                  messagingReviewMode={messagingReviewMode}
-                  isPending={isPending}
-                  onActivate={handleActivate}
-                  onDuplicate={handleDuplicate}
-                  onDelete={handleDelete}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="hidden xl:block">
+        <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(132px,.75fr)] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
+          <span>Campaign</span>
+          <span>Post</span>
+          <span>Trigger</span>
+          <span>Replies</span>
+          <span>Runs</span>
+          <span>Leads</span>
+          <span>Status</span>
+          <span className="text-right">Actions</span>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-white/10">
+          {paged.length === 0 ? (
+            <div className="p-4"><EmptyRows /></div>
+          ) : (
+            paged.map((automation) => (
+              <CampaignDesktopRow
+                key={automation.id}
+                slug={slug}
+                automation={automation}
+                appReviewMode={appReviewMode}
+                messagingReviewMode={messagingReviewMode}
+                isPending={isPending}
+                onActivate={handleActivate}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       {filtered.length > pageSize && (
@@ -241,7 +226,7 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
   );
 }
 
-function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode, isPending, onActivate, onDuplicate, onDelete }: any) {
+function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMode, isPending, onActivate, onDuplicate, onDelete }: any) {
   const post = automation.posts?.[0];
   const isAny = post?.postid === "ANY";
   const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
@@ -252,42 +237,41 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
   const replySummary = getReplySummary(automation);
 
   return (
-    <tr className="text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
-      <td className="px-4 py-3">
+    <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(132px,.75fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
+      <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} />
           <div className="min-w-0 flex-1">
             <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
               {automation.name || "Untitled campaign"}
             </Link>
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <span className="truncate">{mode.full}</span>
               {automation.currentAccountLabel && (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 dark:bg-white/[0.07] dark:text-slate-400">
+                <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 dark:bg-white/[0.07] dark:text-slate-400 2xl:inline-flex">
                   {automation.currentAccountLabel}
                 </span>
               )}
             </div>
           </div>
         </div>
-      </td>
-      <td className="px-2 py-3"><span className="ap3k-badge ap3k-badge-slate">{isAny ? "Any" : post?.postid ? "Specific" : "Manual"}</span></td>
-      <td className="px-2 py-3">
-        <div className="flex max-w-[150px] flex-wrap gap-1">
-          {isAnyComment ? (
-            <span className="ap3k-badge ap3k-badge-blue">Any comment</span>
-          ) : (automation.keywords ?? []).slice(0, 2).map((keyword: any) => (
-            <span key={keyword.id ?? keyword.word} className="ap3k-badge ap3k-badge-pink">{formatKeywordDisplay(String(keyword.word ?? ""), appReviewMode)}</span>
-          ))}
-          {!isAnyComment && (automation.keywords ?? []).length > 2 && <span className="ap3k-badge ap3k-badge-slate">+{(automation.keywords ?? []).length - 2}</span>}
-        </div>
-      </td>
-      <td className="px-2 py-3"><ReplyPill summary={replySummary} /></td>
-      <td className="px-2 py-3 font-black text-slate-950 dark:text-white">{runs}</td>
-      <td className="px-2 py-3 font-black text-slate-950 dark:text-white">{leads}</td>
-      <td className="px-2 py-3"><StatusPill status={status} /></td>
-      <td className="px-4 py-3 text-right">
-        <div className="ml-auto inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
+      </div>
+      <div className="min-w-0"><span className="ap3k-badge ap3k-badge-slate">{isAny ? "Any" : post?.postid ? "Specific" : "Manual"}</span></div>
+      <div className="min-w-0">
+        {isAnyComment ? (
+          <span className="ap3k-badge ap3k-badge-blue">Any</span>
+        ) : (automation.keywords ?? []).length ? (
+          <span className="ap3k-badge ap3k-badge-pink">{formatKeywordDisplay(String((automation.keywords ?? [])[0]?.word ?? ""), appReviewMode)}</span>
+        ) : (
+          <span className="ap3k-badge ap3k-badge-slate">No trigger</span>
+        )}
+      </div>
+      <div className="min-w-0"><ReplyPill summary={replySummary} compact /></div>
+      <div className="font-black text-slate-950 dark:text-white">{runs}</div>
+      <div className="font-black text-slate-950 dark:text-white">{leads}</div>
+      <div className="min-w-0"><StatusPill status={status} /></div>
+      <div className="flex justify-end">
+        <div className="inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
           <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
             Edit
           </Link>
@@ -308,8 +292,8 @@ function CampaignTableRow({ slug, automation, appReviewMode, messagingReviewMode
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -387,19 +371,19 @@ function getReplySummary(automation: any): ReplySummary {
   const hasPrivateReply = automation.sendPrivateDm !== false && Boolean(automation.listener?.prompt);
   const activeTone = automation.active && !automation.needsReview ? "green" : "amber";
 
-  if (hasPublicReply && hasPrivateReply) return { label: "Public + Private", tone: activeTone };
-  if (hasPublicReply) return { label: "Public only", tone: activeTone };
-  if (hasPrivateReply) return { label: "Private only", tone: activeTone };
-  return { label: "Not set", tone: "slate" };
+  if (hasPublicReply && hasPrivateReply) return { label: "Public + Private", compactLabel: "Both", tone: activeTone };
+  if (hasPublicReply) return { label: "Public only", compactLabel: "Public", tone: activeTone };
+  if (hasPrivateReply) return { label: "Private only", compactLabel: "Private", tone: activeTone };
+  return { label: "Not set", compactLabel: "Off", tone: "slate" };
 }
 
-function ReplyPill({ summary }: { summary: ReplySummary }) {
+function ReplyPill({ summary, compact = false }: { summary: ReplySummary; compact?: boolean }) {
   const toneClass = summary.tone === "green"
     ? "ap3k-badge-green"
     : summary.tone === "amber"
       ? "ap3k-badge-amber"
       : "ap3k-badge-slate";
-  return <span className={`ap3k-badge whitespace-nowrap ${toneClass}`}>{summary.label}</span>;
+  return <span title={summary.label} className={`ap3k-badge whitespace-nowrap ${toneClass}`}>{compact ? summary.compactLabel : summary.label}</span>;
 }
 
 function StatMini({ label, value }: { label: string; value: number }) {
