@@ -1,5 +1,5 @@
 import axios from "axios";
-import { META_GRAPH_API_BASE_URL, getSafeMetaError } from "@/lib/fetch";
+import { getSafeMetaError } from "@/lib/fetch";
 
 export const INSTAGRAM_GRAPH_BASE_URL =
   process.env.INSTAGRAM_GRAPH_BASE_URL ?? "https://graph.instagram.com";
@@ -7,7 +7,6 @@ export const INSTAGRAM_GRAPH_VERSION =
   process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
 export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 
-type MessageApiFamily = "facebook_graph_instagram_business" | "instagram_graph";
 type CtaMode = "button_template" | "text_link_fallback" | "none";
 
 type InstagramMessagePayload =
@@ -26,10 +25,6 @@ type InstagramMessagePayload =
         };
       };
     };
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export type SafeMetaApiError = {
   status?: number;
@@ -54,10 +49,6 @@ export type PrivateReplyResult =
       ctaMode: CtaMode;
     };
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function extractFbtraceId(error: unknown): string | undefined {
   if (!axios.isAxiosError(error)) return undefined;
   const raw = error.response?.data as any;
@@ -80,22 +71,6 @@ function isCapabilityError(error: unknown): boolean {
   return getSafeMetaError(error).code === 3;
 }
 
-function shouldTryInstagramGraph(error: unknown): boolean {
-  const safe = getSafeMetaError(error);
-  return Boolean(
-    safe.status === 400 ||
-    safe.status === 401 ||
-    safe.status === 403 ||
-    safe.status === 404 ||
-    safe.code === 3 ||
-    safe.code === 10 ||
-    safe.code === 100 ||
-    safe.code === 190 ||
-    safe.type === "IGApiException" ||
-    safe.type === "OAuthException"
-  );
-}
-
 function shouldTryTextFallback(error: unknown): boolean {
   const safe = getSafeMetaError(error);
   const message = (safe.message ?? "").toLowerCase();
@@ -106,12 +81,6 @@ function shouldTryTextFallback(error: unknown): boolean {
     message.includes("button") ||
     message.includes("template")
   );
-}
-
-function messageBaseUrl(apiFamily: MessageApiFamily) {
-  return apiFamily === "instagram_graph"
-    ? INSTAGRAM_GRAPH_API_BASE_URL
-    : META_GRAPH_API_BASE_URL;
 }
 
 function normalizeCtaUrl(value?: string | null) {
@@ -129,7 +98,6 @@ function normalizeCtaUrl(value?: string | null) {
 
 function normalizeButtonTitle(value?: string | null) {
   const title = value?.trim() || "Open link";
-  // Meta buttons have strict length limits. Keep this short to avoid invalid payloads.
   return Array.from(title).slice(0, 20).join("");
 }
 
@@ -182,55 +150,36 @@ function buildTextFallbackPayload(
   return { message: { text: text + suffix }, ctaMode: "text_link_fallback" };
 }
 
-// ---------------------------------------------------------------------------
-// Senders
-// ---------------------------------------------------------------------------
-
-async function tryPrivateReplyOnFamily(
-  apiFamily: MessageApiFamily,
+async function postInstagramMessage(
   igBusinessAccountId: string,
-  commentId: string,
-  message: InstagramMessagePayload,
-  token: string
+  body: unknown,
+  token: string,
+  log: {
+    endpointName: "ig_messages_private_reply" | "ig_messages_direct_dm";
+    hasCommentId?: boolean;
+    hasCommenterId?: boolean;
+    message: InstagramMessagePayload;
+  }
 ): Promise<"ok" | "capability_error"> {
-  const url = `${messageBaseUrl(apiFamily)}/${igBusinessAccountId}/messages`;
-  console.log("[meta-api] send private reply request", {
-    endpointFamily: apiFamily,
-    endpointName: "ig_messages_private_reply",
+  console.log("[meta-api] send Instagram Graph message request", {
+    endpointFamily: "instagram_graph",
+    endpointName: log.endpointName,
     hasIgBusinessAccountId: Boolean(igBusinessAccountId),
-    hasCommentId: Boolean(commentId),
-    messageShape: "attachment" in message ? "button_template" : "text",
+    hasCommentId: log.hasCommentId,
+    hasCommenterId: log.hasCommenterId,
+    messageShape: "attachment" in log.message ? "button_template" : "text",
   });
+
   try {
     await axios.post(
-      url,
-      { recipient: { comment_id: commentId }, message },
+      `${INSTAGRAM_GRAPH_API_BASE_URL}/${igBusinessAccountId}/messages`,
+      body,
       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
     );
     return "ok";
   } catch (err) {
     if (isCapabilityError(err)) return "capability_error";
     throw err;
-  }
-}
-
-async function tryPrivateReplyOnInstagramGraph(
-  igBusinessAccountId: string,
-  commentId: string,
-  message: InstagramMessagePayload,
-  token: string
-): Promise<"ok" | "capability_error"> {
-  try {
-    return await tryPrivateReplyOnFamily(
-      "instagram_graph",
-      igBusinessAccountId,
-      commentId,
-      message,
-      token
-    );
-  } catch (instagramErr) {
-    if (isCapabilityError(instagramErr)) return "capability_error";
-    throw instagramErr;
   }
 }
 
@@ -240,84 +189,16 @@ async function tryPrivateReply(
   message: InstagramMessagePayload,
   token: string
 ): Promise<"ok" | "capability_error"> {
-  try {
-    const facebookResult = await tryPrivateReplyOnFamily(
-      "facebook_graph_instagram_business",
-      igBusinessAccountId,
-      commentId,
-      message,
-      token
-    );
-
-    if (facebookResult === "ok") return "ok";
-
-    // Facebook Graph can return code=3 for Instagram Login tokens or for apps whose
-    // messaging capability is available only on graph.instagram.com. Do not stop here;
-    // try the Instagram Graph host before classifying the send as impossible.
-    console.warn("[meta-api] facebook graph private reply capability missing — trying instagram graph", {
+  return await postInstagramMessage(
+    igBusinessAccountId,
+    { recipient: { comment_id: commentId }, message },
+    token,
+    {
       endpointName: "ig_messages_private_reply",
-      facebookGraphError: {
-        code: 3,
-        message: "(#3) Application does not have the capability to make this API call",
-      },
-    });
-    return await tryPrivateReplyOnInstagramGraph(igBusinessAccountId, commentId, message, token);
-  } catch (facebookErr) {
-    if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
-    console.warn("[meta-api] facebook graph private reply failed — trying instagram graph", {
-      endpointName: "ig_messages_private_reply",
-      facebookGraphError: getSafeMetaError(facebookErr),
-    });
-    return await tryPrivateReplyOnInstagramGraph(igBusinessAccountId, commentId, message, token);
-  }
-}
-
-async function tryDirectDmOnFamily(
-  apiFamily: MessageApiFamily,
-  igBusinessAccountId: string,
-  commenterId: string,
-  message: InstagramMessagePayload,
-  token: string
-): Promise<"ok" | "capability_error"> {
-  const url = `${messageBaseUrl(apiFamily)}/${igBusinessAccountId}/messages`;
-  console.log("[meta-api] send direct DM fallback request", {
-    endpointFamily: apiFamily,
-    endpointName: "ig_messages_direct_dm",
-    hasIgBusinessAccountId: Boolean(igBusinessAccountId),
-    hasCommenterId: Boolean(commenterId),
-    messageShape: "attachment" in message ? "button_template" : "text",
-  });
-  try {
-    await axios.post(
-      url,
-      { recipient: { id: commenterId }, message },
-      { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-    );
-    return "ok";
-  } catch (err) {
-    if (isCapabilityError(err)) return "capability_error";
-    throw err;
-  }
-}
-
-async function tryDirectDmOnInstagramGraph(
-  igBusinessAccountId: string,
-  commenterId: string,
-  message: InstagramMessagePayload,
-  token: string
-): Promise<"ok" | "capability_error"> {
-  try {
-    return await tryDirectDmOnFamily(
-      "instagram_graph",
-      igBusinessAccountId,
-      commenterId,
+      hasCommentId: Boolean(commentId),
       message,
-      token
-    );
-  } catch (instagramErr) {
-    if (isCapabilityError(instagramErr)) return "capability_error";
-    throw instagramErr;
-  }
+    }
+  );
 }
 
 async function tryDirectDm(
@@ -326,59 +207,21 @@ async function tryDirectDm(
   message: InstagramMessagePayload,
   token: string
 ): Promise<"ok" | "capability_error"> {
-  try {
-    const facebookResult = await tryDirectDmOnFamily(
-      "facebook_graph_instagram_business",
-      igBusinessAccountId,
-      commenterId,
+  return await postInstagramMessage(
+    igBusinessAccountId,
+    { recipient: { id: commenterId }, message },
+    token,
+    {
+      endpointName: "ig_messages_direct_dm",
+      hasCommenterId: Boolean(commenterId),
       message,
-      token
-    );
-
-    if (facebookResult === "ok") return "ok";
-
-    console.warn("[meta-api] facebook graph direct DM capability missing — trying instagram graph", {
-      endpointName: "ig_messages_direct_dm",
-      facebookGraphError: {
-        code: 3,
-        message: "(#3) Application does not have the capability to make this API call",
-      },
-    });
-    return await tryDirectDmOnInstagramGraph(igBusinessAccountId, commenterId, message, token);
-  } catch (facebookErr) {
-    if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
-    console.warn("[meta-api] facebook graph direct DM failed — trying instagram graph", {
-      endpointName: "ig_messages_direct_dm",
-      facebookGraphError: getSafeMetaError(facebookErr),
-    });
-    return await tryDirectDmOnInstagramGraph(igBusinessAccountId, commenterId, message, token);
-  }
+    }
+  );
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /**
- * Sends an Instagram private reply to a comment.
- *
- * Primary:  POST /{ig-business-account-id}/messages  { recipient: { comment_id } }
- *   → links DM visibly to the comment in-thread.
- *
- * Fallback: POST /{ig-business-account-id}/messages  { recipient: { id: commenterId } }
- *   → plain direct DM, used only when primary fails for a non-capability reason.
- *
- * CTA behavior:
- * - If a CTA URL is configured, AP3k first sends a real Instagram button template.
- * - Only if Meta rejects that template does AP3k fall back to text + link.
- *
- * Host compatibility:
- * - Legacy Facebook Login/Page tokens use graph.facebook.com.
- * - New Instagram Login tokens use graph.instagram.com.
- * The sender tries the legacy host first, then falls back to Instagram Graph on
- * token/host/capability-shaped errors so both integration paths can coexist.
- *
- * Never logs the token.
+ * Sends an Instagram private reply to a comment through Instagram Graph only.
+ * AP3k no longer tries Facebook Graph for the user-facing Instagram Login flow.
  */
 export async function sendInstagramCommentPrivateReply(params: {
   token: string;
@@ -393,36 +236,23 @@ export async function sendInstagramCommentPrivateReply(params: {
   const preferred = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl);
   const textFallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl);
 
-  // ── Primary: private reply linked to the comment ──────────────────────────
   try {
     const primary = await tryPrivateReply(igBusinessAccountId, commentId, preferred.message, token);
     if (primary === "ok") {
       return { ok: true, endpoint: "ig_messages_private_reply", ctaMode: preferred.ctaMode };
     }
-    // code=3 after both Facebook Graph and Instagram Graph — same permission guards
-    // the fallback; skip it only after both hosts were tried.
-    console.warn("[meta-api] dm_capability_missing on private reply — skipping fallback", {
-      endpointName: "ig_messages_private_reply",
-      requiredCapabilityHint:
-        "instagram_manage_messages or instagram_business_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
-    });
-    return {
-      ok: false,
-      reason: "dm_capability_missing",
-      endpoint: "ig_messages_private_reply",
-      metaError: { code: 3, message: "(#3) Application does not have the capability to make this API call" },
-      ctaMode: preferred.ctaMode,
-    };
+    return capabilityMissing("ig_messages_private_reply", preferred.ctaMode);
   } catch (primaryErr) {
     const primaryMeta = buildMetaError(primaryErr);
 
     if (preferred.ctaMode === "button_template" && shouldTryTextFallback(primaryErr)) {
-      console.warn("[meta-api] private reply button template failed — trying text fallback", {
+      console.warn("[meta-api] Instagram Graph private reply button template failed — trying text fallback", {
         endpointName: "ig_messages_private_reply",
         status: primaryMeta.status,
         code: primaryMeta.code,
         type: primaryMeta.type,
       });
+
       try {
         const primaryTextFallback = await tryPrivateReply(
           igBusinessAccountId,
@@ -433,52 +263,30 @@ export async function sendInstagramCommentPrivateReply(params: {
         if (primaryTextFallback === "ok") {
           return { ok: true, endpoint: "ig_messages_private_reply", ctaMode: textFallback.ctaMode };
         }
-        return {
-          ok: false,
-          reason: "dm_capability_missing",
-          endpoint: "ig_messages_private_reply",
-          metaError: { code: 3, message: "(#3) Application does not have the capability to make this API call" },
-          ctaMode: textFallback.ctaMode,
-        };
+        return capabilityMissing("ig_messages_private_reply", textFallback.ctaMode);
       } catch (textFallbackErr) {
-        const textFallbackMeta = buildMetaError(textFallbackErr);
-        console.warn("[meta-api] private reply text fallback failed — trying direct DM fallback", {
+        console.warn("[meta-api] Instagram Graph private reply text fallback failed — trying direct DM fallback", {
           endpointName: "ig_messages_private_reply",
-          status: textFallbackMeta.status,
-          code: textFallbackMeta.code,
-          type: textFallbackMeta.type,
+          error: getSafeMetaError(textFallbackErr),
         });
       }
     } else {
-      console.warn("[meta-api] private reply failed — trying direct DM fallback", {
+      console.warn("[meta-api] Instagram Graph private reply failed — trying direct DM fallback", {
         endpointName: "ig_messages_private_reply",
         status: primaryMeta.status,
         code: primaryMeta.code,
       });
     }
 
-    // ── Fallback: direct DM ───────────────────────────────────────────────
     try {
       const fallback = await tryDirectDm(igBusinessAccountId, commenterId, preferred.message, token);
       if (fallback === "ok") {
         return { ok: true, endpoint: "ig_messages_direct_dm", ctaMode: preferred.ctaMode };
       }
-      // code=3 on fallback too
-      console.warn("[meta-api] dm_capability_missing on direct DM fallback", {
-        endpointName: "ig_messages_direct_dm",
-        requiredCapabilityHint:
-          "instagram_manage_messages or instagram_business_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
-      });
-      return {
-        ok: false,
-        reason: "dm_capability_missing",
-        endpoint: "ig_messages_direct_dm",
-        metaError: { code: 3, message: "(#3) Application does not have the capability to make this API call" },
-        ctaMode: preferred.ctaMode,
-      };
+      return capabilityMissing("ig_messages_direct_dm", preferred.ctaMode);
     } catch (fallbackErr) {
       if (preferred.ctaMode === "button_template" && shouldTryTextFallback(fallbackErr)) {
-        console.warn("[meta-api] direct DM button template failed — trying text fallback", {
+        console.warn("[meta-api] Instagram Graph direct DM button template failed — trying text fallback", {
           endpointName: "ig_messages_direct_dm",
           error: getSafeMetaError(fallbackErr),
         });
@@ -492,34 +300,42 @@ export async function sendInstagramCommentPrivateReply(params: {
           if (fallbackText === "ok") {
             return { ok: true, endpoint: "ig_messages_direct_dm", ctaMode: textFallback.ctaMode };
           }
+          return capabilityMissing("ig_messages_direct_dm", textFallback.ctaMode);
         } catch (fallbackTextErr) {
-          const fallbackTextMeta = buildMetaError(fallbackTextErr);
           return {
             ok: false,
             reason: "meta_api_error",
             endpoint: "ig_messages_direct_dm",
-            metaError: fallbackTextMeta,
+            metaError: buildMetaError(fallbackTextErr),
             ctaMode: textFallback.ctaMode,
           };
         }
       }
 
-      const fallbackMeta = buildMetaError(fallbackErr);
-      console.warn("[meta-api] direct DM fallback also failed", {
-        endpointName: "ig_messages_direct_dm",
-        status: fallbackMeta.status,
-        code: fallbackMeta.code,
-        type: fallbackMeta.type,
-      });
       return {
         ok: false,
         reason: "meta_api_error",
         endpoint: "ig_messages_direct_dm",
-        metaError: fallbackMeta,
+        metaError: buildMetaError(fallbackErr),
         ctaMode: preferred.ctaMode,
       };
     }
   }
+}
+
+function capabilityMissing(endpoint: string, ctaMode: CtaMode): PrivateReplyResult {
+  console.warn("[meta-api] dm_capability_missing on Instagram Graph", {
+    endpointName: endpoint,
+    requiredCapabilityHint:
+      "instagram_business_manage_messages must be enabled in Meta App Dashboard with Standard or Advanced Access",
+  });
+  return {
+    ok: false,
+    reason: "dm_capability_missing",
+    endpoint,
+    metaError: { code: 3, message: "(#3) Application does not have the capability to make this API call" },
+    ctaMode,
+  };
 }
 
 export function formatPrivateReplyError(result: PrivateReplyResult & { ok: false }): string {
