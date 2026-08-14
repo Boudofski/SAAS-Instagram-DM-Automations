@@ -64,17 +64,16 @@ export function useWizard(slug: string, automationId?: string) {
   const back = () => setStep((s) => Math.max(1, s - 1) as WizardStep);
   const goTo = (s: WizardStep) => setStep(s);
 
+  const hasPublicReply = [data.publicReply, data.publicReply2, data.publicReply3].some((reply) => reply.trim());
+
   const canAdvance = (): boolean => {
     if (step === 1) return !!data.post;
     if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
-    if (step === 3) return !data.sendPrivateDm || data.dmMessage.trim().length > 0;
-    if (step === 4) {
-      const replies = [data.publicReply, data.publicReply2, data.publicReply3];
-      if (!data.sendPrivateDm) {
-        return data.publicReplyEnabled && replies.some((reply) => reply.trim());
-      }
-      return canAdvancePublicReplyStep(data.publicReplyEnabled, replies);
+    if (step === 3) {
+      if (!data.sendPrivateDm) return data.publicReplyEnabled && hasPublicReply;
+      return canAdvancePublicReplyStep(data.publicReplyEnabled, [data.publicReply, data.publicReply2, data.publicReply3]);
     }
+    if (step === 4) return !data.sendPrivateDm || data.dmMessage.trim().length > 0;
     return true;
   };
 
@@ -87,11 +86,8 @@ export function useWizard(slug: string, automationId?: string) {
       setError("Add at least one keyword or switch the trigger to Any comment.");
       return;
     }
-    if (
-      !data.sendPrivateDm &&
-      (!data.publicReplyEnabled || ![data.publicReply, data.publicReply2, data.publicReply3].some((reply) => reply.trim()))
-    ) {
-      setError("Enable public reply or private DM before activating this campaign.");
+    if (!data.sendPrivateDm && (!data.publicReplyEnabled || !hasPublicReply)) {
+      setError("Enable public reply or private reply before activating this campaign.");
       return;
     }
 
