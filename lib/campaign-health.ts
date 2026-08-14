@@ -77,9 +77,6 @@ export function assessCampaignSetupHealth(input: CampaignHealthInput): CampaignH
     selectedPostOwner: input.selectedPostOwner,
   });
   if (selectedPostStatus === "stale") blockers.push("Selected post belongs to a different Instagram account.");
-  if (selectedPostStatus === "unknown" && postId !== "ANY") {
-    warnings.push("Post ownership unknown — use Any Post or choose a fresh current-account post after reconnect.");
-  }
   if (input.webhookStatus === "only_messaging_active") {
     warnings.push("Messaging webhooks are arriving, but comment delivery is not active yet.");
   } else if (input.webhookStatus === "no_delivery" || input.webhookStatus === "test_only") {
