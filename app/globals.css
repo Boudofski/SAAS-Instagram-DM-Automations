@@ -105,6 +105,10 @@
     background-attachment: fixed;
   }
 
+  body * {
+    min-width: 0;
+  }
+
   body::before {
     content: "";
     position: fixed;
@@ -180,11 +184,24 @@
   }
 
   .ap3k-review-row {
-    @apply flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#101827] dark:text-slate-50;
+    @apply flex w-full max-w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#101827] dark:text-slate-50;
+    min-inline-size: 0;
+    contain: inline-size;
   }
 
   .ap3k-review-row > * {
-    min-width: 0;
+    min-width: 0 !important;
+  }
+
+  .ap3k-review-row > span:nth-of-type(2),
+  .ap3k-review-row .truncate {
+    display: block !important;
+    flex: 1 1 0% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
   .ap3k-review-row span,
@@ -193,12 +210,18 @@
   }
 
   .ap3k-preview-card {
-    @apply min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-950 dark:border-white/10 dark:bg-[#101827] dark:text-slate-50;
+    @apply min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-950 dark:border-white/10 dark:bg-[#101827] dark:text-slate-50;
   }
 
   .ap3k-preview-card * {
     min-width: 0;
+    max-width: 100%;
     overflow-wrap: anywhere;
+  }
+
+  .ap3k-preview-card p {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ap3k-input:-webkit-autofill,
