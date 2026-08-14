@@ -1,7 +1,24 @@
+import { INSTAGRAM_GRAPH_API_BASE_URL, META_GRAPH_API_BASE_URL } from "@/lib/fetch";
+
 export type InstagramMediaIntegration = {
   token?: string | null;
   instagramId?: string | null;
+  igAccountSource?: string | null;
+  oauthResolutionDiagnostics?: unknown;
 };
+
+function diagnosticsLoginType(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const loginType = (value as { loginType?: unknown }).loginType;
+  return typeof loginType === "string" ? loginType : null;
+}
+
+function isDirectInstagramLoginIntegration(integration: InstagramMediaIntegration) {
+  return (
+    integration.igAccountSource === "instagram_login" ||
+    diagnosticsLoginType(integration.oauthResolutionDiagnostics) === "instagram_login"
+  );
+}
 
 export function resolveInstagramMediaConnection(
   integrations: InstagramMediaIntegration[] | undefined
@@ -11,16 +28,24 @@ export function resolveInstagramMediaConnection(
     return { ok: false as const, error: "Reconnect Instagram to load posts." };
   }
 
+  const directInstagramLogin = isDirectInstagramLoginIntegration(integration);
+
   return {
     ok: true as const,
     token: integration.token,
     instagramBusinessAccountId: integration.instagramId,
+    apiBaseUrl: directInstagramLogin ? INSTAGRAM_GRAPH_API_BASE_URL : META_GRAPH_API_BASE_URL,
+    apiFamily: directInstagramLogin ? "instagram_graph" : "facebook_graph_instagram_business",
   };
 }
 
 export function instagramMediaFetchError(status: number) {
   if (status === 401 || status === 403) {
-    return "AP3k could not load posts. Check Instagram connection and permissions.";
+    return "AP3k could not load posts. Reconnect Instagram and confirm media permissions are granted.";
+  }
+
+  if (status === 400) {
+    return "AP3k could not load posts from this Instagram connection. Reconnect Instagram, then refresh posts.";
   }
 
   return "AP3k could not load posts right now.";
