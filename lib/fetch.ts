@@ -4,6 +4,11 @@ export const META_GRAPH_BASE_URL =
   process.env.META_GRAPH_BASE_URL ?? "https://graph.facebook.com";
 export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION ?? "v25.0";
 export const META_GRAPH_API_BASE_URL = `${META_GRAPH_BASE_URL}/${META_GRAPH_VERSION}`;
+export const INSTAGRAM_GRAPH_BASE_URL =
+  process.env.INSTAGRAM_GRAPH_BASE_URL ?? "https://graph.instagram.com";
+export const INSTAGRAM_GRAPH_VERSION =
+  process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
+export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 
 export function getSafeMetaError(error: unknown) {
   if (axios.isAxiosError(error)) {
@@ -38,6 +43,57 @@ export function formatSafeMetaError(error: unknown) {
     .join(" ");
 }
 
+function graphHeaders(token: string) {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+}
+
+function shouldTryInstagramGraph(error: unknown): boolean {
+  const safe = getSafeMetaError(error);
+  return Boolean(
+    safe.status === 400 ||
+    safe.status === 401 ||
+    safe.status === 403 ||
+    safe.status === 404 ||
+    safe.code === 3 ||
+    safe.code === 10 ||
+    safe.code === 100 ||
+    safe.code === 190 ||
+    safe.type === "IGApiException" ||
+    safe.type === "OAuthException"
+  );
+}
+
+async function postMetaWithInstagramGraphFallback(
+  path: string,
+  body: unknown,
+  token: string,
+  context: {
+    endpointName: string;
+    legacyEndpointFamily: string;
+    instagramEndpointFamily?: string;
+  }
+) {
+  try {
+    return await axios.post(`${META_GRAPH_API_BASE_URL}/${path}`, body, {
+      headers: graphHeaders(token),
+    });
+  } catch (facebookErr) {
+    if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
+    console.warn("[meta-api] facebook graph request failed — trying instagram graph", {
+      endpointName: context.endpointName,
+      legacyEndpointFamily: context.legacyEndpointFamily,
+      instagramEndpointFamily: context.instagramEndpointFamily ?? "instagram_graph",
+      facebookGraphError: getSafeMetaError(facebookErr),
+    });
+    return await axios.post(`${INSTAGRAM_GRAPH_API_BASE_URL}/${path}`, body, {
+      headers: graphHeaders(token),
+    });
+  }
+}
+
 export const refreshToken = async (token: string) => {
   return exchangeLongLivedFacebookUserToken(token);
 };
@@ -50,20 +106,20 @@ export const sendDm = async (
 ) => {
   console.log("[meta-api] send DM request", {
     endpointFamily: "facebook_graph_instagram_business",
+    fallbackEndpointFamily: "instagram_graph",
     hasUserId: Boolean(userId),
     hasReceiverId: Boolean(receiverId),
   });
-  return await axios.post(
-    `${META_GRAPH_API_BASE_URL}/${userId}/messages`,
+  return await postMetaWithInstagramGraphFallback(
+    `${userId}/messages`,
     {
       recipient: { id: receiverId },
       message: { text: prompt },
     },
+    token,
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      endpointName: "ig_messages_direct_dm",
+      legacyEndpointFamily: "facebook_graph_instagram_business",
     }
   );
 };
@@ -76,20 +132,20 @@ export const sendPrivateMessage = async (
 ) => {
   console.log("[meta-api] send private reply request", {
     endpointFamily: "facebook_graph_instagram_business",
+    fallbackEndpointFamily: "instagram_graph",
     hasUserId: Boolean(userId),
     hasCommentId: Boolean(commentId),
   });
-  return await axios.post(
-    `${META_GRAPH_API_BASE_URL}/${userId}/messages`,
+  return await postMetaWithInstagramGraphFallback(
+    `${userId}/messages`,
     {
       recipient: { comment_id: commentId },
       message: { text: message },
     },
+    token,
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      endpointName: "ig_messages_private_reply",
+      legacyEndpointFamily: "facebook_graph_instagram_business",
     }
   );
 };
@@ -97,7 +153,7 @@ export const sendPrivateMessage = async (
 /**
  * Posts a threaded reply directly under a comment (Advanced Access).
  * Endpoint: POST /{commentId}/replies
- * Requires instagram_manage_comments at Advanced Access level after App Review.
+ * Supports both legacy Facebook Login/Page tokens and new Instagram Login tokens.
  */
 export const sendCommentReply = async (
   commentId: string,
@@ -106,18 +162,18 @@ export const sendCommentReply = async (
 ) => {
   console.log("[meta-api] send threaded comment reply (Advanced Access)", {
     endpointFamily: "facebook_graph_instagram_business",
+    fallbackEndpointFamily: "instagram_graph",
     accessMode: "advanced",
     endpoint: "comment_replies",
     hasCommentId: Boolean(commentId),
   });
-  return await axios.post(
-    `${META_GRAPH_API_BASE_URL}/${commentId}/replies`,
+  return await postMetaWithInstagramGraphFallback(
+    `${commentId}/replies`,
     { message },
+    token,
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      endpointName: "comment_replies",
+      legacyEndpointFamily: "facebook_graph_instagram_business",
     }
   );
 };
@@ -125,8 +181,7 @@ export const sendCommentReply = async (
 /**
  * Posts a top-level comment on a media object (Standard Access).
  * Endpoint: POST /{mediaId}/comments
- * Works without App Review. Use with an @mention prefix as a fallback
- * when threaded replies are blocked by capability restrictions.
+ * Works as an @mention fallback when threaded replies are blocked.
  */
 export const sendMediaComment = async (
   mediaId: string,
@@ -135,18 +190,18 @@ export const sendMediaComment = async (
 ) => {
   console.log("[meta-api] send media comment (Standard Access)", {
     endpointFamily: "facebook_graph_instagram_business",
+    fallbackEndpointFamily: "instagram_graph",
     accessMode: "standard",
     endpoint: "media_comments",
     hasMediaId: Boolean(mediaId),
   });
-  return await axios.post(
-    `${META_GRAPH_API_BASE_URL}/${mediaId}/comments`,
+  return await postMetaWithInstagramGraphFallback(
+    `${mediaId}/comments`,
     { message },
+    token,
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      endpointName: "media_comments",
+      legacyEndpointFamily: "facebook_graph_instagram_business",
     }
   );
 };
