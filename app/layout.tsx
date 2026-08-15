@@ -7,9 +7,8 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
-const hideDetailsForMessagingReview = process.env.NEXT_PUBLIC_MESSAGING_REVIEW_MODE === "true";
 const siteDescription =
-  "AP3k turns Instagram comments into public replies, private reply workflows, leads, and tracked outcomes using official Meta APIs.";
+  "AP3k automates Instagram comment campaigns with configurable public and private replies, lead tracking, and account analytics for professional accounts.";
 
 export const metadata: Metadata = {
   title: "AP3k — Instagram Comment Automation",
@@ -36,31 +35,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={jakarta.className}>
-        {hideDetailsForMessagingReview ? (
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
-                details { display: none !important; }
-
-                @media (min-width: 1024px) {
-                  .lg\\:grid-cols-5 {
-                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                  }
-                }
-
-                @media (min-width: 1280px) {
-                  .xl\\:grid-cols-6 {
-                    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-                  }
-
-                  [class*="xl:grid-cols-[minmax(0,1fr)_300px]"] {
-                    grid-template-columns: minmax(0, 1fr) !important;
-                  }
-                }
-              `,
-            }}
-          />
-        ) : null}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
