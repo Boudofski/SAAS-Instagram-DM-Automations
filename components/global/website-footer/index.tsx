@@ -9,7 +9,7 @@ export default function WebsiteFooter() {
           <div className="flex flex-col gap-3">
             <AP3kLogo className="text-sm text-slate-700 dark:text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
             <p className="max-w-xs text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
-              Instagram comment automation for creators and teams.
+              Instagram comment automation for creators and professional accounts.
             </p>
           </div>
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">
@@ -27,12 +27,12 @@ export default function WebsiteFooter() {
             </div>
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Support</p>
-              <a href="mailto:contact@ap3k.com" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Contact</a>
+              <a href="mailto:support@ap3k.com" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text">Contact</a>
             </div>
           </div>
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
-          <p className="text-xs text-slate-400 dark:text-slate-400">© 2026 AP3k. Built on official Meta APIs.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-400">© 2026 AP3k. Instagram comment automation for professional accounts.</p>
         </div>
       </div>
     </footer>
