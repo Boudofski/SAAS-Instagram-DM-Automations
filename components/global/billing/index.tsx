@@ -2,7 +2,6 @@
 
 import { isUnlimited, type UsageSummary } from "@/lib/plan-limits";
 import { getBillingUsagePresentation, type BillingMetricKind } from "@/lib/billing-presentation";
-import { isAppReviewMode } from "@/lib/app-review-mode";
 import { ManageBillingButton } from "./manage-billing-button";
 import PaymentCard from "./payment-card";
 
@@ -14,7 +13,6 @@ type Props = {
 
 function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
   const planLabel = usage?.planLabel ?? (current === "PRO" ? "Creator" : "Free");
-  const appReviewMode = isAppReviewMode();
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -25,7 +23,7 @@ function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
             Plans &amp; Usage
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-            One connected Instagram account, unlimited campaigns, and monthly reply volume that scales with the plan.
+            One Instagram account, unlimited campaigns, and a monthly automated-reply allowance that scales with your plan.
           </p>
         </div>
         {canManageBilling && <ManageBillingButton />}
@@ -40,7 +38,7 @@ function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
                 {planLabel} plan active
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-                {usage.periodLabel} usage. AP3k now focuses on one Instagram account with unlimited campaigns; only reply volume is metered.
+                {usage.periodLabel} usage. Campaigns are unlimited; successful public and private replies count toward the monthly reply allowance.
               </p>
             </div>
             <div className="w-fit rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-xs font-black text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
@@ -48,9 +46,9 @@ function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
             </div>
           </div>
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <UsageBar label="Public replies" metric={usage.staticReplies} />
+            <UsageBar label="Automated replies" metric={usage.staticReplies} />
             <UsageBar label="Active campaigns" metric={usage.activeCampaigns} helper="Unlimited campaigns are included." />
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#101827]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:shadow-lg dark:border-white/10 dark:bg-[#101827]">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-black text-slate-950 dark:text-white">Instagram account</p>
                 <span className="ap3k-badge ap3k-badge-green">Included</span>
@@ -59,17 +57,17 @@ function Billing({ current = "FREE", usage, canManageBilling = false }: Props) {
                 <div className="h-full w-full rounded-full bg-emerald-500" />
               </div>
               <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-300">
-                One connected Instagram account per workspace. Reconnecting replaces the current account cleanly.
+                One Instagram account per workspace. Reconnecting replaces the current account while campaign history stays saved.
               </p>
             </div>
           </div>
           <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-            {current === "FREE" ? "Free plan active for testing." : "Creator plan active for production campaigns."}
+            {current === "FREE" ? "Free plan active." : "Creator plan active."}
           </p>
         </div>
       )}
 
-      <div className={appReviewMode ? "grid gap-5 lg:grid-cols-2" : "grid gap-5 lg:grid-cols-2"}>
+      <div className="grid gap-5 lg:grid-cols-2">
         <PaymentCard label="FREE" current={current} campaignLimit={current === "FREE" ? usage?.activeCampaigns.limit : undefined} />
         <PaymentCard label="PRO" current={current} campaignLimit={current === "PRO" ? usage?.activeCampaigns.limit : undefined} />
       </div>
