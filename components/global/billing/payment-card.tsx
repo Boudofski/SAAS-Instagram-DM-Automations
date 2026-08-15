@@ -26,7 +26,7 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For production comment automation on one Instagram account.",
-    features: ["1 Instagram account", "5,000 automated replies/month", "Public + private replies", "Lead export", "Analytics"],
+    features: ["1 Instagram account", "5,000 automated replies/month", "Public + private replies", "Lead tracking", "Analytics"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
