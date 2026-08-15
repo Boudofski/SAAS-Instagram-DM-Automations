@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatCampaignLimitFeature, getPlanLimits, type PlanLimit } from "@/lib/plan-limits";
 import { cn } from "@/lib/utils";
 import { CircleCheck } from "lucide-react";
@@ -18,8 +17,8 @@ const PLAN_COPY = {
     name: "Free",
     price: "$0",
     period: "/month",
-    description: "For testing one connected Instagram account before launch.",
-    features: ["1 Instagram account", "50 public replies/month", "Keyword and Any Comment triggers", "Basic analytics"],
+    description: "For testing AP3k with one Instagram account.",
+    features: ["1 Instagram account", "50 automated replies/month", "Keyword + Any Comment triggers", "Public + private reply setup", "Basic analytics"],
     href: "/pricing",
   },
   PRO: {
@@ -27,31 +26,24 @@ const PLAN_COPY = {
     price: "$29",
     period: "/month",
     description: "For production comment automation on one Instagram account.",
-    features: ["1 Instagram account", "5,000 public replies/month", "Unlimited campaigns", "Lead export", "Analytics"],
+    features: ["1 Instagram account", "5,000 automated replies/month", "Public + private replies", "Lead export", "Analytics"],
     href: "/payment?plan=creator",
   },
   AGENCY: {
     name: "Agency",
     price: "$79",
     period: "/month",
-    description: "Coming later for multi-workspace teams.",
-    features: ["Everything in Creator", "Higher reply volume", "Team workflows"],
-    href: "/payment?plan=agency",
+    description: "Not currently offered.",
+    features: ["Creator features"],
+    href: "/pricing",
   },
 } as const;
 
 function PaymentCard({ label, current, campaignLimit }: Props) {
   const plan = PLAN_COPY[label];
-  const appReviewMode = isAppReviewMode();
   const defaultCampaignLimit = getPlanLimits(label).activeCampaigns;
   const campaignFeature = formatCampaignLimitFeature(campaignLimit ?? defaultCampaignLimit);
-  const features = appReviewMode && label === "PRO"
-    ? ["1 Instagram account", campaignFeature, "5,000 public replies/month", "Lead export", "Analytics"]
-    : appReviewMode && label === "FREE"
-      ? ["1 Instagram account", campaignFeature, "50 public replies/month", "Keyword triggers", "Basic analytics"]
-      : label === "AGENCY"
-        ? plan.features
-        : [campaignFeature, ...plan.features];
+  const features = label === "AGENCY" ? plan.features : [campaignFeature, ...plan.features];
   const isActive = label === current;
   const isAgency = label === "AGENCY";
   const isIncludedFree = label === "FREE" && current === "PRO";
@@ -60,7 +52,7 @@ function PaymentCard({ label, current, campaignLimit }: Props) {
     : isIncludedFree
     ? "Included"
     : isAgency
-    ? "Coming soon"
+    ? "Unavailable"
     : "Upgrade to Creator";
 
   return (
@@ -74,9 +66,7 @@ function PaymentCard({ label, current, campaignLimit }: Props) {
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-black">{plan.name}</h2>
-        {isActive && (
-          <span className="ap3k-badge ap3k-badge-green">Active</span>
-        )}
+        {isActive && <span className="ap3k-badge ap3k-badge-green">Active</span>}
       </div>
       <p className={cn("mt-2 text-sm leading-relaxed text-slate-600", isActive ? "dark:text-slate-300" : "dark:text-slate-400")}>{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
