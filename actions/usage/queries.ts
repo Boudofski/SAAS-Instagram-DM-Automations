@@ -17,12 +17,6 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         select: {
           plan: true,
           usageResetAt: true,
-          monthlyReplyLimitOverride: true,
-          activeCampaignLimitOverride: true,
-          connectedAccountLimitOverride: true,
-          aiReplyLimitOverride: true,
-          overrideReason: true,
-          overrideExpiresAt: true,
         },
       },
     },
@@ -31,26 +25,13 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
 
-  const sub = user?.subscription;
-  const isOverrideActive = !!(
-    sub?.overrideReason &&
-    (!sub.overrideExpiresAt || sub.overrideExpiresAt > date)
-  );
-
-  const staticLimit =
-    isOverrideActive && sub?.monthlyReplyLimitOverride !== null
-      ? sub.monthlyReplyLimitOverride
-      : limits.staticRepliesPerMonth;
-
-  const aiLimit =
-    isOverrideActive && sub?.aiReplyLimitOverride !== null
-      ? sub.aiReplyLimitOverride
-      : limits.aiRepliesPerMonth;
-
-  // AP3k's product model is now simple: one connected Instagram account and
-  // unlimited campaigns for that account. Historical subscription overrides can
-  // still raise/lower reply quotas, but they must not reintroduce old campaign
-  // or multi-account limits in the dashboard or activation validator.
+  // AP3k now has one clear product model across the UI and enforcement layer:
+  // one connected Instagram account, unlimited campaigns, and the published
+  // monthly reply allowance for the selected plan. Historical per-account
+  // overrides are intentionally ignored so billing, pricing, and enforcement
+  // always describe the same product.
+  const staticLimit = limits.staticRepliesPerMonth;
+  const aiLimit = limits.aiRepliesPerMonth;
   const campaignLimit = limits.activeCampaigns;
   const accountLimit = limits.connectedInstagramAccounts;
 
@@ -77,6 +58,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     client.automation.count({ where: { userId, active: true, archivedAt: null } }),
     client.integrations.count({ where: { userId, status: { not: "DISCONNECTED" } } }),
   ]);
+
   const [publicReplyEventFallback, dmEventFallback] = await Promise.all([
     publicReplyLogs > 0
       ? Promise.resolve(0)
@@ -97,6 +79,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
           },
         }),
   ]);
+
   const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback;
 
   return {
