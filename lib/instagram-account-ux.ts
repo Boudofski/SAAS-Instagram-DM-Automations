@@ -67,21 +67,21 @@ export function getWebhookHealthPresentation(health: WebhookHealthLike, now = ne
   if (hasRecentComments) {
     return {
       webhook: {
-        label: "Webhook status",
+        label: "Comment delivery",
         value: "Operational",
-        detail: "Receiving Instagram comment events",
+        detail: "Receiving Instagram comments",
         ok: true,
       },
       failure: hasFailure
         ? {
-            label: "Last failure",
-            value: "Previous subscription warning",
+            label: "Connection status",
+            value: "Previous connection warning",
             detail: safeFailure.detail,
             ok: true,
           }
         : {
-            label: "Last failure",
-            value: "No failures",
+            label: "Connection status",
+            value: "Healthy",
             detail: undefined,
             ok: true,
           },
@@ -90,13 +90,13 @@ export function getWebhookHealthPresentation(health: WebhookHealthLike, now = ne
 
   return {
     webhook: {
-      label: "Webhook status",
-      value: hasFailure ? "Needs review" : "Waiting for comments",
-      detail: hasFailure ? safeFailure.detail : "No recent Instagram comment events",
+      label: "Comment delivery",
+      value: hasFailure ? "Needs attention" : "Waiting for comments",
+      detail: hasFailure ? safeFailure.detail : "No recent Instagram comments",
       ok: !hasFailure,
     },
     failure: {
-      label: "Last failure",
+      label: "Connection status",
       value: safeFailure.title,
       detail: safeFailure.detail,
       ok: safeFailure.severity === "ok",
@@ -145,10 +145,10 @@ export function getDashboardProfileStats(input: {
       subtitle: "Leads captured",
     },
     {
-      label: "Public Replies",
+      label: "Replies",
       value: input.usage ? formatUsageMetricValue(input.usage.staticReplies) : "0",
       change: undefined,
-      subtitle: messagingReviewMode ? "Public replies tracked" : "Public replies + AP3k DMs",
+      subtitle: "Public + private replies sent",
     },
   ];
 
