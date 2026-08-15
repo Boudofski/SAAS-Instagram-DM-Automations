@@ -29,9 +29,7 @@ export default function PricingCard({
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-      {featured && (
-        <div className="absolute -right-16 top-8 h-32 w-32 rounded-full bg-rf-pink/20 blur-3xl" />
-      )}
+      {featured && <div className="absolute -right-16 top-8 h-32 w-32 rounded-full bg-rf-pink/20 blur-3xl" />}
 
       <div className="relative">
         <p className={cn(
@@ -48,33 +46,34 @@ export default function PricingCard({
       </div>
 
       <ul className="relative flex flex-1 flex-col gap-2.5">
-        {features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm">
-            <span className={cn(
-              "mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[11px] font-black",
-              f.included
-                ? "bg-emerald-50 text-emerald-600 dark:bg-rf-green/12 dark:text-rf-green"
-                : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
-            )}>
-              {f.included ? "✓" : "—"}
-            </span>
-            <span className={f.included
-              ? "text-slate-700 dark:text-rf-text"
-              : "text-slate-400 line-through dark:text-slate-500"
-            }>
-              {f.text}
-            </span>
-          </li>
-        ))}
+        {features.map((feature, index) => {
+          const displayText = feature.text === "Lead export" ? "Lead tracking" : feature.text;
+          return (
+            <li key={index} className="flex items-start gap-2 text-sm">
+              <span className={cn(
+                "mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[11px] font-black",
+                feature.included
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-rf-green/12 dark:text-rf-green"
+                  : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
+              )}>
+                {feature.included ? "✓" : "—"}
+              </span>
+              <span className={feature.included
+                ? "text-slate-700 dark:text-rf-text"
+                : "text-slate-400 line-through dark:text-slate-500"
+              }>
+                {displayText}
+              </span>
+            </li>
+          );
+        })}
       </ul>
 
       <Button
         asChild
         className={cn(
           "relative w-full rounded-xl font-bold",
-          featured
-            ? "ap3k-gradient-button border-0"
-            : "ap3k-outline-button"
+          featured ? "ap3k-gradient-button border-0" : "ap3k-outline-button"
         )}
         variant={featured ? "default" : "outline"}
       >
