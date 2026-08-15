@@ -2,7 +2,6 @@ import PricingCard from "@/components/global/pricing-card";
 import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatCampaignLimitFeature, getPlanLimits } from "@/lib/plan-limits";
 
 const FREE_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("FREE").activeCampaigns);
@@ -10,143 +9,107 @@ const CREATOR_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("PRO")
 
 const PLANS = [
   {
-    tier: "Free", price: "$0", description: "For setup, testing, and your first live proof",
-    ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
+    tier: "Free",
+    price: "$0",
+    description: "For testing your first Instagram automation",
+    ctaLabel: "Get started free",
+    ctaHref: "/sign-up",
+    featured: false,
     features: [
-      { text: `${FREE_CAMPAIGN_FEATURE} for testing`, included: true },
-      { text: "50 successful replies/month", included: true },
-      { text: "Keyword triggers", included: true },
+      { text: "1 Instagram account", included: true },
+      { text: FREE_CAMPAIGN_FEATURE, included: true },
+      { text: "50 automated replies/month", included: true },
+      { text: "Keyword + Any Comment triggers", included: true },
+      { text: "Public + private reply setup", included: true },
       { text: "Basic analytics", included: true },
-      { text: "Public reply fallback", included: true },
-      { text: "AI replies", included: false },
-      { text: "Private DM workflow after Meta approval", included: false },
     ],
   },
   {
-    tier: "Creator", price: "$29", description: "For creators who run launches, lead magnets, and evergreen posts",
-    ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
+    tier: "Creator",
+    price: "$29",
+    description: "For production campaigns and higher reply volume",
+    ctaLabel: "Start Creator plan",
+    ctaHref: "/payment?plan=creator",
+    featured: true,
     features: [
+      { text: "1 Instagram account", included: true },
       { text: CREATOR_CAMPAIGN_FEATURE, included: true },
-      { text: "5,000 successful public replies/month", included: true },
-      { text: "750 AI replies/month when AI is enabled", included: true },
-      { text: "Public reply fallback", included: true },
-      { text: "Private DM workflow when Meta messaging is approved", included: true },
-      { text: "Full analytics + leads export", included: true },
-      { text: "{{variable}} personalisation", included: true },
-      { text: "Priority support", included: true },
-    ],
-  },
-  {
-    tier: "Agency", price: "$79", description: "For teams managing client accounts and repeat launches",
-    ctaLabel: "Contact / coming soon", ctaHref: "/pricing", featured: false,
-    features: [
-      { text: "Everything in Creator", included: true },
-      { text: "Up to 10 Instagram accounts", included: true },
-      { text: "Team access", included: false },
-      { text: "Dedicated onboarding", included: true },
-      { text: "Custom integrations", included: true },
-      { text: "SLA support", included: true },
+      { text: "5,000 automated replies/month", included: true },
+      { text: "Public + private replies", included: true },
+      { text: "Lead export", included: true },
+      { text: "Analytics", included: true },
     ],
   },
 ] as const;
 
 const FAQ = [
   {
-    q: "Is it safe for my Instagram account?",
-    a: "AP3k uses Meta's official Instagram Graph API. We never ask for your Instagram password, do not scrape Instagram, and include duplicate prevention so a commenter is not messaged repeatedly by the same campaign.",
+    q: "Do I need to connect Facebook?",
+    a: "No. AP3k connects directly to an Instagram Business or Creator account through Instagram authorization.",
   },
   {
-    q: "Why does private DM sending mention Meta approval?",
-    a: "Meta controls messaging permissions for Instagram professional accounts. AP3k can still listen for comments and run public replies while private messaging is pending.",
+    q: "How many Instagram accounts can I connect?",
+    a: "Each AP3k workspace supports one connected Instagram account. Reconnecting a different account replaces the current connection while campaign history stays saved.",
+  },
+  {
+    q: "How many campaigns can I create?",
+    a: "Campaigns are unlimited on both Free and Creator. The monthly automated-reply allowance is what changes by plan.",
+  },
+  {
+    q: "What counts toward the monthly reply allowance?",
+    a: "Successful public replies and successful private replies count toward the monthly allowance. Failed or skipped actions do not count.",
+  },
+  {
+    q: "Is AP3k safe for my Instagram account?",
+    a: "AP3k uses the supported Instagram API flow for professional accounts. It does not ask for your Instagram password, scrape Instagram, or rely on browser automation.",
   },
   {
     q: "Can I cancel any time?",
-    a: "Yes. Use Manage billing on the Billing page to cancel through Stripe Customer Portal. Stripe shows when the change takes effect, and AP3k syncs the resulting plan status through the existing billing webhook.",
-  },
-  {
-    q: "What's the reply limit on Free?",
-    a: "50 successful public replies per month across 1 active campaign. Successful public replies and private DMs count; failed and skipped messages do not.",
+    a: "Yes. Creator subscribers can manage or cancel billing through the billing portal from inside AP3k.",
   },
 ] as const;
 
 export default function PricingPage() {
-  const appReviewMode = isAppReviewMode();
-  const plans = appReviewMode
-    ? [
-        {
-          tier: "Free", price: "$0", description: "For testing Instagram comment automation",
-          ctaLabel: "Get started free", ctaHref: "/sign-up", featured: false,
-          features: [
-            { text: `${FREE_CAMPAIGN_FEATURE} for testing`, included: true },
-            { text: "50 public replies/month", included: true },
-            { text: "Keyword triggers", included: true },
-            { text: "Basic analytics", included: true },
-          ],
-        },
-        {
-          tier: "Creator", price: "$29", description: "For production campaigns with public reply volume",
-          ctaLabel: "Start Creator plan", ctaHref: "/payment?plan=creator", featured: true,
-          features: [
-            { text: CREATOR_CAMPAIGN_FEATURE, included: true },
-            { text: "5,000 public replies/month", included: true },
-            { text: "Lead export", included: true },
-            { text: "Analytics", included: true },
-          ],
-        },
-      ] as const
-    : PLANS;
-  const faq = appReviewMode
-    ? FAQ.filter((item) => !item.q.toLowerCase().includes("private dm")).map((item) =>
-        item.q === "What's the reply limit on Free?"
-          ? { ...item, a: "50 successful public replies per month across 1 active campaign. Failed or skipped actions do not count." }
-          : item
-      )
-    : FAQ;
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
       <WebsiteNav current="pricing" />
 
-      {/* Header */}
       <section className="relative z-10 px-4 py-20 text-center sm:px-8 lg:px-16">
         <FadeIn>
-        <p className="ap3k-kicker mb-4">Pricing</p>
-        <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
-          Start free.<br />
-          <span className="ap3k-gradient-text">
-            Scale when you&apos;re ready.
-          </span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-rf-muted">
-          Free is built for proving the workflow. Creator is for real campaign volume. No hidden fees, no contracts.
-        </p>
+          <p className="ap3k-kicker mb-4">Pricing</p>
+          <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
+            Start free.<br />
+            <span className="ap3k-gradient-text">Scale your reply volume.</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-rf-muted">
+            One Instagram account and unlimited campaigns on both plans. Upgrade when you need more automated replies and analytics.
+          </p>
         </FadeIn>
       </section>
 
-      {/* Plans */}
-      <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20 sm:px-8 lg:px-16">
-        <div className={appReviewMode ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "grid grid-cols-1 md:grid-cols-3 gap-6"}>
-          {plans.map((p, index) => (
-            <FadeIn key={p.tier} delay={index * 0.05}>
-              <PricingCard {...p} />
+      <section className="relative z-10 mx-auto max-w-4xl px-4 pb-20 sm:px-8 lg:px-16">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {PLANS.map((plan, index) => (
+            <FadeIn key={plan.tier} delay={index * 0.05}>
+              <PricingCard {...plan} />
             </FadeIn>
           ))}
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="relative z-10 mx-auto max-w-2xl px-4 pb-20 sm:px-8 lg:px-0">
         <h2 className="mb-8 text-center text-xl font-black">Common questions</h2>
         <div className="flex flex-col gap-4">
-          {faq.map((f) => (
-            <div key={f.q} className="ap3k-card rounded-2xl p-5">
-              <h3 className="mb-2 text-sm font-black text-slate-950 dark:text-rf-text">{f.q}</h3>
-              <p className="text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{f.a}</p>
+          {FAQ.map((item) => (
+            <div key={item.q} className="ap3k-card rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/25">
+              <h3 className="mb-2 text-sm font-black text-slate-950 dark:text-rf-text">{item.q}</h3>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{item.a}</p>
             </div>
           ))}
         </div>
       </section>
+
       <WebsiteFooter />
     </div>
   );
