@@ -36,7 +36,7 @@ const PLANS = [
       { text: CREATOR_CAMPAIGN_FEATURE, included: true },
       { text: "5,000 automated replies/month", included: true },
       { text: "Public + private replies", included: true },
-      { text: "Lead export", included: true },
+      { text: "Lead tracking", included: true },
       { text: "Analytics", included: true },
     ],
   },
@@ -44,8 +44,8 @@ const PLANS = [
 
 const FAQ = [
   {
-    q: "Do I need to connect Facebook?",
-    a: "No. AP3k connects directly to an Instagram Business or Creator account through Instagram authorization.",
+    q: "Which Instagram accounts are supported?",
+    a: "AP3k supports Instagram Business and Creator accounts through direct Instagram authorization.",
   },
   {
     q: "How many Instagram accounts can I connect?",
@@ -60,7 +60,7 @@ const FAQ = [
     a: "Successful public replies and successful private replies count toward the monthly allowance. Failed or skipped actions do not count.",
   },
   {
-    q: "Is AP3k safe for my Instagram account?",
+    q: "How does AP3k connect to Instagram?",
     a: "AP3k uses the supported Instagram API flow for professional accounts. It does not ask for your Instagram password, scrape Instagram, or rely on browser automation.",
   },
   {
