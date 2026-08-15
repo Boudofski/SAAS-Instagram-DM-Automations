@@ -2,13 +2,11 @@ import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/g
 import PricingCard from "@/components/global/pricing-card";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import { isAppReviewMode } from "@/lib/app-review-mode";
-import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
 import { formatCampaignLimitFeature, getPlanLimits } from "@/lib/plan-limits";
 import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
-import { ArrowRight, Bot, CheckCircle2, FileCheck2, MessageCircle, Reply, ShieldCheck, Sparkles, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, MessageCircle, Reply, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -19,89 +17,81 @@ const PLANS = [
   {
     tier: "Free",
     price: "$0",
-    description: "Perfect for getting started",
+    description: "For testing your first Instagram automation",
     ctaLabel: "Get started free",
     ctaHref: "/sign-up",
     featured: false,
     features: [
+      { text: "1 Instagram account", included: true },
       { text: FREE_CAMPAIGN_FEATURE, included: true },
-      { text: "Free for testing", included: true },
-      { text: "50 public replies/month", included: true },
-      { text: "Keyword triggers", included: true },
+      { text: "50 automated replies/month", included: true },
+      { text: "Keyword + Any Comment triggers", included: true },
+      { text: "Public + private reply setup", included: true },
       { text: "Basic analytics", included: true },
-      { text: "AI replies", included: false },
-      { text: "Private reply workflows with Meta messaging access", included: false },
     ],
   },
   {
     tier: "Creator",
     price: "$29",
-    description: "For serious creators and coaches",
+    description: "For production campaigns and higher reply volume",
     ctaLabel: "Start Creator plan",
     ctaHref: "/payment?plan=creator",
     featured: true,
     features: [
+      { text: "1 Instagram account", included: true },
       { text: CREATOR_CAMPAIGN_FEATURE, included: true },
-      { text: "5,000 public replies/month", included: true },
-      { text: "750 AI replies/month when AI is enabled", included: true },
-      { text: "Full analytics + leads export", included: true },
-      { text: "{{variable}} personalisation", included: true },
-      { text: "Public reply campaigns", included: true },
-      { text: "Priority support", included: true },
-    ],
-  },
-  {
-    tier: "Agency",
-    price: "$79",
-    description: "For teams managing multiple accounts",
-    ctaLabel: "Contact / coming soon",
-    ctaHref: "/pricing",
-    featured: false,
-    features: [
-      { text: "Everything in Creator", included: true },
-      { text: "Up to 10 Instagram accounts", included: true },
-      { text: "Team access", included: false },
-      { text: "Dedicated onboarding", included: true },
-      { text: "Custom integrations", included: true },
-      { text: "SLA support", included: true },
+      { text: "5,000 automated replies/month", included: true },
+      { text: "Public + private replies", included: true },
+      { text: "Lead export", included: true },
+      { text: "Analytics", included: true },
     ],
   },
 ] as const;
 
 const FEATURES = [
-  { icon: MessageCircle, title: "Keyword triggers", desc: "Match exact or contains keywords across real Instagram comment webhooks." },
-  { icon: Sparkles, title: "Any comment triggers", desc: "Launch low-friction campaigns where every comment on a selected post can qualify." },
-  { icon: Reply, title: "Public reply fallback", desc: "Attempt threaded replies first, then fall back to public @mention comments when needed." },
-  { icon: Bot, title: "Private reply workflow", desc: "Configure a private reply that runs after a matching Instagram comment." },
-  { icon: TrendingUp, title: "Lead capture", desc: "Keep campaign-level counts, message logs, and delivery status for each automation." },
-  { icon: FileCheck2, title: "App Review diagnostics", desc: "Show webhook delivery, signature status, Meta errors, and capability evidence." },
-  { icon: ShieldCheck, title: "Admin control center", desc: "Read-only platform views for users, campaigns, integrations, webhooks, and messages." },
-  { icon: Users, title: "External workflow mode", desc: "Let AP3k detect comments and reply publicly while external tools handle additional follow-up." },
+  {
+    icon: MessageCircle,
+    title: "Connect Instagram",
+    desc: "Authorize one Instagram Business or Creator account directly and start from a clean workspace.",
+  },
+  {
+    icon: Sparkles,
+    title: "Comment triggers",
+    desc: "Choose a post or Reel, then react to a keyword or to any new comment.",
+  },
+  {
+    icon: Reply,
+    title: "Public + private replies",
+    desc: "Reply publicly and send one configured private reply after a matching comment.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Activity + leads",
+    desc: "Track comments, trigger matches, reply delivery, campaign runs, and captured leads.",
+  },
 ] as const;
 
 const EXAMPLES = [
-  { comment: "GUIDE", action: "Public reply confirms the guide; private reply workflow is recorded", color: "text-rf-pink" },
-  { comment: "PRICE", action: "Pricing interest tracked with public reply fallback", color: "text-rf-purple" },
-  { comment: "BOOK", action: "Booking interest captured as a lead", color: "text-rf-blue" },
+  { comment: "GUIDE", action: "Send the public confirmation and the private guide reply", color: "text-rf-pink" },
+  { comment: "PRICE", action: "Match pricing interest and continue the conversation automatically", color: "text-rf-purple" },
+  { comment: "BOOK", action: "Capture booking intent and record the campaign lead", color: "text-rf-blue" },
 ] as const;
 
 const PROOF = [
-  ["Real-time", "Meta webhook processing", "bg-rf-orange/10 text-rf-orange"],
-  ["Fallback", "Public reply delivery path", "bg-rf-pink/10 text-rf-magenta"],
-  ["Private", "Private reply workflow", "bg-rf-purple/10 text-rf-purple"],
-  ["Review-ready", "Safe Meta evidence", "bg-rf-indigo/10 text-rf-indigo"],
+  ["Instagram", "Business & Creator accounts", "bg-rf-orange/10 text-rf-orange"],
+  ["Triggers", "Keyword or any comment", "bg-rf-pink/10 text-rf-magenta"],
+  ["Replies", "Public + private", "bg-rf-purple/10 text-rf-purple"],
+  ["Tracking", "Activity + leads", "bg-rf-indigo/10 text-rf-indigo"],
 ] as const;
 
 const STEPS = [
-  ["01", "Connect Instagram", "Use Facebook Login for Business and Page tokens."],
-  ["02", "Choose post + trigger", "Target any post, a specific media ID, keywords, or any comment."],
-  ["03", "Write replies", "Configure public replies and optional private replies after matching comments."],
-  ["04", "Track results", "Review matches, public reply status, private reply attempts, and leads."],
+  ["01", "Connect Instagram", "Authorize one Instagram Business or Creator account."],
+  ["02", "Create a campaign", "Choose Any post or a specific post, then set the trigger and replies."],
+  ["03", "Receive a real comment", "AP3k matches the comment against your active campaign."],
+  ["04", "Send + track", "AP3k runs the configured replies and records the resulting activity and lead."],
 ] as const;
 
 export default async function LandingPage() {
-  const appReviewMode = isAppReviewMode();
-  const messagingReviewMode = isMessagingReviewMode();
   const authUser = await currentUser();
   const profile = authUser
     ? await client.user.findUnique({
@@ -127,137 +117,13 @@ export default async function LandingPage() {
         },
       })
     : null;
+
   const redirectTo = getAuthenticatedLandingRedirect(authUser, profile);
   if (redirectTo) redirect(redirectTo);
-
-  const plans = appReviewMode
-    ? messagingReviewMode
-      ? [
-          {
-            tier: "Free",
-            price: "$0",
-            description: "Perfect for testing comment automation",
-            ctaLabel: "Get started free",
-            ctaHref: "/sign-up",
-            featured: false,
-            features: [
-              { text: FREE_CAMPAIGN_FEATURE, included: true },
-              { text: "50 public replies/month", included: true },
-              { text: "Keyword triggers", included: true },
-              { text: "Private reply after comment setup", included: true },
-              { text: "Basic activity tracking", included: true },
-            ],
-          },
-          {
-            tier: "Creator",
-            price: "$29",
-            description: "For production campaigns",
-            ctaLabel: "Start Creator plan",
-            ctaHref: "/payment?plan=creator",
-            featured: true,
-            features: [
-              { text: CREATOR_CAMPAIGN_FEATURE, included: true },
-              { text: "5,000 public replies/month", included: true },
-              { text: "Private reply workflow tracking", included: true },
-              { text: "Lead export", included: true },
-              { text: "Activity tracking", included: true },
-            ],
-          },
-        ] as const
-      : [
-          {
-            tier: "Free",
-            price: "$0",
-            description: "Perfect for testing comment automation",
-            ctaLabel: "Get started free",
-            ctaHref: "/sign-up",
-            featured: false,
-            features: [
-              { text: FREE_CAMPAIGN_FEATURE, included: true },
-              { text: "50 public replies/month", included: true },
-              { text: "Keyword triggers", included: true },
-              { text: "Basic analytics", included: true },
-            ],
-          },
-          {
-            tier: "Creator",
-            price: "$29",
-            description: "For production campaigns",
-            ctaLabel: "Start Creator plan",
-            ctaHref: "/payment?plan=creator",
-            featured: true,
-            features: [
-              { text: CREATOR_CAMPAIGN_FEATURE, included: true },
-              { text: "5,000 public replies/month", included: true },
-              { text: "Lead export", included: true },
-              { text: "Activity tracking", included: true },
-            ],
-          },
-        ] as const
-    : PLANS;
-  const features = appReviewMode
-    ? messagingReviewMode
-      ? [
-          { icon: MessageCircle, title: "Official Meta Login", desc: "Connect an Instagram Business or Creator account through Facebook Login for Business." },
-          { icon: Sparkles, title: "Comment keyword trigger", desc: "Receive real Instagram comments and match the configured campaign keyword." },
-          { icon: Reply, title: "Public + private replies", desc: "Send the public reply and prepare one private reply after the comment interaction." },
-          { icon: TrendingUp, title: "Activity and leads", desc: "Track the comment, keyword match, reply workflow, and lead activity inside AP3k." },
-        ] as const
-      : [
-          { icon: MessageCircle, title: "Official Meta Login", desc: "Connect an Instagram Business or Creator account through Meta Login." },
-          { icon: Sparkles, title: "Comment automation", desc: "Receive real Instagram comments and match campaign keywords." },
-          { icon: Reply, title: "Public replies", desc: "Send public replies through official Meta APIs." },
-          { icon: TrendingUp, title: "Lead capture", desc: "Track matched commenters and campaign activity inside AP3k." },
-        ] as const
-    : FEATURES;
-  const proof = appReviewMode
-    ? messagingReviewMode
-      ? [
-          ["Meta Login", "Facebook Login for Business", "bg-rf-orange/10 text-rf-orange"],
-          ["Instagram", "Business/Creator connection", "bg-rf-pink/10 text-rf-magenta"],
-          ["Private reply", "One reply after comment", "bg-rf-purple/10 text-rf-purple"],
-          ["Tracking", "Activity and leads", "bg-rf-indigo/10 text-rf-indigo"],
-        ] as const
-      : [
-          ["Meta Login", "Official Meta Login", "bg-rf-orange/10 text-rf-orange"],
-          ["Instagram", "Business/Creator connection", "bg-rf-pink/10 text-rf-magenta"],
-          ["Replies", "Public replies", "bg-rf-purple/10 text-rf-purple"],
-          ["Tracking", "Activity and leads", "bg-rf-indigo/10 text-rf-indigo"],
-        ] as const
-    : PROOF;
-  const steps = appReviewMode
-    ? messagingReviewMode
-      ? [
-          ["01", "Connect Instagram", "Use Facebook Login for Business for an Instagram Business or Creator account."],
-          ["02", "Create a campaign", "Choose a post, add the keyword trigger, and enable private reply after comment."],
-          ["03", "Test a real comment", "Comment the keyword from another Instagram account so AP3k receives the event."],
-          ["04", "Track the workflow", "Confirm the comment was received, keyword matched, public reply sent, and private reply workflow recorded."],
-        ] as const
-      : [
-          ["01", "Connect Instagram", "Use Official Meta Login for an Instagram Business or Creator account."],
-          ["02", "Create a campaign", "Choose a post, add a keyword trigger, and enable public reply mode."],
-          ["03", "Test a real comment", "Comment from another Instagram account so AP3k receives the event."],
-          ["04", "Track results", "Confirm public reply sent, activity recorded, and lead captured."],
-        ] as const
-    : STEPS;
-  const examples = appReviewMode
-    ? messagingReviewMode
-      ? [
-          { comment: "GUIDE", action: "Public reply sent and private reply workflow recorded", color: "text-rf-pink" },
-          { comment: "PRICE", action: "Pricing interest matched after a keyword comment", color: "text-rf-purple" },
-          { comment: "BOOK", action: "Booking interest captured as a lead", color: "text-rf-blue" },
-        ] as const
-      : [
-          { comment: "GUIDE", action: "Public reply sent and lead captured", color: "text-rf-pink" },
-          { comment: "PRICE", action: "Pricing interest tracked with a public reply", color: "text-rf-purple" },
-          { comment: "BOOK", action: "Booking interest captured as a lead", color: "text-rf-blue" },
-        ] as const
-    : EXAMPLES;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,0.16),transparent_28rem),radial-gradient(circle_at_82%_12%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_50%_46%,rgba(139,92,246,0.12),transparent_36rem)]" />
-
       <WebsiteNav current="home" />
 
       <main className="relative z-10">
@@ -266,36 +132,32 @@ export default async function LandingPage() {
             <FadeIn>
               <div className="inline-flex items-center gap-2 rounded-full border border-rf-pink/25 bg-rf-pink/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-rf-pink">
                 <span className="h-1.5 w-1.5 rounded-full bg-rf-pink shadow-[0_0_16px_rgba(244,114,182,0.8)]" />
-                Instagram-native automation
+                Instagram comment automation
               </div>
 
               <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
                 Comments become leads.
                 <span className="ap3k-gradient-text block animate-gradient-pan bg-[length:220%_220%]">
-                  {messagingReviewMode ? "Private replies follow." : "Replies become sales."}
+                  Replies follow automatically.
                 </span>
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-                {appReviewMode
-                  ? messagingReviewMode
-                    ? "Launch Instagram comment campaigns that receive real comments, match keywords, send a public reply, prepare one private reply after comment, and capture leads through official Meta APIs."
-                    : "Launch Instagram comment campaigns that receive real comments, match keywords, send public replies, and capture leads through official Meta APIs."
-                  : "Turn Instagram comments into leads automatically — using public replies, private reply workflows, lead capture, and official Meta APIs."}
+                Connect Instagram, choose what comments should trigger, send public and private replies, and track campaign activity from one simple workspace.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className="ap3k-gradient-button inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm">
                   Launch your first campaign <ArrowRight className="h-4 w-4" />
                 </Link>
-                <a href="#features" className="ap3k-outline-button inline-flex items-center justify-center px-7 py-3.5 text-sm">
+                <a href="#how-it-works" className="ap3k-outline-button inline-flex items-center justify-center px-7 py-3.5 text-sm">
                   See how it works
                 </a>
               </div>
 
               <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                {proof.map(([num, label, accent]) => (
-                  <div key={label} className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)] backdrop-blur dark:border-white/[0.12] dark:bg-[#111827]">
+                {PROOF.map(([num, label, accent]) => (
+                  <div key={label} className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-white/[0.12] dark:bg-[#111827]">
                     <div className={`mb-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${accent}`}>{num}</div>
                     <div className="text-xs font-bold text-slate-600 dark:text-rf-muted">{label}</div>
                   </div>
@@ -305,18 +167,15 @@ export default async function LandingPage() {
 
             <FadeIn delay={0.12} className="relative">
               <div className="absolute -inset-10 rounded-[2.5rem] bg-ap3k-gradient opacity-15 blur-[60px]" />
-              <div className="absolute -inset-6 rounded-[2rem] bg-rf-purple/25 opacity-20 blur-2xl dark:opacity-30" />
               <div className="relative animate-float-slow overflow-hidden rounded-[2rem] border border-slate-200 bg-white/85 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.14)] backdrop-blur-2xl dark:border-white/[0.12] dark:bg-rf-surface/80 dark:shadow-ap3k-card">
                 <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
                   <div className="mb-4 flex items-center gap-3">
                     <div className="h-11 w-11 rounded-full bg-ap3k-gradient shadow-ap3k-glow" />
                     <div>
                       <p className="text-sm font-black">@yourhandle</p>
-                      <p className="text-xs text-slate-500 dark:text-rf-muted">Comment automation live</p>
+                      <p className="text-xs text-slate-500 dark:text-rf-muted">Campaign live</p>
                     </div>
-                    <span className="ml-auto rounded-full border border-rf-green/25 bg-rf-green/10 px-2.5 py-1 text-[10px] font-black text-rf-green">
-                      Live
-                    </span>
+                    <span className="ml-auto rounded-full border border-rf-green/25 bg-rf-green/10 px-2.5 py-1 text-[10px] font-black text-rf-green">Live</span>
                   </div>
 
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 dark:border-white/10 dark:from-[#182033] dark:via-[#111827] dark:to-[#0B1020]">
@@ -333,39 +192,23 @@ export default async function LandingPage() {
                   </div>
 
                   <div className="mt-4 space-y-3">
-                    <div className="animate-[float-slow_8s_ease-in-out_infinite] rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/[0.14] dark:bg-white/[0.07]">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/[0.14] dark:bg-white/[0.07]">
                       <p className="text-xs text-slate-500 dark:text-rf-muted">@sarah.creates commented</p>
-                      <p className="mt-1 text-sm">
-                        This is exactly what I need. <span className="rounded-lg border border-rf-pink/25 bg-rf-pink/10 px-2 py-1 text-xs font-black text-rf-pink">GUIDE</span>
-                      </p>
+                      <p className="mt-1 text-sm">This is exactly what I need. <span className="rounded-lg border border-rf-pink/25 bg-rf-pink/10 px-2 py-1 text-xs font-black text-rf-pink">GUIDE</span></p>
                     </div>
-                    <div className="ml-0 rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 sm:ml-8">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-pink">
-                        <MessageCircle className="h-4 w-4" /> {messagingReviewMode ? "Comment handled" : "Public reply sent"}
-                      </div>
-                      <p className="text-sm leading-relaxed">
-                        {appReviewMode
-                          ? messagingReviewMode
-                            ? "Thanks for commenting. The guide request was recorded."
-                            : "Hey Sarah, the guide is ready. We captured your request."
-                          : "Hey Sarah, the guide is ready. Private reply workflow recorded for this comment."}
-                      </p>
+                    <div className="rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 sm:ml-8">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-pink"><MessageCircle className="h-4 w-4" /> Public reply sent</div>
+                      <p className="text-sm leading-relaxed">Thanks for commenting — I sent the guide privately.</p>
                     </div>
-                    {messagingReviewMode ? (
-                      <div className="ml-0 rounded-2xl border border-rf-blue/20 bg-rf-blue/10 p-4 sm:ml-12">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-blue">
-                          <Reply className="h-4 w-4" /> Private reply after comment
-                        </div>
-                        <p className="text-sm leading-relaxed">
-                          Thanks for commenting. Here is the information you requested.
-                        </p>
-                      </div>
-                    ) : null}
+                    <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/10 p-4 sm:ml-12">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-blue"><Reply className="h-4 w-4" /> Private reply sent</div>
+                      <p className="text-sm leading-relaxed">Here is the guide you requested.</p>
+                    </div>
                     <div className="flex items-center gap-3 rounded-2xl border border-rf-green/20 bg-rf-green/10 p-4">
                       <div className="grid h-9 w-9 place-items-center rounded-xl bg-rf-green/15 text-rf-green">✓</div>
                       <div>
                         <p className="text-sm font-black text-rf-green">Lead captured</p>
-                        <p className="text-xs text-slate-500 dark:text-rf-muted">Added to your launch funnel</p>
+                        <p className="text-xs text-slate-500 dark:text-rf-muted">Campaign activity updated</p>
                       </div>
                     </div>
                   </div>
@@ -377,12 +220,10 @@ export default async function LandingPage() {
 
         <section className="border-y border-slate-200 bg-white/50 px-4 py-8 backdrop-blur dark:border-white/10 dark:bg-rf-surface/40 sm:px-8 lg:px-16">
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
-            {examples.map((ex) => (
+            {EXAMPLES.map((ex) => (
               <HoverLift key={ex.comment}>
                 <div className="ap3k-card rounded-2xl p-5">
-                  <span className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-sm font-black ${ex.color}`}>
-                    &ldquo;{ex.comment}&rdquo;
-                  </span>
+                  <span className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-sm font-black ${ex.color}`}>&ldquo;{ex.comment}&rdquo;</span>
                   <p className="mt-4 text-sm font-semibold leading-relaxed text-slate-800 dark:text-rf-text">{ex.action}</p>
                 </div>
               </HoverLift>
@@ -394,28 +235,18 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">Everything you need</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">
-                Smooth automation for creators who move fast.
-              </h2>
-              <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-rf-muted">
-                {appReviewMode
-                  ? messagingReviewMode
-                    ? "Pick your post, add the keyword, configure public and private replies, and track campaign activity."
-                    : "Pick your post, add keywords, send public replies, and track campaign activity."
-                  : "Pick your post, add keywords, write public replies, and enable private reply workflows after matching comments."}
-              </p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Simple automation for creators who move fast.</h2>
+              <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-rf-muted">One Instagram account, unlimited campaigns, clear triggers, automatic replies, and useful activity tracking.</p>
             </FadeIn>
             <StaggerContainer className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {features.map((f) => {
-                const Icon = f.icon;
+              {FEATURES.map((feature) => {
+                const Icon = feature.icon;
                 return (
-                  <StaggerItem key={f.title}>
+                  <StaggerItem key={feature.title}>
                     <div className="ap3k-card ap3k-card-hover h-full rounded-3xl p-6">
-                      <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft text-rf-pink">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="font-black text-slate-950 dark:text-rf-text">{f.title}</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{f.desc}</p>
+                      <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft text-rf-pink"><Icon className="h-5 w-5" /></div>
+                      <h3 className="font-black text-slate-950 dark:text-rf-text">{feature.title}</h3>
+                      <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{feature.desc}</p>
                     </div>
                   </StaggerItem>
                 );
@@ -428,12 +259,12 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">How it works</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">From comment to tracked outcome.</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">From comment to reply in four steps.</h2>
             </FadeIn>
             <StaggerContainer className="grid gap-4 md:grid-cols-4">
-              {steps.map(([num, title, desc]) => (
+              {STEPS.map(([num, title, desc]) => (
                 <StaggerItem key={num}>
-                  <div className="ap3k-panel p-5">
+                  <div className="ap3k-panel h-full p-5">
                     <p className="font-mono text-xs font-black text-rf-pink">{num}</p>
                     <h3 className="mt-4 font-black text-slate-900 dark:text-white">{title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{desc}</p>
@@ -447,28 +278,20 @@ export default async function LandingPage() {
         <section className="px-4 py-20 sm:px-8 lg:px-16">
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-10 text-center">
-              <p className="ap3k-kicker">Trust and compliance</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Built with official Meta APIs.</h2>
-              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
-                {appReviewMode
-                  ? messagingReviewMode
-                    ? "AP3k uses Facebook Login for Business and official Meta APIs to receive Instagram comments, match keywords, send public replies, and run one private reply workflow after a comment."
-                    : "AP3k uses Official Meta Login and official Meta APIs for Instagram Business and Creator accounts."
-                  : "No scraping, no password sharing, no hidden browser automation. AP3k uses Facebook Login for Business and official Meta APIs throughout."}
-              </p>
+              <p className="ap3k-kicker">Built for a clean connection</p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">No passwords. No scraping. No browser bots.</h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">AP3k connects through Instagram authorization and uses the supported Instagram API flow for professional accounts.</p>
             </FadeIn>
             <StaggerContainer className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: "Official Meta API flow", icon: CheckCircle2 },
-                { label: "Facebook Login for Business", icon: CheckCircle2 },
-                { label: messagingReviewMode ? "Private reply after comment" : "Public privacy and terms pages", icon: CheckCircle2 },
-                { label: "Data deletion instructions", icon: CheckCircle2 },
-              ].map(({ label, icon: Icon }) => (
+                "Direct Instagram authorization",
+                "Business & Creator accounts",
+                "Comment-triggered replies",
+                "Data deletion controls",
+              ].map((label) => (
                 <StaggerItem key={label}>
                   <div className="ap3k-panel flex items-center gap-3 p-4">
-                    <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-rf-green/10 dark:text-rf-green">
-                      <Icon className="h-4 w-4" />
-                    </span>
+                    <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-rf-green/10 dark:text-rf-green"><CheckCircle2 className="h-4 w-4" /></span>
                     <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{label}</span>
                   </div>
                 </StaggerItem>
@@ -481,15 +304,13 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-5xl">
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">Simple pricing</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">
-                Start free. Scale when your replies do.
-              </h2>
-              <p className="mt-4 text-slate-600 dark:text-rf-muted">No hidden fees. Cancel any time.</p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Start free. Scale your reply volume.</h2>
+              <p className="mt-4 text-slate-600 dark:text-rf-muted">One Instagram account and unlimited campaigns on both plans.</p>
             </FadeIn>
-            <div className={plans.length === 2 ? "mx-auto grid max-w-3xl grid-cols-1 gap-5 md:grid-cols-2" : "grid grid-cols-1 gap-5 md:grid-cols-3"}>
-              {plans.map((p, index) => (
-                <FadeIn key={p.tier} delay={index * 0.05}>
-                  <PricingCard {...p} />
+            <div className="mx-auto grid max-w-3xl grid-cols-1 gap-5 md:grid-cols-2">
+              {PLANS.map((plan, index) => (
+                <FadeIn key={plan.tier} delay={index * 0.05}>
+                  <PricingCard {...plan} />
                 </FadeIn>
               ))}
             </div>
