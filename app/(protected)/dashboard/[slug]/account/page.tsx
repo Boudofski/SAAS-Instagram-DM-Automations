@@ -1,5 +1,6 @@
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
+import RemoveInstagramAccountButton from "@/components/dashboard/remove-instagram-account-button";
 import LocalTime from "@/components/global/local-time";
 import { onUserInfo } from "@/actions/user";
 import { getInstagramAccountSettingsStats, type AccountStatValue } from "@/lib/account-settings-stats";
@@ -111,13 +112,16 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
             <p className="ap3k-kicker">Connection management</p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">One Instagram account per workspace</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              Reconnect only when you want to replace the current Instagram account. Existing campaigns and activity stay saved.
+              Reconnect when you want to replace the current Instagram account. Remove it only when you want to permanently clear this workspace&apos;s Instagram automation data and history.
             </p>
           </div>
-          <Link href={`/dashboard/${params.slug}/integrations`} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]">
-            Manage connection
-            <ExternalLink className="h-4 w-4" />
-          </Link>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row lg:justify-end">
+            <Link href={`/dashboard/${params.slug}/integrations`} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]">
+              Manage connection
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+            {connected && <RemoveInstagramAccountButton />}
+          </div>
         </div>
       </section>
     </div>
