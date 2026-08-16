@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useState, useTransition } from "react";
+import { Ban, RefreshCcw, ShieldCheck, Sparkles, X } from "lucide-react";
 import {
   adminSuspendUserAction,
   adminReactivateUserAction,
@@ -18,6 +19,13 @@ type Props = {
 
 type ModalKey = "suspend" | "reactivate" | "change_plan" | "reset_usage";
 
+const TITLES: Record<ModalKey, string> = {
+  suspend: "Suspend user",
+  reactivate: "Reactivate user",
+  change_plan: "Change user plan",
+  reset_usage: "Reset monthly usage",
+};
+
 export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrides }: Props) {
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [reason, setReason] = useState("");
@@ -33,14 +41,13 @@ export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrid
     setActiveModal(modal);
     setReason("");
     setConfirmation("");
-    if (modal === "change_plan") {
-      setSelectedPlan(plan === "PRO" ? "PRO" : "FREE");
-    }
+    if (modal === "change_plan") setSelectedPlan(plan === "PRO" ? "PRO" : "FREE");
     setError(null);
     setSuccessMsg(null);
   }
 
   function closeModal() {
+    if (isPending) return;
     setActiveModal(null);
     setReason("");
     setConfirmation("");
@@ -48,8 +55,8 @@ export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrid
     setSuccessMsg(null);
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!activeModal) return;
     if (reason.trim().length < 5) {
       setError("Reason must be at least 5 characters.");
@@ -58,13 +65,13 @@ export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrid
     setError(null);
 
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("userId", userId);
-      fd.set("reason", reason);
+      const formData = new FormData();
+      formData.set("userId", userId);
+      formData.set("reason", reason);
       if (activeModal === "suspend" || activeModal === "reset_usage" || activeModal === "change_plan") {
-        fd.set("confirmation", confirmation);
+        formData.set("confirmation", confirmation);
       }
-      if (activeModal === "change_plan") fd.set("plan", selectedPlan);
+      if (activeModal === "change_plan") formData.set("plan", selectedPlan);
 
       const action =
         activeModal === "suspend"
@@ -75,224 +82,95 @@ export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrid
               ? adminChangeUserPlanAction
               : adminResetUserUsageAction;
 
-      const result = await action(fd);
-      if (result.status === 200) {
-        setSuccessMsg(String(result.data));
-      } else {
-        setError(String(result.data));
-      }
+      const result = await action(formData);
+      if (result.status === 200) setSuccessMsg(String(result.data));
+      else setError(String(result.data));
     });
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
-      <h2 className="mb-1 text-[11px] font-black uppercase tracking-widest text-slate-500">
-        Admin Actions
-      </h2>
-      <p className="mb-4 text-[10px] text-slate-600">All actions are audited</p>
+    <section className="rounded-2xl border border-white/[0.075] bg-[#0c111d]/88 p-5 shadow-[0_16px_50px_rgba(0,0,0,0.15)] sm:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Admin actions</p>
+          <h2 className="mt-1 text-base font-black text-white">Account controls</h2>
+          <p className="mt-1 text-[11px] leading-5 text-slate-500">All mutations require a reason and are written to the audit log.</p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-emerald-300 sm:self-auto">
+          <ShieldCheck className="h-3 w-3" /> Audited
+        </span>
+      </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {!isSuspended ? (
-          <button
-            onClick={() => openModal("suspend")}
-            className="rounded-lg bg-red-900/40 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-900/60 hover:text-red-200 transition-colors"
-          >
-            Suspend user
-          </button>
+          <ActionButton icon={<Ban className="h-4 w-4" />} title="Suspend user" detail="Pauses active campaigns" tone="red" onClick={() => openModal("suspend")} />
         ) : (
-          <button
-            onClick={() => openModal("reactivate")}
-            className="rounded-lg bg-emerald-900/40 px-4 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-900/60 hover:text-emerald-200 transition-colors"
-          >
-            Reactivate user
-          </button>
+          <ActionButton icon={<ShieldCheck className="h-4 w-4" />} title="Reactivate user" detail="Restore account access" tone="green" onClick={() => openModal("reactivate")} />
         )}
-
-        <button
-          onClick={() => openModal("change_plan")}
-          className="rounded-lg bg-pink-900/40 px-4 py-2 text-sm font-semibold text-pink-300 hover:bg-pink-900/60 hover:text-pink-200 transition-colors"
-        >
-          Change plan
-        </button>
-
-        <button
-          onClick={() => openModal("reset_usage")}
-          className="rounded-lg bg-amber-900/40 px-4 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-900/60 hover:text-amber-200 transition-colors"
-        >
-          Reset usage
-          <span className="ml-1.5 rounded-full border border-amber-700/60 bg-amber-900/60 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-500">
-            Irreversible
-          </span>
-        </button>
+        <ActionButton icon={<Sparkles className="h-4 w-4" />} title="Change plan" detail="Internal access only" tone="pink" onClick={() => openModal("change_plan")} />
+        <ActionButton icon={<RefreshCcw className="h-4 w-4" />} title="Reset usage" detail="Irreversible counter reset" tone="amber" onClick={() => openModal("reset_usage")} />
       </div>
 
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-2xl">
-            <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">
-              Admin Action
-            </p>
-            <h2 className="mt-1 text-lg font-black text-white">
-              {activeModal === "suspend"
-                ? "Suspend user"
-                : activeModal === "reactivate"
-                  ? "Reactivate user"
-                  : activeModal === "change_plan"
-                    ? "Change user plan"
-                    : "Reset monthly usage"}
-            </h2>
-            <p className="mt-1 text-xs text-slate-400">{email}</p>
-
-            {activeModal === "suspend" && (
-              <p className="mt-3 rounded-lg border border-red-500/20 bg-red-900/20 px-3 py-2 text-[11px] text-red-300">
-                Suspending pauses all active campaigns. Record, integrations, leads, and billing preserved.
-              </p>
-            )}
-
-            {activeModal === "change_plan" && (
-              <div className="mt-3 flex flex-col gap-2">
-                <p className="rounded-lg border border-pink-500/20 bg-pink-900/20 px-3 py-2 text-[11px] text-pink-300">
-                  Manual plan changes affect AP3k internal access only. Stripe billing is not modified.
-                </p>
-                {hasActiveOverrides && selectedPlan === "FREE" && plan === "PRO" && (
-                  <p className="rounded-lg border border-amber-500/30 bg-amber-900/20 px-3 py-2 text-[11px] text-amber-300">
-                    ⚠ This user has active internal billing overrides. Downgrading to FREE will reduce plan-level limits. The overrides remain set and can be cleared separately.
-                  </p>
-                )}
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/72 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeModal();
+          }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-t-3xl border border-white/[0.09] bg-[#0b101a] shadow-2xl sm:rounded-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
+              <div className="min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-400">Admin action</p>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-white">{TITLES[activeModal]}</h2>
+                <p className="mt-1 break-all text-xs text-slate-500">{email}</p>
               </div>
-            )}
-
-            {activeModal === "reset_usage" && (
-              <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-900/20 px-3 py-2 text-[11px] text-amber-300">
-                This resets this user’s displayed current monthly reply usage from this moment forward. It does not delete logs, campaigns, integrations, invoices, or Stripe data.
-              </p>
-            )}
+              <button type="button" onClick={closeModal} disabled={isPending} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-slate-500 hover:text-white disabled:opacity-40">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
             {successMsg ? (
-              <>
-                <p className="mt-4 rounded-lg bg-green-900/30 px-3 py-2 text-sm text-green-300">
-                  {successMsg}
-                </p>
-                <button
-                  onClick={closeModal}
-                  className="mt-4 w-full rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white"
-                >
-                  Close
-                </button>
-              </>
+              <div className="p-5 sm:p-6">
+                <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-sm text-emerald-200">{successMsg}</p>
+                <button type="button" onClick={closeModal} className="mt-4 w-full rounded-xl border border-white/[0.09] bg-white/[0.035] px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-white/[0.07] hover:text-white">Done</button>
+              </div>
             ) : (
-              <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+              <form onSubmit={handleSubmit} className="max-h-[78dvh] overflow-y-auto p-5 sm:p-6">
+                <ActionWarning activeModal={activeModal} hasActiveOverrides={hasActiveOverrides} selectedPlan={selectedPlan} plan={plan} />
+
                 {activeModal === "change_plan" && (
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-slate-400">
-                      Select Plan <span className="text-pink-400">*</span>
-                    </label>
-                    <select
-                      value={selectedPlan}
-                      onChange={(e) => setSelectedPlan(e.target.value as "FREE" | "PRO")}
-                      className="w-full rounded-lg border border-white/10 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-pink-500"
-                    >
-                      <option value="FREE">FREE</option>
-                      <option value="PRO">PRO</option>
+                  <label className="mt-4 block">
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Plan</span>
+                    <select value={selectedPlan} onChange={(event) => setSelectedPlan(event.target.value as "FREE" | "PRO")} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10">
+                      <option value="FREE">Free</option>
+                      <option value="PRO">Creator / Pro</option>
                     </select>
-                  </div>
-                )}
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-slate-400">
-                    Reason <span className="text-pink-400">*</span>
                   </label>
-                  <textarea
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={3}
-                    placeholder="Minimum 5 characters"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-pink-500"
-                  />
-                </div>
-
-                {activeModal === "suspend" && (
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-amber-400">
-                      Type SUSPEND to confirm
-                    </label>
-                    <input
-                      type="text"
-                      value={confirmation}
-                      onChange={(e) => setConfirmation(e.target.value)}
-                      placeholder="SUSPEND"
-                      className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                    />
-                  </div>
                 )}
 
-                {activeModal === "change_plan" && (
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-pink-400">
-                      Type CHANGE PLAN to confirm
-                    </label>
-                    <input
-                      type="text"
-                      value={confirmation}
-                      onChange={(e) => setConfirmation(e.target.value)}
-                      placeholder="CHANGE PLAN"
-                      className="w-full rounded-lg border border-pink-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-pink-500"
-                    />
-                  </div>
+                <label className="mt-4 block">
+                  <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Audit reason</span>
+                  <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Explain why this action is necessary" className="mt-1.5 w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+                </label>
+
+                {activeModal !== "reactivate" && (
+                  <label className="mt-4 block">
+                    <span className={`text-[10px] font-black uppercase tracking-[0.14em] ${activeModal === "change_plan" ? "text-pink-300" : "text-amber-300"}`}>
+                      Type {activeModal === "suspend" ? "SUSPEND" : activeModal === "change_plan" ? "CHANGE PLAN" : "RESET USAGE"} to confirm
+                    </span>
+                    <input type="text" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} placeholder={activeModal === "suspend" ? "SUSPEND" : activeModal === "change_plan" ? "CHANGE PLAN" : "RESET USAGE"} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+                  </label>
                 )}
 
-                {activeModal === "reset_usage" && (
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-amber-400">
-                      Type RESET USAGE to confirm
-                    </label>
-                    <input
-                      type="text"
-                      value={confirmation}
-                      onChange={(e) => setConfirmation(e.target.value)}
-                      placeholder="RESET USAGE"
-                      className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                    />
-                  </div>
-                )}
+                {error && <p role="alert" className="mt-4 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-200">{error}</p>}
 
-                {error && (
-                  <p role="alert" className="rounded-lg bg-red-900/30 px-3 py-2 text-xs text-red-300">
-                    {error}
-                  </p>
-                )}
-
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className={
-                      activeModal === "suspend"
-                        ? "flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                        : activeModal === "reactivate"
-                          ? "flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                          : activeModal === "change_plan"
-                            ? "flex-1 rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700 disabled:opacity-50"
-                            : "flex-1 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-                    }
-                  >
-                    {isPending
-                      ? "Processing…"
-                      : activeModal === "suspend"
-                        ? "Suspend user"
-                        : activeModal === "reactivate"
-                          ? "Reactivate user"
-                          : activeModal === "change_plan"
-                            ? "Change plan"
-                            : "Reset usage"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    disabled={isPending}
-                    className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50"
-                  >
-                    Cancel
+                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-400 hover:bg-white/[0.04] hover:text-white disabled:opacity-50">Cancel</button>
+                  <button type="submit" disabled={isPending} className={`rounded-xl px-5 py-2.5 text-sm font-black text-white transition disabled:opacity-50 ${activeModal === "suspend" ? "bg-red-600 hover:bg-red-500" : activeModal === "reactivate" ? "bg-emerald-600 hover:bg-emerald-500" : activeModal === "change_plan" ? "bg-gradient-to-r from-pink-500 to-violet-600 hover:brightness-110" : "bg-amber-600 hover:bg-amber-500"}`}>
+                    {isPending ? "Processing…" : TITLES[activeModal]}
                   </button>
                 </div>
               </form>
@@ -300,6 +178,30 @@ export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrid
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
+}
+
+function ActionButton({ icon, title, detail, tone, onClick }: { icon: React.ReactNode; title: string; detail: string; tone: "red" | "green" | "pink" | "amber"; onClick: () => void }) {
+  const styles = {
+    red: "border-red-500/15 bg-red-500/[0.035] text-red-300 hover:border-red-500/30 hover:bg-red-500/[0.07]",
+    green: "border-emerald-500/15 bg-emerald-500/[0.035] text-emerald-300 hover:border-emerald-500/30 hover:bg-emerald-500/[0.07]",
+    pink: "border-pink-500/15 bg-pink-500/[0.035] text-pink-300 hover:border-pink-500/30 hover:bg-pink-500/[0.07]",
+    amber: "border-amber-500/15 bg-amber-500/[0.035] text-amber-300 hover:border-amber-500/30 hover:bg-amber-500/[0.07]",
+  }[tone];
+
+  return (
+    <button type="button" onClick={onClick} className={`group rounded-2xl border p-4 text-left transition ${styles}`}>
+      <span className="grid h-9 w-9 place-items-center rounded-xl border border-current/15 bg-black/10">{icon}</span>
+      <span className="mt-3 block text-sm font-black text-white">{title}</span>
+      <span className="mt-1 block text-[11px] leading-5 text-slate-500">{detail}</span>
+    </button>
+  );
+}
+
+function ActionWarning({ activeModal, hasActiveOverrides, selectedPlan, plan }: { activeModal: ModalKey; hasActiveOverrides?: boolean; selectedPlan: "FREE" | "PRO"; plan?: string }) {
+  if (activeModal === "suspend") return <p className="rounded-xl border border-red-500/20 bg-red-500/[0.07] px-3.5 py-3 text-xs leading-5 text-red-200">Suspending pauses all active campaigns. Integrations, leads, records, and billing data are preserved.</p>;
+  if (activeModal === "change_plan") return <div className="space-y-2"><p className="rounded-xl border border-pink-500/20 bg-pink-500/[0.07] px-3.5 py-3 text-xs leading-5 text-pink-200">Manual plan changes affect AP3K internal access only. Stripe billing is not modified.</p>{hasActiveOverrides && selectedPlan === "FREE" && plan === "PRO" && <p className="rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 text-xs leading-5 text-amber-200">This user has active internal overrides. Downgrading changes plan defaults, while explicit overrides remain until cleared separately.</p>}</div>;
+  if (activeModal === "reset_usage") return <p className="rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 text-xs leading-5 text-amber-200">Usage counters reset from this moment forward. Historical logs, campaigns, integrations, invoices, and Stripe data are not deleted.</p>;
+  return <p className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3.5 py-3 text-xs leading-5 text-emerald-200">Reactivation restores user access. Existing campaign review states remain unchanged.</p>;
 }
