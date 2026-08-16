@@ -94,7 +94,7 @@ export function V2Table({
 export function V2Pagination({
   page,
   total,
-  limit = 25,
+  limit = 50,
   base,
 }: {
   page: number;
