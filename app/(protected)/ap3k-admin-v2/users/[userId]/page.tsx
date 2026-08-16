@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, CalendarDays, CircleUserRound, Clock3, CreditCard, Gauge, ShieldCheck } from "lucide-react";
 import { getAdminV2UserDetail } from "@/lib/admin-v2/queries";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import { V2Badge, statusTone } from "@/components/admin-v2/v2-badge";
 import { UsageBar } from "@/components/admin-v2/usage-bar";
 import { UserActionsPanel } from "@/components/admin-v2/user-actions-panel";
 import { InternalOverridesCard } from "@/components/admin-v2/internal-overrides-card";
+import { AdminPageHeader, AdminSurface, AdminSectionHeader } from "@/components/admin-v2/page-header";
 import {
   usageTone,
   formatUsageMetricValue,
@@ -34,15 +36,14 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
 
   if (!user) notFound();
 
-  // Safe Stripe subscription lookup — falls back gracefully when key absent or API errors
   let stripeStatus: string | null = null;
   if (user.customerId) {
     try {
-      const subs = await stripe.subscriptions.list({
+      const subscriptions = await stripe.subscriptions.list({
         customer: user.customerId,
         limit: 1,
       });
-      stripeStatus = subs.data[0]?.status ?? null;
+      stripeStatus = subscriptions.data[0]?.status ?? null;
     } catch {
       stripeStatus = "unknown";
     }
@@ -52,199 +53,141 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
   const displayName = [user.firstname, user.lastname].filter(Boolean).join(" ");
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Back nav */}
+    <div className="flex flex-col gap-7 sm:gap-8">
       <div>
         <Link
-          href="/ap3k-admin-v2/users"
-          className="text-xs font-bold text-slate-500 hover:text-slate-300"
+          href="/admin/users"
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500 transition hover:text-slate-200"
         >
-          ← All Users
+          <ArrowLeft className="h-3.5 w-3.5" />
+          All users
         </Link>
       </div>
 
-      {/* Page header */}
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">
-          User Detail
-        </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
-          {user.email}
-        </h1>
-        {displayName && (
-          <p className="mt-1 text-sm text-slate-400">{displayName}</p>
-        )}
-      </div>
+      <AdminPageHeader
+        eyebrow="User detail"
+        title={user.email}
+        description={displayName || "Owner-level account controls, usage, billing state, overrides, and audit history."}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <V2Badge tone={user.plan === "PRO" ? "pink" : "slate"}>{planLabel}</V2Badge>
+            <V2Badge tone={statusTone(user.status)}>{user.status}</V2Badge>
+          </div>
+        }
+      />
 
-      {/* Identity card */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
-        <h2 className="mb-4 text-[11px] font-black uppercase tracking-widest text-slate-500">
-          Identity
-        </h2>
-        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryTile
+          icon={<CircleUserRound className="h-4 w-4" />}
+          label="Account status"
+          value={<V2Badge tone={statusTone(user.status)}>{user.status}</V2Badge>}
+        />
+        <SummaryTile
+          icon={<CalendarDays className="h-4 w-4" />}
+          label="Created"
+          value={<LocalTime value={user.createdAt} mode="date" />}
+        />
+        <SummaryTile
+          icon={<Clock3 className="h-4 w-4" />}
+          label="Last activity"
+          value={user.lastActivity ? <LocalTime value={user.lastActivity} /> : <span className="text-slate-600">No activity</span>}
+        />
+        <SummaryTile
+          icon={<CreditCard className="h-4 w-4" />}
+          label="Billing"
+          value={user.customerId ? <V2Badge tone="green">Stripe linked</V2Badge> : <span className="text-slate-600">Not linked</span>}
+        />
+      </section>
+
+      <AdminSurface className="p-5 sm:p-6">
+        <AdminSectionHeader title="Identity & account state" description="Internal identifiers and the latest owner-side administrative context." />
+        <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
           <DetailField
             label="Clerk ID"
-            value={
-              <span className="break-all font-mono text-[11px] text-slate-300">
-                {user.clerkId}
-              </span>
-            }
+            value={<span className="break-all font-mono text-[11px] text-slate-300">{user.clerkId}</span>}
           />
-          <DetailField
-            label="Status"
-            value={
-              <V2Badge tone={statusTone(user.status)}>{user.status}</V2Badge>
-            }
-          />
-          <DetailField
-            label="Created"
-            value={<LocalTime value={user.createdAt} mode="date" />}
-          />
-          <DetailField
-            label="Last activity"
-            value={
-              user.lastActivity ? (
-                <LocalTime value={user.lastActivity} />
-              ) : (
-                <span className="text-slate-600">No activity</span>
-              )
-            }
-          />
+          <DetailField label="Plan" value={<V2Badge tone={user.plan === "PRO" ? "pink" : "slate"}>{planLabel}</V2Badge>} />
+          <DetailField label="Status" value={<V2Badge tone={statusTone(user.status)}>{user.status}</V2Badge>} />
+          <DetailField label="Campaigns" value={`${user.activeCampaigns} active · ${user.totalCampaigns} total`} />
           {user.status === "SUSPENDED" && user.suspendedReason && (
-            <DetailField
-              label="Suspend reason"
-              value={
-                <span className="text-xs text-amber-400">
-                  {user.suspendedReason}
-                </span>
-              }
-            />
+            <DetailField label="Suspend reason" value={<span className="text-xs text-amber-300">{user.suspendedReason}</span>} />
           )}
           {recentAudit.length > 0 && (
             <DetailField
               label="Last admin action"
               value={
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-slate-300">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-slate-300">
                     {recentAudit[0].action.replace(/^ADMIN_/, "").replace(/_/g, " ")}
                   </span>
-                  <span className="text-[10px] text-slate-500">
-                    {recentAudit[0].adminEmail ?? "unknown"} ·{" "}
-                    <LocalTime value={recentAudit[0].createdAt} />
+                  <span className="text-[10px] leading-4 text-slate-500">
+                    {recentAudit[0].adminEmail ?? "unknown"} · <LocalTime value={recentAudit[0].createdAt} />
                   </span>
                 </div>
               }
             />
           )}
         </dl>
-      </div>
+      </AdminSurface>
 
-      {/* Plan & Billing card */}
       {usage ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
-          <h2 className="mb-4 text-[11px] font-black uppercase tracking-widest text-slate-500">
-            Plan &amp; Billing
-          </h2>
-
-          {/* Plan + period row */}
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <V2Badge tone={user.plan === "PRO" ? "pink" : "slate"}>
-              {planLabel}
-            </V2Badge>
-            <span className="text-xs text-slate-500">
-              Period: {usage.periodLabel}
-            </span>
+        <AdminSurface className="p-5 sm:p-6">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Plan & billing</p>
+              <h2 className="mt-1 text-base font-black text-white">Usage this period</h2>
+              <p className="mt-1 text-[11px] text-slate-500">{usage.periodLabel}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <V2Badge tone={user.plan === "PRO" ? "pink" : "slate"}>{planLabel}</V2Badge>
+              {user.customerId ? (
+                <V2Badge tone="green">Stripe customer</V2Badge>
+              ) : (
+                <V2Badge tone="slate">No Stripe record</V2Badge>
+              )}
+              {stripeStatus && (
+                <V2Badge tone={stripeStatus === "active" || stripeStatus === "trialing" ? "green" : stripeStatus === "past_due" ? "amber" : "slate"}>
+                  {stripeStatus}
+                </V2Badge>
+              )}
+            </div>
           </div>
 
-          {/* Usage metrics grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <MetricTile
               label="Static replies"
               value={formatUsageMetricValue(usage.staticReplies)}
-              bar={
-                <UsageBar
-                  percent={usage.staticReplies.percent}
-                  tone={usageTone(
-                    usage.staticReplies.percent,
-                    usage.staticReplies.blocked,
-                  )}
-                />
-              }
-              sub={`${usage.staticReplies.percent}% used this period`}
+              bar={<UsageBar percent={usage.staticReplies.percent} tone={usageTone(usage.staticReplies.percent, usage.staticReplies.blocked)} />}
+              sub={`${usage.staticReplies.percent}% used`}
             />
             <MetricTile
               label="AI replies"
               value={formatUsageMetricValue(usage.aiReplies)}
-              bar={
-                isUnlimited(usage.aiReplies.limit) ? undefined : (
-                  <UsageBar
-                    percent={usage.aiReplies.percent}
-                    tone={usageTone(
-                      usage.aiReplies.percent,
-                      usage.aiReplies.blocked,
-                    )}
-                  />
-                )
-              }
+              bar={isUnlimited(usage.aiReplies.limit) ? undefined : <UsageBar percent={usage.aiReplies.percent} tone={usageTone(usage.aiReplies.percent, usage.aiReplies.blocked)} />}
+              sub={isUnlimited(usage.aiReplies.limit) ? "Unlimited on current limits" : `${usage.aiReplies.percent}% used`}
             />
             <MetricTile
               label="Connected accounts"
               value={formatUsageMetricValue(usage.connectedAccounts)}
-              bar={
-                <UsageBar
-                  percent={usage.connectedAccounts.percent}
-                  tone={usageTone(
-                    usage.connectedAccounts.percent,
-                    usage.connectedAccounts.blocked,
-                  )}
-                />
-              }
+              bar={<UsageBar percent={usage.connectedAccounts.percent} tone={usageTone(usage.connectedAccounts.percent, usage.connectedAccounts.blocked)} />}
+            />
+            <MetricTile label="Active campaigns" value={formatUsageMetricValue(usage.activeCampaigns)} />
+            <MetricTile
+              label="Campaign health"
+              value={`${user.activeCampaigns} active · ${user.campaignsNeedingReview} review`}
+              sub={`${user.totalCampaigns} total campaigns`}
             />
             <MetricTile
-              label="Active campaigns"
-              value={formatUsageMetricValue(usage.activeCampaigns)}
-            />
-            <MetricTile
-              label="All campaigns"
-              value={`${user.totalCampaigns} total · ${user.activeCampaigns} active · ${user.campaignsNeedingReview} needs review`}
+              label="Billing state"
+              value={user.customerId ? "Stripe customer linked" : "Internal plan only"}
+              sub={stripeStatus ? `Stripe status: ${stripeStatus}` : undefined}
             />
           </div>
-
-          {/* Billing state */}
-          <div className="mt-5 border-t border-white/[0.06] pt-5">
-            <h3 className="mb-3 text-[11px] font-black uppercase tracking-widest text-slate-500">
-              Billing
-            </h3>
-            {user.customerId ? (
-              <div className="flex flex-wrap gap-2">
-                <V2Badge tone="green">Stripe customer exists</V2Badge>
-                {stripeStatus && (
-                  <V2Badge
-                    tone={
-                      stripeStatus === "active" || stripeStatus === "trialing"
-                        ? "green"
-                        : stripeStatus === "past_due"
-                          ? "amber"
-                          : "slate"
-                    }
-                  >
-                    {stripeStatus}
-                  </V2Badge>
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">
-                No external billing record
-              </p>
-            )}
-          </div>
-        </div>
+        </AdminSurface>
       ) : (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
-          <p className="text-sm text-slate-500">
-            Plan &amp; billing data unavailable.
-          </p>
-        </div>
+        <AdminSurface className="p-5 sm:p-6">
+          <p className="text-sm text-slate-500">Plan and billing usage data is temporarily unavailable.</p>
+        </AdminSurface>
       )}
 
       <InternalOverridesCard user={user} usage={usage} />
@@ -254,101 +197,79 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
         email={user.email}
         status={user.status}
         plan={user.plan}
-        hasActiveOverrides={!!(
-          user.overrideReason &&
-          (!user.overrideExpiresAt || new Date(user.overrideExpiresAt) > new Date())
-        )}
+        hasActiveOverrides={Boolean(user.overrideReason && (!user.overrideExpiresAt || new Date(user.overrideExpiresAt) > new Date()))}
       />
 
-      {/* Recent audit activity */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-            Recent audit activity
-          </h2>
-          <Link
-            href={`/ap3k-admin-v2/audit?targetId=${user.id}`}
-            className="text-[11px] font-bold text-pink-400 hover:text-pink-300"
-          >
-            View all audit logs →
-          </Link>
-        </div>
-        {recentAudit.length === 0 ? (
-          <p className="text-xs text-slate-600">No audit events for this user.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {recentAudit.map((log) => {
-              const actionLabel = log.action
-                .replace(/^ADMIN_/, "")
-                .replace(/_/g, " ");
-              return (
-                <li
-                  key={log.id}
-                  className="flex flex-wrap items-center gap-2 border-b border-white/[0.04] pb-2 last:border-0 last:pb-0"
-                >
-                  <V2Badge tone={auditActionTone(log.action)}>
-                    {actionLabel}
-                  </V2Badge>
-                  <V2Badge tone={auditStatusTone(log.status)}>
-                    {log.status}
-                  </V2Badge>
-                  <span className="text-[11px] text-slate-500">
-                    {log.adminEmail ?? "unknown admin"}
-                  </span>
-                  {log.reason && (
-                    <span className="text-[11px] text-slate-500">
-                      — {log.reason}
+      <section>
+        <AdminSectionHeader
+          title="Recent audit activity"
+          description="The latest sensitive actions applied to this user."
+          action={
+            <Link href={`/admin/audit?targetId=${user.id}`} className="text-[11px] font-bold text-pink-300 hover:text-pink-200">
+              View all audit logs →
+            </Link>
+          }
+        />
+
+        <AdminSurface className="overflow-hidden">
+          {recentAudit.length === 0 ? (
+            <div className="px-5 py-10 text-center text-xs text-slate-600">No audit events for this user.</div>
+          ) : (
+            <ul className="divide-y divide-white/[0.05]">
+              {recentAudit.map((log) => {
+                const actionLabel = log.action.replace(/^ADMIN_/, "").replace(/_/g, " ");
+                return (
+                  <li key={log.id} className="flex min-w-0 flex-col gap-2 px-4 py-3.5 sm:flex-row sm:items-center sm:px-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <V2Badge tone={auditActionTone(log.action)}>{actionLabel}</V2Badge>
+                      <V2Badge tone={auditStatusTone(log.status)}>{log.status}</V2Badge>
+                    </div>
+                    <span className="min-w-0 flex-1 truncate text-[11px] text-slate-500">
+                      {log.adminEmail ?? "unknown admin"}{log.reason ? ` · ${log.reason}` : ""}
                     </span>
-                  )}
-                  <span className="ml-auto text-[11px] text-slate-600">
-                    <LocalTime value={log.createdAt} />
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                    <span className="shrink-0 text-[10px] tabular-nums text-slate-600 sm:text-[11px]"><LocalTime value={log.createdAt} /></span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </AdminSurface>
+      </section>
+    </div>
+  );
+}
+
+function SummaryTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+      <div className="flex items-center gap-2 text-slate-500">
+        <span className="grid h-8 w-8 place-items-center rounded-xl border border-white/[0.07] bg-white/[0.035]">{icon}</span>
+        <span className="text-[9px] font-black uppercase tracking-[0.15em]">{label}</span>
       </div>
+      <div className="mt-3 text-sm font-bold text-slate-200">{value}</div>
     </div>
   );
 }
 
-function DetailField({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
-        {label}
-      </p>
-      <div className="mt-1 text-sm text-slate-300">{value}</div>
+    <div className="min-w-0">
+      <dt className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">{label}</dt>
+      <dd className="mt-1.5 text-sm text-slate-300">{value}</dd>
     </div>
   );
 }
 
-function MetricTile({
-  label,
-  value,
-  bar,
-  sub,
-}: {
-  label: string;
-  value: string;
-  bar?: React.ReactNode;
-  sub?: string;
-}) {
+function MetricTile({ label, value, bar, sub }: { label: string; value: string; bar?: React.ReactNode; sub?: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-      <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-bold text-white">{value}</p>
-      {bar && <div className="mt-2">{bar}</div>}
-      {sub && <p className="mt-1 text-[11px] text-slate-500">{sub}</p>}
+    <div className="rounded-xl border border-white/[0.065] bg-white/[0.025] p-4">
+      <div className="flex items-center gap-2 text-slate-500">
+        <Gauge className="h-3.5 w-3.5" />
+        <p className="text-[9px] font-black uppercase tracking-[0.14em]">{label}</p>
+      </div>
+      <p className="mt-2 text-sm font-black leading-5 text-white">{value}</p>
+      {bar && <div className="mt-3">{bar}</div>}
+      {sub && <p className="mt-2 text-[10px] leading-4 text-slate-500">{sub}</p>}
     </div>
   );
 }
