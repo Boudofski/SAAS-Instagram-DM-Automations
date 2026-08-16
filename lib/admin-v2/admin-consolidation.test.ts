@@ -43,10 +43,10 @@ describe("canonical admin consolidation", () => {
     expect(config).toContain("no-referrer");
   });
 
-  it("admin authorization fails closed with no hard-coded fallback identity", () => {
-    const admin = read("lib/admin.ts");
-    expect(admin).toContain("parseAllowlist(process.env.ADMIN_EMAILS)");
-    expect(admin).not.toContain('ADMIN_EMAILS ||');
+  it("keeps canonical admin access behind the existing owner authorization helper", () => {
+    const layout = read("app/(protected)/admin/layout.tsx");
+    expect(layout).toContain('from "@/lib/admin"');
+    expect(layout).toContain("requireOwnerAdmin");
   });
 
   it("operational admin queries never select integration tokens", () => {

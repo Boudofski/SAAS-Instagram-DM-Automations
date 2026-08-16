@@ -19,6 +19,7 @@ export default async function AdminSystemPage() {
   const environment = adminEnvironmentLabel();
   const emailAllowlistConfigured = Boolean(process.env.ADMIN_EMAILS?.trim());
   const clerkAllowlistConfigured = Boolean(process.env.ADMIN_CLERK_USER_IDS?.trim());
+  const explicitAdminAllowlist = emailAllowlistConfigured || clerkAllowlistConfigured;
   const instagramLoginEnabled = process.env.INSTAGRAM_LOGIN_ENABLED === "true";
   const appReviewMode = isAppReviewMode();
 
@@ -67,11 +68,24 @@ export default async function AdminSystemPage() {
             <V2Badge tone={environment === "Production" ? "green" : "amber"}>{environment}</V2Badge>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <ConfigItem label="Admin email allowlist" value={emailAllowlistConfigured ? "Configured" : "Not configured"} ok={emailAllowlistConfigured} />
-            <ConfigItem label="Admin Clerk-ID allowlist" value={clerkAllowlistConfigured ? "Configured" : "Optional / not set"} ok={emailAllowlistConfigured || clerkAllowlistConfigured} />
+            <ConfigItem
+              label="Admin allowlist"
+              value={explicitAdminAllowlist ? "Explicitly configured" : "Legacy fallback active"}
+              ok={explicitAdminAllowlist}
+            />
+            <ConfigItem
+              label="Clerk-ID allowlist"
+              value={clerkAllowlistConfigured ? "Configured" : "Optional / not set"}
+              ok={explicitAdminAllowlist}
+            />
             <ConfigItem label="Instagram Login" value={instagramLoginEnabled ? "Enabled" : "Disabled"} ok={instagramLoginEnabled} />
             <ConfigItem label="App Review mode" value={appReviewMode ? "Enabled" : "Disabled"} ok />
           </div>
+          {!explicitAdminAllowlist && (
+            <div className="mt-4 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] px-4 py-3 text-xs leading-relaxed text-amber-200/80">
+              Configure ADMIN_EMAILS and/or ADMIN_CLERK_USER_IDS in the deployment environment before removing the legacy fallback from the authorization helper.
+            </div>
+          )}
           <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/10 px-4 py-3 text-xs text-slate-400">
             Last real Meta webhook:{" "}
             <span className="font-bold text-slate-200">
