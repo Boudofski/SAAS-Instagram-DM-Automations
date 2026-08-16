@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  AUDIT_LIMIT,
   getAdminV2AuditLogs,
   getAdminV2AuditLogCount,
   summarizeAuditValue,
@@ -9,6 +10,9 @@ import {
   type AdminV2AuditLogRow,
 } from "@/lib/admin-v2/audit-queries";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
+import { V2Table } from "@/components/admin-v2/v2-table";
+import { AdvancedPanel } from "@/components/admin-v2/advanced-panel";
+import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
 
 type SearchParams = {
@@ -22,8 +26,6 @@ type SearchParams = {
 
 type Props = { searchParams?: SearchParams };
 
-const AUDIT_LIMIT = 50;
-
 const ACTION_OPTIONS = [
   { value: "ADMIN_USER_SUSPENDED", label: "User suspended" },
   { value: "ADMIN_USER_REACTIVATED", label: "User reactivated" },
@@ -36,15 +38,15 @@ const ACTION_OPTIONS = [
   { value: "ADMIN_MARK_RECONNECT_REQUIRED", label: "Mark reconnect required" },
 ];
 
-function sp(val: string | string[] | undefined): string | undefined {
-  return Array.isArray(val) ? val[0] : val;
+function sp(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function buildPageUrl(params: SearchParams, page: number): string {
   const entries = Object.entries({ ...params, page: String(page) })
-    .filter(([, v]) => v !== undefined && v !== "")
-    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`);
-  return `/ap3k-admin-v2/audit?${entries.join("&")}`;
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`);
+  return `/admin/audit?${entries.join("&")}`;
 }
 
 export default async function AdminV2AuditPage({ searchParams }: Props) {
@@ -56,122 +58,94 @@ export default async function AdminV2AuditPage({ searchParams }: Props) {
     targetId: sp(params.targetId) || undefined,
     adminEmail: sp(params.adminEmail) || undefined,
     dateFrom: sp(params.dateFrom) ? new Date(sp(params.dateFrom)!) : undefined,
-    dateTo: sp(params.dateTo)
-      ? new Date(`${sp(params.dateTo)}T23:59:59.999Z`)
-      : undefined,
+    dateTo: sp(params.dateTo) ? new Date(`${sp(params.dateTo)}T23:59:59.999Z`) : undefined,
   };
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
-
   const [logs, total] = await Promise.all([
     getAdminV2AuditLogs(filters, page),
     getAdminV2AuditLogCount(filters),
   ]);
-
   const totalPages = Math.max(1, Math.ceil(total / AUDIT_LIMIT));
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">
-          Audit Logs
-        </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
-          Admin Audit Log{" "}
-          <span className="text-base font-bold text-slate-500">({total})</span>
-        </h1>
-        <p className="mt-1 text-xs text-slate-500">
-          Read-only record of all sensitive admin actions. No edits, replays, or
-          rollbacks.
-        </p>
-      </div>
+  const rows = logs.map((log) => makeAuditRow(log));
 
-      {/* Filters */}
+  return (
+    <div className="flex flex-col gap-6 sm:gap-7">
+      <AdminPageHeader
+        eyebrow="Audit"
+        title="Admin audit log"
+        count={total}
+        description="Immutable history of sensitive owner actions. Entries can be inspected, but never edited, replayed, or rolled back from this screen."
+      />
+
       <form
         method="GET"
-        action="/ap3k-admin-v2/audit"
-        className="flex flex-wrap items-end gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4"
+        action="/admin/audit"
+        className="grid gap-3 rounded-2xl border border-white/[0.075] bg-[#0b101b]/72 p-4 sm:grid-cols-2 xl:grid-cols-6"
       >
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-            Action
-          </label>
+        <FilterField label="Action">
           <select
             name="action"
             defaultValue={sp(params.action) ?? ""}
-            className="rounded-lg border border-white/10 bg-[#050816] px-3 py-1.5 text-xs text-slate-300 focus:border-pink-500 focus:outline-none"
+            className="w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3 py-2.5 text-xs text-slate-200 outline-none transition focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10"
           >
             <option value="">All actions</option>
-            {ACTION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+            {ACTION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
-        </div>
+        </FilterField>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-            Target user ID
-          </label>
+        <FilterField label="Target user ID">
           <input
             name="targetId"
             type="text"
             defaultValue={sp(params.targetId) ?? ""}
-            placeholder="User ID..."
-            className="w-52 rounded-lg border border-white/10 bg-[#050816] px-3 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:border-pink-500 focus:outline-none"
+            placeholder="User ID"
+            className="w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3 py-2.5 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10"
           />
-        </div>
+        </FilterField>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-            Admin email
-          </label>
+        <FilterField label="Admin email">
           <input
             name="adminEmail"
             type="text"
             defaultValue={sp(params.adminEmail) ?? ""}
-            placeholder="admin@..."
-            className="w-44 rounded-lg border border-white/10 bg-[#050816] px-3 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:border-pink-500 focus:outline-none"
+            placeholder="admin@…"
+            className="w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3 py-2.5 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10"
           />
-        </div>
+        </FilterField>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-            From
-          </label>
+        <FilterField label="From">
           <input
             name="dateFrom"
             type="date"
             defaultValue={sp(params.dateFrom) ?? ""}
-            className="rounded-lg border border-white/10 bg-[#050816] px-3 py-1.5 text-xs text-slate-300 focus:border-pink-500 focus:outline-none"
+            className="w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10"
           />
-        </div>
+        </FilterField>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-            To
-          </label>
+        <FilterField label="To">
           <input
             name="dateTo"
             type="date"
             defaultValue={sp(params.dateTo) ?? ""}
-            className="rounded-lg border border-white/10 bg-[#050816] px-3 py-1.5 text-xs text-slate-300 focus:border-pink-500 focus:outline-none"
+            className="w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10"
           />
-        </div>
+        </FilterField>
 
-        <div className="flex gap-2">
+        <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-1">
           <button
             type="submit"
-            className="rounded-lg bg-pink-500 px-4 py-1.5 text-xs font-black text-white hover:bg-pink-400"
+            className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-violet-600 px-4 py-2.5 text-xs font-black text-white transition hover:brightness-110"
           >
-            Filter
+            Apply filters
           </button>
           {activeFilterCount > 0 && (
             <Link
-              href="/ap3k-admin-v2/audit"
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-200"
+              href="/admin/audit"
+              className="rounded-xl border border-white/[0.09] px-3 py-2.5 text-xs font-bold text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
             >
               Clear
             </Link>
@@ -179,73 +153,31 @@ export default async function AdminV2AuditPage({ searchParams }: Props) {
         </div>
       </form>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-white/[0.08]">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/[0.08] bg-white/[0.02]">
-              {[
-                "Time",
-                "Action",
-                "Target",
-                "Admin",
-                "Reason",
-                "Before",
-                "After",
-                "Status",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="px-4 py-8 text-center text-sm text-slate-500"
-                >
-                  No audit log entries found.
-                </td>
-              </tr>
-            ) : (
-              logs.map((log, i) => (
-                <AuditLogRows key={log.id} log={log} index={i} />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <V2Table
+        headers={["Time", "Action", "Target", "Admin", "Reason", "Before", "After", "Status", "Details"]}
+        rows={rows}
+        empty="No audit log entries match these filters."
+      />
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
-          <span>
-            {Math.min(page * AUDIT_LIMIT + 1, total)}–
-            {Math.min((page + 1) * AUDIT_LIMIT, total)} of {total}
-          </span>
-          <div className="flex gap-2">
-            {page > 0 && (
-              <Link
-                href={buildPageUrl(params, page - 1)}
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-slate-300 hover:bg-white/[0.08]"
-              >
-                ← Prev
+        <div className="flex flex-col gap-3 rounded-xl border border-white/[0.055] bg-white/[0.018] px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-500">
+            <span className="font-bold tabular-nums text-slate-300">
+              {Math.min(page * AUDIT_LIMIT + 1, total)}–{Math.min((page + 1) * AUDIT_LIMIT, total)} of {total}
+            </span>
+            <span>Page {page + 1} of {totalPages}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            {page > 0 ? (
+              <Link href={buildPageUrl(params, page - 1)} className="rounded-lg border border-white/[0.09] bg-white/[0.035] px-3 py-2 text-center font-bold text-slate-300 hover:bg-white/[0.07] hover:text-white">
+                ← Previous
               </Link>
-            )}
-            {page < totalPages - 1 && (
-              <Link
-                href={buildPageUrl(params, page + 1)}
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-slate-300 hover:bg-white/[0.08]"
-              >
+            ) : <span className="rounded-lg border border-white/[0.04] px-3 py-2 text-center font-bold text-slate-700">← Previous</span>}
+            {page < totalPages - 1 ? (
+              <Link href={buildPageUrl(params, page + 1)} className="rounded-lg border border-white/[0.09] bg-white/[0.035] px-3 py-2 text-center font-bold text-slate-300 hover:bg-white/[0.07] hover:text-white">
                 Next →
               </Link>
-            )}
+            ) : <span className="rounded-lg border border-white/[0.04] px-3 py-2 text-center font-bold text-slate-700">Next →</span>}
           </div>
         </div>
       )}
@@ -253,108 +185,43 @@ export default async function AdminV2AuditPage({ searchParams }: Props) {
   );
 }
 
-function AuditLogRows({
-  log,
-  index,
-}: {
-  log: AdminV2AuditLogRow;
-  index: number;
-}) {
-  const stripe = index % 2 === 0 ? "" : "bg-white/[0.015]";
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function makeAuditRow(log: AdminV2AuditLogRow): React.ReactNode[] {
   const actionLabel = log.action.replace(/^ADMIN_/, "").replace(/_/g, " ");
 
-  return (
-    <>
-      <tr className={`border-b border-white/[0.04] ${stripe}`}>
-        <td className="whitespace-nowrap px-4 py-3 text-[11px] text-slate-400">
-          <LocalTime value={log.createdAt} />
-        </td>
-        <td className="px-4 py-3">
-          <V2Badge tone={auditActionTone(log.action)}>{actionLabel}</V2Badge>
-        </td>
-        <td className="px-4 py-3">
-          <div className="min-w-0">
-            {log.targetLabel && (
-              <p className="truncate text-xs text-slate-300">{log.targetLabel}</p>
-            )}
-            {log.targetId && (
-              <p className="font-mono text-[10px] text-slate-600">
-                {log.targetId.slice(0, 8)}…
-              </p>
-            )}
-          </div>
-        </td>
-        <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-400">
-          {log.adminEmail ?? "—"}
-        </td>
-        <td className="max-w-[180px] px-4 py-3">
-          <p className="truncate text-xs text-slate-400" title={log.reason ?? ""}>
-            {log.reason ?? "—"}
-          </p>
-        </td>
-        <td className="max-w-[140px] px-4 py-3">
-          <p className="truncate text-[11px] text-slate-500">
-            {summarizeAuditValue(log.before)}
-          </p>
-        </td>
-        <td className="max-w-[140px] px-4 py-3">
-          <p className="truncate text-[11px] text-slate-500">
-            {summarizeAuditValue(log.after)}
-          </p>
-        </td>
-        <td className="px-4 py-3">
-          <V2Badge tone={auditStatusTone(log.status)}>{log.status}</V2Badge>
-        </td>
-      </tr>
-      {/* Expandable detail row — pure HTML <details>, no client JS */}
-      <tr className={stripe}>
-        <td colSpan={8} className="border-b border-white/[0.04] px-4 pb-2 pt-0">
-          <details>
-            <summary className="cursor-pointer text-[10px] text-slate-500 hover:text-slate-300">
-              ▶ View details
-            </summary>
-            <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl bg-white/[0.05] p-3 sm:grid-cols-2">
-              {log.reason && (
-                <DetailBlock label="Reason" value={log.reason} />
-              )}
-              {log.before && (
-                <DetailBlock
-                  label="Before"
-                  value={JSON.stringify(log.before, null, 2)}
-                  mono
-                />
-              )}
-              {log.after && (
-                <DetailBlock
-                  label="After"
-                  value={JSON.stringify(log.after, null, 2)}
-                  mono
-                />
-              )}
-              {log.metadata && (
-                <DetailBlock
-                  label="Metadata"
-                  value={JSON.stringify(log.metadata, null, 2)}
-                  mono
-                />
-              )}
-              {log.error && (
-                <DetailBlock label="Error" value={log.error} tone="red" />
-              )}
-              <DetailBlock label="Target type" value={log.targetType} />
-              {log.targetId && (
-                <DetailBlock label="Target ID" value={log.targetId} mono />
-              )}
-              <DetailBlock
-                label="Timestamp"
-                value={<LocalTime value={log.createdAt} />}
-              />
-            </div>
-          </details>
-        </td>
-      </tr>
-    </>
-  );
+  return [
+    <span key="time" className="whitespace-nowrap text-[11px] tabular-nums text-slate-500"><LocalTime value={log.createdAt} /></span>,
+    <V2Badge key="action" tone={auditActionTone(log.action)}>{actionLabel}</V2Badge>,
+    <div key="target" className="min-w-0">
+      <p className="max-w-[180px] truncate text-xs font-medium text-slate-300">{log.targetLabel ?? log.targetType}</p>
+      {log.targetId && <p className="mt-0.5 font-mono text-[9px] text-slate-600">{log.targetId.slice(0, 10)}…</p>}
+    </div>,
+    <span key="admin" className="break-all text-[11px] text-slate-400 sm:break-normal">{log.adminEmail ?? "—"}</span>,
+    <p key="reason" className="max-w-[200px] truncate text-[11px] text-slate-400" title={log.reason ?? ""}>{log.reason ?? "—"}</p>,
+    <p key="before" className="max-w-[160px] truncate text-[11px] text-slate-500">{summarizeAuditValue(log.before)}</p>,
+    <p key="after" className="max-w-[160px] truncate text-[11px] text-slate-500">{summarizeAuditValue(log.after)}</p>,
+    <V2Badge key="status" tone={auditStatusTone(log.status)}>{log.status}</V2Badge>,
+    <AdvancedPanel key="details" label="Inspect" compact>
+      <div className="grid min-w-[260px] gap-3 text-[11px] sm:min-w-[420px] sm:grid-cols-2">
+        {log.reason && <DetailBlock label="Reason" value={log.reason} />}
+        {log.before && <DetailBlock label="Before" value={JSON.stringify(log.before, null, 2)} mono />}
+        {log.after && <DetailBlock label="After" value={JSON.stringify(log.after, null, 2)} mono />}
+        {log.metadata && <DetailBlock label="Metadata" value={JSON.stringify(log.metadata, null, 2)} mono />}
+        {log.error && <DetailBlock label="Error" value={log.error} tone="red" />}
+        <DetailBlock label="Target type" value={log.targetType} />
+        {log.targetId && <DetailBlock label="Target ID" value={log.targetId} mono />}
+        <DetailBlock label="Timestamp" value={<LocalTime value={log.createdAt} />} />
+      </div>
+    </AdvancedPanel>,
+  ];
 }
 
 function DetailBlock({
@@ -369,21 +236,9 @@ function DetailBlock({
   tone?: "red";
 }) {
   return (
-    <div>
-      <p
-        className={`text-[10px] font-black uppercase tracking-wider ${
-          tone === "red" ? "text-red-500" : "text-slate-500"
-        }`}
-      >
-        {label}
-      </p>
-      <div
-        className={`mt-0.5 text-[11px] ${
-          mono
-            ? "overflow-x-auto rounded bg-black/30 p-1.5 font-mono whitespace-pre"
-            : "whitespace-pre-wrap"
-        } ${tone === "red" ? "text-red-300" : mono ? "text-slate-200" : "text-slate-300"}`}
-      >
+    <div className="min-w-0">
+      <p className={`text-[9px] font-black uppercase tracking-[0.14em] ${tone === "red" ? "text-red-400" : "text-slate-500"}`}>{label}</p>
+      <div className={`mt-1 ${mono ? "max-h-40 overflow-auto whitespace-pre rounded-lg bg-black/25 p-2 font-mono" : "whitespace-pre-wrap"} ${tone === "red" ? "text-red-200" : "text-slate-300"}`}>
         {value}
       </div>
     </div>

@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { client } from "@/lib/prisma";
 import { sanitizeAdminPayload } from "@/lib/admin-control-center";
 
-const AUDIT_LIMIT = 50;
+export const AUDIT_LIMIT = 25;
 const RECENT_LIMIT = 5;
 
 export type AdminV2AuditLogFilters = {
@@ -74,24 +74,23 @@ export async function getAdminV2AuditLogs(
       before: true,
       after: true,
       metadata: true,
-      // adminUserId intentionally excluded — adminEmail is the display identifier
     },
   });
 
-  return rows.map((r) => ({
-    id: r.id,
-    createdAt: r.createdAt,
-    action: r.action,
-    targetType: r.targetType,
-    targetId: r.targetId,
-    targetLabel: r.targetLabel,
-    adminEmail: r.adminEmail,
-    reason: r.reason,
-    status: r.status,
-    error: r.error,
-    before: toSafeRecord(r.before),
-    after: toSafeRecord(r.after),
-    metadata: toSafeRecord(r.metadata),
+  return rows.map((row) => ({
+    id: row.id,
+    createdAt: row.createdAt,
+    action: row.action,
+    targetType: row.targetType,
+    targetId: row.targetId,
+    targetLabel: row.targetLabel,
+    adminEmail: row.adminEmail,
+    reason: row.reason,
+    status: row.status,
+    error: row.error,
+    before: toSafeRecord(row.before),
+    after: toSafeRecord(row.after),
+    metadata: toSafeRecord(row.metadata),
   }));
 }
 
@@ -125,31 +124,31 @@ export async function getAdminV2UserRecentAuditLogs(
     },
   });
 
-  return rows.map((r) => ({
-    id: r.id,
-    createdAt: r.createdAt,
-    action: r.action,
-    targetType: r.targetType,
-    targetId: r.targetId,
-    targetLabel: r.targetLabel,
-    adminEmail: r.adminEmail,
-    reason: r.reason,
-    status: r.status,
-    error: r.error,
-    before: toSafeRecord(r.before),
-    after: toSafeRecord(r.after),
-    metadata: toSafeRecord(r.metadata),
+  return rows.map((row) => ({
+    id: row.id,
+    createdAt: row.createdAt,
+    action: row.action,
+    targetType: row.targetType,
+    targetId: row.targetId,
+    targetLabel: row.targetLabel,
+    adminEmail: row.adminEmail,
+    reason: row.reason,
+    status: row.status,
+    error: row.error,
+    before: toSafeRecord(row.before),
+    after: toSafeRecord(row.after),
+    metadata: toSafeRecord(row.metadata),
   }));
 }
 
 export function summarizeAuditValue(value: Record<string, unknown> | null): string {
   if (!value) return "—";
   const entries = Object.entries(value)
-    .filter(([, v]) => v !== null && v !== undefined)
+    .filter(([, entry]) => entry !== null && entry !== undefined)
     .slice(0, 2)
-    .map(([k, v]) => {
-      const label = k.replace(/([A-Z])/g, " $1").toLowerCase().trim();
-      return `${label}: ${String(v)}`;
+    .map(([key, entry]) => {
+      const label = key.replace(/([A-Z])/g, " $1").toLowerCase().trim();
+      return `${label}: ${String(entry)}`;
     });
   return entries.join(", ") || "—";
 }

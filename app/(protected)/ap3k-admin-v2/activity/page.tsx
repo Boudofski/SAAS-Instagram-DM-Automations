@@ -1,6 +1,11 @@
-import { getAdminV2Activity, getAdminV2ActivityCount } from "@/lib/admin-v2/queries";
+import {
+  ADMIN_ACTIVITY_PAGE_SIZE,
+  getAdminUiActivity,
+  getAdminUiActivityCount,
+} from "@/lib/admin-v2/ui-queries";
 import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge, eventTone } from "@/components/admin-v2/v2-badge";
+import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import { humanEvent } from "@/lib/admin-v2/labels";
 import LocalTime from "@/components/global/local-time";
 
@@ -9,42 +14,44 @@ type Props = { searchParams?: { page?: string } };
 export default async function AdminV2ActivityPage({ searchParams }: Props) {
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
   const [events, total] = await Promise.all([
-    getAdminV2Activity(page),
-    getAdminV2ActivityCount(),
+    getAdminUiActivity(page),
+    getAdminUiActivityCount(),
   ]);
 
-  const rows = events.map((e) => [
-    <span key="time" className="tabular-nums text-[11px] text-slate-500">
-      <LocalTime value={e.createdAt} />
+  const rows = events.map((event) => [
+    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-slate-500">
+      <LocalTime value={event.createdAt} />
     </span>,
-    <V2Badge key="type" tone={eventTone(e.eventType)}>
-      {humanEvent(e.eventType)}
+    <V2Badge key="type" tone={eventTone(event.eventType)}>
+      {humanEvent(event.eventType)}
     </V2Badge>,
-    <span key="campaign" className="max-w-[160px] truncate text-[11px] text-slate-300">
-      {e.campaignName ?? "—"}
+    <span key="campaign" title={event.campaignName ?? ""} className="block max-w-[220px] truncate text-[11px] font-medium text-slate-300">
+      {event.campaignName ?? "—"}
     </span>,
-    <span key="owner" className="text-[11px] text-slate-500">{e.ownerEmail ?? "—"}</span>,
-    <span key="keyword" className="text-[11px] text-slate-400">{e.keyword ?? "—"}</span>,
+    <span key="owner" className="break-all text-[11px] text-slate-500 sm:break-normal">{event.ownerEmail ?? "—"}</span>,
+    <span key="keyword" className="max-w-[180px] truncate text-[11px] text-slate-400">{event.keyword ?? "—"}</span>,
   ]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">Activity</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
-          Activity Feed{" "}
-          <span className="text-base font-bold text-slate-500">({total})</span>
-        </h1>
-        <p className="mt-1 text-xs text-slate-500">
-          Human-readable event log. Raw payloads are not shown by default.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6 sm:gap-7">
+      <AdminPageHeader
+        eyebrow="Activity"
+        title="Automation activity"
+        count={total}
+        description={`Human-readable event history, limited to ${ADMIN_ACTIVITY_PAGE_SIZE} records per page so the feed stays fast and scannable.`}
+      />
+
       <V2Table
         headers={["Time", "Event", "Campaign", "Owner", "Keyword"]}
         rows={rows}
         empty="No activity events found."
       />
-      <V2Pagination page={page} total={total} limit={100} base="/ap3k-admin-v2/activity" />
+      <V2Pagination
+        page={page}
+        total={total}
+        limit={ADMIN_ACTIVITY_PAGE_SIZE}
+        base="/admin/activity"
+      />
     </div>
   );
 }

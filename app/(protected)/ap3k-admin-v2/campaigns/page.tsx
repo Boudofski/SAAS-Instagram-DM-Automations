@@ -1,16 +1,17 @@
 import { getAdminV2Campaigns, getAdminV2CampaignCount } from "@/lib/admin-v2/queries";
 import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
+import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import type { AdminV2Campaign } from "@/lib/admin-v2/queries";
 import LocalTime from "@/components/global/local-time";
 import { CampaignActionsCell } from "@/components/admin-v2/campaign-action-modal";
 
 type Props = { searchParams?: { page?: string } };
 
-function campaignHealth(c: AdminV2Campaign): { label: string; tone: "green" | "amber" | "red" | "slate" } {
-  if (c.archivedAt) return { label: "Archived", tone: "slate" };
-  if (c.needsReview) return { label: "Needs review", tone: "amber" };
-  if (c.active) return { label: "Active", tone: "green" };
+function campaignHealth(campaign: AdminV2Campaign): { label: string; tone: "green" | "amber" | "red" | "slate" } {
+  if (campaign.archivedAt) return { label: "Archived", tone: "slate" };
+  if (campaign.needsReview) return { label: "Needs review", tone: "amber" };
+  if (campaign.active) return { label: "Active", tone: "green" };
   return { label: "Paused", tone: "red" };
 }
 
@@ -21,64 +22,68 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
     getAdminV2CampaignCount(),
   ]);
 
-  const rows = campaigns.map((c) => {
-    const health = campaignHealth(c);
+  const rows = campaigns.map((campaign) => {
+    const health = campaignHealth(campaign);
     const keyword =
-      c.triggerMode === "ANY_COMMENT"
-        ? <span key="kw" className="text-slate-500 italic text-[11px]">Any comment</span>
-        : c.keywords.length > 0
-        ? <span key="kw" className="text-[11px] text-slate-300">{c.keywords.slice(0, 2).join(", ")}{c.keywords.length > 2 ? "…" : ""}</span>
-        : <span key="kw" className="text-slate-600 text-[11px]">—</span>;
+      campaign.triggerMode === "ANY_COMMENT" ? (
+        <span key="kw" className="text-[11px] font-medium italic text-slate-400">Any comment</span>
+      ) : campaign.keywords.length > 0 ? (
+        <span key="kw" className="block max-w-[180px] truncate text-[11px] text-slate-300">
+          {campaign.keywords.slice(0, 2).join(", ")}{campaign.keywords.length > 2 ? "…" : ""}
+        </span>
+      ) : (
+        <span key="kw" className="text-[11px] text-slate-600">No keyword</span>
+      );
 
     return [
       <div key="name" className="min-w-0">
-        <p className="max-w-[180px] truncate font-bold text-slate-200">{c.name}</p>
-        <p className="text-[11px] text-slate-500">{c.ownerEmail ?? "—"}</p>
+        <p className="max-w-[220px] truncate font-bold text-slate-100" title={campaign.name}>{campaign.name}</p>
+        <p className="mt-0.5 break-all text-[11px] text-slate-500 sm:break-normal sm:truncate">{campaign.ownerEmail ?? "—"}</p>
       </div>,
       <V2Badge key="status" tone={health.tone}>{health.label}</V2Badge>,
       keyword,
-      <span key="scope" className="text-[11px] text-slate-400">{c.postScope}</span>,
-      <V2Badge key="reply" tone={c.hasPublicReply ? "blue" : "slate"}>
-        {c.hasPublicReply ? "Reply on" : "No reply"}
+      <span key="scope" className="text-[11px] text-slate-400">{campaign.postScope}</span>,
+      <V2Badge key="reply" tone={campaign.hasPublicReply ? "blue" : "slate"}>
+        {campaign.hasPublicReply ? "Enabled" : "Off"}
       </V2Badge>,
-      <span key="replies" className="tabular-nums text-slate-300">{c.replyCount}</span>,
-      <span key="leads" className="tabular-nums text-slate-300">{c.leadCount}</span>,
-      c.lastActivity ? (
-        <span key="last" className="text-[11px] text-slate-400"><LocalTime value={c.lastActivity} /></span>
+      <span key="replies" className="font-semibold tabular-nums text-slate-300">{campaign.replyCount.toLocaleString()}</span>,
+      <span key="leads" className="font-semibold tabular-nums text-slate-300">{campaign.leadCount.toLocaleString()}</span>,
+      campaign.lastActivity ? (
+        <span key="last" className="whitespace-nowrap text-[11px] text-slate-400"><LocalTime value={campaign.lastActivity} /></span>
       ) : (
         <span key="last" className="text-[11px] text-slate-600">No activity</span>
       ),
-      c.needsReview && c.reviewReason ? (
-        <span key="reason" className="max-w-[160px] truncate text-[11px] text-amber-400">{c.reviewReason}</span>
+      campaign.needsReview && campaign.reviewReason ? (
+        <span key="reason" title={campaign.reviewReason} className="block max-w-[180px] truncate text-[11px] text-amber-300">{campaign.reviewReason}</span>
       ) : (
         <span key="reason" className="text-[11px] text-slate-600">—</span>
       ),
       <CampaignActionsCell
         key="actions"
-        campaignId={c.id}
-        campaignName={c.name}
-        active={c.active}
-        needsReview={c.needsReview}
-        archivedAt={c.archivedAt}
+        campaignId={campaign.id}
+        campaignName={campaign.name}
+        active={campaign.active}
+        needsReview={campaign.needsReview}
+        archivedAt={campaign.archivedAt}
       />,
     ];
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">Campaigns</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
-          All Campaigns{" "}
-          <span className="text-base font-bold text-slate-500">({total})</span>
-        </h1>
-      </div>
+    <div className="flex flex-col gap-6 sm:gap-7">
+      <AdminPageHeader
+        eyebrow="Campaigns"
+        title="All campaigns"
+        count={total}
+        description="Review automation health, triggers, scope, delivery volume, and pause state without leaving the owner console."
+      />
+
       <V2Table
-        headers={["Campaign", "Health", "Keyword", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason", "Actions"]}
+        headers={["Campaign", "Health", "Trigger", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason", "Actions"]}
         rows={rows}
         empty="No campaigns found."
       />
-      <V2Pagination page={page} total={total} base="/ap3k-admin-v2/campaigns" />
+      <V2Pagination page={page} total={total} base="/admin/campaigns" />
     </div>
   );
 }

@@ -3,9 +3,19 @@ import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge, accountHealth } from "@/components/admin-v2/v2-badge";
 import { AdvancedPanel } from "@/components/admin-v2/advanced-panel";
 import { AccountActionsCell } from "@/components/admin-v2/account-actions-cell";
+import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
 
 type Props = { searchParams?: { page?: string } };
+
+function webhookState(mode: string | null): { label: string; tone: "green" | "amber" | "slate" } {
+  if (!mode) return { label: "Unknown", tone: "slate" };
+  if (mode === "API_SUBSCRIBED" || mode === "INSTAGRAM_LOGIN_API_SUBSCRIBED") {
+    return { label: "Subscribed", tone: "green" };
+  }
+  if (mode.includes("PENDING") || mode.includes("RETRY")) return { label: "Pending", tone: "amber" };
+  return { label: mode.replace(/_/g, " "), tone: "slate" };
+}
 
 export default async function AdminV2AccountsPage({ searchParams }: Props) {
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
@@ -14,65 +24,66 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
     getAdminV2AccountCount(),
   ]);
 
-  const rows = accounts.map((a) => {
-    const health = accountHealth(a);
+  const rows = accounts.map((account) => {
+    const health = accountHealth(account);
+    const webhook = webhookState(account.webhookSubscriptionMode);
+
     return [
       <div key="ig" className="min-w-0">
-        <p className="font-bold text-slate-200">
-          {a.instagramUsername ? `@${a.instagramUsername}` : "Unknown"}
+        <p className="font-bold text-slate-100">
+          {account.instagramUsername ? `@${account.instagramUsername}` : "Unknown account"}
         </p>
-        {a.pageName && <p className="text-[11px] text-slate-500">{a.pageName}</p>}
+        {account.pageName && <p className="mt-0.5 truncate text-[11px] text-slate-500">{account.pageName}</p>}
       </div>,
-      <span key="owner" className="text-[11px] text-slate-400">{a.ownerEmail ?? "—"}</span>,
+      <span key="owner" className="break-all text-[11px] text-slate-400 sm:break-normal">{account.ownerEmail ?? "—"}</span>,
       <V2Badge key="health" tone={health.tone}>{health.label}</V2Badge>,
-      <div key="webhook" className="text-[11px]">
-        <V2Badge tone={a.webhookSubscriptionMode === "API_SUBSCRIBED" ? "green" : "slate"}>
-          {a.webhookSubscriptionMode ?? "Unknown"}
-        </V2Badge>
-      </div>,
-      a.oauthLastError ? (
-        <span key="error" className="max-w-[180px] truncate text-[11px] text-amber-400">{a.oauthLastError}</span>
+      <V2Badge key="webhook" tone={webhook.tone}>{webhook.label}</V2Badge>,
+      account.oauthLastError ? (
+        <span
+          key="error"
+          title={account.oauthLastError}
+          className="block max-w-[220px] truncate text-[11px] text-amber-300"
+        >
+          {account.oauthLastError}
+        </span>
       ) : (
-        <span key="error" className="text-[11px] text-slate-600">—</span>
+        <span key="error" className="text-[11px] text-slate-600">None</span>
       ),
-      <span key="created" className="text-[11px] text-slate-500">
-        <LocalTime value={a.createdAt} mode="date" />
+      <span key="created" className="whitespace-nowrap text-[11px] text-slate-500">
+        <LocalTime value={account.createdAt} mode="date" />
       </span>,
-      <AdvancedPanel key="ids" label="Meta IDs (internal)">
+      <AdvancedPanel key="ids" label="View IDs">
         <div className="flex flex-col gap-1 font-mono text-[11px] text-slate-400">
-          <p>IG ID: {a.instagramId ?? "—"}</p>
-          <p>Page ID: {a.pageId ?? "—"}</p>
-          <p>Business ID: {a.businessId ?? "—"}</p>
+          <p>IG ID: {account.instagramId ?? "—"}</p>
+          <p>Page ID: {account.pageId ?? "—"}</p>
+          <p>Business ID: {account.businessId ?? "—"}</p>
         </div>
       </AdvancedPanel>,
       <AccountActionsCell
         key="actions"
-        integrationId={a.id}
-        instagramUsername={a.instagramUsername}
-        status={a.status}
-        reconnectRequired={a.reconnectRequired}
+        integrationId={account.id}
+        instagramUsername={account.instagramUsername}
+        status={account.status}
+        reconnectRequired={account.reconnectRequired}
       />,
     ];
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">Accounts</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
-          Instagram Accounts{" "}
-          <span className="text-base font-bold text-slate-500">({total})</span>
-        </h1>
-        <p className="mt-1 text-xs text-slate-500">
-          Raw access tokens are never displayed. Meta IDs are hidden by default inside the Advanced panel.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6 sm:gap-7">
+      <AdminPageHeader
+        eyebrow="Accounts"
+        title="Instagram accounts"
+        count={total}
+        description="Connection health, webhook subscription state, and safe account controls. Raw access tokens are never displayed."
+      />
+
       <V2Table
         headers={["Account", "Owner", "Health", "Webhook", "Last error", "Connected", "Meta IDs", "Actions"]}
         rows={rows}
-        empty="No accounts found."
+        empty="No Instagram accounts found."
       />
-      <V2Pagination page={page} total={total} base="/ap3k-admin-v2/accounts" />
+      <V2Pagination page={page} total={total} base="/admin/accounts" />
     </div>
   );
 }

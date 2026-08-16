@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import LocalTime from "@/components/global/local-time";
 import { adminUpdateUserBillingOverridesAction } from "@/actions/admin/user-actions";
@@ -18,8 +19,6 @@ export function InternalOverridesCard({ user, usage }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Form state
   const [monthlyReply, setMonthlyReply] = useState(user.monthlyReplyLimitOverride?.toString() ?? "");
   const [aiReply, setAiReply] = useState(user.aiReplyLimitOverride?.toString() ?? "");
   const [activeCampaign, setActiveCampaign] = useState(user.activeCampaignLimitOverride?.toString() ?? "");
@@ -27,9 +26,8 @@ export function InternalOverridesCard({ user, usage }: Props) {
   const [expiresAt, setExpiresAt] = useState(user.overrideExpiresAt ? new Date(user.overrideExpiresAt).toISOString().split("T")[0] : "");
   const [reason, setReason] = useState(user.overrideReason ?? "");
 
-  const isOverrideActive = !!(user.overrideReason && (!user.overrideExpiresAt || new Date(user.overrideExpiresAt) > new Date()));
-  const isOverrideExpired = !!(user.overrideExpiresAt && new Date(user.overrideExpiresAt) <= new Date());
-
+  const isOverrideActive = Boolean(user.overrideReason && (!user.overrideExpiresAt || new Date(user.overrideExpiresAt) > new Date()));
+  const isOverrideExpired = Boolean(user.overrideExpiresAt && new Date(user.overrideExpiresAt) <= new Date());
   const planLimits = getPlanLimits(user.plan as ProductPlan);
 
   function openModal() {
@@ -39,11 +37,12 @@ export function InternalOverridesCard({ user, usage }: Props) {
   }
 
   function closeModal() {
+    if (isPending) return;
     setIsModalOpen(false);
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSave(event: React.FormEvent) {
+    event.preventDefault();
     setError(null);
     if (!reason.trim()) {
       setError("Reason is required.");
@@ -51,46 +50,44 @@ export function InternalOverridesCard({ user, usage }: Props) {
     }
 
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("userId", user.id);
-      fd.set("reason", reason);
-      fd.set("monthlyReplyLimitOverride", monthlyReply);
-      fd.set("aiReplyLimitOverride", aiReply);
-      fd.set("activeCampaignLimitOverride", activeCampaign);
-      fd.set("connectedAccountLimitOverride", connectedAccount);
-      fd.set("overrideExpiresAt", expiresAt);
+      const formData = new FormData();
+      formData.set("userId", user.id);
+      formData.set("reason", reason);
+      formData.set("monthlyReplyLimitOverride", monthlyReply);
+      formData.set("aiReplyLimitOverride", aiReply);
+      formData.set("activeCampaignLimitOverride", activeCampaign);
+      formData.set("connectedAccountLimitOverride", connectedAccount);
+      formData.set("overrideExpiresAt", expiresAt);
 
-      const res = await adminUpdateUserBillingOverridesAction(fd);
-      if (res.status === 200) {
+      const result = await adminUpdateUserBillingOverridesAction(formData);
+      if (result.status === 200) {
         setSuccessMsg("Overrides updated successfully.");
-        setTimeout(() => {
-          closeModal();
-        }, 1500);
+        setTimeout(() => setIsModalOpen(false), 1200);
       } else {
-        setError(res.data as string);
+        setError(String(result.data));
       }
     });
   }
 
-  async function handleClear() {
+  function handleClear() {
     setError(null);
     if (!reason.trim()) {
-        setError("Reason is required to clear overrides.");
-        return;
+      setError("Reason is required to clear overrides.");
+      return;
     }
 
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("userId", user.id);
-      fd.set("reason", reason);
-      fd.set("monthlyReplyLimitOverride", "");
-      fd.set("aiReplyLimitOverride", "");
-      fd.set("activeCampaignLimitOverride", "");
-      fd.set("connectedAccountLimitOverride", "");
-      fd.set("overrideExpiresAt", "");
+      const formData = new FormData();
+      formData.set("userId", user.id);
+      formData.set("reason", reason);
+      formData.set("monthlyReplyLimitOverride", "");
+      formData.set("aiReplyLimitOverride", "");
+      formData.set("activeCampaignLimitOverride", "");
+      formData.set("connectedAccountLimitOverride", "");
+      formData.set("overrideExpiresAt", "");
 
-      const res = await adminUpdateUserBillingOverridesAction(fd);
-      if (res.status === 200) {
+      const result = await adminUpdateUserBillingOverridesAction(formData);
+      if (result.status === 200) {
         setSuccessMsg("Overrides cleared.");
         setMonthlyReply("");
         setAiReply("");
@@ -98,221 +95,153 @@ export function InternalOverridesCard({ user, usage }: Props) {
         setConnectedAccount("");
         setExpiresAt("");
         setReason("");
-        setTimeout(() => {
-          closeModal();
-        }, 1500);
+        setTimeout(() => setIsModalOpen(false), 1200);
       } else {
-        setError(res.data as string);
+        setError(String(result.data));
       }
     });
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#111827] p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-          Internal access overrides
-        </h2>
+    <section className="rounded-2xl border border-white/[0.075] bg-[#0c111d]/88 p-5 shadow-[0_16px_50px_rgba(0,0,0,0.15)] sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Internal access overrides</p>
+          <h2 className="mt-1 text-base font-black text-white">Custom usage limits</h2>
+          <p className="mt-1 text-[11px] leading-5 text-slate-500">Owner-only AP3K limits. Stripe billing is never modified by this control.</p>
+        </div>
         <button
+          type="button"
           onClick={openModal}
-          className="text-[11px] font-bold text-pink-400 hover:text-pink-300 transition-colors uppercase tracking-wider"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-pink-500/15 bg-pink-500/[0.055] px-3.5 py-2 text-[11px] font-bold text-pink-300 transition hover:bg-pink-500/[0.1]"
         >
-          Edit internal overrides
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Edit overrides
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <OverrideField
           label="Status"
-          value={
-            <div className="flex items-center gap-2">
-              {isOverrideActive ? (
-                <V2Badge tone="pink">Override active</V2Badge>
-              ) : isOverrideExpired ? (
-                <V2Badge tone="amber">Override expired</V2Badge>
-              ) : (
-                <V2Badge tone="slate">Inactive</V2Badge>
-              )}
-            </div>
-          }
+          value={isOverrideActive ? <V2Badge tone="pink">Override active</V2Badge> : isOverrideExpired ? <V2Badge tone="amber">Override expired</V2Badge> : <V2Badge tone="slate">Inactive</V2Badge>}
         />
         <OverrideField
-          label="Static Replies"
+          label="Static replies"
           value={usage?.staticReplies.limit.toLocaleString() ?? "—"}
-          sub={isOverrideActive && user.monthlyReplyLimitOverride !== null ? `Plan default: ${planLimits.staticRepliesPerMonth.toLocaleString()}` : undefined}
+          sub={isOverrideActive && user.monthlyReplyLimitOverride !== null ? `Plan: ${planLimits.staticRepliesPerMonth.toLocaleString()}` : undefined}
         />
         <OverrideField
-          label="AI Replies"
+          label="AI replies"
           value={usage?.aiReplies.limit.toLocaleString() ?? "—"}
-          sub={isOverrideActive && user.aiReplyLimitOverride !== null ? `Plan default: ${planLimits.aiRepliesPerMonth.toLocaleString()}` : undefined}
+          sub={isOverrideActive && user.aiReplyLimitOverride !== null ? `Plan: ${planLimits.aiRepliesPerMonth.toLocaleString()}` : undefined}
         />
         <OverrideField
-          label="Active Campaigns"
+          label="Active campaigns"
           value={usage?.activeCampaigns.limit.toLocaleString() ?? "—"}
-          sub={isOverrideActive && user.activeCampaignLimitOverride !== null ? `Plan default: ${planLimits.activeCampaigns.toLocaleString()}` : undefined}
+          sub={isOverrideActive && user.activeCampaignLimitOverride !== null ? `Plan: ${planLimits.activeCampaigns.toLocaleString()}` : undefined}
         />
         <OverrideField
-            label="Connected Accounts"
-            value={usage?.connectedAccounts.limit.toLocaleString() ?? "—"}
-            sub={isOverrideActive && user.connectedAccountLimitOverride !== null ? `Plan default: ${planLimits.connectedInstagramAccounts.toLocaleString()}` : undefined}
+          label="Connected accounts"
+          value={usage?.connectedAccounts.limit.toLocaleString() ?? "—"}
+          sub={isOverrideActive && user.connectedAccountLimitOverride !== null ? `Plan: ${planLimits.connectedInstagramAccounts.toLocaleString()}` : undefined}
         />
-        {user.overrideExpiresAt && (
-            <OverrideField
-                label="Expires At"
-                value={<LocalTime value={user.overrideExpiresAt} />}
-            />
-        )}
-        {user.overrideReason && (
-            <div className="sm:col-span-2 lg:col-span-4 mt-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
-                    Last Override Reason
-                </p>
-                <p className="mt-1 text-xs text-slate-400 italic">&quot;{user.overrideReason}&quot;</p>
-            </div>
-        )}
       </div>
 
+      {(user.overrideExpiresAt || user.overrideReason) && (
+        <div className="mt-4 grid gap-3 rounded-xl border border-white/[0.055] bg-black/10 p-3.5 sm:grid-cols-[auto_1fr] sm:items-start">
+          {user.overrideExpiresAt && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-600">Expires</p>
+              <p className="mt-1 text-xs font-semibold text-slate-300"><LocalTime value={user.overrideExpiresAt} /></p>
+            </div>
+          )}
+          {user.overrideReason && (
+            <div className="min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-600">Last reason</p>
+              <p className="mt-1 break-words text-xs leading-5 text-slate-400">{user.overrideReason}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-black text-white">Edit internal access overrides</h2>
-            <p className="mt-2 text-xs text-slate-400">
-              These overrides affect AP3k internal limits only. Stripe billing is not modified.
-            </p>
-
-            {successMsg ? (
-              <div className="mt-6">
-                <p className="rounded-lg bg-green-900/30 px-3 py-2 text-sm text-green-300">
-                  {successMsg}
-                </p>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/72 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeModal();
+          }}
+        >
+          <div className="flex max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-white/[0.09] bg-[#0b101a] shadow-2xl sm:max-h-[90vh] sm:rounded-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-400">Internal access</p>
+                <h2 className="mt-1 text-lg font-black text-white">Edit custom limits</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">These limits affect AP3K only. Billing in Stripe remains unchanged.</p>
               </div>
-            ) : (
-              <form onSubmit={handleSave} className="mt-6 flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-slate-400">Monthly replies override</label>
-                    <input
-                      type="number"
-                      value={monthlyReply}
-                      onChange={(e) => setMonthlyReply(e.target.value)}
-                      placeholder="Plan default"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
-                    />
+              <button type="button" onClick={closeModal} disabled={isPending} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-slate-500 hover:text-white disabled:opacity-40">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+              {successMsg ? (
+                <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-sm text-emerald-200">{successMsg}</p>
+              ) : (
+                <form onSubmit={handleSave} className="space-y-5">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <LimitInput label="Monthly replies" value={monthlyReply} onChange={setMonthlyReply} />
+                    <LimitInput label="AI replies" value={aiReply} onChange={setAiReply} />
+                    <LimitInput label="Active campaigns" value={activeCampaign} onChange={setActiveCampaign} />
+                    <LimitInput label="Connected accounts" value={connectedAccount} onChange={setConnectedAccount} />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-slate-400">AI replies override</label>
-                    <input
-                      type="number"
-                      value={aiReply}
-                      onChange={(e) => setAiReply(e.target.value)}
-                      placeholder="Plan default"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
-                    />
+
+                  <label className="block">
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Expiration date · optional</span>
+                    <input type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Audit reason</span>
+                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Why is this override necessary?" className="mt-1.5 w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+                  </label>
+
+                  {!expiresAt && <p className="rounded-xl border border-amber-500/15 bg-amber-500/[0.055] px-3.5 py-3 text-[11px] leading-5 text-amber-200/85">No expiration is set. These overrides will remain active until they are explicitly changed or cleared.</p>}
+                  {error && <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-200">{error}</p>}
+
+                  <div className="flex flex-col-reverse gap-2 border-t border-white/[0.06] pt-4 sm:flex-row sm:justify-between">
+                    <button type="button" onClick={handleClear} disabled={isPending} className="rounded-xl border border-amber-500/18 bg-amber-500/[0.04] px-4 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-500/[0.08] disabled:opacity-50">Clear overrides</button>
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                      <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-400 hover:bg-white/[0.04] hover:text-white disabled:opacity-50">Cancel</button>
+                      <button type="submit" disabled={isPending} className="rounded-xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-2.5 text-sm font-black text-white hover:brightness-110 disabled:opacity-50">{isPending ? "Saving…" : "Save overrides"}</button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-slate-400">Active campaigns override</label>
-                    <input
-                      type="number"
-                      value={activeCampaign}
-                      onChange={(e) => setActiveCampaign(e.target.value)}
-                      placeholder="Plan default"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-slate-400">Connected accounts override</label>
-                    <input
-                      type="number"
-                      value={connectedAccount}
-                      onChange={(e) => setConnectedAccount(e.target.value)}
-                      placeholder="Plan default"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-slate-400">Expiration date (optional)</label>
-                  <input
-                    type="date"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-slate-400">Reason <span className="text-pink-400">*</span></label>
-                  <textarea
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={2}
-                    placeholder="Why are you applying this override?"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
-                  />
-                </div>
-
-                {!expiresAt && (
-                  <p className="rounded-lg border border-slate-700 bg-white/[0.02] px-3 py-2 text-[11px] text-slate-500">
-                    No expiration set — these overrides will persist indefinitely. Consider setting an expiry date.
-                  </p>
-                )}
-
-                {error && (
-                  <p className="rounded-lg bg-red-900/30 px-3 py-2 text-xs text-red-300">
-                    {error}
-                  </p>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="flex-1 rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700 disabled:opacity-50"
-                  >
-                    {isPending ? "Saving..." : "Save overrides"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    disabled={isPending}
-                    className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50"
-                  >
-                    Clear overrides
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
+                </form>
+              )}
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
-function OverrideField({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: React.ReactNode;
-  sub?: string;
-}) {
+function LimitInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <div>
-      <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
-        {label}
-      </p>
-      <div className="mt-1 text-sm text-slate-300 font-bold">{value}</div>
-      {sub && <p className="mt-0.5 text-[10px] text-slate-500">{sub}</p>}
+    <label className="block">
+      <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</span>
+      <input type="number" min="0" value={value} onChange={(event) => onChange(event.target.value)} placeholder="Plan default" className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+    </label>
+  );
+}
+
+function OverrideField({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-white/[0.055] bg-white/[0.02] p-3.5">
+      <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-600">{label}</p>
+      <div className="mt-2 text-sm font-black text-slate-200">{value}</div>
+      {sub && <p className="mt-1 text-[10px] text-slate-500">{sub}</p>}
     </div>
   );
 }

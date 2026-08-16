@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { BadgeDollarSign, CreditCard, Sparkles, Users } from "lucide-react";
 import { getAdminV2BillingOverview } from "@/lib/admin-v2/operations-queries";
 import { stripeCustomerDashboardUrl } from "@/lib/admin-control-center";
 import { StatCard } from "@/components/admin-v2/stat-card";
 import { V2Badge, statusTone } from "@/components/admin-v2/v2-badge";
 import { V2Table } from "@/components/admin-v2/v2-table";
+import { AdminPageHeader, AdminSectionHeader } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
 
 export default async function AdminBillingPage() {
@@ -20,7 +22,7 @@ export default async function AdminBillingPage() {
         {subscription.userId ? (
           <Link
             href={`/admin/users/${subscription.userId}`}
-            className="font-bold text-slate-200 hover:text-pink-300"
+            className="break-all font-bold text-slate-100 transition hover:text-pink-300 sm:break-normal"
           >
             {subscription.email ?? "Unknown user"}
           </Link>
@@ -37,20 +39,20 @@ export default async function AdminBillingPage() {
           href={stripeUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-[11px] font-bold text-sky-400 hover:text-sky-300"
+          className="inline-flex rounded-lg border border-sky-500/15 bg-sky-500/[0.05] px-2.5 py-1.5 text-[11px] font-bold text-sky-300 transition hover:bg-sky-500/[0.1]"
         >
           Open Stripe ↗
         </a>
       ) : (
-        <span key="stripe" className="text-[11px] text-slate-600">No Stripe customer</span>
+        <span key="stripe" className="text-[11px] text-slate-600">Not linked</span>
       ),
       subscription.hasOverrides ? (
-        <div key="override" className="flex flex-col gap-1">
+        <div key="override" className="flex flex-col items-start gap-1">
           <V2Badge tone={overrideExpired ? "slate" : "amber"}>
             {overrideExpired ? "Expired override" : "Custom limits"}
           </V2Badge>
           {subscription.overrideReason && (
-            <span className="max-w-[220px] truncate text-[10px] text-slate-500">
+            <span className="max-w-[220px] truncate text-[10px] text-slate-500" title={subscription.overrideReason}>
               {subscription.overrideReason}
             </span>
           )}
@@ -68,29 +70,25 @@ export default async function AdminBillingPage() {
   });
 
   return (
-    <div className="flex flex-col gap-7">
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-pink-400">Billing</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">Plans &amp; Revenue Access</h1>
-        <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-500">
-          Platform-wide subscription visibility. Billing mutations stay on the individual user page so every sensitive action remains contextual and auditable.
-        </p>
-      </div>
+    <div className="flex flex-col gap-7 sm:gap-8">
+      <AdminPageHeader
+        eyebrow="Billing"
+        title="Plans & revenue access"
+        description="Platform-wide subscription visibility. Sensitive billing mutations stay on individual user records so every change remains contextual and auditable."
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Subscriptions" value={stats.total} sub="All internal subscription records" />
-        <StatCard label="Creator plans" value={stats.pro} tone="pink" />
-        <StatCard label="Free plans" value={stats.free} />
-        <StatCard label="Stripe linked" value={stats.stripeLinked} tone="blue" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Subscriptions" value={stats.total} sub="Internal subscription records" icon={<Users className="h-4 w-4" />} />
+        <StatCard label="Creator plans" value={stats.pro} tone="pink" icon={<Sparkles className="h-4 w-4" />} />
+        <StatCard label="Free plans" value={stats.free} icon={<BadgeDollarSign className="h-4 w-4" />} />
+        <StatCard label="Stripe linked" value={stats.stripeLinked} tone="blue" icon={<CreditCard className="h-4 w-4" />} />
       </div>
 
       <section>
-        <div className="mb-3 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-300">Recent subscriptions</h2>
-            <p className="mt-1 text-[11px] text-slate-600">Showing the 100 most recently updated records.</p>
-          </div>
-        </div>
+        <AdminSectionHeader
+          title="Recent subscriptions"
+          description="Most recently updated subscription records, with direct Stripe access only when a customer ID exists."
+        />
         <V2Table
           headers={["User", "Plan", "Stripe", "Limits", "User status", "Updated"]}
           rows={rows}
