@@ -1,54 +1,79 @@
-import { getAdminV2ReplyTemplates } from "@/lib/admin-v2/queries";
-import { V2Table } from "@/components/admin-v2/v2-table";
+import {
+  ADMIN_REPLY_PAGE_SIZE,
+  getAdminUiReplyTemplateCount,
+  getAdminUiReplyTemplates,
+} from "@/lib/admin-v2/ui-queries";
+import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import { ReplyEditModal } from "@/components/admin-v2/reply-edit-modal";
+import { AdminPageHeader } from "@/components/admin-v2/page-header";
 
-export default async function AdminV2RepliesPage() {
-  const templates = await getAdminV2ReplyTemplates(0);
+type Props = { searchParams?: { page?: string } };
 
-  const rows = templates.map((t) => [
+export default async function AdminV2RepliesPage({ searchParams }: Props) {
+  const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
+  const [templates, total] = await Promise.all([
+    getAdminUiReplyTemplates(page),
+    getAdminUiReplyTemplateCount(),
+  ]);
+
+  const rows = templates.map((template) => [
     <div key="campaign" className="min-w-0">
-      <p className="max-w-[180px] truncate font-bold text-slate-200">{t.campaignName}</p>
-      <p className="text-[11px] text-slate-500">{t.ownerEmail ?? "—"}</p>
+      <p className="max-w-[220px] truncate font-bold text-slate-100" title={template.campaignName}>{template.campaignName}</p>
+      <p className="mt-0.5 break-all text-[11px] text-slate-500 sm:break-normal sm:truncate">{template.ownerEmail ?? "—"}</p>
     </div>,
-    <V2Badge key="status" tone={t.active ? "green" : "slate"}>
-      {t.active ? "Active" : "Paused"}
+    <V2Badge key="status" tone={template.active ? "green" : "slate"}>
+      {template.active ? "Active" : "Paused"}
     </V2Badge>,
-    <p key="r1" className="max-w-[220px] truncate text-[11px] text-slate-300">{t.reply1 ?? "—"}</p>,
-    <p key="r2" className="max-w-[220px] truncate text-[11px] text-slate-400">{t.reply2 ?? "—"}</p>,
-    <p key="r3" className="max-w-[220px] truncate text-[11px] text-slate-400">{t.reply3 ?? "—"}</p>,
+    <ReplyPreview key="r1" value={template.reply1} />,
+    <ReplyPreview key="r2" value={template.reply2} muted />,
+    <ReplyPreview key="r3" value={template.reply3} muted />,
     <ReplyEditModal
       key="actions"
-      campaignId={t.campaignId}
-      campaignName={t.campaignName}
+      campaignId={template.campaignId}
+      campaignName={template.campaignName}
       initialReplies={{
-        commentReply: t.reply1,
-        commentReply2: t.reply2,
-        commentReply3: t.reply3,
+        commentReply: template.reply1,
+        commentReply2: template.reply2,
+        commentReply3: template.reply3,
       }}
     />,
   ]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-widest text-pink-400">Replies</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">Replies (Templates &amp; Usage)</h1>
-        <p className="mt-1 text-xs text-slate-500">
-          Sourced from campaign listener configurations. No separate reply template model exists.
-        </p>
-      </div>
-      {templates.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.08] px-6 py-10 text-center text-sm text-slate-500">
-          No campaigns with public reply templates found.
-        </div>
-      ) : (
-        <V2Table
-          headers={["Campaign", "Status", "Reply variant 1", "Reply variant 2", "Reply variant 3", "Actions"]}
-          rows={rows}
-          empty="No reply templates found."
-        />
-      )}
+    <div className="flex flex-col gap-6 sm:gap-7">
+      <AdminPageHeader
+        eyebrow="Replies"
+        title="Reply templates"
+        count={total}
+        description="Campaign-level public reply variants. The table is paginated to keep editing fast and readable on desktop and mobile."
+      />
+
+      <V2Table
+        headers={["Campaign", "Status", "Reply variant 1", "Reply variant 2", "Reply variant 3", "Actions"]}
+        rows={rows}
+        empty="No campaigns with public reply templates found."
+      />
+      <V2Pagination
+        page={page}
+        total={total}
+        limit={ADMIN_REPLY_PAGE_SIZE}
+        base="/admin/replies"
+      />
     </div>
+  );
+}
+
+function ReplyPreview({ value, muted = false }: { value: string | null; muted?: boolean }) {
+  if (!value) return <span className="text-[11px] text-slate-600">—</span>;
+
+  return (
+    <p
+      title={value}
+      dir="auto"
+      className={`max-w-[260px] truncate text-[11px] leading-5 ${muted ? "text-slate-400" : "text-slate-300"}`}
+    >
+      {value}
+    </p>
   );
 }
