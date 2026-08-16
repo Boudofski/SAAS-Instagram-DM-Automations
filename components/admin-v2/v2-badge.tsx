@@ -3,18 +3,23 @@ import { cn } from "@/lib/utils";
 type Tone = "green" | "amber" | "red" | "blue" | "slate" | "pink";
 
 const TONE_CLASSES: Record<Tone, string> = {
-  green: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-  amber: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  red: "border-red-500/30 bg-red-500/10 text-red-300",
-  blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
-  slate: "border-white/10 bg-white/[0.04] text-slate-400",
-  pink: "border-pink-500/30 bg-pink-500/10 text-pink-300",
+  green: "border-emerald-500/25 bg-emerald-500/[0.09] text-emerald-300",
+  amber: "border-amber-500/25 bg-amber-500/[0.09] text-amber-200",
+  red: "border-red-500/25 bg-red-500/[0.09] text-red-300",
+  blue: "border-sky-500/25 bg-sky-500/[0.09] text-sky-300",
+  slate: "border-white/[0.09] bg-white/[0.045] text-slate-300",
+  pink: "border-pink-500/25 bg-pink-500/[0.09] text-pink-300",
 };
 
 export function V2Badge({ children, tone = "slate" }: { children: React.ReactNode; tone?: Tone }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-black uppercase tracking-wide", TONE_CLASSES[tone])}>
-      {children}
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-[9px] font-black uppercase leading-none tracking-[0.11em] sm:text-[10px]",
+        TONE_CLASSES[tone]
+      )}
+    >
+      <span className="truncate">{children}</span>
     </span>
   );
 }
