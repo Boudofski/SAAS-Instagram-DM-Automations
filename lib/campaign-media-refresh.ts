@@ -173,7 +173,7 @@ async function refreshCampaignMediaForClerkUser(clerkId: string, campaigns: Camp
   // A specific campaign can reference media older than the paginated account
   // window. Resolve only the remaining IDs directly rather than spending quota
   // on every campaign on every page load.
-  for (const mediaId of mediaIds) {
+  for (const mediaId of Array.from(mediaIds)) {
     if (resolved.has(mediaId)) continue;
     const preview = await fetchMediaDirect(connection, mediaId);
     if (preview) resolved.set(mediaId, preview);
