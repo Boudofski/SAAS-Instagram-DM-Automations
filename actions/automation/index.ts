@@ -8,6 +8,10 @@ import {
   validateNormalizedCampaignPayload,
   type RawCampaignPayload,
 } from "@/lib/campaign-save";
+import {
+  refreshExpiredCampaignMediaForClerkUser,
+  refreshExpiredCampaignMediaListForClerkUser,
+} from "@/lib/campaign-media-refresh";
 import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { canActivateCampaign } from "@/actions/usage/queries";
@@ -183,7 +187,17 @@ export const getAllAutomation = async () => {
   try {
     const getAll = await getAutomation(user.id);
 
-    if (getAll) return { status: 200, data: getAll.automations || [] };
+    if (getAll) {
+      const automations = getAll.automations || [];
+      try {
+        await refreshExpiredCampaignMediaListForClerkUser(user.id, automations);
+      } catch (error) {
+        console.warn("[campaign-media] automatic list refresh skipped", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return { status: 200, data: automations };
+    }
 
     return { status: 404, data: [] };
   } catch (error: any) {
@@ -197,7 +211,17 @@ export const getAutomationInfo = async (id: string) => {
   try {
     const automation = await findAutomationForUser(id, user.id);
 
-    if (automation) return { status: 200, data: automation };
+    if (automation) {
+      try {
+        await refreshExpiredCampaignMediaForClerkUser(user.id, automation);
+      } catch (error) {
+        console.warn("[campaign-media] automatic detail refresh skipped", {
+          automationId: id,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return { status: 200, data: automation };
+    }
 
     return { status: 404 };
   } catch (error) {
