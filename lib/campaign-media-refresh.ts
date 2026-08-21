@@ -145,6 +145,7 @@ async function refreshCampaignMediaForClerkUser(clerkId: string, campaigns: Camp
     select: {
       integrations: {
         select: {
+          name: true,
           token: true,
           instagramId: true,
           igAccountSource: true,
