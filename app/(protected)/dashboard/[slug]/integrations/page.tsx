@@ -106,7 +106,7 @@ async function Page({ searchParams }: PageProps) {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
             {directInstagramLogin
-              ? "Connect one Business or Creator Instagram account directly. AP3k uses the connection to receive matching comments and send the replies configured in your campaigns."
+              ? "Connect one Business or Creator Instagram account directly. AP3k uses the connection to receive matching comments, reply to comments, and send DMs from your campaigns."
               : "Connect the Business or Creator Instagram account that owns the posts AP3k should monitor."}
           </p>
         </div>
@@ -120,6 +120,7 @@ async function Page({ searchParams }: PageProps) {
               "Connect one Instagram Business or Creator account.",
               "Create a campaign with Any post or choose a specific post.",
               "Set a keyword or use Any comment.",
+              "Choose a comment reply, a DM, or both.",
               "Test from a different Instagram account.",
             ].map((item) => (
               <div key={item} className="flex gap-3 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.05]">
@@ -170,12 +171,12 @@ async function Page({ searchParams }: PageProps) {
             <PermissionCard
               title="Comments"
               state={capabilities.comments}
-              detail="Needed to receive comment triggers and publish configured replies."
+              detail="Needed to receive comment triggers and reply to comments."
             />
             <PermissionCard
-              title="Messages"
+              title="DMs"
               state={capabilities.messages}
-              detail="Needed for private replies after qualifying Instagram comments."
+              detail="Needed to send DMs after qualifying Instagram comments."
             />
           </div>
 
@@ -187,7 +188,7 @@ async function Page({ searchParams }: PageProps) {
                   ? "Comment automations cannot run until Access and manage comments is enabled. "
                   : ""}
                 {missingMessages
-                  ? "Private replies cannot run until Access and manage messages is enabled. "
+                  ? "DMs cannot be sent until Access and manage messages is enabled. "
                   : ""}
                 {missingBasic
                   ? "Profile and media access is required for campaign setup."
