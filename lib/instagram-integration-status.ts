@@ -1,3 +1,5 @@
+import { getInstagramPermissionCapabilities } from "@/lib/instagram-permissions";
+
 export type InstagramIntegrationStatusBase = {
   id?: string | null;
   name?: string | null;
@@ -7,16 +9,28 @@ export type InstagramIntegrationStatusBase = {
   reconnectRequired?: boolean | null;
   token?: string | null;
   tokenPresent?: boolean | null;
+  expiresAt?: Date | string | null;
+  oauthResolutionDiagnostics?: unknown;
 };
 
 export type InstagramIntegrationStatusInput = InstagramIntegrationStatusBase | null | undefined;
 
 export function isCanonicalInstagramConnected(integration: InstagramIntegrationStatusInput) {
+  const capabilities = getInstagramPermissionCapabilities(
+    integration?.oauthResolutionDiagnostics
+  );
+  const explicitlyMissingCorePermission =
+    capabilities.authoritative &&
+    (capabilities.basic === "missing" || capabilities.comments === "missing");
+  const explicitlyExpired = isExpired(integration?.expiresAt);
+
   return Boolean(
     integration?.name === "INSTAGRAM" &&
     integration.instagramId &&
     integration.status === "CONNECTED" &&
     !integration.reconnectRequired &&
+    !explicitlyMissingCorePermission &&
+    !explicitlyExpired &&
     hasUsableIntegrationToken(integration)
   );
 }
@@ -32,4 +46,10 @@ export function hasDisconnectedOrMissingInstagramIntegration(integrations?: Inst
 function hasUsableIntegrationToken(integration: InstagramIntegrationStatusBase) {
   if (typeof integration.tokenPresent === "boolean") return integration.tokenPresent;
   return typeof integration.token === "string" && integration.token.trim().length > 0;
+}
+
+function isExpired(value?: Date | string | null) {
+  if (!value) return false;
+  const timestamp = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  return Number.isFinite(timestamp) && timestamp <= Date.now();
 }

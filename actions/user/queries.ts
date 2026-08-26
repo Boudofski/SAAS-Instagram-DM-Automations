@@ -19,6 +19,7 @@ const userProfileInclude = {
       igAccountSource: true,
       instagramUsername: true,
       profilePictureUrl: true,
+      oauthResolutionDiagnostics: true,
       status: true,
       reconnectRequired: true,
     },
