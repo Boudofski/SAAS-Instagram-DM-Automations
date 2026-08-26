@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
         igAccountSource: "instagram_login",
         status: "CONNECTED",
         reconnectRequired: false,
-        token: { not: null },
         expiresAt: {
           gt: now,
           lte: refreshBefore,
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
     let failed = 0;
 
     for (const integration of integrations) {
-      const token = integration.token?.trim();
+      const token = integration.token.trim();
       if (!token) continue;
 
       try {
