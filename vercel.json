@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/db-keepalive",
       "schedule": "17 4 * * *"
+    },
+    {
+      "path": "/api/cron/instagram-token-refresh",
+      "schedule": "27 4 * * *"
     }
   ]
 }
