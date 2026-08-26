@@ -54,9 +54,9 @@ export default function DmEditor({
     <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
       <div className="flex min-w-0 items-center justify-between gap-4">
         <div className="min-w-0">
-          <span className="text-sm font-semibold text-slate-950 dark:text-white">Private message</span>
+          <span className="text-sm font-semibold text-slate-950 dark:text-white">DM message</span>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-            This message is sent privately after the user comments.
+            Sent privately to the commenter&apos;s Instagram inbox.
           </p>
         </div>
         <button
@@ -135,7 +135,7 @@ export default function DmEditor({
       {value && (
         <div className="min-w-0 overflow-hidden rounded-2xl border border-rf-blue/20 bg-rf-blue/5 p-4">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            Preview
+            DM preview
           </p>
           <div className="flex max-w-full flex-col items-start gap-2 sm:max-w-[85%]">
             <div
