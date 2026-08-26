@@ -28,16 +28,16 @@ type Props = {
 const STEP_LABELS = [
   "Choose post",
   "Trigger",
-  "Public reply",
-  "Private reply",
+  "Comment reply",
+  "DM",
   "Review & Activate",
 ];
 
 const STEP_TIPS = [
   "Choose Any post for the easiest launch, or select a specific post or Reel from this Instagram account.",
   "Use a clear keyword so commenters intentionally trigger the automation.",
-  "Public replies run first and tell commenters to check their inbox.",
-  "Private replies are sent after the matching comment. Add a message and optional link button fields.",
+  "Reply under the Instagram post when a comment matches. You can add up to three variations.",
+  "Send a DM directly to the commenter's Instagram inbox. Add a message and optional link button.",
   "Review the full flow before activating and testing from another Instagram account.",
 ];
 
@@ -72,8 +72,8 @@ export default function WizardPage({ params, searchParams }: Props) {
   const reviewWarnings = [
     data.post?.postid && data.post.postid !== "ANY" ? "Specific post mode only reacts to comments on that selected post or Reel." : null,
     postsError ? "Posts could not be refreshed. Use Any post or reconnect Instagram, then refresh again." : null,
-    publicReplyOnlyReviewMode ? "Private replies are disabled in this public-reply review mode." : null,
-    messagingCapabilityPending ? "Meta messaging may still be pending for this account. Test with a real comment before recording." : null,
+    publicReplyOnlyReviewMode ? "DMs are disabled in this comment-reply review mode." : null,
+    messagingCapabilityPending ? "Instagram DM access may still be pending for this account. Test with a real comment before recording." : null,
   ].filter(Boolean) as string[];
 
   useEffect(() => {
@@ -248,7 +248,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 2 && (
-            <StepPanel eyebrow="Step 2 of 5" title="What comment triggers this campaign?" description="Choose a keyword trigger or run on every comment. For private replies, a clear keyword like guide or link is best.">
+            <StepPanel eyebrow="Step 2 of 5" title="What comment triggers this campaign?" description="Choose a keyword trigger or run on every comment. If you want to send a DM, a clear keyword like guide or link is best.">
               <KeywordInput
                 triggerMode={data.triggerMode}
                 keywords={data.keywords}
@@ -262,7 +262,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 3 && (
-            <StepPanel eyebrow="Step 3 of 5" title="Public comment reply" description="Public replies run before the private reply. They tell the commenter to check their inbox and create a visible response on the post.">
+            <StepPanel eyebrow="Step 3 of 5" title="Reply to comment" description="Optional. Reply under the Instagram post when a comment matches. This reply is visible on the post.">
               <button
                 type="button"
                 onClick={() => update({ publicReplyEnabled: !data.publicReplyEnabled })}
@@ -272,17 +272,17 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ].join(" ")}
               >
                 <span>
-                  <span className="block text-sm font-bold text-slate-950 dark:text-white">Send public reply first</span>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Recommended. The private reply still sends after the comment when enabled.</span>
+                  <span className="block text-sm font-bold text-slate-950 dark:text-white">Reply to comment</span>
+                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Visible under the Instagram post. Add up to three variations to keep replies natural.</span>
                 </span>
                 <Toggle enabled={data.publicReplyEnabled} />
               </button>
               {data.publicReplyEnabled && (
                 <div className="flex flex-col gap-3">
                   {[
-                    { field: "publicReply", label: "Reply 1", placeholder: "Thanks for commenting. I sent it to your inbox." },
-                    { field: "publicReply2", label: "Reply 2", placeholder: "Check your inbox — I just sent it." },
-                    { field: "publicReply3", label: "Reply 3", placeholder: "Done — please check your messages." },
+                    { field: "publicReply", label: "Reply 1", placeholder: "Thanks for commenting. I sent it by DM." },
+                    { field: "publicReply2", label: "Reply 2", placeholder: "Done — check your DMs." },
+                    { field: "publicReply3", label: "Reply 3", placeholder: "Sent! Please check your Instagram inbox." },
                   ].map((item) => (
                     <div key={item.field}>
                       <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{item.label}</label>
@@ -302,11 +302,11 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 4 && (
-            <StepPanel eyebrow="Step 4 of 5" title="Private reply after comment" description="AP3k sends this private reply after a matching comment. Add the message, button label, and destination link here.">
+            <StepPanel eyebrow="Step 4 of 5" title="Send a DM" description="Optional. Send a message directly to the commenter's Instagram inbox after a matching comment.">
               {publicReplyOnlyReviewMode ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-relaxed text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  <p className="font-black">Private replies disabled for this review mode</p>
-                  <p className="mt-1">This mode only tests public replies and lead tracking.</p>
+                  <p className="font-black">DMs disabled for this review mode</p>
+                  <p className="mt-1">This mode only tests comment replies and lead tracking.</p>
                 </div>
               ) : (
                 <>
@@ -319,8 +319,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                     ].join(" ")}
                   >
                     <span>
-                      <span className="block text-sm font-bold text-slate-950 dark:text-white">Send private reply with AP3k</span>
-                      <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Turn off only if another approved tool handles private replies.</span>
+                      <span className="block text-sm font-bold text-slate-950 dark:text-white">Send a DM</span>
+                      <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Sent privately to the commenter's Instagram inbox.</span>
                     </span>
                     <Toggle enabled={data.sendPrivateDm} />
                   </button>
@@ -336,8 +336,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                     />
                   ) : (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.04]">
-                      <p className="text-sm font-bold text-slate-950 dark:text-white">Private reply disabled</p>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">AP3k will still receive comments, match triggers, log activity, and send public replies if enabled.</p>
+                      <p className="text-sm font-bold text-slate-950 dark:text-white">DM disabled</p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">AP3k will still receive comments, match triggers, log activity, and reply to comments if enabled.</p>
                     </div>
                   )}
                 </>
@@ -346,16 +346,16 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 5 && (
-            <StepPanel eyebrow="Step 5 of 5" title="Review & Activate" description="Confirm the account, post scope, trigger, public reply, private reply, and status before saving.">
+            <StepPanel eyebrow="Step 5 of 5" title="Review & Activate" description="Confirm the account, post, trigger, comment reply, DM, and status before saving.">
               <div className="mb-6 flex flex-col gap-2">
                 {[
                   { label: "Name", value: data.campaignName || "Untitled campaign", step: 1 as const },
                   { label: "Account", value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account connected", step: 1 as const },
                   { label: "Post", value: data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? `Selected post ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
-                  { label: "Public reply", value: data.publicReplyEnabled && publicReplies.length ? `${publicReplies.length} variation(s)` : "Skipped", step: 3 as const },
-                  { label: "Private reply", value: data.sendPrivateDm ? "Enabled" : "Disabled", step: 4 as const },
-                  ...(data.sendPrivateDm && data.dmMessage ? [{ label: "Private message", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 4 as const }] : []),
+                  { label: "Comment reply", value: data.publicReplyEnabled && publicReplies.length ? `${publicReplies.length} variation(s)` : "Skipped", step: 3 as const },
+                  { label: "DM", value: data.sendPrivateDm ? "Enabled" : "Disabled", step: 4 as const },
+                  ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM message", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 4 as const }] : []),
                   ...(data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? [{ label: "Link button", value: `${data.ctaButtonTitle || "Open link"} -> ${data.ctaLink || "No link yet"}`, step: 4 as const }] : []),
                   { label: "Status", value: data.active ? "Live after save" : "Save as draft", step: 5 as const },
                 ].map((row) => (
@@ -385,7 +385,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               >
                 <span>
                   <span className="block text-sm font-bold text-slate-950 dark:text-white">Active campaign</span>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3k listens for matching comments and runs the configured replies.</span>
+                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3k listens for matching comments and runs the actions you selected.</span>
                 </span>
                 <Toggle enabled={data.active} green />
               </button>
@@ -400,8 +400,8 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
             <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.length ? data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", ") : "No keyword"} />
-            <PreviewRow label="Public reply" value={data.publicReplyEnabled ? `${publicReplies.length} variation(s)` : "Off"} />
-            <PreviewRow label="Private reply" value={data.sendPrivateDm ? data.dmMessage || DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "Off"} />
+            <PreviewRow label="Comment reply" value={data.publicReplyEnabled ? `${publicReplies.length} variation(s)` : "Off"} />
+            <PreviewRow label="DM" value={data.sendPrivateDm ? data.dmMessage || DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "Off"} />
             <PreviewRow label="Link button" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Open link"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No link"} />
             <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
           </div>
