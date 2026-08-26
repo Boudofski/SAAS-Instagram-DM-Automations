@@ -320,7 +320,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   >
                     <span>
                       <span className="block text-sm font-bold text-slate-950 dark:text-white">Send a DM</span>
-                      <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Sent privately to the commenter's Instagram inbox.</span>
+                      <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Sent privately to the commenter&apos;s Instagram inbox.</span>
                     </span>
                     <Toggle enabled={data.sendPrivateDm} />
                   </button>
