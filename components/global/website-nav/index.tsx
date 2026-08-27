@@ -34,7 +34,7 @@ export default async function WebsiteNav({ current }: Props) {
           <AP3kLogo className="text-base text-slate-950 dark:text-white" />
         </Link>
         <ul className="hidden items-center gap-7 text-sm font-semibold text-slate-600 dark:text-rf-muted md:flex">
-          <li><Link href="/#product" className={navClass}>Features</Link></li>
+          <li><Link href="/#features" className={navClass}>Features</Link></li>
           <li><Link href="/#how-it-works" className={navClass}>How it works</Link></li>
           <li><Link href="/pricing" className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : navClass}>Pricing</Link></li>
           <li><Link href="/blog" className={current === "blog" ? "text-slate-950 dark:text-rf-text" : navClass}>Blog</Link></li>
@@ -56,7 +56,7 @@ export default async function WebsiteNav({ current }: Props) {
           </summary>
           <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-white/10 dark:bg-[#101827]">
             <div className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
-              <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/#product">Features</Link>
+              <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/#features">Features</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/#how-it-works">How it works</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/pricing">Pricing</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/blog">Blog</Link>

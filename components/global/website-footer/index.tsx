@@ -17,7 +17,7 @@ export default function WebsiteFooter() {
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-400">Product</p>
-              <Link href="/#product" className={linkClass}>Features</Link>
+              <Link href="/#features" className={linkClass}>Features</Link>
               <Link href="/#how-it-works" className={linkClass}>How it works</Link>
               <Link href="/pricing" className={linkClass}>Pricing</Link>
               <Link href="/blog" className={linkClass}>Blog</Link>
