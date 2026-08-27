@@ -15,6 +15,7 @@ type Props = {
   triggerLabel: string;
   children: React.ReactNode;
   className?: string;
+  contentClassName?: string;
   side?: "left" | "right";
   closeOnNavigation?: boolean;
 };
@@ -24,6 +25,7 @@ function Sheet({
   triggerLabel,
   children,
   className,
+  contentClassName,
   side,
   closeOnNavigation = false,
 }: Props) {
@@ -49,7 +51,7 @@ function Sheet({
       </SheetTrigger>
       <SheetContent
         side={side}
-        className="overflow-x-hidden p-0"
+        className={cn("overflow-x-hidden p-0", contentClassName)}
         onClickCapture={(event) => {
           if (
             closeOnNavigation &&
