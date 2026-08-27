@@ -9,7 +9,7 @@ import { AdminPageHeader, AdminSectionHeader } from "@/components/admin-v2/page-
 import LocalTime from "@/components/global/local-time";
 
 function planBadge(plan: string) {
-  if (plan === "BUSINESS") return <V2Badge tone="purple">Business</V2Badge>;
+  if (plan === "BUSINESS") return <V2Badge tone="blue">Business</V2Badge>;
   if (plan === "PRO") return <V2Badge tone="pink">Pro</V2Badge>;
   return <V2Badge tone="slate">Free</V2Badge>;
 }
@@ -36,7 +36,7 @@ export default async function AdminBillingPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="Subscriptions" value={stats.total} sub="Internal subscription records" icon={<Users className="h-4 w-4" />} />
         <StatCard label="Pro" value={stats.pro} tone="pink" icon={<Sparkles className="h-4 w-4" />} />
-        <StatCard label="Business" value={stats.business} tone="purple" icon={<BriefcaseBusiness className="h-4 w-4" />} />
+        <StatCard label="Business" value={stats.business} tone="blue" icon={<BriefcaseBusiness className="h-4 w-4" />} />
         <StatCard label="Free" value={stats.free} icon={<BadgeDollarSign className="h-4 w-4" />} />
         <StatCard label="Stripe linked" value={stats.stripeLinked} tone="blue" icon={<CreditCard className="h-4 w-4" />} />
       </div>
