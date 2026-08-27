@@ -22,11 +22,9 @@ export default function ThemeToggle({ compact = false, className }: Props) {
 
   useEffect(() => setMounted(true), []);
 
-  // Migrate the former "system" preference to the appearance it currently
-  // resolves to. AP3K now exposes only explicit Light and Dark modes.
   useEffect(() => {
     if (!mounted || !theme || theme === "light" || theme === "dark") return;
-    setTheme(resolvedTheme === "light" ? "light" : "dark");
+    setTheme(resolvedTheme === "dark" ? "dark" : "light");
   }, [mounted, resolvedTheme, setTheme, theme]);
 
   if (!mounted) {
@@ -34,7 +32,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
       <div
         aria-hidden="true"
         className={cn(
-          "h-11 rounded-full border border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.04]",
+          "h-11 rounded-full border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/[0.05]",
           compact ? "w-10" : "w-full sm:w-[190px]",
           className
         )}
@@ -45,12 +43,12 @@ export default function ThemeToggle({ compact = false, className }: Props) {
   const activeTheme =
     theme === "light" || theme === "dark"
       ? theme
-      : resolvedTheme === "light"
-        ? "light"
-        : "dark";
+      : resolvedTheme === "dark"
+        ? "dark"
+        : "light";
 
   if (compact) {
-    const active = THEMES.find((item) => item.value === activeTheme) ?? THEMES[1];
+    const active = THEMES.find((item) => item.value === activeTheme) ?? THEMES[0];
     const Icon = active.icon;
     return (
       <button
@@ -58,7 +56,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
         aria-label={`Theme: ${active.label}. Switch theme.`}
         onClick={() => setTheme(nextThemeMode(activeTheme))}
         className={cn(
-          "grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-700 shadow-sm transition hover:border-pink-200 hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white",
+          "grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white/85 text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:border-violet-400/40 dark:hover:text-white",
           className
         )}
       >
@@ -70,7 +68,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
   return (
     <div
       className={cn(
-        "grid w-full grid-cols-2 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.05] sm:w-[190px]",
+        "grid w-full grid-cols-2 rounded-full border border-slate-200 bg-slate-100/80 p-1 shadow-inner dark:border-white/10 dark:bg-white/[0.05] sm:w-[190px]",
         className
       )}
       aria-label="Theme selector"
@@ -87,8 +85,8 @@ export default function ThemeToggle({ compact = false, className }: Props) {
             className={cn(
               "inline-flex min-w-0 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-all duration-200",
               active
-                ? "bg-slate-950 text-white shadow-sm dark:bg-white/[0.12] dark:text-white dark:ring-1 dark:ring-inset dark:ring-white/10"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 dark:bg-violet-500/15 dark:text-white dark:ring-violet-400/25"
+                : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
             )}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />

@@ -14,10 +14,10 @@ export function FadeIn({ children, className, delay = 0 }: Props) {
 
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: 18, filter: "blur(4px)" }}
-      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, amount: 0.12, margin: "-40px" }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.62, ease: [0.22, 1, 0.36, 1], delay }}
+      initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1, margin: "-32px" }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
       {children}
@@ -30,8 +30,8 @@ export function HoverLift({ children, className }: Omit<Props, "delay">) {
 
   return (
     <motion.div
-      whileHover={reduceMotion ? undefined : { y: -4, scale: 1.01 }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }}
+      whileHover={reduceMotion ? undefined : { y: -3 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}
       className={className}
     >
       {children}
@@ -41,12 +41,12 @@ export function HoverLift({ children, className }: Omit<Props, "delay">) {
 
 const containerVariants: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+  show: { transition: { staggerChildren: 0.055, delayChildren: 0.03 } },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 16, scale: 0.985 },
-  show: { opacity: 1, y: 0, scale: 1 },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0 },
 };
 
 export function StaggerContainer({ children, className }: Omit<Props, "delay">) {
@@ -57,7 +57,7 @@ export function StaggerContainer({ children, className }: Omit<Props, "delay">) 
       variants={containerVariants}
       initial={reduceMotion ? false : "hidden"}
       whileInView={reduceMotion ? undefined : "show"}
-      viewport={{ once: true, amount: 0.1, margin: "-30px" }}
+      viewport={{ once: true, amount: 0.08, margin: "-24px" }}
       className={className}
     >
       {children}
@@ -67,7 +67,7 @@ export function StaggerContainer({ children, className }: Omit<Props, "delay">) 
 
 export function StaggerItem({ children, className }: Omit<Props, "delay">) {
   return (
-    <motion.div variants={itemVariants} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className={className}>
+    <motion.div variants={itemVariants} transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }} className={className}>
       {children}
     </motion.div>
   );
@@ -78,10 +78,10 @@ export function ScaleIn({ children, className, delay = 0 }: Props) {
 
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.975 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.12, margin: "-40px" }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.48, ease: [0.22, 1, 0.36, 1], delay }}
+      viewport={{ once: true, amount: 0.1, margin: "-32px" }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.42, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
       {children}
