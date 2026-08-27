@@ -4,6 +4,8 @@ import {
   findStripeOwnerByCustomerId,
   syncSubscriptionForUser,
 } from "@/actions/user/queries";
+import { inferActiveDatabasePlan } from "@/lib/stripe-config";
+import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { createHash } from "node:crypto";
 
 export type StripeOwner = {
@@ -17,7 +19,7 @@ export type StripeWebhookDependencies = {
   findOwnerByCustomerId(customerId: string): Promise<StripeOwner | null>;
   syncSubscription(
     userId: string,
-    props: { customerId?: string; plan?: "PRO" | "FREE" }
+    props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
   ): Promise<unknown>;
   warnStaleMetadata(details: {
     eventType: string;
@@ -78,6 +80,45 @@ function metadataClerkId(metadata?: Stripe.Metadata | null) {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
+function activePlanForSubscription(subscription: Stripe.Subscription): SUBSCRIPTION_PLAN {
+  if (subscription.status !== "active" && subscription.status !== "trialing") {
+    return "FREE";
+  }
+
+  const price = subscription.items?.data?.[0]?.price;
+  return inferActiveDatabasePlan({
+    metadataPlan: subscription.metadata?.plan,
+    lookupKey: price?.lookup_key,
+    priceId: price?.id,
+  });
+}
+
+async function syncStripeSubscription(
+  eventType: string,
+  subscription: Stripe.Subscription,
+  allowInitialCustomerBinding: boolean,
+  dependencies: StripeWebhookDependencies
+) {
+  const customerId = stripeId(subscription.customer);
+  if (!customerId) {
+    throw new StripeWebhookInputError("STRIPE_CUSTOMER_ID_MISSING");
+  }
+  const resolution = await resolveStripeOwner(
+    {
+      eventType,
+      metadataClerkId: metadataClerkId(subscription.metadata),
+      customerId,
+      allowInitialCustomerBinding,
+    },
+    dependencies
+  );
+  await dependencies.syncSubscription(resolution.owner.id, {
+    customerId,
+    plan: activePlanForSubscription(subscription),
+  });
+  return resolution;
+}
+
 export async function resolveStripeOwner(
   input: {
     eventType: string;
@@ -128,38 +169,6 @@ export async function resolveStripeOwner(
   throw new StripeOwnershipError("STRIPE_OWNER_UNRESOLVED");
 }
 
-function planForSubscription(subscription: Stripe.Subscription) {
-  return subscription.status === "active" || subscription.status === "trialing"
-    ? "PRO"
-    : "FREE";
-}
-
-async function syncStripeSubscription(
-  eventType: string,
-  subscription: Stripe.Subscription,
-  allowInitialCustomerBinding: boolean,
-  dependencies: StripeWebhookDependencies
-) {
-  const customerId = stripeId(subscription.customer);
-  if (!customerId) {
-    throw new StripeWebhookInputError("STRIPE_CUSTOMER_ID_MISSING");
-  }
-  const resolution = await resolveStripeOwner(
-    {
-      eventType,
-      metadataClerkId: metadataClerkId(subscription.metadata),
-      customerId,
-      allowInitialCustomerBinding,
-    },
-    dependencies
-  );
-  await dependencies.syncSubscription(resolution.owner.id, {
-    ...(customerId ? { customerId } : {}),
-    plan: planForSubscription(subscription),
-  });
-  return resolution;
-}
-
 export async function processStripeEvent(
   event: Stripe.Event,
   dependencies: StripeWebhookDependencies = defaultDependencies
@@ -181,8 +190,8 @@ export async function processStripeEvent(
         dependencies
       );
       await dependencies.syncSubscription(resolution.owner.id, {
-        ...(customerId ? { customerId } : {}),
-        plan: "PRO",
+        customerId,
+        plan: inferActiveDatabasePlan({ metadataPlan: session.metadata?.plan }),
       });
       return { outcome: "processed" as const, source: resolution.source };
     }

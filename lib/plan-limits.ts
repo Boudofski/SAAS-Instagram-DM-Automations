@@ -1,10 +1,12 @@
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 
+// AGENCY remains as a non-persisted compatibility alias for older code/tests.
+// Customer subscriptions are persisted as FREE, PRO, or BUSINESS.
 export type ProductPlan = SUBSCRIPTION_PLAN | "AGENCY";
 export type PlanLimit = number | "unlimited";
 
 export type PlanLimits = {
-  label: "Free" | "Creator" | "Agency";
+  label: "Free" | "Pro" | "Business";
   activeCampaigns: PlanLimit;
   staticRepliesPerMonth: PlanLimit;
   aiRepliesPerMonth: PlanLimit;
@@ -37,6 +39,17 @@ export type UsageSummary = {
 
 export const UNLIMITED_LIMIT = 999_999;
 
+const BUSINESS_LIMITS: PlanLimits = {
+  label: "Business",
+  activeCampaigns: "unlimited",
+  staticRepliesPerMonth: 20_000,
+  aiRepliesPerMonth: 0,
+  connectedInstagramAccounts: 1,
+  publicReplyFallback: true,
+  exportLeads: true,
+  teamAccess: false,
+};
+
 export const PLAN_LIMITS: Record<ProductPlan, PlanLimits> = {
   FREE: {
     label: "Free",
@@ -49,25 +62,17 @@ export const PLAN_LIMITS: Record<ProductPlan, PlanLimits> = {
     teamAccess: false,
   },
   PRO: {
-    label: "Creator",
+    label: "Pro",
     activeCampaigns: "unlimited",
     staticRepliesPerMonth: 5_000,
-    aiRepliesPerMonth: 750,
+    aiRepliesPerMonth: 0,
     connectedInstagramAccounts: 1,
     publicReplyFallback: true,
     exportLeads: true,
     teamAccess: false,
   },
-  AGENCY: {
-    label: "Agency",
-    activeCampaigns: "unlimited",
-    staticRepliesPerMonth: 20_000,
-    aiRepliesPerMonth: 5_000,
-    connectedInstagramAccounts: 1,
-    publicReplyFallback: true,
-    exportLeads: true,
-    teamAccess: false,
-  },
+  BUSINESS: BUSINESS_LIMITS,
+  AGENCY: BUSINESS_LIMITS,
 };
 
 export function getPlanLimits(plan?: ProductPlan | null) {
@@ -144,5 +149,5 @@ export function formatCampaignLimitFeature(limit: PlanLimit) {
 }
 
 export function formatConnectedAccountsHelper(_planLabel: string, _metric: Pick<UsageMetric, "limit">) {
-  return "AP3k supports 1 connected Instagram account and unlimited campaigns for that account.";
+  return "AP3K supports 1 connected Instagram account and unlimited campaigns for that account.";
 }

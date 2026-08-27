@@ -3,30 +3,31 @@ import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — AP3k",
-  description: "How AP3k handles Instagram account, campaign, reply, lead, activity, and billing data.",
+  title: "Privacy Policy — AP3K",
+  description: "How AP3K handles Instagram account, campaign, Comment reply, DM, lead, activity, and billing data.",
+  alternates: { canonical: "/privacy" },
 };
 
 const sections = [
   {
     title: "Instagram Data We Collect",
-    body: "AP3k collects account and profile information only after you authorize an Instagram Business or Creator account. This may include the Instagram account ID, username, profile information made available by the Instagram API, media identifiers used for campaigns, comment identifiers used to match campaign triggers, and connection status.",
+    body: "AP3K collects account and profile information only after you authorize an Instagram Business or Creator account. This may include the Instagram account ID, username, profile information made available by the Instagram API, media identifiers used for campaigns, comment identifiers used to match campaign triggers, and connection status.",
   },
   {
     title: "Product Data We Store",
-    body: "AP3k stores campaign settings, keywords, selected post or media identifiers, public reply configuration, private reply configuration, CTA links, lead records, activity and delivery records, account information, and subscription data needed to operate the service.",
+    body: "AP3K stores campaign settings, keywords, selected post or media identifiers, Comment reply configuration, DM configuration, CTA links, lead records, activity and delivery records, account information, and subscription data needed to operate the service.",
   },
   {
     title: "How We Use Instagram Data",
-    body: "AP3k uses Instagram data only to provide comment automation, configured public and private replies, campaign analytics, lead tracking, account management, and related product features requested by the account owner.",
+    body: "AP3K uses Instagram data only to provide comment automation, the Comment replies and DMs you configure, campaign analytics, lead tracking, account management, and related product features requested by the account owner.",
   },
   {
     title: "What We Do Not Do",
-    body: "AP3k does not sell Instagram data, scrape Instagram, request your Instagram password, or use browser bots to imitate user activity. Connections are authorized through the supported Instagram API flow for professional accounts.",
+    body: "AP3K does not sell Instagram data, scrape Instagram, request your Instagram password, or use browser bots to imitate user activity. Connections are authorized through supported Instagram API flows for professional accounts.",
   },
   {
     title: "Disconnect And Delete",
-    body: "You can disconnect Instagram from AP3k or request deletion of your AP3k account data, campaigns, leads, reply records, and activity records. Self-service account deletion is also available from Settings.",
+    body: "You can disconnect Instagram from AP3K or request deletion of your AP3K account data, campaigns, leads, Comment reply and DM delivery records, and activity records. Self-service account deletion is also available from Settings.",
   },
 ];
 
@@ -40,7 +41,7 @@ export default function PrivacyPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Privacy Policy</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: August 15, 2026. This policy explains how AP3k handles data used for Instagram comment automation, replies, analytics, and account management.
+            Last updated: August 27, 2026. This policy explains how AP3K handles data used for Instagram comment automation, Comment replies, DMs, analytics, and account management.
           </p>
         </div>
 
@@ -56,7 +57,7 @@ export default function PrivacyPage() {
         <div className="mt-8 rounded-2xl border border-rf-pink/25 bg-gradient-to-br from-pink-50 via-white to-indigo-50 p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-rf-pink/20 dark:bg-ap3k-gradient-soft dark:from-transparent dark:via-transparent dark:to-transparent">
           <h2 className="text-lg font-black text-slate-950 dark:text-white">Contact</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            For privacy questions or deletion requests, contact{" "}
+            For privacy questions or data requests, contact{" "}
             <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink hover:underline">support@ap3k.com</a>.
           </p>
         </div>

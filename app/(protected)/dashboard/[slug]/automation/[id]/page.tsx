@@ -6,6 +6,7 @@ import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-st
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
+import { customerReplyCopy } from "@/lib/customer-reply-copy";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
@@ -34,13 +35,13 @@ export default async function CampaignDetailPage({ params }: Props) {
   const isAnyPost = post?.postid === "ANY";
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
   const sendPrivateDm = automation.sendPrivateDm !== false;
-  const publicReplies = [
+  const commentReplies = [
     automation.listener?.commentReply,
     automation.listener?.commentReply2,
     automation.listener?.commentReply3,
   ].filter(Boolean) as string[];
-  const hasPublicReply = publicReplies.length > 0;
-  const hasPrivateReply = sendPrivateDm && Boolean(automation.listener?.prompt);
+  const hasCommentReply = commentReplies.length > 0;
+  const hasDm = sendPrivateDm && Boolean(automation.listener?.prompt);
   const isLive = Boolean(automation.active && !automation.needsReview && !automation.archivedAt);
   const groupedAll = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
   const groupedActivity = filterAppReviewActivity(groupedAll, 20);
@@ -77,7 +78,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusBadge status={statusLabel} />
             <span className="ap3k-badge ap3k-badge-slate">{connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Instagram account"}</span>
-            <ReplyBadge publicReply={hasPublicReply} privateReply={hasPrivateReply} />
+            <ReplyBadge commentReply={hasCommentReply} dm={hasDm} />
           </div>
         </div>
         <ActiveAutomationButton id={params.id} disabled={false} disabledReason={null} showRepair={Boolean(automation.needsReview)} />
@@ -88,7 +89,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div>
             <p className="ap3k-kicker">Campaign overview</p>
             <h2 className="mt-1 text-xl font-black">Instagram comment workflow</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A comment enters the campaign, the trigger is checked, then AP3k runs the actions you selected.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A comment enters the campaign, the trigger is checked, then AP3K runs the actions you selected.</p>
           </div>
           <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">
             {isLive ? "Listening now" : statusLabel}
@@ -98,7 +99,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <InfoTile label="Instagram account" value={connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Not connected"} tone={connectedIntegration ? "green" : "amber"} />
           <InfoTile label="Post" value={selectedPostLabel} tone={post ? "green" : "amber"} />
           <InfoTile label="Trigger" value={triggerLabel} tone={isAnyComment || keywords.length ? "green" : "amber"} />
-          <InfoTile label="Actions" value={replySummary(hasPublicReply, hasPrivateReply)} tone={hasPublicReply || hasPrivateReply ? "green" : "amber"} />
+          <InfoTile label="Actions" value={replySummary(hasCommentReply, hasDm)} tone={hasCommentReply || hasDm ? "green" : "amber"} />
         </div>
       </section>
 
@@ -116,8 +117,8 @@ export default async function CampaignDetailPage({ params }: Props) {
             <FlowNode label="2. Trigger" title={isAnyComment ? "Any comment" : "Keyword matched"} body={triggerLabel} tone="pink" />
             <FlowConnector />
             <div className="grid gap-4 md:grid-cols-2">
-              <FlowNode label="3. Comment reply" title={hasPublicReply ? "Reply to comment" : "Not configured"} body={publicReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasPublicReply} />
-              <FlowNode label="4. DM" title={hasPrivateReply ? "Send a DM" : "Not configured"} body={automation.listener?.prompt || "No DM configured."} tone="blue" disabled={!hasPrivateReply} />
+              <FlowNode label="3. Comment reply" title={hasCommentReply ? "Reply to comment" : "Not configured"} body={commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
+              <FlowNode label="4. DM" title={hasDm ? "Send a DM" : "Not configured"} body={automation.listener?.prompt || "No DM configured."} tone="blue" disabled={!hasDm} />
             </div>
           </div>
         </section>
@@ -128,8 +129,8 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Status" value={statusLabel} />
             <SettingsRow label="Post" value={isAnyPost ? "Any post" : "Specific post"} />
             <SettingsRow label="Trigger" value={isAnyComment ? "Any comment" : "Keyword"} />
-            <SettingsRow label="Comment reply" value={hasPublicReply ? `${publicReplies.length} variation${publicReplies.length === 1 ? "" : "s"}` : "Off"} />
-            <SettingsRow label="DM" value={hasPrivateReply ? "Enabled" : "Off"} />
+            <SettingsRow label="Comment reply" value={hasCommentReply ? `${commentReplies.length} variation${commentReplies.length === 1 ? "" : "s"}` : "Off"} />
+            <SettingsRow label="DM" value={hasDm ? "Enabled" : "Off"} />
           </div>
           <Link href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`} className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm">
             Edit campaign
@@ -149,7 +150,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <h2 className="text-sm font-black text-slate-950 dark:text-white">Campaign content</h2>
           <div className="mt-5 space-y-5">
             <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} />
-            {hasPrivateReply && <ContentBlock label="DM message" value={automation.listener?.prompt} />}
+            {hasDm && <ContentBlock label="DM message" value={automation.listener?.prompt} />}
             {(automation.listener?.ctaButtonTitle || automation.listener?.ctaLink) && (
               <div>
                 <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Link button</p>
@@ -159,11 +160,11 @@ export default async function CampaignDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
-            {publicReplies.length > 0 && (
+            {commentReplies.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Comment reply variations</p>
                 <div className="grid gap-2">
-                  {publicReplies.map((reply, index) => (
+                  {commentReplies.map((reply, index) => (
                     <div key={`${reply}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
                       <span className="mr-2 font-black text-slate-400">{index + 1}.</span>{reply}
                     </div>
@@ -204,7 +205,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 <span className={["mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full", activityDotClass(item.tone)].join(" ")} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-black text-slate-950 dark:text-white">{item.title}</p>
+                    <p className="text-sm font-black text-slate-950 dark:text-white">{customerReplyCopy(item.title)}</p>
                     <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}>{item.badge}</span>
                   </div>
                   <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, true)}</p>
@@ -219,10 +220,10 @@ export default async function CampaignDetailPage({ params }: Props) {
   );
 }
 
-function replySummary(publicReply: boolean, privateReply: boolean) {
-  if (publicReply && privateReply) return "Comment reply + DM";
-  if (publicReply) return "Comment reply";
-  if (privateReply) return "DM only";
+function replySummary(commentReply: boolean, dm: boolean) {
+  if (commentReply && dm) return "Comment reply + DM";
+  if (commentReply) return "Comment reply";
+  if (dm) return "DM only";
   return "Not configured";
 }
 
@@ -242,9 +243,9 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={className} variant="outline">● {status}</Badge>;
 }
 
-function ReplyBadge({ publicReply, privateReply }: { publicReply: boolean; privateReply: boolean }) {
-  if (!publicReply && !privateReply) return <span className="ap3k-badge ap3k-badge-slate">Actions not configured</span>;
-  return <span className="ap3k-badge ap3k-badge-green">{replySummary(publicReply, privateReply)}</span>;
+function ReplyBadge({ commentReply, dm }: { commentReply: boolean; dm: boolean }) {
+  if (!commentReply && !dm) return <span className="ap3k-badge ap3k-badge-slate">Actions not configured</span>;
+  return <span className="ap3k-badge ap3k-badge-green">{replySummary(commentReply, dm)}</span>;
 }
 
 function InfoTile({ label, value, tone }: { label: string; value: ReactNode; tone: "green" | "amber" }) {

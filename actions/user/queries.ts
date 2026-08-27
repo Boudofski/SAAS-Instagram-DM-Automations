@@ -1,6 +1,7 @@
 "use server";
 
 import { client } from "@/lib/prisma";
+import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 
 const userProfileInclude = {
   subscription: true,
@@ -105,7 +106,7 @@ export const findStripeOwnerByCustomerId = async (customerId: string) => {
 
 export const syncSubscriptionForUser = async (
   userId: string,
-  props: { customerId?: string; plan?: "PRO" | "FREE" }
+  props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
 ) => {
   return client.$transaction(async (transaction) => {
     const user = await transaction.user.findUnique({
@@ -143,7 +144,7 @@ export const syncSubscriptionForUser = async (
 
 export const updateSubscription = async (
   clerkId: string,
-  props: { customerId?: string; plan?: "PRO" | "FREE" }
+  props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
 ) => {
   return await client.user.update({
     where: {

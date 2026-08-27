@@ -8,39 +8,50 @@ import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 const siteDescription =
-  "AP3k automates Instagram comment campaigns with configurable comment replies and DMs, lead tracking, and account analytics for professional accounts.";
+  "AP3K automates Instagram comments with clear Comment replies and DMs, lead tracking, and campaign analytics for Business and Creator accounts.";
+const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
-  title: "AP3k — Instagram Comment Automation",
+  metadataBase: new URL("https://ap3k.com"),
+  title: {
+    default: "AP3K — Instagram Comment & DM Automation",
+    template: "%s",
+  },
   description: siteDescription,
+  applicationName: "AP3K",
+  alternates: { canonical: "/" },
+  verification: googleVerification ? { google: googleVerification } : undefined,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
-    title: "AP3k — Instagram Comment Automation",
+    title: "AP3K — Instagram Comment & DM Automation",
     description: siteDescription,
     url: "https://ap3k.com",
-    siteName: "AP3k",
+    siteName: "AP3K",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AP3k — Instagram Comment Automation",
+    title: "AP3K — Instagram Comment & DM Automation",
     description: siteDescription,
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={jakarta.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReduxProvider>
             <ReactQueryProvider>{children}</ReactQueryProvider>
           </ReduxProvider>

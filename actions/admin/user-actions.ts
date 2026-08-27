@@ -17,6 +17,10 @@ function safeError(e: unknown) {
 
 function userPaths(userId: string) {
   return [
+    "/admin/users",
+    "/admin/overview",
+    "/admin/billing",
+    `/admin/users/${userId}`,
     "/ap3k-admin-v2/users",
     "/ap3k-admin-v2/overview",
     `/ap3k-admin-v2/users/${userId}`,
@@ -209,7 +213,7 @@ export async function adminChangeUserPlanAction(formData: FormData) {
   const reason = adminFormString(formData, "reason");
   const confirmation = adminFormString(formData, "confirmation");
 
-  if (!["FREE", "PRO"].includes(plan)) {
+  if (!["FREE", "PRO", "BUSINESS"].includes(plan)) {
     return { status: 400 as const, data: "Invalid plan selected." };
   }
 
@@ -425,7 +429,6 @@ export async function adminUpdateUserBillingOverridesAction(formData: FormData) 
     return { status: 400 as const, data: "Reason must be at least 5 characters." };
   }
 
-  // Validate non-negative
   if (
     (monthlyReplyLimitOverride !== null && monthlyReplyLimitOverride < 0) ||
     (aiReplyLimitOverride !== null && aiReplyLimitOverride < 0) ||

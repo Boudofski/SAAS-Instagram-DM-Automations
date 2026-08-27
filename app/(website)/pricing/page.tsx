@@ -1,114 +1,96 @@
-import PricingCard from "@/components/global/pricing-card";
+import PricingExperience from "@/components/global/pricing-experience";
 import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import { formatCampaignLimitFeature, getPlanLimits } from "@/lib/plan-limits";
+import type { Metadata } from "next";
 
-const FREE_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("FREE").activeCampaigns);
-const CREATOR_CAMPAIGN_FEATURE = formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns);
-
-const PLANS = [
-  {
-    tier: "Free",
-    price: "$0",
-    description: "For testing your first Instagram automation",
-    ctaLabel: "Get started free",
-    ctaHref: "/sign-up",
-    featured: false,
-    features: [
-      { text: "1 Instagram account", included: true },
-      { text: FREE_CAMPAIGN_FEATURE, included: true },
-      { text: "50 automated replies/month", included: true },
-      { text: "Keyword + Any Comment triggers", included: true },
-      { text: "Comment replies + DMs", included: true },
-      { text: "Basic analytics", included: true },
-    ],
-  },
-  {
-    tier: "Creator",
-    price: "$29",
-    description: "For production campaigns and higher reply volume",
-    ctaLabel: "Start Creator plan",
-    ctaHref: "/payment?plan=creator",
-    featured: true,
-    features: [
-      { text: "1 Instagram account", included: true },
-      { text: CREATOR_CAMPAIGN_FEATURE, included: true },
-      { text: "5,000 automated replies/month", included: true },
-      { text: "Comment replies + DMs", included: true },
-      { text: "Lead tracking", included: true },
-      { text: "Analytics", included: true },
-    ],
-  },
-] as const;
+export const metadata: Metadata = {
+  title: "AP3K Pricing — Free, Pro & Business Instagram Automation Plans",
+  description:
+    "Compare AP3K Free, Pro, Business and Custom plans for Instagram comment replies, DMs, lead tracking and campaign analytics. Save with annual billing.",
+  alternates: { canonical: "/pricing" },
+};
 
 const FAQ = [
   {
+    q: "What counts toward my automated-reply allowance?",
+    a: "Each successfully sent Comment reply and each successfully sent DM counts as one automated reply. Failed or skipped actions do not count.",
+  },
+  {
+    q: "Do annual plans still reset usage every month?",
+    a: "Yes. Annual billing only changes how you pay. Your automated-reply allowance resets every month just like a monthly subscription.",
+  },
+  {
     q: "Which Instagram accounts are supported?",
-    a: "AP3k supports Instagram Business and Creator accounts through direct Instagram authorization.",
+    a: "AP3K supports Instagram Business and Creator accounts through Instagram authorization.",
   },
   {
     q: "How many Instagram accounts can I connect?",
-    a: "Each AP3k workspace supports one connected Instagram account. Reconnecting a different account replaces the current connection while campaign history stays saved.",
+    a: "Each AP3K workspace currently supports one connected Instagram account. Reconnecting another account replaces the current connection while campaign history stays saved.",
   },
   {
     q: "How many campaigns can I create?",
-    a: "Campaigns are unlimited on both Free and Creator. The monthly automated-reply allowance is what changes by plan.",
+    a: "Campaigns are unlimited on Free, Pro and Business. The monthly automated-reply allowance is what scales with your plan.",
   },
   {
-    q: "What counts toward the monthly reply allowance?",
-    a: "Successful comment replies and DMs count toward the monthly allowance. Failed or skipped actions do not count.",
-  },
-  {
-    q: "How does AP3k connect to Instagram?",
-    a: "AP3k uses the supported Instagram API flow for professional accounts. It does not ask for your Instagram password, scrape Instagram, or rely on browser automation.",
+    q: "What is the difference between a Comment reply and a DM?",
+    a: "A Comment reply appears under the Instagram post. A DM is sent to the commenter in their Instagram inbox. A campaign can use either action or both.",
   },
   {
     q: "Can I cancel any time?",
-    a: "Yes. Creator subscribers can manage or cancel billing through the billing portal from inside AP3k.",
+    a: "Yes. Paid subscribers can manage billing or cancellation through the secure Stripe billing portal from inside AP3K.",
   },
 ] as const;
 
 export default function PricingPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
-      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial opacity-90" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-rf-text">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.12),transparent_30rem),radial-gradient(circle_at_84%_12%,rgba(236,72,153,0.10),transparent_30rem)]" />
       <WebsiteNav current="pricing" />
 
-      <section className="relative z-10 px-4 py-20 text-center sm:px-8 lg:px-16">
-        <FadeIn>
-          <p className="ap3k-kicker mb-4">Pricing</p>
-          <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
-            Start free.<br />
-            <span className="ap3k-gradient-text">Scale your reply volume.</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-rf-muted">
-            One Instagram account and unlimited campaigns on both plans. Upgrade when you need more automated replies and analytics.
-          </p>
-        </FadeIn>
-      </section>
+      <main className="relative z-10">
+        <section className="px-4 pb-12 pt-20 text-center sm:px-8 lg:px-16">
+          <FadeIn>
+            <p className="ap3k-kicker mb-4">Simple pricing</p>
+            <h1 className="text-4xl font-black tracking-tight sm:text-6xl">
+              Start free. <span className="ap3k-gradient-text">Save more annually.</span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
+              One Instagram account, unlimited campaigns, Comment replies and DMs. Choose the reply volume that fits your audience.
+            </p>
+          </FadeIn>
+        </section>
 
-      <section className="relative z-10 mx-auto max-w-4xl px-4 pb-20 sm:px-8 lg:px-16">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {PLANS.map((plan, index) => (
-            <FadeIn key={plan.tier} delay={index * 0.05}>
-              <PricingCard {...plan} />
-            </FadeIn>
-          ))}
-        </div>
-      </section>
+        <section className="mx-auto max-w-[1500px] px-4 pb-24 sm:px-8 lg:px-12">
+          <FadeIn delay={0.08}>
+            <PricingExperience />
+          </FadeIn>
+        </section>
 
-      <section className="relative z-10 mx-auto max-w-2xl px-4 pb-20 sm:px-8 lg:px-0">
-        <h2 className="mb-8 text-center text-xl font-black">Common questions</h2>
-        <div className="flex flex-col gap-4">
-          {FAQ.map((item) => (
-            <div key={item.q} className="ap3k-card rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/25">
-              <h3 className="mb-2 text-sm font-black text-slate-950 dark:text-rf-text">{item.q}</h3>
-              <p className="text-sm leading-relaxed text-slate-600 dark:text-rf-muted">{item.a}</p>
+        <section className="mx-auto max-w-3xl px-4 pb-24 sm:px-8">
+          <FadeIn>
+            <div className="mb-8 text-center">
+              <p className="ap3k-kicker">FAQ</p>
+              <h2 className="mt-2 text-3xl font-black tracking-tight">Billing without surprises</h2>
             </div>
-          ))}
-        </div>
-      </section>
+          </FadeIn>
+          <div className="flex flex-col gap-4">
+            {FAQ.map((item, index) => (
+              <FadeIn key={item.q} delay={index * 0.035}>
+                <details className="group rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-all duration-300 open:border-orange-500/25 open:shadow-lg dark:border-white/10 dark:bg-white/[0.04]">
+                  <summary className="cursor-pointer list-none text-sm font-black text-slate-950 marker:hidden dark:text-white">
+                    <span className="flex items-center justify-between gap-4">
+                      {item.q}
+                      <span className="text-lg text-orange-500 transition-transform group-open:rotate-45">+</span>
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.a}</p>
+                </details>
+              </FadeIn>
+            ))}
+          </div>
+        </section>
+      </main>
 
       <WebsiteFooter />
     </div>
