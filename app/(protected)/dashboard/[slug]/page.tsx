@@ -91,7 +91,21 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
   const activeCampaigns = automations.filter((automation: any) => automation.active && !automation.needsReview && !automation.archivedAt);
   const hasActiveCampaign = activeCampaigns.length > 0;
-  const hasPrivateCampaign = activeCampaigns.some((automation: any) => automation.sendPrivateDm !== false);
+  const hasDmCampaign = activeCampaigns.some((automation: any) => automation.sendPrivateDm !== false);
+  const hasCommentReplyCampaign = activeCampaigns.some((automation: any) => Boolean(
+    automation.listener?.commentReply ||
+    automation.listener?.commentReply2 ||
+    automation.listener?.commentReply3
+  ));
+  const actionHealthDetail = !hasActiveCampaign
+    ? "Ready when a campaign is live"
+    : hasCommentReplyCampaign && hasDmCampaign
+      ? "Comment replies + DMs active"
+      : hasDmCampaign
+        ? "DMs active"
+        : hasCommentReplyCampaign
+          ? "Comment replies active"
+          : "Campaign active";
 
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -99,7 +113,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3k</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          Your Instagram connection, campaign activity, replies, and captured leads in one place.
+          Your Instagram connection, campaign activity, comment replies, DMs, and captured leads in one place.
         </p>
       </div>
 
@@ -110,7 +124,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <p className="ap3k-kicker">Ready to launch</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Create your first Instagram campaign</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Choose a post, set a comment trigger, configure public and private replies, and activate the campaign.
+                Choose a post, set a comment trigger, then choose whether AP3k should reply to the comment, send a DM, or both.
               </p>
             </div>
             <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">Create campaign</Link>
@@ -185,7 +199,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <HealthPill label="Instagram connected" detail={instagramConnected && !tokenExpired ? "Ready" : "Reconnect required"} state={instagramConnected && !tokenExpired ? "ok" : "warn"} />
         <HealthPill label="Comments" detail={metrics?.commentsReceived ? "Comments are arriving" : "Ready to receive"} state={instagramConnected && !tokenExpired ? "ok" : "warn"} />
         <HealthPill label="Campaigns" detail={hasActiveCampaign ? `${activeCampaigns.length} live campaign${activeCampaigns.length === 1 ? "" : "s"}` : "Activate a campaign"} state={hasActiveCampaign ? "ok" : "warn"} />
-        <HealthPill label="Replies" detail={hasActiveCampaign ? (hasPrivateCampaign ? "Public + private replies active" : "Public replies active") : "Ready when a campaign is live"} state={hasActiveCampaign ? "ok" : "warn"} />
+        <HealthPill label="Actions" detail={actionHealthDetail} state={hasActiveCampaign ? "ok" : "warn"} />
       </div>
 
       <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
@@ -218,7 +232,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-950 dark:text-white">Recent activity</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Latest comments, trigger matches, replies, and leads in the selected period.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Latest comments, trigger matches, comment replies, DMs, and leads in the selected period.</p>
           </div>
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
         </div>
@@ -235,8 +249,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 <div className="flex min-w-0 gap-3">
                   <span className={["mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full", recentToneClass(item.tone)].join(" ")} />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.title}{item.actorLabel ? ` ${item.actorLabel}` : ""}</p>
-                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{formatAppReviewActivitySubtitle(item.subtitle, true)}</p>
+                    <p className="truncate text-sm font-black text-slate-950 dark:text-white">{customerActionCopy(item.title)}{item.actorLabel ? ` ${item.actorLabel}` : ""}</p>
+                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{customerActionCopy(formatAppReviewActivitySubtitle(item.subtitle, true))}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pl-5 sm:pl-0">
@@ -262,7 +276,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <EmptyState
             icon="📣"
             title="No campaigns yet"
-            description="Create a campaign, choose a post, add a trigger, configure replies, and activate it."
+            description="Create a campaign, choose a post, add a trigger, choose your actions, and activate it."
             ctaLabel="Create campaign →"
             ctaHref={`/dashboard/${params.slug}/automation/new`}
           />
@@ -272,6 +286,18 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       </section>
     </div>
   );
+}
+
+function customerActionCopy(text: string) {
+  return text
+    .replace(/Public replies/g, "Comment replies")
+    .replace(/Public reply/g, "Comment reply")
+    .replace(/public replies/g, "comment replies")
+    .replace(/public reply/g, "comment reply")
+    .replace(/Private replies/g, "DMs")
+    .replace(/Private reply/g, "DM")
+    .replace(/private replies/g, "DMs")
+    .replace(/private reply/g, "DM");
 }
 
 function recentToneClass(tone: "green" | "blue" | "purple" | "amber" | "red" | "slate") {
