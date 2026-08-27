@@ -118,6 +118,8 @@ export default async function PaymentPage({ searchParams }: Props) {
     );
   }
 
+  let checkoutUrl: string | null = null;
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -141,7 +143,7 @@ export default async function PaymentPage({ searchParams }: Props) {
       allow_promotion_codes: true,
     });
 
-    if (session.url) redirect(session.url);
+    checkoutUrl = session.url;
   } catch (err) {
     console.error("[stripe-checkout] failed to create checkout session", {
       plan: selectedPlan,
@@ -149,6 +151,11 @@ export default async function PaymentPage({ searchParams }: Props) {
       message: err instanceof Error ? err.message : String(err),
     });
   }
+
+  // Next.js redirects are implemented by throwing an internal NEXT_REDIRECT
+  // signal. Keep redirect() outside the Stripe try/catch so a successful
+  // Checkout Session is never mistaken for a Stripe failure.
+  if (checkoutUrl) redirect(checkoutUrl);
 
   return (
     <StatusCard
