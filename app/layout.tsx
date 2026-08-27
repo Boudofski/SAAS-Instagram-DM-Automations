@@ -51,6 +51,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={jakarta.className}>
+        <style>{`
+          div:has(> video > source[src="/media/instagram-features_01.mp4"]) > div:first-child,
+          div:has(> video > source[src="/media/instagram-features_02.mp4"]) > div:first-child,
+          div:has(> video > source[src="/media/instagram-features_03.mp4"]) > div:first-child,
+          div:has(> video > source[src="/media/instagram-features_04.mp4"]) > div:first-child,
+          div:has(> video > source[src="/media/templates_05.mp4"]) > div:first-child {
+            display: none !important;
+          }
+        `}</style>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReduxProvider>
             <ReactQueryProvider>{children}</ReactQueryProvider>
