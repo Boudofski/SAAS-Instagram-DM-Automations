@@ -143,11 +143,11 @@ export default function AutomationTable({
           <span>Campaign</span>
           <span>Post</span>
           <span>Trigger</span>
-          <span>Replies</span>
+          <span>Actions</span>
           <span>Runs</span>
           <span>Leads</span>
           <span>Status</span>
-          <span className="text-right">Actions</span>
+          <span className="text-right">Manage</span>
         </div>
         <div className="divide-y divide-slate-100 dark:divide-white/10">
           {paged.length === 0 ? (
@@ -194,15 +194,15 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
   const replySummary = getReplySummary(automation);
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-pink-300/50 hover:shadow-lg dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045]">
+    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045]">
       <div className="flex items-start gap-3">
         <CampaignThumb post={post} isAny={isAny} size="lg" />
         <div className="min-w-0 flex-1">
           <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
             {automation.name || "Untitled campaign"}
           </Link>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword trigger"} · {mode.full}
+          <p title={mode.full} className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            {isAny ? "Any post" : "Specific post"} · {isAnyComment ? "Any comment" : "Keyword trigger"}
           </p>
         </div>
         <StatusPill status={status} />
@@ -215,12 +215,28 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
         <StatMini label="Runs" value={runs} />
         <StatMini label="Leads" value={leads} />
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="ap3k-table-action">{automation.needsReview || automation.stalePost ? "Review" : "Edit"}</Link>
-        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="ap3k-table-action">View</Link>
-        <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="ap3k-table-action">{automation.active ? "Pause" : "Start"}</button>
-        <button type="button" disabled={isPending} onClick={() => onDuplicate(automation.id)} className="ap3k-table-action">Duplicate</button>
-        <button type="button" disabled={isPending} onClick={() => onDelete(automation.id)} className="ap3k-table-action-danger">Delete</button>
+      <div className="mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))_40px] gap-2">
+        <Link href={`/dashboard/${slug}/automation/new?edit=${automation.id}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
+          {automation.needsReview || automation.stalePost ? "Review" : "Edit"}
+        </Link>
+        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
+          View
+        </Link>
+        <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
+          {automation.active ? "Pause" : "Start"}
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label="More campaign actions" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-rf-pink/30 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white">
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem disabled={isPending} onSelect={() => onDuplicate(automation.id)}>Duplicate campaign</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={isPending} onSelect={() => onDelete(automation.id)} className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10">Delete campaign</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </article>
   );
@@ -367,13 +383,13 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function getReplySummary(automation: any): ReplySummary {
-  const hasPublicReply = Boolean(automation.listener?.commentReply || automation.listener?.commentReply2 || automation.listener?.commentReply3);
-  const hasPrivateReply = automation.sendPrivateDm !== false && Boolean(automation.listener?.prompt);
+  const hasCommentReply = Boolean(automation.listener?.commentReply || automation.listener?.commentReply2 || automation.listener?.commentReply3);
+  const hasDm = automation.sendPrivateDm !== false && Boolean(automation.listener?.prompt);
   const activeTone = automation.active && !automation.needsReview ? "green" : "amber";
 
-  if (hasPublicReply && hasPrivateReply) return { label: "Public + Private", compactLabel: "Both", tone: activeTone };
-  if (hasPublicReply) return { label: "Public only", compactLabel: "Public", tone: activeTone };
-  if (hasPrivateReply) return { label: "Private only", compactLabel: "Private", tone: activeTone };
+  if (hasCommentReply && hasDm) return { label: "Comment + DM", compactLabel: "Both", tone: activeTone };
+  if (hasCommentReply) return { label: "Comment reply", compactLabel: "Comment", tone: activeTone };
+  if (hasDm) return { label: "DM", compactLabel: "DM", tone: activeTone };
   return { label: "Not set", compactLabel: "Off", tone: "slate" };
 }
 
