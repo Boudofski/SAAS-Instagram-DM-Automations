@@ -8,7 +8,7 @@ import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 const siteDescription =
-  "AP3k automates Instagram comment campaigns with configurable public and private replies, lead tracking, and account analytics for professional accounts.";
+  "AP3k automates Instagram comment campaigns with configurable comment replies and DMs, lead tracking, and account analytics for professional accounts.";
 
 export const metadata: Metadata = {
   title: "AP3k — Instagram Comment Automation",
