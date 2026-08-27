@@ -5,17 +5,17 @@ export function getCampaignModeLabel(
 ) {
   if (messagingReviewMode) {
     return externalDm
-      ? { short: "Public", full: "Public reply only" }
-      : { short: "Both", full: "Public + private replies active" };
+      ? { short: "Comment", full: "Comment reply only" }
+      : { short: "Both", full: "Comment reply + DM active" };
   }
 
   if (appReviewMode) {
     return externalDm
-      ? { short: "Public", full: "Public reply mode" }
-      : { short: "Public", full: "Public reply active" };
+      ? { short: "Comment", full: "Comment reply mode" }
+      : { short: "Comment", full: "Comment reply active" };
   }
 
   return externalDm
-    ? { short: "External", full: "External DM" }
-    : { short: "AP3k", full: "AP3k DM" };
+    ? { short: "Comment", full: "Comment reply" }
+    : { short: "DM", full: "AP3K DM" };
 }
