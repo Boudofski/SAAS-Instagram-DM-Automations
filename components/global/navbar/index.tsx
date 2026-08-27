@@ -13,6 +13,8 @@ import UpgradeCard from "../sidebar/upgrade";
 import SubscriptionPlan from "../subscription-plan";
 import Notification from "./notification";
 import Search from "./search";
+import { useClerk } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   slug: string;
@@ -20,8 +22,15 @@ type Props = {
 
 function NavBar({ slug }: Props) {
   const { page, pathname } = usePath();
+  const { signOut } = useClerk();
+  const queryClient = useQueryClient();
   const currentPage = PAGE_BREAD_CRUMBS.includes(page) || page == slug;
   const isCampaignList = pathname === `/dashboard/${slug}/automation`;
+
+  const handleSignOut = () => {
+    queryClient.clear();
+    void signOut({ redirectUrl: "/" });
+  };
 
   return (
     currentPage && (
@@ -31,24 +40,40 @@ function NavBar({ slug }: Props) {
             trigger={<Menu aria-hidden="true" />}
             triggerLabel="Open navigation"
             className="lg:hidden"
+            contentClassName="h-[100dvh] max-h-[100dvh]"
             side="left"
             closeOnNavigation
           >
-            <div className="flex h-full w-full flex-col gap-y-5 bg-white p-3 text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
-              <div className="flex items-center justify-center gap-x-2 p-5">
-                <AP3kLogo className="text-slate-950 dark:text-white" />
-              </div>
-              <div className="flex flex-col py-3">
-                <Items page={page} slug={slug} />
-              </div>
-              <div className="px-16">
-                <Separator orientation="horizontal" className="bg-slate-200 dark:bg-[#333336]" />
-              </div>
-              <SubscriptionPlan type="FREE">
-                <div className="flex flex-1 flex-col justify-end">
-                  <UpgradeCard />
+            <div className="flex h-full min-h-0 w-full flex-col bg-white text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
+              <div className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+                <div className="flex items-center justify-center gap-x-2 p-5">
+                  <AP3kLogo className="text-slate-950 dark:text-white" />
                 </div>
-              </SubscriptionPlan>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
+                <div className="flex flex-col py-3">
+                  <Items page={page} slug={slug} />
+                </div>
+                <div className="px-16 py-2">
+                  <Separator orientation="horizontal" className="bg-slate-200 dark:bg-[#333336]" />
+                </div>
+                <SubscriptionPlan type="FREE">
+                  <div className="mt-4">
+                    <UpgradeCard />
+                  </div>
+                </SubscriptionPlan>
+              </div>
+
+              <div className="shrink-0 border-t border-slate-200 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-pink dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                >
+                  Sign out
+                </button>
+              </div>
             </div>
           </Sheet>
         </span>
