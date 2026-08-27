@@ -7,9 +7,7 @@ export function normalizeThemeMode(value?: string | null): ThemeMode {
 
 export function nextThemeMode(current?: string | null): ThemeMode {
   const mode = normalizeThemeMode(current);
-  if (mode === "dark") return "light";
-  if (mode === "light") return "system";
-  return "dark";
+  return mode === "dark" ? "light" : "dark";
 }
 
 export function ap3kFormControlClass(kind: "input" | "textarea" | "select" = "input") {
