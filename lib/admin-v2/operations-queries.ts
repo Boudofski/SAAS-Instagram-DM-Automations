@@ -18,9 +18,10 @@ export type AdminV2BillingRow = {
 };
 
 export async function getAdminV2BillingOverview() {
-  const [total, pro, free, stripeLinked, subscriptions] = await Promise.all([
+  const [total, pro, business, free, stripeLinked, subscriptions] = await Promise.all([
     client.subscription.count(),
     client.subscription.count({ where: { plan: "PRO" } }),
+    client.subscription.count({ where: { plan: "BUSINESS" } }),
     client.subscription.count({ where: { plan: "FREE" } }),
     client.subscription.count({ where: { customerId: { not: null } } }),
     client.subscription.findMany({
@@ -60,63 +61,20 @@ export async function getAdminV2BillingOverview() {
     overrideExpiresAt: subscription.overrideExpiresAt,
   }));
 
-  return {
-    stats: { total, pro, free, stripeLinked },
-    rows,
-  };
+  return { stats: { total, pro, business, free, stripeLinked }, rows };
 }
 
 export async function getAdminV2SystemSnapshot() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-  const [
-    realMetaEvents24h,
-    signatureFailures24h,
-    failedMessages24h,
-    loopGuardEvents24h,
-    reconnectRequired,
-    adminActions24h,
-    lastRealWebhook,
-  ] = await Promise.all([
-    client.webhookEvent.count({
-      where: { eventSource: "META_REAL", createdAt: { gte: since } },
-    }),
-    client.webhookEvent.count({
-      where: { eventType: "SIGNATURE_FAILED", createdAt: { gte: since } },
-    }),
-    client.messageLog.count({
-      where: { status: "FAILED", createdAt: { gte: since } },
-    }),
-    client.automationEvent.count({
-      where: {
-        eventType: { in: ["LOOP_GUARD_TRIGGERED", "LOOP_GUARD_PAUSED_CAMPAIGN"] },
-        createdAt: { gte: since },
-      },
-    }),
-    client.integrations.count({
-      where: {
-        OR: [
-          { reconnectRequired: true },
-          { status: "DISCONNECTED" },
-          { expiresAt: { lt: new Date() } },
-        ],
-      },
-    }),
+  const [realMetaEvents24h, signatureFailures24h, failedMessages24h, loopGuardEvents24h, reconnectRequired, adminActions24h, lastRealWebhook] = await Promise.all([
+    client.webhookEvent.count({ where: { eventSource: "META_REAL", createdAt: { gte: since } } }),
+    client.webhookEvent.count({ where: { eventType: "SIGNATURE_FAILED", createdAt: { gte: since } } }),
+    client.messageLog.count({ where: { status: "FAILED", createdAt: { gte: since } } }),
+    client.automationEvent.count({ where: { eventType: { in: ["LOOP_GUARD_TRIGGERED", "LOOP_GUARD_PAUSED_CAMPAIGN"] }, createdAt: { gte: since } } }),
+    client.integrations.count({ where: { OR: [{ reconnectRequired: true }, { status: "DISCONNECTED" }, { expiresAt: { lt: new Date() } }] } }),
     client.adminAuditLog.count({ where: { createdAt: { gte: since } } }),
-    client.webhookEvent.findFirst({
-      where: { eventSource: "META_REAL" },
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true, eventType: true, status: true },
-    }),
+    client.webhookEvent.findFirst({ where: { eventSource: "META_REAL" }, orderBy: { createdAt: "desc" }, select: { createdAt: true, eventType: true, status: true } }),
   ]);
 
-  return {
-    realMetaEvents24h,
-    signatureFailures24h,
-    failedMessages24h,
-    loopGuardEvents24h,
-    reconnectRequired,
-    adminActions24h,
-    lastRealWebhook,
-  };
+  return { realMetaEvents24h, signatureFailures24h, failedMessages24h, loopGuardEvents24h, reconnectRequired, adminActions24h, lastRealWebhook };
 }
