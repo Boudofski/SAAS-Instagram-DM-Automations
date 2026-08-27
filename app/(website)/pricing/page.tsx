@@ -20,7 +20,7 @@ const PLANS = [
       { text: FREE_CAMPAIGN_FEATURE, included: true },
       { text: "50 automated replies/month", included: true },
       { text: "Keyword + Any Comment triggers", included: true },
-      { text: "Public + private reply setup", included: true },
+      { text: "Comment replies + DMs", included: true },
       { text: "Basic analytics", included: true },
     ],
   },
@@ -35,7 +35,7 @@ const PLANS = [
       { text: "1 Instagram account", included: true },
       { text: CREATOR_CAMPAIGN_FEATURE, included: true },
       { text: "5,000 automated replies/month", included: true },
-      { text: "Public + private replies", included: true },
+      { text: "Comment replies + DMs", included: true },
       { text: "Lead tracking", included: true },
       { text: "Analytics", included: true },
     ],
@@ -57,7 +57,7 @@ const FAQ = [
   },
   {
     q: "What counts toward the monthly reply allowance?",
-    a: "Successful public replies and successful private replies count toward the monthly allowance. Failed or skipped actions do not count.",
+    a: "Successful comment replies and DMs count toward the monthly allowance. Failed or skipped actions do not count.",
   },
   {
     q: "How does AP3k connect to Instagram?",

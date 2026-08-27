@@ -136,7 +136,7 @@ export function validateNormalizedCampaignPayload(
     payload.listener.commentReply3,
   ].filter(Boolean).length;
   if (!payload.sendPrivateDm && publicReplyCount === 0) {
-    return "Enable public reply or private DM before activating this campaign.";
+    return "Choose a comment reply or DM before activating this campaign.";
   }
 
   return null;

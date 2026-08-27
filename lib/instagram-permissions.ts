@@ -78,7 +78,7 @@ export function instagramPermissionBlockMessage(
     return "Reconnect Instagram and enable Access and manage comments before activating campaigns.";
   }
   if (options.needsMessages && capabilities.messages === "missing") {
-    return "Reconnect Instagram and enable Access and manage messages before enabling private replies.";
+    return "Reconnect Instagram and enable Access and manage messages before sending DMs.";
   }
   return null;
 }

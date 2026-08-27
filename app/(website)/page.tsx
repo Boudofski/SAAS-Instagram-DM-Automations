@@ -26,7 +26,7 @@ const PLANS = [
       { text: FREE_CAMPAIGN_FEATURE, included: true },
       { text: "50 automated replies/month", included: true },
       { text: "Keyword + Any Comment triggers", included: true },
-      { text: "Public + private reply setup", included: true },
+      { text: "Comment replies + DMs", included: true },
       { text: "Basic analytics", included: true },
     ],
   },
@@ -41,7 +41,7 @@ const PLANS = [
       { text: "1 Instagram account", included: true },
       { text: CREATOR_CAMPAIGN_FEATURE, included: true },
       { text: "5,000 automated replies/month", included: true },
-      { text: "Public + private replies", included: true },
+      { text: "Comment replies + DMs", included: true },
       { text: "Lead export", included: true },
       { text: "Analytics", included: true },
     ],
@@ -61,8 +61,8 @@ const FEATURES = [
   },
   {
     icon: Reply,
-    title: "Public + private replies",
-    desc: "Reply publicly and send one configured private reply after a matching comment.",
+    title: "Comment replies + DMs",
+    desc: "Reply under the post and send a DM after a matching comment.",
   },
   {
     icon: TrendingUp,
@@ -72,7 +72,7 @@ const FEATURES = [
 ] as const;
 
 const EXAMPLES = [
-  { comment: "GUIDE", action: "Send the public confirmation and the private guide reply", color: "text-rf-pink" },
+  { comment: "GUIDE", action: "Reply to the comment and send the guide by DM", color: "text-rf-pink" },
   { comment: "PRICE", action: "Match pricing interest and continue the conversation automatically", color: "text-rf-purple" },
   { comment: "BOOK", action: "Capture booking intent and record the campaign lead", color: "text-rf-blue" },
 ] as const;
@@ -80,15 +80,15 @@ const EXAMPLES = [
 const PROOF = [
   ["Instagram", "Business & Creator accounts", "bg-rf-orange/10 text-rf-orange"],
   ["Triggers", "Keyword or any comment", "bg-rf-pink/10 text-rf-magenta"],
-  ["Replies", "Public + private", "bg-rf-purple/10 text-rf-purple"],
+  ["Actions", "Comment reply + DM", "bg-rf-purple/10 text-rf-purple"],
   ["Tracking", "Activity + leads", "bg-rf-indigo/10 text-rf-indigo"],
 ] as const;
 
 const STEPS = [
   ["01", "Connect Instagram", "Authorize one Instagram Business or Creator account."],
-  ["02", "Create a campaign", "Choose Any post or a specific post, then set the trigger and replies."],
+  ["02", "Create a campaign", "Choose Any post or a specific post, then set the trigger and actions."],
   ["03", "Receive a real comment", "AP3k matches the comment against your active campaign."],
-  ["04", "Send + track", "AP3k runs the configured replies and records the resulting activity and lead."],
+  ["04", "Reply + track", "AP3k replies to the comment, sends the DM you configured, and records the resulting activity and lead."],
 ] as const;
 
 export default async function LandingPage() {
@@ -143,7 +143,7 @@ export default async function LandingPage() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-                Connect Instagram, choose what comments should trigger, send public and private replies, and track campaign activity from one simple workspace.
+                Connect Instagram, choose what comments should trigger, reply to comments and send DMs, and track campaign activity from one simple workspace.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -197,11 +197,11 @@ export default async function LandingPage() {
                       <p className="mt-1 text-sm">This is exactly what I need. <span className="rounded-lg border border-rf-pink/25 bg-rf-pink/10 px-2 py-1 text-xs font-black text-rf-pink">GUIDE</span></p>
                     </div>
                     <div className="rounded-2xl border border-rf-pink/20 bg-ap3k-gradient-soft p-4 sm:ml-8">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-pink"><MessageCircle className="h-4 w-4" /> Public reply sent</div>
-                      <p className="text-sm leading-relaxed">Thanks for commenting — I sent the guide privately.</p>
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-pink"><MessageCircle className="h-4 w-4" /> Comment reply sent</div>
+                      <p className="text-sm leading-relaxed">Thanks for commenting — I sent the guide by DM.</p>
                     </div>
                     <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/10 p-4 sm:ml-12">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-blue"><Reply className="h-4 w-4" /> Private reply sent</div>
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-rf-blue"><Reply className="h-4 w-4" /> DM sent</div>
                       <p className="text-sm leading-relaxed">Here is the guide you requested.</p>
                     </div>
                     <div className="flex items-center gap-3 rounded-2xl border border-rf-green/20 bg-rf-green/10 p-4">
@@ -236,7 +236,7 @@ export default async function LandingPage() {
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">Everything you need</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Simple automation for creators who move fast.</h2>
-              <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-rf-muted">One Instagram account, unlimited campaigns, clear triggers, automatic replies, and useful activity tracking.</p>
+              <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-rf-muted">One Instagram account, unlimited campaigns, clear triggers, automatic actions, and useful activity tracking.</p>
             </FadeIn>
             <StaggerContainer className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {FEATURES.map((feature) => {
@@ -259,7 +259,7 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mb-12 text-center">
               <p className="ap3k-kicker">How it works</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">From comment to reply in four steps.</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">From comment to action in four steps.</h2>
             </FadeIn>
             <StaggerContainer className="grid gap-4 md:grid-cols-4">
               {STEPS.map(([num, title, desc]) => (
@@ -286,7 +286,7 @@ export default async function LandingPage() {
               {[
                 "Direct Instagram authorization",
                 "Business & Creator accounts",
-                "Comment-triggered replies",
+                "Comment replies + DMs",
                 "Data deletion controls",
               ].map((label) => (
                 <StaggerItem key={label}>

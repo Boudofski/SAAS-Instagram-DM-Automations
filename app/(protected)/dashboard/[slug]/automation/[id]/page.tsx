@@ -88,7 +88,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <div>
             <p className="ap3k-kicker">Campaign overview</p>
             <h2 className="mt-1 text-xl font-black">Instagram comment workflow</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A comment enters the campaign, the trigger is checked, then the configured replies run.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A comment enters the campaign, the trigger is checked, then AP3k runs the actions you selected.</p>
           </div>
           <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">
             {isLive ? "Listening now" : statusLabel}
@@ -98,7 +98,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <InfoTile label="Instagram account" value={connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Not connected"} tone={connectedIntegration ? "green" : "amber"} />
           <InfoTile label="Post" value={selectedPostLabel} tone={post ? "green" : "amber"} />
           <InfoTile label="Trigger" value={triggerLabel} tone={isAnyComment || keywords.length ? "green" : "amber"} />
-          <InfoTile label="Replies" value={replySummary(hasPublicReply, hasPrivateReply)} tone={hasPublicReply || hasPrivateReply ? "green" : "amber"} />
+          <InfoTile label="Actions" value={replySummary(hasPublicReply, hasPrivateReply)} tone={hasPublicReply || hasPrivateReply ? "green" : "amber"} />
         </div>
       </section>
 
@@ -106,7 +106,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         <section className="ap3k-card animate-[ap3kDashboardRise_0.52s_ease-out_both] rounded-3xl p-6">
           <div className="mb-6">
             <p className="ap3k-kicker">Workflow</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight">Comment → trigger → replies</h2>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">Comment → trigger → actions</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The customer-facing path configured for this campaign.</p>
           </div>
 
@@ -116,8 +116,8 @@ export default async function CampaignDetailPage({ params }: Props) {
             <FlowNode label="2. Trigger" title={isAnyComment ? "Any comment" : "Keyword matched"} body={triggerLabel} tone="pink" />
             <FlowConnector />
             <div className="grid gap-4 md:grid-cols-2">
-              <FlowNode label="3. Public reply" title={hasPublicReply ? "Reply to comment" : "Not configured"} body={publicReplies[0] || "No public reply configured."} tone="purple" disabled={!hasPublicReply} />
-              <FlowNode label="4. Private reply" title={hasPrivateReply ? "Reply after comment" : "Not configured"} body={automation.listener?.prompt || "No private reply configured."} tone="blue" disabled={!hasPrivateReply} />
+              <FlowNode label="3. Comment reply" title={hasPublicReply ? "Reply to comment" : "Not configured"} body={publicReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasPublicReply} />
+              <FlowNode label="4. DM" title={hasPrivateReply ? "Send a DM" : "Not configured"} body={automation.listener?.prompt || "No DM configured."} tone="blue" disabled={!hasPrivateReply} />
             </div>
           </div>
         </section>
@@ -128,8 +128,8 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Status" value={statusLabel} />
             <SettingsRow label="Post" value={isAnyPost ? "Any post" : "Specific post"} />
             <SettingsRow label="Trigger" value={isAnyComment ? "Any comment" : "Keyword"} />
-            <SettingsRow label="Public reply" value={hasPublicReply ? `${publicReplies.length} variation${publicReplies.length === 1 ? "" : "s"}` : "Off"} />
-            <SettingsRow label="Private reply" value={hasPrivateReply ? "Enabled" : "Off"} />
+            <SettingsRow label="Comment reply" value={hasPublicReply ? `${publicReplies.length} variation${publicReplies.length === 1 ? "" : "s"}` : "Off"} />
+            <SettingsRow label="DM" value={hasPrivateReply ? "Enabled" : "Off"} />
           </div>
           <Link href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`} className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm">
             Edit campaign
@@ -138,9 +138,9 @@ export default async function CampaignDetailPage({ params }: Props) {
       </div>
 
       <section className="grid animate-[ap3kDashboardRise_0.64s_ease-out_both] gap-4 md:grid-cols-4">
-        <MetricCard label="Reply actions" value={stats?.dmsSent ?? automation.listener?.dmCount ?? 0} detail="Completed automated actions" />
+        <MetricCard label="DMs" value={stats?.dmsSent ?? automation.listener?.dmCount ?? 0} detail="DMs sent" />
         <MetricCard label="Comments" value={stats?.commentsReceived ?? automation.listener?.commentCount ?? 0} detail="Comments received" />
-        <MetricCard label="Public replies" value={stats?.repliesSent ?? 0} detail="Replies posted" />
+        <MetricCard label="Comment replies" value={stats?.repliesSent ?? 0} detail="Replies posted under comments" />
         <MetricCard label="Leads" value={stats?.leadsCollected ?? automation._count?.leads ?? 0} detail="Leads captured" />
       </section>
 
@@ -149,7 +149,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           <h2 className="text-sm font-black text-slate-950 dark:text-white">Campaign content</h2>
           <div className="mt-5 space-y-5">
             <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} />
-            {hasPrivateReply && <ContentBlock label="Private reply" value={automation.listener?.prompt} />}
+            {hasPrivateReply && <ContentBlock label="DM message" value={automation.listener?.prompt} />}
             {(automation.listener?.ctaButtonTitle || automation.listener?.ctaLink) && (
               <div>
                 <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Link button</p>
@@ -161,7 +161,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             )}
             {publicReplies.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Public reply variations</p>
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Comment reply variations</p>
                 <div className="grid gap-2">
                   {publicReplies.map((reply, index) => (
                     <div key={`${reply}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
@@ -189,7 +189,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-black text-slate-950 dark:text-white">Recent activity</h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest comments, trigger matches, replies, and lead activity.</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest comments, trigger matches, comment replies, DMs, and lead activity.</p>
           </div>
           <span className="ap3k-badge ap3k-badge-slate">Latest 20</span>
         </div>
@@ -220,9 +220,9 @@ export default async function CampaignDetailPage({ params }: Props) {
 }
 
 function replySummary(publicReply: boolean, privateReply: boolean) {
-  if (publicReply && privateReply) return "Public + private";
-  if (publicReply) return "Public only";
-  if (privateReply) return "Private only";
+  if (publicReply && privateReply) return "Comment reply + DM";
+  if (publicReply) return "Comment reply";
+  if (privateReply) return "DM only";
   return "Not configured";
 }
 
@@ -243,8 +243,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function ReplyBadge({ publicReply, privateReply }: { publicReply: boolean; privateReply: boolean }) {
-  if (!publicReply && !privateReply) return <span className="ap3k-badge ap3k-badge-slate">Replies not configured</span>;
-  return <span className="ap3k-badge ap3k-badge-green">{replySummary(publicReply, privateReply)} replies</span>;
+  if (!publicReply && !privateReply) return <span className="ap3k-badge ap3k-badge-slate">Actions not configured</span>;
+  return <span className="ap3k-badge ap3k-badge-green">{replySummary(publicReply, privateReply)}</span>;
 }
 
 function InfoTile({ label, value, tone }: { label: string; value: ReactNode; tone: "green" | "amber" }) {
