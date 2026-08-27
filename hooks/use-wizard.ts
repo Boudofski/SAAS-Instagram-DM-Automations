@@ -46,7 +46,7 @@ const INITIAL: WizardData = {
   publicReply: "",
   publicReply2: "",
   publicReply3: "",
-  publicReplyEnabled: true,
+  publicReplyEnabled: false,
   active: true,
 };
 
