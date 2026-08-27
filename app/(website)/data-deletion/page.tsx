@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Data Deletion Instructions — AP3k",
-  description: "How to delete your AP3k account data, Instagram connection, campaigns, leads, and reply records.",
+  description: "How to delete your AP3k account data, Instagram connection, campaigns, leads, and automation records.",
 };
 
 const cardClass = "rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.10] dark:bg-[#111827] dark:shadow-ap3k-card";
@@ -57,9 +57,9 @@ export default function DataDeletionPage() {
             <ul className={`mt-4 list-disc space-y-2 pl-5 ${mutedClass}`}>
               <li>Your AP3k user profile and workspace data</li>
               <li>Your Instagram connection record and stored access token</li>
-              <li>Campaigns, keywords, reply settings, and CTA configuration</li>
+              <li>Campaigns, keywords, Comment reply settings, DM settings, and CTA configuration</li>
               <li>Lead records and campaign activity records</li>
-              <li>Reply delivery records associated with your campaigns</li>
+              <li>Comment-reply and DM delivery records associated with your campaigns</li>
               <li>Subscription metadata where deletion is permitted by applicable payment-record requirements</li>
             </ul>
           </section>
