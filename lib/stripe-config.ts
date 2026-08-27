@@ -85,10 +85,8 @@ export function inferActiveDatabasePlan(input: {
   lookupKey?: string | null;
   priceId?: string | null;
 }): SUBSCRIPTION_PLAN {
-  const metadata = input.metadataPlan?.trim().toUpperCase();
-  if (metadata === "BUSINESS" || metadata === "AGENCY") return "BUSINESS";
-  if (metadata === "PRO" || metadata === "CREATOR") return "PRO";
-
+  // A known current-catalog price is the strongest source of truth. This lets
+  // plan changes in Stripe override stale metadata on the subscription.
   if (input.lookupKey === STRIPE_PRICE_LOOKUP_KEYS.BUSINESS.month) return "BUSINESS";
   if (input.lookupKey === STRIPE_PRICE_LOOKUP_KEYS.BUSINESS.year) return "BUSINESS";
   if (input.lookupKey === STRIPE_PRICE_LOOKUP_KEYS.PRO.month) return "PRO";
@@ -97,19 +95,31 @@ export function inferActiveDatabasePlan(input: {
   const businessIds = [
     process.env.STRIPE_PRICE_ID_BUSINESS_MONTHLY,
     process.env.STRIPE_PRICE_ID_BUSINESS_ANNUAL,
-    process.env.STRIPE_PRICE_ID_AGENCY,
   ].filter(Boolean);
   if (input.priceId && businessIds.includes(input.priceId)) return "BUSINESS";
 
   const proIds = [
     process.env.STRIPE_PRICE_ID_PRO_MONTHLY,
     process.env.STRIPE_PRICE_ID_PRO_ANNUAL,
-    process.env.STRIPE_PRICE_ID_CREATOR,
-    process.env.STRIPE_SUBSCRIPTION_PRICE_ID,
   ].filter(Boolean);
   if (input.priceId && proIds.includes(input.priceId)) return "PRO";
 
+  // Legacy sessions/subscriptions may have no lookup key. In that case use the
+  // explicit plan metadata written by AP3K checkout before considering old IDs.
+  const metadata = input.metadataPlan?.trim().toUpperCase();
+  if (metadata === "BUSINESS" || metadata === "AGENCY") return "BUSINESS";
+  if (metadata === "PRO" || metadata === "CREATOR") return "PRO";
+
+  const legacyBusinessIds = [process.env.STRIPE_PRICE_ID_AGENCY].filter(Boolean);
+  if (input.priceId && legacyBusinessIds.includes(input.priceId)) return "BUSINESS";
+
+  const legacyProIds = [
+    process.env.STRIPE_PRICE_ID_CREATOR,
+    process.env.STRIPE_SUBSCRIPTION_PRICE_ID,
+  ].filter(Boolean);
+  if (input.priceId && legacyProIds.includes(input.priceId)) return "PRO";
+
   // Preserve historical paid customers whose old Stripe prices predate the
-  // explicit AP3K lookup-key catalog. Never silently upgrade an unknown price.
+  // explicit AP3K catalog. Never silently upgrade an unknown paid price.
   return "PRO";
 }
