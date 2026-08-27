@@ -21,13 +21,6 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-const PROOF = [
-  ["Instagram", "Business + Creator"],
-  ["Triggers", "Keyword or any comment"],
-  ["Actions", "Comment reply + DM"],
-  ["Setup", "No code required"],
-] as const;
-
 const VALUE_CARDS = [
   { icon: MessageCircle, title: "Comment replies", copy: "Respond under the post automatically while the conversation is still active." },
   { icon: Reply, title: "DM follow-up", copy: "Move eligible commenters into a direct conversation without repetitive inbox work." },
@@ -151,32 +144,24 @@ export default async function LandingPage() {
           <div className="pointer-events-none absolute -right-24 bottom-0 h-[34rem] w-[34rem] rounded-full bg-indigo-950/35 blur-[130px]" />
           <div className="pointer-events-none absolute left-1/2 top-0 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
-          <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-20">
-            <FadeIn>
+          <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16 xl:gap-20">
+            <FadeIn className="max-w-[760px] lg:py-8">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
                 <Sparkles className="h-4 w-4" /> Instagram automation, simplified
               </div>
-              <h1 className="mt-7 max-w-4xl text-[3.3rem] font-black leading-[0.92] tracking-[-0.06em] sm:text-7xl lg:text-[5.7rem]">
-                Your Instagram just got smarter.
+              <h1 className="mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
+                Your Instagram <span className="sm:block">just got smarter.</span>
               </h1>
-              <p className="mt-7 max-w-2xl text-base leading-7 text-white/82 sm:text-xl sm:leading-8">
-                Turn Instagram comments into instant Comment replies, DMs, and trackable leads—without living in your inbox.
+              <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">
+                Turn Instagram comments into instant comment replies, DMs, and trackable leads—without living in your inbox.
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
                   Start free <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a href="#how-it-works" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur-xl transition duration-200 hover:bg-white/16">
                   See how it works
                 </a>
-              </div>
-              <div className="mt-9 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                {PROOF.map(([label, value]) => (
-                  <div key={value} className="rounded-2xl border border-white/14 bg-white/[0.08] p-4 shadow-sm backdrop-blur-xl">
-                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-fuchsia-100">{label}</span>
-                    <p className="mt-2 text-xs font-bold leading-5 text-white/90">{value}</p>
-                  </div>
-                ))}
               </div>
             </FadeIn>
 
