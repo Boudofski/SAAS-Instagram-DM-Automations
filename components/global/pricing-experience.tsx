@@ -6,13 +6,24 @@ import {
   annualMonthlyEquivalent,
   checkoutHref,
   type BillingInterval,
+  type CustomerPlan,
   type PaidPlan,
 } from "@/lib/billing-plans";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-export default function PricingExperience({ compact = false }: { compact?: boolean }) {
+type Props = {
+  compact?: boolean;
+  currentPlan?: CustomerPlan;
+  existingPaid?: boolean;
+};
+
+export default function PricingExperience({
+  compact = false,
+  currentPlan,
+  existingPaid = false,
+}: Props) {
   const [interval, setInterval] = useState<BillingInterval>("year");
 
   return (
@@ -45,33 +56,53 @@ export default function PricingExperience({ compact = false }: { compact?: boole
         </button>
       </div>
 
+      {existingPaid && (
+        <p className="mx-auto mb-6 max-w-2xl rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-center text-sm font-bold text-blue-800 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200">
+          You already have a paid subscription. Use <strong>Manage billing</strong> above to change plan, billing interval, payment method, or cancellation settings without creating a second subscription.
+        </p>
+      )}
+
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {PLAN_CARDS.map((plan, index) => {
           const isPaid = plan.id === "PRO" || plan.id === "BUSINESS";
           const paidPlan = isPaid ? (plan.id as PaidPlan) : null;
+          const isCurrent = Boolean(currentPlan && plan.id === currentPlan);
           const price =
             plan.id === "CUSTOM"
               ? null
               : interval === "year"
                 ? plan.annualPrice
                 : plan.monthlyPrice;
-          const href =
+
+          let href =
             plan.id === "FREE"
               ? "/sign-up"
               : plan.id === "CUSTOM"
                 ? "mailto:support@ap3k.com?subject=AP3K%20Custom%20Plan"
                 : checkoutHref(paidPlan!, interval);
-          const cta =
+          let cta =
             plan.id === "FREE"
               ? "Start free"
               : plan.id === "CUSTOM"
                 ? "Contact us"
                 : `Choose ${plan.name}`;
 
+          if (isCurrent) {
+            href = existingPaid ? "#manage-billing" : "/dashboard";
+            cta = "Current plan";
+          } else if (existingPaid && plan.id !== "CUSTOM") {
+            href = "#manage-billing";
+            cta = "Manage plan in portal";
+          }
+
           return (
             <article
               key={plan.id}
               className={`group relative flex min-h-full flex-col overflow-visible rounded-[28px] border p-6 shadow-sm transition-all duration-500 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-2xl ${
+                isCurrent
+                  ? "ring-2 ring-emerald-500/50"
+                  : ""
+              } ${
                 plan.featured
                   ? "border-rf-pink/45 bg-gradient-to-b from-orange-50 via-pink-50/70 to-white shadow-[0_24px_80px_rgba(236,72,153,0.12)] dark:border-orange-500/45 dark:from-[#28150f] dark:via-[#171216] dark:to-[#101010]"
                   : "border-slate-200 bg-white/90 dark:border-white/10 dark:bg-[#0f1012]"
@@ -82,6 +113,11 @@ export default function PricingExperience({ compact = false }: { compact?: boole
                 <div className="absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-rf-pink px-4 py-1.5 text-xs font-black text-white shadow-lg">
                   <Sparkles className="h-3.5 w-3.5" /> Most popular
                 </div>
+              )}
+              {isCurrent && (
+                <span className="absolute right-4 top-4 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  Current
+                </span>
               )}
 
               <div className="pt-2">
@@ -127,9 +163,11 @@ export default function PricingExperience({ compact = false }: { compact?: boole
               <Link
                 href={href}
                 className={`mt-7 inline-flex min-h-12 items-center justify-center rounded-2xl px-5 text-sm font-black transition-all duration-300 motion-safe:hover:-translate-y-0.5 ${
-                  plan.featured
-                    ? "bg-gradient-to-r from-orange-500 to-rf-pink text-white shadow-[0_14px_38px_rgba(249,115,22,0.26)] hover:shadow-[0_18px_48px_rgba(236,72,153,0.30)]"
-                    : "border border-slate-200 bg-slate-50 text-slate-900 hover:border-orange-500/30 hover:bg-orange-500/[0.06] dark:border-white/10 dark:bg-white/[0.05] dark:text-white"
+                  isCurrent
+                    ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : plan.featured
+                      ? "bg-gradient-to-r from-orange-500 to-rf-pink text-white shadow-[0_14px_38px_rgba(249,115,22,0.26)] hover:shadow-[0_18px_48px_rgba(236,72,153,0.30)]"
+                      : "border border-slate-200 bg-slate-50 text-slate-900 hover:border-orange-500/30 hover:bg-orange-500/[0.06] dark:border-white/10 dark:bg-white/[0.05] dark:text-white"
                 }`}
               >
                 {cta}
