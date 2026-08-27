@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Sheet as ShadcnSheet,
   SheetContent,
@@ -12,11 +16,28 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   side?: "left" | "right";
+  closeOnNavigation?: boolean;
 };
 
-function Sheet({ trigger, triggerLabel, children, className, side }: Props) {
+function Sheet({
+  trigger,
+  triggerLabel,
+  children,
+  className,
+  side,
+  closeOnNavigation = false,
+}: Props) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (closeOnNavigation) {
+      setOpen(false);
+    }
+  }, [pathname, closeOnNavigation]);
+
   return (
-    <ShadcnSheet>
+    <ShadcnSheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         aria-label={triggerLabel}
         className={cn(
@@ -26,7 +47,19 @@ function Sheet({ trigger, triggerLabel, children, className, side }: Props) {
       >
         {trigger}
       </SheetTrigger>
-      <SheetContent side={side} className="overflow-x-hidden p-0">
+      <SheetContent
+        side={side}
+        className="overflow-x-hidden p-0"
+        onClickCapture={(event) => {
+          if (
+            closeOnNavigation &&
+            event.target instanceof Element &&
+            event.target.closest("a[href]")
+          ) {
+            setOpen(false);
+          }
+        }}
+      >
         <SheetTitle className="sr-only">{triggerLabel}</SheetTitle>
         {children}
       </SheetContent>
