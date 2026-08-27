@@ -1,104 +1,63 @@
 import { Button } from "@/components/ui/button";
-import { formatCampaignLimitFeature, getPlanLimits, type PlanLimit } from "@/lib/plan-limits";
+import { PLAN_CARDS, checkoutHref, type CustomerPlan } from "@/lib/billing-plans";
 import { cn } from "@/lib/utils";
 import { CircleCheck } from "lucide-react";
 import Link from "next/link";
 
-type PlanLabel = "FREE" | "PRO" | "AGENCY";
-
 type Props = {
-  label: PlanLabel;
-  current: "PRO" | "FREE";
-  campaignLimit?: PlanLimit;
+  label: CustomerPlan;
+  current: CustomerPlan;
 };
 
-const PLAN_COPY = {
-  FREE: {
-    name: "Free",
-    price: "$0",
-    period: "/month",
-    description: "For testing AP3k with one Instagram account.",
-    features: ["1 Instagram account", "50 automated replies/month", "Keyword + Any Comment triggers", "Public + private reply setup", "Basic analytics"],
-    href: "/pricing",
-  },
-  PRO: {
-    name: "Creator",
-    price: "$29",
-    period: "/month",
-    description: "For production comment automation on one Instagram account.",
-    features: ["1 Instagram account", "5,000 automated replies/month", "Public + private replies", "Lead tracking", "Analytics"],
-    href: "/payment?plan=creator",
-  },
-  AGENCY: {
-    name: "Agency",
-    price: "$79",
-    period: "/month",
-    description: "Not currently offered.",
-    features: ["Creator features"],
-    href: "/pricing",
-  },
-} as const;
-
-function PaymentCard({ label, current, campaignLimit }: Props) {
-  const plan = PLAN_COPY[label];
-  const defaultCampaignLimit = getPlanLimits(label).activeCampaigns;
-  const campaignFeature = formatCampaignLimitFeature(campaignLimit ?? defaultCampaignLimit);
-  const features = label === "AGENCY" ? plan.features : [campaignFeature, ...plan.features];
+// Compatibility card retained for older internal imports. The primary Billing
+// experience now uses PricingExperience, but this component follows the same
+// customer-facing plan catalog and terminology.
+export default function PaymentCard({ label, current }: Props) {
+  const plan = PLAN_CARDS.find((item) => item.id === label)!;
   const isActive = label === current;
-  const isAgency = label === "AGENCY";
-  const isIncludedFree = label === "FREE" && current === "PRO";
-  const ctaLabel = isActive
-    ? "Current plan"
-    : isIncludedFree
-    ? "Included"
-    : isAgency
-    ? "Unavailable"
-    : "Upgrade to Creator";
+  const href =
+    label === "FREE"
+      ? "/pricing"
+      : checkoutHref(label, "month");
 
   return (
     <div
       className={cn(
         "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm transition-all duration-300 dark:text-white",
         isActive
-          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 shadow-[0_12px_40px_rgba(221,42,123,0.10)] dark:border-pink-500/30 dark:bg-gradient-to-br dark:from-[#151827] dark:via-[#1b1023] dark:to-[#2a1230] dark:shadow-[0_24px_70px_rgba(221,42,123,0.20)]"
-          : "border-slate-200 bg-white hover:-translate-y-1 hover:border-rf-pink/30 hover:shadow-[0_18px_50px_rgba(221,42,123,0.14)] dark:border-white/[0.12] dark:bg-[#111827] dark:hover:bg-[#141e30]"
+          ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-white dark:border-pink-500/30 dark:from-[#17110f] dark:via-[#161116] dark:to-[#101112]"
+          : "border-slate-200 bg-white hover:-translate-y-1 hover:border-rf-pink/30 hover:shadow-lg dark:border-white/[0.12] dark:bg-[#111827]"
       )}
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-black">{plan.name}</h2>
-        {isActive && <span className="ap3k-badge ap3k-badge-green">Active</span>}
+        {isActive && <span className="ap3k-badge ap3k-badge-green">Current</span>}
       </div>
-      <p className={cn("mt-2 text-sm leading-relaxed text-slate-600", isActive ? "dark:text-slate-300" : "dark:text-slate-400")}>{plan.description}</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
-        <span className="text-4xl font-black tracking-tight">{plan.price}</span>
-        <span className={cn("text-sm text-slate-500", isActive ? "dark:text-slate-300" : "dark:text-rf-muted")}>{plan.period}</span>
+        <span className="text-4xl font-black tracking-tight">${plan.monthlyPrice}</span>
+        <span className="text-sm text-slate-500 dark:text-rf-muted">/month</span>
       </div>
       <div className="mt-5 flex flex-1 flex-col gap-2.5">
-        {features.map((feature) => (
+        {plan.features.map((feature) => (
           <p key={feature} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <CircleCheck className="h-4 w-4 flex-shrink-0 text-rf-green" />
+            <CircleCheck className="h-4 w-4 flex-shrink-0 text-orange-500" />
             {feature}
           </p>
         ))}
       </div>
       <Button
         asChild
-        disabled={isActive || isIncludedFree || isAgency}
+        disabled={isActive}
         className={cn(
           "mt-6 rounded-xl font-bold",
           isActive
             ? "cursor-default border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-            : isIncludedFree || isAgency
-            ? "border border-slate-200 bg-white text-slate-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-400"
             : "ap3k-gradient-button"
         )}
       >
-        <Link href={isActive || isIncludedFree || isAgency ? "/dashboard" : plan.href}>
-          {ctaLabel}
-        </Link>
+        <Link href={isActive ? "/dashboard" : href}>{isActive ? "Current plan" : label === "FREE" ? "View pricing" : `Choose ${plan.name}`}</Link>
       </Button>
     </div>
   );
 }
-
-export default PaymentCard;
