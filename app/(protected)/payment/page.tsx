@@ -1,4 +1,4 @@
-import { onSubscribe } from "@/actions/user";
+import { verifyCheckoutSession } from "@/actions/billing/verify-checkout";
 import { dashboardPath } from "@/lib/dashboard";
 import { client } from "@/lib/prisma";
 import {
@@ -55,7 +55,7 @@ export default async function PaymentPage({ searchParams }: Props) {
   const { cancel, session_id, plan, interval } = searchParams;
 
   if (session_id) {
-    const subscription = await onSubscribe(session_id);
+    const subscription = await verifyCheckoutSession(session_id);
     if (subscription.status === 200 && subscription.dashboardPath) {
       redirect(`${subscription.dashboardPath}/billing`);
     }
