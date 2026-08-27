@@ -51,7 +51,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={jakarta.className}>
-        {/* These selectors remove only the legacy AP3K demo/status strip around the five landing-page videos. */}
         <style>{`
           div:has(> video > source[src="/media/instagram-features_01.mp4"]) > div:first-child,
           div:has(> video > source[src="/media/instagram-features_02.mp4"]) > div:first-child,
