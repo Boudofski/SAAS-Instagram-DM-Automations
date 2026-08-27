@@ -34,8 +34,8 @@ export default function ThemeToggle({ compact = false, className }: Props) {
       <div
         aria-hidden="true"
         className={cn(
-          "h-10 rounded-full border border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.04]",
-          compact ? "w-10" : "w-[136px]",
+          "h-11 rounded-full border border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.04]",
+          compact ? "w-10" : "w-full sm:w-[190px]",
           className
         )}
       />
@@ -70,7 +70,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
   return (
     <div
       className={cn(
-        "inline-flex rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.05]",
+        "grid w-full grid-cols-2 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.05] sm:w-[190px]",
         className
       )}
       aria-label="Theme selector"
@@ -85,14 +85,14 @@ export default function ThemeToggle({ compact = false, className }: Props) {
             aria-pressed={active}
             onClick={() => setTheme(item.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition",
+              "inline-flex min-w-0 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-all duration-200",
               active
                 ? "bg-slate-950 text-white shadow-sm dark:bg-white/[0.12] dark:text-white dark:ring-1 dark:ring-inset dark:ring-white/10"
-                : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
             )}
           >
-            <Icon className="h-3.5 w-3.5" />
-            {item.label}
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            <span>{item.label}</span>
           </button>
         );
       })}
