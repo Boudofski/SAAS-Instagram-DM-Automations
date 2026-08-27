@@ -19,58 +19,34 @@ async function getDashboardHref() {
 }
 
 type Props = {
-  current?: "home" | "pricing" | "privacy" | "terms" | "data-deletion";
+  current?: "home" | "pricing" | "blog" | "privacy" | "terms" | "data-deletion";
 };
 
 export default async function WebsiteNav({ current }: Props) {
   const dashboardHref = await getDashboardHref();
   const isSignedIn = Boolean(dashboardHref);
+  const navClass = "transition-colors hover:text-slate-950 dark:hover:text-rf-text";
 
   return (
     <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/78 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-rf-bg/72 sm:px-8 lg:px-16">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <Link href="/">
+        <Link href="/" aria-label="AP3K home">
           <AP3kLogo className="text-base text-slate-950 dark:text-white" />
         </Link>
-        <ul className="hidden items-center gap-8 text-sm font-semibold text-slate-600 dark:text-rf-muted md:flex">
-          <li>
-            <Link href="/#features" className="transition-colors hover:text-slate-950 dark:hover:text-rf-text">
-              Features
-            </Link>
-          </li>
-          <li>
-            <Link href="/#how-it-works" className="transition-colors hover:text-slate-950 dark:hover:text-rf-text">
-              How it works
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/pricing"
-              className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : "transition-colors hover:text-slate-950 dark:hover:text-rf-text"}
-            >
-              Pricing
-            </Link>
-          </li>
+        <ul className="hidden items-center gap-7 text-sm font-semibold text-slate-600 dark:text-rf-muted md:flex">
+          <li><Link href="/#features" className={navClass}>Features</Link></li>
+          <li><Link href="/#how-it-works" className={navClass}>How it works</Link></li>
+          <li><Link href="/pricing" className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : navClass}>Pricing</Link></li>
+          <li><Link href="/blog" className={current === "blog" ? "text-slate-950 dark:text-rf-text" : navClass}>Blog</Link></li>
           {isSignedIn ? (
-            <li>
-              <Link href={dashboardHref!} className="transition-colors hover:text-slate-950 dark:hover:text-rf-text">
-                Dashboard
-              </Link>
-            </li>
+            <li><Link href={dashboardHref!} className={navClass}>Dashboard</Link></li>
           ) : (
-            <li>
-              <Link href="/dashboard" className="transition-colors hover:text-slate-950 dark:hover:text-rf-text">
-                Login
-              </Link>
-            </li>
+            <li><Link href="/dashboard" className={navClass}>Login</Link></li>
           )}
         </ul>
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle compact />
-          <Link
-            href={dashboardHref ?? "/sign-up"}
-            className="ap3k-gradient-button px-5 py-2 text-sm"
-          >
+          <Link href={dashboardHref ?? "/sign-up"} className="ap3k-gradient-button px-5 py-2 text-sm">
             {isSignedIn ? "Dashboard" : "Start free"}
           </Link>
         </div>
@@ -83,6 +59,7 @@ export default async function WebsiteNav({ current }: Props) {
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/#features">Features</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/#how-it-works">How it works</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/pricing">Pricing</Link>
+              <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/blog">Blog</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href={dashboardHref ?? "/dashboard"}>{isSignedIn ? "Dashboard" : "Login"}</Link>
             </div>
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-white/10">
