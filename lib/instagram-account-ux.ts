@@ -148,7 +148,7 @@ export function getDashboardProfileStats(input: {
       label: "Replies",
       value: input.usage ? formatUsageMetricValue(input.usage.staticReplies) : "0",
       change: undefined,
-      subtitle: "Public + private replies sent",
+      subtitle: "Comment replies + DMs sent",
     },
   ];
 

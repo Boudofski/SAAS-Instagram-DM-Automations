@@ -44,27 +44,27 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
       </div>
 
       <section className="ap3k-card animate-[ap3kDashboardRise_0.55s_ease-out_both] overflow-hidden rounded-3xl p-0">
-        <div className="bg-gradient-to-br from-emerald-50 via-white to-pink-50 p-6 dark:from-emerald-500/[0.10] dark:via-white/[0.04] dark:to-rf-pink/[0.08]">
+        <div className="bg-[radial-gradient(circle_at_12%_18%,rgba(16,185,129,0.18),transparent_34%),radial-gradient(circle_at_90%_12%,rgba(236,72,153,0.20),transparent_38%),linear-gradient(135deg,#0f172a_0%,#111827_55%,#21152a_100%)] p-5 text-white sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-5">
+            <div className="flex min-w-0 items-center gap-4 sm:gap-5">
               <InstagramAvatar src={displayProfilePictureUrl} username={displayUsername} label={instagram?.pageName} size="xl" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="truncate text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+                  <h2 className="truncate text-2xl font-black tracking-tight text-white sm:text-3xl">
                     {connected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
                   </h2>
                   <span className={connected && !tokenExpired ? "ap3k-badge ap3k-badge-green" : "ap3k-badge ap3k-badge-amber"}>
                     {tokenExpired ? "Reconnect" : connected ? "Connected" : "Not connected"}
                   </span>
                 </div>
-                <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-sm font-semibold text-slate-300">
                   {connected ? (
                     snapshot?.fetchedAt ? <LocalTime value={snapshot.fetchedAt} prefix="Profile refreshed" /> : "Connected. Profile sync pending."
                   ) : "Connect Instagram to start receiving comments."}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="ap3k-badge ap3k-badge-green">Comment automation ready</span>
-                  {profileSnapshotDisplay.label !== "Missing" && <span className="ap3k-badge ap3k-badge-slate">{profileSnapshotDisplay.label}</span>}
+                  {profileSnapshotDisplay.label !== "Missing" && <span className="ap3k-badge border-white/15 bg-white/[0.08] text-slate-200">{profileSnapshotDisplay.label}</span>}
                 </div>
               </div>
             </div>
@@ -76,7 +76,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
       <section className="grid animate-[ap3kDashboardRise_0.6s_ease-out_both] gap-3 md:grid-cols-3">
         <StatusCard label="Instagram connected" value={connected && !tokenExpired ? "Ready" : "Reconnect required"} ok={connected && !tokenExpired} />
         <StatusCard label="Comments" value={connected ? "Ready to receive" : "Connect account first"} ok={connected} />
-        <StatusCard label="Replies" value={connected ? "Ready in campaigns" : "Paused"} ok={connected} />
+        <StatusCard label="Actions" value={connected ? "Comment replies + DMs ready" : "Paused"} ok={connected} />
       </section>
 
       <section className="ap3k-card animate-[ap3kDashboardRise_0.7s_ease-out_both] rounded-3xl p-5 sm:p-6">
@@ -95,7 +95,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
               <SettingsStatCard label="Posts" stat={stats.posts} />
               <SettingsStatCard label="Comments" stat={stats.comments} />
               <SettingsStatCard label="Leads" stat={stats.contacts} />
-              <SettingsStatCard label="Private replies" stat={stats.dmsOut} />
+              <SettingsStatCard label="DMs" stat={stats.dmsOut} />
               <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
             </>
           ) : (
