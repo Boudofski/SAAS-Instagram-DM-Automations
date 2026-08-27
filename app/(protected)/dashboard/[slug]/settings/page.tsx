@@ -23,7 +23,7 @@ async function SettingsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-black text-slate-950 dark:text-white">Theme</h2>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Choose light, dark, or match your system preference.</p>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Choose a light or dark appearance.</p>
           </div>
           <ThemeToggle />
         </div>
