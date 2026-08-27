@@ -1,124 +1,160 @@
 import { onSubscribe } from "@/actions/user";
-import { getStripePriceId, parseStripePlan } from "@/lib/stripe-config";
+import { dashboardPath } from "@/lib/dashboard";
+import { client } from "@/lib/prisma";
+import {
+  parseStripeBillingInterval,
+  parseStripePlan,
+  stripePlanToDatabasePlan,
+} from "@/lib/stripe-config";
+import { resolveStripePriceId } from "@/lib/stripe-pricing";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import React from "react";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   searchParams: {
     session_id?: string;
-    cancel?: boolean;
+    cancel?: string | boolean;
     plan?: string;
+    interval?: string;
   };
 };
 
-function PaymentVerificationFailed() {
+function StatusCard({
+  title,
+  body,
+  tone = "default",
+}: {
+  title: string;
+  body: string;
+  tone?: "default" | "error";
+}) {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-slate-50 px-6 text-center text-slate-950 dark:bg-[#070808] dark:text-white">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
       <div className="ap3k-card relative z-10 flex max-w-lg flex-col items-center gap-3 rounded-3xl p-8">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-2xl text-red-300">
-        !
-      </div>
-      <h1 className="text-3xl font-black">Payment verification failed</h1>
-      <p className="max-w-md text-sm leading-relaxed text-rf-muted">
-        We could not verify this checkout session. Your card may still have
-        completed successfully, so please refresh your dashboard before trying
-        again.
-      </p>
+        <div
+          className={`grid h-14 w-14 place-items-center rounded-2xl border text-2xl ${
+            tone === "error"
+              ? "border-red-400/20 bg-red-500/10 text-red-500"
+              : "border-orange-400/20 bg-orange-500/10 text-orange-500"
+          }`}
+        >
+          {tone === "error" ? "!" : "↗"}
+        </div>
+        <h1 className="text-3xl font-black">{title}</h1>
+        <p className="max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-300">{body}</p>
       </div>
     </div>
   );
 }
 
-async function Page({ searchParams: { cancel, session_id, plan } }: Props) {
+export default async function PaymentPage({ searchParams }: Props) {
+  const { cancel, session_id, plan, interval } = searchParams;
+
   if (session_id) {
     const subscription = await onSubscribe(session_id);
-
     if (subscription.status === 200 && subscription.dashboardPath) {
-      return redirect(subscription.dashboardPath);
+      redirect(`${subscription.dashboardPath}/billing`);
     }
 
-    return <PaymentVerificationFailed />;
+    return (
+      <StatusCard
+        title="Payment verification failed"
+        body="We could not verify this checkout session. Your payment may still have completed, so check Billing before trying again."
+        tone="error"
+      />
+    );
   }
 
   if (cancel) {
     return (
-      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
-        <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
-        <div className="ap3k-card relative z-10 rounded-3xl p-8">
-        <h4 className="text-3xl font-black">Checkout canceled</h4>
-        <p className="mt-3 text-rf-muted">Your subscription was not changed.</p>
-        </div>
-      </div>
+      <StatusCard
+        title="Checkout canceled"
+        body="Your subscription was not changed. You can return to Pricing whenever you are ready."
+      />
     );
   }
 
   const user = await currentUser();
-  if (!user) return redirect("/sign-in");
+  if (!user) redirect("/sign-in");
+
+  const existing = await client.user.findUnique({
+    where: { clerkId: user.id },
+    select: { subscription: { select: { plan: true, customerId: true } } },
+  });
+  if (
+    existing?.subscription?.customerId &&
+    existing.subscription.plan !== "FREE"
+  ) {
+    redirect(`${dashboardPath(user.id)}/billing`);
+  }
 
   const selectedPlan = parseStripePlan(plan);
-  const priceId = getStripePriceId(selectedPlan);
+  const selectedInterval = parseStripeBillingInterval(interval);
+  const databasePlan = stripePlanToDatabasePlan(selectedPlan);
   const hostUrl = process.env.NEXT_PUBLIC_HOST_URL;
+
+  let priceId: string | null = null;
+  try {
+    priceId = await resolveStripePriceId(selectedPlan, selectedInterval);
+  } catch (err) {
+    console.error("[stripe-checkout] price lookup failed", {
+      plan: selectedPlan,
+      interval: selectedInterval,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   if (!priceId || !hostUrl) {
     return (
-      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
-        <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
-        <div className="ap3k-card relative z-10 rounded-3xl p-8">
-        <h4 className="text-3xl font-black">Checkout unavailable</h4>
-        <p className="mt-3 text-rf-muted">
-          Stripe checkout is not configured for this environment.
-        </p>
-        </div>
-      </div>
+      <StatusCard
+        title="Checkout unavailable"
+        body="This plan is not configured for checkout yet. Please try again shortly or contact support@ap3k.com."
+        tone="error"
+      />
     );
   }
 
-  let session;
   try {
-    session = await stripe.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: user.id,
-      metadata: { clerkId: user.id, plan: selectedPlan },
+      metadata: {
+        clerkId: user.id,
+        plan: databasePlan,
+        interval: selectedInterval,
+      },
       subscription_data: {
-        metadata: { clerkId: user.id, plan: selectedPlan },
+        metadata: {
+          clerkId: user.id,
+          plan: databasePlan,
+          interval: selectedInterval,
+        },
       },
       customer_email: user.emailAddresses[0]?.emailAddress,
       success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${hostUrl}/payment?cancel=true`,
+      allow_promotion_codes: true,
     });
+
+    if (session.url) redirect(session.url);
   } catch (err) {
     console.error("[stripe-checkout] failed to create checkout session", {
       plan: selectedPlan,
+      interval: selectedInterval,
       message: err instanceof Error ? err.message : String(err),
     });
-    return (
-      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
-        <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
-        <div className="ap3k-card relative z-10 rounded-3xl p-8">
-        <h4 className="text-3xl font-black">Checkout unavailable</h4>
-        <p className="mt-3 text-rf-muted">
-          Stripe checkout could not be started. Please try again later.
-        </p>
-        </div>
-      </div>
-    );
   }
 
-  if (session.url) redirect(session.url);
-
   return (
-    <div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center text-rf-text">
-      <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
-      <div className="ap3k-card relative z-10 rounded-3xl p-8">
-      <h4 className="text-3xl font-black">Checkout unavailable</h4>
-      <p className="mt-3 text-rf-muted">Stripe did not return a checkout URL.</p>
-      </div>
-    </div>
+    <StatusCard
+      title="Checkout unavailable"
+      body="Stripe could not start checkout. Please try again later."
+      tone="error"
+    />
   );
 }
-
-export default Page;
