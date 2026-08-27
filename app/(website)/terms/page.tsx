@@ -4,13 +4,13 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service — AP3k",
-  description: "Terms for using AP3k Instagram comment automation and reply workflows.",
+  description: "Terms for using AP3k Instagram comment automation, Comment reply, and DM workflows.",
 };
 
 const sections = [
   {
     title: "What AP3k Does",
-    body: "AP3k is an Instagram comment automation service for professional accounts. It can match configured comment triggers, send configured public replies, send a private reply after a qualifying comment, track campaign activity, and capture leads.",
+    body: "AP3k is an Instagram comment automation service for professional accounts. It can match configured comment triggers, Reply to comment, Send a DM after a qualifying comment, track campaign activity, and capture leads.",
   },
   {
     title: "Authorized Accounts Only",
@@ -18,7 +18,7 @@ const sections = [
   },
   {
     title: "Your Responsibility for Campaigns",
-    body: "You are responsible for the campaigns, keywords, public replies, private replies, CTA links, offers, and claims you configure in AP3k. AP3k executes the automation you configure, and you remain responsible for the content and intent of those replies.",
+    body: "You are responsible for the campaigns, keywords, Comment reply content, DM content, CTA links, offers, and claims you configure in AP3k. AP3k executes the automation you configure, and you remain responsible for the content and intent of those actions.",
   },
   {
     title: "Supported Instagram Access",
@@ -38,7 +38,7 @@ const sections = [
   },
   {
     title: "Service Availability",
-    body: "AP3k depends on Instagram API availability, account permissions, rate limits, and platform policies. Features may pause, degrade, or change because of platform limitations or technical issues outside AP3k's control. AP3k does not guarantee uninterrupted service or delivery of every reply.",
+    body: "AP3k depends on Instagram API availability, account permissions, rate limits, and platform policies. Features may pause, degrade, or change because of platform limitations or technical issues outside AP3k's control. AP3k does not guarantee uninterrupted service or delivery of every Comment reply or DM.",
   },
   {
     title: "Limitation of Liability",
@@ -60,7 +60,7 @@ export default function TermsPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Terms of Service</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: August 15, 2026. These terms govern your use of AP3k. By connecting an Instagram account or creating campaigns, you agree to these terms.
+            Last updated: August 27, 2026. These terms govern your use of AP3k. By connecting an Instagram account or creating campaigns, you agree to these terms.
           </p>
         </div>
 
