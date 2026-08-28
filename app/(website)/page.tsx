@@ -12,11 +12,8 @@ import {
   Clock3,
   MessageCircle,
   Reply,
-  ShieldCheck,
   Sparkles,
-  TrendingUp,
   Users,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -209,29 +206,42 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="relative overflow-hidden bg-[linear-gradient(135deg,#5521c8_0%,#7033e4_46%,#8f38df_100%)] px-4 py-24 text-white sm:px-8 lg:px-16 lg:py-28">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(244,114,182,0.22),transparent_25rem),radial-gradient(circle_at_88%_75%,rgba(30,41,59,0.30),transparent_32rem)]" />
-          <div className="relative mx-auto max-w-6xl space-y-24 lg:space-y-32">
+        <section id="features" className="relative bg-[#5521c8] text-white">
+          <div className="relative">
             {BENEFITS.map((benefit, index) => (
-              <div key={benefit.title} className={`grid items-center gap-12 lg:grid-cols-2 lg:gap-24 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                <FadeIn>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">{benefit.kicker}</p>
-                  <h2 className="mt-4 text-4xl font-black leading-[0.98] tracking-[-0.05em] sm:text-5xl">{benefit.title}</h2>
-                  <p className="mt-6 max-w-xl text-base leading-8 text-white/75 sm:text-lg">{benefit.body}</p>
-                  <div className="mt-7 space-y-3">
-                    {benefit.bullets.map((bullet) => (
-                      <div key={bullet} className="flex items-center gap-3 text-sm font-bold text-white/90">
-                        <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /></span>
-                        {bullet}
+              <article
+                key={benefit.title}
+                className={`sticky top-16 flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-t border-white/10 px-4 py-8 sm:px-8 sm:py-10 lg:px-16 ${
+                  index === 0
+                    ? "bg-[radial-gradient(circle_at_12%_18%,rgba(244,114,182,0.25),transparent_28rem),linear-gradient(135deg,#5521c8,#7832e3)]"
+                    : index === 1
+                      ? "bg-[radial-gradient(circle_at_86%_22%,rgba(244,114,182,0.22),transparent_28rem),linear-gradient(135deg,#6725d4,#8b35df)]"
+                      : "bg-[radial-gradient(circle_at_18%_78%,rgba(30,41,59,0.26),transparent_30rem),linear-gradient(135deg,#5c22cc,#7431df)]"
+                }`}
+                style={{ zIndex: index + 1 }}
+              >
+                <FadeIn replay amount={0.42} className="mx-auto w-full max-w-6xl">
+                  <div className={`grid items-center gap-7 lg:grid-cols-2 lg:gap-24 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
+                    <div className="text-center lg:text-left">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-fuchsia-200 sm:text-xs">{benefit.kicker}</p>
+                      <h2 className="mx-auto mt-3 max-w-xl text-3xl font-black leading-[0.96] tracking-[-0.05em] sm:text-5xl lg:mx-0 lg:mt-4">{benefit.title}</h2>
+                      <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-white/75 sm:text-base sm:leading-7 lg:mx-0 lg:mt-6 lg:text-lg lg:leading-8">{benefit.body}</p>
+                      <div className="mt-7 hidden space-y-3 lg:block">
+                        {benefit.bullets.map((bullet) => (
+                          <div key={bullet} className="flex items-center gap-3 text-sm font-bold text-white/90">
+                            <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /></span>
+                            {bullet}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                      <Link href="/sign-up" className="mt-8 hidden items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5 lg:inline-flex">Try it free <ArrowRight className="h-4 w-4" /></Link>
+                    </div>
+                    <div className="mx-auto flex w-full items-center justify-center">
+                      <ProductVideo src={benefit.src} label={benefit.label} className="w-[min(60vw,250px)] sm:w-[260px] lg:w-full lg:max-w-[300px]" />
+                    </div>
                   </div>
-                  <Link href="/sign-up" className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5">Try it free <ArrowRight className="h-4 w-4" /></Link>
                 </FadeIn>
-                <FadeIn delay={0.06}>
-                  <ProductVideo src={benefit.src} label={benefit.label} className="max-w-[270px] sm:max-w-[300px]" />
-                </FadeIn>
-              </div>
+              </article>
             ))}
           </div>
         </section>
@@ -291,21 +301,6 @@ export default async function LandingPage() {
                 <ProductVideo src="/media/templates_05.mp4" label="AP3K campaign setup demo" className="max-w-[280px]" />
               </div>
             </FadeIn>
-          </div>
-        </section>
-
-        <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16">
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] border border-slate-800 bg-[radial-gradient(circle_at_82%_20%,rgba(124,58,237,0.24),transparent_24rem),linear-gradient(135deg,#11121a,#151323)] px-6 py-11 text-white shadow-[0_30px_90px_rgba(15,23,42,0.18)] sm:px-10 lg:px-14">
-            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-              <FadeIn>
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-300">Built on supported access</p>
-                <h2 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.04em] sm:text-4xl">No Instagram password. No scraping. No browser bot pretending to be you.</h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-white/65">AP3K uses Instagram authorization and the Instagram Business API permissions required for profile/media access, comment management, and messaging.</p>
-              </FadeIn>
-              <div className="grid grid-cols-3 gap-3">
-                {[ShieldCheck, Zap, TrendingUp].map((Icon, index) => <div key={index} className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.06]"><Icon className="h-5 w-5 text-fuchsia-300" /></div>)}
-              </div>
-            </div>
           </div>
         </section>
 
