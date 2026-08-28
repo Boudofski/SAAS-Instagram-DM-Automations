@@ -125,6 +125,16 @@
 }
 
 @layer components {
+  .ap3k-hero-mesh {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(245, 133, 41, 0.44), transparent 29rem),
+      radial-gradient(circle at 82% 12%, rgba(221, 42, 123, 0.38), transparent 34rem),
+      radial-gradient(circle at 70% 82%, rgba(81, 91, 212, 0.42), transparent 38rem),
+      linear-gradient(135deg, #35108f 0%, #6122c7 42%, #8b2dc5 72%, #4c25b9 100%);
+    background-size: 120% 120%;
+    animation: ap3k-hero-shift 14s ease-in-out infinite alternate;
+  }
+
   .ap3k-card {
     @apply min-w-0 border border-slate-200 bg-white/90 text-slate-950 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.05)] backdrop-blur-xl dark:border-white/[0.12] dark:bg-[#111827] dark:text-slate-50 dark:shadow-ap3k-card;
   }
@@ -262,6 +272,15 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-rf-pink;
   }
+}
+
+@keyframes ap3k-hero-shift {
+  0% { background-position: 0% 15%; }
+  100% { background-position: 100% 85%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap3k-hero-mesh { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
