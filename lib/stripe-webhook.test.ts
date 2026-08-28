@@ -24,10 +24,10 @@ function dependencies(input: {
   clerkOwners?: Record<string, StripeOwner>;
   customerOwners?: Record<string, StripeOwner>;
 }) {
-  const subscriptions = new Map<string, { customerId?: string; plan?: "PRO" | "FREE" }>();
+  const subscriptions = new Map<string, { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }>();
   const warnStaleMetadata = vi.fn();
   const syncSubscription = vi.fn(
-    async (userId: string, props: { customerId?: string; plan?: "PRO" | "FREE" }) => {
+    async (userId: string, props: { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }) => {
       subscriptions.set(userId, { ...subscriptions.get(userId), ...props });
     }
   );
@@ -36,6 +36,7 @@ function dependencies(input: {
     findOwnerByCustomerId: async (customerId) =>
       input.customerOwners?.[customerId] ?? null,
     syncSubscription,
+    retrieveSubscription: vi.fn(async () => subscription({ customer: "cus_alpha" })),
     warnStaleMetadata,
   };
   return { value, subscriptions, syncSubscription, warnStaleMetadata };
@@ -50,6 +51,7 @@ function checkout(input: { clerkId?: string; customer?: string | null }) {
     id: "cs_test",
     customer: input.customer ?? null,
     metadata: input.clerkId ? { clerkId: input.clerkId } : {},
+    subscription: "sub_test",
   } as unknown as Stripe.Checkout.Session;
 }
 
@@ -57,12 +59,15 @@ function subscription(input: {
   clerkId?: string;
   customer?: string | null;
   status?: Stripe.Subscription.Status;
+  plan?: "PRO" | "BUSINESS";
 }) {
+  const lookupKey = input.plan === "BUSINESS" ? "ap3k_business_month" : "ap3k_pro_month";
   return {
     id: "sub_test",
     customer: input.customer ?? null,
     metadata: input.clerkId ? { clerkId: input.clerkId } : {},
     status: input.status ?? "active",
+    items: { data: [{ price: { id: `price_${input.plan ?? "PRO"}`, lookup_key: lookupKey } }] },
   } as unknown as Stripe.Subscription;
 }
 
@@ -207,6 +212,77 @@ describe("processStripeEvent", () => {
       deps.value
     );
     expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, {
+      customerId: "cus_alpha",
+      plan: "PRO",
+    });
+  });
+
+  it("activates both Pro and Business from the current Stripe price", async () => {
+    for (const plan of ["PRO", "BUSINESS"] as const) {
+      const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+      await processStripeEvent(
+        event("customer.subscription.created", subscription({ customer: "cus_alpha", plan })),
+        deps.value
+      );
+      expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
+        customerId: "cus_alpha",
+        plan,
+      });
+    }
+  });
+
+  it("keeps access during past-due Smart Retries and revokes it when unpaid", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    await processStripeEvent(
+      event("customer.subscription.updated", subscription({ customer: "cus_alpha", status: "past_due" })),
+      deps.value
+    );
+    expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
+      customerId: "cus_alpha",
+      plan: "PRO",
+    });
+
+    await processStripeEvent(
+      event("customer.subscription.updated", subscription({ customer: "cus_alpha", status: "unpaid" })),
+      deps.value
+    );
+    expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
+      customerId: "cus_alpha",
+      plan: "FREE",
+    });
+  });
+
+  it("processes successful renewals and failed renewal state from invoice events", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const retrieve = vi.mocked(deps.value.retrieveSubscription);
+    retrieve.mockResolvedValueOnce(subscription({ customer: "cus_alpha", plan: "BUSINESS", status: "active" }));
+    await processStripeEvent(
+      event("invoice.paid", { parent: { subscription_details: { subscription: "sub_test" } } }),
+      deps.value
+    );
+    expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
+      customerId: "cus_alpha",
+      plan: "BUSINESS",
+    });
+
+    retrieve.mockResolvedValueOnce(subscription({ customer: "cus_alpha", status: "past_due" }));
+    await processStripeEvent(
+      event("invoice.payment_failed", { parent: { subscription_details: { subscription: "sub_test" } } }),
+      deps.value
+    );
+    expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
+      customerId: "cus_alpha",
+      plan: "PRO",
+    });
+  });
+
+  it("applies a paid-plan downgrade from the replacement price", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    await processStripeEvent(
+      event("customer.subscription.updated", subscription({ customer: "cus_alpha", plan: "PRO" })),
+      deps.value
+    );
+    expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
       plan: "PRO",
     });

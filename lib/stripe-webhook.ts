@@ -5,6 +5,7 @@ import {
   syncSubscriptionForUser,
 } from "@/actions/user/queries";
 import { inferActiveDatabasePlan } from "@/lib/stripe-config";
+import { stripe } from "@/lib/stripe";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { createHash } from "node:crypto";
 
@@ -21,6 +22,7 @@ export type StripeWebhookDependencies = {
     userId: string,
     props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
   ): Promise<unknown>;
+  retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription>;
   warnStaleMetadata(details: {
     eventType: string;
     clerkIdFingerprint: string;
@@ -51,6 +53,9 @@ const defaultDependencies: StripeWebhookDependencies = {
   findOwnerByClerkId: findStripeOwnerByClerkId,
   findOwnerByCustomerId: findStripeOwnerByCustomerId,
   syncSubscription: syncSubscriptionForUser,
+  retrieveSubscription(subscriptionId) {
+    return stripe.subscriptions.retrieve(subscriptionId);
+  },
   warnStaleMetadata(details) {
     console.warn("[stripe-webhook] stale Clerk metadata", details);
   },
@@ -81,7 +86,9 @@ function metadataClerkId(metadata?: Stripe.Metadata | null) {
 }
 
 function activePlanForSubscription(subscription: Stripe.Subscription): SUBSCRIPTION_PLAN {
-  if (subscription.status !== "active" && subscription.status !== "trialing") {
+  // Keep access during Stripe's recovery window. Revoke only when Stripe moves
+  // the subscription beyond a recoverable past_due state.
+  if (!["active", "trialing", "past_due"].includes(subscription.status)) {
     return "FREE";
   }
 
@@ -91,6 +98,12 @@ function activePlanForSubscription(subscription: Stripe.Subscription): SUBSCRIPT
     lookupKey: price?.lookup_key,
     priceId: price?.id,
   });
+}
+
+function invoiceSubscriptionId(invoice: Stripe.Invoice) {
+  const value = (invoice as any).parent?.subscription_details?.subscription
+    ?? (invoice as any).subscription;
+  return stripeId(value);
 }
 
 async function syncStripeSubscription(
@@ -189,10 +202,17 @@ export async function processStripeEvent(
         },
         dependencies
       );
-      await dependencies.syncSubscription(resolution.owner.id, {
-        customerId,
-        plan: inferActiveDatabasePlan({ metadataPlan: session.metadata?.plan }),
-      });
+      const subscriptionId = stripeId(session.subscription);
+      if (subscriptionId) {
+        const subscription = await dependencies.retrieveSubscription(subscriptionId);
+        await dependencies.syncSubscription(resolution.owner.id, {
+          customerId,
+          plan: activePlanForSubscription(subscription),
+        });
+      } else {
+        // Bind ownership, but never grant paid access from Checkout metadata alone.
+        await dependencies.syncSubscription(resolution.owner.id, { customerId });
+      }
       return { outcome: "processed" as const, source: resolution.source };
     }
 
@@ -210,6 +230,34 @@ export async function processStripeEvent(
       const resolution = await syncStripeSubscription(
         event.type,
         event.data.object as Stripe.Subscription,
+        false,
+        dependencies
+      );
+      return { outcome: "processed" as const, source: resolution.source };
+    }
+
+    case "customer.subscription.paused":
+    case "customer.subscription.resumed": {
+      const resolution = await syncStripeSubscription(
+        event.type,
+        event.data.object as Stripe.Subscription,
+        false,
+        dependencies
+      );
+      return { outcome: "processed" as const, source: resolution.source };
+    }
+
+    case "invoice.paid":
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionId = invoiceSubscriptionId(invoice);
+      if (!subscriptionId) {
+        return { outcome: "ignored" as const, source: "non-subscription-invoice" as const };
+      }
+      const subscription = await dependencies.retrieveSubscription(subscriptionId);
+      const resolution = await syncStripeSubscription(
+        event.type,
+        subscription,
         false,
         dependencies
       );
