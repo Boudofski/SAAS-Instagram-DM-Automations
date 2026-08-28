@@ -45,6 +45,7 @@ function dependencies(input?: {
     findOwnerByClerkId: vi.fn(async () => input?.clerkOwner ?? null),
     findOwnerByCustomerId: vi.fn(async () => input?.customerOwner ?? null),
     syncSubscription,
+    retrieveSubscription: vi.fn(async () => subscription("user_test", "cus_test")),
     warnStaleMetadata: vi.fn(),
   };
   return { value, syncSubscription };
