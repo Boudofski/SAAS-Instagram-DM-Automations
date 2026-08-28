@@ -2,7 +2,6 @@ import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/g
 import PricingExperience from "@/components/global/pricing-experience";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import AutomationFlowDemo from "@/components/website/automation-flow-demo";
 import { BLOG_POSTS } from "@/lib/blog";
 import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
 import { client } from "@/lib/prisma";
@@ -23,10 +22,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 const VALUE_CARDS = [
-  { icon: MessageCircle, title: "They comment", copy: "A keyword—or any eligible comment—starts your campaign instantly." },
-  { icon: Reply, title: "AP3K replies", copy: "Send a public reply, a private DM, or both in seconds." },
-  { icon: Users, title: "You capture the lead", copy: "Keep the person, campaign, and conversation context together." },
-  { icon: Clock3, title: "You stay focused", copy: "Create content and close customers instead of copying replies." },
+  { icon: MessageCircle, title: "Comment replies", copy: "Respond under the post automatically while the conversation is still active." },
+  { icon: Reply, title: "DM follow-up", copy: "Move eligible commenters into a direct conversation without repetitive inbox work." },
+  { icon: Users, title: "Lead tracking", copy: "Keep campaign activity and captured leads together instead of scattered across tools." },
+  { icon: Clock3, title: "Time back", copy: "Stop repeating the same first-response workflow every time a comment arrives." },
 ] as const;
 
 const BENEFITS = [
@@ -94,9 +93,9 @@ function ProductVideo({
   priority?: boolean;
 }) {
   return (
-    <div className={`relative mx-auto w-full max-w-[320px] ${className}`}>
+    <div className={`ap3k-product-float relative mx-auto w-full max-w-[320px] ${className}`}>
       <div className="pointer-events-none absolute -inset-10 rounded-[4rem] bg-[radial-gradient(circle,rgba(244,114,182,0.28),rgba(124,58,237,0.16)_42%,transparent_70%)] blur-2xl" />
-      <div className="relative rounded-[2.7rem] border border-white/25 bg-[#090a10] p-[7px] shadow-[0_34px_90px_rgba(25,7,66,0.36)] ring-1 ring-black/25 dark:ring-white/10">
+      <div className="ap3k-video-frame relative rounded-[2.7rem] border border-white/25 bg-[#090a10] p-[7px] shadow-[0_34px_90px_rgba(25,7,66,0.36)] ring-1 ring-black/25 dark:ring-white/10">
         <div className="overflow-hidden rounded-[2.32rem] bg-black">
           <video
             autoPlay
@@ -140,55 +139,58 @@ export default async function LandingPage() {
       <WebsiteNav current="home" />
 
       <main>
-        <section className="ap3k-hero-mesh relative overflow-hidden px-4 pb-16 pt-10 text-white sm:px-8 sm:pb-24 sm:pt-16 lg:px-16 lg:pb-28 lg:pt-20">
-          <div className="pointer-events-none absolute -left-28 top-12 h-80 w-80 animate-float-slow rounded-full bg-orange-300/25 blur-[100px]" />
-          <div className="pointer-events-none absolute -right-24 bottom-0 h-[34rem] w-[34rem] rounded-full bg-indigo-950/40 blur-[130px]" />
-          <div className="pointer-events-none absolute left-[45%] top-[15%] h-72 w-72 animate-float-slow rounded-full bg-pink-400/20 blur-[110px] [animation-delay:-2s]" />
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5121c7_0%,#7435e8_44%,#9c3eea_100%)] px-4 pb-20 pt-12 text-white sm:px-8 sm:pb-24 sm:pt-20 lg:px-16 lg:pb-28 lg:pt-20">
+          <div className="ap3k-orb-one pointer-events-none absolute -left-28 top-12 h-80 w-80 rounded-full bg-fuchsia-300/30 blur-[100px]" />
+          <div className="ap3k-orb-two pointer-events-none absolute -right-24 bottom-0 h-[34rem] w-[34rem] rounded-full bg-indigo-950/35 blur-[130px]" />
           <div className="pointer-events-none absolute left-1/2 top-0 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
-          <div className="relative mx-auto grid max-w-[1380px] items-center gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 xl:gap-16">
-            <FadeIn className="max-w-[680px] lg:py-8">
+          <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16 xl:gap-20">
+            <FadeIn className="max-w-[760px] lg:py-8">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
-                <Sparkles className="h-4 w-4" /> Turn comments into customers
+                <Sparkles className="h-4 w-4" /> Instagram automation, simplified
               </div>
-              <h1 className="mt-7 max-w-[700px] text-[3.15rem] font-black leading-[0.91] tracking-[-0.06em] sm:text-[4.7rem] lg:text-[4.9rem] xl:text-[5.45rem]">
-                A comment comes in. <span className="bg-gradient-to-r from-orange-200 via-pink-200 to-violet-200 bg-clip-text text-transparent">AP3K does the rest.</span>
+              <h1 className="mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
+                Your Instagram <span className="sm:block">just got smarter.</span>
               </h1>
-              <p className="mt-6 max-w-[590px] text-base font-medium leading-7 text-white/75 sm:text-[1.12rem] sm:leading-8">
-                Automatically reply to Instagram comments, send the right DM, and capture interested people—while you focus on growing your business.
+              <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">
+                Turn Instagram comments into instant comment replies, DMs, and trackable leads—without living in your inbox.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/sign-up" className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(38,10,80,0.42)]">
-                  Start automating free <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
+                  Start free <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a href="#how-it-works" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur-xl transition duration-200 hover:bg-white/16">
-                  See the 3-step setup
+                  See how it works
                 </a>
-              </div>
-              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-bold text-white/55">
-                {["No credit card", "No code", "50 free replies monthly"].map((item) => <span key={item} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />{item}</span>)}
               </div>
             </FadeIn>
 
-            <FadeIn delay={0.08} className="relative flex min-h-[390px] items-center justify-center sm:min-h-[480px] lg:min-h-[570px]">
-              <AutomationFlowDemo />
+            <FadeIn delay={0.08} className="relative flex min-h-[430px] items-center justify-center sm:min-h-[500px] lg:min-h-[620px]">
+              <div className="ap3k-ring-one pointer-events-none absolute h-[78%] w-[78%] rounded-full border border-white/10 bg-white/[0.05] blur-[1px]" />
+              <div className="ap3k-ring-two pointer-events-none absolute h-[62%] w-[62%] rounded-full border border-white/10" />
+              <ProductVideo
+                src="/media/instagram-features_01.mp4"
+                label="AP3K Instagram automation demo"
+                className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
+                priority
+              />
             </FadeIn>
           </div>
         </section>
 
         <section className="border-b border-slate-200/80 bg-white/85 px-4 py-6 backdrop-blur dark:border-white/8 dark:bg-[#0b0c15]/90 sm:px-8">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[10px] font-black uppercase tracking-[0.17em] text-slate-500 dark:text-slate-400 sm:text-xs">
-            <span>Instagram Business + Creator</span><span className="text-pink-500">•</span><span>Official API workflow</span><span className="text-pink-500">•</span><span>No Instagram password</span><span className="text-pink-500">•</span><span>Launch in minutes</span>
+            <span>Instagram Business + Creator</span><span className="text-violet-400">•</span><span>Supported API access</span><span className="text-violet-400">•</span><span>No scraping</span><span className="text-violet-400">•</span><span>No code</span>
           </div>
         </section>
 
         <section className="bg-[#f7f7fb] px-4 py-20 dark:bg-[#080911] sm:px-8 lg:py-24">
           <div className="mx-auto max-w-6xl">
             <FadeIn className="mx-auto max-w-4xl text-center">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-pink-600 dark:text-pink-300">One simple customer journey</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">From “I’m interested” to your inbox—in seconds.</h2>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Put growth on autopilot</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Stop manually chasing every Instagram comment.</h2>
               <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300/75 sm:text-lg">
-                No complicated chatbot builder. Choose the comment that starts the flow, write the reply and DM, then switch it on.
+                AP3K handles the repetitive first response so you can focus on content, offers, customers, and the conversations that actually need you.
               </p>
             </FadeIn>
             <StaggerContainer className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -196,7 +198,7 @@ export default async function LandingPage() {
                 <StaggerItem key={title}>
                   <HoverLift>
                     <div className="h-full rounded-[1.7rem] border border-slate-200/80 bg-white p-6 text-left shadow-[0_12px_40px_rgba(15,23,42,0.05)] dark:border-white/8 dark:bg-[#10121d] dark:shadow-none">
-                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-orange-100 via-pink-100 to-violet-100 text-pink-700 dark:from-orange-500/15 dark:via-pink-500/15 dark:to-violet-500/15 dark:text-pink-300"><Icon className="h-5 w-5" /></div>
+                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/12 dark:text-violet-300"><Icon className="h-5 w-5" /></div>
                       <h3 className="mt-5 text-lg font-black">{title}</h3>
                       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{copy}</p>
                     </div>
@@ -234,17 +236,48 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="text-center">
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Less busywork</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Stop doing overtime. Start replying in real time.</h2>
+              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Build the campaign once, then let AP3K handle the repetitive first touch while you stay in control.</p>
+            </FadeIn>
+            <div className="mt-12 grid gap-5 lg:grid-cols-2">
+              <FadeIn>
+                <div className="h-full rounded-[2rem] border border-rose-200 bg-rose-50/80 p-7 shadow-sm dark:border-rose-400/15 dark:bg-rose-400/[0.045] sm:p-9">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-500">Without automation</p>
+                  <h3 className="mt-4 text-2xl font-black">You are doing the same work again and again.</h3>
+                  <div className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                    {["Watch comments manually", "Copy the same replies", "Jump between comments and inbox", "Lose leads when response time slips"].map((item) => <p key={item} className="flex gap-3"><span className="font-black text-rose-500">×</span>{item}</p>)}
+                  </div>
+                </div>
+              </FadeIn>
+              <FadeIn delay={0.06}>
+                <div className="h-full rounded-[2rem] border border-emerald-200 bg-emerald-50/80 p-7 shadow-sm dark:border-emerald-400/15 dark:bg-emerald-400/[0.045] sm:p-9">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">With AP3K</p>
+                  <h3 className="mt-4 text-2xl font-black">The first response happens automatically.</h3>
+                  <div className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                    {["Campaign listens for eligible comments", "Trigger matches automatically", "Comment reply and/or DM sends", "Activity and leads stay organized"].map((item) => <p key={item} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />{item}</p>)}
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
+        </section>
+
         <section id="how-it-works" className="bg-[#f1edfb] px-4 py-20 dark:bg-[#0e1020] sm:px-8 lg:px-16 lg:py-24">
           <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[0.98fr_1.02fr] lg:gap-24">
             <FadeIn>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Start in minutes</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Your first automation takes three steps.</h2>
-              <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400">No flowchart maze. AP3K gives you the few decisions that matter and handles the repetitive work.</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">New to automation? Do not overthink it.</h2>
+              <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
               <div className="mt-8 space-y-3">
                 {[
-                  ["01", "Connect Instagram", "Securely authorize your Business or Creator account."],
-                  ["02", "Choose the trigger", "Pick a post and listen for a keyword or any comment."],
-                  ["03", "Write it, then switch it on", "Choose the public reply, DM, or both. AP3K handles the rest."],
+                  ["01", "Connect Instagram", "Authorize your professional Instagram account."],
+                  ["02", "Choose a post + trigger", "Use a keyword or any eligible comment."],
+                  ["03", "Choose Actions", "Reply to comment, Send a DM, or enable both."],
+                  ["04", "Activate", "AP3K starts listening and records the activity."],
                 ].map(([num, title, copy]) => (
                   <div key={num} className="flex gap-4 rounded-2xl border border-violet-200/80 bg-white/90 p-4 shadow-sm dark:border-white/8 dark:bg-white/[0.04]">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-xs font-black text-white">{num}</span>
