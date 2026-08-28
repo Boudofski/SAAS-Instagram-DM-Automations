@@ -207,7 +207,7 @@ export function InternalOverridesCard({ user, usage }: Props) {
                     <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Why is this override necessary?" className="mt-1.5 w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
                   </label>
 
-                  {!expiresAt && <p className="rounded-xl border border-amber-500/15 bg-amber-500/[0.055] px-3.5 py-3 text-[11px] leading-5 text-amber-200/85">No expiration is set. These overrides will remain active until they are explicitly changed or cleared.</p>}
+                  {!expiresAt && <p className="rounded-xl border border-amber-500/15 bg-amber-500/[0.055] px-3.5 py-3 text-[11px] leading-5 text-amber-200/85">No expiration is set. These overrides remain active indefinitely until they are explicitly changed or cleared.</p>}
                   {error && <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-200">{error}</p>}
 
                   <div className="flex flex-col-reverse gap-2 border-t border-white/[0.06] pt-4 sm:flex-row sm:justify-between">

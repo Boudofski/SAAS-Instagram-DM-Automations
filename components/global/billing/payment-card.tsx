@@ -35,8 +35,14 @@ export default function PaymentCard({ label, current }: Props) {
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
-        <span className="text-4xl font-black tracking-tight">${plan.monthlyPrice}</span>
-        <span className="text-sm text-slate-500 dark:text-rf-muted">/month</span>
+        {label === "FREE" ? (
+          <span className="text-4xl font-black tracking-tight">Free forever</span>
+        ) : (
+          <>
+            <span className="text-4xl font-black tracking-tight">${plan.monthlyPrice}</span>
+            <span className="text-sm text-slate-500 dark:text-rf-muted">/month</span>
+          </>
+        )}
       </div>
       <div className="mt-5 flex flex-1 flex-col gap-2.5">
         {plan.features.map((feature) => (

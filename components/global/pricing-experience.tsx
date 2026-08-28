@@ -131,6 +131,13 @@ export default function PricingExperience({
               <div className={dashboardCompact ? "mt-3 min-h-[3.8rem]" : "mt-6 min-h-[5rem]"}>
                 {plan.id === "CUSTOM" ? (
                   <p className={`${dashboardCompact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>Let&apos;s talk</p>
+                ) : plan.id === "FREE" ? (
+                  <div>
+                    <p className={`${dashboardCompact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>
+                      Free forever
+                    </p>
+                    <p className="mt-1 text-[11px] font-bold text-slate-400">No credit card required</p>
+                  </div>
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
@@ -142,7 +149,6 @@ export default function PricingExperience({
                         Save {plan.annualSavingsPercent}% · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}/mo
                       </p>
                     )}
-                    {plan.id === "FREE" && <p className="mt-1 text-[11px] font-bold text-slate-400">No credit card required</p>}
                   </>
                 )}
               </div>

@@ -154,7 +154,7 @@ describe("sendInstagramCommentPrivateReply", () => {
     if (!result.ok) expect(result.reason).toBe("dm_capability_missing");
   });
 
-  it("appends CTA URL as text fallback when ctaUrl is provided", async () => {
+  it("sends a CTA URL as an Instagram button template", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: {} });
 
     const result = await sendInstagramCommentPrivateReply({
@@ -168,14 +168,16 @@ describe("sendInstagramCommentPrivateReply", () => {
     });
 
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.ctaMode).toBe("text_link_fallback");
+    if (result.ok) expect(result.ctaMode).toBe("button_template");
 
     const body = mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.text).toContain("https://example.com/shop");
-    expect(body.message.text).toContain("Shop now");
+    expect(body.message.attachment.payload.text).toBe("Check this out");
+    expect(body.message.attachment.payload.buttons).toEqual([
+      { type: "web_url", title: "Shop now", url: "https://example.com/shop" },
+    ]);
   });
 
-  it("does not double-append CTA if already in the message", async () => {
+  it("keeps the CTA URL in one button when it already appears in message copy", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: {} });
 
     const messageWithCta = "Check this out https://example.com/shop";
@@ -189,8 +191,8 @@ describe("sendInstagramCommentPrivateReply", () => {
     });
 
     const body = mockedAxios.post.mock.calls[0][1] as any;
-    const occurrences = (body.message.text.match(/example\.com\/shop/g) ?? []).length;
-    expect(occurrences).toBe(1);
+    expect(body.message.attachment.payload.text).toBe(messageWithCta);
+    expect(body.message.attachment.payload.buttons[0].url).toBe("https://example.com/shop");
   });
 
   it("never includes token value in returned result", async () => {

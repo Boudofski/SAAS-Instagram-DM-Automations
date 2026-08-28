@@ -11,13 +11,13 @@ const now = new Date("2026-05-25T12:00:00Z");
 
 const usage: UsageSummary = {
   plan: "PRO",
-  planLabel: "Creator",
+  planLabel: "Pro",
   periodLabel: "May 2026",
   periodStart: new Date("2026-05-01T00:00:00Z"),
   periodEnd: new Date("2026-06-01T00:00:00Z"),
   enforcementStart: new Date("2026-05-01T00:00:00Z"),
   staticReplies: { used: 10, limit: 5000, remaining: 4990, percent: 0, blocked: false },
-  aiReplies: { used: 0, limit: 750, remaining: 750, percent: 0, blocked: false },
+  aiReplies: { used: 0, limit: 0, remaining: 0, percent: 0, blocked: true },
   activeCampaigns: { used: 1, limit: "unlimited", remaining: null, percent: 0, blocked: false },
   connectedAccounts: { used: 1, limit: 1, remaining: 0, percent: 100, blocked: true },
 };
@@ -45,12 +45,12 @@ describe("instagram account UX helpers", () => {
     }, now);
 
     expect(result.webhook).toEqual({
-      label: "Webhook status",
+      label: "Comment delivery",
       value: "Operational",
-      detail: "Receiving Instagram comment events",
+      detail: "Receiving Instagram comments",
       ok: true,
     });
-    expect(result.failure.value).toBe("Previous subscription warning");
+    expect(result.failure.value).toBe("Previous connection warning");
     expect(result.failure.ok).toBe(true);
   });
 
@@ -60,7 +60,7 @@ describe("instagram account UX helpers", () => {
       subscription: { error: "code=100 subscribed_fields failed" },
     }, now);
 
-    expect(result.webhook.value).toBe("Needs review");
+    expect(result.webhook.value).toBe("Needs attention");
     expect(result.webhook.ok).toBe(false);
     expect(result.failure.value).toBe("Webhook subscription needs review");
     expect(result.failure.ok).toBe(false);
@@ -101,7 +101,7 @@ describe("instagram account UX helpers", () => {
       ["Comments", 22],
       ["Reply Rate", "75%"],
       ["Leads", 3],
-      ["Public Replies", "10 / 5,000"],
+      ["Replies", "10 / 5,000"],
     ]);
   });
 });

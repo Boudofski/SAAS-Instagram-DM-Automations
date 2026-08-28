@@ -204,9 +204,9 @@ export function dashboardNoCommentDiagnosis(input: any) {
   return DASHBOARD_DIAGNOSIS_COPY[key];
 }
 
-export function compareIntegrationDelivery(input: { working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] }; failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] } }) {
-  const workingDelivery = classifyAccountWebhookDelivery({ integration: input.working.integration, events: input.working.events });
-  const failingDelivery = classifyAccountWebhookDelivery({ integration: input.failing.integration, events: input.failing.events });
+export function compareIntegrationDelivery(input: { now?: Date; working: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] }; failing: { integration: IntegrationLike; events: AccountWebhookEventLike[]; campaigns: CampaignLike[] } }) {
+  const workingDelivery = classifyAccountWebhookDelivery({ integration: input.working.integration, events: input.working.events, now: input.now });
+  const failingDelivery = classifyAccountWebhookDelivery({ integration: input.failing.integration, events: input.failing.events, now: input.now });
   return {
     working: { integration: input.working.integration, delivery: workingDelivery, campaigns: buildCampaignBindingDiagnostics({ integration: input.working.integration, campaigns: input.working.campaigns }) },
     failing: { integration: input.failing.integration, delivery: failingDelivery, campaigns: buildCampaignBindingDiagnostics({ integration: input.failing.integration, campaigns: input.failing.campaigns }) },

@@ -50,11 +50,11 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
     expect(accounts).toContain("tokens are never displayed");
   });
 
-  it("diagnostics page has app review notes behind an advanced panel", () => {
+  it("diagnostics page exposes operational webhook diagnostics", () => {
     const diag = read("app/(protected)/ap3k-admin-v2/diagnostics/page.tsx");
     expect(diag).toContain("AdvancedPanel");
-    expect(diag).toContain("App Review Notes");
-    expect(diag).toContain("not visible to users or Meta App Review");
+    expect(diag).toContain("System diagnostics");
+    expect(diag).toContain("Webhook events");
   });
 
   it("query layer is bounded — every findMany has a take clause", () => {
@@ -98,7 +98,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
 
   it("accounts table renders empty state", () => {
     const accounts = read("app/(protected)/ap3k-admin-v2/accounts/page.tsx");
-    expect(accounts).toContain("No accounts found.");
+    expect(accounts).toContain("No Instagram accounts found.");
   });
 
   it("activity table renders empty state", () => {
@@ -106,9 +106,9 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
     expect(activity).toContain("No activity events found.");
   });
 
-  it("reply templates page acknowledges no separate model", () => {
+  it("reply templates page describes its empty state", () => {
     const replies = read("app/(protected)/ap3k-admin-v2/replies/page.tsx");
-    expect(replies).toContain("No separate reply template model exists");
+    expect(replies).toContain("No campaigns with public reply templates found.");
   });
 
   it("root page redirects to overview", () => {
@@ -185,24 +185,24 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
     expect(badge).toContain('"Broken"');
   });
 
-  it("overview page has System Health section", () => {
+  it("overview page has System health section", () => {
     const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
-    expect(overview).toContain("System Health");
+    expect(overview).toContain("System health");
     expect(overview).toContain("getAdminV2SystemHealth");
   });
 
-  it("overview Requires Attention section links to diagnostics", () => {
+  it("overview attention section links to diagnostics", () => {
     const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
-    expect(overview).toContain("Requires Attention");
-    expect(overview).toContain("/ap3k-admin-v2/diagnostics");
-    expect(overview).toContain("View diagnostics");
+    expect(overview).toContain("Review recommended");
+    expect(overview).toContain("/admin/diagnostics");
+    expect(overview).toContain("Open diagnostics");
   });
 
   it("overview activity filters out WEBHOOK_RECEIVED noise", () => {
     const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
     expect(overview).toContain("WEBHOOK_RECEIVED");
     expect(overview).toContain(".filter(");
-    expect(overview).toContain(".slice(0, 30)");
+    expect(overview).toContain("liveActivity");
   });
 
   it("campaigns page shows health, last activity, and pause reason", () => {
@@ -216,7 +216,7 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
   it("accounts page uses accountHealth for status column", () => {
     const accounts = read("app/(protected)/ap3k-admin-v2/accounts/page.tsx");
     expect(accounts).toContain("accountHealth");
-    expect(accounts).toContain("Meta IDs (internal)");
+    expect(accounts).toContain("Meta IDs");
     // Raw status badge replaced by health label
     expect(accounts).not.toContain('"CONNECTED"');
     expect(accounts).not.toContain('"DISCONNECTED"');
@@ -234,7 +234,7 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
 
   it("replies page uses approved title", () => {
     const replies = read("app/(protected)/ap3k-admin-v2/replies/page.tsx");
-    expect(replies).toContain("Replies (Templates");
+    expect(replies).toContain('eyebrow="Replies"');
     // Nav label remains "Replies" not "Reply Library"
     const nav = read("components/admin-v2/nav.tsx");
     expect(nav).toContain('label: "Replies"');
@@ -315,14 +315,14 @@ describe("Admin v2 — Phase 2D.1 Plan & Billing user detail", () => {
     expect(page).toContain("campaignsNeedingReview");
   });
 
-  it("user detail page shows 'No external billing record' when no Stripe customer", () => {
+  it("user detail page shows the internal plan state when no Stripe customer exists", () => {
     const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
-    expect(page).toContain("No external billing record");
+    expect(page).toContain("Internal plan only");
   });
 
   it("user detail page shows Stripe customer exists when customerId present", () => {
     const page = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
-    expect(page).toContain("Stripe customer exists");
+    expect(page).toContain("Stripe customer linked");
   });
 
   it("user detail page wraps Stripe call in try/catch — safe on missing key", () => {
@@ -343,7 +343,7 @@ describe("Admin v2 — Phase 2D.1 Plan & Billing user detail", () => {
   it("users list page has View details link to user detail route", () => {
     const users = read("app/(protected)/ap3k-admin-v2/users/page.tsx");
     expect(users).toContain("View details");
-    expect(users).toContain("/ap3k-admin-v2/users/");
+    expect(users).toContain("/admin/users/");
   });
 
   it("formatUsageMetricValue shows used / limit — unlimited shows Unlimited", () => {
@@ -451,13 +451,13 @@ describe("Admin v2 — Phase 2E audit log visibility", () => {
 
   it("audit page has an empty state message", () => {
     const src = read("app/(protected)/ap3k-admin-v2/audit/page.tsx");
-    expect(src).toContain("No audit log entries found.");
+    expect(src).toContain("No audit log entries match these filters.");
   });
 
-  it("nav.tsx includes Audit tab linking to /ap3k-admin-v2/audit", () => {
+  it("nav.tsx includes Audit tab linking to canonical admin audit", () => {
     const src = read("components/admin-v2/nav.tsx");
     expect(src).toContain("Audit");
-    expect(src).toContain("/ap3k-admin-v2/audit");
+    expect(src).toContain("/admin/audit");
   });
 
   it("user detail page includes getAdminV2UserRecentAuditLogs and Recent audit section", () => {
@@ -468,7 +468,7 @@ describe("Admin v2 — Phase 2E audit log visibility", () => {
 
   it("user detail page links to audit log filtered by this user's targetId", () => {
     const src = read("app/(protected)/ap3k-admin-v2/users/[userId]/page.tsx");
-    expect(src).toContain("/ap3k-admin-v2/audit?targetId=");
+    expect(src).toContain("/admin/audit?targetId=");
   });
 });
 

@@ -25,7 +25,7 @@ export const PLAN_CARDS: PlanCard[] = [
   {
     id: "FREE",
     name: "Free",
-    description: "Build and test your first Instagram comment automation.",
+    description: "Launch your first Instagram comment automation and keep using it free.",
     monthlyPrice: 0,
     annualPrice: 0,
     annualSavingsPercent: null,
@@ -33,7 +33,7 @@ export const PLAN_CARDS: PlanCard[] = [
     features: [
       "1 Instagram Business or Creator account",
       "Unlimited campaigns",
-      "50 automated replies/month",
+      "50 automated replies every month",
       "Keyword + Any Comment triggers",
       "Comment replies + DMs",
       "Basic analytics",

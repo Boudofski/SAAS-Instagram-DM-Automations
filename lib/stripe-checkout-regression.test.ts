@@ -1,9 +1,23 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkoutHref } from "@/lib/billing-plans";
+import { PLAN_CARDS, checkoutHref } from "@/lib/billing-plans";
 
 describe("Stripe checkout routing", () => {
+  it("presents Free as an interval-independent allowance, not a zero-dollar bill", () => {
+    const free = PLAN_CARDS.find((plan) => plan.id === "FREE");
+
+    expect(free?.description).toContain("keep using it free");
+    expect(free?.features).toContain("50 automated replies every month");
+
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "components/global/pricing-experience.tsx"),
+      "utf8"
+    );
+    expect(source).toContain("Free forever");
+    expect(source).not.toContain('plan.id === "FREE" && <p');
+  });
+
   it("builds checkout routes for every paid plan and billing interval", () => {
     expect(checkoutHref("PRO", "month")).toBe("/payment?plan=pro&interval=month");
     expect(checkoutHref("PRO", "year")).toBe("/payment?plan=pro&interval=year");

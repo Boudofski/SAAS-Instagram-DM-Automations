@@ -287,7 +287,7 @@ describe("softDisconnectIntegrationForUser", () => {
     expect(mockClient.user.update).not.toHaveBeenCalled();
   });
 
-  it("blocks plan limit before creating another Instagram connection", async () => {
+  it("replaces the current connection when a user connects a different Instagram account", async () => {
     mockClient.user.findUnique.mockResolvedValue({
       id: "user-1",
       firstname: "A",
@@ -307,8 +307,8 @@ describe("softDisconnectIntegrationForUser", () => {
       ],
     });
 
-    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new")).rejects.toMatchObject({
-      code: "PLAN_LIMIT_REACHED",
+    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new")).resolves.toMatchObject({
+      integrationId: "current-integration",
     });
     expect(mockClient.user.update).not.toHaveBeenCalled();
   });

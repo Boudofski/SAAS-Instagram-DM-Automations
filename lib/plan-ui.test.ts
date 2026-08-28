@@ -6,6 +6,6 @@ describe("plan UI formatting", () => {
     expect(formatUsageMetricValue({ used: 10, limit: 5000 })).toBe("10 / 5,000");
     expect(formatUsageMetricValue({ used: 1, limit: "unlimited" })).toBe("1 / Unlimited");
     expect(formatUsageMetricValue({ used: 1, limit: 1 })).toBe("1 / 1");
-    expect(formatConnectedAccountsHelper("Creator", { limit: 1 })).toBe("Creator supports 1 account.");
+    expect(formatConnectedAccountsHelper("Pro", { limit: 1 })).toBe("AP3K supports 1 connected Instagram account and unlimited campaigns for that account.");
   });
 });

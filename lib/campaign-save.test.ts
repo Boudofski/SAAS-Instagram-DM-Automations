@@ -164,7 +164,7 @@ describe("normalizeCampaignPayload", () => {
     });
 
     expect(validateNormalizedCampaignPayload(normalized)).toBe(
-      "Enable public reply or private DM before activating this campaign."
+      "Choose a comment reply or DM before activating this campaign."
     );
   });
 });

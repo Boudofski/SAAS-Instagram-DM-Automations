@@ -59,9 +59,9 @@ describe("canonical admin consolidation", () => {
   });
 
   it("restores billing and system visibility without restoring a danger-zone monolith", () => {
-    expect(read("app/(protected)/admin/billing/page.tsx")).toContain("Plans &amp; Revenue Access");
+    expect(read("app/(protected)/admin/billing/page.tsx")).toContain("Plans & subscription access");
     const system = read("app/(protected)/admin/system/page.tsx");
-    expect(system).toContain("System &amp; Safety");
-    expect(system).toContain("Sensitive admin operations");
+    expect(system).toContain("System & safety");
+    expect(system).toContain("Operational control");
   });
 });
