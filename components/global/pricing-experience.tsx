@@ -100,14 +100,14 @@ export default function PricingExperience({
           const visibleFeatures = dashboardCompact
             ? plan.features.slice(0, 4)
             : compact
-              ? plan.features.slice(0, 5)
+              ? plan.features.slice(0, 4)
               : plan.features;
           const remainingFeatures = Math.max(0, plan.features.length - visibleFeatures.length);
 
           return (
             <article
               key={plan.id}
-              className={`group relative flex min-h-full flex-col overflow-visible border shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-xl ${dashboardCompact ? "rounded-2xl p-4" : compact ? "rounded-[24px] p-5" : "rounded-[28px] p-6"} ${
+              className={`group relative flex min-h-full flex-col overflow-visible border shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-xl ${dashboardCompact || compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"} ${
                 isCurrent ? "ring-2 ring-emerald-500/50" : ""
               } ${
                 plan.featured

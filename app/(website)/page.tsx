@@ -304,9 +304,9 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="bg-[#f7f7fb] px-4 py-20 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-24">
+        <section id="pricing" className="bg-[#f7f7fb] px-4 py-16 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-20">
           <div className="mx-auto max-w-7xl">
-            <FadeIn className="mb-10 text-center">
+            <FadeIn className="mb-8 text-center">
               <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Simple pricing</p>
               <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Start free. Save more annually.</h2>
               <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Pro is $9/month or $79/year. Business is $29/month or $279/year. Annual billing saves up to 27% while usage still resets monthly.</p>
