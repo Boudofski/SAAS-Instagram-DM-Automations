@@ -17,6 +17,8 @@ describe("resolveInstagramMediaConnection", () => {
       ok: true,
       token: "token",
       instagramBusinessAccountId: "1789",
+      apiBaseUrl: "https://graph.facebook.com/v25.0",
+      apiFamily: "facebook_graph_instagram_business",
     });
   });
 });
@@ -24,7 +26,7 @@ describe("resolveInstagramMediaConnection", () => {
 describe("instagramMediaFetchError", () => {
   it("uses a permission-specific message for auth errors", () => {
     expect(instagramMediaFetchError(403)).toBe(
-      "AP3k could not load posts. Check Instagram connection and permissions."
+      "AP3k could not load posts. Reconnect Instagram and confirm media permissions are granted."
     );
   });
 });

@@ -115,13 +115,12 @@ describe("usage query helpers", () => {
     });
   });
 
-  it("blocks a second active campaign on Free", async () => {
+  it("allows unlimited active campaigns on Free", async () => {
     mockAutomationCount.mockResolvedValue(1);
 
     const result = await canActivateCampaign("user-1");
 
-    expect(result.ok).toBe(false);
-    expect(result.reason).toBe("active_campaign_limit_reached");
+    expect(result.ok).toBe(true);
   });
 
   it("allows saving an already-active campaign on Free", async () => {
@@ -181,7 +180,7 @@ describe("usage query helpers", () => {
     );
   });
 
-  it("applies active internal billing overrides", async () => {
+  it("keeps published plan limits authoritative over legacy internal overrides", async () => {
     mockUserFindUnique.mockResolvedValue({
       subscription: {
         plan: "FREE",
@@ -195,9 +194,9 @@ describe("usage query helpers", () => {
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
-    expect(usage.staticReplies.limit).toBe(500);
-    expect(usage.activeCampaigns.limit).toBe(10);
-    expect(usage.connectedAccounts.limit).toBe(5);
+    expect(usage.staticReplies.limit).toBe(50);
+    expect(usage.activeCampaigns.limit).toBe("unlimited");
+    expect(usage.connectedAccounts.limit).toBe(1);
   });
 
   it("ignores expired billing overrides", async () => {

@@ -13,7 +13,7 @@ import {
 describe("plan limits", () => {
   it("defines the Free limits", () => {
     expect(getPlanLimits("FREE")).toMatchObject({
-      activeCampaigns: 1,
+      activeCampaigns: "unlimited",
       staticRepliesPerMonth: 50,
       aiRepliesPerMonth: 0,
       connectedInstagramAccounts: 1,
@@ -21,22 +21,22 @@ describe("plan limits", () => {
     });
   });
 
-  it("maps PRO to Creator limits", () => {
+  it("defines the Pro limits", () => {
     expect(getPlanLimits("PRO")).toMatchObject({
-      label: "Creator",
+      label: "Pro",
       activeCampaigns: "unlimited",
       staticRepliesPerMonth: 5000,
-      aiRepliesPerMonth: 750,
+      aiRepliesPerMonth: 0,
       exportLeads: true,
     });
   });
 
-  it("defines Agency limits without making it a DB subscription plan", () => {
+  it("maps the legacy Agency alias to Business limits", () => {
     expect(getPlanLimits("AGENCY")).toMatchObject({
-      label: "Agency",
+      label: "Business",
       staticRepliesPerMonth: 20000,
-      aiRepliesPerMonth: 5000,
-      connectedInstagramAccounts: 10,
+      aiRepliesPerMonth: 0,
+      connectedInstagramAccounts: 1,
     });
   });
 

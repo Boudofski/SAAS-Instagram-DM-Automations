@@ -55,23 +55,23 @@ describe("instagram account settings stats", () => {
   it("maps DMs out from canonical sent AP3k DMs only", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.dmsOut).toEqual({ value: 0, enabled: true, subtitle: "AP3k private DMs sent" });
+    expect(stats.dmsOut).toEqual({ value: 0, enabled: true, subtitle: "DMs sent by AP3k" });
   });
 
   it("maps reply rate from canonical confirmed replies over matched comments", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
     expect(stats.replyRate.value).toBe("75%");
-    expect(stats.replyRate.subtitle).toBe("Confirmed replies / matched comments");
+    expect(stats.replyRate.subtitle).toBe("Replies / matched comments");
   });
 
   it("returns intentional unavailable states for unsupported data sources", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.followers).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" });
-    expect(stats.posts).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load from Meta" });
-    expect(stats.removed).toEqual({ value: "Not tracked", enabled: false, subtitle: "Removed comments are not tracked in account stats" });
-    expect(stats.dmsIn).toEqual({ value: "Messaging approval required", enabled: false, subtitle: "Inbound DMs require Meta messaging approval" });
+    expect(stats.followers).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load Instagram stats" });
+    expect(stats.posts).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load Instagram stats" });
+    expect(stats.removed).toEqual({ value: "Not shown", enabled: false, subtitle: "This dashboard focuses on comments AP3k received" });
+    expect(stats.dmsIn).toEqual({ value: "Not used", enabled: false, subtitle: "AP3k starts DMs from comment triggers" });
   });
 
   it("uses follower and post counts from the latest snapshot", async () => {
@@ -101,8 +101,8 @@ describe("instagram account settings stats", () => {
 
     const stats = await getInstagramAccountSettingsStats("user-a", "integration-a");
 
-    expect(stats.followers).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta does not expose follower count for this connection." });
-    expect(stats.posts).toEqual({ value: "Unavailable", enabled: false, subtitle: "Meta did not return media count" });
+    expect(stats.followers).toEqual({ value: "Unavailable", enabled: false, subtitle: "Follower count is not available for this profile." });
+    expect(stats.posts).toEqual({ value: "Unavailable", enabled: false, subtitle: "Media count is not available for this profile." });
   });
 
   it("uses baseline copy when there is no previous follower snapshot", async () => {

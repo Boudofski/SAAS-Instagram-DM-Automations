@@ -103,8 +103,8 @@ describe("account webhook diagnostics", () => {
 
   it("returns dashboard no-comment diagnosis when only messaging webhooks exist", () => {
     expect(dashboardNoCommentDiagnosis({ username: "boudofi", status: "only_messaging_active" })).toEqual({
-      title: "No comment webhooks received for @boudofi yet.",
-      detail: "Messaging webhooks are arriving, so AP3k is connected, but comment delivery is not active.",
+      title: "Only messaging is arriving",
+      detail: "Messaging webhooks are active, but no real comment webhook has arrived yet.",
     });
   });
 
@@ -167,9 +167,9 @@ describe("account webhook diagnostics", () => {
       },
     });
 
-    expect(comparison.working.status).toBe("comments_active");
-    expect(comparison.failing.status).toBe("only_messaging_active");
-    expect(comparison.failing.selectedMediaIds).toEqual(["media-boudofi"]);
+    expect(comparison.working.delivery.status).toBe("comments_active");
+    expect(comparison.failing.delivery.status).toBe("only_messaging_active");
+    expect(comparison.failing.campaigns.map((campaign) => campaign.postId)).toEqual(["media-boudofi"]);
   });
 
   it("never treats DM webhooks as comment triggers", () => {

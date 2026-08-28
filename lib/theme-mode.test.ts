@@ -10,9 +10,9 @@ describe("theme mode helpers", () => {
     expect(normalizeThemeMode(undefined)).toBe("system");
   });
 
-  it("cycles compact theme toggle dark -> light -> system -> dark", () => {
+  it("cycles the compact theme toggle between dark and light", () => {
     expect(nextThemeMode("dark")).toBe("light");
-    expect(nextThemeMode("light")).toBe("system");
+    expect(nextThemeMode("light")).toBe("dark");
     expect(nextThemeMode("system")).toBe("dark");
     expect(nextThemeMode("bad-value")).toBe("dark");
   });
