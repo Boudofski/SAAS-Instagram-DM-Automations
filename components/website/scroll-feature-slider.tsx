@@ -20,7 +20,7 @@ export default function ScrollFeatureSlider({ features }: { features: readonly F
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
 
   useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    const nextIndex = Math.min(features.length - 1, Math.max(0, Math.round(progress * (features.length - 1))));
+    const nextIndex = Math.min(features.length - 1, Math.max(0, Math.floor(progress * features.length)));
     setActiveIndex((current) => (current === nextIndex ? current : nextIndex));
   });
 
@@ -69,18 +69,21 @@ function FeatureSlide({
   active: boolean;
 }) {
   const reduceMotion = useReducedMotion();
-  const center = index / (total - 1);
+  const segmentStart = index / total;
+  const segmentEnd = (index + 1) / total;
+  const center = (segmentStart + segmentEnd) / 2;
+  const fade = 0.065;
   const opacity = useTransform(
     progress,
     index === 0
-      ? [0, 0.38, 0.5]
+      ? [0, segmentEnd - fade, segmentEnd + fade]
       : index === total - 1
-        ? [0.5, 0.62, 1]
-        : [0, center - 0.1, center, center + 0.1, 1],
-    index === 0 ? [1, 1, 0] : index === total - 1 ? [0, 1, 1] : [0, 0, 1, 0, 0]
+        ? [segmentStart - fade, segmentStart + fade, 1]
+        : [0, segmentStart - fade, segmentStart + fade, segmentEnd - fade, segmentEnd + fade, 1],
+    index === 0 ? [1, 1, 0] : index === total - 1 ? [0, 1, 1] : [0, 0, 1, 1, 0, 0]
   );
-  const y = useTransform(progress, [Math.max(0, center - 0.16), center, Math.min(1, center + 0.16)], [44, 0, -44]);
-  const scale = useTransform(progress, [Math.max(0, center - 0.16), center, Math.min(1, center + 0.16)], [0.97, 1, 0.97]);
+  const y = useTransform(progress, [Math.max(0, segmentStart - fade), center, Math.min(1, segmentEnd + fade)], [44, 0, -44]);
+  const scale = useTransform(progress, [Math.max(0, segmentStart - fade), center, Math.min(1, segmentEnd + fade)], [0.97, 1, 0.97]);
 
   const gradients = [
     "bg-[radial-gradient(circle_at_12%_18%,rgba(244,114,182,0.28),transparent_28rem),linear-gradient(135deg,#5521c8,#7832e3)]",
@@ -90,7 +93,9 @@ function FeatureSlide({
 
   return (
     <motion.article
-      style={reduceMotion ? { opacity: active ? 1 : 0 } : { opacity, y, scale }}
+      style={reduceMotion ? undefined : { opacity, y, scale }}
+      animate={reduceMotion ? { opacity: active ? 1 : 0 } : undefined}
+      transition={reduceMotion ? { duration: 0 } : undefined}
       className={`absolute inset-0 flex items-center px-4 py-7 sm:px-8 sm:py-10 lg:px-16 ${gradients[index % gradients.length]}`}
       aria-hidden={!active}
     >
