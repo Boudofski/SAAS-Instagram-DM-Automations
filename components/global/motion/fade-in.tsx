@@ -7,18 +7,16 @@ type Props = {
   children: ReactNode;
   className?: string;
   delay?: number;
-  replay?: boolean;
-  amount?: number;
 };
 
-export function FadeIn({ children, className, delay = 0, replay = false, amount = 0.1 }: Props) {
+export function FadeIn({ children, className, delay = 0 }: Props) {
   const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, y: 14 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: !replay, amount, margin: "-32px" }}
+      viewport={{ once: true, amount: 0.1, margin: "-32px" }}
       transition={reduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
