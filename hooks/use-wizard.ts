@@ -33,6 +33,15 @@ export type WizardData = {
   active: boolean;
 };
 
+export const DEFAULT_PUBLIC_REPLIES = [
+  "Thanks! Please see DMs.",
+  "Sent you a message! Check it out!",
+  "Nice! Check your DMs!",
+] as const;
+
+export const DEFAULT_DM_MESSAGE = "Here's the link I promised! 🎁";
+export const DEFAULT_CTA_BUTTON_TITLE = "Get the Link";
+
 const INITIAL: WizardData = {
   post: null,
   campaignName: "",
@@ -40,13 +49,13 @@ const INITIAL: WizardData = {
   keywords: [],
   matchingMode: "CONTAINS",
   sendPrivateDm: true,
-  dmMessage: "",
+  dmMessage: DEFAULT_DM_MESSAGE,
   ctaLink: "",
-  ctaButtonTitle: "",
-  publicReply: "",
-  publicReply2: "",
-  publicReply3: "",
-  publicReplyEnabled: false,
+  ctaButtonTitle: DEFAULT_CTA_BUTTON_TITLE,
+  publicReply: DEFAULT_PUBLIC_REPLIES[0],
+  publicReply2: DEFAULT_PUBLIC_REPLIES[1],
+  publicReply3: DEFAULT_PUBLIC_REPLIES[2],
+  publicReplyEnabled: true,
   active: true,
 };
 
@@ -100,7 +109,7 @@ export function useWizard(slug: string, automationId?: string) {
       const payload = {
         name: data.campaignName,
         active: typeof activeOverride === "boolean" ? activeOverride : data.active,
-        matchingMode: data.matchingMode,
+        matchingMode: "CONTAINS",
         triggerMode: data.triggerMode,
         sendPrivateDm: data.sendPrivateDm,
         post: data.post,
