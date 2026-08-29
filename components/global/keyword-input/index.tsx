@@ -5,16 +5,12 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { useState } from "react";
 
-type MatchingMode = "EXACT" | "CONTAINS";
-
 type Props = {
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
   keywords: string[];
-  matchingMode: MatchingMode;
   onTriggerModeChange: (mode: "SPECIFIC_KEYWORD" | "ANY_COMMENT") => void;
   onAdd: (word: string) => void;
   onRemove: (word: string) => void;
-  onModeChange: (mode: MatchingMode) => void;
 };
 
 const KW_COLOURS = [
@@ -24,13 +20,8 @@ const KW_COLOURS = [
   "bg-rf-green/10 text-rf-green border-rf-green/25",
 ];
 
-const MODES: { value: MatchingMode; label: string; desc: string }[] = [
-  { value: "CONTAINS", label: "Contains",   desc: "Best for natural comments like send the guide" },
-  { value: "EXACT",    label: "Exact match", desc: "Only when the full comment is the keyword" },
-];
-
 export default function KeywordInput({
-  triggerMode, keywords, matchingMode, onTriggerModeChange, onAdd, onRemove, onModeChange,
+  triggerMode, keywords, onTriggerModeChange, onAdd, onRemove,
 }: Props) {
   const [value, setValue] = useState("");
   const appReviewMode = isAppReviewMode();
@@ -133,28 +124,6 @@ export default function KeywordInput({
           ))}
         </div>
       )}
-
-      {/* Matching mode */}
-      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
-        {MODES.map((m) => (
-          <button
-            key={m.value}
-            type="button"
-            onClick={() => onModeChange(m.value)}
-            className={cn(
-              "flex-1 rounded-lg px-3 py-2.5 text-center transition-all border",
-              matchingMode === m.value
-                ? "border-rf-blue bg-white text-slate-950 shadow-sm dark:bg-[#101827] dark:text-white"
-                : "border-transparent text-slate-500 hover:bg-white dark:text-slate-300 dark:hover:bg-white/[0.06]"
-            )}
-          >
-            <div className="text-xs font-bold flex items-center justify-center gap-1.5">
-              {m.label}
-            </div>
-            <div className="mt-0.5 text-[10px] text-slate-500">{m.desc}</div>
-          </button>
-        ))}
-      </div>
       </>
       )}
     </div>

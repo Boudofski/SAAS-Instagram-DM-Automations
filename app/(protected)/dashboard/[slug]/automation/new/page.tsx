@@ -100,7 +100,7 @@ export default function WizardPage({ params, searchParams }: Props) {
     update({
       campaignName: automation.name ?? "",
       active: Boolean(automation.active),
-      matchingMode: automation.matchingMode ?? "CONTAINS",
+      matchingMode: "CONTAINS",
       keywords: Array.isArray(automation.keywords)
         ? automation.keywords.map((keyword: any) => keyword.word).filter(Boolean)
         : [],
@@ -245,11 +245,9 @@ export default function WizardPage({ params, searchParams }: Props) {
               <KeywordInput
                 triggerMode={data.triggerMode}
                 keywords={data.keywords}
-                matchingMode={data.matchingMode}
-                onTriggerModeChange={(mode) => update({ triggerMode: mode })}
+                onTriggerModeChange={(mode) => update({ triggerMode: mode, matchingMode: "CONTAINS" })}
                 onAdd={(word) => update({ keywords: [...data.keywords, word] })}
                 onRemove={(word) => update({ keywords: data.keywords.filter((keyword) => keyword !== word) })}
-                onModeChange={(mode) => update({ matchingMode: mode })}
               />
             </StepPanel>
           )}
@@ -280,16 +278,15 @@ export default function WizardPage({ params, searchParams }: Props) {
                     <div className="border-t border-rf-purple/15 p-5 pt-4">
                       <div className="flex flex-col gap-3">
                         {[
-                          { field: "publicReply", label: "Reply 1", placeholder: "Thanks for commenting. I sent it by DM." },
-                          { field: "publicReply2", label: "Reply 2", placeholder: "Done — check your DMs." },
-                          { field: "publicReply3", label: "Reply 3", placeholder: "Sent! Please check your Instagram inbox." },
+                          { field: "publicReply", label: "Reply 1" },
+                          { field: "publicReply2", label: "Reply 2" },
+                          { field: "publicReply3", label: "Reply 3" },
                         ].map((item) => (
                           <div key={item.field}>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{item.label}</label>
                             <textarea
                               value={(data as any)[item.field]}
                               onChange={(event) => update({ [item.field]: event.target.value } as any)}
-                              placeholder={item.placeholder}
                               rows={2}
                               dir="auto"
                               className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
