@@ -55,20 +55,20 @@ export default function KeywordInput({
             className={cn(
               "rounded-2xl border-2 p-4 text-left transition-all",
               triggerMode === mode.value
-                ? "border-rf-blue bg-rf-blue/10 shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
-                : "border-slate-200 bg-white hover:border-rf-blue/40"
+                ? "border-rf-blue bg-rf-blue/10 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] dark:bg-rf-blue/15"
+                : "border-slate-200 bg-white hover:border-rf-blue/40 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-rf-blue/50 dark:hover:bg-white/[0.07]"
             )}
           >
-            <span className="text-sm font-black text-slate-950">{mode.label}</span>
-            <span className="mt-1 block text-xs leading-relaxed text-slate-500">{mode.desc}</span>
+            <span className="text-sm font-black text-slate-950 dark:text-white">{mode.label}</span>
+            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-300">{mode.desc}</span>
           </button>
         ))}
       </div>
 
       {triggerMode === "ANY_COMMENT" && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100">
           <p className="font-bold">Every comment will trigger this automation.</p>
-          <p className="mt-1 text-xs leading-relaxed text-amber-800">
+          <p className="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-200/80">
             AP3k automatically ignores your own replies to prevent loops. Use this when every commenter should get the same response.
           </p>
         </div>
