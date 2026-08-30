@@ -1,6 +1,7 @@
 import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import BlogVisual from "@/components/website/blog-visual";
 import { BLOG_POSTS, getBlogPost } from "@/lib/blog";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
@@ -45,7 +46,15 @@ export default function BlogPostPage({ params }: Props) {
   const post = getBlogPost(params.slug);
   if (!post) notFound();
 
-  const related = BLOG_POSTS.filter((item) => item.slug !== post.slug).slice(0, 3);
+  const related = BLOG_POSTS
+    .filter((item) => item.slug !== post.slug)
+    .map((item) => ({
+      item,
+      score: Number(item.category === post.category) * 3 + item.keywords.filter((keyword) => post.keywords.includes(keyword)).length,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ item }) => item);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -82,13 +91,47 @@ export default function BlogPostPage({ params }: Props) {
             <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">{post.intro}</p>
           </FadeIn>
 
+          <FadeIn delay={0.06}>
+            <div className="mt-10">
+              <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.09}>
+            <nav aria-label="Article contents" className="mt-10 rounded-2xl border border-slate-200 bg-white/80 p-5 dark:border-white/10 dark:bg-white/[0.04]">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">In this guide</p>
+              <ol className="mt-3 grid gap-2 sm:grid-cols-2">
+                {post.sections.map((section, index) => (
+                  <li key={section.heading}>
+                    <a href={`#section-${index + 1}`} className="text-sm font-bold leading-6 text-slate-600 transition hover:text-violet-600 dark:text-slate-300 dark:hover:text-violet-300">
+                      {index + 1}. {section.heading.replace(/^\d+\.\s*/, "")}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </FadeIn>
+
           <div className="mt-12 space-y-12">
             {post.sections.map((section, index) => (
               <FadeIn key={section.heading} delay={Math.min(index * 0.03, 0.15)}>
-                <section className="scroll-mt-24">
+                <section id={`section-${index + 1}`} className="scroll-mt-24">
                   <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{section.heading}</h2>
                   <div className="mt-4 space-y-4 text-base leading-8 text-slate-600 dark:text-slate-300">
                     {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                    {section.steps && (
+                      <ol className="grid gap-3">
+                        {section.steps.map((item, stepIndex) => (
+                          <li key={item.title} className="group flex gap-4 rounded-2xl border border-violet-500/15 bg-violet-50/70 p-5 transition duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-violet-500/30 dark:bg-violet-500/[0.06]">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-sm font-black text-white shadow-lg shadow-violet-600/20">{stepIndex + 1}</span>
+                            <span>
+                              <strong className="block text-slate-950 dark:text-white">{item.title}</strong>
+                              <span className="mt-1 block text-sm leading-6">{item.body}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
                     {section.bullets && (
                       <ul className="space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-5 dark:border-white/10 dark:bg-white/[0.04]">
                         {section.bullets.map((bullet) => (
@@ -104,6 +147,17 @@ export default function BlogPostPage({ params }: Props) {
               </FadeIn>
             ))}
           </div>
+
+          <FadeIn>
+            <div className="mt-12 border-t border-slate-200 pt-6 dark:border-white/10">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Topics</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {post.keywords.map((keyword) => (
+                  <span key={keyword} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">{keyword}</span>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
 
           <FadeIn>
             <aside className="mt-14 rounded-[30px] border border-orange-500/20 bg-gradient-to-br from-orange-50 via-pink-50 to-white p-7 dark:from-orange-500/10 dark:via-pink-500/10 dark:to-white/[0.03] sm:p-8">
