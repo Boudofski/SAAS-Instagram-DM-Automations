@@ -2,6 +2,7 @@ import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/g
 import PricingExperience from "@/components/global/pricing-experience";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import ScrollFeatureSlider from "@/components/website/scroll-feature-slider";
 import { BLOG_POSTS } from "@/lib/blog";
 import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
 import { client } from "@/lib/prisma";
@@ -53,13 +54,25 @@ const BENEFITS = [
 ] as const;
 
 const FAQS = [
-  ["Do I need coding skills?", "No. Connect an Instagram Business or Creator account, choose a post, set the trigger, choose your actions, and activate the campaign."],
-  ["Can AP3K reply to comments and send DMs?", "Yes. A campaign can Reply to comment, Send a DM, or do both when an eligible Instagram comment matches the trigger."],
-  ["How are automated replies counted?", "Each successfully sent Comment reply counts as one automated reply, and each successfully sent DM counts as one automated reply. Failed or skipped actions do not count."],
-  ["Do annual plans still reset usage monthly?", "Yes. Annual billing changes how you pay, not the monthly usage cycle. Your automated reply allowance resets each month."],
-  ["Which Instagram accounts work?", "AP3K is designed for Instagram professional accounts supported by the current Instagram Business API flow, including Business and Creator accounts."],
-  ["Can I change or cancel my plan later?", "Yes. Paid subscriptions can be managed through the Billing center and Stripe customer portal."],
+  ["What does AP3K automate?", "AP3K watches new comments on the Instagram posts or Reels you choose. When a comment matches your campaign, it can publish a reply, send the commenter a DM, or run both actions."],
+  ["Which Instagram accounts can connect to AP3K?", "AP3K supports Instagram Business and Creator accounts through Instagram's official authorization flow. Personal Instagram accounts must be changed to a professional account before connecting."],
+  ["What is the difference between Specific keyword and Any comment?", "Specific keyword runs only when a new comment contains a word you configured, such as GUIDE. Any comment runs for every eligible new comment in that campaign's post scope."],
+  ["Can AP3K reply publicly and send a DM at the same time?", "Yes. You can enable a public Comment reply, a private DM, or both. When both are enabled, the public reply confirms the action while the DM delivers the private follow-up."],
+  ["Can the automated DM include a clickable link?", "Yes. Add your destination URL and edit the button label—for example, Get the Link—so the commenter can open the promised guide, product, booking page, or offer from the DM."],
+  ["Will a new campaign respond to old comments?", "No. Campaigns react to eligible new comment events received after the campaign is active. They do not go backward through comments that were already on the post."],
+  ["How do I test a campaign before promoting it?", "Activate the campaign, then comment from a different Instagram account using the configured keyword or any normal comment. Check the public reply, Instagram inbox, campaign activity, and link button before sending traffic to the post."],
+  ["Will AP3K reply to its own automated comments?", "No. AP3K ignores replies from the connected Instagram account and duplicate comment events so an automation cannot create a reply loop."],
 ] as const;
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map(([question, answer]) => ({
+    "@type": "Question",
+    name: question,
+    acceptedAnswer: { "@type": "Answer", text: answer },
+  })),
+};
 
 const softwareSchema = {
   "@context": "https://schema.org",
@@ -133,6 +146,7 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
       <WebsiteNav current="home" />
 
       <main>
@@ -206,45 +220,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="relative bg-[#5521c8] text-white">
-          <div className="relative">
-            {BENEFITS.map((benefit, index) => (
-              <article
-                key={benefit.title}
-                className={`sticky top-16 flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-t border-white/10 px-4 py-8 sm:px-8 sm:py-10 lg:px-16 ${
-                  index === 0
-                    ? "bg-[radial-gradient(circle_at_12%_18%,rgba(244,114,182,0.25),transparent_28rem),linear-gradient(135deg,#5521c8,#7832e3)]"
-                    : index === 1
-                      ? "bg-[radial-gradient(circle_at_86%_22%,rgba(244,114,182,0.22),transparent_28rem),linear-gradient(135deg,#6725d4,#8b35df)]"
-                      : "bg-[radial-gradient(circle_at_18%_78%,rgba(30,41,59,0.26),transparent_30rem),linear-gradient(135deg,#5c22cc,#7431df)]"
-                }`}
-                style={{ zIndex: index + 1 }}
-              >
-                <FadeIn replay amount={0.42} className="mx-auto w-full max-w-6xl">
-                  <div className={`grid items-center gap-7 lg:grid-cols-2 lg:gap-24 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                    <div className="text-center lg:text-left">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-fuchsia-200 sm:text-xs">{benefit.kicker}</p>
-                      <h2 className="mx-auto mt-3 max-w-xl text-3xl font-black leading-[0.96] tracking-[-0.05em] sm:text-5xl lg:mx-0 lg:mt-4">{benefit.title}</h2>
-                      <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-white/75 sm:text-base sm:leading-7 lg:mx-0 lg:mt-6 lg:text-lg lg:leading-8">{benefit.body}</p>
-                      <div className="mt-7 hidden space-y-3 lg:block">
-                        {benefit.bullets.map((bullet) => (
-                          <div key={bullet} className="flex items-center gap-3 text-sm font-bold text-white/90">
-                            <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /></span>
-                            {bullet}
-                          </div>
-                        ))}
-                      </div>
-                      <Link href="/sign-up" className="mt-8 hidden items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5 lg:inline-flex">Try it free <ArrowRight className="h-4 w-4" /></Link>
-                    </div>
-                    <div className="mx-auto flex w-full items-center justify-center">
-                      <ProductVideo src={benefit.src} label={benefit.label} className="w-[min(60vw,250px)] sm:w-[260px] lg:w-full lg:max-w-[300px]" />
-                    </div>
-                  </div>
-                </FadeIn>
-              </article>
-            ))}
-          </div>
-        </section>
+        <ScrollFeatureSlider features={BENEFITS} />
 
         <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16 lg:py-24">
           <div className="mx-auto max-w-6xl">
