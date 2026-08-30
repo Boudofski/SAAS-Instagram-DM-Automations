@@ -1,7 +1,7 @@
 import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import BlogVisual from "@/components/website/blog-visual";
+import BlogVisual, { getBlogVisualSrc } from "@/components/website/blog-visual";
 import { BLOG_POSTS, getBlogPost } from "@/lib/blog";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
@@ -19,6 +19,7 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: Props): Metadata {
   const post = getBlogPost(params.slug);
   if (!post) return {};
+  const socialImage = `${SITE_URL}${getBlogVisualSrc(post.visual)}`;
 
   return {
     title: `${post.title} | AP3K`,
@@ -33,11 +34,13 @@ export function generateMetadata({ params }: Props): Metadata {
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       siteName: "AP3K",
+      images: [{ url: socialImage, width: 1440, height: 810, alt: post.visualAlt }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.description,
+      images: [socialImage],
     },
   };
 }
@@ -65,6 +68,7 @@ export default function BlogPostPage({ params }: Props) {
     mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
     author: { "@type": "Organization", name: "AP3K", url: SITE_URL },
     publisher: { "@type": "Organization", name: "AP3K", url: SITE_URL },
+    image: `${SITE_URL}${getBlogVisualSrc(post.visual)}`,
     keywords: post.keywords.join(", "),
   };
 
