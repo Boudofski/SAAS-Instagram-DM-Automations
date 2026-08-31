@@ -138,7 +138,7 @@
   }
 
   .ap3k-gradient-button {
-    @apply relative overflow-hidden rounded-xl bg-ap3k-gradient bg-[length:180%_180%] font-bold text-white shadow-ap3k-glow transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_58px_rgba(221,42,123,0.34)] active:translate-y-0;
+    @apply relative overflow-hidden rounded-xl bg-ap3k-gradient bg-[length:180%_180%] font-bold text-white shadow-ap3k-glow transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_58px_rgba(109,40,217,0.34)] active:translate-y-0;
   }
 
   .ap3k-gradient-button::after {

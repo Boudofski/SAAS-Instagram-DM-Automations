@@ -98,15 +98,15 @@ const config = {
       },
       backgroundImage: {
         "ap3k-gradient":
-          "linear-gradient(135deg, #F58529 0%, #DD2A7B 34%, #8134AF 68%, #515BD4 100%)",
+          "linear-gradient(135deg, #6D28D9 0%, #8B5CF6 46%, #EC4899 74%, #FF6B35 100%)",
         "ap3k-gradient-soft":
-          "linear-gradient(135deg, rgba(245,133,41,0.18), rgba(221,42,123,0.16), rgba(81,91,212,0.18))",
+          "linear-gradient(135deg, rgba(109,40,217,0.18), rgba(139,92,246,0.16), rgba(255,107,53,0.18))",
         "ap3k-radial":
           "radial-gradient(circle at 20% 0%, rgba(245,133,41,0.14), transparent 32%), radial-gradient(circle at 80% 12%, rgba(221,42,123,0.16), transparent 34%), radial-gradient(circle at 50% 55%, rgba(81,91,212,0.12), transparent 42%)",
       },
       boxShadow: {
         "ap3k-card": "0 18px 60px rgba(0, 0, 0, 0.34)",
-        "ap3k-glow": "0 18px 48px rgba(221, 42, 123, 0.26)",
+        "ap3k-glow": "0 18px 48px rgba(109, 40, 217, 0.26)",
         "ap3k-blue": "0 18px 48px rgba(96, 165, 250, 0.22)",
       },
       borderRadius: {
