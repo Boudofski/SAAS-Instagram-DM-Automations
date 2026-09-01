@@ -9,9 +9,9 @@ import { currentUser } from "@clerk/nextjs/server";
 import {
   ArrowRight,
   CheckCircle2,
-  Clock3,
   MessageCircle,
   Reply,
+  Send,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -19,10 +19,30 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 const VALUE_CARDS = [
-  { icon: MessageCircle, title: "Comment replies", copy: "Respond under the post automatically while the conversation is still active." },
-  { icon: Reply, title: "DM follow-up", copy: "Move eligible commenters into a direct conversation without repetitive inbox work." },
-  { icon: Users, title: "Lead tracking", copy: "Keep campaign activity and captured leads together instead of scattered across tools." },
-  { icon: Clock3, title: "Time back", copy: "Stop repeating the same first-response workflow every time a comment arrives." },
+  {
+    step: "01",
+    icon: MessageCircle,
+    title: "Choose the trigger",
+    copy: "Use a specific keyword like GUIDE, or respond to any eligible comment on the post.",
+  },
+  {
+    step: "02",
+    icon: Reply,
+    title: "Reply publicly",
+    copy: "AP3K posts one of your saved replies so the commenter knows to check their DMs.",
+  },
+  {
+    step: "03",
+    icon: Send,
+    title: "Send the DM",
+    copy: "Deliver your message and optional link button automatically while interest is fresh.",
+  },
+  {
+    step: "04",
+    icon: Users,
+    title: "See what happened",
+    copy: "Keep replies, DMs, campaign activity, and captured leads together in AP3K.",
+  },
 ] as const;
 
 const BENEFITS = [
@@ -194,23 +214,38 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[#f7f7fb] px-4 py-20 dark:bg-[#080911] sm:px-8 lg:py-24">
-          <div className="mx-auto max-w-6xl">
+        <section className="relative overflow-hidden border-b border-slate-200/80 bg-[linear-gradient(180deg,#f8f7fc_0%,#f2effa_100%)] px-4 py-20 dark:border-white/[0.08] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#080911_0%,#0c0d19_100%)] sm:px-8 lg:py-24">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-28 top-20 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-600/10" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-28 bottom-0 h-72 w-72 rounded-full bg-fuchsia-200/25 blur-3xl dark:bg-fuchsia-500/[0.08]" />
+
+          <div className="relative mx-auto max-w-6xl">
             <FadeIn className="mx-auto max-w-4xl text-center">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Put growth on autopilot</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Stop manually chasing every Instagram comment.</h2>
-              <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300/75 sm:text-lg">
-                AP3K handles the repetitive first response so you can focus on content, offers, customers, and the conversations that actually need you.
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">The AP3K workflow</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] text-slate-950 dark:text-white sm:text-6xl">
+                From Instagram comment to delivered link—automatically.
+              </h2>
+              <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
+                Choose the post, trigger, and actions once. When the right comment arrives, AP3K can publish your reply, send the DM and link, and record the result.
               </p>
             </FadeIn>
-            <StaggerContainer className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {VALUE_CARDS.map(({ icon: Icon, title, copy }) => (
-                <StaggerItem key={title}>
-                  <HoverLift>
-                    <div className="h-full rounded-[1.7rem] border border-slate-200/80 bg-white p-6 text-left shadow-[0_12px_40px_rgba(15,23,42,0.05)] dark:border-white/8 dark:bg-[#10121d] dark:shadow-none">
-                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/12 dark:text-violet-300"><Icon className="h-5 w-5" /></div>
-                      <h3 className="mt-5 text-lg font-black">{title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{copy}</p>
+
+            <StaggerContainer className="relative mt-12 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div aria-hidden="true" className="pointer-events-none absolute left-[8%] right-[8%] top-6 hidden h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent dark:via-violet-400/25 lg:block" />
+              {VALUE_CARDS.map(({ step, icon: Icon, title, copy }) => (
+                <StaggerItem key={title} className="h-full">
+                  <HoverLift className="h-full">
+                    <div className="group relative h-full overflow-hidden rounded-[1.7rem] border border-slate-200/90 bg-white/90 p-6 text-left shadow-[0_16px_45px_rgba(42,27,78,0.07)] backdrop-blur-sm transition-colors hover:border-violet-300 dark:border-violet-300/[0.14] dark:bg-[#111320] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] dark:shadow-[0_24px_70px_rgba(0,0,0,0.28)] dark:hover:border-violet-300/30">
+                      <div aria-hidden="true" className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/75 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:via-violet-300/70 dark:opacity-60" />
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="rounded-full border border-violet-200/80 bg-violet-50 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-violet-700 dark:border-violet-300/15 dark:bg-violet-300/[0.07] dark:text-violet-200">
+                          {step}
+                        </span>
+                      </div>
+                      <h3 className="mt-5 text-lg font-black text-slate-950 dark:text-white">{title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300/80">{copy}</p>
                     </div>
                   </HoverLift>
                 </StaggerItem>
