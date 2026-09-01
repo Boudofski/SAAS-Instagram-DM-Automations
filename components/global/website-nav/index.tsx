@@ -19,7 +19,7 @@ async function getDashboardHref() {
 }
 
 type Props = {
-  current?: "home" | "pricing" | "blog" | "privacy" | "terms" | "data-deletion";
+  current?: "home" | "pricing" | "blog" | "contact" | "privacy" | "terms" | "data-deletion";
 };
 
 export default async function WebsiteNav({ current }: Props) {
@@ -60,6 +60,7 @@ export default async function WebsiteNav({ current }: Props) {
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/#how-it-works">How it works</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/pricing">Pricing</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/blog">Blog</Link>
+              <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/contact">Support</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href={dashboardHref ?? "/dashboard"}>{isSignedIn ? "Dashboard" : "Login"}</Link>
             </div>
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-white/10">

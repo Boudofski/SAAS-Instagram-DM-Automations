@@ -3,14 +3,15 @@ import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — AP3k",
-  description: "Terms for using AP3k Instagram comment automation, Comment reply, and DM workflows.",
+  title: "Terms of Service — AP3K",
+  description: "Terms for using AP3K Instagram comment automation, comment reply, and DM workflows.",
+  alternates: { canonical: "/terms" },
 };
 
 const sections = [
   {
-    title: "What AP3k Does",
-    body: "AP3k is an Instagram comment automation service for professional accounts. It can match configured comment triggers, Reply to comment, Send a DM after a qualifying comment, track campaign activity, and capture leads.",
+    title: "What AP3K Does",
+    body: "AP3K is an Instagram comment automation service for professional accounts. It can match configured comment triggers, reply to comments, send a DM after a qualifying comment, track campaign activity, and capture leads.",
   },
   {
     title: "Authorized Accounts Only",
@@ -18,11 +19,11 @@ const sections = [
   },
   {
     title: "Your Responsibility for Campaigns",
-    body: "You are responsible for the campaigns, keywords, Comment reply content, DM content, CTA links, offers, and claims you configure in AP3k. AP3k executes the automation you configure, and you remain responsible for the content and intent of those actions.",
+    body: "You are responsible for the campaigns, keywords, comment reply content, DM content, CTA links, offers, and claims you configure in AP3K. AP3K executes the automation you configure, and you remain responsible for the content and intent of those actions.",
   },
   {
     title: "Supported Instagram Access",
-    body: "AP3k uses the supported Instagram API flow for professional accounts. AP3k does not scrape Instagram, use undocumented private Instagram APIs, ask for your Instagram password, or rely on browser bots to imitate account activity.",
+    body: "AP3K uses the supported Instagram API flow for professional accounts. AP3K does not scrape Instagram, use undocumented private Instagram APIs, ask for your Instagram password, or rely on browser bots to imitate account activity.",
   },
   {
     title: "Platform Compliance",
@@ -30,23 +31,23 @@ const sections = [
   },
   {
     title: "Prohibited Uses",
-    body: "You may not use AP3k for spam, harassment, fake engagement, coordinated inauthentic behavior, scraping, unauthorized data collection, impersonation, illegal promotions, or any use that violates platform rules or applicable law.",
+    body: "You may not use AP3K for spam, harassment, fake engagement, coordinated inauthentic behavior, scraping, unauthorized data collection, impersonation, illegal promotions, or any use that violates platform rules or applicable law.",
   },
   {
     title: "Suspension and Termination",
-    body: "AP3k may suspend or terminate accounts that abuse the service, violate these terms, harm users or third parties, violate platform rules, or create material legal, security, or reputational risk.",
+    body: "AP3K may suspend or terminate accounts that abuse the service, violate these terms, harm users or third parties, violate platform rules, or create material legal, security, or reputational risk.",
   },
   {
     title: "Service Availability",
-    body: "AP3k depends on Instagram API availability, account permissions, rate limits, and platform policies. Features may pause, degrade, or change because of platform limitations or technical issues outside AP3k's control. AP3k does not guarantee uninterrupted service or delivery of every Comment reply or DM.",
+    body: "AP3K depends on Instagram API availability, account permissions, rate limits, and platform policies. Features may pause, degrade, or change because of platform limitations or technical issues outside AP3K's control. AP3K does not guarantee uninterrupted service or delivery of every comment reply or DM.",
   },
   {
     title: "Limitation of Liability",
-    body: "To the maximum extent permitted by law, AP3k and its operators are not liable for indirect, incidental, special, consequential, or punitive damages, including loss of business, revenue, data, or goodwill, arising from your use of or inability to use AP3k.",
+    body: "To the maximum extent permitted by law, AP3K and its operators are not liable for indirect, incidental, special, consequential, or punitive damages, including loss of business, revenue, data, or goodwill, arising from your use of or inability to use AP3K.",
   },
   {
     title: "Changes to These Terms",
-    body: "AP3k may update these terms. Continued use of the service after an update constitutes acceptance of the revised terms. Material changes will be communicated where reasonably practicable.",
+    body: "AP3K may update these terms. Continued use of the service after an update constitutes acceptance of the revised terms. Material changes will be communicated where reasonably practicable.",
   },
 ];
 
@@ -60,7 +61,7 @@ export default function TermsPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Terms of Service</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: August 27, 2026. These terms govern your use of AP3k. By connecting an Instagram account or creating campaigns, you agree to these terms.
+            Last updated: September 1, 2026. These terms govern your use of AP3K. By connecting an Instagram account or creating campaigns, you agree to these terms.
           </p>
         </div>
 

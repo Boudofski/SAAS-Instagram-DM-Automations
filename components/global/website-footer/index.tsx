@@ -36,6 +36,7 @@ export default function WebsiteFooter() {
             </div>
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-400">Support</p>
+              <Link href="/contact" className={linkClass}>Contact support</Link>
               <a href="mailto:support@ap3k.com" className={linkClass}>support@ap3k.com</a>
             </div>
           </div>
