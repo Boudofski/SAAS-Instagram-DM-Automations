@@ -30,7 +30,7 @@ const STEP_LABELS = ["Choose post", "Trigger", "Actions", "Review & Activate"];
 const STEP_TIPS = [
   "Choose Any post for the easiest launch, or select a specific post or Reel from this Instagram account.",
   "Use a clear keyword so commenters intentionally trigger the automation.",
-  "Choose what AP3k should do: reply to the comment, send a DM, or both.",
+  "Choose what AP3K should do: reply to the comment, send a DM, or both.",
   "Review the full flow before activating and testing from another Instagram account.",
 ];
 
@@ -164,7 +164,7 @@ export default function WizardPage({ params, searchParams }: Props) {
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:px-8 lg:grid-cols-[1fr_340px]">
         <main className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
           {step === 1 && (
-            <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3k should listen for comments. Any post is the fastest option; specific post mode limits the campaign to one post or Reel.">
+            <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3K should listen for comments. Any post is the fastest option; specific post mode limits the campaign to one post or Reel.">
               {instagram?.instagramUsername && (
                 <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
                   Current account: @{instagram.instagramUsername}
@@ -181,7 +181,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               {postsLoading ? (
                 <div className="flex justify-center py-16"><Loader2 className="animate-spin text-slate-500 dark:text-slate-400" /></div>
               ) : !hasInstagramConnection ? (
-                <EmptyState icon="🔗" title="Connect Instagram first" description="AP3k needs an official Instagram connection before it can listen for comments." ctaLabel="Connect Instagram" ctaHref={`/dashboard/${slug}/integrations`} />
+                <EmptyState icon="🔗" title="Connect Instagram first" description="AP3K needs an official Instagram connection before it can listen for comments." ctaLabel="Connect Instagram" ctaHref={`/dashboard/${slug}/integrations`} />
               ) : (
                 <div className="flex flex-col gap-5">
                   <button
@@ -195,7 +195,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-2xl">🌐</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-bold text-slate-950 dark:text-white">Any post</span>
-                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Recommended for launch. AP3k checks comments on all posts and Reels from the connected account.</span>
+                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Recommended for launch. AP3K checks comments on all posts and Reels from the connected account.</span>
                     </span>
                     {data.post?.postid === "ANY" && <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-bold text-white">✓</span>}
                   </button>
@@ -253,7 +253,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 3 && (
-            <StepPanel eyebrow="Step 3 of 4" title="What should AP3k do?" description="Choose one or both actions. AP3k can reply under the comment, send a DM to the commenter, or do both.">
+            <StepPanel eyebrow="Step 3 of 4" title="What should AP3K do?" description="Choose one or both actions. AP3K can reply under the comment, send a DM to the commenter, or do both.">
               <div className="space-y-5">
                 <section className={[
                   "overflow-hidden rounded-2xl border transition-colors",
@@ -394,7 +394,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               >
                 <span>
                   <span className="block text-sm font-bold text-slate-950 dark:text-white">Active campaign</span>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3k listens for matching comments and runs the actions you selected.</span>
+                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3K listens for matching comments and runs the actions you selected.</span>
                 </span>
                 <Toggle enabled={data.active} green />
               </button>

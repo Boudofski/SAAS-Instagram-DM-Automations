@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Data Deletion Status — AP3k",
-  description: "Status page for AP3k Meta data deletion requests.",
+  title: "Data Deletion Status — AP3K",
+  description: "Status page for AP3K Meta data deletion requests.",
 };
 
 type DataDeletionStatusPageProps = {
@@ -22,7 +22,7 @@ export default function DataDeletionStatusPage({ searchParams }: DataDeletionSta
           Your data deletion request was received and processed.
         </h1>
         <p className="mt-4 text-sm leading-7 text-rf-muted">
-          AP3k has processed the Meta data deletion callback for this request.
+          AP3K has processed the Meta data deletion callback for this request.
           No further action is required.
         </p>
         {code ? (

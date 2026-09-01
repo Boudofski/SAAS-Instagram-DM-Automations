@@ -574,7 +574,7 @@ describe("comment webhook private DM toggle", () => {
     );
   });
 
-  it("skips AP3k-generated public reply comment ids", async () => {
+  it("skips AP3K-generated public reply comment ids", async () => {
     const campaign = automation(true);
     mockHasAp3kGeneratedCommentId.mockResolvedValue(true);
     mockFindAutomationForCommentWithReason.mockResolvedValue({
@@ -596,7 +596,7 @@ describe("comment webhook private DM toggle", () => {
     );
   });
 
-  it("does not skip an external user only because their text matches a recent AP3k reply", async () => {
+  it("does not skip an external user only because their text matches a recent AP3K reply", async () => {
     const campaign = automation(true, { keywords: [{ word: "Check your DMs" }] });
     mockHasRecentAp3kReplyTextMatch.mockResolvedValue(true);
     mockFindAutomationForCommentWithReason.mockResolvedValue({

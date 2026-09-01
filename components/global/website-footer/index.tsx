@@ -1,4 +1,4 @@
-import AP3kLogo from "@/components/global/ap3k-logo";
+import AP3KLogo from "@/components/global/ap3k-logo";
 import Link from "next/link";
 
 export default function WebsiteFooter() {
@@ -9,7 +9,7 @@ export default function WebsiteFooter() {
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-3">
-            <AP3kLogo className="text-sm text-slate-700 dark:text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
+            <AP3KLogo className="text-sm text-slate-700 dark:text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
             <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
               Instagram comment automation for Business and Creator accounts. Match comments, send Comment replies and DMs, and track campaign activity and leads.
             </p>

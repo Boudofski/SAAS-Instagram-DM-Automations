@@ -69,9 +69,9 @@ export async function getInstagramAccountSettingsStats(
           ? unavailableSnapshotField("Media count is not available for this profile.")
           : missingSnapshot(),
     comments: { value: metrics.commentsReceived, enabled: true, subtitle: "External comments this period" },
-    removed: { value: "Not shown", enabled: false, subtitle: "This dashboard focuses on comments AP3k received" },
-    dmsIn: { value: "Not used", enabled: false, subtitle: "AP3k starts DMs from comment triggers" },
-    dmsOut: { value: metrics.dmsSent, enabled: true, subtitle: "DMs sent by AP3k" },
+    removed: { value: "Not shown", enabled: false, subtitle: "This dashboard focuses on comments AP3K received" },
+    dmsIn: { value: "Not used", enabled: false, subtitle: "AP3K starts DMs from comment triggers" },
+    dmsOut: { value: metrics.dmsSent, enabled: true, subtitle: "DMs sent by AP3K" },
     contacts: { value: metrics.leadsCaptured, enabled: true, subtitle: "Leads captured this period" },
     replyRate: { value: `${metrics.replyRate}%`, enabled: true, subtitle: "Replies / matched comments" },
   };

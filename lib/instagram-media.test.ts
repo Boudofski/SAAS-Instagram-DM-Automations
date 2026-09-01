@@ -26,7 +26,7 @@ describe("resolveInstagramMediaConnection", () => {
 describe("instagramMediaFetchError", () => {
   it("uses a permission-specific message for auth errors", () => {
     expect(instagramMediaFetchError(403)).toBe(
-      "AP3k could not load posts. Reconnect Instagram and confirm media permissions are granted."
+      "AP3K could not load posts. Reconnect Instagram and confirm media permissions are granted."
     );
   });
 });

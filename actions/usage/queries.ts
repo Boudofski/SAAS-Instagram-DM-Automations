@@ -25,7 +25,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
 
-  // AP3k now has one clear product model across the UI and enforcement layer:
+  // AP3K now has one clear product model across the UI and enforcement layer:
   // one connected Instagram account, unlimited campaigns, and the published
   // monthly reply allowance for the selected plan. Historical per-account
   // overrides are intentionally ignored so billing, pricing, and enforcement

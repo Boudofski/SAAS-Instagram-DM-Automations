@@ -4,7 +4,7 @@ import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-st
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import AP3kLogo from "@/components/global/ap3k-logo";
+import AP3KLogo from "@/components/global/ap3k-logo";
 
 const onboardingSkippedCookie = (clerkId: string) =>
   `ap3k_onboarding_skipped_${clerkId}`;
@@ -32,10 +32,10 @@ export default async function OnboardingWelcomePage() {
 
   return (
     <div className="text-center">
-      <AP3kLogo showText={false} markClassName="mx-auto mb-6 h-16 w-16 rounded-2xl text-sm" />
+      <AP3KLogo showText={false} markClassName="mx-auto mb-6 h-16 w-16 rounded-2xl text-sm" />
 
       <h1 className="text-3xl font-black tracking-tight mb-3">
-        Welcome to AP3k, {firstName}
+        Welcome to AP3K, {firstName}
       </h1>
       <p className="mb-10 leading-relaxed text-slate-600 dark:text-rf-muted">
         It takes 60 seconds to set up your first campaign.<br />
@@ -75,7 +75,7 @@ export default async function OnboardingWelcomePage() {
         <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-600 dark:text-rf-muted">
           <li>1. Meta opens its official permission screen.</li>
           <li>2. Choose the Instagram Business or Creator account that owns your posts.</li>
-          <li>3. AP3k listens for comments through Meta&apos;s API. No password sharing, no scraping.</li>
+          <li>3. AP3K listens for comments through Meta&apos;s API. No password sharing, no scraping.</li>
         </ul>
       </div>
 

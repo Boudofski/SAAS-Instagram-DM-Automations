@@ -1,4 +1,4 @@
-import AP3kLogo from "@/components/global/ap3k-logo";
+import AP3KLogo from "@/components/global/ap3k-logo";
 import ThemeToggle from "@/components/global/theme-toggle";
 import { dashboardPath } from "@/lib/dashboard";
 import { client } from "@/lib/prisma";
@@ -31,7 +31,7 @@ export default async function WebsiteNav({ current }: Props) {
     <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/78 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-rf-bg/72 sm:px-8 lg:px-16">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <Link href="/" aria-label="AP3K home">
-          <AP3kLogo className="text-base text-slate-950 dark:text-white" />
+          <AP3KLogo className="text-base text-slate-950 dark:text-white" />
         </Link>
         <ul className="hidden items-center gap-7 text-sm font-semibold text-slate-600 dark:text-rf-muted md:flex">
           <li><Link href="/#features" className={navClass}>Features</Link></li>

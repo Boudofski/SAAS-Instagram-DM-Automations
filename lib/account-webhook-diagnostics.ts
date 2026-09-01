@@ -122,7 +122,7 @@ export function classifyAccountWebhookDelivery(input: {
     return { status: "comments_active", label: "Comments active", detail: "Real comment webhook received for this Instagram account in the last 24h.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
   }
   if (lastParserFailure) {
-    return { status: "parser_failed", label: "Parser failed", detail: "A comment-like payload arrived but AP3k could not extract required comment fields.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
+    return { status: "parser_failed", label: "Parser failed", detail: "A comment-like payload arrived but AP3K could not extract required comment fields.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
   }
   if (lastMessagingWebhook) {
     return { status: "only_messaging_active", label: "Only messaging active", detail: "Messaging webhooks are arriving, but no real comment webhook has arrived for this Instagram account in the last 24h.", lastRawWebhook, lastMessagingWebhook, lastCommentWebhook, lastParserFailure };
@@ -176,7 +176,7 @@ export function planReconnectCleanup(input: { current: IntegrationLike; integrat
 }
 
 const DASHBOARD_DIAGNOSIS_COPY = {
-  comments_arriving: { title: "Comments are arriving", detail: "AP3k has received real comment webhooks for this Instagram account." },
+  comments_arriving: { title: "Comments are arriving", detail: "AP3K has received real comment webhooks for this Instagram account." },
   only_messaging_arriving: { title: "Only messaging is arriving", detail: "Messaging webhooks are active, but no real comment webhook has arrived yet." },
   comment_payload_parser_failed: { title: "Comment payload could not be parsed", detail: "Meta sent a comment-like payload, but required fields were missing." },
   meta_test_payload_only: { title: "Only Meta test payloads seen", detail: "Sample webhook tests do not prove live Instagram comments are connected." },

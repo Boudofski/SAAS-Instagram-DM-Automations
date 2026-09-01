@@ -24,7 +24,7 @@ export type ActivityDisplay = {
 export const META_CAPABILITY_PENDING_LABEL = "Comment handled";
 
 export const META_CAPABILITY_PENDING_HELPER =
-  "AP3k received the comment, matched the keyword, and recorded the private reply workflow.";
+  "AP3K received the comment, matched the keyword, and recorded the private reply workflow.";
 
 export type SafeMetaCapabilityDetails = {
   code: 3;
@@ -111,14 +111,14 @@ export function getCampaignModeLabels(input: {
   const publicReplyOn = (input.publicReplyCount ?? 0) > 0;
   return {
     publicReply: publicReplyOn ? "On" : "Off",
-    privateDm: input.sendPrivateDm === false ? "Off — external tool" : "Sent by AP3k",
+    privateDm: input.sendPrivateDm === false ? "Off — external tool" : "Sent by AP3K",
   };
 }
 
 export function getReviewerTestCopy(sendPrivateDm: boolean) {
   return sendPrivateDm
     ? "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and records the private reply workflow after the user-initiated keyword comment."
-    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3k skips private reply for this campaign.";
+    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3K skips private reply for this campaign.";
 }
 
 export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
@@ -467,7 +467,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
     return completeGroup(base, "Duplicate webhook ignored", "Repeated webhook delivery ignored.", "slate", "SKIPPED");
   }
   if (steps.loopGuard) {
-    return completeGroup(base, "Loop guard protected this campaign", "AP3k blocked a possible self-reply loop.", "amber", "PROTECTED");
+    return completeGroup(base, "Loop guard protected this campaign", "AP3K blocked a possible self-reply loop.", "amber", "PROTECTED");
   }
   if (steps.usageLimitReached) {
     return completeGroup(base, "Monthly reply limit reached", "No public reply or private reply was sent.", "amber", "LIMIT");

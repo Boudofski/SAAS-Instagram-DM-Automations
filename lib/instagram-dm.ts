@@ -221,7 +221,7 @@ async function tryDirectDm(
 
 /**
  * Sends an Instagram private reply to a comment through Instagram Graph only.
- * AP3k no longer tries Facebook Graph for the user-facing Instagram Login flow.
+ * AP3K no longer tries Facebook Graph for the user-facing Instagram Login flow.
  */
 export async function sendInstagramCommentPrivateReply(params: {
   token: string;

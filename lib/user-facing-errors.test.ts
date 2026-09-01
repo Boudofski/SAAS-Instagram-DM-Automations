@@ -9,7 +9,7 @@ describe("user-facing Meta errors", () => {
 
     expect(result).toEqual({
       title: "Webhook subscription needs review",
-      detail: "Meta rejected one or more webhook fields. AP3k can still process comments if the comments webhook is active.",
+      detail: "Meta rejected one or more webhook fields. AP3K can still process comments if the comments webhook is active.",
       severity: "warning",
     });
     expect(JSON.stringify(result)).not.toContain("subscribed_fields[0]");

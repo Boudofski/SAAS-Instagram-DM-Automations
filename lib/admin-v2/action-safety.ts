@@ -46,7 +46,7 @@ export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
     reversalNote:
       "Plan can be changed back at any time. Stripe subscription is not modified.",
     warningCopy:
-      "Manual plan changes affect AP3k internal access only. Stripe billing is not modified.",
+      "Manual plan changes affect AP3K internal access only. Stripe billing is not modified.",
   },
   ADMIN_USER_USAGE_RESET: {
     severity: "HIGH",

@@ -99,7 +99,7 @@ export const getProfilePostsPaginated = async () => {
 
     return {
       status: 500,
-      data: { data: [], pageSize: 14, totalLoaded: 0, hasMore: false, error: "AP3k could not load posts right now." },
+      data: { data: [], pageSize: 14, totalLoaded: 0, hasMore: false, error: "AP3K could not load posts right now." },
     };
   }
 };

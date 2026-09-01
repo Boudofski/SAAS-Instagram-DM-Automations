@@ -82,7 +82,7 @@ describe("softDisconnectIntegrationForUser", () => {
       where: { id: "current-integration" },
       data: expect.objectContaining({
         status: "DISCONNECTED",
-        disconnectedReason: "User disconnected Instagram from AP3k",
+        disconnectedReason: "User disconnected Instagram from AP3K",
       }),
     }));
     expect(mockClient.automation.updateMany).toHaveBeenCalledWith(expect.objectContaining({

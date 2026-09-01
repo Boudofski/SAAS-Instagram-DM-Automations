@@ -18,8 +18,8 @@ function MainBreadCrumbs({ page, slug }: Props) {
       : page === "billing"
       ? "Review plan limits, billing status, and monthly usage."
       : page === "settings"
-      ? "Review your AP3k plan and account settings."
-      : "Manage your AP3k workspace.";
+      ? "Review your AP3K plan and account settings."
+      : "Manage your AP3K workspace.";
 
   return (
     <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03]">

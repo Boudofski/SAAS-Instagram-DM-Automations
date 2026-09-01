@@ -117,7 +117,7 @@ describe("getRecentSelectedFacebookPageContent", () => {
           reconnectRequired: false,
           token: "page-access-token-that-is-long-enough",
           pageId: "page-123",
-          pageName: "AP3k Test Page",
+          pageName: "AP3K Test Page",
           instagramId: "ig-456",
           instagramUsername: "ap3k_test",
           createdAt: new Date("2026-06-25T10:00:00Z"),
@@ -144,7 +144,7 @@ describe("getRecentSelectedFacebookPageContent", () => {
       status: 200,
       data: {
         pageId: "page-123",
-        pageName: "AP3k Test Page",
+        pageName: "AP3K Test Page",
         posts: [
           {
             id: "page-123_post-1",

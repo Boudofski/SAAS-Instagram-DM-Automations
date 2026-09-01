@@ -22,10 +22,10 @@ export default async function OnboardingConnectPage() {
         </h1>
         <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
           {connected
-            ? "AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account."
+            ? "AP3K can now receive Instagram comments, send public replies, and track campaign activity for this account."
             : directInstagramLogin
               ? "Connect your Instagram Business or Creator account directly. No Facebook Page selection or developer dashboard step is required."
-              : "AP3k connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."}
+              : "AP3K connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."}
         </p>
       </div>
 
@@ -38,7 +38,7 @@ export default async function OnboardingConnectPage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-black leading-tight text-slate-950 dark:text-rf-text sm:text-2xl">Instagram connected</h2>
               <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
-                AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account.
+                AP3K can now receive Instagram comments, send public replies, and track campaign activity for this account.
               </p>
               {instagram?.instagramUsername && (
                 <p className="mt-3 truncate text-sm font-black text-emerald-700 dark:text-rf-green">@{instagram.instagramUsername}</p>
@@ -79,11 +79,11 @@ export default async function OnboardingConnectPage() {
         <p className="font-bold text-slate-900 dark:text-rf-text">Safe connection notes</p>
         <p className="mt-2">
           {directInstagramLogin
-            ? "We never ask for your Instagram password inside AP3k and we do not scrape your account. The connection happens through Instagram's official authorization screen and AP3k uses official Instagram APIs."
+            ? "We never ask for your Instagram password inside AP3K and we do not scrape your account. The connection happens through Instagram's official authorization screen and AP3K uses official Instagram APIs."
             : "We never ask for your Instagram password and we do not scrape your account. Meta may show permissions for Pages, posts, and comments because Instagram Business accounts are managed through Meta Pages."}
         </p>
         {!appReviewMode && (
-          <p className="mt-2">Some Meta permissions may require additional approval. AP3k can still help you test comments and public replies.</p>
+          <p className="mt-2">Some Meta permissions may require additional approval. AP3K can still help you test comments and public replies.</p>
         )}
       </div>
 
