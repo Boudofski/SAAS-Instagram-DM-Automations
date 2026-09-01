@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createIntegration, softDisconnectIntegrationForUser, updateIntegration } from "./queries";
+import {
+  consumeMetaOAuthState,
+  createIntegration,
+  createMetaOAuthState,
+  getLatestMetaOAuthSelection,
+  softDisconnectIntegrationForUser,
+  updateIntegration,
+} from "./queries";
 import { client } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
@@ -13,6 +20,11 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       delete: vi.fn(),
     },
+    metaOAuthSelection: {
+      create: vi.fn(),
+      deleteMany: vi.fn(),
+      findMany: vi.fn(),
+    },
     automation: {
       updateMany: vi.fn(),
     },
@@ -21,6 +33,83 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 const mockClient = client as any;
+
+describe("Meta OAuth state helpers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockClient.user.findUnique.mockResolvedValue({ id: "user-1" });
+    mockClient.metaOAuthSelection.create.mockResolvedValue({ id: "state-row" });
+    mockClient.metaOAuthSelection.deleteMany.mockResolvedValue({ count: 1 });
+    mockClient.metaOAuthSelection.findMany.mockResolvedValue([]);
+  });
+
+  it("stores the hashed state in the existing short-lived OAuth pending table", async () => {
+    const expiresAt = new Date("2026-09-01T12:10:00.000Z");
+
+    await createMetaOAuthState("workspace-clerk-user", "session-clerk-user", "state-hash", expiresAt);
+
+    expect(mockClient.metaOAuthSelection.deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "user-1" }),
+      })
+    );
+    expect(mockClient.metaOAuthSelection.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: "user-1",
+          expiresAt,
+          accounts: expect.objectContaining({
+            kind: "META_OAUTH_STATE",
+            stateHash: "state-hash",
+            sessionClerkId: "session-clerk-user",
+          }),
+        }),
+      })
+    );
+  });
+
+  it("consumes a matching state by deleting it once", async () => {
+    await expect(
+      consumeMetaOAuthState("workspace-clerk-user", "session-clerk-user", "state-hash")
+    ).resolves.toBe(true);
+
+    expect(mockClient.metaOAuthSelection.deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "user-1",
+          expiresAt: expect.objectContaining({ gt: expect.any(Date) }),
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              accounts: expect.objectContaining({ path: ["stateHash"], equals: "state-hash" }),
+            }),
+            expect.objectContaining({
+              accounts: expect.objectContaining({ path: ["sessionClerkId"], equals: "session-clerk-user" }),
+            }),
+          ]),
+        }),
+      })
+    );
+  });
+
+  it("does not return OAuth state rows as pending account selections", async () => {
+    mockClient.metaOAuthSelection.findMany.mockResolvedValue([
+      {
+        id: "state-row",
+        expiresAt: new Date("2026-09-01T12:10:00.000Z"),
+        accounts: { kind: "META_OAUTH_STATE", stateHash: "state-hash" },
+      },
+      {
+        id: "selection-row",
+        expiresAt: new Date("2026-09-01T12:10:00.000Z"),
+        accounts: [{ pageId: "page-1" }],
+      },
+    ]);
+
+    await expect(getLatestMetaOAuthSelection("workspace-clerk-user")).resolves.toMatchObject({
+      id: "selection-row",
+    });
+  });
+});
 
 describe("softDisconnectIntegrationForUser", () => {
   beforeEach(() => {

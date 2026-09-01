@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockCurrentUser = vi.fn();
+const mockGenerateToken = vi.fn();
 const mockGetIntegrations = vi.fn();
 const mockGetRecentFacebookPagePosts = vi.fn();
 const mockSoftDisconnectIntegrationForUser = vi.fn();
 const mockRevalidatePath = vi.fn();
 const mockGetCurrentWorkspaceClerkId = vi.fn();
+const mockCreateMetaOAuthState = vi.fn();
+const mockConsumeMetaOAuthState = vi.fn();
+const mockRecordIntegrationOAuthError = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: (...args: any[]) => mockCurrentUser(...args),
@@ -21,7 +25,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/fetch", () => ({
   formatSafeMetaError: vi.fn(),
-  generateToken: vi.fn(),
+  generateToken: (...args: any[]) => mockGenerateToken(...args),
   debugPageToken: vi.fn(),
   getEligibleFacebookInstagramAccounts: vi.fn(),
   getRecentFacebookPagePosts: (...args: any[]) => mockGetRecentFacebookPagePosts(...args),
@@ -53,19 +57,24 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("./queries", () => ({
   createIntegration: vi.fn(),
   createMetaOAuthSelection: vi.fn(),
+  createMetaOAuthState: (...args: any[]) => mockCreateMetaOAuthState(...args),
+  consumeMetaOAuthState: (...args: any[]) => mockConsumeMetaOAuthState(...args),
   deleteMetaOAuthSelection: vi.fn(),
   getLatestMetaOAuthSelection: vi.fn(),
   getIntegrations: (...args: any[]) => mockGetIntegrations(...args),
   getWebhookHealthForUser: vi.fn(),
-  recordIntegrationOAuthError: vi.fn(),
+  recordIntegrationOAuthError: (...args: any[]) => mockRecordIntegrationOAuthError(...args),
   softDisconnectIntegrationForUser: (...args: any[]) => mockSoftDisconnectIntegrationForUser(...args),
   updateIntegration: vi.fn(),
 }));
 
 import {
   disconnectCurrentInstagramIntegration,
+  getInstagramConnectUrl,
   getRecentSelectedFacebookPageContent,
+  onIntegrate,
 } from "./index";
+import { hashMetaOAuthState } from "@/lib/meta-oauth-state";
 
 describe("disconnectCurrentInstagramIntegration", () => {
   beforeEach(() => {
@@ -100,6 +109,70 @@ describe("disconnectCurrentInstagramIntegration", () => {
     });
 
     expect(mockRevalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("Instagram OAuth state", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.INSTAGRAM_LOGIN_ENABLED = "false";
+    process.env.META_APP_ID = "meta-app-id";
+    process.env.META_REDIRECT_URI = "https://ap3k.test/callback/instagram";
+    mockCurrentUser.mockResolvedValue({
+      id: "session-clerk-user",
+      firstName: "A",
+      lastName: "User",
+    });
+    mockGetCurrentWorkspaceClerkId.mockResolvedValue("workspace-clerk-user");
+    mockCreateMetaOAuthState.mockResolvedValue({ id: "state-row" });
+    mockConsumeMetaOAuthState.mockResolvedValue(false);
+  });
+
+  it("creates a single-use state and appends it to the Meta authorization URL", async () => {
+    const result = await getInstagramConnectUrl();
+
+    expect(result.status).toBe(200);
+    const state = new URL(result.url!).searchParams.get("state");
+    expect(state).toMatch(/^[A-Za-z0-9_-]{32,128}$/);
+    expect(mockCreateMetaOAuthState).toHaveBeenCalledWith(
+      "workspace-clerk-user",
+      "session-clerk-user",
+      hashMetaOAuthState(state!),
+      expect.any(Date)
+    );
+  });
+
+  it("rejects callbacks without state before exchanging the code", async () => {
+    const result = await onIntegrate("oauth-code", undefined);
+
+    expect(result).toMatchObject({
+      status: 401,
+      error: "oauth_state_missing_or_invalid",
+    });
+    expect(mockConsumeMetaOAuthState).not.toHaveBeenCalled();
+    expect(mockGenerateToken).not.toHaveBeenCalled();
+    expect(mockRecordIntegrationOAuthError).toHaveBeenCalledWith(
+      "workspace-clerk-user",
+      "oauth_state_missing_or_invalid",
+      "facebook_business_oauth"
+    );
+  });
+
+  it("rejects replayed or foreign state before exchanging the code", async () => {
+    const state = "validOAuthStateValue_12345678901234567890";
+
+    const result = await onIntegrate("oauth-code", state);
+
+    expect(result).toMatchObject({
+      status: 401,
+      error: "oauth_state_invalid_or_expired",
+    });
+    expect(mockConsumeMetaOAuthState).toHaveBeenCalledWith(
+      "workspace-clerk-user",
+      "session-clerk-user",
+      hashMetaOAuthState(state)
+    );
+    expect(mockGenerateToken).not.toHaveBeenCalled();
   });
 });
 

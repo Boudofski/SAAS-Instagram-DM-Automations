@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 type Props = {
   searchParams: {
     code?: string;
+    state?: string;
     error?: string;
     error_reason?: string;
     error_description?: string;
@@ -36,7 +37,7 @@ function isInsufficientDeveloperRole(params: Props["searchParams"]) {
 }
 
 async function Page({ searchParams }: Props) {
-  const { code, error, error_reason, error_description, message } = searchParams;
+  const { code, state, error, error_reason, error_description, message } = searchParams;
 
   if (error || error_reason || error_description || message) {
     const clerkUser = await currentUser();
@@ -57,7 +58,7 @@ async function Page({ searchParams }: Props) {
   }
 
   if (code) {
-    const user = await onIntegrate(code.split("#_")[0]);
+    const user = await onIntegrate(code.split("#_")[0], state);
     const slug = user.data?.clerkId || "";
 
     if (user.status === 200) {

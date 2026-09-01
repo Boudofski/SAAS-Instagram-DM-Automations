@@ -48,6 +48,8 @@ const WEBHOOK_ROUTE_VERSION = "2026-05-tenant-diagnostics-v2";
 
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
 const WEBHOOK_RATE_LIMIT_MAX = 120;
+const WEBHOOK_RATE_LIMIT_MAX_BUCKETS = 5_000;
+const WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const SEND_RETRY_ATTEMPTS = 2;
 const LOOP_GUARD_MEDIA_WINDOW_MS = 10 * 60 * 1000;
 const LOOP_GUARD_AUTOMATION_WINDOW_MS = 60 * 60 * 1000;
@@ -56,6 +58,7 @@ const MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR = 50;
 // ANY_COMMENT campaigns only: pause if self-comment skip rate exceeds this within 10 min.
 const SELF_COMMENT_PAUSE_THRESHOLD = 3;
 const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+let nextRateLimitCleanupAt = 0;
 const PUBLIC_REPLY_SENT_REASON = "PUBLIC_REPLY_SENT";
 const PUBLIC_REPLY_SKIPPED_SELF_COMMENT = "PUBLIC_REPLY_SKIPPED_SELF_COMMENT";
 const PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT = "PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT";
@@ -71,6 +74,12 @@ const PUBLIC_REPLY_FAILED_UNKNOWN = "PUBLIC_REPLY_FAILED_UNKNOWN";
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
+  const rateKey = getRateLimitKey(req);
+  if (isRateLimited(`GET:${rateKey}`)) {
+    console.warn("[webhook] GET verification rate limited", { rateKey });
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   const mode = req.nextUrl.searchParams.get("hub.mode");
   const token = req.nextUrl.searchParams.get("hub.verify_token");
   const challenge = req.nextUrl.searchParams.get("hub.challenge");
@@ -100,21 +109,6 @@ export async function GET(req: NextRequest) {
     }
     return new NextResponse(challenge, { status: 200 });
   }
-  try {
-    await createWebhookEvent({
-      eventType: "WEBHOOK_VERIFY_GET",
-      eventSource: "META_REAL",
-      status: "FAILED",
-      errorMessage: "webhook_verification_failed",
-      payload: {
-        mode,
-        tokenMatch,
-        challengeExists: Boolean(challenge),
-      },
-    });
-  } catch {
-    // Non-critical
-  }
   return NextResponse.json({ error: "webhook_verification_failed" }, { status: 403 });
 }
 
@@ -134,50 +128,40 @@ export async function POST(req: NextRequest) {
   });
 
   const rateKey = getRateLimitKey(req);
-  if (isRateLimited(rateKey)) {
+  if (isRateLimited(`POST:${rateKey}`)) {
     console.warn("[webhook] request rate limited", { rateKey });
     return NextResponse.json({ received: true, rate_limited: true }, { status: 200 });
   }
 
   try {
-    const rawBody = await req.text();
-    const signature = req.headers.get("x-hub-signature-256");
-
-    // Store raw receipt before any processing — proves the route is reachable
-    try {
-      const quickParse = parseJsonSafely(rawBody);
-      const firstEntry = quickParse.ok && Array.isArray(quickParse.body?.entry)
-        ? quickParse.body.entry[0]
-        : undefined;
-      const firstChange = firstEntry?.changes?.[0];
-      const firstValue = firstChange?.value;
-      await createWebhookEvent({
-        eventType: "WEBHOOK_POST_RECEIVED_RAW",
-        eventSource: "META_REAL",
-        status: "RECEIVED",
-        payload: {
-          routeVersion: WEBHOOK_ROUTE_VERSION,
-          hasSignature: Boolean(signature),
-          contentLength: rawBody.length,
-          rawBodyLength: rawBody.length,
-          receivedAt: new Date().toISOString(),
-          userAgent: req.headers.get("user-agent") ?? undefined,
-          object: quickParse.ok ? (quickParse.body?.object ?? undefined) : undefined,
-          entryCount: quickParse.ok && Array.isArray(quickParse.body?.entry)
-            ? quickParse.body.entry.length
-            : undefined,
-          firstEntryId: firstEntry?.id ?? undefined,
-          firstField: firstChange?.field ?? undefined,
-          hasValueText: Boolean(firstValue?.text ?? firstValue?.comment_text ?? firstValue?.message),
-          hasValueMediaId: Boolean(firstValue?.media?.id ?? firstValue?.media_id),
-        },
+    const bodyRead = await readBodyWithLimit(req, WEBHOOK_MAX_BODY_BYTES);
+    if (!bodyRead.ok) {
+      console.warn("[webhook] request body rejected", {
+        reason: bodyRead.reason,
+        bytesRead: bodyRead.bytesRead,
+        maxBytes: WEBHOOK_MAX_BODY_BYTES,
       });
-    } catch (err) {
-      console.error("WEBHOOK_POST_RECEIVED_RAW_FAIL", err);
+      return NextResponse.json({ received: false, error: bodyRead.reason }, { status: 413 });
     }
+
+    const rawBody = bodyRead.rawBody;
+    const signature = req.headers.get("x-hub-signature-256");
 
     const signatureResult = verifyMetaSignature(rawBody, signature);
     const requestMeta = getRequestMetadata(req, signature, signatureResult.verified);
+
+    if (!signatureResult.verified) {
+      console.warn("[webhook] signature verification failed", {
+        routeVersion: WEBHOOK_ROUTE_VERSION,
+        reason: signatureResult.reason,
+        hasSignature: Boolean(signature),
+        triedSecretCount: signatureResult.triedSecretCount,
+        rawBodyLength: rawBody.length,
+        rawBodySha256Short: signatureResult.rawBodySha256Short,
+      });
+      return ok();
+    }
+
     const parsedBody = parseJsonSafely(rawBody);
     console.log("[webhook] POST received", {
       ...requestMeta,
@@ -185,36 +169,6 @@ export async function POST(req: NextRequest) {
       signatureReason: signatureResult.reason,
       payloadObject: parsedBody.ok ? parsedBody.body?.object : undefined,
     });
-
-    if (!signatureResult.verified) {
-      try {
-        await createWebhookEvent({
-          eventType: "SIGNATURE_FAILED",
-          eventSource: "META_REAL",
-          status: "FAILED",
-          errorMessage: signatureResult.reason,
-          payload: {
-            routeVersion: WEBHOOK_ROUTE_VERSION,
-            hasSignature: Boolean(signature),
-            signaturePrefix: "sha256",
-            candidateSecretsConfigured: signatureResult.candidateSecretsConfigured,
-            triedSecretCount: signatureResult.triedSecretCount,
-            rawBodyLength: rawBody.length,
-            rawBodySha256Short: signatureResult.rawBodySha256Short,
-            object: parsedBody.ok ? (parsedBody.body?.object ?? undefined) : undefined,
-            entryCount:
-              parsedBody.ok && Array.isArray(parsedBody.body?.entry)
-                ? parsedBody.body.entry.length
-                : undefined,
-          },
-        });
-      } catch (error) {
-        console.error("[webhook] failed to store signature failure", {
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-      return ok();
-    }
 
     if (!parsedBody.ok) {
       await createWebhookEvent({
@@ -245,6 +199,8 @@ export async function POST(req: NextRequest) {
           routeVersion: WEBHOOK_ROUTE_VERSION,
           signatureVerified: true,
           dryRun: isDryRun,
+          rawBodyLength: rawBody.length,
+          rawBodyBytes: bodyRead.bytesRead,
           object: body?.object,
           entryId: firstEntry?.id,
           entryCount: Array.isArray(body?.entry) ? body.entry.length : 0,
@@ -1665,6 +1621,51 @@ function ok() {
   return NextResponse.json({ received: true }, { status: 200 });
 }
 
+async function readBodyWithLimit(
+  req: NextRequest,
+  maxBytes: number
+): Promise<
+  | { ok: true; rawBody: string; bytesRead: number }
+  | { ok: false; reason: string; bytesRead: number }
+> {
+  const contentLength = req.headers.get("content-length");
+  if (contentLength) {
+    const parsedLength = Number(contentLength);
+    if (Number.isFinite(parsedLength) && parsedLength > maxBytes) {
+      return { ok: false, reason: "payload_too_large", bytesRead: 0 };
+    }
+  }
+
+  if (!req.body) return { ok: true, rawBody: "", bytesRead: 0 };
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytesRead = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    bytesRead += value.byteLength;
+    if (bytesRead > maxBytes) {
+      try {
+        await reader.cancel();
+      } catch {
+        // Nothing else to do once the body is already over the hard limit.
+      }
+      return { ok: false, reason: "payload_too_large", bytesRead };
+    }
+    chunks.push(value);
+  }
+
+  return {
+    ok: true,
+    rawBody: Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8"),
+    bytesRead,
+  };
+}
+
 
 function classifyWebhookEnvelope(body: any) {
   // Meta Test button sends entry.id="0" for both object=page and object=instagram
@@ -1769,6 +1770,7 @@ function getRateLimitKey(req: NextRequest) {
 
 function isRateLimited(key: string) {
   const now = Date.now();
+  pruneRateLimitBuckets(now);
   const existing = rateLimitBuckets.get(key);
 
   if (!existing || existing.resetAt <= now) {
@@ -1781,6 +1783,24 @@ function isRateLimited(key: string) {
 
   existing.count += 1;
   return existing.count > WEBHOOK_RATE_LIMIT_MAX;
+}
+
+function pruneRateLimitBuckets(now: number) {
+  if (now < nextRateLimitCleanupAt && rateLimitBuckets.size <= WEBHOOK_RATE_LIMIT_MAX_BUCKETS) {
+    return;
+  }
+
+  rateLimitBuckets.forEach((bucket, key) => {
+    if (bucket.resetAt <= now) rateLimitBuckets.delete(key);
+  });
+
+  while (rateLimitBuckets.size > WEBHOOK_RATE_LIMIT_MAX_BUCKETS) {
+    const oldestKey = rateLimitBuckets.keys().next().value;
+    if (!oldestKey) break;
+    rateLimitBuckets.delete(oldestKey);
+  }
+
+  nextRateLimitCleanupAt = now + WEBHOOK_RATE_LIMIT_WINDOW_MS;
 }
 
 function selectIntegrationForWebhook<T extends {
