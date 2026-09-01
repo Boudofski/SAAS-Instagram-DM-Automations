@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       headers: {
         "Content-Type": "application/json",
         "x-hub-signature-256": signature,
-        "User-Agent": "AP3k-webhook-smoke-test/1.0",
+        "User-Agent": "AP3K-webhook-smoke-test/1.0",
       },
       body: payload,
     });

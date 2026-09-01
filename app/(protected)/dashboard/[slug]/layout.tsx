@@ -17,7 +17,7 @@ import { redirect } from "next/navigation";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Dashboard — AP3k",
+  title: "Dashboard — AP3K",
   description: "Monitor campaigns, replies, leads, and delivery logs for your Instagram comment campaigns.",
 };
 

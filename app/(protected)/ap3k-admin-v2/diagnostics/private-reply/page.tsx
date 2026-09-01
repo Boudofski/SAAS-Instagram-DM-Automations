@@ -78,7 +78,7 @@ export default async function PrivateReplyPreflightPage({
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
           Previously stored Page tokens must not be assumed to contain{" "}
-          <code>instagram_manage_messages</code>. Set the flag, restart AP3k,
+          <code>instagram_manage_messages</code>. Set the flag, restart AP3K,
           reconnect this Facebook Login account, then return here and verify the
           detected scope before sending.
         </p>

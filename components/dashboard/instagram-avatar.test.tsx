@@ -24,7 +24,7 @@ describe("InstagramAvatar", () => {
   });
 
   it("fallback initial uses username before label", () => {
-    expect(getInstagramAvatarFallbackInitial("@maglobal", "AP3k Page")).toBe("M");
+    expect(getInstagramAvatarFallbackInitial("@maglobal", "AP3K Page")).toBe("M");
   });
 
   it("fallback initial uses IG when username and label are missing", () => {

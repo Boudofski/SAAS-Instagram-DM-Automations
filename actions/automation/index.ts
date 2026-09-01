@@ -415,7 +415,7 @@ export const getProfilePosts = async () => {
       message: error instanceof Error ? error.message : String(error),
     });
 
-    return { status: 500, data: { data: [], error: "AP3k could not load posts right now." } };
+    return { status: 500, data: { data: [], error: "AP3K could not load posts right now." } };
   }
 };
 

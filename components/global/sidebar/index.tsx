@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePath } from "@/hooks/user-nav";
 import SubscriptionPlan from "../subscription-plan";
-import AP3kLogo from "../ap3k-logo";
+import AP3KLogo from "../ap3k-logo";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -27,9 +27,9 @@ export default function Sidebar({ slug }: Props) {
   return (
     <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-[260px] flex-col border-r border-slate-200 bg-white/92 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#0b1020]/92 dark:text-slate-50 lg:flex">
       <div className="border-b border-slate-200 px-5 py-5 dark:border-white/10">
-        <AP3kLogo className="text-sm text-slate-950 dark:text-white" />
+        <AP3KLogo className="text-sm text-slate-950 dark:text-white" />
         <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/[0.12] dark:bg-white/[0.06]">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">AP3k user</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">AP3K user</p>
           <p className="mt-2 truncate text-sm font-black text-slate-950 dark:text-white">{displayName}</p>
           {email && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{email}</p>}
         </div>

@@ -80,12 +80,12 @@ function IntegrationCard({
   const displayTitle = onboarding && connected ? "Instagram connected" : title;
   const displayDescription = onboarding
     ? connected
-      ? "AP3k can now receive Instagram comments, send public replies, and track campaign activity for this account."
+      ? "AP3K can now receive Instagram comments, send public replies, and track campaign activity for this account."
       : directInstagramLogin
         ? "Connect your Instagram Business or Creator account directly. No Facebook Page selection is required."
-        : "AP3k connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."
+        : "AP3K connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."
     : directInstagramLogin
-      ? "Connect your Instagram Business or Creator account directly. AP3k subscribes comments and messages automatically after authorization."
+      ? "Connect your Instagram Business or Creator account directly. AP3K subscribes comments and messages automatically after authorization."
       : description;
   const lastFailure = formatUserFacingMetaError(
     health?.data?.subscription?.error ?? health?.data?.lastFailure?.errorMessage,
@@ -221,7 +221,7 @@ function IntegrationCard({
             <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
               <p className="font-bold">Reconnect Instagram</p>
               <p className="mt-1 leading-relaxed">
-                AP3k matched your real comment, but the saved access token is missing or invalid.
+                AP3K matched your real comment, but the saved access token is missing or invalid.
                 Click <strong>Reconnect Instagram</strong> above to restore delivery.
               </p>
             </div>

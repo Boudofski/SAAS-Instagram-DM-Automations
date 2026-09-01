@@ -108,7 +108,7 @@ describe("campaign reconnect health", () => {
       selectedPostOwner: { integrationId: "integration-new", instagramId: "ig-new", verified: true },
     });
 
-    expect(health.warnings).toContain("External DM mode: AP3k will not send private DMs.");
+    expect(health.warnings).toContain("External DM mode: AP3K will not send private DMs.");
     expect(health.okToActivate).toBe(true);
   });
 

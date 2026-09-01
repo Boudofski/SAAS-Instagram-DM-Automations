@@ -14,7 +14,7 @@ export function formatUserFacingMetaError(errorMessage?: string | null, eventTyp
   if (text.includes("subscribed_fields") || (text.includes("code=100") && text.includes("field"))) {
     return {
       title: "Webhook subscription needs review",
-      detail: "Meta rejected one or more webhook fields. AP3k can still process comments if the comments webhook is active.",
+      detail: "Meta rejected one or more webhook fields. AP3K can still process comments if the comments webhook is active.",
       severity: "warning",
     };
   }

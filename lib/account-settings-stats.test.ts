@@ -52,10 +52,10 @@ describe("instagram account settings stats", () => {
     expect(stats.contacts.value).toBe(3);
   });
 
-  it("maps DMs out from canonical sent AP3k DMs only", async () => {
+  it("maps DMs out from canonical sent AP3K DMs only", async () => {
     const stats = await getInstagramAccountSettingsStats("user-a");
 
-    expect(stats.dmsOut).toEqual({ value: 0, enabled: true, subtitle: "DMs sent by AP3k" });
+    expect(stats.dmsOut).toEqual({ value: 0, enabled: true, subtitle: "DMs sent by AP3K" });
   });
 
   it("maps reply rate from canonical confirmed replies over matched comments", async () => {
@@ -70,8 +70,8 @@ describe("instagram account settings stats", () => {
 
     expect(stats.followers).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load Instagram stats" });
     expect(stats.posts).toEqual({ value: "Refresh needed", enabled: false, subtitle: "Refresh profile to load Instagram stats" });
-    expect(stats.removed).toEqual({ value: "Not shown", enabled: false, subtitle: "This dashboard focuses on comments AP3k received" });
-    expect(stats.dmsIn).toEqual({ value: "Not used", enabled: false, subtitle: "AP3k starts DMs from comment triggers" });
+    expect(stats.removed).toEqual({ value: "Not shown", enabled: false, subtitle: "This dashboard focuses on comments AP3K received" });
+    expect(stats.dmsIn).toEqual({ value: "Not used", enabled: false, subtitle: "AP3K starts DMs from comment triggers" });
   });
 
   it("uses follower and post counts from the latest snapshot", async () => {

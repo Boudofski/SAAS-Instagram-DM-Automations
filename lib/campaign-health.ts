@@ -68,7 +68,7 @@ export function assessCampaignSetupHealth(input: CampaignHealthInput): CampaignH
     blockers.push("Add a keyword or switch trigger to Any Comment.");
   }
   if (!hasPublicReply && !hasPrivateDm) blockers.push("Enable public reply or private DM.");
-  if (sendPrivateDm && !hasPrivateDm) blockers.push("Write a private DM message or disable AP3k DM mode.");
+  if (sendPrivateDm && !hasPrivateDm) blockers.push("Write a private DM message or disable AP3K DM mode.");
 
   const selectedPostStatus = selectedPostHealth({
     postId,
@@ -87,7 +87,7 @@ export function assessCampaignSetupHealth(input: CampaignHealthInput): CampaignH
   if (sendPrivateDm && input.messagingCapabilityPending) {
     warnings.push("Private DM is enabled, but Meta messaging capability may still be pending.");
   }
-  if (!sendPrivateDm) warnings.push("External DM mode: AP3k will not send private DMs.");
+  if (!sendPrivateDm) warnings.push("External DM mode: AP3K will not send private DMs.");
 
   return {
     okToActivate: blockers.length === 0,

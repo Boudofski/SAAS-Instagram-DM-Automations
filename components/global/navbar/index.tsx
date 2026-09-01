@@ -5,7 +5,7 @@ import ThemeToggle from "@/components/global/theme-toggle";
 import { PAGE_BREAD_CRUMBS } from "@/constants/pages";
 import { usePath } from "@/hooks/user-nav";
 import { Menu } from "lucide-react";
-import AP3kLogo from "../ap3k-logo";
+import AP3KLogo from "../ap3k-logo";
 import CreateAutomation from "../create-automation";
 import Sheet from "../sheet";
 import Items from "../sidebar/items";
@@ -47,7 +47,7 @@ function NavBar({ slug }: Props) {
             <div className="flex h-full min-h-0 w-full flex-col bg-white text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
               <div className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
                 <div className="flex items-center justify-center gap-x-2 p-5">
-                  <AP3kLogo className="text-slate-950 dark:text-white" />
+                  <AP3KLogo className="text-slate-950 dark:text-white" />
                 </div>
               </div>
 

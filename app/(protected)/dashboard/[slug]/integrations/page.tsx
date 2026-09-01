@@ -11,21 +11,21 @@ import {
 import IntegrationCard from "./_components/integration-card";
 
 const ERROR_COPY: Record<string, string> = {
-  auth_missing: "Instagram returned successfully, but your AP3k session was not available. Sign in again and reconnect Instagram.",
-  token_exchange_failed: "Instagram authorization was received, but AP3k could not complete the connection.",
-  page_resolution_failed: "Instagram authorization succeeded, but AP3k could not confirm the selected account. Reconnect and approve the requested Instagram permissions.",
-  ig_business_not_linked: "AP3k could not find an eligible Instagram Business or Creator account for this login.",
-  page_token_missing: "AP3k could not validate access for the selected Instagram account.",
+  auth_missing: "Instagram returned successfully, but your AP3K session was not available. Sign in again and reconnect Instagram.",
+  token_exchange_failed: "Instagram authorization was received, but AP3K could not complete the connection.",
+  page_resolution_failed: "Instagram authorization succeeded, but AP3K could not confirm the selected account. Reconnect and approve the requested Instagram permissions.",
+  ig_business_not_linked: "AP3K could not find an eligible Instagram Business or Creator account for this login.",
+  page_token_missing: "AP3K could not validate access for the selected Instagram account.",
   no_eligible_facebook_pages: "No eligible Instagram professional account was found for this login.",
-  webhook_subscription_failed: "The account connected, but AP3k could not finish comment delivery setup. Reconnect once or contact support.",
-  integration_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
-  database_save_failed: "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.",
-  duplicate_instagram_account: "This Instagram account is already connected to another AP3k workspace. Remove it there first or contact support.",
-  plan_limit_reached: "AP3k supports one Instagram account per workspace. Reconnect only when you want to replace the current account.",
-  missing_local_profile: "Your AP3k workspace could not be found. Sign in again and retry.",
+  webhook_subscription_failed: "The account connected, but AP3K could not finish comment delivery setup. Reconnect once or contact support.",
+  integration_save_failed: "Instagram authorization succeeded, but AP3K could not save the connection. Please try again.",
+  database_save_failed: "Instagram authorization succeeded, but AP3K could not save the connection. Please try again.",
+  duplicate_instagram_account: "This Instagram account is already connected to another AP3K workspace. Remove it there first or contact support.",
+  plan_limit_reached: "AP3K supports one Instagram account per workspace. Reconnect only when you want to replace the current account.",
+  missing_local_profile: "Your AP3K workspace could not be found. Sign in again and retry.",
   profile_fetch_failed: "Instagram authorization could not be completed. Please try again.",
   provider_denied: "Instagram did not authorize the connection.",
-  insufficient_developer_role: "Instagram connection is not available for this account yet. Contact AP3k support if this continues.",
+  insufficient_developer_role: "Instagram connection is not available for this account yet. Contact AP3K support if this continues.",
   missing_code: "Instagram did not return an authorization code.",
   oauth_failed: "Instagram connection could not be completed.",
 };
@@ -45,7 +45,7 @@ const ERROR_STEPS: Record<string, string[]> = {
   ],
   webhook_subscription_failed: [
     "Reconnect Instagram once.",
-    "Contact AP3k support if comments still do not arrive.",
+    "Contact AP3K support if comments still do not arrive.",
   ],
 };
 
@@ -106,8 +106,8 @@ async function Page({ searchParams }: PageProps) {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
             {directInstagramLogin
-              ? "Connect one Business or Creator Instagram account directly. AP3k uses the connection to receive matching comments, reply to comments, and send DMs from your campaigns."
-              : "Connect the Business or Creator Instagram account that owns the posts AP3k should monitor."}
+              ? "Connect one Business or Creator Instagram account directly. AP3K uses the connection to receive matching comments, reply to comments, and send DMs from your campaigns."
+              : "Connect the Business or Creator Instagram account that owns the posts AP3K should monitor."}
           </p>
         </div>
 
@@ -143,7 +143,7 @@ async function Page({ searchParams }: PageProps) {
                 Instagram capabilities
               </h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                AP3k checks what this Instagram account actually granted, not just what the app requested.
+                AP3K checks what this Instagram account actually granted, not just what the app requested.
               </p>
             </div>
             <span className={[
@@ -208,7 +208,7 @@ async function Page({ searchParams }: PageProps) {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-relaxed text-slate-600 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-300">
         <p className="font-black text-slate-950 dark:text-white">Instagram workflow</p>
         <p className="mt-2">
-          AP3k opens Instagram authorization, saves the connected account, and runs comment automation based on your active campaigns.
+          AP3K opens Instagram authorization, saves the connected account, and runs comment automation based on your active campaigns.
         </p>
       </div>
 

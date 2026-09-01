@@ -150,7 +150,7 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
     hasInstagramBusinessAccountId: Boolean(integration.instagramId),
   });
 
-  const reason = "User disconnected Instagram from AP3k";
+  const reason = "User disconnected Instagram from AP3K";
   const [updated, paused] = await client.$transaction([
     client.integrations.update({
       where: { id: integration.id },
@@ -337,7 +337,7 @@ export const createIntegration = async (
         data: {
           status: "DISCONNECTED",
           disconnectedAt: new Date(),
-          disconnectedReason: "AP3k supports one active Instagram account per workspace.",
+          disconnectedReason: "AP3K supports one active Instagram account per workspace.",
           reconnectRequired: false,
         },
       });

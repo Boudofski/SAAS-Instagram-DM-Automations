@@ -6,7 +6,7 @@ type Props = {
   showText?: boolean;
 };
 
-export default function AP3kLogo({ className, markClassName, showText = true }: Props) {
+export default function AP3KLogo({ className, markClassName, showText = true }: Props) {
   return (
     <div className={cn("flex items-center gap-2.5 text-slate-950 dark:text-rf-text", className)}>
       <div

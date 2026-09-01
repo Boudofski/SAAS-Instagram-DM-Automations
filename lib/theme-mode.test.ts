@@ -17,7 +17,7 @@ describe("theme mode helpers", () => {
     expect(nextThemeMode("bad-value")).toBe("dark");
   });
 
-  it("returns dark-safe AP3k form classes", () => {
+  it("returns dark-safe AP3K form classes", () => {
     expect(ap3kFormControlClass("input")).toBe("ap3k-input");
     expect(ap3kFormControlClass("textarea")).toBe("ap3k-textarea");
     expect(ap3kFormControlClass("select")).toBe("ap3k-select");

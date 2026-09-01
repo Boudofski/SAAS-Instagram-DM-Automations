@@ -48,12 +48,12 @@ export function resolveInstagramMediaConnection(
 
 export function instagramMediaFetchError(status: number) {
   if (status === 401 || status === 403) {
-    return "AP3k could not load posts. Reconnect Instagram and confirm media permissions are granted.";
+    return "AP3K could not load posts. Reconnect Instagram and confirm media permissions are granted.";
   }
 
   if (status === 400) {
-    return "AP3k could not load posts from this Instagram connection. Reconnect Instagram, then refresh posts.";
+    return "AP3K could not load posts from this Instagram connection. Reconnect Instagram, then refresh posts.";
   }
 
-  return "AP3k could not load posts right now.";
+  return "AP3K could not load posts right now.";
 }

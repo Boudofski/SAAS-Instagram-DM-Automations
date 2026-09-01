@@ -84,7 +84,7 @@ export default async function InstagramAccountPage({ params, searchParams }: Pro
           <div>
             <p className="ap3k-kicker">Account analytics</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">Performance</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Real AP3k activity for this Instagram account · {periodRange.label}</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Real AP3K activity for this Instagram account · {periodRange.label}</p>
           </div>
           <PeriodSelector slug={params.slug} active={period} />
         </div>

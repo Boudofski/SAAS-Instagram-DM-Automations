@@ -26,7 +26,7 @@ describe("production polish UI contracts", () => {
     const navbar = source("components/global/navbar/index.tsx");
     const sheet = source("components/global/sheet/index.tsx");
     expect(navbar).toContain('triggerLabel="Open navigation"');
-    expect(navbar).toContain("<AP3kLogo");
+    expect(navbar).toContain("<AP3KLogo");
     expect(sheet).toContain("aria-label={triggerLabel}");
     expect(sheet).toContain('<SheetTitle className="sr-only">');
   });

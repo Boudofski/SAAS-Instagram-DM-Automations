@@ -19,7 +19,7 @@ export default function ReviewDemoPage({ params }: Props) {
         <p className="ap3k-kicker">App Review demo</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">End-to-end review checklist</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-          Use this clean checklist for the screencast flow. It uses real AP3k screens and does not create sample data.
+          Use this clean checklist for the screencast flow. It uses real AP3K screens and does not create sample data.
         </p>
       </div>
 

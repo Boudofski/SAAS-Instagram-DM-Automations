@@ -50,7 +50,7 @@ async function SettingsPage() {
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">Danger zone</p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-red-800 dark:text-red-200">
-              Permanently delete your AP3k campaigns, Instagram connection, leads, activity, billing profile, and sign-in account. This cannot be undone.
+              Permanently delete your AP3K campaigns, Instagram connection, leads, activity, billing profile, and sign-in account. This cannot be undone.
             </p>
             <div className="mt-4"><DeleteAccountButton email={emailState.email} /></div>
           </div>

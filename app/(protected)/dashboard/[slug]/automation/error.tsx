@@ -19,7 +19,7 @@ export default function AutomationError({
           Campaigns could not load
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          AP3k hit a client-side issue while rendering campaigns. You can retry
+          AP3K hit a client-side issue while rendering campaigns. You can retry
           or create a campaign from the stable builder.
         </p>
         {error?.message && (

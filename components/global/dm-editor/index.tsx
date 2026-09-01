@@ -128,7 +128,7 @@ export default function DmEditor({
           className="ap3k-input w-full min-w-0 rounded-xl px-4 py-3 text-sm"
         />
         <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-300">
-          AP3k sends this as an Instagram web button when supported. Long URLs are hidden from the message bubble.
+          AP3K sends this as an Instagram web button when supported. Long URLs are hidden from the message bubble.
         </p>
       </div>
 

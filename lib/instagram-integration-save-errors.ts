@@ -38,7 +38,7 @@ export function instagramOAuthErrorParamForSaveFailure(code: InstagramIntegratio
 export function reviewSafeInstagramOAuthErrorMessage(error: string) {
   switch (error) {
     case "duplicate_instagram_account":
-      return "This Instagram account is already connected to another AP3k workspace. Remove it there first or contact support.";
+      return "This Instagram account is already connected to another AP3K workspace. Remove it there first or contact support.";
     case "plan_limit_reached":
       return "Your current plan supports one Instagram account. Remove the existing account before connecting another.";
     case "token_exchange_failed":
@@ -46,7 +46,7 @@ export function reviewSafeInstagramOAuthErrorMessage(error: string) {
       return "Instagram authorization could not be completed. Please try again.";
     case "database_save_failed":
     case "integration_save_failed":
-      return "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.";
+      return "Instagram authorization succeeded, but AP3K could not save the connection. Please try again.";
     default:
       return "Instagram connection could not be completed.";
   }
@@ -55,17 +55,17 @@ export function reviewSafeInstagramOAuthErrorMessage(error: string) {
 export function standardInstagramOAuthErrorMessage(error: string) {
   switch (error) {
     case "duplicate_instagram_account":
-      return "This Instagram account is already connected to another AP3k workspace. Remove it there first or contact support.";
+      return "This Instagram account is already connected to another AP3K workspace. Remove it there first or contact support.";
     case "plan_limit_reached":
       return "Your current plan supports one Instagram account. Remove the existing account before connecting another.";
     case "missing_local_profile":
-      return "Your AP3k workspace could not be found. Sign in again and retry.";
+      return "Your AP3K workspace could not be found. Sign in again and retry.";
     case "token_exchange_failed":
     case "profile_fetch_failed":
       return "Instagram authorization could not be completed. Please try again.";
     case "database_save_failed":
     case "integration_save_failed":
-      return "Instagram authorization succeeded, but AP3k could not save the connection. Please try again.";
+      return "Instagram authorization succeeded, but AP3K could not save the connection. Please try again.";
     default:
       return "Instagram connection could not be completed.";
   }

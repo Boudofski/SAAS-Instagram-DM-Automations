@@ -110,7 +110,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3k</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3K</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           Your Instagram connection, campaign activity, comment replies, DMs, and captured leads in one place.
@@ -124,7 +124,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <p className="ap3k-kicker">Ready to launch</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Create your first Instagram campaign</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Choose a post, set a comment trigger, then choose whether AP3k should reply to the comment, send a DM, or both.
+                Choose a post, set a comment trigger, then choose whether AP3K should reply to the comment, send a DM, or both.
               </p>
             </div>
             <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">Create campaign</Link>
