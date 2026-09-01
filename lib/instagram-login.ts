@@ -98,7 +98,7 @@ function normalizeInstagramLoginProfile(data: any, fallbackUserId?: string | nul
   };
 }
 
-export function getInstagramLoginOAuthUrl() {
+export function getInstagramLoginOAuthUrl(state?: string) {
   const { clientId, redirectUri } = getInstagramLoginOAuthConfig();
   const scopes = getInstagramBusinessOAuthScopes();
   const url = new URL(INSTAGRAM_OAUTH_URL);
@@ -107,6 +107,7 @@ export function getInstagramLoginOAuthUrl() {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", scopes.join(","));
+  if (state) url.searchParams.set("state", state);
   // Keep the user in the Instagram professional-account authorization path.
   // Without this, Meta can intermittently bounce users into Facebook login.
   url.searchParams.set("enable_fb_login", "0");

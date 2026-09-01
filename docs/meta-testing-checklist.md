@@ -41,11 +41,15 @@ Expected:
 {
   "ok": true,
   "route": "/api/webhooks/meta",
-  "webhookUrl": "https://ap3k.com/api/webhooks/meta",
-  "hasMetaVerifyToken": true,
-  "hasMetaAppSecret": true,
+  "routeVersion": "2026-05-tenant-diagnostics-v2",
   "timestamp": "..."
 }
+```
+
+Owner-only diagnostics now live behind owner-admin authentication:
+
+```
+GET https://ap3k.com/api/admin/meta-health
 ```
 
 ---

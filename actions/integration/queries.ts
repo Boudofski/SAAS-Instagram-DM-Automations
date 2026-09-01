@@ -9,6 +9,17 @@ import {
   InstagramIntegrationSaveError,
 } from "@/lib/instagram-integration-save-errors";
 
+const META_OAUTH_STATE_MARKER = "META_OAUTH_STATE";
+
+function isMetaOAuthStatePayload(value: unknown) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as { kind?: unknown }).kind === META_OAUTH_STATE_MARKER
+  );
+}
+
 export const updateIntegration = async (
   token: string,
   expire: Date,
@@ -200,6 +211,89 @@ export const createMetaOAuthSelection = async (
   });
 };
 
+export const createMetaOAuthState = async (
+  workspaceClerkId: string,
+  sessionClerkId: string,
+  stateHash: string,
+  expiresAt: Date
+) => {
+  const user = await client.user.findUnique({
+    where: { clerkId: workspaceClerkId },
+    select: { id: true },
+  });
+  if (!user) throw new Error("user_not_found");
+
+  await client.metaOAuthSelection.deleteMany({
+    where: {
+      userId: user.id,
+      OR: [
+        { expiresAt: { lt: new Date() } },
+        {
+          accounts: {
+            path: ["kind"],
+            equals: META_OAUTH_STATE_MARKER,
+          },
+        },
+      ],
+    },
+  });
+
+  return await client.metaOAuthSelection.create({
+    data: {
+      userId: user.id,
+      accounts: {
+        kind: META_OAUTH_STATE_MARKER,
+        stateHash,
+        sessionClerkId,
+        createdAt: new Date().toISOString(),
+      } as any,
+      expiresAt,
+    },
+    select: { id: true },
+  });
+};
+
+export const consumeMetaOAuthState = async (
+  workspaceClerkId: string,
+  sessionClerkId: string,
+  stateHash: string
+) => {
+  const user = await client.user.findUnique({
+    where: { clerkId: workspaceClerkId },
+    select: { id: true },
+  });
+  if (!user) return false;
+
+  const consumed = await client.metaOAuthSelection.deleteMany({
+    where: {
+      userId: user.id,
+      expiresAt: { gt: new Date() },
+      AND: [
+        {
+          accounts: {
+            path: ["kind"],
+            equals: META_OAUTH_STATE_MARKER,
+          },
+        },
+        {
+          accounts: {
+            path: ["stateHash"],
+            equals: stateHash,
+          },
+        },
+        {
+          accounts: {
+            path: ["sessionClerkId"],
+            equals: sessionClerkId,
+          },
+        },
+      ],
+    },
+  });
+
+  return consumed.count === 1;
+};
+
 export const getLatestMetaOAuthSelection = async (clerkId: string) => {
   const user = await client.user.findUnique({
     where: { clerkId },
@@ -207,18 +301,21 @@ export const getLatestMetaOAuthSelection = async (clerkId: string) => {
   });
   if (!user) return null;
 
-  return await client.metaOAuthSelection.findFirst({
+  const selections = await client.metaOAuthSelection.findMany({
     where: {
       userId: user.id,
       expiresAt: { gt: new Date() },
     },
     orderBy: { createdAt: "desc" },
+    take: 5,
     select: {
       id: true,
       accounts: true,
       expiresAt: true,
     },
   });
+
+  return selections.find((selection) => !isMetaOAuthStatePayload(selection.accounts)) ?? null;
 };
 
 export const deleteMetaOAuthSelection = async (id: string) => {

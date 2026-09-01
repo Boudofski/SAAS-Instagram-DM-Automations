@@ -26,7 +26,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   createIntegration,
+  createMetaOAuthState,
   createMetaOAuthSelection,
+  consumeMetaOAuthState,
   deleteMetaOAuthSelection,
   getLatestMetaOAuthSelection,
   getIntegrations,
@@ -50,6 +52,12 @@ import {
 } from "@/lib/app-review-mode";
 import { getMetaBusinessOAuthScopes } from "@/lib/messaging-review-mode";
 import { getCurrentWorkspaceClerkId } from "@/actions/user";
+import {
+  generateMetaOAuthState,
+  hashMetaOAuthState,
+  META_OAUTH_STATE_TTL_MS,
+  normalizeMetaOAuthState,
+} from "@/lib/meta-oauth-state";
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
 
@@ -210,8 +218,21 @@ function getOAuthClientId() {
 }
 
 export async function getInstagramOAuthUrl() {
+  const user = await currentUser();
+  if (!user) throw new Error("auth_missing");
+
+  const workspaceClerkId =
+    (await getCurrentWorkspaceClerkId()) ?? user.id;
+  const state = generateMetaOAuthState();
+  await createMetaOAuthState(
+    workspaceClerkId,
+    user.id,
+    hashMetaOAuthState(state),
+    new Date(Date.now() + META_OAUTH_STATE_TTL_MS)
+  );
+
   if (isInstagramLoginEnabled()) {
-    return getInstagramLoginOAuthUrl();
+    return getInstagramLoginOAuthUrl(state);
   }
 
   const redirectUri =
@@ -232,6 +253,7 @@ export async function getInstagramOAuthUrl() {
   url.searchParams.set("scope", requiredScopes.join(","));
   url.searchParams.set("response_type", "code");
   url.searchParams.set("auth_type", "rerequest");
+  url.searchParams.set("state", state);
   return url.toString();
 }
 
@@ -271,6 +293,9 @@ export const getInstagramConnectUrl = async () => {
       hasInstagramAppId: Boolean(process.env.INSTAGRAM_APP_ID),
       hasRedirectUri: Boolean(process.env.INSTAGRAM_REDIRECT_URI ?? process.env.META_REDIRECT_URI),
     });
+    if (error instanceof Error && error.message === "auth_missing") {
+      return { status: 401, error: "auth_missing" };
+    }
     return { status: 500, error: "oauth_url_unavailable" };
   }
 };
@@ -377,12 +402,13 @@ async function completeInstagramLoginIntegration(input: {
   return { status: 200, data: { ...create, reconnectImpact } };
 }
 
-export const onIntegrate = async (code: string) => {
+export const onIntegrate = async (code: string, state?: string | null) => {
   const user = await currentUser();
   const instagramLogin = isInstagramLoginEnabled();
   console.log("[oauth] callback received", {
     hasCode: Boolean(code),
     hasCurrentUser: Boolean(user),
+    hasState: Boolean(state),
     authProduct: instagramLogin ? "business_login_for_instagram" : "facebook_login_for_business",
   });
 
@@ -391,6 +417,33 @@ export const onIntegrate = async (code: string) => {
   }
   const workspaceClerkId =
     (await getCurrentWorkspaceClerkId()) ?? user.id;
+  const normalizedState = normalizeMetaOAuthState(state);
+  const oauthErrorSource = instagramLogin
+    ? "instagram_login"
+    : "facebook_business_oauth";
+
+  if (!normalizedState) {
+    await recordIntegrationOAuthError(workspaceClerkId, "oauth_state_missing_or_invalid", oauthErrorSource);
+    return {
+      status: 401,
+      error: "oauth_state_missing_or_invalid",
+      data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
+    };
+  }
+
+  const stateValid = await consumeMetaOAuthState(
+    workspaceClerkId,
+    user.id,
+    hashMetaOAuthState(normalizedState)
+  );
+  if (!stateValid) {
+    await recordIntegrationOAuthError(workspaceClerkId, "oauth_state_invalid_or_expired", oauthErrorSource);
+    return {
+      status: 401,
+      error: "oauth_state_invalid_or_expired",
+      data: { firstname: user.firstName, lastname: user.lastName, clerkId: workspaceClerkId },
+    };
+  }
 
   try {
     const integration = await getIntegrations(workspaceClerkId);
