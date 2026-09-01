@@ -21,7 +21,8 @@ export default function Billing({
   canManageBilling = false,
   billing,
 }: Props) {
-  const planLabel = usage?.planLabel ?? planDisplayName(current);
+  const launchTrialActive = Boolean(usage?.welcomeTrial?.active);
+  const planLabel = launchTrialActive ? "Free launch trial" : usage?.planLabel ?? planDisplayName(current);
   const paid = current !== "FREE" && canManageBilling;
 
   return (
@@ -53,7 +54,9 @@ export default function Billing({
               )}
             </div>
             <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-              Usage refreshes monthly. Campaigns remain unlimited and each workspace supports one connected Instagram account.
+              {launchTrialActive
+                ? "Your one-time 500-reply allowance stays active for 14 days after connecting Instagram. The normal Free allowance starts fresh when it ends."
+                : "Usage refreshes monthly. Campaigns remain unlimited and each workspace supports one connected Instagram account."}
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[430px]">
@@ -64,8 +67,14 @@ export default function Billing({
             />
             <BillingFact
               icon={<CalendarDays className="h-4 w-4" />}
-              label={billing?.cancelAtPeriodEnd ? "Access until" : "Next renewal"}
-              value={billing?.renewsAt ? formatDate(billing.renewsAt) : usage ? `${usage.periodLabel} usage` : "Monthly reset"}
+              label={launchTrialActive ? "Trial ends" : billing?.cancelAtPeriodEnd ? "Access until" : "Next renewal"}
+              value={launchTrialActive && usage?.welcomeTrial
+                ? formatDate(usage.welcomeTrial.endsAt.toISOString())
+                : billing?.renewsAt
+                  ? formatDate(billing.renewsAt)
+                  : usage
+                    ? `${usage.periodLabel} usage`
+                    : "Monthly reset"}
             />
           </div>
         </div>

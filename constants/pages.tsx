@@ -12,6 +12,7 @@ export const PAGE_BREAD_CRUMBS: string[] = [
   "account",
   "integrations",
   "billing",
+  "referrals",
   "settings",
 ];
 
@@ -25,6 +26,7 @@ export const PAGE_ICONS: Props = {
   INTEGRATIONS: <RocketDuoToneBlue />,
   ACCOUNT: <RocketDuoToneBlue />,
   BILLING: <RocketDuoToneBlue />,
+  REFERRALS: <RocketDuoToneBlue />,
   SETTINGS: <SettingsDuoToneWhite />,
   HOME: <HomeDuoToneBlue />,
 };

@@ -26,6 +26,9 @@ function dependencies(input: {
 }) {
   const subscriptions = new Map<string, { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }>();
   const warnStaleMetadata = vi.fn();
+  const applyPendingRewards = vi.fn(async () => undefined);
+  const qualifyPaidReferral = vi.fn(async () => undefined);
+  const reversePaidReferral = vi.fn(async () => undefined);
   const syncSubscription = vi.fn(
     async (userId: string, props: { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }) => {
       subscriptions.set(userId, { ...subscriptions.get(userId), ...props });
@@ -37,9 +40,24 @@ function dependencies(input: {
       input.customerOwners?.[customerId] ?? null,
     syncSubscription,
     retrieveSubscription: vi.fn(async () => subscription({ customer: "cus_alpha" })),
+    retrieveCharge: vi.fn(async (chargeId) => ({
+      id: chargeId,
+      invoice: "in_disputed",
+    } as Stripe.Charge)),
+    applyPendingRewards,
+    qualifyPaidReferral,
+    reversePaidReferral,
     warnStaleMetadata,
   };
-  return { value, subscriptions, syncSubscription, warnStaleMetadata };
+  return {
+    value,
+    subscriptions,
+    syncSubscription,
+    applyPendingRewards,
+    qualifyPaidReferral,
+    reversePaidReferral,
+    warnStaleMetadata,
+  };
 }
 
 function event(type: string, object: unknown, id = "evt_test") {
@@ -257,12 +275,26 @@ describe("processStripeEvent", () => {
     const retrieve = vi.mocked(deps.value.retrieveSubscription);
     retrieve.mockResolvedValueOnce(subscription({ customer: "cus_alpha", plan: "BUSINESS", status: "active" }));
     await processStripeEvent(
-      event("invoice.paid", { parent: { subscription_details: { subscription: "sub_test" } } }),
+      event("invoice.paid", {
+        id: "in_paid",
+        amount_paid: 2900,
+        currency: "usd",
+        status_transitions: { paid_at: 1_788_200_000 },
+        parent: { subscription_details: { subscription: "sub_test" } },
+      }),
       deps.value
     );
     expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
       plan: "BUSINESS",
+    });
+    expect(deps.qualifyPaidReferral).toHaveBeenCalledWith({
+      referredUserId: USER_A.id,
+      invoiceId: "in_paid",
+      plan: "BUSINESS",
+      amountPaid: 2900,
+      currency: "usd",
+      paidAt: new Date(1_788_200_000 * 1000),
     });
 
     retrieve.mockResolvedValueOnce(subscription({ customer: "cus_alpha", status: "past_due" }));
@@ -274,6 +306,7 @@ describe("processStripeEvent", () => {
       customerId: "cus_alpha",
       plan: "PRO",
     });
+    expect(deps.qualifyPaidReferral).toHaveBeenCalledTimes(1);
   });
 
   it("applies a paid-plan downgrade from the replacement price", async () => {
@@ -301,6 +334,23 @@ describe("processStripeEvent", () => {
       customerId: "cus_alpha",
       plan: "FREE",
     });
+  });
+
+  it("reverses referral rewards for refunded and disputed invoice charges", async () => {
+    const deps = dependencies({});
+
+    await processStripeEvent(
+      event("charge.refunded", { id: "ch_refund", invoice: "in_refunded" }),
+      deps.value
+    );
+    expect(deps.reversePaidReferral).toHaveBeenCalledWith("in_refunded", "refund");
+
+    await processStripeEvent(
+      event("charge.dispute.created", { id: "dp_test", charge: "ch_disputed" }),
+      deps.value
+    );
+    expect(deps.value.retrieveCharge).toHaveBeenCalledWith("ch_disputed");
+    expect(deps.reversePaidReferral).toHaveBeenCalledWith("in_disputed", "dispute");
   });
 
   it("is idempotent when Stripe redelivers the same event", async () => {

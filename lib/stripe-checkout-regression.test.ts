@@ -8,7 +8,8 @@ describe("Stripe checkout routing", () => {
     const free = PLAN_CARDS.find((plan) => plan.id === "FREE");
 
     expect(free?.description).toContain("keep using it free");
-    expect(free?.features).toContain("50 automated replies every month");
+    expect(free?.features).toContain("500 replies during your 14-day launch trial");
+    expect(free?.features).toContain("Then 50 automated replies every month");
 
     const source = fs.readFileSync(
       path.join(process.cwd(), "components/global/pricing-experience.tsx"),

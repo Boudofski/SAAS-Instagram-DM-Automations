@@ -35,6 +35,12 @@ export type UsageSummary = {
   aiReplies: UsageMetric;
   activeCampaigns: UsageMetric;
   connectedAccounts: UsageMetric;
+  welcomeTrial?: {
+    active: boolean;
+    startsAt: Date;
+    endsAt: Date;
+    replyLimit: number;
+  } | null;
 };
 
 export const UNLIMITED_LIMIT = 999_999;

@@ -1,6 +1,7 @@
 "use server";
 
 import { dashboardPath } from "@/lib/dashboard";
+import { applyPendingReferralRewards, REFERRAL_COOKIE } from "@/lib/referral-program";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
@@ -14,6 +15,20 @@ import {
 
 const onboardingSkippedCookie = (clerkId: string) =>
   `ap3k_onboarding_skipped_${clerkId}`;
+
+function currentReferralCode() {
+  const cookieStore = cookies();
+  return typeof cookieStore.get === "function"
+    ? cookieStore.get(REFERRAL_COOKIE)?.value
+    : undefined;
+}
+
+function clearReferralCode() {
+  const cookieStore = cookies();
+  if (typeof cookieStore.delete === "function") {
+    cookieStore.delete(REFERRAL_COOKIE);
+  }
+}
 
 const publicUserProfile = <T extends { integrations?: any[] }>(profile: T) => ({
   ...profile,
@@ -219,8 +234,10 @@ export const ensureCurrentUserProfile = async () => {
         user.id,
         user.firstName ?? "",
         user.lastName ?? "",
-        email
+        email,
+        currentReferralCode()
       );
+      clearReferralCode();
 
       console.log("[user-provision] AP3K profile created", {
         authenticatedUserPresent: true,
@@ -367,8 +384,10 @@ export const onSubscribe = async (session_id: string) => {
           user.id,
           user.firstName ?? "",
           user.lastName ?? "",
-          email
+          email,
+          currentReferralCode()
         );
+        clearReferralCode();
         profile = await findUser(user.id);
       }
 
@@ -376,6 +395,10 @@ export const onSubscribe = async (session_id: string) => {
         customerId: session.customer,
         plan: "PRO",
       });
+
+      if (profile?.id) {
+        await applyPendingReferralRewards(profile.id, session.customer);
+      }
 
       if (subscript) {
         const slug = profile?.clerkId || "";

@@ -15,6 +15,7 @@ describe("primary navigation", () => {
       { label: "Campaigns", href: "/dashboard/user_slug/automation" },
       { label: "Instagram Account", href: "/dashboard/user_slug/account" },
       { label: "Billing", href: "/dashboard/user_slug/billing" },
+      { label: "Refer & earn", href: "/dashboard/user_slug/referrals" },
       { label: "Settings", href: "/dashboard/user_slug/settings" },
     ]);
 

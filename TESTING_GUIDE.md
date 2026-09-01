@@ -339,7 +339,7 @@ Update the following in production:
 - Meta app → **Valid OAuth Redirect URIs** → add `https://ap3k.com/callback/instagram`
 - Meta Webhooks → update Callback URL to `https://ap3k.com/api/webhooks/meta`
 - Stripe Dashboard → Webhooks → add `https://ap3k.com/api/webhooks/stripe`
-- Stripe Dashboard → Webhooks → subscribe to `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+- Stripe Dashboard → Webhooks → subscribe to `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.paused`, `customer.subscription.resumed`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded`, `charge.dispute.created`
 
 Production endpoint reference:
 

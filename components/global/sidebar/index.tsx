@@ -74,9 +74,9 @@ export default function Sidebar({ slug }: Props) {
         <div className="px-3 pb-4">
           <div className="relative overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4 dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
             <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-rf-pink/20 blur-2xl" />
-            <p className="relative mb-1 text-xs font-black text-slate-950 dark:text-white">Upgrade to Creator</p>
-            <p className="mb-3 text-[11px] leading-snug text-slate-500 dark:text-slate-400">Increase monthly reply volume and unlock Creator analytics.</p>
-            <Link href="/payment" className="ap3k-gradient-button block py-2 text-center text-xs">Upgrade — $29/mo</Link>
+            <p className="relative mb-1 text-xs font-black text-slate-950 dark:text-white">Upgrade to Pro</p>
+            <p className="mb-3 text-[11px] leading-snug text-slate-500 dark:text-slate-400">Get 5,000 automated replies and full campaign analytics.</p>
+            <Link href="/payment?plan=pro&interval=month" className="ap3k-gradient-button block py-2 text-center text-xs">Upgrade — $9/mo</Link>
           </div>
         </div>
       </SubscriptionPlan>

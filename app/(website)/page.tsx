@@ -81,6 +81,8 @@ const FAQS = [
   ["Will a new campaign respond to old comments?", "No. Campaigns react to eligible new comment events received after the campaign is active. They do not go backward through comments that were already on the post."],
   ["How do I test a campaign before promoting it?", "Activate the campaign, then comment from a different Instagram account using the configured keyword or any normal comment. Check the public reply, Instagram inbox, campaign activity, and link button before sending traffic to the post."],
   ["Will AP3K reply to its own automated comments?", "No. AP3K ignores replies from the connected Instagram account and duplicate comment events so an automation cannot create a reply loop."],
+  ["What is included in the AP3K launch trial?", "Connect an eligible Instagram Business or Creator account and AP3K unlocks 500 automated replies for 14 days. After the one-time trial ends, the Free plan starts with 50 automated replies each month."],
+  ["How does the AP3K referral program work?", "Share your tracked link from the Refer & earn dashboard. When a new referred user connects Instagram and completes a qualifying paid Pro or Business invoice, eligible Founding 10 partners earn a $9 AP3K account credit."],
 ] as const;
 
 const faqSchema = {
@@ -185,6 +187,7 @@ export default async function LandingPage() {
               <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">
                 Turn Instagram comments into instant comment replies, DMs, and trackable leads—without living in your inbox.
               </p>
+              <p className="mt-4 text-sm font-bold text-white/85">500 automated replies free for 14 days after connecting. No credit card required.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
                   Start free <ArrowRight className="h-4 w-4" />
@@ -357,7 +360,7 @@ export default async function LandingPage() {
             <FadeIn className="mb-8 text-center">
               <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Simple pricing</p>
               <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Start free. Save more annually.</h2>
-              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Pro is $9/month or $79/year. Business is $29/month or $279/year. Annual billing saves up to 27% while usage still resets monthly.</p>
+              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Connect Instagram for a one-time 14-day trial with 500 replies. Then stay Free with 50 replies/month, choose Pro at $9/month, or Business at $29/month.</p>
             </FadeIn>
             <FadeIn delay={0.04}><PricingExperience compact /></FadeIn>
             <div className="mt-8 text-center"><Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">See the full plan comparison <ArrowRight className="h-4 w-4" /></Link></div>

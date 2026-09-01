@@ -3,6 +3,7 @@
 import { client } from "@/lib/prisma";
 import { getIntegrationHealth, REAL_COMMENT_WEBHOOK_TYPES } from "@/lib/dashboard-metrics";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
+import { activateConnectionBenefits } from "@/lib/referral-program";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
 import {
   classifyInstagramIntegrationSaveError,
@@ -446,6 +447,14 @@ export const createIntegration = async (
       replacedExistingAccount: !sameWorkspaceRow,
       disabledOtherInstagramRows: staleIds.length,
     });
+    try {
+      await activateConnectionBenefits(user.id);
+    } catch (error) {
+      console.error("[referral] connection benefits activation failed", {
+        userId: user.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     return {
       firstname: user.firstname,
       lastname: user.lastname,
@@ -472,7 +481,7 @@ export const createIntegration = async (
   }
 
   try {
-    return await client.user.update({
+    const created = await client.user.update({
       where: {
         clerkId,
       },
@@ -514,6 +523,15 @@ export const createIntegration = async (
         clerkId: true,
       },
     });
+    try {
+      await activateConnectionBenefits(user.id);
+    } catch (error) {
+      console.error("[referral] connection benefits activation failed", {
+        userId: user.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return created;
   } catch (error) {
     const anyError = error as any;
     console.error("[integration-save] create failed", {

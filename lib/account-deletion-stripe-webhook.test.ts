@@ -46,6 +46,10 @@ function dependencies(input?: {
     findOwnerByCustomerId: vi.fn(async () => input?.customerOwner ?? null),
     syncSubscription,
     retrieveSubscription: vi.fn(async () => subscription("user_test", "cus_test")),
+    retrieveCharge: vi.fn(),
+    applyPendingRewards: vi.fn(async () => undefined),
+    qualifyPaidReferral: vi.fn(async () => undefined),
+    reversePaidReferral: vi.fn(async () => undefined),
     warnStaleMetadata: vi.fn(),
   };
   return { value, syncSubscription };

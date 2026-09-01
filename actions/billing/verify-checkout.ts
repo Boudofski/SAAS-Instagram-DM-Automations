@@ -4,6 +4,7 @@ import { createUser, findUser, updateSubscription } from "@/actions/user/queries
 import { dashboardPath } from "@/lib/dashboard";
 import { inferActiveDatabasePlan } from "@/lib/stripe-config";
 import { stripe } from "@/lib/stripe";
+import { applyPendingReferralRewards } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function verifyCheckoutSession(sessionId: string) {
@@ -42,6 +43,9 @@ export async function verifyCheckoutSession(sessionId: string) {
       customerId: session.customer,
       plan,
     });
+    if (profile?.id) {
+      await applyPendingReferralRewards(profile.id, session.customer);
+    }
 
     return {
       status: 200 as const,

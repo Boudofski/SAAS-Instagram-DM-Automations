@@ -1,6 +1,7 @@
 "use server";
 
 import { client } from "@/lib/prisma";
+import { createReferralAttribution } from "@/lib/referral-program";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 
 const userProfileInclude = {
@@ -49,23 +50,35 @@ export const createUser = async (
   clerkId: string,
   firstname: string,
   lastname: string,
-  email: string
+  email: string,
+  referralCode?: string | null
 ) => {
-  return await client.user.create({
-    data: {
-      clerkId,
-      firstname,
-      lastname,
-      email,
-      subscription: {
-        create: {},
+  return client.$transaction(async (transaction) => {
+    const created = await transaction.user.create({
+      data: {
+        clerkId,
+        firstname,
+        lastname,
+        email,
+        subscription: {
+          create: {},
+        },
       },
-    },
-    select: {
-      firstname: true,
-      lastname: true,
-      clerkId: true,
-    },
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        clerkId: true,
+      },
+    });
+
+    await createReferralAttribution(transaction, created.id, referralCode);
+
+    return {
+      firstname: created.firstname,
+      lastname: created.lastname,
+      clerkId: created.clerkId,
+    };
   });
 };
 

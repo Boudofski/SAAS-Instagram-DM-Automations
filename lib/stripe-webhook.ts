@@ -6,6 +6,11 @@ import {
 } from "@/actions/user/queries";
 import { inferActiveDatabasePlan } from "@/lib/stripe-config";
 import { stripe } from "@/lib/stripe";
+import {
+  applyPendingReferralRewards,
+  qualifyAndApplyReferralReward,
+  reverseReferralRewardForInvoice,
+} from "@/lib/referral-program";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { createHash } from "node:crypto";
 
@@ -23,6 +28,17 @@ export type StripeWebhookDependencies = {
     props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
   ): Promise<unknown>;
   retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription>;
+  retrieveCharge(chargeId: string): Promise<Stripe.Charge>;
+  applyPendingRewards(userId: string, customerId: string): Promise<unknown>;
+  qualifyPaidReferral(input: {
+    referredUserId: string;
+    invoiceId: string;
+    plan: SUBSCRIPTION_PLAN;
+    amountPaid: number;
+    currency: string;
+    paidAt?: Date;
+  }): Promise<unknown>;
+  reversePaidReferral(invoiceId: string, reason: "refund" | "dispute"): Promise<unknown>;
   warnStaleMetadata(details: {
     eventType: string;
     clerkIdFingerprint: string;
@@ -56,6 +72,12 @@ const defaultDependencies: StripeWebhookDependencies = {
   retrieveSubscription(subscriptionId) {
     return stripe.subscriptions.retrieve(subscriptionId);
   },
+  retrieveCharge(chargeId) {
+    return stripe.charges.retrieve(chargeId);
+  },
+  applyPendingRewards: applyPendingReferralRewards,
+  qualifyPaidReferral: qualifyAndApplyReferralReward,
+  reversePaidReferral: reverseReferralRewardForInvoice,
   warnStaleMetadata(details) {
     console.warn("[stripe-webhook] stale Clerk metadata", details);
   },
@@ -125,11 +147,13 @@ async function syncStripeSubscription(
     },
     dependencies
   );
+  const plan = activePlanForSubscription(subscription);
   await dependencies.syncSubscription(resolution.owner.id, {
     customerId,
-    plan: activePlanForSubscription(subscription),
+    plan,
   });
-  return resolution;
+  await dependencies.applyPendingRewards(resolution.owner.id, customerId);
+  return { ...resolution, plan };
 }
 
 export async function resolveStripeOwner(
@@ -213,6 +237,7 @@ export async function processStripeEvent(
         // Bind ownership, but never grant paid access from Checkout metadata alone.
         await dependencies.syncSubscription(resolution.owner.id, { customerId });
       }
+      await dependencies.applyPendingRewards(resolution.owner.id, customerId);
       return { outcome: "processed" as const, source: resolution.source };
     }
 
@@ -261,6 +286,16 @@ export async function processStripeEvent(
         false,
         dependencies
       );
+      if (event.type === "invoice.paid") {
+        await dependencies.qualifyPaidReferral({
+          referredUserId: resolution.owner.id,
+          invoiceId: invoice.id,
+          plan: resolution.plan,
+          amountPaid: invoice.amount_paid ?? 0,
+          currency: invoice.currency ?? "",
+          paidAt: new Date((invoice.status_transitions?.paid_at ?? event.created) * 1000),
+        });
+      }
       return { outcome: "processed" as const, source: resolution.source };
     }
 
@@ -300,6 +335,33 @@ export async function processStripeEvent(
         plan: "FREE",
       });
       return { outcome: "processed" as const, source: resolution.source };
+    }
+
+    case "charge.refunded": {
+      const charge = event.data.object as Stripe.Charge;
+      const invoiceId = stripeId(charge.invoice);
+      if (!invoiceId) {
+        return { outcome: "ignored" as const, source: "non-invoice-charge" as const };
+      }
+      await dependencies.reversePaidReferral(invoiceId, "refund");
+      return { outcome: "processed" as const, source: "referral-reversal" as const };
+    }
+
+    case "charge.dispute.created": {
+      const dispute = event.data.object as Stripe.Dispute;
+      const chargeId = stripeId(dispute.charge);
+      if (!chargeId) {
+        return { outcome: "ignored" as const, source: "dispute-without-charge" as const };
+      }
+      const charge = typeof dispute.charge === "object"
+        ? dispute.charge
+        : await dependencies.retrieveCharge(chargeId);
+      const invoiceId = stripeId(charge.invoice);
+      if (!invoiceId) {
+        return { outcome: "ignored" as const, source: "non-invoice-dispute" as const };
+      }
+      await dependencies.reversePaidReferral(invoiceId, "dispute");
+      return { outcome: "processed" as const, source: "referral-reversal" as const };
     }
 
     default:

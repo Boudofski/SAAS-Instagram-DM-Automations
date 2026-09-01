@@ -11,90 +11,150 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clerkId      String         @unique
-  email        String         @unique
-  firstname    String?
-  lastname     String?
-  status       String         @default("ACTIVE")
-  suspendedAt  DateTime?
-  suspendedReason String?
-  createdAt    DateTime       @default(now())
-  subscription Subscription?
-  integrations Integrations[]
-  automations  Automation[]
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clerkId             String               @unique
+  email               String               @unique
+  firstname           String?
+  lastname            String?
+  status              String               @default("ACTIVE")
+  suspendedAt         DateTime?
+  suspendedReason     String?
+  createdAt           DateTime             @default(now())
+  subscription        Subscription?
+  integrations        Integrations[]
+  automations         Automation[]
   metaOAuthSelections MetaOAuthSelection[]
+  referralPartner     ReferralPartner?     @relation("ReferralPartnerOwner")
+  referralAttribution ReferralAttribution? @relation("ReferredUser")
 }
 
 model Subscription {
-  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  User       User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String?           @unique @db.Uuid
-  createdAt  DateTime          @default(now())
-  plan       SUBSCRIPTION_PLAN @default(FREE)
-  updatedAt  DateTime          @default(now())
-  customerId String?           @unique
-  usageResetAt DateTime?
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  User                   User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                 String?           @unique @db.Uuid
+  createdAt              DateTime          @default(now())
+  plan                   SUBSCRIPTION_PLAN @default(FREE)
+  updatedAt              DateTime          @default(now())
+  customerId             String?           @unique
+  usageResetAt           DateTime?
+  welcomeTrialStartedAt  DateTime?
+  welcomeTrialEndsAt     DateTime?
+  welcomeTrialReplyLimit Int?
 
   // Internal Overrides
-  monthlyReplyLimitOverride    Int?
-  activeCampaignLimitOverride  Int?
+  monthlyReplyLimitOverride     Int?
+  activeCampaignLimitOverride   Int?
   connectedAccountLimitOverride Int?
-  aiReplyLimitOverride         Int?
-  overrideReason               String?
-  overrideExpiresAt            DateTime?
+  aiReplyLimitOverride          Int?
+  overrideReason                String?
+  overrideExpiresAt             DateTime?
+}
+
+model ReferralPartner {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @unique @db.Uuid
+  user        User      @relation("ReferralPartnerOwner", fields: [userId], references: [id], onDelete: Cascade)
+  code        String    @unique @db.VarChar(24)
+  founderRank Int?      @unique
+  qualifiedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attributions ReferralAttribution[]
+  rewards      ReferralReward[]
+
+  @@index([createdAt])
+}
+
+model ReferralAttribution {
+  id                 String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId          String                      @db.Uuid
+  partner            ReferralPartner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  referredUserId     String                      @unique @db.Uuid
+  referredUser       User                        @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: Cascade)
+  status             REFERRAL_ATTRIBUTION_STATUS @default(SIGNED_UP)
+  connectedAt        DateTime?
+  qualifiedAt        DateTime?
+  firstPaidInvoiceId String?                     @unique
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+
+  reward ReferralReward?
+
+  @@index([partnerId, status])
+  @@index([createdAt])
+}
+
+model ReferralReward {
+  id                         String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId                  String                 @db.Uuid
+  partner                    ReferralPartner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  attributionId              String                 @unique @db.Uuid
+  attribution                ReferralAttribution    @relation(fields: [attributionId], references: [id], onDelete: Cascade)
+  qualifyingInvoiceId        String                 @unique
+  amountCents                Int                    @default(900)
+  currency                   String                 @default("usd") @db.VarChar(3)
+  status                     REFERRAL_REWARD_STATUS @default(PENDING)
+  stripeBalanceTransactionId String?                @unique
+  failureReason              String?
+  createdAt                  DateTime               @default(now())
+  appliedAt                  DateTime?
+  reversedAt                 DateTime?
+
+  @@index([partnerId, status])
+  @@index([createdAt])
 }
 
 model Integrations {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        INTEGRATIONS @default(INSTAGRAM)
-  createdAt   DateTime     @default(now())
-  User        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String?      @db.Uuid
-  token       String       @unique
-  expiresAt   DateTime?
-  instagramId String?      @unique
-  metaAppScopedUserId String?
-  webhookAccountId String?
-  pageId      String?
-  pageName    String?
-  businessId  String?
-  instagramUsername String?
-  profilePictureUrl String?
-  igAccountSource String?
-  oauthResolutionDiagnostics Json?
+  id                                 String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                               INTEGRATIONS               @default(INSTAGRAM)
+  createdAt                          DateTime                   @default(now())
+  User                               User?                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                             String?                    @db.Uuid
+  token                              String                     @unique
+  expiresAt                          DateTime?
+  instagramId                        String?                    @unique
+  metaAppScopedUserId                String?
+  webhookAccountId                   String?
+  pageId                             String?
+  pageName                           String?
+  businessId                         String?
+  instagramUsername                  String?
+  profilePictureUrl                  String?
+  igAccountSource                    String?
+  oauthResolutionDiagnostics         Json?
   webhookSubscriptionLastAttemptedAt DateTime?
-  webhookSubscriptionStatusCode Int?
-  webhookSubscriptionSubscribed Boolean?
-  webhookSubscriptionMode String?
-  webhookSubscriptionError String?
-  oauthLastError String?
-  oauthLastErrorAt DateTime?
-  oauthLastErrorSource String?
-  status String @default("CONNECTED")
-  disconnectedAt DateTime?
-  disconnectedReason String?
-  reconnectRequired Boolean @default(false)
-  lastAdminNote String?
-  lastAdminActionAt DateTime?
-  snapshots InstagramAccountSnapshot[]
+  webhookSubscriptionStatusCode      Int?
+  webhookSubscriptionSubscribed      Boolean?
+  webhookSubscriptionMode            String?
+  webhookSubscriptionError           String?
+  oauthLastError                     String?
+  oauthLastErrorAt                   DateTime?
+  oauthLastErrorSource               String?
+  status                             String                     @default("CONNECTED")
+  disconnectedAt                     DateTime?
+  disconnectedReason                 String?
+  reconnectRequired                  Boolean                    @default(false)
+  lastAdminNote                      String?
+  lastAdminActionAt                  DateTime?
+  snapshots                          InstagramAccountSnapshot[]
 
   @@index([metaAppScopedUserId])
 }
 
 model InstagramAccountSnapshot {
-  id String @id @default(cuid())
-  integrationId String @db.Uuid
-  integration Integrations @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  id            String       @id @default(cuid())
+  integrationId String       @db.Uuid
+  integration   Integrations @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
-  instagramId String?
-  username String?
+  instagramId       String?
+  username          String?
   profilePictureUrl String?
-  followersCount Int?
-  mediaCount Int?
-  accountType String?
+  followersCount    Int?
+  mediaCount        Int?
+  accountType       String?
 
-  source String @default("meta_graph")
+  source    String   @default("meta_graph")
   fetchedAt DateTime @default(now())
   createdAt DateTime @default(now())
 
@@ -114,29 +174,29 @@ model MetaOAuthSelection {
 }
 
 model Automation {
-  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String            @default("Untitled")
-  createdAt    DateTime          @default(now())
-  active       Boolean           @default(false)
-  matchingMode MATCHING_MODE     @default(CONTAINS)
-  triggerMode  String            @default("SPECIFIC_KEYWORD")
-  sendPrivateDm Boolean          @default(true)
-  needsReview  Boolean           @default(false)
-  reviewReason String?
-  archivedAt   DateTime?
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String            @default("Untitled")
+  createdAt            DateTime          @default(now())
+  active               Boolean           @default(false)
+  matchingMode         MATCHING_MODE     @default(CONTAINS)
+  triggerMode          String            @default("SPECIFIC_KEYWORD")
+  sendPrivateDm        Boolean           @default(true)
+  needsReview          Boolean           @default(false)
+  reviewReason         String?
+  archivedAt           DateTime?
   archivedByAdminEmail String?
-  archiveReason String?
-  trigger      Trigger[]
-  listener     Listener?
-  posts        Post[]
-  dms          Dms[]
-  User         User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String?           @db.Uuid
-  keywords     Keyword[]
-  leads        Lead[]
-  events       AutomationEvent[]
-  messageLogs  MessageLog[]
-  webhookEvents WebhookEvent[]
+  archiveReason        String?
+  trigger              Trigger[]
+  listener             Listener?
+  posts                Post[]
+  dms                  Dms[]
+  User                 User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String?           @db.Uuid
+  keywords             Keyword[]
+  leads                Lead[]
+  events               AutomationEvent[]
+  messageLogs          MessageLog[]
+  webhookEvents        WebhookEvent[]
 }
 
 model Dms {
@@ -160,18 +220,18 @@ model Post {
 }
 
 model Listener {
-  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  Automation      Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  automationId    String     @unique @db.Uuid
-  listener        LISTENERS  @default(MESSAGE)
-  prompt          String
-  commentReply    String?
-  commentReply2   String?
-  commentReply3   String?
-  ctaLink         String?
-  ctaButtonTitle  String?
-  dmCount         Int        @default(0)
-  commentCount    Int        @default(0)
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Automation     Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  automationId   String     @unique @db.Uuid
+  listener       LISTENERS  @default(MESSAGE)
+  prompt         String
+  commentReply   String?
+  commentReply2  String?
+  commentReply3  String?
+  ctaLink        String?
+  ctaButtonTitle String?
+  dmCount        Int        @default(0)
+  commentCount   Int        @default(0)
 }
 
 model Trigger {
@@ -258,22 +318,22 @@ model AdminAuditLog {
   id String @id @default(cuid())
 
   adminUserId String?
-  adminEmail String?
+  adminEmail  String?
 
-  action String
-  targetType String
-  targetId String?
+  action      String
+  targetType  String
+  targetId    String?
   targetLabel String?
 
-  reason String?
+  reason       String?
   confirmation String?
 
-  before Json?
-  after Json?
+  before   Json?
+  after    Json?
   metadata Json?
 
-  status String @default("SUCCESS")
-  error String?
+  status String  @default("SUCCESS")
+  error  String?
 
   createdAt DateTime @default(now())
 
@@ -291,6 +351,19 @@ enum SUBSCRIPTION_PLAN {
   PRO
   BUSINESS
   FREE
+}
+
+enum REFERRAL_ATTRIBUTION_STATUS {
+  SIGNED_UP
+  CONNECTED
+  QUALIFIED
+  WAITLISTED
+}
+
+enum REFERRAL_REWARD_STATUS {
+  PENDING
+  APPLIED
+  REVERSED
 }
 
 enum INTEGRATIONS {

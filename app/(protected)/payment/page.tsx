@@ -8,6 +8,7 @@ import {
 } from "@/lib/stripe-config";
 import { resolveStripePriceId } from "@/lib/stripe-pricing";
 import { stripe } from "@/lib/stripe";
+import { prepareReferralCreditForCheckout } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -83,7 +84,11 @@ export default async function PaymentPage({ searchParams }: Props) {
 
   const existing = await client.user.findUnique({
     where: { clerkId: user.id },
-    select: { subscription: { select: { plan: true, customerId: true } } },
+    select: {
+      id: true,
+      email: true,
+      subscription: { select: { plan: true, customerId: true } },
+    },
   });
   if (
     existing?.subscription?.customerId &&
@@ -121,6 +126,13 @@ export default async function PaymentPage({ searchParams }: Props) {
   let checkoutUrl: string | null = null;
 
   try {
+    const customerId = existing
+      ? await prepareReferralCreditForCheckout({
+          userId: existing.id,
+          clerkId: user.id,
+          email: existing.email,
+        })
+      : null;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
@@ -137,7 +149,9 @@ export default async function PaymentPage({ searchParams }: Props) {
           interval: selectedInterval,
         },
       },
-      customer_email: user.emailAddresses[0]?.emailAddress,
+      ...(customerId
+        ? { customer: customerId }
+        : { customer_email: user.emailAddresses[0]?.emailAddress }),
       success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${hostUrl}/payment?cancel=true`,
       allow_promotion_codes: true,

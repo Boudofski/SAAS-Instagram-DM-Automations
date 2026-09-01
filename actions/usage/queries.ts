@@ -17,6 +17,9 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         select: {
           plan: true,
           usageResetAt: true,
+          welcomeTrialStartedAt: true,
+          welcomeTrialEndsAt: true,
+          welcomeTrialReplyLimit: true,
         },
       },
     },
@@ -25,25 +28,55 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
   const limits = getPlanLimits(plan);
 
+  const trialStartedAt = user?.subscription?.welcomeTrialStartedAt ?? null;
+  const trialEndsAt = user?.subscription?.welcomeTrialEndsAt ?? null;
+  const trialReplyLimit = user?.subscription?.welcomeTrialReplyLimit ?? null;
+  const welcomeTrialActive = Boolean(
+    plan === "FREE" &&
+    trialStartedAt &&
+    trialEndsAt &&
+    trialReplyLimit &&
+    trialStartedAt <= date &&
+    trialEndsAt > date
+  );
+
   // AP3K now has one clear product model across the UI and enforcement layer:
   // one connected Instagram account, unlimited campaigns, and the published
   // monthly reply allowance for the selected plan. Historical per-account
   // overrides are intentionally ignored so billing, pricing, and enforcement
   // always describe the same product.
-  const staticLimit = limits.staticRepliesPerMonth;
+  const staticLimit = welcomeTrialActive && trialReplyLimit
+    ? trialReplyLimit
+    : limits.staticRepliesPerMonth;
   const aiLimit = limits.aiRepliesPerMonth;
   const campaignLimit = limits.activeCampaigns;
   const accountLimit = limits.connectedInstagramAccounts;
 
   const resetAt = user?.subscription?.usageResetAt;
-  const effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
+  let effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
+  let effectiveEnd = period.monthEnd;
+  let periodLabel = period.periodLabel;
+
+  if (welcomeTrialActive && trialStartedAt && trialEndsAt) {
+    effectiveStart = trialStartedAt;
+    effectiveEnd = trialEndsAt;
+    periodLabel = "14-day launch trial";
+  } else if (
+    plan === "FREE" &&
+    trialEndsAt &&
+    trialEndsAt <= date &&
+    trialEndsAt > effectiveStart
+  ) {
+    // The normal Free allowance starts fresh after the one-time launch trial.
+    effectiveStart = trialEndsAt;
+  }
 
   const [publicReplyLogs, dmLogs, activeCampaigns, connectedAccounts] = await Promise.all([
     client.messageLog.count({
       where: {
         status: "SENT",
         messageType: "COMMENT_REPLY",
-        createdAt: { gte: effectiveStart, lt: period.monthEnd },
+        createdAt: { gte: effectiveStart, lt: effectiveEnd },
         automation: { userId },
       },
     }),
@@ -51,7 +84,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       where: {
         status: "SENT",
         messageType: "DM",
-        createdAt: { gte: effectiveStart, lt: period.monthEnd },
+        createdAt: { gte: effectiveStart, lt: effectiveEnd },
         automation: { userId },
       },
     }),
@@ -65,7 +98,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       : client.automationEvent.count({
           where: {
             eventType: "PUBLIC_REPLY_SENT",
-            createdAt: { gte: effectiveStart, lt: period.monthEnd },
+            createdAt: { gte: effectiveStart, lt: effectiveEnd },
             automation: { userId },
           },
         }),
@@ -74,7 +107,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
       : client.automationEvent.count({
           where: {
             eventType: "DM_SENT",
-            createdAt: { gte: effectiveStart, lt: period.monthEnd },
+            createdAt: { gte: effectiveStart, lt: effectiveEnd },
             automation: { userId },
           },
         }),
@@ -85,14 +118,22 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   return {
     plan,
     planLabel: getPlanLabel(plan),
-    periodLabel: period.periodLabel,
-    periodStart: period.monthStart,
-    periodEnd: period.monthEnd,
-    enforcementStart: period.enforcementStart,
+    periodLabel,
+    periodStart: effectiveStart,
+    periodEnd: effectiveEnd,
+    enforcementStart: effectiveStart,
     staticReplies: makeUsageMetric(staticReplies, staticLimit),
     aiReplies: makeUsageMetric(0, aiLimit),
     activeCampaigns: makeUsageMetric(activeCampaigns, campaignLimit),
     connectedAccounts: makeUsageMetric(Math.min(connectedAccounts, 1), accountLimit),
+    welcomeTrial: trialStartedAt && trialEndsAt && trialReplyLimit
+      ? {
+          active: welcomeTrialActive,
+          startsAt: trialStartedAt,
+          endsAt: trialEndsAt,
+          replyLimit: trialReplyLimit,
+        }
+      : null,
   };
 }
 

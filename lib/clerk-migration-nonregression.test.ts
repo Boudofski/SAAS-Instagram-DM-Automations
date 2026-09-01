@@ -30,8 +30,8 @@ describe("Clerk migration non-regression invariants", () => {
 
   it("keeps all business ownership relations anchored to User.id UUID", () => {
     const schema = source("prisma/schema.prisma");
-    expect(schema).toContain(
-      'id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid'
+    expect(schema).toMatch(
+      /model User \{[\s\S]*?id\s+String\s+@id @default\(dbgenerated\("gen_random_uuid\(\)"\)\) @db\.Uuid/
     );
     expect(schema.match(/@relation\(fields: \[userId\], references: \[id\]/g)).toHaveLength(
       4

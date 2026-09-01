@@ -146,10 +146,13 @@ stripe listen --forward-to http://localhost:3000/api/webhooks/stripe
 Copy the **webhook signing secret** it prints → `STRIPE_WEBHOOK_SECRET`
 
 Events handled:
-- `checkout.session.completed` — upgrades user to PRO
+- `checkout.session.completed` — binds the verified Stripe customer and subscription
 - `customer.subscription.created` — syncs a new subscription if it arrives before/after checkout completion
-- `customer.subscription.updated` — syncs plan status
+- `customer.subscription.updated`, `customer.subscription.paused`, `customer.subscription.resumed` — sync plan status
 - `customer.subscription.deleted` — downgrades to FREE
+- `invoice.paid` — syncs access and qualifies an eligible referral reward
+- `invoice.payment_failed` — keeps subscription recovery state in sync without issuing a reward
+- `charge.refunded`, `charge.dispute.created` — reverse referral rewards tied to refunded or disputed invoices
 
 ---
 
@@ -199,7 +202,7 @@ In Vercel → Project → Settings → Environment Variables, add every variable
 
 1. Go to Stripe → **Developers → Webhooks → Add endpoint**
 2. URL: `https://ap3k.com/api/webhooks/stripe`
-3. Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+3. Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.paused`, `customer.subscription.resumed`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded`, `charge.dispute.created`
 4. Copy the signing secret → `STRIPE_WEBHOOK_SECRET` in Vercel env vars
 
 ### 5. Meta Webhook (Production)

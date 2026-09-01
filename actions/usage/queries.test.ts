@@ -94,6 +94,74 @@ describe("usage query helpers", () => {
     expect(result.reason).toBe("static_reply_limit_reached");
   });
 
+  it("uses the one-time 500-reply window during an active launch trial", async () => {
+    const startsAt = new Date("2026-05-20T12:00:00Z");
+    const endsAt = new Date("2026-06-03T12:00:00Z");
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        welcomeTrialStartedAt: startsAt,
+        welcomeTrialEndsAt: endsAt,
+        welcomeTrialReplyLimit: 500,
+      },
+    });
+    mockMessageLogCount.mockResolvedValueOnce(300).mockResolvedValueOnce(120);
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(usage.staticReplies).toMatchObject({ used: 420, limit: 500, remaining: 80, blocked: false });
+    expect(usage.periodStart).toEqual(startsAt);
+    expect(usage.periodEnd).toEqual(endsAt);
+    expect(usage.periodLabel).toBe("14-day launch trial");
+    expect(usage.welcomeTrial).toMatchObject({ active: true, replyLimit: 500 });
+  });
+
+  it("starts the normal Free allowance fresh after the launch trial ends", async () => {
+    const endsAt = new Date("2026-05-20T12:00:00Z");
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        welcomeTrialStartedAt: new Date("2026-05-06T12:00:00Z"),
+        welcomeTrialEndsAt: endsAt,
+        welcomeTrialReplyLimit: 500,
+      },
+    });
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+
+    expect(usage.staticReplies.limit).toBe(50);
+    expect(usage.periodStart).toEqual(endsAt);
+    expect(usage.welcomeTrial?.active).toBe(false);
+    expect(mockMessageLogCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        createdAt: { gte: endsAt, lt: new Date("2026-06-01T00:00:00Z") },
+      }),
+    });
+  });
+
+  it("does not reset the 500-reply trial when it crosses a month boundary", async () => {
+    const startsAt = new Date("2026-08-25T12:00:00Z");
+    const endsAt = new Date("2026-09-08T12:00:00Z");
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        welcomeTrialStartedAt: startsAt,
+        welcomeTrialEndsAt: endsAt,
+        welcomeTrialReplyLimit: 500,
+      },
+    });
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-09-02T12:00:00Z"));
+
+    expect(usage.periodStart).toEqual(startsAt);
+    expect(usage.periodEnd).toEqual(endsAt);
+    expect(mockMessageLogCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        createdAt: { gte: startsAt, lt: endsAt },
+      }),
+    });
+  });
+
   it("falls back to sent automation events when message logs are missing", async () => {
     mockMessageLogCount.mockResolvedValue(0);
     mockAutomationEventCount.mockResolvedValueOnce(2).mockResolvedValueOnce(3);
