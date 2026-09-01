@@ -234,7 +234,7 @@ export default async function LandingPage() {
               {VALUE_CARDS.map(({ step, icon: Icon, title, copy }) => (
                 <StaggerItem key={title} className="h-full">
                   <HoverLift className="h-full">
-                    <div className="group relative h-full overflow-hidden rounded-[1.7rem] border border-slate-200/90 bg-white/90 p-6 text-left shadow-[0_16px_45px_rgba(42,27,78,0.07)] backdrop-blur-sm transition-colors hover:border-violet-300 dark:border-violet-300/[0.14] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] dark:shadow-[0_24px_70px_rgba(0,0,0,0.28)] dark:hover:border-violet-300/30">
+                    <div className="group relative h-full overflow-hidden rounded-[1.7rem] border border-slate-200/90 bg-white/90 p-6 text-left shadow-[0_16px_45px_rgba(42,27,78,0.07)] backdrop-blur-sm transition-colors hover:border-violet-300 dark:border-violet-300/[0.14] dark:bg-[#111320] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] dark:shadow-[0_24px_70px_rgba(0,0,0,0.28)] dark:hover:border-violet-300/30">
                       <div aria-hidden="true" className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/75 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:via-violet-300/70 dark:opacity-60" />
                       <div className="flex items-center justify-between gap-4">
                         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20">
