@@ -727,6 +727,28 @@ export const isDuplicate = async (
   return !!existing;
 };
 
+/**
+ * Follow-gate callbacks intentionally bypass the normal "one DM ever" guard,
+ * because the gate prompt itself is a sent DM. This marker prevents a later
+ * repeated button tap from releasing the protected payload more than once.
+ */
+export const hasDeliveredFollowGatePayload = async (
+  automationId: string,
+  recipientIgId: string
+): Promise<boolean> => {
+  const existing = await client.messageLog.findFirst({
+    where: {
+      automationId,
+      recipientIgId,
+      messageType: "DM",
+      status: "SENT",
+      errorMessage: "follow_gate_payload_sent",
+    },
+    select: { id: true },
+  });
+  return Boolean(existing);
+};
+
 export const hasProcessedCommentWebhook = async (
   automationId: string,
   commentId: string,

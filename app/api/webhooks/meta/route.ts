@@ -8,6 +8,7 @@ import {
   findAutomationById,
   findIntegrationForWebhookAccount,
   isDuplicate,
+  hasDeliveredFollowGatePayload,
   hasProcessedCommentWebhook,
   hasAp3kGeneratedCommentId,
   countRecentPublicReplies,
@@ -40,6 +41,7 @@ import {
   sendInstagramDirectResponse,
   sendInstagramSenderAction,
   getInstagramRecipientProfile,
+  getInstagramFollowGatePromptCopy,
   formatPrivateReplyError,
 } from "@/lib/instagram-dm";
 import { resolveTemplate } from "@/lib/template";
@@ -1276,7 +1278,10 @@ async function processEntry(
       let dmMessageText = resolveTemplate(listener.prompt, templateVars);
 
       if (followGateBlocked) {
-        dmMessageText = `Follow @${integrationRaw?.instagramUsername || "our account"}, then comment again and I'll send it right away.`;
+        dmMessageText = getInstagramFollowGatePromptCopy({
+          username: integrationRaw?.instagramUsername,
+          state: commentRecipientProfile ? "INITIAL" : "UNAVAILABLE",
+        }).text;
       }
 
       if (isSmartAi) {
@@ -1314,6 +1319,12 @@ async function processEntry(
         ctaUrl: followGateBlocked ? undefined : listener.ctaLink,
         mediaUrl: followGateBlocked ? undefined : listener.mediaUrl,
         mediaType: followGateBlocked ? undefined : listener.mediaType,
+        followGatePrompt: followGateBlocked
+          ? {
+              username: integrationRaw?.instagramUsername,
+              state: commentRecipientProfile ? "INITIAL" : "UNAVAILABLE",
+            }
+          : undefined,
       });
       if (automation.typingIndicator) {
         await sendInstagramSenderAction(instagramBusinessAccountId, commenterId, "typing_off", token).catch(() => undefined);
@@ -1517,7 +1528,11 @@ async function processEntry(
 
       if (directAutomation?.listener) {
         await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSING" });
-        if (await isDuplicate(directAutomation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined)) {
+        const followCheckRequested = Boolean(followCheckAutomationId);
+        const duplicate = followCheckRequested
+          ? await hasDeliveredFollowGatePayload(directAutomation.id, senderId)
+          : await isDuplicate(directAutomation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined);
+        if (duplicate) {
           await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSED", errorMessage: "duplicate_skipped", processedAt: new Date() });
           continue;
         }
@@ -1529,6 +1544,7 @@ async function processEntry(
           webhookEventId: webhookEvent.id,
           messageMid: parsed.ok ? parsed.data.messageMid : undefined,
           matchedKeyword: storyInteraction ? `story_${storyInteraction.toLowerCase()}` : "follow_check",
+          followCheckRequested,
         });
         continue;
       }
@@ -1746,8 +1762,9 @@ async function processConfiguredMessageAutomation(params: {
   webhookEventId: string;
   messageMid?: string;
   matchedKeyword: string;
+  followCheckRequested?: boolean;
 }) {
-  const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword } = params;
+  const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword, followCheckRequested = false } = params;
   const integration = selectIntegrationForWebhook(automation.User?.integrations, pageId) ?? automation.User?.integrations?.[0];
   const tokenResolution = resolveIntegrationSendToken(integration);
   const instagramBusinessAccountId = integration?.instagramId;
@@ -1772,24 +1789,25 @@ async function processConfiguredMessageAutomation(params: {
   const profile = params.senderProfile ?? (automation.followGateRequired
     ? await getInstagramRecipientProfile({ token, recipientId: senderId })
     : null);
-
-  if (automation.followGateRequired && !profile) {
-    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "FAILED", errorMessage: "follow_status_unavailable", processedAt: new Date() });
-    return;
-  }
-
   const isFollowPrompt = automation.followGateRequired && profile?.followsBusiness !== true;
+  const followGatePrompt = isFollowPrompt
+    ? {
+        username: integration?.instagramUsername,
+        state: !profile ? "UNAVAILABLE" as const : followCheckRequested ? "NOT_FOLLOWING" as const : "INITIAL" as const,
+      }
+    : undefined;
   const quickReplies = Array.isArray(automation.listener.quickReplies)
     ? automation.listener.quickReplies.filter((item: unknown): item is string => typeof item === "string")
     : [];
-  const resolvedMessage = isFollowPrompt
-    ? `Follow @${integration?.instagramUsername || "our account"}, then tap below and I'll send it right away.`
-    : resolveTemplate(automation.listener.prompt, {
+  const payloadMessage = resolveTemplate(automation.listener.prompt, {
         username: profile?.username ? `@${profile.username}` : "",
         first_name: profile?.name?.split(/\s+/)[0] ?? "",
         keyword: matchedKeyword,
         link: automation.listener.ctaLink ?? "",
       });
+  const resolvedMessage = followGatePrompt
+    ? getInstagramFollowGatePromptCopy(followGatePrompt).text
+    : payloadMessage;
 
   const result = await sendInstagramDirectResponse({
     token,
@@ -1806,6 +1824,7 @@ async function processConfiguredMessageAutomation(params: {
     mediaType: isFollowPrompt ? undefined : automation.listener.mediaType,
     typingIndicator: Boolean(automation.typingIndicator),
     delaySeconds: Number(automation.deliveryDelaySeconds ?? 0),
+    followGatePrompt,
   });
 
   const sent = result.ok;
@@ -1818,14 +1837,25 @@ async function processConfiguredMessageAutomation(params: {
     commentId: messageMid,
     messageType: "DM",
     status: sent ? "SENT" : "FAILED",
-    errorMessage,
+    errorMessage: sent
+      ? isFollowPrompt
+        ? "follow_gate_prompt_sent"
+        : followCheckRequested
+          ? "follow_gate_payload_sent"
+          : undefined
+      : errorMessage,
   });
   await createAutomationEvent({
     automationId: automation.id,
     eventType: sent ? "DM_SENT" : "DM_FAILED",
     igUserId: senderId,
     keyword: matchedKeyword,
-    meta: { responseFormat: isFollowPrompt ? "FOLLOW_GATE" : automation.listener.responseFormat, error: errorMessage },
+    meta: {
+      responseFormat: isFollowPrompt ? "FOLLOW_GATE" : automation.listener.responseFormat,
+      followGateState: followGatePrompt?.state,
+      followCheckRequested,
+      error: errorMessage,
+    },
   });
 
   if (sent) {

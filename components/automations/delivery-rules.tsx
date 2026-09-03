@@ -17,10 +17,18 @@ export default function DeliveryRules({ followGateRequired, typingIndicator, del
       <RuleToggle
         icon={UserCheck}
         title="Follow gate required"
-        description="Followers get the payload. Non-followers receive a follow prompt first."
+        description="Followers get the payload. Non-followers must use the Follow and I followed buttons first."
         checked={followGateRequired}
         onChange={(checked) => onChange({ followGateRequired: checked })}
       />
+      {followGateRequired ? (
+        <div className="rounded-2xl border border-rf-purple/20 bg-rf-purple/[0.06] p-4 dark:border-rf-purple/30 dark:bg-rf-purple/[0.09]">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple dark:text-violet-300">Follower experience</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+            AP3K sends two clickable options: <strong>Follow</strong> opens your Instagram profile and <strong>I followed ✅</strong> verifies the follow. If verification fails, the same options return with <strong>❌ Not Following Yet!</strong>
+          </p>
+        </div>
+      ) : null}
       <RuleToggle
         icon={Waves}
         title="Show typing status"
