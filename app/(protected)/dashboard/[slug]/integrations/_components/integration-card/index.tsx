@@ -80,10 +80,10 @@ function IntegrationCard({
   const displayTitle = onboarding && connected ? "Instagram connected" : title;
   const displayDescription = onboarding
     ? connected
-      ? "AP3K can now receive Instagram comments, send public replies, and track campaign activity for this account."
+      ? "AP3K can now receive Instagram interactions, send responses, and track automation activity for this account."
       : directInstagramLogin
         ? "Connect your Instagram Business or Creator account directly. No Facebook Page selection is required."
-        : "AP3K connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."
+        : "AP3K connects through Meta's official login to receive Instagram interactions, send responses, and track automation activity for the account you choose."
     : directInstagramLogin
       ? "Connect your Instagram Business or Creator account directly. AP3K subscribes comments and messages automatically after authorization."
       : description;

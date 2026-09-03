@@ -155,16 +155,16 @@ export function buildCampaignBindingDiagnostics(input: {
     const warnings: string[] = [];
 
     if (postId && postId !== "ANY" && owner) {
-      if (owner.integrationId && owner.integrationId !== input.integration?.id) warnings.push("Campaign post belongs to a different integration.");
-      if (owner.userId && owner.userId !== input.integration?.userId) warnings.push("Campaign post belongs to a different user.");
-      if (owner.instagramId && owner.instagramId !== input.integration?.instagramId) warnings.push("Campaign post belongs to a different Instagram account.");
+      if (owner.integrationId && owner.integrationId !== input.integration?.id) warnings.push("Automation post belongs to a different integration.");
+      if (owner.userId && owner.userId !== input.integration?.userId) warnings.push("Automation post belongs to a different user.");
+      if (owner.instagramId && owner.instagramId !== input.integration?.instagramId) warnings.push("Automation post belongs to a different Instagram account.");
     }
 
     const campaignCreatedAt = toTime(campaign.createdAt);
-    if (postId && postId !== "ANY" && reconnectTime && campaignCreatedAt && campaignCreatedAt < reconnectTime.getTime()) warnings.push("Campaign was created before the current reconnect/subscription refresh.");
+    if (postId && postId !== "ANY" && reconnectTime && campaignCreatedAt && campaignCreatedAt < reconnectTime.getTime()) warnings.push("Automation was created before the current reconnect/subscription refresh.");
     if (postId && postId !== "ANY" && !owner && hasMediaOwnerIndex) warnings.push("Post ownership unknown — choose Any Post or refresh posts from the current account.");
 
-    return { campaignId: campaign.id, campaignName: campaign.name ?? "Untitled campaign", active: Boolean(campaign.active), postId, reconnectTime, owner: owner ?? null, warnings, stale: warnings.length > 0 };
+    return { campaignId: campaign.id, campaignName: campaign.name ?? "Untitled automation", active: Boolean(campaign.active), postId, reconnectTime, owner: owner ?? null, warnings, stale: warnings.length > 0 };
   });
 }
 

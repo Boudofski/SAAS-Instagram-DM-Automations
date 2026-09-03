@@ -23,6 +23,7 @@ model User {
   subscription        Subscription?
   integrations        Integrations[]
   automations         Automation[]
+  conversations       Conversation[]
   metaOAuthSelections MetaOAuthSelection[]
   referralPartner     ReferralPartner?     @relation("ReferralPartnerOwner")
   referralAttribution ReferralAttribution? @relation("ReferredUser")
@@ -181,6 +182,11 @@ model Automation {
   matchingMode         MATCHING_MODE     @default(CONTAINS)
   triggerMode          String            @default("SPECIFIC_KEYWORD")
   sendPrivateDm        Boolean           @default(true)
+  source               String            @default("COMMENT")
+  storyTriggerType     String?
+  followGateRequired   Boolean           @default(false)
+  typingIndicator      Boolean           @default(false)
+  deliveryDelaySeconds Int               @default(0)
   needsReview          Boolean           @default(false)
   reviewReason         String?
   archivedAt           DateTime?
@@ -197,6 +203,7 @@ model Automation {
   events               AutomationEvent[]
   messageLogs          MessageLog[]
   webhookEvents        WebhookEvent[]
+  conversations        Conversation[]
 }
 
 model Dms {
@@ -230,8 +237,47 @@ model Listener {
   commentReply3  String?
   ctaLink        String?
   ctaButtonTitle String?
+  responseFormat String     @default("TEXT")
+  quickReplies   Json?
+  mediaUrl       String?
+  mediaType      String?
   dmCount        Int        @default(0)
   commentCount   Int        @default(0)
+}
+
+model Conversation {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String         @db.Uuid
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  automationId      String?        @db.Uuid
+  automation        Automation?    @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  recipientIgId     String
+  recipientUsername String?
+  profilePictureUrl String?
+  lastMessageAt     DateTime       @default(now())
+  lastInboundAt     DateTime?
+  unreadCount       Int            @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  messages          InboxMessage[]
+
+  @@unique([userId, recipientIgId])
+  @@index([userId, lastMessageAt])
+}
+
+model InboxMessage {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  metaMessageId  String?      @unique
+  senderIgId     String
+  direction      String
+  content        String
+  messageType    String       @default("TEXT")
+  status         String       @default("RECEIVED")
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 model Trigger {

@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "AP3K Pricing — Free, Pro & Business Instagram Automation Plans",
   description:
-    "Compare AP3K Free, Pro, Business and Custom plans for Instagram comment replies, DMs, lead tracking and campaign analytics. Save with annual billing.",
+    "Compare AP3K Free, Pro, Business and Custom plans for Instagram comment replies, DMs, lead tracking and automation analytics. Save with annual billing.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -26,15 +26,15 @@ const FAQ = [
   },
   {
     q: "How many Instagram accounts can I connect?",
-    a: "Each AP3K workspace currently supports one connected Instagram account. Reconnecting another account replaces the current connection while campaign history stays saved.",
+    a: "Each AP3K workspace currently supports one connected Instagram account. Reconnecting another account replaces the current connection while automation history stays saved.",
   },
   {
-    q: "How many campaigns can I create?",
-    a: "Campaigns are unlimited on Free, Pro and Business. The monthly automated-reply allowance is what scales with your plan.",
+    q: "How many automations can I create?",
+    a: "Automations are unlimited on Free, Pro and Business. The monthly automated-reply allowance is what scales with your plan.",
   },
   {
     q: "What is the difference between a Comment reply and a DM?",
-    a: "A Comment reply appears under the Instagram post. A DM is sent to the commenter in their Instagram inbox. A campaign can use either action or both.",
+    a: "A comment reply appears under the Instagram post. A DM is sent to the commenter in their Instagram inbox. A post automation can use either action or both.",
   },
   {
     q: "Can I cancel any time?",
@@ -56,7 +56,7 @@ export default function PricingPage() {
               Start free. <span className="ap3k-gradient-text">Save more annually.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-              One Instagram account, unlimited campaigns, Comment replies and DMs. Choose the reply volume that fits your audience.
+              One Instagram account, unlimited automations, comment replies and DMs. Choose the reply volume that fits your audience.
             </p>
           </FadeIn>
         </section>

@@ -55,11 +55,11 @@ export default async function AdminV2UsersPage({ searchParams }: Props) {
         eyebrow="Users"
         title="All users"
         count={total}
-        description="Account status, plan, Instagram connection, campaign volume, and recent usage in one place."
+        description="Account status, plan, Instagram connection, automation volume, and recent usage in one place."
       />
 
       <V2Table
-        headers={["User", "Plan", "Instagram", "Campaigns", "Replies today", "Leads today", "Last activity", "Status", "Actions"]}
+        headers={["User", "Plan", "Instagram", "Automations", "Replies today", "Leads today", "Last activity", "Status", "Actions"]}
         rows={rows}
         empty="No users found."
       />

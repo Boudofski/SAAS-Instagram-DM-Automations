@@ -35,10 +35,10 @@ describe("App Review-safe UX", () => {
     expect(source).toContain('<LocalTime value={snapshot.fetchedAt} prefix="Profile refreshed" />');
   });
 
-  it("keeps the campaign list aligned with the approved Comment reply and DM model", () => {
+  it("keeps the automation list aligned with the approved Instagram response model", () => {
     const source = readRepoFile("app/(protected)/dashboard/[slug]/automation/page.tsx");
     expect(source).toContain("AutomationTable");
-    expect(source).toContain("Campaigns");
+    expect(source).toContain("Automations");
     expect(source).not.toContain("External DM");
   });
 });

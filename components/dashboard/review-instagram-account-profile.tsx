@@ -58,7 +58,7 @@ export default function ReviewInstagramAccountProfile({
             <div className="flex flex-col gap-2.5 pb-4">
               <SummaryRow label="Instagram account" value="Connected" />
               <SummaryRow label="Comments" value="Ready to receive" />
-              <SummaryRow label="Public replies" value="Available with comment campaigns" />
+              <SummaryRow label="Public replies" value="Available with comment automations" />
             </div>
             <div className="border-t border-slate-200 pt-4 dark:border-white/10">
               <ReviewDisconnectInstagramButton onDisconnected={() => setRemoved(true)} />

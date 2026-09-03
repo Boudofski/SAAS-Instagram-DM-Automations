@@ -73,7 +73,7 @@ export function UserActionsPanel({ userId, email, status, plan, hasActiveOverrid
         <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-emerald-300 sm:self-auto"><ShieldCheck className="h-3 w-3" /> Audited</span>
       </div>
       <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {!isSuspended ? <ActionButton icon={<Ban className="h-4 w-4" />} title="Suspend user" detail="Pauses active campaigns" tone="red" onClick={() => openModal("suspend")} /> : <ActionButton icon={<ShieldCheck className="h-4 w-4" />} title="Reactivate user" detail="Restore account access" tone="green" onClick={() => openModal("reactivate")} />}
+        {!isSuspended ? <ActionButton icon={<Ban className="h-4 w-4" />} title="Suspend user" detail="Pauses active automations" tone="red" onClick={() => openModal("suspend")} /> : <ActionButton icon={<ShieldCheck className="h-4 w-4" />} title="Reactivate user" detail="Restore account access" tone="green" onClick={() => openModal("reactivate")} />}
         <ActionButton icon={<Sparkles className="h-4 w-4" />} title="Change plan" detail="Internal access only" tone="pink" onClick={() => openModal("change_plan")} />
         <ActionButton icon={<RefreshCcw className="h-4 w-4" />} title="Reset usage" detail="Irreversible counter reset" tone="amber" onClick={() => openModal("reset_usage")} />
       </div>
@@ -112,8 +112,8 @@ function ActionButton({ icon, title, detail, tone, onClick }: { icon: React.Reac
 }
 
 function ActionWarning({ activeModal, hasActiveOverrides, selectedPlan, plan }: { activeModal: ModalKey; hasActiveOverrides?: boolean; selectedPlan: AdminPlan; plan?: string }) {
-  if (activeModal === "suspend") return <p className="rounded-xl border border-red-500/20 bg-red-500/[0.07] px-3.5 py-3 text-xs leading-5 text-red-200">Suspending pauses all active campaigns. Integrations, leads, records, and billing data are preserved.</p>;
+  if (activeModal === "suspend") return <p className="rounded-xl border border-red-500/20 bg-red-500/[0.07] px-3.5 py-3 text-xs leading-5 text-red-200">Suspending pauses all active automations. Integrations, leads, records, and billing data are preserved.</p>;
   if (activeModal === "change_plan") return <div className="space-y-2"><p className="rounded-xl border border-pink-500/20 bg-pink-500/[0.07] px-3.5 py-3 text-xs leading-5 text-pink-200">Manual plan changes affect AP3K internal access only. Stripe billing is not modified.</p>{hasActiveOverrides && selectedPlan === "FREE" && plan !== "FREE" && <p className="rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 text-xs leading-5 text-amber-200">This user has active internal overrides. Downgrading changes plan defaults, while explicit overrides remain until cleared separately.</p>}</div>;
-  if (activeModal === "reset_usage") return <p className="rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 text-xs leading-5 text-amber-200">Usage counters reset from this moment forward. Historical logs, campaigns, integrations, invoices, and Stripe data are not deleted.</p>;
-  return <p className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3.5 py-3 text-xs leading-5 text-emerald-200">Reactivation restores user access. Existing campaign review states remain unchanged.</p>;
+  if (activeModal === "reset_usage") return <p className="rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 text-xs leading-5 text-amber-200">Usage counters reset from this moment forward. Historical logs, automations, integrations, invoices, and Stripe data are not deleted.</p>;
+  return <p className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3.5 py-3 text-xs leading-5 text-emerald-200">Reactivation restores user access. Existing automation review states remain unchanged.</p>;
 }

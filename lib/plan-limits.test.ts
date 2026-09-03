@@ -48,8 +48,8 @@ describe("plan limits", () => {
   });
 
   it("formats Creator campaign limits from the enforcement source", () => {
-    expect(formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns)).toBe("Unlimited campaigns");
-    expect(formatCampaignLimitFeature(3)).toBe("Up to 3 active campaigns");
+    expect(formatCampaignLimitFeature(getPlanLimits("PRO").activeCampaigns)).toBe("Unlimited automations");
+    expect(formatCampaignLimitFeature(3)).toBe("Up to 3 active automations");
     expect(formatUsageMetricValue(makeUsageMetric(1, "unlimited"))).toBe("1 / Unlimited");
   });
 

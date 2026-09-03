@@ -56,13 +56,13 @@ export function assessCampaignSetupHealth(input: CampaignHealthInput): CampaignH
   const blockers: string[] = [];
   const warnings: string[] = [];
 
-  if (!input.connectedAccount?.instagramId) blockers.push("Connect Instagram before activating this campaign.");
+  if (!input.connectedAccount?.instagramId) blockers.push("Connect Instagram before activating this automation.");
   if (input.connectedAccount?.status && input.connectedAccount.status !== "CONNECTED") {
     blockers.push("Instagram account is not connected.");
   }
-  if (input.connectedAccount?.reconnectRequired) blockers.push("Reconnect Instagram before activating this campaign.");
+  if (input.connectedAccount?.reconnectRequired) blockers.push("Reconnect Instagram before activating this automation.");
   if (!input.connectedAccount?.tokenPresent) blockers.push("Instagram token is missing.");
-  if (campaign?.needsReview) blockers.push(campaign.reviewReason || "Campaign needs review after Instagram reconnect.");
+  if (campaign?.needsReview) blockers.push(campaign.reviewReason || "Automation needs review after Instagram reconnect.");
   if (!postId) blockers.push("Select Any Post or a current-account Instagram post.");
   if (campaign?.triggerMode !== "ANY_COMMENT" && !(campaign?.keywords ?? []).some((keyword) => keyword.word?.trim())) {
     blockers.push("Add a keyword or switch trigger to Any Comment.");
@@ -154,7 +154,7 @@ export function planReconnectCampaignImpact(input: {
       input.nextUsername || input.nextInstagramId
         ? `Current: ${input.nextUsername ? `@${input.nextUsername}` : "unknown"} / ${input.nextInstagramId ?? "unknown"}.`
         : null,
-      "Review campaigns before reactivating.",
+      "Review automations before reactivating.",
     ].filter(Boolean).join(" "),
   };
 }

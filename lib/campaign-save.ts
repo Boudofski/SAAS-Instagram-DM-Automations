@@ -16,6 +16,9 @@ export type RawCampaignPayload = {
   keywords?: string[];
   publicReplyEnabled?: boolean;
   sendPrivateDm?: boolean;
+  followGateRequired?: boolean;
+  typingIndicator?: boolean;
+  deliveryDelaySeconds?: number;
   aiMode?: boolean;
   listener?: {
     listener?: string;
@@ -25,6 +28,10 @@ export type RawCampaignPayload = {
     commentReply3?: string | null;
     ctaLink?: string | null;
     ctaButtonTitle?: string | null;
+    responseFormat?: string | null;
+    quickReplies?: string[];
+    mediaUrl?: string | null;
+    mediaType?: string | null;
   } | null;
 };
 
@@ -34,6 +41,9 @@ export type NormalizedCampaignPayload = {
   matchingMode: "EXACT" | "CONTAINS";
   triggerMode: CampaignTriggerMode;
   sendPrivateDm: boolean;
+  followGateRequired?: boolean;
+  typingIndicator?: boolean;
+  deliveryDelaySeconds?: 0 | 3 | 5 | 10 | 30;
   post: {
     postid: string;
     caption?: string;
@@ -49,6 +59,10 @@ export type NormalizedCampaignPayload = {
     commentReply3?: string;
     ctaLink?: string;
     ctaButtonTitle?: string;
+    responseFormat?: "TEXT" | "LINK" | "MEDIA";
+    quickReplies?: string[];
+    mediaUrl?: string;
+    mediaType?: "IMAGE" | "VIDEO";
   };
 };
 
@@ -82,6 +96,13 @@ export function normalizeCampaignPayload(
   const postid = payload.post?.postid?.trim() ?? "";
   const publicReplyEnabled = payload.publicReplyEnabled !== false;
   const sendPrivateDm = payload.sendPrivateDm !== false;
+  const responseFormat = payload.listener?.responseFormat === "MEDIA"
+    ? "MEDIA"
+    : payload.listener?.responseFormat === "LINK" || payload.listener?.ctaLink
+      ? "LINK"
+      : "TEXT";
+  const rawDelay = Number(payload.deliveryDelaySeconds);
+  const deliveryDelaySeconds = ([0, 3, 5, 10, 30].includes(rawDelay) ? rawDelay : 0) as 0 | 3 | 5 | 10 | 30;
   const replies = publicReplyEnabled
     ? [
         payload.listener?.commentReply?.trim(),
@@ -91,11 +112,14 @@ export function normalizeCampaignPayload(
     : [];
 
   return {
-    name: payload.name?.trim() || "Untitled campaign",
+    name: payload.name?.trim() || "Untitled automation",
     active: Boolean(payload.active),
     matchingMode,
     triggerMode,
     sendPrivateDm,
+    followGateRequired: Boolean(payload.followGateRequired),
+    typingIndicator: Boolean(payload.typingIndicator),
+    deliveryDelaySeconds,
     post: {
       postid,
       caption: cleanOptional(payload.post?.caption),
@@ -111,6 +135,14 @@ export function normalizeCampaignPayload(
       commentReply3: replies[2],
       ctaLink: sendPrivateDm ? cleanOptional(payload.listener?.ctaLink) : undefined,
       ctaButtonTitle: sendPrivateDm ? cleanOptional(payload.listener?.ctaButtonTitle) : undefined,
+      responseFormat,
+      quickReplies: sendPrivateDm
+        ? Array.from(new Set((payload.listener?.quickReplies ?? []).map((item) => item.trim()).filter(Boolean)))
+            .slice(0, 4)
+            .map((item) => Array.from(item).slice(0, 20).join(""))
+        : [],
+      mediaUrl: sendPrivateDm && responseFormat === "MEDIA" ? normalizeUrl(payload.listener?.mediaUrl) : undefined,
+      mediaType: sendPrivateDm && responseFormat === "MEDIA" && payload.listener?.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
     },
   };
 }
@@ -119,15 +151,23 @@ export function validateNormalizedCampaignPayload(
   payload: NormalizedCampaignPayload
 ): string | null {
   if (!payload.post.postid) {
-    return "Campaign needs a post.";
+    return "This automation needs a post.";
   }
 
   if (payload.triggerMode === "SPECIFIC_KEYWORD" && payload.keywords.length === 0) {
-    return "Specific keyword campaigns need at least one keyword.";
+    return "Specific keyword automations need at least one keyword.";
   }
 
   if (payload.sendPrivateDm && !payload.listener.prompt) {
-    return "Campaign needs a DM message.";
+    return "This automation needs a DM message.";
+  }
+
+  if (payload.sendPrivateDm && payload.listener.responseFormat === "LINK" && !payload.listener.ctaLink) {
+    return "Add a valid button link.";
+  }
+
+  if (payload.sendPrivateDm && payload.listener.responseFormat === "MEDIA" && !payload.listener.mediaUrl) {
+    return "Add a valid public image or video URL.";
   }
 
   const publicReplyCount = [
@@ -136,7 +176,7 @@ export function validateNormalizedCampaignPayload(
     payload.listener.commentReply3,
   ].filter(Boolean).length;
   if (!payload.sendPrivateDm && publicReplyCount === 0) {
-    return "Choose a comment reply or DM before activating this campaign.";
+    return "Choose a comment reply or DM before activating this automation.";
   }
 
   return null;
@@ -187,4 +227,15 @@ function cleanKeywords(triggerMode: CampaignTriggerMode, keywords: string[]) {
 function cleanOptional(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed || undefined;
+}
+
+function normalizeUrl(value?: string | null) {
+  const raw = cleanOptional(value);
+  if (!raw) return undefined;
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
 }

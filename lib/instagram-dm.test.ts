@@ -7,6 +7,7 @@ const mockedAxios = vi.mocked(axios, true);
 
 import {
   sendInstagramCommentPrivateReply,
+  sendInstagramDirectResponse,
   formatPrivateReplyError,
 } from "./instagram-dm";
 
@@ -228,6 +229,60 @@ describe("sendInstagramCommentPrivateReply", () => {
       expect(result.metaError.code).toBe(190);
       expect(result.endpoint).toBeDefined();
     }
+  });
+});
+
+describe("sendInstagramDirectResponse", () => {
+  it("sends text with bounded quick replies and custom payloads", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.direct" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-1",
+      message: "Choose an option",
+      responseFormat: "TEXT",
+      quickReplies: ["I followed", "Pricing", "Book", "Help", "Ignored"],
+      quickReplyPayloads: ["AP3K_FOLLOW_CHECK:automation-1"],
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.direct"] });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.recipient).toEqual({ id: COMMENTER_ID });
+    expect(body.message.text).toBe("Choose an option");
+    expect(body.message.quick_replies).toHaveLength(4);
+    expect(body.message.quick_replies[0]).toEqual({
+      content_type: "text",
+      title: "I followed",
+      payload: "AP3K_FOLLOW_CHECK:automation-1",
+    });
+  });
+
+  it("sends rich media before the accompanying text", async () => {
+    mockedAxios.post
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.media" } })
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.text" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-2",
+      message: "Here is the preview",
+      responseFormat: "MEDIA",
+      mediaType: "IMAGE",
+      mediaUrl: "https://example.com/preview.jpg",
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.media", "mid.text"] });
+    const mediaBody = mockedAxios.post.mock.calls[0][1] as any;
+    const textBody = mockedAxios.post.mock.calls[1][1] as any;
+    expect(mediaBody.message.attachment).toEqual({
+      type: "image",
+      payload: { url: "https://example.com/preview.jpg", is_reusable: true },
+    });
+    expect(textBody.message.text).toBe("Here is the preview");
   });
 });
 

@@ -12,14 +12,15 @@ describe("primary navigation", () => {
       }))
     ).toEqual([
       { label: "Home", href: "/dashboard/user_slug" },
-      { label: "Campaigns", href: "/dashboard/user_slug/automation" },
+      { label: "Automations", href: "/dashboard/user_slug/automation" },
+      { label: "Inbox", href: "/dashboard/user_slug/inbox" },
       { label: "Instagram Account", href: "/dashboard/user_slug/account" },
       { label: "Billing", href: "/dashboard/user_slug/billing" },
       { label: "Refer & earn", href: "/dashboard/user_slug/referrals" },
       { label: "Settings", href: "/dashboard/user_slug/settings" },
     ]);
 
-    expect(PRIMARY_NAVIGATION.map(({ label }) => label)).not.toContain("Automation");
+    expect(PRIMARY_NAVIGATION.map(({ label }) => label)).not.toContain("Campaigns");
     expect(PRIMARY_NAVIGATION.map(({ label }) => label)).not.toContain("Account");
   });
 

@@ -11,7 +11,7 @@ export default function WebsiteFooter() {
           <div className="flex flex-col gap-3">
             <AP3KLogo className="text-sm text-slate-700 dark:text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
             <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
-              Instagram comment automation for Business and Creator accounts. Match comments, send Comment replies and DMs, and track campaign activity and leads.
+              Instagram automation for Business and Creator accounts. Reply to comments, stories, and DMs, then manage conversations and leads in one place.
             </p>
           </div>
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">

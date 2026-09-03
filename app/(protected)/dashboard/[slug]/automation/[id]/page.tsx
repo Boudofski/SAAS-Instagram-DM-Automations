@@ -15,7 +15,7 @@ type Props = { params: { id: string; slug: string } };
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const info = await getAutomationInfo(params.id);
-  return { title: info.data?.name ?? "Campaign" };
+  return { title: info.data?.name ?? "Automation" };
 }
 
 export default async function CampaignDetailPage({ params }: Props) {
@@ -32,6 +32,8 @@ export default async function CampaignDetailPage({ params }: Props) {
   const activity = logsResult.status === 200 ? (logsResult.data as any[]) : [];
   const connectedIntegration = getCanonicalInstagramIntegration<any>(automation.User?.integrations);
   const post = automation.posts?.[0];
+  const source = automation.source === "STORY" || automation.source === "DM" ? automation.source : "COMMENT";
+  const isMessageAutomation = source !== "COMMENT";
   const isAnyPost = post?.postid === "ANY";
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
   const sendPrivateDm = automation.sendPrivateDm !== false;
@@ -55,7 +57,13 @@ export default async function CampaignDetailPage({ params }: Props) {
       : post?.postid
         ? `Specific Instagram media · ${shortId(String(post.postid))}`
         : "No post selected";
-  const triggerLabel = isAnyComment ? "Any comment" : keywords.length ? keywords.join(", ") : "No keyword configured";
+  const triggerLabel = source === "STORY"
+    ? automation.storyTriggerType === "REACTION" ? "Story reaction" : automation.storyTriggerType === "REPLY" ? "Story reply" : "Story mention"
+    : source === "DM" && automation.triggerMode === "ANY_MESSAGE"
+      ? "Any incoming DM"
+      : isAnyComment ? "Any comment" : keywords.length ? keywords.join(", ") : "No keyword configured";
+  const sourceLabel = source === "STORY" ? "Instagram Stories" : source === "DM" ? "Instagram DMs" : "Posts & Reels";
+  const editHref = `/dashboard/${params.slug}/automation/new?edit=${params.id}&type=${source.toLowerCase()}`;
   const statusLabel = automation.archivedAt
     ? "Archived"
     : automation.needsReview
@@ -71,9 +79,9 @@ export default async function CampaignDetailPage({ params }: Props) {
       <div className="flex animate-[ap3kDashboardRise_0.38s_ease-out_both] flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link href={`/dashboard/${params.slug}/automation`} className="mb-2 inline-block text-xs text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
-            ← Campaigns
+            ← Automations
           </Link>
-          <p className="ap3k-kicker">Campaign detail</p>
+          <p className="ap3k-kicker">Automation detail</p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{automation.name}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusBadge status={statusLabel} />
@@ -87,9 +95,9 @@ export default async function CampaignDetailPage({ params }: Props) {
       <section className="ap3k-card animate-[ap3kDashboardRise_0.45s_ease-out_both] rounded-3xl p-5 transition-all duration-300 hover:shadow-[0_20px_80px_rgba(15,23,42,0.10)]">
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="ap3k-kicker">Campaign overview</p>
-            <h2 className="mt-1 text-xl font-black">Instagram comment workflow</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A comment enters the campaign, the trigger is checked, then AP3K runs the actions you selected.</p>
+            <p className="ap3k-kicker">Automation overview</p>
+            <h2 className="mt-1 text-xl font-black">{sourceLabel} workflow</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">AP3K checks the configured interaction, applies your delivery rules, then sends the saved response.</p>
           </div>
           <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">
             {isLive ? "Listening now" : statusLabel}
@@ -97,8 +105,8 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <InfoTile label="Instagram account" value={connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Not connected"} tone={connectedIntegration ? "green" : "amber"} />
-          <InfoTile label="Post" value={selectedPostLabel} tone={post ? "green" : "amber"} />
-          <InfoTile label="Trigger" value={triggerLabel} tone={isAnyComment || keywords.length ? "green" : "amber"} />
+          <InfoTile label="Channel" value={sourceLabel} tone="green" />
+          <InfoTile label="Trigger" value={triggerLabel} tone={isMessageAutomation || isAnyComment || keywords.length ? "green" : "amber"} />
           <InfoTile label="Actions" value={replySummary(hasCommentReply, hasDm)} tone={hasCommentReply || hasDm ? "green" : "amber"} />
         </div>
       </section>
@@ -107,11 +115,17 @@ export default async function CampaignDetailPage({ params }: Props) {
         <section className="ap3k-card animate-[ap3kDashboardRise_0.52s_ease-out_both] rounded-3xl p-6">
           <div className="mb-6">
             <p className="ap3k-kicker">Workflow</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight">Comment → trigger → actions</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The customer-facing path configured for this campaign.</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">Interaction → rules → response</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The customer-facing path configured for this automation.</p>
           </div>
 
-          <div className="grid gap-4">
+          {isMessageAutomation ? <div className="grid gap-4">
+            <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
+            <FlowConnector />
+            <FlowNode label="2. Delivery rules" title={automation.followGateRequired ? "Follower check enabled" : "Open to everyone"} body={`${automation.typingIndicator ? "Typing indicator on" : "No typing indicator"} · ${automation.deliveryDelaySeconds ? `up to ${automation.deliveryDelaySeconds}s randomized delay` : "send immediately"}`} tone="pink" />
+            <FlowConnector />
+            <FlowNode label="3. Direct message" title={automation.listener?.responseFormat === "LINK" ? "Card / link" : automation.listener?.responseFormat === "MEDIA" ? "Rich media" : "Text message"} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
+          </div> : <div className="grid gap-4">
             <FlowNode label="1. Comment" title={isAnyPost ? "Any post or Reel" : "Selected post or Reel"} body={selectedPostLabel} tone="orange" />
             <FlowConnector />
             <FlowNode label="2. Trigger" title={isAnyComment ? "Any comment" : "Keyword matched"} body={triggerLabel} tone="pink" />
@@ -120,20 +134,21 @@ export default async function CampaignDetailPage({ params }: Props) {
               <FlowNode label="3. Comment reply" title={hasCommentReply ? "Reply to comment" : "Not configured"} body={commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
               <FlowNode label="4. DM" title={hasDm ? "Send a DM" : "Not configured"} body={automation.listener?.prompt || "No DM configured."} tone="blue" disabled={!hasDm} />
             </div>
-          </div>
+          </div>}
         </section>
 
         <aside className="ap3k-card animate-[ap3kDashboardRise_0.58s_ease-out_both] rounded-3xl p-6">
           <p className="ap3k-kicker">Settings</p>
           <div className="mt-5 space-y-3">
             <SettingsRow label="Status" value={statusLabel} />
-            <SettingsRow label="Post" value={isAnyPost ? "Any post" : "Specific post"} />
-            <SettingsRow label="Trigger" value={isAnyComment ? "Any comment" : "Keyword"} />
-            <SettingsRow label="Comment reply" value={hasCommentReply ? `${commentReplies.length} variation${commentReplies.length === 1 ? "" : "s"}` : "Off"} />
+            <SettingsRow label="Channel" value={sourceLabel} />
+            <SettingsRow label="Trigger" value={triggerLabel} />
+            {!isMessageAutomation && <SettingsRow label="Comment reply" value={hasCommentReply ? `${commentReplies.length} variation${commentReplies.length === 1 ? "" : "s"}` : "Off"} />}
             <SettingsRow label="DM" value={hasDm ? "Enabled" : "Off"} />
+            <SettingsRow label="Follow gate" value={automation.followGateRequired ? "Required" : "Off"} />
           </div>
-          <Link href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`} className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm">
-            Edit campaign
+          <Link href={editHref} className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm">
+            Edit automation
           </Link>
         </aside>
       </div>
@@ -147,9 +162,9 @@ export default async function CampaignDetailPage({ params }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
         <section className="ap3k-card animate-[ap3kDashboardRise_0.7s_ease-out_both] rounded-3xl p-6">
-          <h2 className="text-sm font-black text-slate-950 dark:text-white">Campaign content</h2>
+          <h2 className="text-sm font-black text-slate-950 dark:text-white">Automation content</h2>
           <div className="mt-5 space-y-5">
-            <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} />
+            {!isMessageAutomation && <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} />}
             {hasDm && <ContentBlock label="DM message" value={automation.listener?.prompt} />}
             {(automation.listener?.ctaButtonTitle || automation.listener?.ctaLink) && (
               <div>
@@ -176,12 +191,12 @@ export default async function CampaignDetailPage({ params }: Props) {
         </section>
 
         <section className="ap3k-card animate-[ap3kDashboardRise_0.74s_ease-out_both] rounded-3xl p-6">
-          <h2 className="text-sm font-black text-slate-950 dark:text-white">Campaign actions</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Edit this campaign or jump back to the campaign list.</p>
+          <h2 className="text-sm font-black text-slate-950 dark:text-white">Automation actions</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Edit this automation or jump back to the automation list.</p>
           <div className="mt-5 grid gap-3">
-            <Link href={`/dashboard/${params.slug}/automation/new?edit=${params.id}`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>✏️</span><span>Edit campaign</span></Link>
-            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>＋</span><span>Create another campaign</span></Link>
-            <Link href={`/dashboard/${params.slug}/automation`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>←</span><span>All campaigns</span></Link>
+            <Link href={editHref} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>✏️</span><span>Edit automation</span></Link>
+            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>＋</span><span>Create another automation</span></Link>
+            <Link href={`/dashboard/${params.slug}/automation`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>←</span><span>All automations</span></Link>
           </div>
         </section>
       </div>
@@ -196,7 +211,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
         {groupedActivity.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
-            No activity yet. Comment from another Instagram account to test this campaign.
+            No activity yet. Trigger this automation from another Instagram account to test it.
           </div>
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-white/10">

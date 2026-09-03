@@ -18,7 +18,7 @@ function CreateAutomation({ slug }: Props) {
     >
       <Link href={href} className="whitespace-nowrap">
         <AutomationDuoToneWhite />
-        <p className="hidden sm:inline">Create Campaign</p>
+        <p className="hidden sm:inline">Create Automation</p>
       </Link>
     </Button>
   );

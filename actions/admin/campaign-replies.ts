@@ -79,9 +79,9 @@ export async function adminUpdateCampaignRepliesAction(formData: FormData) {
       targetId: campaignId,
       reason,
       status: "FAILED",
-      error: "Campaign or listener not found.",
+      error: "Automation or response configuration not found.",
     });
-    return { status: 404 as const, data: "Campaign or listener not found." };
+    return { status: 404 as const, data: "Automation or response configuration not found." };
   }
 
   if (campaign.archivedAt) {
@@ -93,9 +93,9 @@ export async function adminUpdateCampaignRepliesAction(formData: FormData) {
       targetLabel: campaign.name,
       reason,
       status: "BLOCKED",
-      error: "Campaign is archived.",
+      error: "Automation is archived.",
     });
-    return { status: 400 as const, data: "Archived campaigns cannot be modified." };
+    return { status: 400 as const, data: "Archived automations cannot be modified." };
   }
 
   // 4. Update and Audit

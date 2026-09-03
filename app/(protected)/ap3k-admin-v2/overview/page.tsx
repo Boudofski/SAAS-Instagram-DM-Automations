@@ -58,7 +58,7 @@ export default async function AdminV2OverviewPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard label="Total users" value={stats.totalUsers} icon={<Users className="h-4 w-4" />} />
         <StatCard label="Connected accounts" value={stats.connectedAccounts} icon={<Instagram className="h-4 w-4" />} tone="pink" />
-        <StatCard label="Active campaigns" value={stats.activeCampaigns} icon={<Megaphone className="h-4 w-4" />} tone="blue" />
+        <StatCard label="Active automations" value={stats.activeCampaigns} icon={<Megaphone className="h-4 w-4" />} tone="blue" />
         <StatCard label="Replies today" value={stats.repliesToday} icon={<MessageCircleMore className="h-4 w-4" />} tone="green" />
         <StatCard label="Leads today" value={stats.leadsToday} icon={<UserRoundPlus className="h-4 w-4" />} tone="green" />
         <StatCard
@@ -83,7 +83,7 @@ export default async function AdminV2OverviewPage() {
             href="/admin/accounts"
           />
           <HealthTile
-            label="Campaigns needing review"
+            label="Automations needing review"
             value={health.campaignsNeedingReview}
             ok={health.campaignsNeedingReview === 0}
             href="/admin/campaigns"
@@ -95,7 +95,7 @@ export default async function AdminV2OverviewPage() {
             href="/admin/diagnostics"
           />
           <HealthTile
-            label="Active campaigns"
+            label="Active automations"
             value={stats.activeCampaigns}
             ok={stats.activeCampaigns > 0}
             href="/admin/campaigns"
@@ -123,9 +123,9 @@ export default async function AdminV2OverviewPage() {
             )}
             {health.campaignsNeedingReview > 0 && (
               <AttentionRow
-                message={`${health.campaignsNeedingReview} campaign${health.campaignsNeedingReview !== 1 ? "s" : ""} require owner review before reactivation.`}
+                message={`${health.campaignsNeedingReview} automation${health.campaignsNeedingReview !== 1 ? "s" : ""} require owner review before reactivation.`}
                 href="/admin/campaigns"
-                linkLabel="Review campaigns"
+                linkLabel="Review automations"
               />
             )}
             {stats.failedToday > 0 && (
@@ -162,7 +162,7 @@ export default async function AdminV2OverviewPage() {
                 >
                   <V2Badge tone={eventTone(event.eventType)}>{humanEvent(event.eventType)}</V2Badge>
                   <span className="min-w-0 flex-1 truncate text-xs text-slate-400">
-                    <span className="font-semibold text-slate-300">{event.campaignName ?? "Unknown campaign"}</span>
+                    <span className="font-semibold text-slate-300">{event.campaignName ?? "Unknown automation"}</span>
                     {event.keyword ? (
                       <>
                         {" · "}

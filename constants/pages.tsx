@@ -52,7 +52,7 @@ export const PLANS = [
       "AI-powered response generation",
       "Advanced analytics and insights",
       "Priority customer support",
-      "Unlimited campaigns and replies",
+      "Unlimited automations and replies",
     ],
     cta: "Upgrade Now",
   },

@@ -56,7 +56,7 @@ function ActiveAutomationButton({ id, disabled, disabledReason, showRepair }: Pr
           })}
           className="ml-4 rounded-xl border-amber-200 bg-amber-50 text-sm font-bold text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
         >
-          {isRepairing ? "Repairing..." : "Repair campaign"}
+          {isRepairing ? "Repairing..." : "Repair automation"}
         </Button>
       )}
     </div>

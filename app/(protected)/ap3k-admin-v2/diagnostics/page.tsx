@@ -60,7 +60,7 @@ export default async function AdminV2DiagnosticsPage() {
             description={`Showing the ${Math.min(LOOP_PREVIEW, loopGuard.length)} most recent events first. Older events remain available below.`}
           />
           <V2Table
-            headers={["Time", "Event", "Campaign", "Owner"]}
+            headers={["Time", "Event", "Automation", "Owner"]}
             rows={loopGuardRows.slice(0, LOOP_PREVIEW)}
             empty="No loop guard events."
           />
@@ -71,7 +71,7 @@ export default async function AdminV2DiagnosticsPage() {
               </summary>
               <div className="border-t border-white/[0.05] p-3 sm:p-4">
                 <V2Table
-                  headers={["Time", "Event", "Campaign", "Owner"]}
+                  headers={["Time", "Event", "Automation", "Owner"]}
                   rows={loopGuardRows}
                   empty="No loop guard events."
                 />
@@ -87,7 +87,7 @@ export default async function AdminV2DiagnosticsPage() {
           description={`Showing ${Math.min(WEBHOOK_PREVIEW, webhooks.length)} of the latest ${webhooks.length} diagnostic events.`}
         />
         <V2Table
-          headers={["Time", "Source", "Type", "Status", "Campaign", "Error"]}
+          headers={["Time", "Source", "Type", "Status", "Automation", "Error"]}
           rows={webhookRows.slice(0, WEBHOOK_PREVIEW)}
           empty="No webhook events found."
         />
@@ -99,7 +99,7 @@ export default async function AdminV2DiagnosticsPage() {
             </summary>
             <div className="border-t border-white/[0.05] p-3 sm:p-4">
               <V2Table
-                headers={["Time", "Source", "Type", "Status", "Campaign", "Error"]}
+                headers={["Time", "Source", "Type", "Status", "Automation", "Error"]}
                 rows={webhookRows}
                 empty="No webhook events found."
               />

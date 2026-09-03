@@ -56,7 +56,7 @@ export default function Billing({
             <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
               {launchTrialActive
                 ? "Your one-time 500-reply allowance stays active for 14 days after connecting Instagram. The normal Free allowance starts fresh when it ends."
-                : "Usage refreshes monthly. Campaigns remain unlimited and each workspace supports one connected Instagram account."}
+                : "Usage refreshes monthly. Automations remain unlimited and each workspace supports one connected Instagram account."}
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[430px]">
@@ -82,7 +82,7 @@ export default function Billing({
         {usage && (
           <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr_1.05fr]">
             <UsageBar label="Automated replies" metric={usage.staticReplies} />
-            <UsageBar label="Active campaigns" metric={usage.activeCampaigns} helper="Unlimited campaigns are included." />
+            <UsageBar label="Active automations" metric={usage.activeCampaigns} helper="Unlimited automations are included." />
             <div className="rounded-2xl border border-slate-200 bg-white/85 p-4 dark:border-white/10 dark:bg-[#101217]">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-black text-slate-950 dark:text-white">How replies count</p>

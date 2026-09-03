@@ -47,9 +47,9 @@ export async function adminPauseCampaignAction(formData: FormData) {
       targetId: campaignId,
       reason,
       status: "FAILED",
-      error: "Campaign not found.",
+      error: "Automation not found.",
     });
-    return { status: 404 as const, data: "Campaign not found." };
+    return { status: 404 as const, data: "Automation not found." };
   }
 
   if (before.archivedAt) {
@@ -62,9 +62,9 @@ export async function adminPauseCampaignAction(formData: FormData) {
       reason,
       before: { id: before.id, active: before.active, needsReview: before.needsReview },
       status: "BLOCKED",
-      error: "Campaign is archived.",
+      error: "Automation is archived.",
     });
-    return { status: 400 as const, data: "Archived campaigns cannot be paused." };
+    return { status: 400 as const, data: "Archived automations cannot be paused." };
   }
 
   try {
@@ -90,7 +90,7 @@ export async function adminPauseCampaignAction(formData: FormData) {
       revalidatePath(path);
     }
 
-    return { status: 200 as const, data: "Campaign paused." };
+    return { status: 200 as const, data: "Automation paused." };
   } catch (error) {
     await createAdminAuditLog({
       admin,
@@ -135,9 +135,9 @@ export async function adminResumeCampaignAction(formData: FormData) {
       targetId: campaignId,
       reason,
       status: "FAILED",
-      error: "Campaign not found.",
+      error: "Automation not found.",
     });
-    return { status: 404 as const, data: "Campaign not found." };
+    return { status: 404 as const, data: "Automation not found." };
   }
 
   if (before.archivedAt) {
@@ -150,9 +150,9 @@ export async function adminResumeCampaignAction(formData: FormData) {
       reason,
       before: { id: before.id, active: before.active, needsReview: before.needsReview },
       status: "BLOCKED",
-      error: "Campaign is archived.",
+      error: "Automation is archived.",
     });
-    return { status: 400 as const, data: "Archived campaigns cannot be resumed." };
+    return { status: 400 as const, data: "Archived automations cannot be resumed." };
   }
 
   if (before.needsReview) {
@@ -165,9 +165,9 @@ export async function adminResumeCampaignAction(formData: FormData) {
       reason,
       before: { id: before.id, active: before.active, needsReview: before.needsReview },
       status: "BLOCKED",
-      error: "Campaign needs review before activation.",
+      error: "Automation needs review before activation.",
     });
-    return { status: 400 as const, data: "Campaign needs review before activation." };
+    return { status: 400 as const, data: "Automation needs review before activation." };
   }
 
   try {
@@ -193,7 +193,7 @@ export async function adminResumeCampaignAction(formData: FormData) {
       revalidatePath(path);
     }
 
-    return { status: 200 as const, data: "Campaign activated." };
+    return { status: 200 as const, data: "Automation activated." };
   } catch (error) {
     await createAdminAuditLog({
       admin,

@@ -25,9 +25,9 @@ export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
     reasonRequired: true,
     reversible: true,
     reversalNote:
-      "Reactivate user to restore access. Campaigns remain paused — restart manually if needed.",
+      "Reactivate the user to restore access. Automations remain paused — restart them manually if needed.",
     warningCopy:
-      "Suspending removes login access immediately and pauses all active campaigns. Records, integrations, leads, and billing are preserved.",
+      "Suspending removes login access immediately and pauses all active automations. Records, integrations, leads, and billing are preserved.",
   },
   ADMIN_USER_REACTIVATED: {
     severity: "MEDIUM",
@@ -36,7 +36,7 @@ export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
     reversible: true,
     reversalNote: "Can re-suspend at any time.",
     warningCopy:
-      "Campaigns will NOT auto-resume. Reactivate campaigns manually if needed.",
+      "Automations will NOT auto-resume. Reactivate them manually if needed.",
   },
   ADMIN_PLAN_CHANGED: {
     severity: "MEDIUM",
@@ -55,7 +55,7 @@ export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
     reversible: false,
     reversalNote: null,
     warningCopy:
-      "Resets reply counters from this moment forward. Message logs, leads, campaigns, and Stripe data are preserved. This cannot be undone.",
+      "Resets reply counters from this moment forward. Message logs, leads, automations, and Stripe data are preserved. This cannot be undone.",
   },
   ADMIN_BILLING_OVERRIDES_UPDATED: {
     severity: "LOW",
@@ -70,7 +70,7 @@ export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
     confirmationWord: null,
     reasonRequired: true,
     reversible: true,
-    reversalNote: "Resume campaign at any time.",
+    reversalNote: "Resume the automation at any time.",
     warningCopy: null,
   },
   ADMIN_RESUME_CAMPAIGN: {
@@ -78,7 +78,7 @@ export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
     confirmationWord: null,
     reasonRequired: true,
     reversible: true,
-    reversalNote: "Pause campaign at any time.",
+    reversalNote: "Pause the automation at any time.",
     warningCopy: null,
   },
 };

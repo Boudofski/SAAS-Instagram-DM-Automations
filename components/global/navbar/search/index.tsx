@@ -30,7 +30,7 @@ export default function Search() {
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const sections = useMemo<SearchSection[]>(() => [
-    { label: "Campaigns", items: results.campaigns },
+    { label: "Automations", items: results.campaigns },
     { label: "Keywords", items: results.keywords },
     { label: "Leads", items: results.leads },
   ], [results]);
@@ -142,8 +142,8 @@ export default function Search() {
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => canSearch && setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search campaigns, keywords, or leads"
-          aria-label="Search campaigns, keywords, or leads"
+          placeholder="Search automations, keywords, or leads"
+          aria-label="Search automations, keywords, or leads"
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={isOpen && canSearch}

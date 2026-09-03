@@ -108,7 +108,7 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
           />
           <DetailField label="Plan" value={<V2Badge tone={user.plan === "PRO" ? "pink" : "slate"}>{planLabel}</V2Badge>} />
           <DetailField label="Status" value={<V2Badge tone={statusTone(user.status)}>{user.status}</V2Badge>} />
-          <DetailField label="Campaigns" value={`${user.activeCampaigns} active · ${user.totalCampaigns} total`} />
+          <DetailField label="Automations" value={`${user.activeCampaigns} active · ${user.totalCampaigns} total`} />
           {user.status === "SUSPENDED" && user.suspendedReason && (
             <DetailField label="Suspend reason" value={<span className="text-xs text-amber-300">{user.suspendedReason}</span>} />
           )}
@@ -171,11 +171,11 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
               value={formatUsageMetricValue(usage.connectedAccounts)}
               bar={<UsageBar percent={usage.connectedAccounts.percent} tone={usageTone(usage.connectedAccounts.percent, usage.connectedAccounts.blocked)} />}
             />
-            <MetricTile label="Active campaigns" value={formatUsageMetricValue(usage.activeCampaigns)} />
+            <MetricTile label="Active automations" value={formatUsageMetricValue(usage.activeCampaigns)} />
             <MetricTile
-              label="Campaign health"
+              label="Automation health"
               value={`${user.activeCampaigns} active · ${user.campaignsNeedingReview} review`}
-              sub={`${user.totalCampaigns} total campaigns`}
+              sub={`${user.totalCampaigns} total automations`}
             />
             <MetricTile
               label="Billing state"

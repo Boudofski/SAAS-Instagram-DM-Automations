@@ -31,7 +31,7 @@ export default function CampaignCard({
 }: Props) {
   const safeKeywords = Array.isArray(keywords) ? keywords : [];
   const safeId = id ?? "";
-  const safeName = name?.trim() || "Untitled campaign";
+  const safeName = name?.trim() || "Untitled automation";
   const isActive = Boolean(active);
   const safeDmCount = typeof dmCount === "number" ? dmCount : 0;
   const appReviewMode = isAppReviewMode();

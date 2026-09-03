@@ -117,8 +117,8 @@ export function getCampaignModeLabels(input: {
 
 export function getReviewerTestCopy(sendPrivateDm: boolean) {
   return sendPrivateDm
-    ? "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and records the private reply workflow after the user-initiated keyword comment."
-    : "This campaign listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3K skips private reply for this campaign.";
+    ? "This automation listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and records the private reply workflow after the user-initiated keyword comment."
+    : "This automation listens for comments on the selected Instagram media, matches the configured trigger, replies publicly if enabled, and AP3K skips private reply for this automation.";
 }
 
 export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
@@ -173,7 +173,7 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
       label: "Public reply skipped",
       badge: "OFF",
       tone: "amber",
-      detail: "Public reply is disabled for this campaign.",
+      detail: "Public reply is disabled for this automation.",
       technical: false,
     };
   }
@@ -190,7 +190,7 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
 
   if (type === "LOOP_GUARD_TRIGGERED") {
     return {
-      label: "Loop guard protected this campaign",
+      label: "Loop guard protected this automation",
       badge: "PROTECTED",
       tone: "amber",
       detail: null,
@@ -200,7 +200,7 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
 
   if (type === "LOOP_GUARD_PAUSED_CAMPAIGN") {
     return {
-      label: "Campaign auto-paused by loop guard",
+      label: "Automation auto-paused by loop guard",
       badge: "PAUSED",
       tone: "red",
       detail: null,
@@ -322,7 +322,7 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
   return {
     ...base,
     title: display.label,
-    subtitle: `${display.detail ?? endpoint ?? "Campaign activity"}${commentSuffix}`,
+    subtitle: `${display.detail ?? endpoint ?? "Automation activity"}${commentSuffix}`,
     tone: display.tone === "slate" ? "slate" : display.tone,
     kind: display.technical
       ? "technical"
@@ -467,7 +467,7 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
     return completeGroup(base, "Duplicate webhook ignored", "Repeated webhook delivery ignored.", "slate", "SKIPPED");
   }
   if (steps.loopGuard) {
-    return completeGroup(base, "Loop guard protected this campaign", "AP3K blocked a possible self-reply loop.", "amber", "PROTECTED");
+    return completeGroup(base, "Loop guard protected this automation", "AP3K blocked a possible self-reply loop.", "amber", "PROTECTED");
   }
   if (steps.usageLimitReached) {
     return completeGroup(base, "Monthly reply limit reached", "No public reply or private reply was sent.", "amber", "LIMIT");

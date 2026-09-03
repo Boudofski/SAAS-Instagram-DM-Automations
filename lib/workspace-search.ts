@@ -97,10 +97,10 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
   return {
     campaigns: campaignRows.slice(0, WORKSPACE_SEARCH_RESULT_LIMIT).map((campaign) => ({
       id: `campaign-${campaign.id}`,
-      title: campaign.name || "Untitled campaign",
+      title: campaign.name || "Untitled automation",
       subtitle: campaign.keywords.length > 0
         ? `Keywords: ${campaign.keywords.map((keyword) => keyword.word).join(", ")}`
-        : "Campaign",
+        : "Automation",
       href: campaignHref(campaign.id),
     })),
     keywords: keywordRows.slice(0, WORKSPACE_SEARCH_RESULT_LIMIT).flatMap((keyword) =>
@@ -108,7 +108,7 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
         ? [{
             id: `keyword-${keyword.id}`,
             title: keyword.word,
-            subtitle: keyword.Automation.name || "Untitled campaign",
+            subtitle: keyword.Automation.name || "Untitled automation",
             href: campaignHref(keyword.Automation.id),
           }]
         : []
@@ -117,8 +117,8 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
       id: `lead-${lead.id}`,
       title: lead.igUsername ? `@${lead.igUsername.replace(/^@/, "")}` : "Instagram lead",
       subtitle: lead.commentText?.trim()
-        ? `${lead.commentText.trim().slice(0, 90)} · ${lead.automation.name || "Untitled campaign"}`
-        : lead.automation.name || "Untitled campaign",
+        ? `${lead.commentText.trim().slice(0, 90)} · ${lead.automation.name || "Untitled automation"}`
+        : lead.automation.name || "Untitled automation",
       href: campaignHref(lead.automation.id),
     })),
   } satisfies WorkspaceSearchResults;

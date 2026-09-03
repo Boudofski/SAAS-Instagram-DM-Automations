@@ -70,7 +70,7 @@ describe("normalizeCampaignPayload", () => {
     const normalized = normalizeCampaignPayload({ ...basePayload, keywords: [] });
 
     expect(validateNormalizedCampaignPayload(normalized)).toBe(
-      "Specific keyword campaigns need at least one keyword."
+      "Specific keyword automations need at least one keyword."
     );
   });
 
@@ -139,7 +139,7 @@ describe("normalizeCampaignPayload", () => {
       listener: { ...basePayload.listener, prompt: " " },
     });
 
-    expect(validateNormalizedCampaignPayload(normalized)).toBe("Campaign needs a DM message.");
+    expect(validateNormalizedCampaignPayload(normalized)).toBe("This automation needs a DM message.");
   });
 
   it("allows an empty DM message when sendPrivateDm is false and public reply is enabled", () => {
@@ -164,7 +164,7 @@ describe("normalizeCampaignPayload", () => {
     });
 
     expect(validateNormalizedCampaignPayload(normalized)).toBe(
-      "Choose a comment reply or DM before activating this campaign."
+      "Choose a comment reply or DM before activating this automation."
     );
   });
 });

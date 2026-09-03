@@ -1,6 +1,9 @@
 "use client";
 
-import DmEditor from "@/components/global/dm-editor";
+import AutomationTypePicker from "@/components/automations/automation-type-picker";
+import DeliveryRules from "@/components/automations/delivery-rules";
+import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
+import MessageResponseEditor from "@/components/automations/message-response-editor";
 import EmptyState from "@/components/global/empty-state";
 import KeywordInput from "@/components/global/keyword-input";
 import PostPicker from "@/components/global/post-picker";
@@ -22,7 +25,7 @@ import { useEffect, useRef, useState } from "react";
 
 type Props = {
   params: { slug: string };
-  searchParams?: { edit?: string };
+  searchParams?: { edit?: string; type?: string };
 };
 
 const STEP_LABELS = ["Choose post", "Trigger", "Actions", "Review & Activate"];
@@ -43,7 +46,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   const { data: posts, isLoading: postsLoading, isFetching: postsFetching, refetch: refetchPosts } = useQueryAutomationPosts();
   const { data: user } = useQueryUser();
   const { data: webhookHealth } = useQueryWebhookHealth();
-  const { data: editing } = useQueryAutomations(editId ?? "", Boolean(editId));
+  const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId);
   const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
@@ -110,6 +113,13 @@ export default function WizardPage({ params, searchParams }: Props) {
       publicReply3: automation.listener?.commentReply3 ?? "",
       ctaLink: automation.listener?.ctaLink ?? "",
       ctaButtonTitle: automation.listener?.ctaButtonTitle ?? "",
+      responseFormat: automation.listener?.responseFormat === "LINK" || automation.listener?.responseFormat === "MEDIA" ? automation.listener.responseFormat : "TEXT",
+      quickReplies: Array.isArray(automation.listener?.quickReplies) ? automation.listener.quickReplies.filter((item: unknown) => typeof item === "string") : [],
+      mediaUrl: automation.listener?.mediaUrl ?? "",
+      mediaType: automation.listener?.mediaType === "VIDEO" ? "VIDEO" : "IMAGE",
+      followGateRequired: Boolean(automation.followGateRequired),
+      typingIndicator: Boolean(automation.typingIndicator),
+      deliveryDelaySeconds: automation.deliveryDelaySeconds ?? 0,
       sendPrivateDm: commentReplyOnlyReviewMode ? false : preparedDm.sendPrivateDm,
       triggerMode: automation.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
       publicReplyEnabled: Boolean(
@@ -128,6 +138,29 @@ export default function WizardPage({ params, searchParams }: Props) {
     });
     setLoadedEdit(true);
   }, [editId, editing, loadedEdit, messagingReviewMode, commentReplyOnlyReviewMode, update]);
+
+  const requestedType = searchParams?.type?.toLowerCase();
+  const editingSource = (editing as any)?.data?.source;
+  const selectedType = requestedType || (editingSource === "STORY" ? "story" : editingSource === "DM" ? "dm" : editId ? "comment" : undefined);
+
+  if (!editId && !selectedType) {
+    return <AutomationTypePicker slug={slug} />;
+  }
+
+  if (editId && !requestedType && editingLoading) {
+    return <div className="grid min-h-screen place-items-center bg-slate-50 dark:bg-[#050816]"><Loader2 className="h-6 w-6 animate-spin text-rf-purple" /></div>;
+  }
+
+  if (selectedType === "story" || selectedType === "dm") {
+    return (
+      <MessageAutomationWizard
+        slug={slug}
+        source={selectedType === "story" ? "STORY" : "DM"}
+        automationId={editId}
+        automation={(editing as any)?.data}
+      />
+    );
+  }
 
   const selectManualMedia = () => {
     const value = manualMedia.trim();
@@ -149,7 +182,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           Back
         </Link>
         <div className="text-center">
-          <p className="text-sm font-bold text-slate-950 dark:text-white">{editId ? "Edit Campaign" : "New Campaign"}</p>
+          <p className="text-sm font-bold text-slate-950 dark:text-white">{editId ? "Edit Automation" : "New Automation"}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Instagram comment automation</p>
         </div>
         <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -164,17 +197,17 @@ export default function WizardPage({ params, searchParams }: Props) {
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:px-8 lg:grid-cols-[1fr_340px]">
         <main className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
           {step === 1 && (
-            <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3K should listen for comments. Any post is the fastest option; specific post mode limits the campaign to one post or Reel.">
+            <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3K should listen for comments. Any post is the fastest option; specific post mode limits the automation to one post or Reel.">
               {instagram?.instagramUsername && (
                 <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
                   Current account: @{instagram.instagramUsername}
                 </p>
               )}
-              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Campaign name</label>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Automation name</label>
               <input
                 value={data.campaignName}
                 onChange={(event) => update({ campaignName: event.target.value })}
-                placeholder="Example: AI guide campaign"
+                placeholder="Example: AI guide automation"
                 className="ap3k-input mb-6 w-full rounded-xl px-4 py-3 text-sm"
               />
 
@@ -241,7 +274,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 2 && (
-            <StepPanel eyebrow="Step 2 of 4" title="What comment triggers this campaign?" description="Choose a keyword trigger or run on every comment. If you want to send a DM, a clear keyword like guide or link is best.">
+            <StepPanel eyebrow="Step 2 of 4" title="What comment starts this automation?" description="Choose a keyword trigger or run on every comment. If you want to send a DM, a clear keyword like guide or link is best.">
               <KeywordInput
                 triggerMode={data.triggerMode}
                 keywords={data.keywords}
@@ -331,14 +364,33 @@ export default function WizardPage({ params, searchParams }: Props) {
 
                       {data.sendPrivateDm && (
                         <div className="border-t border-rf-blue/15 p-5 pt-4">
-                          <DmEditor
-                            value={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
+                          <MessageResponseEditor
+                            format={data.responseFormat}
+                            message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
+                            quickReplies={data.quickReplies}
                             ctaLink={data.ctaLink}
                             ctaButtonTitle={data.ctaButtonTitle}
-                            onChange={(value) => update({ dmMessage: value })}
-                            onCtaLinkChange={(link) => update({ ctaLink: link })}
-                            onCtaButtonTitleChange={(title) => update({ ctaButtonTitle: title })}
+                            mediaUrl={data.mediaUrl}
+                            mediaType={data.mediaType}
+                            onChange={(next) => update({
+                              responseFormat: next.format ?? data.responseFormat,
+                              dmMessage: next.message ?? data.dmMessage,
+                              quickReplies: next.quickReplies ?? data.quickReplies,
+                              ctaLink: next.ctaLink ?? data.ctaLink,
+                              ctaButtonTitle: next.ctaButtonTitle ?? data.ctaButtonTitle,
+                              mediaUrl: next.mediaUrl ?? data.mediaUrl,
+                              mediaType: next.mediaType ?? data.mediaType,
+                            })}
                           />
+                          <div className="mt-6 border-t border-rf-blue/15 pt-5">
+                            <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Delivery options</p>
+                            <DeliveryRules
+                              followGateRequired={data.followGateRequired}
+                              typingIndicator={data.typingIndicator}
+                              deliveryDelaySeconds={data.deliveryDelaySeconds}
+                              onChange={(next) => update(next)}
+                            />
+                          </div>
                         </div>
                       )}
                     </>
@@ -358,7 +410,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             <StepPanel eyebrow="Step 4 of 4" title="Review & Activate" description="Confirm the account, post, trigger, actions, and status before saving.">
               <div className="mb-6 flex flex-col gap-2">
                 {[
-                  { label: "Name", value: data.campaignName || "Untitled campaign", step: 1 as const },
+                  { label: "Name", value: data.campaignName || "Untitled automation", step: 1 as const },
                   { label: "Account", value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account connected", step: 1 as const },
                   { label: "Post", value: data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? `Selected post ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
@@ -393,7 +445,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ].join(" ")}
               >
                 <span>
-                  <span className="block text-sm font-bold text-slate-950 dark:text-white">Active campaign</span>
+                  <span className="block text-sm font-bold text-slate-950 dark:text-white">Active automation</span>
                   <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3K listens for matching comments and runs the actions you selected.</span>
                 </span>
                 <Toggle enabled={data.active} green />
@@ -404,7 +456,7 @@ export default function WizardPage({ params, searchParams }: Props) {
 
         <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Preview</p>
-          <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{data.campaignName || (editId ? "Edit campaign" : "New campaign")}</h2>
+          <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{data.campaignName || (editId ? "Edit automation" : "New automation")}</h2>
           <div className="mt-4 space-y-3 text-sm">
             <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
             <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
@@ -439,7 +491,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 Save as draft
               </button>
               <button type="button" onClick={() => { update({ active: true }); void activate(true); }} disabled={isSubmitting} className="ap3k-gradient-button flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm disabled:opacity-50">
-                {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : editId ? "Update campaign" : "Activate campaign"}
+                {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : editId ? "Update automation" : "Activate automation"}
               </button>
             </>
           )}

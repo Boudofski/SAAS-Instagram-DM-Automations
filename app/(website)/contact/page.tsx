@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact AP3K Support",
   description:
-    "Contact AP3K support for Instagram connections, campaigns, billing, account access, privacy, and data requests.",
+    "Contact AP3K support for Instagram connections, automations, Inbox, billing, account access, privacy, and data requests.",
   alternates: { canonical: "/contact" },
 };
 
@@ -18,9 +18,9 @@ const supportTopics = [
     icon: Instagram,
   },
   {
-    title: "Campaign help",
+    title: "Automation help",
     description: "Keywords, any-comment triggers, public replies, links, or activity.",
-    subject: "AP3K campaign support",
+    subject: "AP3K automation support",
     icon: CircleHelp,
   },
   {
@@ -90,7 +90,7 @@ export default function ContactPage() {
               <h2 className="text-lg font-black text-slate-950 dark:text-white">Send the useful details</h2>
               <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-600 dark:text-rf-muted">
                 <li>• Email address used for your AP3K account</li>
-                <li>• Instagram username and campaign name</li>
+                <li>• Instagram username and automation name</li>
                 <li>• What you expected and what happened instead</li>
                 <li>• Screenshot of the error, with passwords and tokens hidden</li>
               </ul>

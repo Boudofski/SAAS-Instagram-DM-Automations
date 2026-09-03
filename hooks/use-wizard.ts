@@ -26,6 +26,13 @@ export type WizardData = {
   dmMessage: string;
   ctaLink: string;
   ctaButtonTitle: string;
+  responseFormat: "TEXT" | "LINK" | "MEDIA";
+  quickReplies: string[];
+  mediaUrl: string;
+  mediaType: "IMAGE" | "VIDEO";
+  followGateRequired: boolean;
+  typingIndicator: boolean;
+  deliveryDelaySeconds: number;
   publicReply: string;
   publicReply2: string;
   publicReply3: string;
@@ -52,6 +59,13 @@ const INITIAL: WizardData = {
   dmMessage: DEFAULT_DM_MESSAGE,
   ctaLink: "",
   ctaButtonTitle: DEFAULT_CTA_BUTTON_TITLE,
+  responseFormat: "TEXT",
+  quickReplies: [],
+  mediaUrl: "",
+  mediaType: "IMAGE",
+  followGateRequired: false,
+  typingIndicator: true,
+  deliveryDelaySeconds: 3,
   publicReply: DEFAULT_PUBLIC_REPLIES[0],
   publicReply2: DEFAULT_PUBLIC_REPLIES[1],
   publicReply3: DEFAULT_PUBLIC_REPLIES[2],
@@ -83,6 +97,8 @@ export function useWizard(slug: string, automationId?: string) {
     if (step === 3) {
       if (!hasCommentReply && !data.sendPrivateDm) return false;
       if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
+      if (data.sendPrivateDm && data.responseFormat === "LINK" && !data.ctaLink.trim()) return false;
+      if (data.sendPrivateDm && data.responseFormat === "MEDIA" && !data.mediaUrl.trim()) return false;
       return true;
     }
     return true;
@@ -98,7 +114,15 @@ export function useWizard(slug: string, automationId?: string) {
       return;
     }
     if (!hasCommentReply && !data.sendPrivateDm) {
-      setError("Choose a comment reply or DM before activating this campaign.");
+      setError("Choose a comment reply or DM before activating this automation.");
+      return;
+    }
+    if (data.sendPrivateDm && data.responseFormat === "LINK" && !data.ctaLink.trim()) {
+      setError("Add the button destination URL before activating.");
+      return;
+    }
+    if (data.sendPrivateDm && data.responseFormat === "MEDIA" && !data.mediaUrl.trim()) {
+      setError("Add a public image or video URL before activating.");
       return;
     }
 
@@ -112,6 +136,9 @@ export function useWizard(slug: string, automationId?: string) {
         matchingMode: "CONTAINS",
         triggerMode: data.triggerMode,
         sendPrivateDm: data.sendPrivateDm,
+        followGateRequired: data.followGateRequired,
+        typingIndicator: data.typingIndicator,
+        deliveryDelaySeconds: data.deliveryDelaySeconds,
         post: data.post,
         keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
         publicReplyEnabled: data.publicReplyEnabled,
@@ -123,6 +150,10 @@ export function useWizard(slug: string, automationId?: string) {
           commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
           ctaLink: data.sendPrivateDm ? data.ctaLink || undefined : undefined,
           ctaButtonTitle: data.sendPrivateDm ? data.ctaButtonTitle || undefined : undefined,
+          responseFormat: data.responseFormat,
+          quickReplies: data.quickReplies,
+          mediaUrl: data.responseFormat === "MEDIA" ? data.mediaUrl || undefined : undefined,
+          mediaType: data.responseFormat === "MEDIA" ? data.mediaType : undefined,
         },
       } as const;
 
@@ -156,13 +187,13 @@ export function useWizard(slug: string, automationId?: string) {
           : null;
 
       if (saved.status !== 200 || !campaignId) {
-        throw new Error(typeof saved.data === "string" ? saved.data : "Could not save campaign. Please try again.");
+        throw new Error(typeof saved.data === "string" ? saved.data : "Could not save automation. Please try again.");
       }
 
       router.push(`/dashboard/${slug}/automation/${campaignId}`);
     } catch (err) {
       console.error("[campaign-wizard] save failed", err);
-      setError(err instanceof Error ? err.message : "Could not save campaign. Please try again.");
+      setError(err instanceof Error ? err.message : "Could not save automation. Please try again.");
       setIsSubmitting(false);
     }
   };

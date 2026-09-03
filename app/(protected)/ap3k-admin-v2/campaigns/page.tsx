@@ -72,16 +72,16 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
   return (
     <div className="flex flex-col gap-6 sm:gap-7">
       <AdminPageHeader
-        eyebrow="Campaigns"
-        title="All campaigns"
+        eyebrow="Automations"
+        title="All automations"
         count={total}
         description="Review automation health, triggers, scope, delivery volume, and pause state without leaving the owner console."
       />
 
       <V2Table
-        headers={["Campaign", "Health", "Trigger", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason", "Actions"]}
+        headers={["Automation", "Health", "Trigger", "Post scope", "Public reply", "Replies", "Leads", "Last activity", "Pause reason", "Actions"]}
         rows={rows}
-        empty="No campaigns found."
+        empty="No automations found."
       />
       <V2Pagination page={page} total={total} base="/admin/campaigns" />
     </div>

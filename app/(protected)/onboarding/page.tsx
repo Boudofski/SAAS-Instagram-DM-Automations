@@ -38,7 +38,7 @@ export default async function OnboardingWelcomePage() {
         Welcome to AP3K, {firstName}
       </h1>
       <p className="mb-10 leading-relaxed text-slate-600 dark:text-rf-muted">
-        It takes 60 seconds to set up your first campaign.<br />
+        It takes 60 seconds to set up your first automation.<br />
         Let&apos;s connect your Instagram and launch it now.
       </p>
 

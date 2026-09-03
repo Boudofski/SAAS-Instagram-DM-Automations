@@ -99,10 +99,10 @@ export function CampaignActionsCell({
             <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
               <div className="min-w-0">
                 <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${modal === "pause" ? "text-amber-300" : "text-emerald-300"}`}>
-                  Campaign control
+                  Automation control
                 </p>
                 <h2 className="mt-1 text-lg font-black tracking-tight text-white">
-                  {modal === "pause" ? "Pause campaign" : "Resume campaign"}
+                  {modal === "pause" ? "Pause automation" : "Resume automation"}
                 </h2>
                 <p className="mt-1 truncate text-xs text-slate-500">{campaignName}</p>
               </div>
@@ -114,8 +114,8 @@ export function CampaignActionsCell({
             <div className="p-5 sm:p-6">
               <p className={`rounded-xl border px-3.5 py-3 text-xs leading-5 ${modal === "pause" ? "border-amber-500/18 bg-amber-500/[0.06] text-amber-200" : "border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-200"}`}>
                 {modal === "pause"
-                  ? "The campaign will stop processing new automation events. Review state and historical activity are preserved."
-                  : "The campaign will become active again. This is allowed only when the campaign does not require review."}
+                  ? "The automation will stop processing new events. Review state and historical activity are preserved."
+                  : "The automation will become active again. This is allowed only when the automation does not require review."}
               </p>
 
               <label className="mt-4 block">
@@ -139,7 +139,7 @@ export function CampaignActionsCell({
               <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-400 hover:bg-white/[0.04] hover:text-white disabled:opacity-50">Cancel</button>
                 <button type="button" onClick={handleSubmit} disabled={isPending} className={`rounded-xl px-5 py-2.5 text-sm font-black text-white transition disabled:opacity-50 ${modal === "pause" ? "bg-amber-600 hover:bg-amber-500" : "bg-emerald-600 hover:bg-emerald-500"}`}>
-                  {isPending ? "Working…" : modal === "pause" ? "Pause campaign" : "Resume campaign"}
+                  {isPending ? "Working…" : modal === "pause" ? "Pause automation" : "Resume automation"}
                 </button>
               </div>
             </div>

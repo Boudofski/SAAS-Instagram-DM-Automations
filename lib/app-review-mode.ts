@@ -7,7 +7,7 @@ export function shouldShowMetaPageSelection(eligiblePageCount: number) {
 }
 
 export const APP_REVIEW_SUBMISSION_NOTES =
-  "AP3K uses official Meta APIs. The screencast shows Meta Login, user permission grant, Instagram account connection, campaign creation, real Instagram comment webhook receipt, public reply sent with instagram_manage_comments, and activity/lead tracking inside AP3K. AP3K does not scrape Instagram and does not ask for Instagram passwords. Private replies are only enabled after instagram_manage_messages approval.";
+  "AP3K uses official Meta APIs. The screencast shows Meta Login, user permission grant, Instagram account connection, automation creation, real Instagram comment webhook receipt, public reply sent with instagram_manage_comments, and activity/lead tracking inside AP3K. AP3K does not scrape Instagram and does not ask for Instagram passwords. Private replies are only enabled after instagram_manage_messages approval.";
 
 const APP_REVIEW_FORBIDDEN_COPY = [
   "reviewer-ready",

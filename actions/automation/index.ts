@@ -9,6 +9,11 @@ import {
   type RawCampaignPayload,
 } from "@/lib/campaign-save";
 import {
+  normalizeMessageAutomationPayload,
+  validateMessageAutomationPayload,
+  type RawMessageAutomationPayload,
+} from "@/lib/message-automation";
+import {
   refreshExpiredCampaignMediaForClerkUser,
   refreshExpiredCampaignMediaListForClerkUser,
 } from "@/lib/campaign-media-refresh";
@@ -24,6 +29,7 @@ import {
   addTrigger,
   createAutomation,
   createCompleteAutomation,
+  createCompleteMessageAutomation,
   deleteAutomationQuery,
   deleteKeywordsQuery,
   duplicateAutomationQuery,
@@ -34,6 +40,7 @@ import {
   getDashboardActivity,
   updateAutomation,
   updateCompleteAutomation,
+  updateCompleteMessageAutomation,
 } from "./queries";
 
 export const createAutomations = async (id?: string) => {
@@ -82,19 +89,19 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       if ((profile as any)?.status === "SUSPENDED") {
         return {
           status: 403,
-          data: "Your account is suspended. Contact support before creating or activating campaigns.",
+          data: "Your account is suspended. Contact support before creating or activating automations.",
         };
       }
       if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
         return {
           status: 403,
-          data: "Reconnect Instagram before activating campaigns.",
+          data: "Reconnect Instagram before activating automations.",
         };
       }
       if (!getCanonicalInstagramIntegration((profile as any)?.integrations)) {
         return {
           status: 403,
-          data: "Connect Instagram before activating campaigns.",
+          data: "Connect Instagram before activating automations.",
         };
       }
       if (automationId) {
@@ -119,7 +126,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       if (!activation.ok) {
         return {
           status: 403,
-          data: "Your plan allows 1 active campaign. Pause another campaign or upgrade.",
+          data: "Your plan allows 1 active automation. Pause another automation or upgrade.",
         };
       }
     }
@@ -134,7 +141,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
     const id = automationId || savedResult?.automations?.[0]?.id || savedResult?.id;
     if (saved && id) return { status: 200, data: { id } };
 
-    return { status: 404, data: "Campaign not found" };
+    return { status: 404, data: "Automation not found" };
   } catch (error) {
     const message = campaignSaveErrorMessage(error);
     console.error("[campaign-save] save failed", {
@@ -149,13 +156,57 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
   }
 };
 
+export const saveMessageAutomation = async (
+  payload: RawMessageAutomationPayload,
+  automationId?: string
+) => {
+  const user = await onCurrentUser();
+
+  try {
+    const cleanPayload = normalizeMessageAutomationPayload(payload);
+    const validationError = validateMessageAutomationPayload(cleanPayload);
+    if (validationError) return { status: 400, data: validationError };
+
+    const profile = await findUser(user.id);
+    if ((profile as any)?.status === "SUSPENDED") {
+      return { status: 403, data: "Your account is suspended. Contact support before activating automations." };
+    }
+
+    if (cleanPayload.active) {
+      const instagram = getCanonicalInstagramIntegration((profile as any)?.integrations);
+      if (!instagram) {
+        return { status: 403, data: "Connect or reconnect Instagram before activating automations." };
+      }
+      const activation = profile?.id
+        ? await canActivateCampaign(profile.id, automationId)
+        : { ok: false };
+      if (!activation.ok) {
+        return { status: 403, data: "Your plan's active automation limit has been reached. Pause one or upgrade." };
+      }
+    }
+
+    const saved = automationId
+      ? await updateCompleteMessageAutomation(automationId, user.id, cleanPayload)
+      : await createCompleteMessageAutomation(user.id, cleanPayload);
+    if (!saved?.id) return { status: 404, data: "Automation not found" };
+    return { status: 200, data: { id: saved.id } };
+  } catch (error) {
+    console.error("[message-automation-save] save failed", {
+      automationId,
+      userId: user.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return { status: 500, data: "Could not save automation. Please try again." };
+  }
+};
+
 function campaignSaveErrorMessage(error: unknown) {
   const code = getPrismaErrorCode(error);
   const text = error instanceof Error ? error.message : String(error);
   const meta = JSON.stringify(getSafePrismaMeta(error) ?? {});
 
   if (code === "P2022" || text.includes("triggerMode") || meta.includes("triggerMode")) {
-    return "Could not save campaign because the database migration is missing. Deploy migration.";
+    return "Could not save automation because the database migration is missing. Deploy migration.";
   }
 
   if (
@@ -164,10 +215,10 @@ function campaignSaveErrorMessage(error: unknown) {
     text.includes("CAROSEL_ALBUM") ||
     text.includes("CAROUSEL_ALBUM")
   ) {
-    return "Could not save campaign. Check selected Instagram post.";
+    return "Could not save automation. Check the selected Instagram post.";
   }
 
-  return "Could not save campaign. Please try again.";
+  return "Could not save automation. Please try again.";
 }
 
 function getPrismaErrorCode(error: unknown) {
@@ -234,10 +285,10 @@ export const duplicateAutomation = async (id: string) => {
 
   try {
     const duplicated = await duplicateAutomationQuery(id, user.id);
-    if (duplicated) return { status: 200, data: "Campaign duplicated" };
-    return { status: 404, data: "Campaign cannot be duplicated until it has a post and DM" };
+    if (duplicated) return { status: 200, data: "Automation duplicated" };
+    return { status: 404, data: "This automation needs a post and DM before it can be duplicated" };
   } catch {
-    return { status: 500, data: "Failed to duplicate campaign" };
+    return { status: 500, data: "Failed to duplicate automation" };
   }
 };
 
@@ -246,10 +297,10 @@ export const deleteAutomation = async (id: string) => {
 
   try {
     const deleted = await deleteAutomationQuery(id, user.id);
-    if (deleted.count > 0) return { status: 200, data: "Campaign deleted" };
-    return { status: 404, data: "Campaign not found" };
+    if (deleted.count > 0) return { status: 200, data: "Automation deleted" };
+    return { status: 404, data: "Automation not found" };
   } catch {
-    return { status: 500, data: "Failed to delete campaign" };
+    return { status: 500, data: "Failed to delete automation" };
   }
 };
 
@@ -269,19 +320,19 @@ export const updateAutomationName = async (
       if ((profile as any)?.status === "SUSPENDED") {
         return {
           status: 403,
-          data: "Your account is suspended. Contact support before activating campaigns.",
+          data: "Your account is suspended. Contact support before activating automations.",
         };
       }
       if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
         return {
           status: 403,
-          data: "Reconnect Instagram before activating campaigns.",
+          data: "Reconnect Instagram before activating automations.",
         };
       }
       if (!getCanonicalInstagramIntegration((profile as any)?.integrations)) {
         return {
           status: 403,
-          data: "Connect Instagram before activating campaigns.",
+          data: "Connect Instagram before activating automations.",
         };
       }
       const existing = await client.automation.findFirst({
@@ -291,7 +342,7 @@ export const updateAutomationName = async (
       if (existing?.needsReview) {
         return {
           status: 403,
-          data: existing.reviewReason ?? "Review this campaign before activating.",
+          data: existing.reviewReason ?? "Review this automation before activating.",
         };
       }
       const activation = profile?.id
@@ -300,7 +351,7 @@ export const updateAutomationName = async (
       if (!activation.ok) {
         return {
           status: 403,
-          data: "Your plan allows 1 active campaign. Pause another campaign or upgrade.",
+          data: "Your plan allows 1 active automation. Pause another automation or upgrade.",
         };
       }
     }
@@ -453,25 +504,25 @@ export const activateAutomation = async (id: string, status: boolean) => {
       if (existing?.needsReview) {
         return {
           status: 403,
-          data: existing.reviewReason ?? "Review this campaign before activating.",
+          data: existing.reviewReason ?? "Review this automation before activating.",
         };
       }
       if ((profile as any)?.status === "SUSPENDED") {
         return {
           status: 403,
-          data: "Your account is suspended. Contact support before activating campaigns.",
+          data: "Your account is suspended. Contact support before activating automations.",
         };
       }
       if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
         return {
           status: 403,
-          data: "Reconnect Instagram before activating campaigns.",
+          data: "Reconnect Instagram before activating automations.",
         };
       }
       if (!getCanonicalInstagramIntegration((profile as any)?.integrations)) {
         return {
           status: 403,
-          data: "Connect Instagram before activating campaigns.",
+          data: "Connect Instagram before activating automations.",
         };
       }
       const activation = profile?.id
@@ -480,7 +531,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
       if (!activation.ok) {
         return {
           status: 403,
-          data: "Your plan allows 1 active campaign. Pause another campaign or upgrade.",
+          data: "Your plan allows 1 active automation. Pause another automation or upgrade.",
         };
       }
     }
@@ -508,7 +559,7 @@ export const repairCampaign = async (automationId: string) => {
       }),
       findUser(user.id),
     ]);
-    if (!automation) return { status: 404, data: "Campaign not found" };
+    if (!automation) return { status: 404, data: "Automation not found" };
     const integrationId = profile?.integrations?.[0]?.id;
     if (integrationId) {
       try {
@@ -528,7 +579,7 @@ export const repairCampaign = async (automationId: string) => {
     );
     const validTrigger = automation.triggerMode === "ANY_COMMENT" || automation.keywords.some((keyword) => keyword.word.trim());
     if (!validAction || !validTrigger) {
-      return { status: 403, data: "Campaign is missing trigger or reply settings." };
+      return { status: 403, data: "This automation is missing trigger or reply settings." };
     }
 
     const postValidation = await validatePostForReviewedCampaign(profile?.integrations, postId);
@@ -540,9 +591,9 @@ export const repairCampaign = async (automationId: string) => {
       where: { id: automation.id },
       data: { needsReview: false, reviewReason: null },
     });
-    return { status: 200, data: "Campaign repaired. You can activate it now." };
+    return { status: 200, data: "Automation repaired. You can activate it now." };
   } catch {
-    return { status: 500, data: "Could not repair campaign." };
+    return { status: 500, data: "Could not repair automation." };
   }
 };
 
@@ -554,7 +605,7 @@ async function validatePostForReviewedCampaign(integrations: any[] | undefined, 
 
   const connection = resolveInstagramMediaConnection(integrations);
   if (!connection.ok) {
-    return { ok: false, message: "Reconnect Instagram before reviewing this campaign." };
+    return { ok: false, message: "Reconnect Instagram before reviewing this automation." };
   }
 
   try {

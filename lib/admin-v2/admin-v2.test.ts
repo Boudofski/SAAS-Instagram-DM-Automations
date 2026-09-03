@@ -80,7 +80,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
     const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
     expect(overview).toContain("Total users");
     expect(overview).toContain("Connected accounts");
-    expect(overview).toContain("Active campaigns");
+    expect(overview).toContain("Active automations");
     expect(overview).toContain("Replies today");
     expect(overview).toContain("Leads today");
     expect(overview).toContain("Failed today");
@@ -93,7 +93,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
 
   it("campaigns table renders empty state", () => {
     const campaigns = read("app/(protected)/ap3k-admin-v2/campaigns/page.tsx");
-    expect(campaigns).toContain("No campaigns found.");
+    expect(campaigns).toContain("No automations found.");
   });
 
   it("accounts table renders empty state", () => {
@@ -108,7 +108,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
 
   it("reply templates page describes its empty state", () => {
     const replies = read("app/(protected)/ap3k-admin-v2/replies/page.tsx");
-    expect(replies).toContain("No campaigns with public reply templates found.");
+    expect(replies).toContain("No automations with public reply templates found.");
   });
 
   it("root page redirects to overview", () => {

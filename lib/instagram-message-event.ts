@@ -9,6 +9,10 @@ export type ParsedMessagingData = {
   messageMid?: string;
   messageTimestamp?: number;
   postback?: { payload?: string; title?: string };
+  quickReplyPayload?: string;
+  attachments: Array<{ type?: string; url?: string }>;
+  replyToStory?: { id?: string; url?: string };
+  storyMention: boolean;
   isEcho: boolean;
 };
 
@@ -19,6 +23,9 @@ export type MessagingDiagnostics = {
   hasMessageMid: boolean;
   hasTimestamp: boolean;
   hasPostback: boolean;
+  hasQuickReply: boolean;
+  hasAttachments: boolean;
+  hasStoryContext: boolean;
   isEcho: boolean;
 };
 
@@ -33,6 +40,9 @@ const EMPTY_DIAGNOSTICS: MessagingDiagnostics = {
   hasMessageMid: false,
   hasTimestamp: false,
   hasPostback: false,
+  hasQuickReply: false,
+  hasAttachments: false,
+  hasStoryContext: false,
   isEcho: false,
 };
 
@@ -65,6 +75,23 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
   const messageMid = typeof m.message?.mid === "string" ? m.message.mid : undefined;
   const messageTimestamp = typeof m.timestamp === "number" ? m.timestamp : undefined;
   const isEcho = Boolean(m.message?.is_echo);
+  const quickReplyPayload = typeof m.message?.quick_reply?.payload === "string"
+    ? m.message.quick_reply.payload
+    : undefined;
+  const attachments: Array<{ type?: string; url?: string }> = Array.isArray(m.message?.attachments)
+    ? m.message.attachments.map((attachment: any) => ({
+        type: typeof attachment?.type === "string" ? attachment.type : undefined,
+        url: typeof attachment?.payload?.url === "string" ? attachment.payload.url : undefined,
+      }))
+    : [];
+  const story = m.message?.reply_to?.story;
+  const replyToStory = story && typeof story === "object"
+    ? {
+        id: typeof story.id === "string" ? story.id : undefined,
+        url: typeof story.url === "string" ? story.url : undefined,
+      }
+    : undefined;
+  const storyMention = attachments.some((attachment) => attachment.type === "story_mention");
   const postback =
     m.postback && typeof m.postback === "object"
       ? {
@@ -80,6 +107,9 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
     hasMessageMid: Boolean(messageMid),
     hasTimestamp: messageTimestamp !== undefined,
     hasPostback: Boolean(postback),
+    hasQuickReply: Boolean(quickReplyPayload),
+    hasAttachments: attachments.length > 0,
+    hasStoryContext: Boolean(replyToStory) || storyMention,
     isEcho,
   };
 
@@ -89,7 +119,19 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
 
   return {
     ok: true,
-    data: { senderId, recipientId, messageText, messageMid, messageTimestamp, postback, isEcho },
+    data: {
+      senderId,
+      recipientId,
+      messageText,
+      messageMid,
+      messageTimestamp,
+      postback,
+      quickReplyPayload,
+      attachments,
+      replyToStory,
+      storyMention,
+      isEcho,
+    },
     diagnostics,
   };
 }
@@ -100,3 +142,27 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
 
 export const INBOUND_MESSAGE_NO_AUTOMATION = "inbound_message_received_no_dm_automation" as const;
 export const INBOUND_MESSAGE_ECHO_SKIPPED = "echo_message_skipped" as const;
+
+export type StoryInteractionType = "MENTION" | "REACTION" | "REPLY";
+
+/** Story reactions arrive as emoji-only story replies; generic message reactions are not story interactions. */
+export function classifyStoryInteraction(data: ParsedMessagingData): StoryInteractionType | null {
+  if (data.storyMention) return "MENTION";
+  if (!data.replyToStory) return null;
+  return isEmojiOnly(data.messageText) ? "REACTION" : "REPLY";
+}
+
+function isEmojiOnly(value?: string) {
+  const text = value?.trim();
+  if (!text) return false;
+  return Array.from(text).every((character) => {
+    if (/\s/.test(character) || character === "\uFE0F" || character === "\u200D") return true;
+    const codePoint = character.codePointAt(0) ?? 0;
+    return (
+      (codePoint >= 0x1f000 && codePoint <= 0x1faff) ||
+      (codePoint >= 0x2600 && codePoint <= 0x27ff) ||
+      (codePoint >= 0x2300 && codePoint <= 0x23ff) ||
+      (codePoint >= 0x2b00 && codePoint <= 0x2bff)
+    );
+  });
+}

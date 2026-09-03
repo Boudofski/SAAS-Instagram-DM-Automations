@@ -149,7 +149,7 @@ describe("account webhook diagnostics", () => {
       },
     });
 
-    expect(diagnostic.warnings).toContain("Campaign post belongs to a different user.");
+    expect(diagnostic.warnings).toContain("Automation post belongs to a different user.");
   });
 
   it("compares working and failing accounts with correct statuses", () => {

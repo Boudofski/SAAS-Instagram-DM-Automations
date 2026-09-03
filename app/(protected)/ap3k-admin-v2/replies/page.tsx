@@ -46,13 +46,13 @@ export default async function AdminV2RepliesPage({ searchParams }: Props) {
         eyebrow="Replies"
         title="Reply templates"
         count={total}
-        description="Campaign-level public reply variants. The table is paginated to keep editing fast and readable on desktop and mobile."
+        description="Automation-level public reply variants. The table is paginated to keep editing fast and readable on desktop and mobile."
       />
 
       <V2Table
-        headers={["Campaign", "Status", "Reply variant 1", "Reply variant 2", "Reply variant 3", "Actions"]}
+        headers={["Automation", "Status", "Reply variant 1", "Reply variant 2", "Reply variant 3", "Actions"]}
         rows={rows}
-        empty="No campaigns with public reply templates found."
+        empty="No automations with public reply templates found."
       />
       <V2Pagination
         page={page}

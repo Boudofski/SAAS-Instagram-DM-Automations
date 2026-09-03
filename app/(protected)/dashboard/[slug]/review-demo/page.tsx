@@ -4,7 +4,7 @@ type Props = { params: { slug: string } };
 
 const REVIEW_STEPS = [
   "Connect Instagram with Meta Login",
-  "Create campaign",
+  "Create automation",
   "Add keyword trigger",
   "Enable public reply",
   "Comment from another Instagram account",
@@ -41,7 +41,7 @@ export default function ReviewDemoPage({ params }: Props) {
           Start with Instagram connection
         </Link>
         <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-outline-button inline-flex justify-center px-5 py-2.5 text-sm">
-          Create campaign
+          Create automation
         </Link>
       </div>
     </div>

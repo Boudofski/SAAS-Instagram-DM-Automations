@@ -8,7 +8,7 @@ import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 const siteDescription =
-  "AP3K automates Instagram comments with clear Comment replies and DMs, lead tracking, and campaign analytics for Business and Creator accounts.";
+  "AP3K automates Instagram comments, stories, and DMs with clear replies, lead tracking, inbox management, and automation analytics for Business and Creator accounts.";
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {

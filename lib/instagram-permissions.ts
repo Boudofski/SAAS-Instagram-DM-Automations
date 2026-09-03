@@ -72,10 +72,10 @@ export function instagramPermissionBlockMessage(
   if (!capabilities.authoritative) return null;
 
   if (capabilities.basic === "missing") {
-    return "Reconnect Instagram and allow profile and media access before activating campaigns.";
+    return "Reconnect Instagram and allow profile and media access before activating automations.";
   }
   if (capabilities.comments === "missing") {
-    return "Reconnect Instagram and enable Access and manage comments before activating campaigns.";
+    return "Reconnect Instagram and enable Access and manage comments before activating automations.";
   }
   if (options.needsMessages && capabilities.messages === "missing") {
     return "Reconnect Instagram and enable Access and manage messages before sending DMs.";

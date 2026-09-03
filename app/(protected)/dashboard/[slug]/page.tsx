@@ -98,14 +98,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     automation.listener?.commentReply3
   ));
   const actionHealthDetail = !hasActiveCampaign
-    ? "Ready when a campaign is live"
+    ? "Ready when an automation is live"
     : hasCommentReplyCampaign && hasDmCampaign
       ? "Comment replies + DMs active"
       : hasDmCampaign
         ? "DMs active"
         : hasCommentReplyCampaign
           ? "Comment replies active"
-          : "Campaign active";
+          : "Automation active";
 
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -113,7 +113,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3K</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          Your Instagram connection, campaign activity, comment replies, DMs, and captured leads in one place.
+          Your Instagram connection, automation activity, comment replies, DMs, and captured leads in one place.
         </p>
       </div>
 
@@ -122,12 +122,12 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="ap3k-kicker">Ready to launch</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Create your first Instagram campaign</h2>
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Create your first Instagram automation</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Choose a post, set a comment trigger, then choose whether AP3K should reply to the comment, send a DM, or both.
+                Start with a post comment, story interaction, or incoming DM, then choose the response and delivery rules.
               </p>
             </div>
-            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">Create campaign</Link>
+            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">Create automation</Link>
           </div>
         </div>
       )}
@@ -151,10 +151,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 </div>
                 <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   {tokenExpired
-                    ? "Reconnect Instagram to resume campaign activity."
+                    ? "Reconnect Instagram to resume automation activity."
                     : profileSnapshot?.fetchedAt
                       ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
-                      : "Instagram is ready for campaign activity."}
+                      : "Instagram is ready for automation activity."}
                 </p>
               </div>
             </div>
@@ -198,7 +198,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       <div className="grid animate-[ap3kDashboardRise_0.64s_ease-out_both] gap-3 md:grid-cols-4">
         <HealthPill label="Instagram connected" detail={instagramConnected && !tokenExpired ? "Ready" : "Reconnect required"} state={instagramConnected && !tokenExpired ? "ok" : "warn"} />
         <HealthPill label="Comments" detail={metrics?.commentsReceived ? "Comments are arriving" : "Ready to receive"} state={instagramConnected && !tokenExpired ? "ok" : "warn"} />
-        <HealthPill label="Campaigns" detail={hasActiveCampaign ? `${activeCampaigns.length} live campaign${activeCampaigns.length === 1 ? "" : "s"}` : "Activate a campaign"} state={hasActiveCampaign ? "ok" : "warn"} />
+        <HealthPill label="Automations" detail={hasActiveCampaign ? `${activeCampaigns.length} live automation${activeCampaigns.length === 1 ? "" : "s"}` : "Activate an automation"} state={hasActiveCampaign ? "ok" : "warn"} />
         <HealthPill label="Actions" detail={actionHealthDetail} state={hasActiveCampaign ? "ok" : "warn"} />
       </div>
 
@@ -240,7 +240,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         {recentActivity.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400">
             <p>{activityEmptyState?.title ?? "No activity yet"}</p>
-            <p className="mt-1">Comment from another Instagram account on a post covered by a live campaign to create the first activity.</p>
+            <p className="mt-1">Trigger a live automation from another Instagram account to create the first activity.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/[0.07]">
@@ -266,8 +266,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       <section className="animate-[ap3kDashboardRise_0.82s_ease-out_both]">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="ap3k-kicker">Campaigns</p>
-            <h2 className="font-black text-slate-950 dark:text-white">Active campaigns</h2>
+            <p className="ap3k-kicker">Automations</p>
+            <h2 className="font-black text-slate-950 dark:text-white">Active automations</h2>
           </div>
           <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15">View all</Link>
         </div>
@@ -275,9 +275,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         {isEmpty ? (
           <EmptyState
             icon="📣"
-            title="No campaigns yet"
-            description="Create a campaign, choose a post, add a trigger, choose your actions, and activate it."
-            ctaLabel="Create campaign →"
+            title="No automations yet"
+            description="Choose a comment, story, or DM trigger, configure the response, and activate it."
+            ctaLabel="Create automation →"
             ctaHref={`/dashboard/${params.slug}/automation/new`}
           />
         ) : (

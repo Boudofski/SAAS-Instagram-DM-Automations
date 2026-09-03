@@ -14,7 +14,7 @@ export const HUMAN_EVENT: Record<string, string> = {
   SELF_COMMENT_SKIPPED: "Self-comment skipped",
   COMMENT_SKIPPED: "Comment skipped",
   LOOP_GUARD_TRIGGERED: "Loop guard triggered",
-  LOOP_GUARD_PAUSED_CAMPAIGN: "Campaign auto-paused",
+  LOOP_GUARD_PAUSED_CAMPAIGN: "Automation auto-paused",
   NO_MATCH: "No keyword match",
 };
 
@@ -37,7 +37,7 @@ export const HUMAN_ERROR: Record<string, string> = {
   no_keyword_match: "No keyword matched in this comment",
   ap3k_generated_comment: "Skipped: AP3K-generated comment detected",
   webhook_verification_failed: "Webhook verification failed",
-  external_dm_tool_enabled: "DM skipped: external tool handles messaging for this campaign",
+  external_dm_tool_enabled: "DM skipped: external tool handles messaging for this automation",
   token_expired: "Access token has expired — reconnect required",
   page_token_missing: "Page access token missing or invalid",
   webhook_subscription_failed: "Webhook subscription could not be established",

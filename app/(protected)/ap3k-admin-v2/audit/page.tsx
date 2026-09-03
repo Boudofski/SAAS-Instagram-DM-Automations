@@ -32,8 +32,8 @@ const ACTION_OPTIONS = [
   { value: "ADMIN_PLAN_CHANGED", label: "Plan changed" },
   { value: "ADMIN_USER_USAGE_RESET", label: "Usage reset" },
   { value: "ADMIN_BILLING_OVERRIDES_UPDATED", label: "Billing overrides updated" },
-  { value: "ADMIN_PAUSE_CAMPAIGN", label: "Campaign paused" },
-  { value: "ADMIN_RESUME_CAMPAIGN", label: "Campaign resumed" },
+  { value: "ADMIN_PAUSE_CAMPAIGN", label: "Automation paused" },
+  { value: "ADMIN_RESUME_CAMPAIGN", label: "Automation resumed" },
   { value: "ADMIN_REFRESH_PROFILE_SNAPSHOT", label: "Profile snapshot refresh" },
   { value: "ADMIN_MARK_RECONNECT_REQUIRED", label: "Mark reconnect required" },
 ];

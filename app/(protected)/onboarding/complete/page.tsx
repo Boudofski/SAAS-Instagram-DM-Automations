@@ -19,7 +19,7 @@ export default async function OnboardingCompletePage() {
         Instagram connected
       </h1>
       <p className="mb-10 text-slate-600 dark:text-rf-muted">
-        Your Instagram Business or Creator account is connected. Create a campaign to test public replies.
+        Your Instagram Business or Creator account is connected. Create an automation to test public replies.
       </p>
 
       <Link

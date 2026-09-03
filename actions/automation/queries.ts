@@ -2,6 +2,7 @@
 
 import { client } from "@/lib/prisma";
 import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
+import type { NormalizedMessageAutomationPayload } from "@/lib/message-automation";
 import type { MATCHING_MODE } from "@prisma/client";
 
 export type CampaignPayload = NormalizedCampaignPayload;
@@ -72,6 +73,11 @@ export const createCompleteAutomation = async (
           matchingMode: payload.matchingMode,
           triggerMode: payload.triggerMode,
           sendPrivateDm: payload.sendPrivateDm,
+          source: "COMMENT",
+          storyTriggerType: null,
+          followGateRequired: payload.followGateRequired,
+          typingIndicator: payload.typingIndicator,
+          deliveryDelaySeconds: payload.deliveryDelaySeconds,
           posts: {
             create: payload.post,
           },
@@ -99,6 +105,118 @@ export const createCompleteAutomation = async (
         select: { id: true },
       },
     },
+  });
+};
+
+function messageTriggerType(payload: NormalizedMessageAutomationPayload) {
+  return payload.source === "STORY"
+    ? `STORY_${payload.storyTriggerType}`
+    : "DM";
+}
+
+export const createCompleteMessageAutomation = async (
+  clerkId: string,
+  payload: NormalizedMessageAutomationPayload
+) => {
+  const user = await client.user.findUnique({ where: { clerkId }, select: { id: true } });
+  if (!user) return null;
+
+  return client.automation.create({
+    data: {
+      userId: user.id,
+      name: payload.name,
+      active: payload.active,
+      source: payload.source,
+      storyTriggerType: payload.storyTriggerType,
+      triggerMode: payload.triggerMode,
+      matchingMode: "CONTAINS",
+      sendPrivateDm: true,
+      followGateRequired: payload.followGateRequired,
+      typingIndicator: payload.typingIndicator,
+      deliveryDelaySeconds: payload.deliveryDelaySeconds,
+      needsReview: false,
+      reviewReason: null,
+      ...(payload.keywords.length > 0 && {
+        keywords: {
+          createMany: {
+            data: payload.keywords.map((word) => ({ word })),
+            skipDuplicates: true,
+          },
+        },
+      }),
+      trigger: { create: { type: messageTriggerType(payload) } },
+      listener: {
+        create: {
+          listener: "MESSAGE",
+          prompt: payload.message,
+          responseFormat: payload.responseFormat,
+          quickReplies: payload.quickReplies,
+          ctaLink: payload.ctaLink,
+          ctaButtonTitle: payload.ctaButtonTitle,
+          mediaUrl: payload.mediaUrl,
+          mediaType: payload.mediaType,
+        },
+      },
+    },
+    select: { id: true },
+  });
+};
+
+export const updateCompleteMessageAutomation = async (
+  automationId: string,
+  clerkId: string,
+  payload: NormalizedMessageAutomationPayload
+) => {
+  const automation = await client.automation.findFirst({
+    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    select: { id: true },
+  });
+  if (!automation) return null;
+
+  return client.$transaction(async (tx) => {
+    await tx.keyword.deleteMany({ where: { automationId } });
+    await tx.trigger.deleteMany({ where: { automationId } });
+    await tx.listener.deleteMany({ where: { automationId } });
+
+    return tx.automation.update({
+      where: { id: automationId },
+      data: {
+        name: payload.name,
+        active: payload.active,
+        source: payload.source,
+        storyTriggerType: payload.storyTriggerType,
+        triggerMode: payload.triggerMode,
+        matchingMode: "CONTAINS",
+        sendPrivateDm: true,
+        followGateRequired: payload.followGateRequired,
+        typingIndicator: payload.typingIndicator,
+        deliveryDelaySeconds: payload.deliveryDelaySeconds,
+        needsReview: false,
+        reviewReason: null,
+        ...(payload.keywords.length > 0 && {
+          keywords: {
+            createMany: {
+              data: payload.keywords.map((word) => ({ word })),
+              skipDuplicates: true,
+            },
+          },
+        }),
+        trigger: { create: { type: messageTriggerType(payload) } },
+        listener: {
+          create: {
+            listener: "MESSAGE",
+            prompt: payload.message,
+            responseFormat: payload.responseFormat,
+            quickReplies: payload.quickReplies,
+            ctaLink: payload.ctaLink,
+            ctaButtonTitle: payload.ctaButtonTitle,
+            mediaUrl: payload.mediaUrl,
+            mediaType: payload.mediaType,
+          },
+        },
+      },
+      select: { id: true },
+    });
   });
 };
 
@@ -213,6 +331,11 @@ export const updateCompleteAutomation = async (
         matchingMode: payload.matchingMode,
         triggerMode: payload.triggerMode,
         sendPrivateDm: payload.sendPrivateDm,
+        source: "COMMENT",
+        storyTriggerType: null,
+        followGateRequired: payload.followGateRequired,
+        typingIndicator: payload.typingIndicator,
+        deliveryDelaySeconds: payload.deliveryDelaySeconds,
         posts: { create: payload.post },
         ...(payload.keywords.length > 0 && {
           keywords: {
@@ -235,14 +358,56 @@ export const duplicateAutomationQuery = async (
   clerkId: string
 ) => {
   const automation = await findAutomationForUser(automationId, clerkId);
-  if (!automation?.listener || !automation.posts[0]) return null;
+  if (!automation?.listener) return null;
+
+  if (automation.source === "STORY" || automation.source === "DM") {
+    return createCompleteMessageAutomation(clerkId, {
+      name: `${automation.name || "Untitled automation"} copy`,
+      active: false,
+      source: automation.source,
+      storyTriggerType:
+        automation.storyTriggerType === "REACTION" || automation.storyTriggerType === "REPLY"
+          ? automation.storyTriggerType
+          : automation.source === "STORY"
+            ? "MENTION"
+            : null,
+      triggerMode: automation.triggerMode === "SPECIFIC_KEYWORD" ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE",
+      keywords: automation.keywords.map((keyword) => keyword.word),
+      responseFormat:
+        automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA"
+          ? automation.listener.responseFormat
+          : "TEXT",
+      message: automation.listener.prompt,
+      quickReplies: Array.isArray(automation.listener.quickReplies)
+        ? automation.listener.quickReplies.filter((item): item is string => typeof item === "string")
+        : [],
+      ctaLink: automation.listener.ctaLink ?? undefined,
+      ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
+      mediaUrl: automation.listener.mediaUrl ?? undefined,
+      mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
+      followGateRequired: automation.followGateRequired,
+      typingIndicator: automation.typingIndicator,
+      deliveryDelaySeconds:
+        automation.deliveryDelaySeconds === 3 || automation.deliveryDelaySeconds === 5 || automation.deliveryDelaySeconds === 10 || automation.deliveryDelaySeconds === 30
+          ? automation.deliveryDelaySeconds
+          : 0,
+    });
+  }
+
+  if (!automation.posts[0]) return null;
 
   const payload: CampaignPayload = {
-    name: `${automation.name || "Untitled campaign"} copy`,
+    name: `${automation.name || "Untitled automation"} copy`,
     active: false,
     matchingMode: automation.matchingMode === "EXACT" ? "EXACT" : "CONTAINS",
     triggerMode: (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ?? "SPECIFIC_KEYWORD",
     sendPrivateDm: automation.sendPrivateDm,
+    followGateRequired: automation.followGateRequired,
+    typingIndicator: automation.typingIndicator,
+    deliveryDelaySeconds:
+      automation.deliveryDelaySeconds === 3 || automation.deliveryDelaySeconds === 5 || automation.deliveryDelaySeconds === 10 || automation.deliveryDelaySeconds === 30
+        ? automation.deliveryDelaySeconds
+        : 0,
     post: {
       postid: automation.posts[0].postid,
       caption: automation.posts[0].caption ?? undefined,
@@ -258,6 +423,15 @@ export const duplicateAutomationQuery = async (
       commentReply3: automation.listener.commentReply3 ?? undefined,
       ctaLink: automation.listener.ctaLink ?? undefined,
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
+      responseFormat:
+        automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA"
+          ? automation.listener.responseFormat
+          : "TEXT",
+      quickReplies: Array.isArray(automation.listener.quickReplies)
+        ? automation.listener.quickReplies.filter((item): item is string => typeof item === "string")
+        : [],
+      mediaUrl: automation.listener.mediaUrl ?? undefined,
+      mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
     },
   };
 
@@ -648,7 +822,7 @@ export const getDashboardActivity = async (clerkId: string) => {
   return [...events, ...messageLogs, ...webhookEvents]
     .map((item: any) => ({
       id: item.id,
-      campaign: item.automation?.name ?? "Campaign",
+      campaign: item.automation?.name ?? "Automation",
       createdAt: item.createdAt,
       type: item.eventType ?? `${item.messageType}_${item.status}`,
       status: item.status ?? undefined,

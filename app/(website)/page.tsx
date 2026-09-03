@@ -41,7 +41,7 @@ const VALUE_CARDS = [
     step: "04",
     icon: Users,
     title: "See what happened",
-    copy: "Keep replies, DMs, campaign activity, and captured leads together in AP3K.",
+    copy: "Keep replies, DMs, automation activity, and captured leads together in AP3K.",
   },
 ] as const;
 
@@ -50,22 +50,22 @@ const BENEFITS = [
     kicker: "Comment automation",
     title: "Turn comments into conversations that keep moving.",
     body: "Choose a keyword or any eligible comment, then let AP3K react immediately while intent is still fresh.",
-    bullets: ["Match keywords or any comment", "Keep every campaign organized", "See activity as it happens"],
+    bullets: ["Match keywords or any comment", "Keep every automation organized", "See activity as it happens"],
     src: "/media/instagram-features_02.mp4",
     label: "Comment triggers",
   },
   {
     kicker: "Lead capture",
     title: "Catch interested people before the moment disappears.",
-    body: "Move the right commenters into a DM and keep the campaign activity and lead context in one place.",
-    bullets: ["Send the requested follow-up by DM", "Track campaign leads", "Reduce manual inbox follow-up"],
+    body: "Move the right commenters into a DM and keep the automation activity and lead context in one place.",
+    bullets: ["Send the requested follow-up by DM", "Track automation leads", "Reduce manual inbox follow-up"],
     src: "/media/instagram-features_03.mp4",
     label: "Lead flow",
   },
   {
     kicker: "Always-on engagement",
     title: "Reply while your audience is still paying attention.",
-    body: "AP3K can reply under the post, send a DM, or do both—using the exact actions you configured for the campaign.",
+    body: "AP3K can reply under the post, send a DM, or do both—using the exact actions you configured for the automation.",
     bullets: ["Reply to comments automatically", "Send DMs after eligible comments", "Use one action or both"],
     src: "/media/instagram-features_04.mp4",
     label: "Reply and DM",
@@ -73,13 +73,13 @@ const BENEFITS = [
 ] as const;
 
 const FAQS = [
-  ["What does AP3K automate?", "AP3K watches new comments on the Instagram posts or Reels you choose. When a comment matches your campaign, it can publish a reply, send the commenter a DM, or run both actions."],
+  ["What does AP3K automate?", "AP3K watches new comments, story interactions, and incoming DMs. When an interaction matches your automation, it can publish a comment reply, send a DM, or run both actions."],
   ["Which Instagram accounts can connect to AP3K?", "AP3K supports Instagram Business and Creator accounts through Instagram's official authorization flow. Personal Instagram accounts must be changed to a professional account before connecting."],
-  ["What is the difference between Specific keyword and Any comment?", "Specific keyword runs only when a new comment contains a word you configured, such as GUIDE. Any comment runs for every eligible new comment in that campaign's post scope."],
+  ["What is the difference between Specific keyword and Any comment?", "Specific keyword runs only when a new comment contains a word you configured, such as GUIDE. Any comment runs for every eligible new comment in that automation's post scope."],
   ["Can AP3K reply publicly and send a DM at the same time?", "Yes. You can enable a public Comment reply, a private DM, or both. When both are enabled, the public reply confirms the action while the DM delivers the private follow-up."],
   ["Can the automated DM include a clickable link?", "Yes. Add your destination URL and edit the button label—for example, Get the Link—so the commenter can open the promised guide, product, booking page, or offer from the DM."],
-  ["Will a new campaign respond to old comments?", "No. Campaigns react to eligible new comment events received after the campaign is active. They do not go backward through comments that were already on the post."],
-  ["How do I test a campaign before promoting it?", "Activate the campaign, then comment from a different Instagram account using the configured keyword or any normal comment. Check the public reply, Instagram inbox, campaign activity, and link button before sending traffic to the post."],
+  ["Will a new automation respond to old interactions?", "No. Automations react to eligible new events received after they are active. They do not go backward through comments or messages that already existed."],
+  ["How do I test an automation before promoting it?", "Activate the automation, then trigger it from a different Instagram account. Check the public reply, AP3K Inbox, activity, DM content, and link button before sending traffic to it."],
   ["Will AP3K reply to its own automated comments?", "No. AP3K ignores replies from the connected Instagram account and duplicate comment events so an automation cannot create a reply loop."],
   ["What is included in the AP3K launch trial?", "Connect an eligible Instagram Business or Creator account and AP3K unlocks 500 automated replies for 14 days. After the one-time trial ends, the Free plan starts with 50 automated replies each month."],
   ["How does the AP3K referral program work?", "Share your tracked link from the Refer & earn dashboard. When a new referred user connects Instagram and completes a qualifying paid Pro or Business invoice, eligible Founding 10 partners earn a $9 AP3K account credit."],
@@ -302,7 +302,7 @@ export default async function LandingPage() {
             <FadeIn className="text-center">
               <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Less busywork</p>
               <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Stop doing overtime. Start replying in real time.</h2>
-              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Build the campaign once, then let AP3K handle the repetitive first touch while you stay in control.</p>
+              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Build the automation once, then let AP3K handle the repetitive first touch while you stay in control.</p>
             </FadeIn>
             <div className="mt-12 grid gap-5 lg:grid-cols-2">
               <FadeIn>
@@ -319,7 +319,7 @@ export default async function LandingPage() {
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">With AP3K</p>
                   <h3 className="mt-4 text-2xl font-black">The first response happens automatically.</h3>
                   <div className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
-                    {["Campaign listens for eligible comments", "Trigger matches automatically", "Comment reply and/or DM sends", "Activity and leads stay organized"].map((item) => <p key={item} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />{item}</p>)}
+                    {["Automation listens for eligible interactions", "Trigger matches automatically", "Configured response sends", "Activity and leads stay organized"].map((item) => <p key={item} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />{item}</p>)}
                   </div>
                 </div>
               </FadeIn>
@@ -349,7 +349,7 @@ export default async function LandingPage() {
             </FadeIn>
             <FadeIn delay={0.06}>
               <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-8 shadow-[0_25px_80px_rgba(91,33,200,0.12)] dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-12">
-                <ProductVideo src="/media/templates_05.mp4" label="AP3K campaign setup demo" className="max-w-[280px]" />
+                <ProductVideo src="/media/templates_05.mp4" label="AP3K automation setup demo" className="max-w-[280px]" />
               </div>
             </FadeIn>
           </div>
@@ -409,7 +409,7 @@ export default async function LandingPage() {
           <FadeIn className="relative mx-auto max-w-4xl">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Your next comment can become a customer</p>
             <h2 className="mt-5 text-4xl font-black tracking-[-0.055em] sm:text-6xl">Start automating Instagram today.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">Create your first campaign, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">Create your first automation, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition hover:-translate-y-0.5">Start free <ArrowRight className="h-4 w-4" /></Link>
               <Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">View pricing</Link>

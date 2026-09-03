@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseMessagingItem,
+  classifyStoryInteraction,
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "./instagram-message-event";
@@ -93,6 +94,41 @@ describe("parseMessagingItem — postback events", () => {
     expect(result.data.messageText).toBeUndefined();
     expect(result.diagnostics.hasPostback).toBe(true);
     expect(result.diagnostics.hasMessageText).toBe(false);
+  });
+});
+
+describe("story interaction classification", () => {
+  it("classifies story mentions from the attachment type", () => {
+    const result = parseMessagingItem({
+      sender: { id: SENDER_ID },
+      message: { mid: MESSAGE_MID, attachments: [{ type: "story_mention", payload: { url: "https://example.com/story" } }] },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.storyMention).toBe(true);
+    expect(classifyStoryInteraction(result.data)).toBe("MENTION");
+  });
+
+  it("separates emoji reactions from text replies when both reference a story", () => {
+    const reaction = parseMessagingItem({ sender: { id: SENDER_ID }, message: { text: "🔥", reply_to: { story: { id: "story-1" } } } });
+    const reply = parseMessagingItem({ sender: { id: SENDER_ID }, message: { text: "Can I get this?", reply_to: { story: { id: "story-1" } } } });
+    expect(reaction.ok && classifyStoryInteraction(reaction.data)).toBe("REACTION");
+    expect(reply.ok && classifyStoryInteraction(reply.data)).toBe("REPLY");
+  });
+
+  it("does not mistake a generic message reaction for a story reaction", () => {
+    const result = parseMessagingItem({ sender: { id: SENDER_ID }, reaction: { action: "react", emoji: "❤️" } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(classifyStoryInteraction(result.data)).toBeNull();
+  });
+
+  it("parses quick reply payloads", () => {
+    const result = parseMessagingItem({ sender: { id: SENDER_ID }, message: { text: "I followed", quick_reply: { payload: "AP3K_FOLLOW_CHECK:abc" } } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.quickReplyPayload).toBe("AP3K_FOLLOW_CHECK:abc");
+    expect(result.diagnostics.hasQuickReply).toBe(true);
   });
 });
 

@@ -151,9 +151,9 @@ export function formatUsageMetricValue(metric: Pick<UsageMetric, "used" | "limit
 }
 
 export function formatCampaignLimitFeature(limit: PlanLimit) {
-  return isUnlimited(limit) ? "Unlimited campaigns" : `Up to ${limit.toLocaleString()} active campaigns`;
+  return isUnlimited(limit) ? "Unlimited automations" : `Up to ${limit.toLocaleString()} active automations`;
 }
 
 export function formatConnectedAccountsHelper(_planLabel: string, _metric: Pick<UsageMetric, "limit">) {
-  return "AP3K supports 1 connected Instagram account and unlimited campaigns for that account.";
+  return "AP3K supports 1 connected Instagram account and unlimited automations for that account.";
 }

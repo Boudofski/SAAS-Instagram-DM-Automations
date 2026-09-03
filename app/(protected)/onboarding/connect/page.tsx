@@ -22,10 +22,10 @@ export default async function OnboardingConnectPage() {
         </h1>
         <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
           {connected
-            ? "AP3K can now receive Instagram comments, send public replies, and track campaign activity for this account."
+            ? "AP3K can now receive Instagram comments, send public replies, and track automation activity for this account."
             : directInstagramLogin
               ? "Connect your Instagram Business or Creator account directly. No Facebook Page selection or developer dashboard step is required."
-              : "AP3K connects through Meta's official login to receive Instagram comments, send public replies, and track campaign activity for the account you choose."}
+              : "AP3K connects through Meta's official login to receive Instagram comments, send public replies, and track automation activity for the account you choose."}
         </p>
       </div>
 

@@ -11,15 +11,15 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: "What AP3K Does",
-    body: "AP3K is an Instagram comment automation service for professional accounts. It can match configured comment triggers, reply to comments, send a DM after a qualifying comment, track campaign activity, and capture leads.",
+    body: "AP3K is an Instagram automation service for professional accounts. It can match configured comment, story, and DM triggers, send eligible replies, track automation activity, and capture leads.",
   },
   {
     title: "Authorized Accounts Only",
     body: "You may connect only Instagram Business or Creator accounts that you own or are authorized to manage. You are responsible for maintaining the access required to operate the connected account.",
   },
   {
-    title: "Your Responsibility for Campaigns",
-    body: "You are responsible for the campaigns, keywords, comment reply content, DM content, CTA links, offers, and claims you configure in AP3K. AP3K executes the automation you configure, and you remain responsible for the content and intent of those actions.",
+    title: "Your Responsibility for Automations",
+    body: "You are responsible for the automations, keywords, comment reply content, DM content, CTA links, offers, and claims you configure in AP3K. AP3K executes the automation you configure, and you remain responsible for the content and intent of those actions.",
   },
   {
     title: "Supported Instagram Access",
@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: "Platform Compliance",
-    body: "You must comply with applicable Instagram and Meta platform terms, community standards, and all laws that apply to your campaigns, including consumer protection, anti-spam, privacy, and marketing laws.",
+    body: "You must comply with applicable Instagram and Meta platform terms, community standards, and all laws that apply to your automations, including consumer protection, anti-spam, privacy, and marketing laws.",
   },
   {
     title: "Prohibited Uses",

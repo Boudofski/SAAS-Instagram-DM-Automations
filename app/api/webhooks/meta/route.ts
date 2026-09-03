@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { createHash } from "crypto";
 import {
   findAutomationForCommentWithReason,
   findAutomationForDM,
+  findAutomationForStory,
   findAutomationById,
+  findIntegrationForWebhookAccount,
   isDuplicate,
   hasProcessedCommentWebhook,
   hasAp3kGeneratedCommentId,
@@ -19,6 +22,8 @@ import {
   createChatHistory,
   getChatHistory,
   trackResponse,
+  upsertInboundInboxMessage,
+  recordOutboundInboxMessage,
 } from "@/actions/webhook/queries";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { verifyMetaSignature } from "@/lib/webhook-signature";
@@ -32,6 +37,9 @@ import {
 } from "@/lib/fetch";
 import {
   sendInstagramCommentPrivateReply,
+  sendInstagramDirectResponse,
+  sendInstagramSenderAction,
+  getInstagramRecipientProfile,
   formatPrivateReplyError,
 } from "@/lib/instagram-dm";
 import { resolveTemplate } from "@/lib/template";
@@ -39,10 +47,13 @@ import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/s
 import { canSendStaticReply } from "@/actions/usage/queries";
 import {
   parseMessagingItem,
+  classifyStoryInteraction,
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "@/lib/instagram-message-event";
 import { openai } from "@/lib/openai";
+
+export const maxDuration = 60;
 
 const WEBHOOK_ROUTE_VERSION = "2026-05-tenant-diagnostics-v2";
 
@@ -237,11 +248,32 @@ export async function POST(req: NextRequest) {
       return ok();
     }
 
-    await Promise.all(
+    // Meta expects a fast acknowledgement. Keep all delivery work alive after
+    // the response so configured 3–30 second delays never invite webhook
+    // retries or duplicate replies.
+    const backgroundProcessing = Promise.all(
       entries.map((entry: any) =>
         processEntry(entry, body, signatureResult.verified, requestMeta)
       )
-    );
+    ).catch(async (error) => {
+        console.error("AP3K_WEBHOOK_BACKGROUND_ERROR", {
+          message: error instanceof Error ? error.message : String(error),
+          routeVersion: WEBHOOK_ROUTE_VERSION,
+        });
+        await createWebhookEvent({
+          eventType: "WEBHOOK_BACKGROUND_ERROR",
+          eventSource: "META_REAL",
+          status: "FAILED",
+          errorMessage: error instanceof Error ? error.message : String(error),
+          payload: { routeVersion: WEBHOOK_ROUTE_VERSION },
+        }).catch(() => undefined);
+      });
+
+    if (process.env.VERCEL === "1") {
+      waitUntil(backgroundProcessing);
+    } else {
+      await backgroundProcessing;
+    }
 
     return ok();
   } catch (error) {
@@ -591,7 +623,7 @@ async function processEntry(
               commentId,
               meta: {
                 reason: "repeated_self_comment_skips",
-                message: "Campaign auto-paused: repeated self-comment skips detected.",
+                message: "Automation paused: repeated self-comment skips detected.",
                 recentSelfCommentSkips,
               },
             });
@@ -1231,12 +1263,21 @@ async function processEntry(
       }
 
       // 6. Build DM message — resolve template first, then optionally run through SMARTAI
+      const commentRecipientProfile = automation.followGateRequired
+        ? await getInstagramRecipientProfile({ token, recipientId: commenterId })
+        : null;
+      const followGateBlocked = automation.followGateRequired && commentRecipientProfile?.followsBusiness !== true;
       const isSmartAi =
+        !followGateBlocked &&
         listener.listener === "SMARTAI" &&
         automation.User?.subscription?.plan === "PRO" &&
         !!process.env.OPENAI_API_KEY;
 
       let dmMessageText = resolveTemplate(listener.prompt, templateVars);
+
+      if (followGateBlocked) {
+        dmMessageText = `Follow @${integrationRaw?.instagramUsername || "our account"}, then comment again and I'll send it right away.`;
+      }
 
       if (isSmartAi) {
         try {
@@ -1256,15 +1297,27 @@ async function processEntry(
       }
 
       // 7. Send private DM (private reply linked to the comment, with direct DM fallback)
+      if (automation.typingIndicator) {
+        await sendInstagramSenderAction(instagramBusinessAccountId, commenterId, "typing_on", token).catch(() => undefined);
+      }
+      await applyRandomizedDeliveryDelay(automation.deliveryDelaySeconds);
       const dmResult = await sendInstagramCommentPrivateReply({
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
         commenterId,
         message: dmMessageText,
-        ctaTitle: listener.ctaButtonTitle,
-        ctaUrl: listener.ctaLink,
+        automationId: automation.id,
+        responseFormat: followGateBlocked ? "TEXT" : listener.responseFormat,
+        quickReplies: followGateBlocked ? [] : Array.isArray(listener.quickReplies) ? listener.quickReplies.filter((item): item is string => typeof item === "string") : [],
+        ctaTitle: followGateBlocked ? undefined : listener.ctaButtonTitle,
+        ctaUrl: followGateBlocked ? undefined : listener.ctaLink,
+        mediaUrl: followGateBlocked ? undefined : listener.mediaUrl,
+        mediaType: followGateBlocked ? undefined : listener.mediaType,
       });
+      if (automation.typingIndicator) {
+        await sendInstagramSenderAction(instagramBusinessAccountId, commenterId, "typing_off", token).catch(() => undefined);
+      }
 
       if (dmResult.ok) {
         console.log(`[webhook] DM_SENT recipientId=${commenterId} automationId=${automation.id} endpoint=${dmResult.endpoint} ctaMode=${dmResult.ctaMode}`);
@@ -1283,13 +1336,13 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode },
+          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode, followGatePrompt: followGateBlocked },
         });
         await trackResponse(automation.id, "DM");
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
-          errorMessage: "dm_sent",
+          errorMessage: followGateBlocked ? "follow_gate_prompt_sent" : "dm_sent",
           processedAt: new Date(),
         });
       } else {
@@ -1349,6 +1402,11 @@ async function processEntry(
     const parsed = parseMessagingItem(messagingItem);
     const senderId = parsed.ok ? parsed.data.senderId : (messagingItem.sender?.id ? String(messagingItem.sender.id) : undefined);
     const dmText = parsed.ok ? (parsed.data.messageText ?? "") : (messagingItem.message?.text ?? "");
+    const storyInteraction = parsed.ok ? classifyStoryInteraction(parsed.data) : null;
+    const actionPayload = parsed.ok
+      ? parsed.data.quickReplyPayload ?? parsed.data.postback?.payload
+      : undefined;
+    const inboundContent = dmText || (storyInteraction === "MENTION" ? "Mentioned you in a story" : storyInteraction === "REACTION" ? "Reacted to your story" : storyInteraction === "REPLY" ? "Replied to your story" : parsed.ok && parsed.data.postback?.title ? parsed.data.postback.title : "Instagram message");
 
     // Echo messages are copies of outbound messages sent by the IG account — skip them.
     if (parsed.ok && parsed.data.isEcho) {
@@ -1411,7 +1469,26 @@ async function processEntry(
         },
       });
 
-      if (!senderId || !dmText) {
+      const inboxIntegration = await findIntegrationForWebhookAccount(pageId);
+      let senderProfile: Awaited<ReturnType<typeof getInstagramRecipientProfile>> = null;
+      if (senderId && inboxIntegration?.userId) {
+        const inboxToken = resolveIntegrationSendToken(inboxIntegration);
+        if (inboxToken.ok) {
+          senderProfile = await getInstagramRecipientProfile({ token: inboxToken.token, recipientId: senderId });
+        }
+        await upsertInboundInboxMessage({
+          userId: inboxIntegration.userId,
+          senderIgId: senderId,
+          content: inboundContent,
+          metaMessageId: parsed.ok ? parsed.data.messageMid : undefined,
+          username: senderProfile?.username,
+          profilePictureUrl: senderProfile?.profilePictureUrl,
+          messageType: storyInteraction ? `STORY_${storyInteraction}` : actionPayload ? "QUICK_REPLY" : "TEXT",
+          occurredAt: parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : undefined,
+        }).catch((error) => console.warn("[inbox] inbound persistence failed", { message: error instanceof Error ? error.message : String(error) }));
+      }
+
+      if (!senderId || (!dmText && !storyInteraction && !actionPayload)) {
         console.log("[webhook] inbound DM missing required fields — ignoring", {
           hasSenderId: Boolean(senderId),
           hasMessageText: Boolean(dmText),
@@ -1421,6 +1498,37 @@ async function processEntry(
           status: "IGNORED",
           errorMessage: "missing_required_dm_fields",
           processedAt: new Date(),
+        });
+        continue;
+      }
+
+      const followCheckAutomationId = actionPayload?.startsWith("AP3K_FOLLOW_CHECK:")
+        ? actionPayload.slice("AP3K_FOLLOW_CHECK:".length)
+        : null;
+      const followedAutomation = followCheckAutomationId
+        ? await findAutomationById(followCheckAutomationId)
+        : null;
+      const storyAutomation = storyInteraction
+        ? await findAutomationForStory(storyInteraction, pageId)
+        : null;
+      const directAutomation = followedAutomation?.active && followedAutomation.userId === inboxIntegration?.userId
+        ? followedAutomation
+        : storyAutomation;
+
+      if (directAutomation?.listener) {
+        await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSING" });
+        if (await isDuplicate(directAutomation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined)) {
+          await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSED", errorMessage: "duplicate_skipped", processedAt: new Date() });
+          continue;
+        }
+        await processConfiguredMessageAutomation({
+          automation: directAutomation,
+          pageId,
+          senderId,
+          senderProfile,
+          webhookEventId: webhookEvent.id,
+          messageMid: parsed.ok ? parsed.data.messageMid : undefined,
+          matchedKeyword: storyInteraction ? `story_${storyInteraction.toLowerCase()}` : "follow_check",
         });
         continue;
       }
@@ -1488,7 +1596,7 @@ async function processEntry(
       });
 
       // 2. Duplicate check
-      if (await isDuplicate(automation.id, senderId)) {
+      if (await isDuplicate(automation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined)) {
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DUPLICATE_SKIPPED",
@@ -1500,6 +1608,19 @@ async function processEntry(
           status: "PROCESSED",
           errorMessage: "duplicate_skipped",
           processedAt: new Date(),
+        });
+        continue;
+      }
+
+      if (automation.listener?.listener !== "SMARTAI") {
+        await processConfiguredMessageAutomation({
+          automation,
+          pageId,
+          senderId,
+          senderProfile,
+          webhookEventId: webhookEvent.id,
+          messageMid: parsed.ok ? parsed.data.messageMid : undefined,
+          matchedKeyword,
         });
         continue;
       }
@@ -1616,6 +1737,123 @@ async function processEntry(
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
+
+async function processConfiguredMessageAutomation(params: {
+  automation: any;
+  pageId: string;
+  senderId: string;
+  senderProfile: Awaited<ReturnType<typeof getInstagramRecipientProfile>>;
+  webhookEventId: string;
+  messageMid?: string;
+  matchedKeyword: string;
+}) {
+  const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword } = params;
+  const integration = selectIntegrationForWebhook(automation.User?.integrations, pageId) ?? automation.User?.integrations?.[0];
+  const tokenResolution = resolveIntegrationSendToken(integration);
+  const instagramBusinessAccountId = integration?.instagramId;
+  if (!automation.listener || !automation.userId || !tokenResolution.ok || !instagramBusinessAccountId) {
+    await updateWebhookEvent(webhookEventId, {
+      automationId: automation.id,
+      status: "FAILED",
+      errorMessage: !instagramBusinessAccountId ? "instagram_business_account_missing" : !automation.listener ? "listener_missing" : "token_missing",
+      processedAt: new Date(),
+    });
+    return;
+  }
+
+  const usageAllowed = await canSendStaticReply(automation.userId);
+  if (!usageAllowed.ok) {
+    await createAutomationEvent({ automationId: automation.id, eventType: "DM_SKIPPED", igUserId: senderId, keyword: matchedKeyword, meta: { reason: usageAllowed.reason } });
+    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "IGNORED", errorMessage: usageAllowed.reason, processedAt: new Date() });
+    return;
+  }
+
+  const token = tokenResolution.token;
+  const profile = params.senderProfile ?? (automation.followGateRequired
+    ? await getInstagramRecipientProfile({ token, recipientId: senderId })
+    : null);
+
+  if (automation.followGateRequired && !profile) {
+    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "FAILED", errorMessage: "follow_status_unavailable", processedAt: new Date() });
+    return;
+  }
+
+  const isFollowPrompt = automation.followGateRequired && profile?.followsBusiness !== true;
+  const quickReplies = Array.isArray(automation.listener.quickReplies)
+    ? automation.listener.quickReplies.filter((item: unknown): item is string => typeof item === "string")
+    : [];
+  const resolvedMessage = isFollowPrompt
+    ? `Follow @${integration?.instagramUsername || "our account"}, then tap below and I'll send it right away.`
+    : resolveTemplate(automation.listener.prompt, {
+        username: profile?.username ? `@${profile.username}` : "",
+        first_name: profile?.name?.split(/\s+/)[0] ?? "",
+        keyword: matchedKeyword,
+        link: automation.listener.ctaLink ?? "",
+      });
+
+  const result = await sendInstagramDirectResponse({
+    token,
+    igBusinessAccountId: instagramBusinessAccountId,
+    recipientId: senderId,
+    automationId: automation.id,
+    message: resolvedMessage,
+    responseFormat: isFollowPrompt ? "TEXT" : automation.listener.responseFormat,
+    quickReplies: isFollowPrompt ? ["I followed"] : quickReplies,
+    quickReplyPayloads: isFollowPrompt ? [`AP3K_FOLLOW_CHECK:${automation.id}`] : undefined,
+    ctaTitle: isFollowPrompt ? undefined : automation.listener.ctaButtonTitle,
+    ctaUrl: isFollowPrompt ? undefined : automation.listener.ctaLink,
+    mediaUrl: isFollowPrompt ? undefined : automation.listener.mediaUrl,
+    mediaType: isFollowPrompt ? undefined : automation.listener.mediaType,
+    typingIndicator: Boolean(automation.typingIndicator),
+    delaySeconds: Number(automation.deliveryDelaySeconds ?? 0),
+  });
+
+  const sent = result.ok;
+  const errorMessage = result.ok
+    ? undefined
+    : [result.metaError.status, result.metaError.code, result.metaError.message].filter(Boolean).join(": ") || "meta_api_error";
+  await createMessageLog({
+    automationId: automation.id,
+    recipientIgId: senderId,
+    commentId: messageMid,
+    messageType: "DM",
+    status: sent ? "SENT" : "FAILED",
+    errorMessage,
+  });
+  await createAutomationEvent({
+    automationId: automation.id,
+    eventType: sent ? "DM_SENT" : "DM_FAILED",
+    igUserId: senderId,
+    keyword: matchedKeyword,
+    meta: { responseFormat: isFollowPrompt ? "FOLLOW_GATE" : automation.listener.responseFormat, error: errorMessage },
+  });
+
+  if (sent) {
+    await Promise.all([
+      trackResponse(automation.id, "DM"),
+      recordOutboundInboxMessage({
+        userId: automation.userId,
+        recipientIgId: senderId,
+        automationId: automation.id,
+        content: resolvedMessage,
+        metaMessageId: result.messageIds[0] || undefined,
+      }).catch((error) => console.warn("[inbox] outbound persistence failed", { message: error instanceof Error ? error.message : String(error) })),
+    ]);
+  }
+  await updateWebhookEvent(webhookEventId, {
+    automationId: automation.id,
+    status: sent ? "PROCESSED" : "FAILED",
+    errorMessage: sent ? (isFollowPrompt ? "follow_gate_prompt_sent" : "dm_sent") : `dm_failed: ${errorMessage}`,
+    processedAt: new Date(),
+  });
+}
+
+async function applyRandomizedDeliveryDelay(value: unknown) {
+  const maximumDelay = [3, 5, 10, 30].includes(Number(value)) ? Number(value) : 0;
+  if (!maximumDelay) return;
+  const delayMs = (1 + Math.floor(Math.random() * maximumDelay)) * 1000;
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+}
 
 function ok() {
   return NextResponse.json({ received: true }, { status: 200 });

@@ -136,7 +136,7 @@ export function InternalOverridesCard({ user, usage }: Props) {
           sub={isOverrideActive && user.aiReplyLimitOverride !== null ? `Plan: ${planLimits.aiRepliesPerMonth.toLocaleString()}` : undefined}
         />
         <OverrideField
-          label="Active campaigns"
+          label="Active automations"
           value={usage?.activeCampaigns.limit.toLocaleString() ?? "—"}
           sub={isOverrideActive && user.activeCampaignLimitOverride !== null ? `Plan: ${planLimits.activeCampaigns.toLocaleString()}` : undefined}
         />
@@ -193,7 +193,7 @@ export function InternalOverridesCard({ user, usage }: Props) {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <LimitInput label="Monthly replies" value={monthlyReply} onChange={setMonthlyReply} />
                     <LimitInput label="AI replies" value={aiReply} onChange={setAiReply} />
-                    <LimitInput label="Active campaigns" value={activeCampaign} onChange={setActiveCampaign} />
+                    <LimitInput label="Active automations" value={activeCampaign} onChange={setActiveCampaign} />
                     <LimitInput label="Connected accounts" value={connectedAccount} onChange={setConnectedAccount} />
                   </div>
 

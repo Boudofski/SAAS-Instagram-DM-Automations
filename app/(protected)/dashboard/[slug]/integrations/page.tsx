@@ -106,7 +106,7 @@ async function Page({ searchParams }: PageProps) {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
             {directInstagramLogin
-              ? "Connect one Business or Creator Instagram account directly. AP3K uses the connection to receive matching comments, reply to comments, and send DMs from your campaigns."
+              ? "Connect one Business or Creator Instagram account directly. AP3K uses it for comment, story, and DM automations."
               : "Connect the Business or Creator Instagram account that owns the posts AP3K should monitor."}
           </p>
         </div>
@@ -118,7 +118,7 @@ async function Page({ searchParams }: PageProps) {
           <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2 lg:grid-cols-1">
             {[
               "Connect one Instagram Business or Creator account.",
-              "Create a campaign with Any post or choose a specific post.",
+              "Create an automation for comments, stories, or DMs.",
               "Set a keyword or use Any comment.",
               "Choose a comment reply, a DM, or both.",
               "Test from a different Instagram account.",
@@ -191,7 +191,7 @@ async function Page({ searchParams }: PageProps) {
                   ? "DMs cannot be sent until Access and manage messages is enabled. "
                   : ""}
                 {missingBasic
-                  ? "Profile and media access is required for campaign setup."
+                  ? "Profile and media access is required for automation setup."
                   : ""}
               </p>
             </div>

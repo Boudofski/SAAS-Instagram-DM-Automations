@@ -42,7 +42,7 @@ export default async function AdminV2ActivityPage({ searchParams }: Props) {
       />
 
       <V2Table
-        headers={["Time", "Event", "Campaign", "Owner", "Keyword"]}
+        headers={["Time", "Event", "Automation", "Owner", "Keyword"]}
         rows={rows}
         empty="No activity events found."
       />

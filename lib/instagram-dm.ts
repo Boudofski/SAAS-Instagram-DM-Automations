@@ -10,20 +10,16 @@ export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTA
 type CtaMode = "button_template" | "text_link_fallback" | "none";
 
 type InstagramMessagePayload =
-  | { text: string }
+  | {
+      text: string;
+      quick_replies?: Array<{ content_type: "text"; title: string; payload: string }>;
+    }
   | {
       attachment: {
-        type: "template";
-        payload: {
-          template_type: "button";
-          text: string;
-          buttons: Array<{
-            type: "web_url";
-            title: string;
-            url: string;
-          }>;
-        };
+        type: "template" | "image" | "video";
+        payload: Record<string, unknown>;
       };
+      quick_replies?: Array<{ content_type: "text"; title: string; payload: string }>;
     };
 
 export type SafeMetaApiError = {
@@ -150,12 +146,61 @@ function buildTextFallbackPayload(
   return { message: { text: text + suffix }, ctaMode: "text_link_fallback" };
 }
 
+function addQuickReplies(
+  message: InstagramMessagePayload,
+  automationId: string,
+  replies: string[]
+): InstagramMessagePayload {
+  const quickReplies = buildQuickReplies(automationId, replies);
+  return quickReplies.length ? { ...message, quick_replies: quickReplies } as InstagramMessagePayload : message;
+}
+
+function buildConfiguredPrivateReplyPayload(params: {
+  automationId: string;
+  message: string;
+  responseFormat?: string | null;
+  quickReplies?: string[];
+  ctaTitle?: string | null;
+  ctaUrl?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+}) {
+  const quickReplies = params.quickReplies ?? [];
+  if (params.responseFormat === "MEDIA" && params.mediaUrl) {
+    const mediaUrl = normalizeCtaUrl(params.mediaUrl);
+    if (mediaUrl && params.mediaType !== "VIDEO") {
+      return {
+        message: addQuickReplies({
+          attachment: {
+            type: "template",
+            payload: {
+              template_type: "generic",
+              elements: [{ title: Array.from(params.message.trim() || "Here's what you requested.").slice(0, 80).join(""), image_url: mediaUrl }],
+            },
+          },
+        }, params.automationId, quickReplies),
+        ctaMode: "none" as CtaMode,
+      };
+    }
+    if (mediaUrl) {
+      return {
+        message: addQuickReplies({ attachment: { type: "video", payload: { url: mediaUrl, is_reusable: true } } }, params.automationId, quickReplies),
+        ctaMode: "none" as CtaMode,
+      };
+    }
+  }
+  const preferred = params.responseFormat === "LINK" || params.ctaUrl
+    ? buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl)
+    : { message: { text: params.message.trim() || "Thanks for your message!" } as InstagramMessagePayload, ctaMode: "none" as CtaMode };
+  return { ...preferred, message: addQuickReplies(preferred.message, params.automationId, quickReplies) };
+}
+
 async function postInstagramMessage(
   igBusinessAccountId: string,
   body: unknown,
   token: string,
   log: {
-    endpointName: "ig_messages_private_reply" | "ig_messages_direct_dm";
+    endpointName: string;
     hasCommentId?: boolean;
     hasCommenterId?: boolean;
     message: InstagramMessagePayload;
@@ -180,6 +225,145 @@ async function postInstagramMessage(
   } catch (err) {
     if (isCapabilityError(err)) return "capability_error";
     throw err;
+  }
+}
+
+function buildQuickReplies(automationId: string, replies: string[], payloads?: string[]) {
+  return replies.slice(0, 4).map((reply, index) => ({
+    content_type: "text" as const,
+    title: Array.from(reply.trim()).slice(0, 20).join(""),
+    payload: payloads?.[index] || `AP3K_QUICK_REPLY:${automationId}:${index}`,
+  })).filter((item) => item.title);
+}
+
+export type DirectResponseResult =
+  | { ok: true; messageIds: string[] }
+  | { ok: false; metaError: SafeMetaApiError };
+
+export async function sendInstagramDirectResponse(params: {
+  token: string;
+  igBusinessAccountId: string;
+  recipientId: string;
+  automationId: string;
+  message: string;
+  responseFormat?: string | null;
+  quickReplies?: string[];
+  quickReplyPayloads?: string[];
+  ctaTitle?: string | null;
+  ctaUrl?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+  typingIndicator?: boolean;
+  delaySeconds?: number;
+}): Promise<DirectResponseResult> {
+  const messageIds: string[] = [];
+  const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
+
+  try {
+    if (params.typingIndicator) {
+      await sendInstagramSenderAction(params.igBusinessAccountId, params.recipientId, "typing_on", params.token);
+    }
+
+    const maximumDelay = [3, 5, 10, 30].includes(Number(params.delaySeconds))
+      ? Number(params.delaySeconds)
+      : 0;
+    if (maximumDelay > 0) {
+      const delayMs = (1 + Math.floor(Math.random() * maximumDelay)) * 1000;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    let mediaFallbackUrl = "";
+    if (params.responseFormat === "MEDIA" && params.mediaUrl) {
+      const mediaMessage: InstagramMessagePayload = {
+        attachment: {
+          type: params.mediaType === "VIDEO" ? "video" : "image",
+          payload: { url: normalizeCtaUrl(params.mediaUrl), is_reusable: true },
+        },
+      };
+      try {
+        const media = await postDirectPayload(params, mediaMessage);
+        if (media) messageIds.push(media);
+      } catch {
+        mediaFallbackUrl = normalizeCtaUrl(params.mediaUrl) ?? "";
+      }
+    }
+
+    let responseMessage: InstagramMessagePayload;
+    if (params.responseFormat === "LINK" && params.ctaUrl) {
+      const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl).message;
+      responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
+    } else {
+      responseMessage = {
+        text: `${params.message.trim() || "Thanks for your message!"}${mediaFallbackUrl ? `\n\n${mediaFallbackUrl}` : ""}`,
+        ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}),
+      };
+    }
+
+    let sent: string;
+    try {
+      sent = await postDirectPayload(params, responseMessage);
+    } catch (error) {
+      if (params.responseFormat !== "LINK") throw error;
+      const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl).message;
+      sent = await postDirectPayload(params, addQuickReplies(fallback, params.automationId, params.quickReplies ?? []));
+    }
+    if (sent) messageIds.push(sent);
+
+    if (params.typingIndicator) {
+      await sendInstagramSenderAction(params.igBusinessAccountId, params.recipientId, "typing_off", params.token).catch(() => undefined);
+    }
+    return { ok: true, messageIds };
+  } catch (error) {
+    if (params.typingIndicator) {
+      await sendInstagramSenderAction(params.igBusinessAccountId, params.recipientId, "typing_off", params.token).catch(() => undefined);
+    }
+    return { ok: false, metaError: buildMetaError(error) };
+  }
+}
+
+async function postDirectPayload(
+  params: { token: string; igBusinessAccountId: string; recipientId: string },
+  message: InstagramMessagePayload
+) {
+  const response = await axios.post(
+    `${INSTAGRAM_GRAPH_API_BASE_URL}/${params.igBusinessAccountId}/messages`,
+    { recipient: { id: params.recipientId }, message },
+    { headers: { Authorization: `Bearer ${params.token}`, "Content-Type": "application/json" } }
+  );
+  return typeof response.data?.message_id === "string" ? response.data.message_id : "";
+}
+
+export async function sendInstagramSenderAction(
+  igBusinessAccountId: string,
+  recipientId: string,
+  action: "typing_on" | "typing_off" | "mark_seen",
+  token: string
+) {
+  await axios.post(
+    `${INSTAGRAM_GRAPH_API_BASE_URL}/${igBusinessAccountId}/messages`,
+    { recipient: { id: recipientId }, sender_action: action },
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+  );
+}
+
+export async function getInstagramRecipientProfile(params: {
+  token: string;
+  recipientId: string;
+}) {
+  try {
+    const response = await axios.get(`${INSTAGRAM_GRAPH_API_BASE_URL}/${params.recipientId}`, {
+      params: { fields: "username,name,profile_pic,is_user_follow_business" },
+      headers: { Authorization: `Bearer ${params.token}` },
+    });
+    return {
+      username: typeof response.data?.username === "string" ? response.data.username : undefined,
+      name: typeof response.data?.name === "string" ? response.data.name : undefined,
+      profilePictureUrl: typeof response.data?.profile_pic === "string" ? response.data.profile_pic : undefined,
+      followsBusiness: response.data?.is_user_follow_business === true,
+    };
+  } catch (error) {
+    console.warn("[meta-api] recipient profile lookup failed", { error: getSafeMetaError(error) });
+    return null;
   }
 }
 
@@ -231,9 +415,23 @@ export async function sendInstagramCommentPrivateReply(params: {
   message: string;
   ctaTitle?: string | null;
   ctaUrl?: string | null;
+  automationId?: string;
+  responseFormat?: string | null;
+  quickReplies?: string[];
+  mediaUrl?: string | null;
+  mediaType?: string | null;
 }): Promise<PrivateReplyResult> {
   const { token, igBusinessAccountId, commentId, commenterId } = params;
-  const preferred = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl);
+  const preferred = buildConfiguredPrivateReplyPayload({
+    automationId: params.automationId ?? commentId,
+    message: params.message,
+    responseFormat: params.responseFormat,
+    quickReplies: params.quickReplies,
+    ctaTitle: params.ctaTitle,
+    ctaUrl: params.ctaUrl,
+    mediaUrl: params.mediaUrl,
+    mediaType: params.mediaType,
+  });
   const textFallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl);
 
   try {

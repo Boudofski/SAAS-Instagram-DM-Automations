@@ -29,14 +29,14 @@ const ACTION_LABELS: Record<ModalKey, string> = {
   refresh: "Refresh profile snapshot",
   reconnect: "Mark reconnect required",
   disconnect: "Soft disconnect account",
-  pause: "Pause all campaigns",
+  pause: "Pause all automations",
 };
 
 const ACTION_DESCRIPTIONS: Record<ModalKey, string> = {
   refresh: "Fetch a fresh profile snapshot without changing connection state.",
   reconnect: "Flag the account so the owner is prompted to reconnect it.",
   disconnect: "Disconnect AP3K without deleting the integration record.",
-  pause: "Pause every active campaign currently using this account.",
+  pause: "Pause every active automation currently using this account.",
 };
 
 const ACTION_FNS: Record<ModalKey, (fd: FormData) => Promise<{ status: number; data: string }>> = {
@@ -174,8 +174,8 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
                 />
                 <ActionChoice
                   icon={<PauseCircle className="h-4 w-4" />}
-                  title="Pause campaigns"
-                  description="Stop every campaign for this account."
+                  title="Pause automations"
+                  description="Stop every automation for this account."
                   tone="amber"
                   onClick={() => selectAction("pause")}
                 />
@@ -197,7 +197,7 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
               <form onSubmit={handleSubmit} className="space-y-4 p-5 sm:p-6">
                 {activeModal === "disconnect" && (
                   <p className="rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 text-xs leading-5 text-amber-200/90">
-                    Disconnecting does not automatically pause campaigns. If they should stop immediately, use the pause-campaigns action as well.
+                    Disconnecting does not automatically pause automations. If they should stop immediately, use the pause-automations action as well.
                   </p>
                 )}
 

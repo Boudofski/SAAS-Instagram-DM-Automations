@@ -35,7 +35,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Users", href: "/admin/users", icon: Users },
       { label: "Accounts", href: "/admin/accounts", icon: Instagram },
-      { label: "Campaigns", href: "/admin/campaigns", icon: Megaphone },
+      { label: "Automations", href: "/admin/campaigns", icon: Megaphone },
       { label: "Replies", href: "/admin/replies", icon: MessageCircleMore },
       { label: "Billing", href: "/admin/billing", icon: BadgeDollarSign },
     ],

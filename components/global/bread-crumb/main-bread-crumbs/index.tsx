@@ -14,7 +14,7 @@ function MainBreadCrumbs({ page, slug }: Props) {
       : page === "integrations"
       ? "Connect Instagram and manage official account access."
       : page === "automation"
-      ? "Create and manage Instagram comment automation campaigns."
+      ? "Create and manage Instagram automations."
       : page === "billing"
       ? "Review plan limits, billing status, and monthly usage."
       : page === "settings"

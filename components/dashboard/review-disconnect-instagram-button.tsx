@@ -56,7 +56,7 @@ export default function ReviewDisconnectInstagramButton({ onDisconnected }: Prop
       <div className="flex flex-col items-start gap-2 sm:items-end">
         <p className="text-sm font-black text-slate-950 dark:text-white">Instagram not connected</p>
         <p className="max-w-[260px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
-          Connection removed. Campaign history is preserved.
+          Connection removed. Automation history is preserved.
         </p>
       </div>
     );
@@ -67,7 +67,7 @@ export default function ReviewDisconnectInstagramButton({ onDisconnected }: Prop
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:min-w-[280px]">
         <p className="text-sm font-black text-slate-950 dark:text-white">Remove Instagram connection?</p>
         <p className="text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
-          AP3K will stop using this Instagram account. Campaign history, leads, and activity stay saved.
+          AP3K will stop using this Instagram account. Automation history, leads, and activity stay saved.
         </p>
         <div className="flex gap-2">
           <button
@@ -100,7 +100,7 @@ export default function ReviewDisconnectInstagramButton({ onDisconnected }: Prop
         Remove connection
       </button>
       <p className="max-w-[260px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
-        Remove this Instagram account from AP3K. Campaign history is preserved.
+        Remove this Instagram account from AP3K. Automation history is preserved.
       </p>
       {message && (
         <p className="max-w-[240px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">

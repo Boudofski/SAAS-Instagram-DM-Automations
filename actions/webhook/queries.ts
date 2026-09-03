@@ -463,7 +463,7 @@ export const findAutomationForDM = async (
       trigger: { some: { type: "DM" } },
       User: {
         status: { not: "SUSPENDED" },
-        integrations: { some: { pageId, status: { not: "DISCONNECTED" }, reconnectRequired: false } },
+        integrations: { some: { ...webhookAccountFilter(pageId), status: { not: "DISCONNECTED" }, reconnectRequired: false } },
       },
     },
     include: {
@@ -488,9 +488,13 @@ export const findAutomationForDM = async (
         },
       },
     },
+    orderBy: { createdAt: "desc" },
   });
 
   for (const automation of automations) {
+    if (automation.triggerMode === "ANY_MESSAGE") {
+      return { automation, matchedKeyword: "any message" };
+    }
     const matched = matchKeywordWithMode(
       dmText,
       automation.keywords,
@@ -500,6 +504,167 @@ export const findAutomationForDM = async (
   }
 
   return null;
+};
+
+export const findAutomationForStory = async (
+  interaction: "MENTION" | "REACTION" | "REPLY",
+  accountId: string
+): Promise<AutomationWithRelations | null> => {
+  return client.automation.findFirst({
+    where: {
+      active: true,
+      archivedAt: null,
+      source: "STORY",
+      storyTriggerType: interaction,
+      trigger: { some: { type: `STORY_${interaction}` } },
+      User: {
+        status: { not: "SUSPENDED" },
+        integrations: { some: { ...webhookAccountFilter(accountId), status: { not: "DISCONNECTED" }, reconnectRequired: false } },
+      },
+    },
+    include: {
+      keywords: true,
+      listener: true,
+      User: {
+        select: {
+          subscription: { select: { plan: true } },
+          integrations: {
+            select: {
+              id: true,
+              token: true,
+              instagramId: true,
+              pageId: true,
+              webhookAccountId: true,
+              businessId: true,
+              instagramUsername: true,
+              status: true,
+              reconnectRequired: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+function webhookAccountFilter(accountId: string) {
+  return {
+    OR: [
+      { pageId: accountId },
+      { instagramId: accountId },
+      { webhookAccountId: accountId },
+      { businessId: accountId },
+    ],
+  };
+}
+
+export const findIntegrationForWebhookAccount = async (accountId: string) => {
+  return client.integrations.findFirst({
+    where: {
+      ...webhookAccountFilter(accountId),
+      userId: { not: null },
+      status: { not: "DISCONNECTED" },
+      reconnectRequired: false,
+    },
+    select: {
+      id: true,
+      userId: true,
+      token: true,
+      instagramId: true,
+      instagramUsername: true,
+      pageId: true,
+      webhookAccountId: true,
+      businessId: true,
+    },
+  });
+};
+
+export const upsertInboundInboxMessage = async (data: {
+  userId: string;
+  senderIgId: string;
+  content: string;
+  metaMessageId?: string;
+  automationId?: string;
+  username?: string;
+  profilePictureUrl?: string;
+  messageType?: string;
+  occurredAt?: Date;
+}) => {
+  const occurredAt = data.occurredAt ?? new Date();
+  if (data.metaMessageId) {
+    const existing = await client.inboxMessage.findUnique({
+      where: { metaMessageId: data.metaMessageId },
+      select: { conversationId: true },
+    });
+    if (existing) return existing.conversationId;
+  }
+  const conversation = await client.conversation.upsert({
+    where: { userId_recipientIgId: { userId: data.userId, recipientIgId: data.senderIgId } },
+    create: {
+      userId: data.userId,
+      recipientIgId: data.senderIgId,
+      automationId: data.automationId,
+      recipientUsername: data.username,
+      profilePictureUrl: data.profilePictureUrl,
+      lastMessageAt: occurredAt,
+      lastInboundAt: occurredAt,
+      unreadCount: 1,
+    },
+    update: {
+      automationId: data.automationId,
+      recipientUsername: data.username,
+      profilePictureUrl: data.profilePictureUrl,
+      lastMessageAt: occurredAt,
+      lastInboundAt: occurredAt,
+      unreadCount: { increment: 1 },
+    },
+    select: { id: true },
+  });
+
+  try {
+    await client.inboxMessage.create({
+      data: {
+        conversationId: conversation.id,
+        metaMessageId: data.metaMessageId,
+        senderIgId: data.senderIgId,
+        direction: "INBOUND",
+        content: data.content,
+        messageType: data.messageType ?? "TEXT",
+        status: "RECEIVED",
+        createdAt: occurredAt,
+      },
+    });
+  } catch (error) {
+    if (!(typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "P2002")) throw error;
+  }
+  return conversation.id;
+};
+
+export const recordOutboundInboxMessage = async (data: {
+  userId: string;
+  recipientIgId: string;
+  content: string;
+  metaMessageId?: string;
+  automationId?: string;
+  status?: string;
+}) => {
+  const conversation = await client.conversation.upsert({
+    where: { userId_recipientIgId: { userId: data.userId, recipientIgId: data.recipientIgId } },
+    create: { userId: data.userId, recipientIgId: data.recipientIgId, automationId: data.automationId, lastMessageAt: new Date() },
+    update: { automationId: data.automationId, lastMessageAt: new Date() },
+    select: { id: true },
+  });
+  return client.inboxMessage.create({
+    data: {
+      conversationId: conversation.id,
+      metaMessageId: data.metaMessageId,
+      senderIgId: data.recipientIgId,
+      direction: "OUTBOUND",
+      content: data.content,
+      status: data.status ?? "SENT",
+    },
+  });
 };
 
 // ---------------------------------------------------------------------------
