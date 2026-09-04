@@ -5,6 +5,7 @@ const mockCreateWebhookEvent = vi.fn();
 const mockUpdateWebhookEvent = vi.fn();
 const mockVerifyMetaSignature = vi.fn();
 const mockFindAutomationById = vi.fn();
+const mockFindPendingCommentDmActionForText = vi.fn();
 const mockFindIntegrationForWebhookAccount = vi.fn();
 const mockIsDuplicate = vi.fn();
 const mockHasDeliveredFinalPayload = vi.fn();
@@ -22,6 +23,7 @@ vi.mock("@/actions/webhook/queries", () => ({
   findAutomationForCommentWithReason: vi.fn(),
   findAutomationForDM: vi.fn(),
   findAutomationForStory: vi.fn(),
+  findPendingCommentDmActionForText: (...args: unknown[]) => mockFindPendingCommentDmActionForText(...args),
   findAutomationById: (...args: unknown[]) => mockFindAutomationById(...args),
   findIntegrationForWebhookAccount: (...args: unknown[]) => mockFindIntegrationForWebhookAccount(...args),
   isDuplicate: (...args: unknown[]) => mockIsDuplicate(...args),
@@ -81,6 +83,10 @@ vi.mock("@/lib/openai", () => ({
   openai: { chat: { completions: { create: vi.fn() } } },
 }));
 
+vi.mock("@/lib/instagram-postback-subscription", () => ({
+  ensureInstagramPostbackSubscription: vi.fn().mockResolvedValue(true),
+}));
+
 import { GET, POST } from "./route";
 
 function signatureResult(verified: boolean) {
@@ -105,6 +111,7 @@ describe("Meta webhook route security", () => {
     mockUpdateWebhookEvent.mockResolvedValue({});
     mockVerifyMetaSignature.mockReturnValue(signatureResult(false));
     mockFindAutomationById.mockResolvedValue(null);
+    mockFindPendingCommentDmActionForText.mockResolvedValue(null);
     mockFindIntegrationForWebhookAccount.mockResolvedValue(null);
     mockIsDuplicate.mockResolvedValue(false);
     mockHasDeliveredFinalPayload.mockResolvedValue(false);
@@ -242,6 +249,79 @@ describe("Meta webhook route security", () => {
           postback: {
             title: "Send me the link",
             payload: "AP3K_OPENING_CONTINUE:automation-1",
+          },
+        }],
+      }],
+    });
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
+      method: "POST",
+      headers: { "x-hub-signature-256": "sha256=good" },
+      body,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith("automation-1", "recipient-1");
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
+      recipientId: "recipient-1",
+      automationId: "automation-1",
+      message: "Here is the final link",
+      ctaTitle: "Get the Link",
+      ctaUrl: "https://example.com/guide",
+      postbackButton: undefined,
+    }));
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
+      status: "SENT",
+      errorMessage: "final_dm_payload_sent",
+    }));
+  });
+
+  it.each(["text", "quick_reply"])("releases the final DM from an opening %s callback", async (kind) => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    const integration = {
+      userId: "user-1",
+      token: "token-1",
+      instagramId: "ig-business-1",
+      pageId: "ig-business-1",
+      instagramUsername: "ap3k",
+      status: "CONNECTED",
+      reconnectRequired: false,
+    };
+    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    const automation = {
+      id: "automation-1",
+      userId: "user-1",
+      source: "COMMENT",
+      active: true,
+      followGateRequired: false,
+      listener: {
+        prompt: "Here is the final link",
+        responseFormat: "LINK",
+        quickReplies: [],
+        ctaButtonTitle: "Get the Link",
+        ctaLink: "https://example.com/guide",
+        mediaUrl: null,
+        mediaType: null,
+      },
+      User: { integrations: [integration] },
+    };
+    mockFindAutomationById.mockResolvedValue(automation);
+    mockFindPendingCommentDmActionForText.mockResolvedValue({
+      automation, action: { type: "OPENING_CONTINUE", automationId: "automation-1" },
+    });
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{
+        id: "ig-business-1",
+        messaging: [{
+          sender: { id: "recipient-1" },
+          recipient: { id: "ig-business-1" },
+          timestamp: Date.now(),
+          message: {
+            mid: "mid.inbound",
+            text: "Send me the link",
+            ...(kind === "quick_reply" ? { quick_reply: { payload: "AP3K_OPENING_CONTINUE:automation-1" } } : {}),
           },
         }],
       }],

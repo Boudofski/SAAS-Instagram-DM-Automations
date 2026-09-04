@@ -115,6 +115,7 @@ export async function getMetaTokenHealth(input: {
       subscribedAppsActive: false,
       commentsSubscribed: false,
       messagesSubscribed: false,
+      messagingPostbacksSubscribed: false,
       diagnostics: ["missing_page_access_token"],
     };
   }
@@ -186,6 +187,9 @@ export async function getMetaTokenHealth(input: {
   if (subscribedAppsCall.ok && !subscribedFields.has("messages")) {
     diagnostics.push("messages_not_subscribed");
   }
+  if (subscribedAppsCall.ok && !subscribedFields.has("messaging_postbacks")) {
+    diagnostics.push("messaging_postbacks_not_subscribed");
+  }
 
   return {
     config,
@@ -208,6 +212,7 @@ export async function getMetaTokenHealth(input: {
     subscribedAppsActive: subscribedData.length > 0,
     commentsSubscribed: subscribedFields.has("comments"),
     messagesSubscribed: subscribedFields.has("messages"),
+    messagingPostbacksSubscribed: subscribedFields.has("messaging_postbacks"),
     subscribedAppsStatus: subscribedAppsCall.ok ? "ok" : subscribedAppsCall.error,
     diagnostics,
   };

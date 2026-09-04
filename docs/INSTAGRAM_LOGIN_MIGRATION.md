@@ -11,7 +11,7 @@ Target flow:
 1. User clicks **Connect Instagram**.
 2. User authorizes their Instagram Business or Creator account.
 3. AP3k receives an Instagram User access token.
-4. AP3k subscribes that Instagram account to `comments,messages` webhooks automatically.
+4. AP3K subscribes that Instagram account to `comments,messages,messaging_postbacks` webhooks automatically.
 5. User creates a campaign.
 6. Instagram comments trigger public replies and private replies through official Instagram APIs.
 

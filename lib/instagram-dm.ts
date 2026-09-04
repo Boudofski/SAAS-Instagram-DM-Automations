@@ -312,7 +312,9 @@ async function postInstagramMessage(
     hasIgBusinessAccountId: Boolean(igBusinessAccountId),
     hasCommentId: log.hasCommentId,
     hasCommenterId: log.hasCommenterId,
-    messageShape: "attachment" in log.message ? "button_template" : "text",
+    messageShape: "attachment" in log.message
+      ? String(log.message.attachment.payload.template_type ?? log.message.attachment.type)
+      : "text",
   });
 
   try {
@@ -357,6 +359,7 @@ export async function sendInstagramDirectResponse(params: {
   delaySeconds?: number;
   followGatePrompt?: FollowGatePrompt;
   postbackButton?: InstagramPostbackButton;
+  preferQuickReplyForPostback?: boolean;
 }): Promise<DirectResponseResult> {
   const messageIds: string[] = [];
   const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
@@ -392,7 +395,8 @@ export async function sendInstagramDirectResponse(params: {
 
     let responseMessage: InstagramMessagePayload;
     if (params.postbackButton) {
-      responseMessage = buildPostbackButtonPayload(params.message, params.postbackButton).preferred;
+      const payload = buildPostbackButtonPayload(params.message, params.postbackButton);
+      responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.followGatePrompt) {
       responseMessage = buildFollowGatePayload(params.automationId, params.followGatePrompt).preferred;
     } else if (params.responseFormat === "LINK" || params.ctaUrl) {
@@ -558,6 +562,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   mediaType?: string | null;
   followGatePrompt?: FollowGatePrompt;
   postbackButton?: InstagramPostbackButton;
+  preferQuickReplyForPostback?: boolean;
 }): Promise<PrivateReplyResult> {
   const { token, igBusinessAccountId, commentId, commenterId } = params;
   const automationId = params.automationId ?? commentId;
@@ -568,7 +573,7 @@ export async function sendInstagramCommentPrivateReply(params: {
     ? buildPostbackButtonPayload(params.message, params.postbackButton)
     : null;
   const preferred = postbackPayload
-    ? { message: postbackPayload.preferred, ctaMode: "postback_button" as CtaMode }
+    ? { message: params.preferQuickReplyForPostback ? postbackPayload.fallback : postbackPayload.preferred, ctaMode: "postback_button" as CtaMode }
     : followGatePayload
     ? { message: followGatePayload.preferred, ctaMode: "follow_gate_card" as CtaMode }
     : buildConfiguredPrivateReplyPayload({

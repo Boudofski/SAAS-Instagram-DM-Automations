@@ -58,12 +58,13 @@ import {
   META_OAUTH_STATE_TTL_MS,
   normalizeMetaOAuthState,
 } from "@/lib/meta-oauth-state";
+import { INSTAGRAM_WEBHOOK_FIELDS_CSV } from "@/lib/instagram-webhook-subscriptions";
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
 
 async function attemptWebhookSubscription(pageId: string, pageToken: string) {
   const attemptedAt = new Date();
-  const requestedFields = "comments,messages";
+  const requestedFields = INSTAGRAM_WEBHOOK_FIELDS_CSV;
   try {
     const subscription = await subscribeInstagramWebhooks(pageId, pageToken);
     const subscribed = subscription.status >= 200 && subscription.status < 300;
@@ -94,7 +95,7 @@ async function attemptWebhookSubscription(pageId: string, pageToken: string) {
 
     // Summarize unsupported field errors specifically
     const errorMessage = typeof metaError.message === "string" ? metaError.message : "";
-    const unsupportedFields = errorMessage.includes("unsupported") ? "Subscription failed: one or more requested fields (comments, messages) may not be supported for this account or app level." : undefined;
+    const unsupportedFields = errorMessage.includes("unsupported") ? "Subscription failed: one or more requested fields (comments, messages, messaging postbacks) may not be supported for this account or app level." : undefined;
 
     console.warn("[oauth] page webhook subscription failed", {
       endpointFamily: "facebook_graph_page",
@@ -117,7 +118,7 @@ async function attemptWebhookSubscription(pageId: string, pageToken: string) {
 
 async function attemptInstagramLoginWebhookSubscription(instagramUserId: string, instagramUserToken: string) {
   const attemptedAt = new Date();
-  const requestedFields = "comments,messages";
+  const requestedFields = INSTAGRAM_WEBHOOK_FIELDS_CSV;
   try {
     const subscription = await subscribeInstagramLoginWebhooks(instagramUserId, instagramUserToken, requestedFields);
     const subscribed = subscription.status >= 200 && subscription.status < 300;
@@ -712,7 +713,7 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
       };
     }
     if (subscriptionAttempt.subscribed) {
-      return { status: 200, data: "Instagram webhook subscription refreshed for comments and messages" };
+      return { status: 200, data: "Instagram webhook subscription refreshed for comments, messages, and button callbacks" };
     }
     return { status: 500, data: subscriptionAttempt.error || "Meta rejected the Instagram webhook subscription request" };
   } catch (error) {

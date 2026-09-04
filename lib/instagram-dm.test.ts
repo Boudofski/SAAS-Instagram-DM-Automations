@@ -214,6 +214,21 @@ describe("sendInstagramCommentPrivateReply", () => {
     });
   });
 
+  it("keeps the complete editable copy and payload when using a message quick reply", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.quick" } });
+    const message = "Editable opening copy ".repeat(20);
+    await sendInstagramCommentPrivateReply({
+      token: VALID_TOKEN, igBusinessAccountId: IG_BIZ_ID,
+      commentId: COMMENT_ID, commenterId: COMMENTER_ID, message,
+      preferQuickReplyForPostback: true,
+      postbackButton: { title: "Send me the link", payload: "AP3K_OPENING_CONTINUE:automation-1" },
+    });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.message.text).toBe(message.trim());
+    expect(body.message.quick_replies[0].payload).toBe("AP3K_OPENING_CONTINUE:automation-1");
+    expect(body.message.attachment).toBeUndefined();
+  });
+
   it("sends the clickable follower gate card as a private reply", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.gate" } });
 

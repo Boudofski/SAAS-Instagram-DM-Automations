@@ -88,6 +88,10 @@ vi.mock("@/lib/app-review-mode", () => ({
   isAppReviewMode: () => mockIsAppReviewMode(),
 }));
 
+vi.mock("@/lib/instagram-postback-subscription", () => ({
+  ensureInstagramPostbackSubscription: vi.fn().mockResolvedValue(true),
+}));
+
 import { POST } from "@/app/api/webhooks/meta/route";
 
 function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {}) {

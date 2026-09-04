@@ -237,7 +237,7 @@ For real comment delivery while the app is still in Development mode, verify:
 - The connected account owns the media being commented on.
 - The commenter is a separate Instagram account, not the connected business account.
 - The commenter has been added as a Meta app admin/developer/tester and accepted the invite.
-- The app is subscribed to `comments,messages` for the connected IG user after OAuth.
+- The app is subscribed to `comments,messages,messaging_postbacks` for the connected IG user after OAuth.
 - Vercel production has `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `META_APP_ID`, `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_REDIRECT_URI`, and `NEXT_PUBLIC_HOST_URL`.
 
 The dashboard Integrations page includes **Resubscribe webhooks** and webhook

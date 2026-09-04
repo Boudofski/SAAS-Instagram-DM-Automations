@@ -6,6 +6,7 @@ import {
   findAutomationForDM,
   findAutomationForStory,
   findAutomationById,
+  findPendingCommentDmActionForText,
   findIntegrationForWebhookAccount,
   isDuplicate,
   hasDeliveredFinalPayload,
@@ -61,6 +62,7 @@ import {
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "@/lib/instagram-message-event";
+import { ensureInstagramPostbackSubscription } from "@/lib/instagram-postback-subscription";
 import { openai } from "@/lib/openai";
 
 export const maxDuration = 60;
@@ -1275,7 +1277,9 @@ async function processEntry(
       // 6. Send an editable opening DM. The final payload is released only
       // after the recipient explicitly taps the postback button.
       const dmMessageText = resolveTemplate(resolveOpeningDmText(listener.openingDmText), templateVars);
+      const postbacksReady = await ensureInstagramPostbackSubscription(integrationRaw?.id, token);
       const dmResult = await sendInstagramCommentPrivateReply({
+        preferQuickReplyForPostback: !postbacksReady,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1474,10 +1478,27 @@ async function processEntry(
         continue;
       }
 
-      const dmFlowAction = parseCommentDmActionPayload(actionPayload);
-      const callbackAutomation = dmFlowAction
-        ? await findAutomationById(dmFlowAction.automationId)
+      const payloadAction = parseCommentDmActionPayload(actionPayload);
+      const fallbackAction = !payloadAction
+        ? await findPendingCommentDmActionForText(
+            pageId,
+            senderId,
+            dmText || (parsed.ok ? parsed.data.postback?.title ?? "" : "")
+          )
         : null;
+      const dmFlowAction = payloadAction ?? fallbackAction?.action ?? null;
+      const callbackAutomation = fallbackAction?.automation ?? (dmFlowAction
+        ? await findAutomationById(dmFlowAction.automationId)
+        : null);
+      if (dmFlowAction) {
+        console.log("[webhook] comment DM callback resolved", {
+          automationId: dmFlowAction.automationId,
+          action: dmFlowAction.type,
+          source: payloadAction ? "payload" : "pending_text_fallback",
+          hasQuickReplyPayload: Boolean(parsed.ok && parsed.data.quickReplyPayload),
+          hasPostbackPayload: Boolean(parsed.ok && parsed.data.postback?.payload),
+        });
+      }
       const storyAutomation = storyInteraction
         ? await findAutomationForStory(storyInteraction, pageId)
         : null;
@@ -1772,7 +1793,11 @@ async function processConfiguredMessageAutomation(params: {
       })
     : payloadMessage;
 
+  const postbacksReady = needsFollowRequest
+    ? await ensureInstagramPostbackSubscription(integration?.id, token)
+    : true;
   const result = await sendInstagramDirectResponse({
+    preferQuickReplyForPostback: !postbacksReady,
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,

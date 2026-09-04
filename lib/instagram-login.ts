@@ -1,4 +1,5 @@
 import axios from "axios";
+import { INSTAGRAM_WEBHOOK_FIELDS_CSV } from "@/lib/instagram-webhook-subscriptions";
 import { formatSafeMetaError, getSafeMetaError } from "@/lib/fetch";
 
 export const INSTAGRAM_GRAPH_BASE_URL =
@@ -261,7 +262,7 @@ export async function exchangeInstagramLoginCode(code: string): Promise<Instagra
 export async function subscribeInstagramLoginWebhooks(
   userId: string,
   accessToken: string,
-  fields = "comments,messages"
+  fields = INSTAGRAM_WEBHOOK_FIELDS_CSV
 ) {
   console.log("[instagram-login] subscribed_apps request", {
     endpointFamily: "instagram_graph",

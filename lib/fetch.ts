@@ -1,4 +1,5 @@
 import axios from "axios";
+import { INSTAGRAM_WEBHOOK_FIELDS_CSV } from "@/lib/instagram-webhook-subscriptions";
 
 export const META_GRAPH_BASE_URL =
   process.env.META_GRAPH_BASE_URL ?? "https://graph.facebook.com";
@@ -180,7 +181,7 @@ export const sendMediaComment = async (
   );
 };
 
-const WEBHOOK_SUBSCRIBED_FIELDS = "comments,messages";
+const WEBHOOK_SUBSCRIBED_FIELDS = INSTAGRAM_WEBHOOK_FIELDS_CSV;
 
 function isSuccessfulMetaStatus(status?: number) {
   return typeof status === "number" && status >= 200 && status < 300;

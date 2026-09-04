@@ -1,5 +1,10 @@
 import { client } from "@/lib/prisma";
 import { matchKeywordWithMode, normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
+import {
+  resolveFollowRequestButtonText,
+  resolveOpeningDmButtonText,
+  type CommentDmAction,
+} from "@/lib/comment-dm-flow";
 import type {
   Automation,
   Keyword,
@@ -696,6 +701,90 @@ export const findAutomationById = async (id: string) => {
       },
     },
   });
+};
+
+/**
+ * Instagram can surface a template button tap as ordinary inbound text on
+ * some clients instead of including the postback payload. Resolve that text
+ * only against the latest still-pending comment DM flow for this account and
+ * recipient, so a generic DM with the same words cannot unlock content.
+ */
+export const findPendingCommentDmActionForText = async (
+  pageId: string,
+  recipientIgId: string,
+  inboundText: string
+): Promise<{ automation: AutomationWithRelations; action: CommentDmAction } | null> => {
+  const normalizedInbound = normalizeMatchText(inboundText);
+  if (!normalizedInbound) return null;
+
+  const pending = await client.messageLog.findMany({
+    where: {
+      recipientIgId,
+      messageType: "DM",
+      status: "SENT",
+      errorMessage: { in: ["opening_dm_sent", "follow_request_dm_sent"] },
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      automation: {
+        active: true,
+        archivedAt: null,
+        source: "COMMENT",
+        User: {
+          status: { not: "SUSPENDED" },
+          integrations: {
+            some: {
+              ...webhookAccountFilter(pageId),
+              status: { not: "DISCONNECTED" },
+              reconnectRequired: false,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    include: {
+      automation: {
+        include: {
+          keywords: true,
+          listener: true,
+          User: {
+            select: {
+              subscription: { select: { plan: true } },
+              integrations: {
+                select: {
+                  id: true,
+                  token: true,
+                  instagramId: true,
+                  pageId: true,
+                  webhookAccountId: true,
+                  businessId: true,
+                  instagramUsername: true,
+                  status: true,
+                  reconnectRequired: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  for (const item of pending) {
+    const listener = item.automation.listener;
+    if (!listener) continue;
+    const action: CommentDmAction = item.errorMessage === "follow_request_dm_sent"
+      ? { type: "FOLLOW_CHECK", automationId: item.automationId }
+      : { type: "OPENING_CONTINUE", automationId: item.automationId };
+    const expectedButton = action.type === "FOLLOW_CHECK"
+      ? resolveFollowRequestButtonText(listener.followRequestButtonText)
+      : resolveOpeningDmButtonText(listener.openingDmButtonText);
+    if (normalizeMatchText(expectedButton) === normalizedInbound) {
+      return { automation: item.automation as AutomationWithRelations, action };
+    }
+  }
+
+  return null;
 };
 
 // ---------------------------------------------------------------------------
