@@ -251,6 +251,21 @@ describe("comment webhook private DM toggle", () => {
     await POST(commentRequest());
 
     expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledWith(expect.objectContaining({
+      automationId: campaign.id,
+      message: "Hey there! I’m so happy you’re here, thanks so much for your interest 😊\n\nClick below and I’ll send you the link in just a sec ✨",
+      responseFormat: "TEXT",
+      postbackButton: {
+        title: "Send me the link",
+        payload: `AP3K_OPENING_CONTINUE:${campaign.id}`,
+      },
+    }));
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
+      automationId: campaign.id,
+      messageType: "DM",
+      status: "SENT",
+      errorMessage: "opening_dm_sent",
+    }));
     expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         automationId: campaign.id,

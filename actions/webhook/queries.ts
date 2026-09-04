@@ -687,6 +687,7 @@ export const findAutomationById = async (id: string) => {
               pageId: true,
               webhookAccountId: true,
               businessId: true,
+              instagramUsername: true,
               status: true,
               reconnectRequired: true,
             },
@@ -725,6 +726,29 @@ export const isDuplicate = async (
     },
   });
   return !!existing;
+};
+
+/**
+ * Consent/follow callbacks intentionally bypass the normal "one DM ever"
+ * guard because the opening and follow-request messages are already sent DMs.
+ * This marker prevents repeated button taps from releasing the final payload
+ * more than once. The legacy marker keeps already-delivered flows idempotent.
+ */
+export const hasDeliveredFinalPayload = async (
+  automationId: string,
+  recipientIgId: string
+): Promise<boolean> => {
+  const existing = await client.messageLog.findFirst({
+    where: {
+      automationId,
+      recipientIgId,
+      messageType: "DM",
+      status: "SENT",
+      errorMessage: { in: ["final_dm_payload_sent", "follow_gate_payload_sent"] },
+    },
+    select: { id: true },
+  });
+  return Boolean(existing);
 };
 
 export const hasProcessedCommentWebhook = async (

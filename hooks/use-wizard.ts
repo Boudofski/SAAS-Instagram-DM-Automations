@@ -4,6 +4,12 @@ import {
   saveCampaign,
 } from "@/actions/automation";
 import { canAdvanceTriggerStep } from "@/lib/campaign-validation";
+import {
+  DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
+  DEFAULT_FOLLOW_REQUEST_DM_TEXT,
+  DEFAULT_OPENING_DM_BUTTON_TEXT,
+  DEFAULT_OPENING_DM_TEXT,
+} from "@/lib/comment-dm-flow";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -31,8 +37,10 @@ export type WizardData = {
   mediaUrl: string;
   mediaType: "IMAGE" | "VIDEO";
   followGateRequired: boolean;
-  typingIndicator: boolean;
-  deliveryDelaySeconds: number;
+  openingDmText: string;
+  openingDmButtonText: string;
+  followRequestDmText: string;
+  followRequestButtonText: string;
   publicReply: string;
   publicReply2: string;
   publicReply3: string;
@@ -64,8 +72,10 @@ const INITIAL: WizardData = {
   mediaUrl: "",
   mediaType: "IMAGE",
   followGateRequired: false,
-  typingIndicator: true,
-  deliveryDelaySeconds: 3,
+  openingDmText: DEFAULT_OPENING_DM_TEXT,
+  openingDmButtonText: DEFAULT_OPENING_DM_BUTTON_TEXT,
+  followRequestDmText: DEFAULT_FOLLOW_REQUEST_DM_TEXT,
+  followRequestButtonText: DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
   publicReply: DEFAULT_PUBLIC_REPLIES[0],
   publicReply2: DEFAULT_PUBLIC_REPLIES[1],
   publicReply3: DEFAULT_PUBLIC_REPLIES[2],
@@ -96,6 +106,8 @@ export function useWizard(slug: string, automationId?: string) {
     if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
     if (step === 3) {
       if (!hasCommentReply && !data.sendPrivateDm) return false;
+      if (data.sendPrivateDm && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
+      if (data.sendPrivateDm && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) return false;
       if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
       if (data.sendPrivateDm && data.responseFormat === "LINK" && !data.ctaLink.trim()) return false;
       if (data.sendPrivateDm && data.responseFormat === "MEDIA" && !data.mediaUrl.trim()) return false;
@@ -105,7 +117,7 @@ export function useWizard(slug: string, automationId?: string) {
   };
 
   const activate = async (activeOverride?: boolean) => {
-    if (!data.post || (data.sendPrivateDm && !data.dmMessage.trim())) {
+    if (!data.post || (data.sendPrivateDm && (!data.dmMessage.trim() || !data.openingDmText.trim() || !data.openingDmButtonText.trim()))) {
       setError("Please complete all required steps before activating.");
       return;
     }
@@ -125,6 +137,10 @@ export function useWizard(slug: string, automationId?: string) {
       setError("Add a public image or video URL before activating.");
       return;
     }
+    if (data.sendPrivateDm && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) {
+      setError("Add the follow request message and verification button.");
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -137,8 +153,8 @@ export function useWizard(slug: string, automationId?: string) {
         triggerMode: data.triggerMode,
         sendPrivateDm: data.sendPrivateDm,
         followGateRequired: data.followGateRequired,
-        typingIndicator: data.typingIndicator,
-        deliveryDelaySeconds: data.deliveryDelaySeconds,
+        typingIndicator: false,
+        deliveryDelaySeconds: 0,
         post: data.post,
         keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
         publicReplyEnabled: data.publicReplyEnabled,
@@ -154,6 +170,10 @@ export function useWizard(slug: string, automationId?: string) {
           quickReplies: data.quickReplies,
           mediaUrl: data.responseFormat === "MEDIA" ? data.mediaUrl || undefined : undefined,
           mediaType: data.responseFormat === "MEDIA" ? data.mediaType : undefined,
+          openingDmText: data.sendPrivateDm ? data.openingDmText : undefined,
+          openingDmButtonText: data.sendPrivateDm ? data.openingDmButtonText : undefined,
+          followRequestDmText: data.sendPrivateDm ? data.followRequestDmText : undefined,
+          followRequestButtonText: data.sendPrivateDm ? data.followRequestButtonText : undefined,
         },
       } as const;
 

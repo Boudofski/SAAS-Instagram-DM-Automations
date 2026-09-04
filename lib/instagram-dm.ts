@@ -7,7 +7,19 @@ export const INSTAGRAM_GRAPH_VERSION =
   process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
 export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 
-type CtaMode = "button_template" | "text_link_fallback" | "none";
+type CtaMode = "button_template" | "postback_button" | "follow_gate_card" | "text_link_fallback" | "none";
+
+export type InstagramPostbackButton = {
+  title: string;
+  payload: string;
+};
+
+export type FollowGatePromptState = "INITIAL" | "NOT_FOLLOWING" | "UNAVAILABLE";
+
+export type FollowGatePrompt = {
+  username?: string | null;
+  state: FollowGatePromptState;
+};
 
 type InstagramMessagePayload =
   | {
@@ -130,6 +142,31 @@ function buildButtonPayload(
   };
 }
 
+function buildPostbackButtonPayload(
+  message: string,
+  button: InstagramPostbackButton
+): { preferred: InstagramMessagePayload; fallback: InstagramMessagePayload } {
+  const text = message.trim() || "Tap below to continue.";
+  const title = normalizeButtonTitle(button.title);
+  const preferred: InstagramMessagePayload = {
+    attachment: {
+      type: "template",
+      payload: {
+        template_type: "button",
+        text,
+        buttons: [{ type: "postback", title, payload: button.payload }],
+      },
+    },
+  };
+  const fallback = addQuickReplies(
+    { text },
+    button.payload,
+    [title],
+    [button.payload]
+  );
+  return { preferred, fallback };
+}
+
 function buildTextFallbackPayload(
   message: string,
   ctaTitle?: string | null,
@@ -149,10 +186,73 @@ function buildTextFallbackPayload(
 function addQuickReplies(
   message: InstagramMessagePayload,
   automationId: string,
-  replies: string[]
+  replies: string[],
+  payloads?: string[]
 ): InstagramMessagePayload {
-  const quickReplies = buildQuickReplies(automationId, replies);
+  const quickReplies = buildQuickReplies(automationId, replies, payloads);
   return quickReplies.length ? { ...message, quick_replies: quickReplies } as InstagramMessagePayload : message;
+}
+
+function normalizeInstagramUsername(value?: string | null) {
+  return (value ?? "")
+    .trim()
+    .replace(/^@+/, "")
+    .replace(/[^A-Za-z0-9._]/g, "")
+    .slice(0, 30) || "our account";
+}
+
+export function getInstagramFollowGatePromptCopy(prompt: FollowGatePrompt) {
+  const username = normalizeInstagramUsername(prompt.username);
+  const displayHandle = username === "our account" ? "our Instagram account" : `@${username}`;
+  const profileUrl = username === "our account"
+    ? "https://www.instagram.com/"
+    : `https://www.instagram.com/${encodeURIComponent(username)}/`;
+
+  if (prompt.state === "NOT_FOLLOWING") {
+    const title = "❌ Not Following Yet!";
+    const subtitle = `We couldn't verify your follow. Follow ${displayHandle}, then tap I followed ✅ again.`;
+    return { title, subtitle, profileUrl, text: `${title}\n${subtitle}` };
+  }
+
+  if (prompt.state === "UNAVAILABLE") {
+    const title = "⚠️ Verification delayed";
+    const subtitle = `We couldn't verify your follow yet. Follow ${displayHandle}, then tap I followed ✅ again.`;
+    return { title, subtitle, profileUrl, text: `${title}\n${subtitle}` };
+  }
+
+  const title = "Follow to unlock";
+  const subtitle = `Follow ${displayHandle}, then tap I followed ✅ to receive your message.`;
+  return { title, subtitle, profileUrl, text: `${title}\n${subtitle}` };
+}
+
+function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) {
+  const copy = getInstagramFollowGatePromptCopy(prompt);
+  const verificationPayload = `AP3K_FOLLOW_CHECK:${automationId}`;
+  const preferred: InstagramMessagePayload = {
+    attachment: {
+      type: "template",
+      payload: {
+        template_type: "generic",
+        elements: [
+          {
+            title: copy.title,
+            subtitle: copy.subtitle,
+            buttons: [
+              { type: "web_url", title: "Follow", url: copy.profileUrl },
+              { type: "postback", title: "I followed ✅", payload: verificationPayload },
+            ],
+          },
+        ],
+      },
+    },
+  };
+  const fallback = addQuickReplies(
+    { text: `${copy.text}\n\nFollow: ${copy.profileUrl}` },
+    automationId,
+    ["I followed ✅"],
+    [verificationPayload]
+  );
+  return { preferred, fallback, copy };
 }
 
 function buildConfiguredPrivateReplyPayload(params: {
@@ -255,6 +355,8 @@ export async function sendInstagramDirectResponse(params: {
   mediaType?: string | null;
   typingIndicator?: boolean;
   delaySeconds?: number;
+  followGatePrompt?: FollowGatePrompt;
+  postbackButton?: InstagramPostbackButton;
 }): Promise<DirectResponseResult> {
   const messageIds: string[] = [];
   const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
@@ -289,7 +391,11 @@ export async function sendInstagramDirectResponse(params: {
     }
 
     let responseMessage: InstagramMessagePayload;
-    if (params.responseFormat === "LINK" && params.ctaUrl) {
+    if (params.postbackButton) {
+      responseMessage = buildPostbackButtonPayload(params.message, params.postbackButton).preferred;
+    } else if (params.followGatePrompt) {
+      responseMessage = buildFollowGatePayload(params.automationId, params.followGatePrompt).preferred;
+    } else if (params.responseFormat === "LINK" || params.ctaUrl) {
       const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
     } else {
@@ -303,9 +409,21 @@ export async function sendInstagramDirectResponse(params: {
     try {
       sent = await postDirectPayload(params, responseMessage);
     } catch (error) {
-      if (params.responseFormat !== "LINK") throw error;
-      const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl).message;
-      sent = await postDirectPayload(params, addQuickReplies(fallback, params.automationId, params.quickReplies ?? []));
+      if (params.postbackButton && shouldTryTextFallback(error)) {
+        sent = await postDirectPayload(
+          params,
+          buildPostbackButtonPayload(params.message, params.postbackButton).fallback
+        );
+      } else if (params.followGatePrompt && shouldTryTextFallback(error)) {
+        sent = await postDirectPayload(
+          params,
+          buildFollowGatePayload(params.automationId, params.followGatePrompt).fallback
+        );
+      } else {
+        if (params.responseFormat !== "LINK" && !params.ctaUrl) throw error;
+        const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl).message;
+        sent = await postDirectPayload(params, addQuickReplies(fallback, params.automationId, params.quickReplies ?? []));
+      }
     }
     if (sent) messageIds.push(sent);
 
@@ -362,8 +480,26 @@ export async function getInstagramRecipientProfile(params: {
       followsBusiness: response.data?.is_user_follow_business === true,
     };
   } catch (error) {
-    console.warn("[meta-api] recipient profile lookup failed", { error: getSafeMetaError(error) });
-    return null;
+    console.warn("[meta-api] recipient profile lookup failed — retrying follow status only", {
+      error: getSafeMetaError(error),
+    });
+    try {
+      const followResponse = await axios.get(`${INSTAGRAM_GRAPH_API_BASE_URL}/${params.recipientId}`, {
+        params: { fields: "is_user_follow_business" },
+        headers: { Authorization: `Bearer ${params.token}` },
+      });
+      return {
+        username: undefined,
+        name: undefined,
+        profilePictureUrl: undefined,
+        followsBusiness: followResponse.data?.is_user_follow_business === true,
+      };
+    } catch (followError) {
+      console.warn("[meta-api] recipient follow-status lookup failed", {
+        error: getSafeMetaError(followError),
+      });
+      return null;
+    }
   }
 }
 
@@ -420,19 +556,37 @@ export async function sendInstagramCommentPrivateReply(params: {
   quickReplies?: string[];
   mediaUrl?: string | null;
   mediaType?: string | null;
+  followGatePrompt?: FollowGatePrompt;
+  postbackButton?: InstagramPostbackButton;
 }): Promise<PrivateReplyResult> {
   const { token, igBusinessAccountId, commentId, commenterId } = params;
-  const preferred = buildConfiguredPrivateReplyPayload({
-    automationId: params.automationId ?? commentId,
-    message: params.message,
-    responseFormat: params.responseFormat,
-    quickReplies: params.quickReplies,
-    ctaTitle: params.ctaTitle,
-    ctaUrl: params.ctaUrl,
-    mediaUrl: params.mediaUrl,
-    mediaType: params.mediaType,
-  });
-  const textFallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl);
+  const automationId = params.automationId ?? commentId;
+  const followGatePayload = params.followGatePrompt
+    ? buildFollowGatePayload(automationId, params.followGatePrompt)
+    : null;
+  const postbackPayload = params.postbackButton
+    ? buildPostbackButtonPayload(params.message, params.postbackButton)
+    : null;
+  const preferred = postbackPayload
+    ? { message: postbackPayload.preferred, ctaMode: "postback_button" as CtaMode }
+    : followGatePayload
+    ? { message: followGatePayload.preferred, ctaMode: "follow_gate_card" as CtaMode }
+    : buildConfiguredPrivateReplyPayload({
+        automationId,
+        message: params.message,
+        responseFormat: params.responseFormat,
+        quickReplies: params.quickReplies,
+        ctaTitle: params.ctaTitle,
+        ctaUrl: params.ctaUrl,
+        mediaUrl: params.mediaUrl,
+        mediaType: params.mediaType,
+      });
+  const textFallback = postbackPayload
+    ? { message: postbackPayload.fallback, ctaMode: "postback_button" as CtaMode }
+    : followGatePayload
+    ? { message: followGatePayload.fallback, ctaMode: "text_link_fallback" as CtaMode }
+    : buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl);
+  const usesTemplate = preferred.ctaMode === "button_template" || preferred.ctaMode === "postback_button" || preferred.ctaMode === "follow_gate_card";
 
   try {
     const primary = await tryPrivateReply(igBusinessAccountId, commentId, preferred.message, token);
@@ -443,7 +597,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   } catch (primaryErr) {
     const primaryMeta = buildMetaError(primaryErr);
 
-    if (preferred.ctaMode === "button_template" && shouldTryTextFallback(primaryErr)) {
+    if (usesTemplate && shouldTryTextFallback(primaryErr)) {
       console.warn("[meta-api] Instagram Graph private reply button template failed — trying text fallback", {
         endpointName: "ig_messages_private_reply",
         status: primaryMeta.status,
@@ -483,7 +637,7 @@ export async function sendInstagramCommentPrivateReply(params: {
       }
       return capabilityMissing("ig_messages_direct_dm", preferred.ctaMode);
     } catch (fallbackErr) {
-      if (preferred.ctaMode === "button_template" && shouldTryTextFallback(fallbackErr)) {
+      if (usesTemplate && shouldTryTextFallback(fallbackErr)) {
         console.warn("[meta-api] Instagram Graph direct DM button template failed — trying text fallback", {
           endpointName: "ig_messages_direct_dm",
           error: getSafeMetaError(fallbackErr),

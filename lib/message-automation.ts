@@ -1,3 +1,8 @@
+import {
+  resolveFollowRequestButtonText,
+  resolveFollowRequestDmText,
+} from "@/lib/comment-dm-flow";
+
 export type MessageAutomationSource = "STORY" | "DM";
 export type StoryTriggerType = "MENTION" | "REACTION" | "REPLY";
 export type MessageResponseFormat = "TEXT" | "LINK" | "MEDIA";
@@ -21,6 +26,8 @@ export type RawMessageAutomationPayload = {
   followGateRequired?: boolean;
   typingIndicator?: boolean;
   deliveryDelaySeconds?: number;
+  followRequestDmText?: string | null;
+  followRequestButtonText?: string | null;
 };
 
 export type NormalizedMessageAutomationPayload = {
@@ -40,9 +47,9 @@ export type NormalizedMessageAutomationPayload = {
   followGateRequired: boolean;
   typingIndicator: boolean;
   deliveryDelaySeconds: DeliveryDelaySeconds;
+  followRequestDmText: string;
+  followRequestButtonText: string;
 };
-
-const DELAYS = new Set([0, 3, 5, 10, 30]);
 
 export function normalizeMessageAutomationPayload(
   payload: RawMessageAutomationPayload
@@ -58,7 +65,6 @@ export function normalizeMessageAutomationPayload(
     source === "DM" && payload.triggerMode === "SPECIFIC_KEYWORD"
       ? "SPECIFIC_KEYWORD"
       : "ANY_MESSAGE";
-  const delay = Number(payload.deliveryDelaySeconds);
 
   return {
     name: cleanOptional(payload.name)?.slice(0, 120) || `Untitled ${source === "STORY" ? "story" : "DM"} automation`,
@@ -85,8 +91,10 @@ export function normalizeMessageAutomationPayload(
     mediaUrl: responseFormat === "MEDIA" ? normalizeUrl(payload.mediaUrl) : undefined,
     mediaType: responseFormat === "MEDIA" && payload.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
     followGateRequired: Boolean(payload.followGateRequired),
-    typingIndicator: Boolean(payload.typingIndicator),
-    deliveryDelaySeconds: (DELAYS.has(delay) ? delay : 0) as DeliveryDelaySeconds,
+    typingIndicator: false,
+    deliveryDelaySeconds: 0,
+    followRequestDmText: resolveFollowRequestDmText(payload.followRequestDmText),
+    followRequestButtonText: resolveFollowRequestButtonText(payload.followRequestButtonText),
   };
 }
 

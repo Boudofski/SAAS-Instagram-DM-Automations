@@ -39,6 +39,10 @@ describe("normalizeCampaignPayload", () => {
     expect(normalized.sendPrivateDm).toBe(true);
     expect(normalized.listener.prompt).toBe("Hey {{first_name}}");
     expect(normalized.listener.ctaLink).toBe("https://ceptice.com/");
+    expect(normalized.listener.openingDmButtonText).toBe("Send me the link");
+    expect(normalized.listener.followRequestButtonText).toBe("Following");
+    expect(normalized.typingIndicator).toBe(false);
+    expect(normalized.deliveryDelaySeconds).toBe(0);
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 
@@ -178,5 +182,20 @@ describe("sendPrivateDm migration contract", () => {
 
     expect(migration).toContain('"sendPrivateDm" BOOLEAN NOT NULL DEFAULT true');
     expect(migration).toContain("'DM_SKIPPED'");
+  });
+});
+
+describe("comment DM consent migration contract", () => {
+  it("adds the four editable flow fields without destructive schema changes", () => {
+    const migration = readFileSync(
+      "prisma/migrations/20260904190000_add_comment_dm_consent_flow/migration.sql",
+      "utf8"
+    );
+
+    expect(migration).toContain('ADD COLUMN "openingDmText" TEXT');
+    expect(migration).toContain('ADD COLUMN "openingDmButtonText" TEXT');
+    expect(migration).toContain('ADD COLUMN "followRequestDmText" TEXT');
+    expect(migration).toContain('ADD COLUMN "followRequestButtonText" TEXT');
+    expect(migration).not.toContain("DROP COLUMN");
   });
 });

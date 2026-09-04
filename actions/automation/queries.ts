@@ -3,6 +3,7 @@
 import { client } from "@/lib/prisma";
 import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
 import type { NormalizedMessageAutomationPayload } from "@/lib/message-automation";
+import { resolveFollowRequestButtonText, resolveFollowRequestDmText } from "@/lib/comment-dm-flow";
 import type { MATCHING_MODE } from "@prisma/client";
 
 export type CampaignPayload = NormalizedCampaignPayload;
@@ -155,6 +156,8 @@ export const createCompleteMessageAutomation = async (
           ctaButtonTitle: payload.ctaButtonTitle,
           mediaUrl: payload.mediaUrl,
           mediaType: payload.mediaType,
+          followRequestDmText: payload.followRequestDmText,
+          followRequestButtonText: payload.followRequestButtonText,
         },
       },
     },
@@ -212,6 +215,8 @@ export const updateCompleteMessageAutomation = async (
             ctaButtonTitle: payload.ctaButtonTitle,
             mediaUrl: payload.mediaUrl,
             mediaType: payload.mediaType,
+            followRequestDmText: payload.followRequestDmText,
+            followRequestButtonText: payload.followRequestButtonText,
           },
         },
       },
@@ -386,11 +391,10 @@ export const duplicateAutomationQuery = async (
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
       followGateRequired: automation.followGateRequired,
-      typingIndicator: automation.typingIndicator,
-      deliveryDelaySeconds:
-        automation.deliveryDelaySeconds === 3 || automation.deliveryDelaySeconds === 5 || automation.deliveryDelaySeconds === 10 || automation.deliveryDelaySeconds === 30
-          ? automation.deliveryDelaySeconds
-          : 0,
+      typingIndicator: false,
+      deliveryDelaySeconds: 0,
+      followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
+      followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
     });
   }
 
@@ -403,11 +407,8 @@ export const duplicateAutomationQuery = async (
     triggerMode: (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ?? "SPECIFIC_KEYWORD",
     sendPrivateDm: automation.sendPrivateDm,
     followGateRequired: automation.followGateRequired,
-    typingIndicator: automation.typingIndicator,
-    deliveryDelaySeconds:
-      automation.deliveryDelaySeconds === 3 || automation.deliveryDelaySeconds === 5 || automation.deliveryDelaySeconds === 10 || automation.deliveryDelaySeconds === 30
-        ? automation.deliveryDelaySeconds
-        : 0,
+    typingIndicator: false,
+    deliveryDelaySeconds: 0,
     post: {
       postid: automation.posts[0].postid,
       caption: automation.posts[0].caption ?? undefined,
@@ -432,6 +433,10 @@ export const duplicateAutomationQuery = async (
         : [],
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
+      openingDmText: automation.listener.openingDmText ?? undefined,
+      openingDmButtonText: automation.listener.openingDmButtonText ?? undefined,
+      followRequestDmText: automation.listener.followRequestDmText ?? undefined,
+      followRequestButtonText: automation.listener.followRequestButtonText ?? undefined,
     },
   };
 

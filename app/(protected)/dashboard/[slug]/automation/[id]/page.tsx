@@ -7,6 +7,12 @@ import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { customerReplyCopy } from "@/lib/customer-reply-copy";
+import {
+  resolveFollowRequestButtonText,
+  resolveFollowRequestDmText,
+  resolveOpeningDmButtonText,
+  resolveOpeningDmText,
+} from "@/lib/comment-dm-flow";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
@@ -44,6 +50,10 @@ export default async function CampaignDetailPage({ params }: Props) {
   ].filter(Boolean) as string[];
   const hasCommentReply = commentReplies.length > 0;
   const hasDm = sendPrivateDm && Boolean(automation.listener?.prompt);
+  const openingDmText = resolveOpeningDmText(automation.listener?.openingDmText);
+  const openingDmButtonText = resolveOpeningDmButtonText(automation.listener?.openingDmButtonText);
+  const followRequestDmText = resolveFollowRequestDmText(automation.listener?.followRequestDmText);
+  const followRequestButtonText = resolveFollowRequestButtonText(automation.listener?.followRequestButtonText);
   const isLive = Boolean(automation.active && !automation.needsReview && !automation.archivedAt);
   const groupedAll = groupCampaignActivity(activity, { privateDmEnabled: sendPrivateDm, limit: 20 });
   const groupedActivity = filterAppReviewActivity(groupedAll, 20);
@@ -122,7 +132,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           {isMessageAutomation ? <div className="grid gap-4">
             <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
             <FlowConnector />
-            <FlowNode label="2. Delivery rules" title={automation.followGateRequired ? "Follower check enabled" : "Open to everyone"} body={`${automation.typingIndicator ? "Typing indicator on" : "No typing indicator"} · ${automation.deliveryDelaySeconds ? `up to ${automation.deliveryDelaySeconds}s randomized delay` : "send immediately"}`} tone="pink" />
+            <FlowNode label="2. Optional follow request" title={automation.followGateRequired ? "Ask them to follow" : "Send without a follow check"} body={automation.followGateRequired ? `${followRequestButtonText} rechecks their follow before delivery.` : "The saved response is sent immediately."} tone="pink" />
             <FlowConnector />
             <FlowNode label="3. Direct message" title={automation.listener?.responseFormat === "LINK" ? "Card / link" : automation.listener?.responseFormat === "MEDIA" ? "Rich media" : "Text message"} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
           </div> : <div className="grid gap-4">
@@ -132,8 +142,16 @@ export default async function CampaignDetailPage({ params }: Props) {
             <FlowConnector />
             <div className="grid gap-4 md:grid-cols-2">
               <FlowNode label="3. Comment reply" title={hasCommentReply ? "Reply to comment" : "Not configured"} body={commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
-              <FlowNode label="4. DM" title={hasDm ? "Send a DM" : "Not configured"} body={automation.listener?.prompt || "No DM configured."} tone="blue" disabled={!hasDm} />
+              <FlowNode label="4. Opening DM" title={hasDm ? openingDmButtonText : "Not configured"} body={hasDm ? openingDmText : "No DM configured."} tone="blue" disabled={!hasDm} />
             </div>
+            {hasDm && <>
+              <FlowConnector />
+              {automation.followGateRequired && <>
+                <FlowNode label="5. Optional follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" />
+                <FlowConnector />
+              </>}
+              <FlowNode label={automation.followGateRequired ? "6. Final DM" : "5. Final DM"} title={automation.listener?.responseFormat === "LINK" ? "Deliver link" : "Deliver response"} body={automation.listener?.prompt || "No final DM configured."} tone="blue" />
+            </>}
           </div>}
         </section>
 
@@ -145,7 +163,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <SettingsRow label="Trigger" value={triggerLabel} />
             {!isMessageAutomation && <SettingsRow label="Comment reply" value={hasCommentReply ? `${commentReplies.length} variation${commentReplies.length === 1 ? "" : "s"}` : "Off"} />}
             <SettingsRow label="DM" value={hasDm ? "Enabled" : "Off"} />
-            <SettingsRow label="Follow gate" value={automation.followGateRequired ? "Required" : "Off"} />
+            <SettingsRow label="Follow request" value={automation.followGateRequired ? "Enabled" : "Off"} />
           </div>
           <Link href={editHref} className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm">
             Edit automation
@@ -165,7 +183,9 @@ export default async function CampaignDetailPage({ params }: Props) {
           <h2 className="text-sm font-black text-slate-950 dark:text-white">Automation content</h2>
           <div className="mt-5 space-y-5">
             {!isMessageAutomation && <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} />}
-            {hasDm && <ContentBlock label="DM message" value={automation.listener?.prompt} />}
+            {!isMessageAutomation && hasDm && <ContentBlock label={`Opening DM · ${openingDmButtonText}`} value={openingDmText} />}
+            {hasDm && <ContentBlock label="Final DM" value={automation.listener?.prompt} />}
+            {hasDm && automation.followGateRequired && <ContentBlock label={`Follow request · ${followRequestButtonText}`} value={followRequestDmText} />}
             {(automation.listener?.ctaButtonTitle || automation.listener?.ctaLink) && (
               <div>
                 <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Link button</p>

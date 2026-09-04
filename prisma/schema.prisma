@@ -241,6 +241,10 @@ model Listener {
   quickReplies   Json?
   mediaUrl       String?
   mediaType      String?
+  openingDmText            String?
+  openingDmButtonText      String?
+  followRequestDmText      String?
+  followRequestButtonText  String?
   dmCount        Int        @default(0)
   commentCount   Int        @default(0)
 }

@@ -4,6 +4,12 @@ import { saveMessageAutomation } from "@/actions/automation";
 import DeliveryRules from "@/components/automations/delivery-rules";
 import MessageResponseEditor, { type ResponseFormat } from "@/components/automations/message-response-editor";
 import WizardStepper, { type StepStatus } from "@/components/global/wizard-stepper";
+import {
+  DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
+  DEFAULT_FOLLOW_REQUEST_DM_TEXT,
+  resolveFollowRequestButtonText,
+  resolveFollowRequestDmText,
+} from "@/lib/comment-dm-flow";
 import { AtSign, Loader2, MessageCircleReply, SmilePlus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
@@ -26,8 +32,8 @@ type Draft = {
   mediaUrl: string;
   mediaType: "IMAGE" | "VIDEO";
   followGateRequired: boolean;
-  typingIndicator: boolean;
-  deliveryDelaySeconds: number;
+  followRequestDmText: string;
+  followRequestButtonText: string;
 };
 
 const STORY_TRIGGERS = [
@@ -49,8 +55,8 @@ const INITIAL: Draft = {
   mediaUrl: "",
   mediaType: "IMAGE",
   followGateRequired: false,
-  typingIndicator: true,
-  deliveryDelaySeconds: 3,
+  followRequestDmText: DEFAULT_FOLLOW_REQUEST_DM_TEXT,
+  followRequestButtonText: DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
 };
 
 export default function MessageAutomationWizard({ slug, source, automationId, automation }: { slug: string; source: Source; automationId?: string; automation?: any }) {
@@ -80,8 +86,8 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       mediaUrl: automation.listener.mediaUrl ?? "",
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : "IMAGE",
       followGateRequired: Boolean(automation.followGateRequired),
-      typingIndicator: Boolean(automation.typingIndicator),
-      deliveryDelaySeconds: automation.deliveryDelaySeconds ?? 0,
+      followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
+      followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
     });
   }, [automation]);
 
@@ -165,7 +171,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
             )}
 
             {step === 3 && (
-              <section><PhaseHeader eyebrow="Phase 3" title="Configure rules & name" description="Finalize delivery settings and activate the automation." /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Automation identifier name</label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" /><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Delivery options</p><DeliveryRules followGateRequired={draft.followGateRequired} typingIndicator={draft.typingIndicator} deliveryDelaySeconds={draft.deliveryDelaySeconds} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /><div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
+              <section><PhaseHeader eyebrow="Phase 3" title="Configure rules & name" description="Name the automation and decide whether the final message is reserved for followers." /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Automation name</label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" /><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Optional follow request</p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /><div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
             )}
 
             {error && <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">{error}</p>}

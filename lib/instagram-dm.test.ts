@@ -8,6 +8,8 @@ const mockedAxios = vi.mocked(axios, true);
 import {
   sendInstagramCommentPrivateReply,
   sendInstagramDirectResponse,
+  getInstagramFollowGatePromptCopy,
+  getInstagramRecipientProfile,
   formatPrivateReplyError,
 } from "./instagram-dm";
 
@@ -178,6 +180,96 @@ describe("sendInstagramCommentPrivateReply", () => {
     ]);
   });
 
+  it("sends the opening DM with a clickable consent postback", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.opening" } });
+
+    const result = await sendInstagramCommentPrivateReply({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      commentId: COMMENT_ID,
+      commenterId: COMMENTER_ID,
+      automationId: "automation-opening",
+      message: "Click below and I’ll send the link.",
+      postbackButton: {
+        title: "Send me the link",
+        payload: "AP3K_OPENING_CONTINUE:automation-opening",
+      },
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      endpoint: "ig_messages_private_reply",
+      ctaMode: "postback_button",
+    });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.recipient).toEqual({ comment_id: COMMENT_ID });
+    expect(body.message.attachment.payload).toEqual({
+      template_type: "button",
+      text: "Click below and I’ll send the link.",
+      buttons: [{
+        type: "postback",
+        title: "Send me the link",
+        payload: "AP3K_OPENING_CONTINUE:automation-opening",
+      }],
+    });
+  });
+
+  it("sends the clickable follower gate card as a private reply", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.gate" } });
+
+    const result = await sendInstagramCommentPrivateReply({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      commentId: COMMENT_ID,
+      commenterId: COMMENTER_ID,
+      automationId: "automation-gate",
+      message: "Protected payload",
+      followGatePrompt: { username: "ap3k", state: "INITIAL" },
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      endpoint: "ig_messages_private_reply",
+      ctaMode: "follow_gate_card",
+    });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.recipient).toEqual({ comment_id: COMMENT_ID });
+    expect(body.message.attachment.payload.template_type).toBe("generic");
+    expect(body.message.attachment.payload.elements[0].buttons).toEqual([
+      { type: "web_url", title: "Follow", url: "https://www.instagram.com/ap3k/" },
+      { type: "postback", title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-gate" },
+    ]);
+  });
+
+  it("preserves a clickable verification action if Meta rejects the private-reply card", async () => {
+    mockedAxios.post
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.gate-fallback" } });
+
+    const result = await sendInstagramCommentPrivateReply({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      commentId: COMMENT_ID,
+      commenterId: COMMENTER_ID,
+      automationId: "automation-gate",
+      message: "Protected payload",
+      followGatePrompt: { username: "@ap3k", state: "NOT_FOLLOWING" },
+    });
+
+    expect(result.ok).toBe(true);
+    const fallbackBody = mockedAxios.post.mock.calls[1][1] as any;
+    expect(fallbackBody.recipient).toEqual({ comment_id: COMMENT_ID });
+    expect(fallbackBody.message.text).toContain("❌ Not Following Yet!");
+    expect(fallbackBody.message.text).toContain("https://www.instagram.com/ap3k/");
+    expect(fallbackBody.message.quick_replies).toEqual([
+      {
+        content_type: "text",
+        title: "I followed ✅",
+        payload: "AP3K_FOLLOW_CHECK:automation-gate",
+      },
+    ]);
+  });
+
   it("keeps the CTA URL in one button when it already appears in message copy", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: {} });
 
@@ -283,6 +375,113 @@ describe("sendInstagramDirectResponse", () => {
       payload: { url: "https://example.com/preview.jpg", is_reusable: true },
     });
     expect(textBody.message.text).toBe("Here is the preview");
+  });
+
+  it("sends an editable follow request with a repeatable verification postback", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-request" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-follow",
+      message: "Nearly there! Follow me and tap below.",
+      postbackButton: {
+        title: "Following",
+        payload: "AP3K_FOLLOW_CHECK:automation-follow",
+      },
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-request"] });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.recipient).toEqual({ id: COMMENTER_ID });
+    expect(body.message.attachment.payload.buttons).toEqual([{
+      type: "postback",
+      title: "Following",
+      payload: "AP3K_FOLLOW_CHECK:automation-follow",
+    }]);
+  });
+
+  it("sends Follow and I followed as two clickable card buttons", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-gate" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-3",
+      message: "Protected payload",
+      followGatePrompt: { username: "ap3k", state: "INITIAL" },
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-gate"] });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    const card = body.message.attachment.payload.elements[0];
+    expect(card.title).toBe("Follow to unlock");
+    expect(card.buttons).toEqual([
+      { type: "web_url", title: "Follow", url: "https://www.instagram.com/ap3k/" },
+      { type: "postback", title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-3" },
+    ]);
+  });
+
+  it("returns the retry card when a follow still cannot be verified", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.retry" } });
+
+    await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-4",
+      message: "Protected payload",
+      followGatePrompt: { username: "ap3k", state: "NOT_FOLLOWING" },
+    });
+
+    const card = (mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0];
+    expect(card.title).toBe("❌ Not Following Yet!");
+    expect(card.subtitle).toContain("tap I followed ✅ again");
+    expect(card.buttons[1].payload).toBe("AP3K_FOLLOW_CHECK:automation-4");
+  });
+
+  it("falls back to a profile link and verification quick reply when the card is rejected", async () => {
+    mockedAxios.post
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.direct-fallback" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-5",
+      message: "Protected payload",
+      followGatePrompt: { username: "ap3k", state: "UNAVAILABLE" },
+    });
+
+    expect(result.ok).toBe(true);
+    const fallback = mockedAxios.post.mock.calls[1][1] as any;
+    expect(fallback.message.text).toContain("⚠️ Verification delayed");
+    expect(fallback.message.text).toContain("https://www.instagram.com/ap3k/");
+    expect(fallback.message.quick_replies[0].payload).toBe("AP3K_FOLLOW_CHECK:automation-5");
+  });
+});
+
+describe("Instagram follow verification", () => {
+  it("sanitizes the account handle used by the Follow button", () => {
+    expect(getInstagramFollowGatePromptCopy({ username: "@@ap3k<script>", state: "INITIAL" }).profileUrl)
+      .toBe("https://www.instagram.com/ap3kscript/");
+  });
+
+  it("retries only is_user_follow_business when the full profile request fails", async () => {
+    mockedAxios.get = vi.fn()
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockResolvedValueOnce({ data: { is_user_follow_business: true } }) as any;
+
+    const profile = await getInstagramRecipientProfile({ token: VALID_TOKEN, recipientId: COMMENTER_ID });
+
+    expect(profile?.followsBusiness).toBe(true);
+    expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+    expect(mockedAxios.get.mock.calls[1][1]).toEqual(expect.objectContaining({
+      params: { fields: "is_user_follow_business" },
+    }));
   });
 });
 

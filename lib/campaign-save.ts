@@ -1,3 +1,10 @@
+import {
+  resolveFollowRequestButtonText,
+  resolveFollowRequestDmText,
+  resolveOpeningDmButtonText,
+  resolveOpeningDmText,
+} from "@/lib/comment-dm-flow";
+
 export type CampaignTriggerMode = "SPECIFIC_KEYWORD" | "ANY_COMMENT";
 export type CampaignMatchingMode = "EXACT" | "CONTAINS" | "SMART_AI";
 export type CampaignMediaType = "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
@@ -32,6 +39,10 @@ export type RawCampaignPayload = {
     quickReplies?: string[];
     mediaUrl?: string | null;
     mediaType?: string | null;
+    openingDmText?: string | null;
+    openingDmButtonText?: string | null;
+    followRequestDmText?: string | null;
+    followRequestButtonText?: string | null;
   } | null;
 };
 
@@ -63,6 +74,10 @@ export type NormalizedCampaignPayload = {
     quickReplies?: string[];
     mediaUrl?: string;
     mediaType?: "IMAGE" | "VIDEO";
+    openingDmText?: string;
+    openingDmButtonText?: string;
+    followRequestDmText?: string;
+    followRequestButtonText?: string;
   };
 };
 
@@ -101,8 +116,6 @@ export function normalizeCampaignPayload(
     : payload.listener?.responseFormat === "LINK" || payload.listener?.ctaLink
       ? "LINK"
       : "TEXT";
-  const rawDelay = Number(payload.deliveryDelaySeconds);
-  const deliveryDelaySeconds = ([0, 3, 5, 10, 30].includes(rawDelay) ? rawDelay : 0) as 0 | 3 | 5 | 10 | 30;
   const replies = publicReplyEnabled
     ? [
         payload.listener?.commentReply?.trim(),
@@ -118,8 +131,8 @@ export function normalizeCampaignPayload(
     triggerMode,
     sendPrivateDm,
     followGateRequired: Boolean(payload.followGateRequired),
-    typingIndicator: Boolean(payload.typingIndicator),
-    deliveryDelaySeconds,
+    typingIndicator: false,
+    deliveryDelaySeconds: 0,
     post: {
       postid,
       caption: cleanOptional(payload.post?.caption),
@@ -143,6 +156,10 @@ export function normalizeCampaignPayload(
         : [],
       mediaUrl: sendPrivateDm && responseFormat === "MEDIA" ? normalizeUrl(payload.listener?.mediaUrl) : undefined,
       mediaType: sendPrivateDm && responseFormat === "MEDIA" && payload.listener?.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
+      openingDmText: sendPrivateDm ? resolveOpeningDmText(payload.listener?.openingDmText) : undefined,
+      openingDmButtonText: sendPrivateDm ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText) : undefined,
+      followRequestDmText: sendPrivateDm ? resolveFollowRequestDmText(payload.listener?.followRequestDmText) : undefined,
+      followRequestButtonText: sendPrivateDm ? resolveFollowRequestButtonText(payload.listener?.followRequestButtonText) : undefined,
     },
   };
 }

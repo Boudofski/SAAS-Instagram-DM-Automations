@@ -15,6 +15,12 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import {
+  resolveFollowRequestButtonText,
+  resolveFollowRequestDmText,
+  resolveOpeningDmButtonText,
+  resolveOpeningDmText,
+} from "@/lib/comment-dm-flow";
+import {
   applyMessagingReviewCampaignDefaults,
   DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY,
   isMessagingReviewMode,
@@ -118,8 +124,10 @@ export default function WizardPage({ params, searchParams }: Props) {
       mediaUrl: automation.listener?.mediaUrl ?? "",
       mediaType: automation.listener?.mediaType === "VIDEO" ? "VIDEO" : "IMAGE",
       followGateRequired: Boolean(automation.followGateRequired),
-      typingIndicator: Boolean(automation.typingIndicator),
-      deliveryDelaySeconds: automation.deliveryDelaySeconds ?? 0,
+      openingDmText: resolveOpeningDmText(automation.listener?.openingDmText),
+      openingDmButtonText: resolveOpeningDmButtonText(automation.listener?.openingDmButtonText),
+      followRequestDmText: resolveFollowRequestDmText(automation.listener?.followRequestDmText),
+      followRequestButtonText: resolveFollowRequestButtonText(automation.listener?.followRequestButtonText),
       sendPrivateDm: commentReplyOnlyReviewMode ? false : preparedDm.sendPrivateDm,
       triggerMode: automation.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
       publicReplyEnabled: Boolean(
@@ -364,6 +372,41 @@ export default function WizardPage({ params, searchParams }: Props) {
 
                       {data.sendPrivateDm && (
                         <div className="border-t border-rf-blue/15 p-5 pt-4">
+                          <div className="mb-6 rounded-2xl border border-rf-blue/20 bg-rf-blue/[0.05] p-4 dark:border-rf-blue/25 dark:bg-rf-blue/[0.08] sm:p-5">
+                            <div className="mb-4 flex items-start gap-3">
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">1</span>
+                              <div>
+                                <p className="text-sm font-black text-slate-950 dark:text-white">Opening DM</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Sent first. The person taps this button to ask for your final message.</p>
+                              </div>
+                            </div>
+                            <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">Message</label>
+                            <textarea
+                              value={data.openingDmText}
+                              onChange={(event) => update({ openingDmText: event.target.value })}
+                              maxLength={640}
+                              rows={5}
+                              dir="auto"
+                              className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
+                            />
+                            <label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">
+                              Continue button
+                              <input
+                                value={data.openingDmButtonText}
+                                onChange={(event) => update({ openingDmButtonText: event.target.value })}
+                                maxLength={20}
+                                className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="mb-6 flex items-start gap-3">
+                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span>
+                            <div>
+                              <p className="text-sm font-black text-slate-950 dark:text-white">Final DM</p>
+                              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">This is the message or link AP3K delivers after the opening button and optional follow check.</p>
+                            </div>
+                          </div>
                           <MessageResponseEditor
                             format={data.responseFormat}
                             message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
@@ -383,11 +426,17 @@ export default function WizardPage({ params, searchParams }: Props) {
                             })}
                           />
                           <div className="mt-6 border-t border-rf-blue/15 pt-5">
-                            <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Delivery options</p>
+                            <div className="mb-3 flex items-start gap-3">
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">3</span>
+                              <div>
+                                <p className="text-sm font-black text-slate-950 dark:text-white">Optional follow request</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Leave this off to send the final DM immediately after the opening button.</p>
+                              </div>
+                            </div>
                             <DeliveryRules
                               followGateRequired={data.followGateRequired}
-                              typingIndicator={data.typingIndicator}
-                              deliveryDelaySeconds={data.deliveryDelaySeconds}
+                              followRequestDmText={data.followRequestDmText}
+                              followRequestButtonText={data.followRequestButtonText}
                               onChange={(next) => update(next)}
                             />
                           </div>
@@ -416,7 +465,9 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
                   { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? `${commentReplies.length} variation(s)` : "Off", step: 3 as const },
                   { label: "DM", value: data.sendPrivateDm ? "On" : "Off", step: 3 as const },
-                  ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM message", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
+                  ...(data.sendPrivateDm ? [{ label: "Opening DM", value: `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}`, step: 3 as const }] : []),
+                  ...(data.sendPrivateDm && data.dmMessage ? [{ label: "Final DM", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
+                  ...(data.sendPrivateDm ? [{ label: "Follow request", value: data.followGateRequired ? `On · ${data.followRequestButtonText}` : "Off", step: 3 as const }] : []),
                   ...(data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? [{ label: "Link button", value: `${data.ctaButtonTitle || "Open link"} -> ${data.ctaLink || "No link yet"}`, step: 3 as const }] : []),
                   { label: "Status", value: data.active ? "Live after save" : "Save as draft", step: 4 as const },
                 ].map((row) => (
@@ -462,7 +513,9 @@ export default function WizardPage({ params, searchParams }: Props) {
             <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
             <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.length ? data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", ") : "No keyword"} />
             <PreviewRow label="Comment reply" value={data.publicReplyEnabled ? `${commentReplies.length} variation(s)` : "Off"} />
-            <PreviewRow label="DM" value={data.sendPrivateDm ? data.dmMessage || DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "Off"} />
+            <PreviewRow label="Opening DM" value={data.sendPrivateDm ? `${data.openingDmButtonText} · ${data.openingDmText}` : "Off"} />
+            <PreviewRow label="Final DM" value={data.sendPrivateDm ? data.dmMessage || DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "Off"} />
+            <PreviewRow label="Follow request" value={data.sendPrivateDm && data.followGateRequired ? `${data.followRequestButtonText} · enabled` : "Off"} />
             <PreviewRow label="Link button" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Open link"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No link"} />
             <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
           </div>
