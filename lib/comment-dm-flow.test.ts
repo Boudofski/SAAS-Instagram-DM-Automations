@@ -21,6 +21,16 @@ describe("comment DM flow", () => {
       type: "FOLLOW_CHECK",
       automationId: "automation-1",
     });
+    expect(parseCommentDmActionPayload(openingDmActionPayload("automation-1", "comment-1"))).toEqual({
+      type: "OPENING_CONTINUE",
+      automationId: "automation-1",
+      flowId: "comment-1",
+    });
+    expect(parseCommentDmActionPayload(followRequestActionPayload("automation-1", "comment-1"))).toEqual({
+      type: "FOLLOW_CHECK",
+      automationId: "automation-1",
+      flowId: "comment-1",
+    });
     expect(parseCommentDmActionPayload("UNKNOWN:automation-1")).toBeNull();
   });
 

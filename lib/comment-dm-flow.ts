@@ -14,30 +14,38 @@ export const FOLLOW_REQUEST_ACTION_PREFIX = "AP3K_FOLLOW_CHECK:";
 export type CommentDmAction = {
   type: "OPENING_CONTINUE" | "FOLLOW_CHECK";
   automationId: string;
+  /** The Instagram comment that started this individual DM journey. */
+  flowId?: string;
 };
 
-export function openingDmActionPayload(automationId: string) {
-  return `${OPENING_DM_ACTION_PREFIX}${automationId}`;
+export function openingDmActionPayload(automationId: string, flowId?: string) {
+  return `${OPENING_DM_ACTION_PREFIX}${automationId}${flowId ? `:${flowId}` : ""}`;
 }
 
-export function followRequestActionPayload(automationId: string) {
-  return `${FOLLOW_REQUEST_ACTION_PREFIX}${automationId}`;
+export function followRequestActionPayload(automationId: string, flowId?: string) {
+  return `${FOLLOW_REQUEST_ACTION_PREFIX}${automationId}${flowId ? `:${flowId}` : ""}`;
 }
 
 export function parseCommentDmActionPayload(payload?: string | null): CommentDmAction | null {
   if (!payload) return null;
 
   if (payload.startsWith(OPENING_DM_ACTION_PREFIX)) {
-    const automationId = payload.slice(OPENING_DM_ACTION_PREFIX.length).trim();
-    return automationId ? { type: "OPENING_CONTINUE", automationId } : null;
+    return parseAction("OPENING_CONTINUE", payload.slice(OPENING_DM_ACTION_PREFIX.length));
   }
 
   if (payload.startsWith(FOLLOW_REQUEST_ACTION_PREFIX)) {
-    const automationId = payload.slice(FOLLOW_REQUEST_ACTION_PREFIX.length).trim();
-    return automationId ? { type: "FOLLOW_CHECK", automationId } : null;
+    return parseAction("FOLLOW_CHECK", payload.slice(FOLLOW_REQUEST_ACTION_PREFIX.length));
   }
 
   return null;
+}
+
+function parseAction(type: CommentDmAction["type"], remainder: string): CommentDmAction | null {
+  const [rawAutomationId, ...flowParts] = remainder.trim().split(":");
+  const automationId = rawAutomationId?.trim();
+  const flowId = flowParts.join(":").trim();
+  if (!automationId) return null;
+  return flowId ? { type, automationId, flowId } : { type, automationId };
 }
 
 export function resolveOpeningDmText(value?: string | null) {

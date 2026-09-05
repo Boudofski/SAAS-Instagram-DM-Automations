@@ -63,6 +63,7 @@ import {
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "@/lib/instagram-message-event";
 import { openai } from "@/lib/openai";
+import { ensureInstagramButtonCallbacks } from "@/lib/instagram-postback-subscription";
 
 export const maxDuration = 60;
 
@@ -1276,13 +1277,12 @@ async function processEntry(
       // 6. Send an editable opening DM. The final payload is released only
       // after the recipient explicitly taps the continue button.
       const dmMessageText = resolveTemplate(resolveOpeningDmText(listener.openingDmText), templateVars);
+      const fullWidthButtonsReady = await ensureInstagramButtonCallbacks(integrationRaw?.id, token);
       const dmResult = await sendInstagramCommentPrivateReply({
-        // Opening-DM callbacks must travel on the `messages` webhook as a
-        // quick reply. A postback button can render successfully while Meta
-        // silently drops the click when the app-level
-        // `messaging_postbacks` field is not enabled, leaving the customer
-        // with a visible tap but no continuation.
-        preferQuickReplyForPostback: true,
+        // Prefer the card-style button the user configured. If either Meta
+        // subscription cannot be verified/repaired, retain the proven
+        // messages-webhook quick-reply fallback instead of dropping taps.
+        preferQuickReplyForPostback: !fullWidthButtonsReady,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1293,7 +1293,7 @@ async function processEntry(
         quickReplies: [],
         postbackButton: {
           title: resolveOpeningDmButtonText(listener.openingDmButtonText),
-          payload: openingDmActionPayload(automation.id),
+          payload: openingDmActionPayload(automation.id, commentId),
         },
       });
 
@@ -1518,7 +1518,9 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSING" });
         const callbackRequested = Boolean(dmFlowAction && callbackIsAllowed);
         const duplicate = callbackRequested
-          ? await hasDeliveredFinalPayload(directAutomation.id, senderId)
+          ? dmFlowAction?.flowId
+            ? await hasDeliveredFinalPayload(directAutomation.id, senderId, dmFlowAction.flowId)
+            : await hasDeliveredFinalPayload(directAutomation.id, senderId)
           : await isDuplicate(directAutomation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined);
         if (duplicate) {
           await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSED", errorMessage: "duplicate_skipped", processedAt: new Date() });
@@ -1795,11 +1797,12 @@ async function processConfiguredMessageAutomation(params: {
         link: automation.listener.ctaLink ?? "",
       })
     : payloadMessage;
+  const fullWidthButtonsReady = needsFollowRequest
+    ? await ensureInstagramButtonCallbacks(integration?.id, token)
+    : false;
 
   const result = await sendInstagramDirectResponse({
-    // Keep follow verification on the already-required `messages` webhook
-    // for the same reason as the opening-DM continuation above.
-    preferQuickReplyForPostback: needsFollowRequest,
+    preferQuickReplyForPostback: needsFollowRequest && !fullWidthButtonsReady,
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,
@@ -1814,7 +1817,7 @@ async function processConfiguredMessageAutomation(params: {
     postbackButton: needsFollowRequest
       ? {
           title: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
-          payload: followRequestActionPayload(automation.id),
+          payload: followRequestActionPayload(automation.id, dmFlowAction?.flowId),
         }
       : undefined,
   });
@@ -1827,7 +1830,7 @@ async function processConfiguredMessageAutomation(params: {
   await createMessageLog({
     automationId: automation.id,
     recipientIgId: senderId,
-    commentId: messageMid,
+    commentId: dmFlowAction?.flowId ?? messageMid,
     messageType: "DM",
     status: sent ? "SENT" : "FAILED",
     errorMessage: sent ? sentMarker : errorMessage,

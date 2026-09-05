@@ -821,23 +821,52 @@ export const isDuplicate = async (
  * Consent/follow callbacks intentionally bypass the normal "one DM ever"
  * guard because the opening and follow-request messages are already sent DMs.
  * This marker prevents repeated button taps from releasing the final payload
- * more than once. The legacy marker keeps already-delivered flows idempotent.
+ * more than once per comment journey. Payloads created before flow IDs were
+ * added fall back to the relative order of the latest opening and final logs.
  */
 export const hasDeliveredFinalPayload = async (
   automationId: string,
-  recipientIgId: string
+  recipientIgId: string,
+  flowId?: string
 ): Promise<boolean> => {
-  const existing = await client.messageLog.findFirst({
-    where: {
-      automationId,
-      recipientIgId,
-      messageType: "DM",
-      status: "SENT",
-      errorMessage: { in: ["final_dm_payload_sent", "follow_gate_payload_sent"] },
-    },
-    select: { id: true },
-  });
-  return Boolean(existing);
+  const baseWhere = {
+    automationId,
+    recipientIgId,
+    messageType: "DM" as const,
+    status: "SENT" as const,
+  };
+
+  if (flowId) {
+    const deliveredForFlow = await client.messageLog.findFirst({
+      where: {
+        ...baseWhere,
+        commentId: flowId,
+        errorMessage: { in: ["final_dm_payload_sent", "follow_gate_payload_sent"] },
+      },
+      select: { id: true },
+    });
+    return Boolean(deliveredForFlow);
+  }
+
+  const [latestDelivered, latestOpening] = await Promise.all([
+    client.messageLog.findFirst({
+      where: {
+        ...baseWhere,
+        errorMessage: { in: ["final_dm_payload_sent", "follow_gate_payload_sent"] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, createdAt: true },
+    }),
+    client.messageLog.findFirst({
+      where: { ...baseWhere, errorMessage: "opening_dm_sent" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, createdAt: true },
+    }),
+  ]);
+
+  if (!latestDelivered) return false;
+  if (!latestOpening) return true;
+  return latestDelivered.createdAt >= latestOpening.createdAt;
 };
 
 export const hasProcessedCommentWebhook = async (

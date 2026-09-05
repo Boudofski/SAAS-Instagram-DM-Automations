@@ -85,6 +85,7 @@ vi.mock("@/lib/openai", () => ({
 
 vi.mock("@/lib/instagram-postback-subscription", () => ({
   ensureInstagramPostbackSubscription: vi.fn().mockResolvedValue(true),
+  ensureInstagramButtonCallbacks: vi.fn().mockResolvedValue(true),
 }));
 
 import { GET, POST } from "./route";

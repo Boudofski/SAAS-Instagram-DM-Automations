@@ -19,26 +19,37 @@ describe("hasDeliveredFinalPayload", () => {
     vi.clearAllMocks();
   });
 
-  it("checks only the explicit protected-payload delivery marker", async () => {
+  it("checks the protected-payload marker for one explicit comment journey", async () => {
     mockMessageLogFindFirst.mockResolvedValue({ id: "message-log-1" });
 
-    await expect(hasDeliveredFinalPayload("automation-1", "recipient-1")).resolves.toBe(true);
+    await expect(hasDeliveredFinalPayload("automation-1", "recipient-1", "comment-2")).resolves.toBe(true);
     expect(mockMessageLogFindFirst).toHaveBeenCalledWith({
       where: {
         automationId: "automation-1",
         recipientIgId: "recipient-1",
         messageType: "DM",
         status: "SENT",
+        commentId: "comment-2",
         errorMessage: { in: ["final_dm_payload_sent", "follow_gate_payload_sent"] },
       },
       select: { id: true },
     });
   });
 
-  it("does not treat a gate prompt as delivered protected content", async () => {
-    mockMessageLogFindFirst.mockResolvedValue(null);
+  it("allows a legacy callback when a newer opening was sent after the prior final payload", async () => {
+    mockMessageLogFindFirst
+      .mockResolvedValueOnce({ id: "final-1", createdAt: new Date("2026-09-05T11:37:22Z") })
+      .mockResolvedValueOnce({ id: "opening-2", createdAt: new Date("2026-09-05T11:41:38Z") });
 
     await expect(hasDeliveredFinalPayload("automation-1", "recipient-1")).resolves.toBe(false);
+  });
+
+  it("blocks a repeated legacy callback when the final payload followed the latest opening", async () => {
+    mockMessageLogFindFirst
+      .mockResolvedValueOnce({ id: "final-2", createdAt: new Date("2026-09-05T11:42:00Z") })
+      .mockResolvedValueOnce({ id: "opening-2", createdAt: new Date("2026-09-05T11:41:38Z") });
+
+    await expect(hasDeliveredFinalPayload("automation-1", "recipient-1")).resolves.toBe(true);
   });
 });
 

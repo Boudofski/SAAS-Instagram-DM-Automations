@@ -90,6 +90,7 @@ vi.mock("@/lib/app-review-mode", () => ({
 
 vi.mock("@/lib/instagram-postback-subscription", () => ({
   ensureInstagramPostbackSubscription: vi.fn().mockResolvedValue(true),
+  ensureInstagramButtonCallbacks: vi.fn().mockResolvedValue(true),
 }));
 
 import { POST } from "@/app/api/webhooks/meta/route";
@@ -259,10 +260,10 @@ describe("comment webhook private DM toggle", () => {
       automationId: campaign.id,
       message: "Hey there! I’m so happy you’re here, thanks so much for your interest 😊\n\nClick below and I’ll send you the link in just a sec ✨",
       responseFormat: "TEXT",
-      preferQuickReplyForPostback: true,
+      preferQuickReplyForPostback: false,
       postbackButton: {
         title: "Send me the link",
-        payload: `AP3K_OPENING_CONTINUE:${campaign.id}`,
+        payload: `AP3K_OPENING_CONTINUE:${campaign.id}:comment-1`,
       },
     }));
     expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
