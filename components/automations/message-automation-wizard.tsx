@@ -2,6 +2,7 @@
 
 import { saveMessageAutomation } from "@/actions/automation";
 import DeliveryRules from "@/components/automations/delivery-rules";
+import MessageAutomationPreview from "@/components/automations/message-automation-preview";
 import MessageResponseEditor, { type ResponseFormat } from "@/components/automations/message-response-editor";
 import WizardStepper, { type StepStatus } from "@/components/global/wizard-stepper";
 import {
@@ -131,18 +132,18 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-white">
+    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-white">
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/90 sm:px-8">
         <Link href={`/dashboard/${slug}/automation`} className="text-sm font-semibold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">← Automations</Link>
         <div className="text-center"><p className="text-sm font-black">{automationId ? "Edit" : "New"} {source === "STORY" ? "story" : "DM"} automation</p><p className="text-xs text-slate-500 dark:text-slate-400">Phase {step} of 3</p></div>
         <span className="text-xs font-bold text-slate-400">Official API</span>
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 pt-8 sm:px-8"><WizardStepper steps={steps} /></div>
+      <div className="mx-auto max-w-[1480px] px-4 pt-6 sm:px-8"><WizardStepper steps={steps} /></div>
 
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
+      <div className="mx-auto grid max-w-[1480px] gap-6 px-4 py-6 sm:px-8 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-10">
         <AnimatePresence mode="wait">
-          <motion.main key={step} initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? undefined : { opacity: 0, y: -8 }} transition={{ duration: 0.22 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111827] sm:p-8">
+          <motion.main key={step} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduceMotion ? undefined : { opacity: 0, x: 10 }} transition={{ duration: 0.22 }} className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#0d1220] sm:p-8">
             {step === 1 && (
               <section>
                 <PhaseHeader eyebrow="Phase 1" title={source === "STORY" ? "When someone interacts with your story" : "When someone sends you a DM"} description="Set the conditions that launch this automation." />
@@ -181,6 +182,23 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
             </div>
           </motion.main>
         </AnimatePresence>
+        <aside className="h-fit rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:sticky xl:top-24 xl:p-6">
+          <MessageAutomationPreview
+            source={source}
+            step={step}
+            trigger={draft.storyTriggerType}
+            triggerMode={draft.triggerMode}
+            keywords={draft.keywords}
+            message={draft.message}
+            responseFormat={draft.responseFormat}
+            ctaButtonTitle={draft.ctaButtonTitle}
+            mediaUrl={draft.mediaUrl}
+            quickReplies={draft.quickReplies}
+            followGateRequired={draft.followGateRequired}
+            followRequestDmText={draft.followRequestDmText}
+            followRequestButtonText={draft.followRequestButtonText}
+          />
+        </aside>
       </div>
     </div>
   );

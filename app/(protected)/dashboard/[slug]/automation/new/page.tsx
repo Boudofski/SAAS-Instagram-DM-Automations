@@ -2,6 +2,7 @@
 
 import AutomationTypePicker from "@/components/automations/automation-type-picker";
 import DeliveryRules from "@/components/automations/delivery-rules";
+import InstagramPhonePreview from "@/components/automations/instagram-phone-preview";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
 import EmptyState from "@/components/global/empty-state";
@@ -25,6 +26,7 @@ import {
   DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY,
   isMessagingReviewMode,
 } from "@/lib/messaging-review-mode";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, MessageCircle, RefreshCw, Send } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -57,6 +59,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
   const initializedMessagingReviewDraft = useRef(false);
+  const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
   const postList: any[] = Array.isArray(posts?.data?.data) ? posts.data.data : [];
@@ -184,8 +187,8 @@ export default function WizardPage({ params, searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-slate-50">
-      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:px-8">
+    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-slate-50">
+      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-8">
         <Link href={`/dashboard/${slug}/automation`} className="text-sm text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
           Back
         </Link>
@@ -193,17 +196,25 @@ export default function WizardPage({ params, searchParams }: Props) {
           <p className="text-sm font-bold text-slate-950 dark:text-white">{editId ? "Edit Automation" : "New Automation"}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Instagram comment automation</p>
         </div>
-        <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-rf-green" /> Auto-saved
+        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-rf-green" /> Live preview
         </span>
       </div>
 
-      <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-8">
+      <div className="mx-auto w-full max-w-[1480px] px-4 pt-6 sm:px-8">
         <WizardStepper steps={steps} />
       </div>
 
-      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:px-8 lg:grid-cols-[1fr_340px]">
-        <main className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-10">
+        <AnimatePresence mode="wait">
+        <motion.main
+          key={step}
+          initial={reduceMotion ? false : { opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, x: 10 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-[#0d1220] sm:p-7"
+        >
           {step === 1 && (
             <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3K should listen for comments. Any post is the fastest option; specific post mode limits the automation to one post or Reel.">
               {instagram?.instagramUsername && (
@@ -503,30 +514,20 @@ export default function WizardPage({ params, searchParams }: Props) {
               </button>
             </StepPanel>
           )}
-        </main>
+        </motion.main>
+        </AnimatePresence>
 
-        <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">Preview</p>
-          <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{data.campaignName || (editId ? "Edit automation" : "New automation")}</h2>
-          <div className="mt-4 space-y-3 text-sm">
-            <PreviewRow label="Post" value={data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? "Specific post" : "Not selected"} />
-            <PreviewRow label="Account" value={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account"} />
-            <PreviewRow label="Trigger" value={data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.length ? data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", ") : "No keyword"} />
-            <PreviewRow label="Comment reply" value={data.publicReplyEnabled ? `${commentReplies.length} variation(s)` : "Off"} />
-            <PreviewRow label="Opening DM" value={data.sendPrivateDm ? `${data.openingDmButtonText} · ${data.openingDmText}` : "Off"} />
-            <PreviewRow label="Final DM" value={data.sendPrivateDm ? data.dmMessage || DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "Off"} />
-            <PreviewRow label="Follow request" value={data.sendPrivateDm && data.followGateRequired ? `${data.followRequestButtonText} · enabled` : "Off"} />
-            <PreviewRow label="Link button" value={data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? `${data.ctaButtonTitle || "Open link"} ${data.ctaLink ? `-> ${data.ctaLink}` : ""}` : "No link"} />
-            <PreviewRow label="Status" value={data.active ? "Live after save" : "Save paused"} />
-          </div>
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-            <p className="font-black text-slate-950 dark:text-white">Quick test</p>
-            <p className="mt-1">Use a different Instagram account to comment. Your own account replies are ignored to prevent loops.</p>
-          </div>
+        <aside className="h-fit rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:sticky xl:top-24 xl:p-6">
+          <InstagramPhonePreview
+            data={data}
+            step={step}
+            username={instagram?.instagramUsername}
+            profilePictureUrl={instagram?.profilePictureUrl}
+          />
         </aside>
       </div>
 
-      <div className="sticky bottom-0 flex items-center justify-between border-t border-slate-200 bg-white px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:px-10">
+      <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 py-3.5 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-10">
         <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{STEP_TIPS[step - 1]}</p>
         <div className="ml-auto flex items-center gap-3">
           {step > 1 && (
@@ -570,15 +571,6 @@ function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean 
     <span className={["relative h-6 w-11 shrink-0 rounded-full transition-colors", enabled ? (green ? "bg-rf-green" : "bg-rf-blue") : "bg-slate-300"].join(" ")}>
       <span className={["absolute top-1 h-4 w-4 rounded-full bg-white transition-all", enabled ? "left-6" : "left-1"].join(" ")} />
     </span>
-  );
-}
-
-function PreviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="ap3k-preview-card">
-      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">{label}</p>
-      <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{value}</p>
-    </div>
   );
 }
 

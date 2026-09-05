@@ -103,13 +103,6 @@ export default function MessageResponseEditor({ format, message, quickReplies, c
         )}
       </div>
 
-      <div className="rounded-2xl bg-gradient-to-br from-[#1a1230] to-[#090d1a] p-4 text-white shadow-lg">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-300">Instagram preview</p>
-        {format === "MEDIA" && <div className="mt-3 grid aspect-[16/8] place-items-center rounded-xl bg-white/10 text-xs font-bold text-white/60">{mediaUrl ? `${mediaType.toLowerCase()} attached` : "Your media preview"}</div>}
-        <div className="mt-3 max-w-[88%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-rf-purple px-4 py-3 text-sm leading-6">{message || "Your message will appear here."}</div>
-        {format === "LINK" && <div className="mt-2 max-w-[88%] rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center text-xs font-black">{ctaButtonTitle || "Open link"}</div>}
-        {quickReplies.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{quickReplies.map((chip) => <span key={chip} className="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">{chip}</span>)}</div>}
-      </div>
     </div>
   );
 }
