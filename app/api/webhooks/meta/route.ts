@@ -62,7 +62,6 @@ import {
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "@/lib/instagram-message-event";
-import { ensureInstagramPostbackSubscription } from "@/lib/instagram-postback-subscription";
 import { openai } from "@/lib/openai";
 
 export const maxDuration = 60;
@@ -1275,11 +1274,15 @@ async function processEntry(
       }
 
       // 6. Send an editable opening DM. The final payload is released only
-      // after the recipient explicitly taps the postback button.
+      // after the recipient explicitly taps the continue button.
       const dmMessageText = resolveTemplate(resolveOpeningDmText(listener.openingDmText), templateVars);
-      const postbacksReady = await ensureInstagramPostbackSubscription(integrationRaw?.id, token);
       const dmResult = await sendInstagramCommentPrivateReply({
-        preferQuickReplyForPostback: !postbacksReady,
+        // Opening-DM callbacks must travel on the `messages` webhook as a
+        // quick reply. A postback button can render successfully while Meta
+        // silently drops the click when the app-level
+        // `messaging_postbacks` field is not enabled, leaving the customer
+        // with a visible tap but no continuation.
+        preferQuickReplyForPostback: true,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1793,11 +1796,10 @@ async function processConfiguredMessageAutomation(params: {
       })
     : payloadMessage;
 
-  const postbacksReady = needsFollowRequest
-    ? await ensureInstagramPostbackSubscription(integration?.id, token)
-    : true;
   const result = await sendInstagramDirectResponse({
-    preferQuickReplyForPostback: !postbacksReady,
+    // Keep follow verification on the already-required `messages` webhook
+    // for the same reason as the opening-DM continuation above.
+    preferQuickReplyForPostback: needsFollowRequest,
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,
