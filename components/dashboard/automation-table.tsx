@@ -133,6 +133,7 @@ export default function AutomationTable({
               onActivate={handleActivate}
               onDuplicate={handleDuplicate}
               onDelete={handleDelete}
+              compact={!showControls}
             />
           ))
         )}
@@ -183,7 +184,7 @@ export default function AutomationTable({
   );
 }
 
-function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMode, isPending, onActivate, onDuplicate, onDelete }: any) {
+function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMode, isPending, onActivate, onDuplicate, onDelete, compact = false }: any) {
   const post = automation.posts?.[0];
   const source = automationSource(automation);
   const isAny = post?.postid === "ANY";
@@ -208,15 +209,16 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
         </div>
         <StatusPill status={status} />
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {automation.currentAccountLabel && <span className="ap3k-badge ap3k-badge-slate">{automation.currentAccountLabel}</span>}
         <ReplyPill summary={replySummary} />
+        {compact && <span className="ml-auto text-[11px] font-bold text-slate-400">{runs} runs · {leads} leads</span>}
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+      {!compact && <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
         <StatMini label="Runs" value={runs} />
         <StatMini label="Leads" value={leads} />
-      </div>
-      <div className="mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))_40px] gap-2">
+      </div>}
+      {compact ? <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">Manage automation</Link> : <div className="mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))_40px] gap-2">
         <Link href={automationEditHref(slug, automation)} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
           {automation.needsReview || automation.stalePost ? "Review" : "Edit"}
         </Link>
@@ -238,7 +240,7 @@ function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMo
             <DropdownMenuItem disabled={isPending} onSelect={() => onDelete(automation.id)} className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10">Delete automation</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </div>}
     </article>
   );
 }

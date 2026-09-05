@@ -26,7 +26,6 @@ export default function MessageAutomationPreview(props: Props) {
 
   return (
     <section className="mx-auto w-full max-w-[430px]">
-      <div className="mb-4 px-1"><p className="text-xs font-black uppercase tracking-[0.18em] text-rf-purple">Live preview</p><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Trigger and response update as you type.</p></div>
       <div className="rounded-[3.25rem] bg-[#171b24] p-3 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.65)] ring-1 ring-black/20 dark:ring-white/10">
         <div className="flex h-[690px] flex-col overflow-hidden rounded-[2.55rem] bg-[#0e0e0f] text-white">
           <div className="relative flex h-11 items-center justify-between px-7 text-[12px] font-black"><span>9:41</span><span className="absolute left-1/2 top-3 h-5 w-20 -translate-x-1/2 rounded-full bg-black" /><span>••• ▰</span></div>

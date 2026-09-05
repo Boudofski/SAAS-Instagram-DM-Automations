@@ -2,7 +2,7 @@ import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import LocalTime from "@/components/global/local-time";
-import { getAllAutomation, getRecentAutomationActivity } from "@/actions/automation";
+import { getAllAutomation } from "@/actions/automation";
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import {
@@ -14,10 +14,7 @@ import {
 import { getInstagramSnapshotComparisonWithRefresh, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
-import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
-import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
-import { getActivityEmptyState, isActivityInPeriod } from "@/lib/dashboard-consistency";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -48,15 +45,14 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const period = parseDashboardPeriod(searchParams?.period);
 
-  const [usage, dashboardStats, campaignMetrics, recentResult, snapshotState] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period),
         getCampaignTableMetrics(userResult.data.id),
-        getRecentAutomationActivity(),
         getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period),
       ])
-    : [null, null, {} as Record<string, any>, { status: 200, data: [] as any[] }, { comparison: null, refresh: null }];
+    : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }];
 
   const snapshotComparison = snapshotState.comparison;
   const profileSnapshot = snapshotComparison?.current;
@@ -73,39 +69,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     currentAccountLabel: displayInstagramUsername ? `@${displayInstagramUsername}` : "Current account",
   }));
 
-  const groupedActivity = recentResult.status === 200
-    ? groupCampaignActivity(recentResult.data as any[], { limit: 20 })
-    : [];
-  const periodActivity = dashboardStats
-    ? groupedActivity.filter((item) => isActivityInPeriod(item.createdAt, dashboardStats.period.currentStart, dashboardStats.period.currentEnd))
-    : groupedActivity;
-  const recentActivity = filterAppReviewActivity(periodActivity, 20);
-  const lifetimeCampaignTotals = Object.values(campaignMetrics).reduce(
-    (totals, metric) => ({ runs: totals.runs + metric.runs, leads: totals.leads + metric.leads }),
-    { runs: 0, leads: 0 }
-  );
-  const activityEmptyState = getActivityEmptyState(
-    recentActivity.length,
-    lifetimeCampaignTotals.runs + lifetimeCampaignTotals.leads + groupedActivity.length
-  );
   const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
-  const activeCampaigns = automations.filter((automation: any) => automation.active && !automation.needsReview && !automation.archivedAt);
-  const hasActiveCampaign = activeCampaigns.length > 0;
-  const hasDmCampaign = activeCampaigns.some((automation: any) => automation.sendPrivateDm !== false);
-  const hasCommentReplyCampaign = activeCampaigns.some((automation: any) => Boolean(
-    automation.listener?.commentReply ||
-    automation.listener?.commentReply2 ||
-    automation.listener?.commentReply3
-  ));
-  const actionHealthDetail = !hasActiveCampaign
-    ? "Ready when an automation is live"
-    : hasCommentReplyCampaign && hasDmCampaign
-      ? "Comment replies + DMs active"
-      : hasDmCampaign
-        ? "DMs active"
-        : hasCommentReplyCampaign
-          ? "Comment replies active"
-          : "Automation active";
 
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -113,7 +77,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3K</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          Your Instagram connection, automation activity, comment replies, DMs, and captured leads in one place.
+          See performance, manage automations, and keep Instagram conversations moving.
         </p>
       </div>
 
@@ -195,13 +159,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{dashboardStats?.period.label ?? "This month"}</p>
       </div>
 
-      <div className="grid animate-[ap3kDashboardRise_0.64s_ease-out_both] gap-3 md:grid-cols-4">
-        <HealthPill label="Instagram connected" detail={instagramConnected && !tokenExpired ? "Ready" : "Reconnect required"} state={instagramConnected && !tokenExpired ? "ok" : "warn"} />
-        <HealthPill label="Comments" detail={metrics?.commentsReceived ? "Comments are arriving" : "Ready to receive"} state={instagramConnected && !tokenExpired ? "ok" : "warn"} />
-        <HealthPill label="Automations" detail={hasActiveCampaign ? `${activeCampaigns.length} live automation${activeCampaigns.length === 1 ? "" : "s"}` : "Activate an automation"} state={hasActiveCampaign ? "ok" : "warn"} />
-        <HealthPill label="Actions" detail={actionHealthDetail} state={hasActiveCampaign ? "ok" : "warn"} />
-      </div>
-
       <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
         <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -210,7 +167,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           </div>
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{dashboardStats?.period.label ?? "This month"}</p>
         </div>
-        <div className="grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid grid-flow-col auto-cols-[minmax(140px,1fr)] overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] xl:grid-flow-row xl:grid-cols-5">
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}
@@ -226,41 +183,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             />
           ))}
         </div>
-      </section>
-
-      <section className="ap3k-card animate-[ap3kDashboardRise_0.76s_ease-out_both] rounded-3xl p-5 transition duration-300 hover:shadow-[0_20px_80px_rgba(15,23,42,0.10)]">
-        <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-950 dark:text-white">Recent activity</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Latest comments, trigger matches, comment replies, DMs, and leads in the selected period.</p>
-          </div>
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Grouped by comment</span>
-        </div>
-
-        {recentActivity.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400">
-            <p>{activityEmptyState?.title ?? "No activity yet"}</p>
-            <p className="mt-1">Trigger a live automation from another Instagram account to create the first activity.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/[0.07]">
-            {recentActivity.map((item, index) => (
-              <div key={`${item.id}-${index}`} className="grid gap-3 rounded-2xl px-2 py-4 transition duration-200 hover:bg-slate-50/80 dark:hover:bg-white/[0.035] sm:grid-cols-[1fr_auto] sm:items-center">
-                <div className="flex min-w-0 gap-3">
-                  <span className={["mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full", recentToneClass(item.tone)].join(" ")} />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-950 dark:text-white">{customerActionCopy(item.title)}{item.actorLabel ? ` ${item.actorLabel}` : ""}</p>
-                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{customerActionCopy(formatAppReviewActivitySubtitle(item.subtitle, true))}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 pl-5 sm:pl-0">
-                  <span className="ap3k-badge ap3k-badge-slate">{item.badge}</span>
-                  <span className="shrink-0 text-xs font-bold text-slate-400"><LocalTime value={item.createdAt} mode="time" /></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
       <section className="animate-[ap3kDashboardRise_0.82s_ease-out_both]">
@@ -281,35 +203,11 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             ctaHref={`/dashboard/${params.slug}/automation/new`}
           />
         ) : (
-          <AutomationTable slug={params.slug} automations={automationsWithMetrics.slice(0, 8)} showControls={false} />
+          <AutomationTable slug={params.slug} automations={automationsWithMetrics.slice(0, 4)} showControls={false} pageSize={4} />
         )}
       </section>
     </div>
   );
-}
-
-function customerActionCopy(text: string) {
-  return text
-    .replace(/Public replies/g, "Comment replies")
-    .replace(/Public reply/g, "Comment reply")
-    .replace(/public replies/g, "comment replies")
-    .replace(/public reply/g, "comment reply")
-    .replace(/Private replies/g, "DMs")
-    .replace(/Private reply/g, "DM")
-    .replace(/private replies/g, "DMs")
-    .replace(/private reply/g, "DM");
-}
-
-function recentToneClass(tone: "green" | "blue" | "purple" | "amber" | "red" | "slate") {
-  const tones = {
-    green: "bg-emerald-500",
-    blue: "bg-blue-500",
-    purple: "bg-purple-500",
-    amber: "bg-amber-500",
-    red: "bg-red-500",
-    slate: "bg-slate-400",
-  };
-  return tones[tone];
 }
 
 function AccountStatCard({ label, value, change, subtitle }: { label: string; value: string | number; change?: ChangeSummary; subtitle: string }) {
@@ -321,47 +219,13 @@ function AccountStatCard({ label, value, change, subtitle }: { label: string; va
         : "text-slate-500 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-b border-slate-200 px-5 py-6 transition duration-200 last:border-b-0 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] md:border-b-0 md:border-r md:last:border-r-0">
+    <div className="min-w-0 border-r border-slate-200 px-4 py-5 transition duration-200 last:border-r-0 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-6">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-2">
         <p className="text-2xl font-black leading-none tracking-tight text-slate-950 dark:text-white">{value}</p>
         <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}>{change?.label ?? "—"}</span>
       </div>
       <p className="mt-2 text-[11px] leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
-    </div>
-  );
-}
-
-function HealthPill({ label, detail, state }: { label: string; detail: string; state: "ok" | "warn" }) {
-  return (
-    <div className={[
-      "flex items-start gap-2.5 rounded-2xl border p-3.5 shadow-sm transition duration-300 hover:-translate-y-0.5",
-      state === "ok"
-        ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/25 dark:bg-emerald-500/[0.09]"
-        : "border-amber-200 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-500/[0.09]",
-    ].join(" ")}>
-      <span className={[
-        "grid h-6 w-6 shrink-0 place-items-center rounded-lg text-[11px] font-black",
-        state === "ok"
-          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300"
-          : "bg-amber-100 text-amber-800 dark:bg-amber-500/25 dark:text-amber-200",
-      ].join(" ")}>
-        {state === "ok" ? "✓" : "!"}
-      </span>
-      <div className="min-w-0">
-        <p className={[
-          "text-xs font-black",
-          state === "ok" ? "text-emerald-800 dark:text-emerald-200" : "text-amber-900 dark:text-amber-100",
-        ].join(" ")}>
-          {label}
-        </p>
-        <p className={[
-          "mt-0.5 text-[11px] font-semibold leading-snug",
-          state === "ok" ? "text-emerald-700 dark:text-emerald-300" : "text-amber-800 dark:text-amber-200",
-        ].join(" ")}>
-          {detail}
-        </p>
-      </div>
     </div>
   );
 }

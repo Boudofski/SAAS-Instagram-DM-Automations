@@ -32,6 +32,49 @@ export async function getInboxConversations() {
   return { status: 200, data: conversations };
 }
 
+export async function getInstagramContacts() {
+  const profile = await currentProfile();
+  if (!profile) return { status: 404, data: [] };
+  const [conversations, leads] = await Promise.all([
+    client.conversation.findMany({
+      where: { userId: profile.id },
+      orderBy: { lastMessageAt: "desc" },
+      take: 500,
+      include: {
+        automation: { select: { id: true, name: true, source: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    }),
+    client.lead.findMany({
+      where: { automation: { userId: profile.id } },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: { automation: { select: { id: true, name: true, source: true } } },
+    }),
+  ]);
+
+  const contacts = new Map<string, any>();
+  for (const lead of leads) {
+    contacts.set(lead.igUserId, {
+      id: `lead:${lead.id}`,
+      conversationId: null,
+      recipientIgId: lead.igUserId,
+      recipientUsername: lead.igUsername,
+      profilePictureUrl: null,
+      lastMessageAt: lead.createdAt,
+      messages: lead.commentText ? [{ content: lead.commentText }] : [],
+      automation: lead.automation,
+    });
+  }
+  for (const conversation of conversations) {
+    contacts.set(conversation.recipientIgId, {
+      ...conversation,
+      conversationId: conversation.id,
+    });
+  }
+  return { status: 200, data: Array.from(contacts.values()).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()) };
+}
+
 export async function getInboxMessages(conversationId: string) {
   const profile = await currentProfile();
   if (!profile) return { status: 404, data: [] };

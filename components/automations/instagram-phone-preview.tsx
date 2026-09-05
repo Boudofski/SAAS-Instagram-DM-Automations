@@ -42,16 +42,6 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
 
   return (
     <section aria-label="Instagram live preview" className="mx-auto w-full max-w-[430px]">
-      <div className="mb-4 flex items-center justify-between px-1">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-purple">Live preview</p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">See exactly what people experience.</p>
-        </div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> Updates live
-        </span>
-      </div>
-
       <div className="rounded-[3.25rem] bg-[#171b24] p-3 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.65)] ring-1 ring-black/20 dark:ring-white/10">
         <div className="relative h-[690px] overflow-hidden rounded-[2.55rem] bg-[#0e0e0f] text-white">
           <PhoneStatus />

@@ -12,6 +12,7 @@ describe("primary navigation", () => {
       }))
     ).toEqual([
       { label: "Home", href: "/dashboard/user_slug" },
+      { label: "Contacts", href: "/dashboard/user_slug/contacts" },
       { label: "Automations", href: "/dashboard/user_slug/automation" },
       { label: "Inbox", href: "/dashboard/user_slug/inbox" },
       { label: "Instagram Account", href: "/dashboard/user_slug/account" },

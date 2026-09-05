@@ -27,7 +27,7 @@ import {
   isMessagingReviewMode,
 } from "@/lib/messaging-review-mode";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Loader2, MessageCircle, RefreshCw, Send } from "lucide-react";
+import { Eye, Loader2, MessageCircle, RefreshCw, Send, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -58,6 +58,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId);
   const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const initializedMessagingReviewDraft = useRef(false);
   const reduceMotion = useReducedMotion();
 
@@ -150,6 +151,11 @@ export default function WizardPage({ params, searchParams }: Props) {
     setLoadedEdit(true);
   }, [editId, editing, loadedEdit, messagingReviewMode, commentReplyOnlyReviewMode, update]);
 
+  useEffect(() => {
+    if (step <= 1) return;
+    window.requestAnimationFrame(() => document.getElementById("current-automation-step")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
+  }, [reduceMotion, step]);
+
   const requestedType = searchParams?.type?.toLowerCase();
   const editingSource = (editing as any)?.data?.source;
   const selectedType = requestedType || (editingSource === "STORY" ? "story" : editingSource === "DM" ? "dm" : editId ? "comment" : undefined);
@@ -196,9 +202,8 @@ export default function WizardPage({ params, searchParams }: Props) {
           <p className="text-sm font-bold text-slate-950 dark:text-white">{editId ? "Edit Automation" : "New Automation"}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Instagram comment automation</p>
         </div>
-        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-rf-green" /> Live preview
-        </span>
+        <button type="button" onClick={() => setMobilePreviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-rf-purple dark:border-white/10 xl:hidden"><Eye className="h-4 w-4" /> Preview</button>
+        <span className="hidden w-16 xl:block" />
       </div>
 
       <div className="mx-auto w-full max-w-[1480px] px-4 pt-6 sm:px-8">
@@ -206,8 +211,13 @@ export default function WizardPage({ params, searchParams }: Props) {
       </div>
 
       <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-10">
+        <div className="space-y-4">
+        {Array.from({ length: Math.max(0, step - 1) }, (_, index) => index + 1).map((completedStep) => (
+          <CompletedStep key={completedStep} number={completedStep} title={STEP_LABELS[completedStep - 1]} summary={commentStepSummary(completedStep, data)} onEdit={() => goTo(completedStep as 1 | 2 | 3 | 4)} />
+        ))}
         <AnimatePresence mode="wait">
         <motion.main
+          id="current-automation-step"
           key={step}
           initial={reduceMotion ? false : { opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
@@ -516,8 +526,9 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
         </motion.main>
         </AnimatePresence>
+        </div>
 
-        <aside className="h-fit rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:sticky xl:top-24 xl:p-6">
+        <aside className="hidden h-fit rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:sticky xl:top-24 xl:block xl:p-6">
           <InstagramPhonePreview
             data={data}
             step={step}
@@ -526,6 +537,15 @@ export default function WizardPage({ params, searchParams }: Props) {
           />
         </aside>
       </div>
+
+      {mobilePreviewOpen && (
+        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
+          <div className="mx-auto min-h-full max-w-[460px] rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
+            <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
+            <InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} />
+          </div>
+        </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 py-3.5 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-10">
         <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{STEP_TIPS[step - 1]}</p>
@@ -564,6 +584,17 @@ function StepPanel({ eyebrow, title, description, children }: { eyebrow: string;
       {children}
     </div>
   );
+}
+
+function CompletedStep({ number, title, summary, onEdit }: { number: number; title: string; summary: string; onEdit: () => void }) {
+  return <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/[0.07]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-500 text-xs font-black text-white">✓</span><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Step {number} · {title}</p><p className="mt-1 truncate text-sm text-slate-600 dark:text-slate-300">{summary}</p></div><button type="button" onClick={onEdit} className="rounded-lg px-2 py-1 text-xs font-black text-rf-blue hover:bg-white/70 dark:hover:bg-white/10">Edit</button></div>;
+}
+
+function commentStepSummary(step: number, data: any) {
+  if (step === 1) return data.post?.postid === "ANY" ? "Any post or Reel" : data.post?.caption || "Specific Instagram post";
+  if (step === 2) return data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.join(", ") || "Specific keyword";
+  if (step === 3) return [data.publicReplyEnabled ? "Comment reply" : null, data.sendPrivateDm ? "DM" : null].filter(Boolean).join(" + ") || "Choose an action";
+  return data.active ? "Ready to activate" : "Saved as draft";
 }
 
 function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean }) {

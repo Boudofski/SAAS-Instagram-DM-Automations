@@ -24,15 +24,17 @@ type Props = {
 const POSTS_PER_PAGE = 14;
 
 export default function PostPicker({ posts, selected, onSelect }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()), [posts]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return posts;
-    return posts.filter((post) =>
+    if (!needle) return orderedPosts;
+    return orderedPosts.filter((post) =>
       `${post.caption ?? ""} ${post.id}`.toLowerCase().includes(needle)
     );
-  }, [posts, query]);
+  }, [orderedPosts, query]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / POSTS_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * POSTS_PER_PAGE;
@@ -55,8 +57,30 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
     );
   }
 
+  if (!expanded) {
+    return (
+      <div>
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          {orderedPosts.slice(0, 4).map((post) => {
+            const thumb = post.media_type === "VIDEO" ? (post.thumbnail_url ?? post.media_url) : post.media_url;
+            const isSelected = selected === post.id;
+            return (
+              <button key={post.id} type="button" onClick={() => onSelect(post)} aria-label={`Select post from ${formatPostDate(post.timestamp)}`} className={cn("group relative aspect-[4/5] overflow-hidden rounded-xl border-2 bg-slate-100 transition", isSelected ? "border-rf-blue ring-2 ring-rf-blue/20" : "border-transparent hover:border-rf-blue/50 dark:bg-white/[0.06]")}>
+                {thumb ? <Image src={thumb} alt={post.caption?.trim() || "Instagram post"} fill sizes="(max-width: 640px) 22vw, 140px" className="object-cover" unoptimized /> : <span className="absolute inset-0 grid place-items-center text-xs font-black text-slate-400">POST</span>}
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-2 pb-2 pt-6 text-left text-[9px] font-black text-white">{post.media_type === "VIDEO" ? "REEL" : post.media_type === "CAROUSEL_ALBUM" ? "CAROUSEL" : "POST"}</span>
+                {isSelected && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rf-blue text-[10px] font-black text-white">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+        <button type="button" onClick={() => setExpanded(true)} className="mt-4 text-sm font-black text-rf-blue transition hover:underline">Show all posts</button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3"><p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">All posts</p><button type="button" onClick={() => { setExpanded(false); setQuery(""); }} className="text-xs font-black text-rf-blue hover:underline">Show latest four</button></div>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input

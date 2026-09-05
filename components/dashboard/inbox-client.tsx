@@ -7,27 +7,23 @@ import {
   CheckCheck,
   ChevronDown,
   Clock3,
-  ImageIcon,
   Inbox,
   Instagram,
   Loader2,
-  MoreHorizontal,
-  Paperclip,
   RefreshCw,
   Search,
   Send,
-  Settings2,
   Smile,
-  UserRound,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type ConversationFilter = "all" | "unread";
+type ConversationFilter = "all" | "unread" | "recent";
+type ConversationSort = "newest" | "oldest";
 
-export default function InboxClient() {
+export default function InboxClient({ initialConversationId }: { initialConversationId?: string }) {
   const [conversations, setConversations] = useState<any[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialConversationId ?? null);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -36,29 +32,59 @@ export default function InboxClient() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ConversationFilter>("all");
+  const [sort, setSort] = useState<ConversationSort>("newest");
+  const [refreshing, setRefreshing] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   const selected = useMemo(() => conversations.find((item) => item.id === selectedId), [conversations, selectedId]);
   const unreadTotal = useMemo(() => conversations.reduce((total, item) => total + Number(item.unreadCount || 0), 0), [conversations]);
   const filteredConversations = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return conversations.filter((conversation) => {
+    const rows = conversations.filter((conversation) => {
       if (filter === "unread" && !conversation.unreadCount) return false;
+      if (filter === "recent" && Date.now() - new Date(conversation.lastMessageAt).getTime() > 24 * 60 * 60 * 1000) return false;
       if (!needle) return true;
       return `${conversation.recipientUsername ?? ""} ${conversation.recipientIgId ?? ""} ${conversation.messages?.[0]?.content ?? ""}`.toLowerCase().includes(needle);
     });
-  }, [conversations, filter, query]);
+    return rows.sort((a, b) => {
+      const difference = new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+      return sort === "newest" ? difference : -difference;
+    });
+  }, [conversations, filter, query, sort]);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     setLoading(true);
     const result = await getInboxConversations();
     const rows = result.status === 200 && Array.isArray(result.data) ? result.data : [];
     setConversations(rows);
-    setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : rows[0]?.id ?? null);
+    setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : initialConversationId && rows.some((row) => row.id === initialConversationId) ? initialConversationId : rows[0]?.id ?? null);
     setLoading(false);
-  };
+  }, [initialConversationId]);
 
-  useEffect(() => { void loadConversations(); }, []);
+  const refreshAll = useCallback(async (showProgress = false) => {
+    if (showProgress) setRefreshing(true);
+    const [conversationResult, messageResult] = await Promise.all([
+      getInboxConversations(),
+      selectedId ? getInboxMessages(selectedId) : Promise.resolve(null),
+    ]);
+    if (conversationResult.status === 200 && Array.isArray(conversationResult.data)) {
+      setConversations(conversationResult.data);
+    }
+    if (messageResult?.status === 200 && Array.isArray(messageResult.data)) {
+      setMessages(messageResult.data);
+      setConversations((current) => current.map((conversation) => conversation.id === selectedId ? { ...conversation, unreadCount: 0 } : conversation));
+    }
+    if (showProgress) setRefreshing(false);
+  }, [selectedId]);
+
+  useEffect(() => { void loadConversations(); }, [loadConversations]);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshAll(false);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [refreshAll]);
   useEffect(() => {
     if (!selectedId) { setMessages([]); return; }
     setLoadingMessages(true);
@@ -97,8 +123,8 @@ export default function InboxClient() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" className="ap3k-input w-full rounded-xl py-3 pl-11 pr-4 text-sm" />
         </label>
         <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => void loadConversations()} aria-label="Refresh inbox" className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-white/10"><RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} /></button>
-          <span className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300"><Settings2 className="h-4 w-4" /></span>
+          <span className="hidden text-[11px] font-bold text-emerald-600 dark:text-emerald-300 sm:inline">Updates automatically</span>
+          <button type="button" onClick={() => void refreshAll(true)} aria-label="Refresh conversations and messages" className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-white/10"><RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} /></button>
         </div>
       </header>
 
@@ -106,16 +132,20 @@ export default function InboxClient() {
         <nav aria-label="Inbox folders" className="hidden border-r border-slate-200 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.02] xl:block">
           <button type="button" onClick={() => setFilter("all")} className={folderClass(filter === "all")}><Inbox className="h-4 w-4" /><span className="flex-1 text-left">All chats</span><span>{conversations.length}</span></button>
           <button type="button" onClick={() => setFilter("unread")} className={folderClass(filter === "unread")}><Instagram className="h-4 w-4" /><span className="flex-1 text-left">Unread</span><span>{unreadTotal}</span></button>
-          <div className="my-5 h-px bg-slate-200 dark:bg-white/10" />
-          <p className="px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Quick access</p>
-          <div className="mt-2 space-y-1 text-sm text-slate-500 dark:text-slate-400"><p className="flex items-center gap-2 rounded-xl px-3 py-2"><Clock3 className="h-4 w-4" /> Recent</p><p className="flex items-center gap-2 rounded-xl px-3 py-2"><UserRound className="h-4 w-4" /> Contacts</p></div>
+          <button type="button" onClick={() => setFilter("recent")} className={folderClass(filter === "recent")}><Clock3 className="h-4 w-4" /><span className="flex-1 text-left">Recent</span></button>
           <div className="mt-8 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-xs leading-5 text-violet-900 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-200"><strong className="block">Official Instagram inbox</strong><span className="mt-1 block opacity-75">Messages sync from AP3K automations and inbound replies.</span></div>
         </nav>
 
         <aside className={["min-h-0 border-r border-slate-200 dark:border-white/10", selectedId ? "hidden md:block" : "block"].join(" ")}>
           <div className="flex h-14 items-center gap-2 border-b border-slate-200 px-3 dark:border-white/10">
-            <button type="button" onClick={() => setFilter(filter === "all" ? "unread" : "all")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 dark:border-white/10 dark:text-slate-300">{filter === "all" ? "All chats" : "Unread"}<ChevronDown className="h-3.5 w-3.5" /></button>
-            <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-slate-400"><ArrowDownUp className="h-3.5 w-3.5" /> Newest</span>
+            <label className="relative">
+              <span className="sr-only">Conversation folder</span>
+              <select value={filter} onChange={(event) => setFilter(event.target.value as ConversationFilter)} className="appearance-none rounded-lg border border-slate-200 bg-transparent py-2 pl-3 pr-8 text-xs font-bold text-slate-600 outline-none dark:border-white/10 dark:text-slate-300">
+                <option value="all">All chats</option><option value="unread">Unread</option><option value="recent">Recent</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
+            </label>
+            <button type="button" onClick={() => setSort((value) => value === "newest" ? "oldest" : "newest")} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-2 text-[11px] font-bold text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><ArrowDownUp className="h-3.5 w-3.5" /> {sort === "newest" ? "Newest" : "Oldest"}</button>
           </div>
           {loading ? <div className="grid h-64 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-rf-purple" /></div> : filteredConversations.length === 0 ? <EmptyInbox filtered={Boolean(query || filter === "unread")} /> : <div className="max-h-[calc(100vh-142px)] overflow-y-auto">{filteredConversations.map((conversation) => <ConversationRow key={conversation.id} conversation={conversation} selected={selectedId === conversation.id} onClick={() => setSelectedId(conversation.id)} />)}</div>}
         </aside>
@@ -127,7 +157,7 @@ export default function InboxClient() {
                 <button type="button" onClick={() => setSelectedId(null)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 md:hidden dark:border-white/10"><ArrowLeft className="h-4 w-4" /></button>
                 <Avatar src={selected.profilePictureUrl} name={selected.recipientUsername || selected.recipientIgId} size="lg" />
                 <div className="min-w-0"><p className="truncate text-sm font-black">{displayName(selected)}</p><p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><Instagram className="h-3.5 w-3.5 text-pink-500" /> Instagram · {isReplyWindowOpen(selected.lastInboundAt) ? "Active now" : "Reply window closed"}</p></div>
-                <div className="ml-auto flex items-center gap-2"><span className="hidden rounded-full bg-rf-purple/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-rf-purple sm:inline-flex">{selected.automation?.source ?? "manual"}</span><button type="button" aria-label="Conversation options" className="grid h-9 w-9 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10"><MoreHorizontal className="h-5 w-5" /></button></div>
+                <span className="ml-auto hidden rounded-full bg-rf-purple/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-rf-purple sm:inline-flex">{selected.automation?.source ?? "manual"}</span>
               </header>
 
               <div className="flex min-h-[420px] flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_top,#faf5ff_0,transparent_42%)] px-4 py-6 dark:bg-[radial-gradient(circle_at_top,rgba(109,40,217,0.12)_0,transparent_42%)] sm:px-7">
@@ -140,7 +170,11 @@ export default function InboxClient() {
                 {error && <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-600 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2 transition focus-within:border-rf-purple/40 focus-within:ring-2 focus-within:ring-rf-purple/10 dark:border-white/10 dark:bg-white/[0.035]">
                   <textarea value={draft} maxLength={1000} rows={2} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(); } }} placeholder={isReplyWindowOpen(selected.lastInboundAt) ? "Reply to this Instagram conversation…" : "Instagram's 24-hour reply window is closed"} disabled={!isReplyWindowOpen(selected.lastInboundAt)} className="w-full resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60" />
-                  <div className="flex items-center gap-1 border-t border-slate-200 pt-2 dark:border-white/10"><button type="button" aria-label="Add emoji" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><Smile className="h-4 w-4" /></button><button type="button" aria-label="Attach image" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><ImageIcon className="h-4 w-4" /></button><button type="button" aria-label="Attach file" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><Paperclip className="h-4 w-4" /></button><span className="ml-auto hidden text-[10px] text-slate-400 sm:inline">Enter to send · Shift + Enter for a new line</span><button type="button" onClick={() => void send()} disabled={sending || !draft.trim() || !isReplyWindowOpen(selected.lastInboundAt)} className="ml-2 inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-4 text-xs font-black text-white shadow-sm disabled:opacity-35">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}<span className="hidden sm:inline">Send</span></button></div>
+                  <div className="relative flex items-center gap-1 border-t border-slate-200 pt-2 dark:border-white/10">
+                    <button type="button" onClick={() => setEmojiOpen((value) => !value)} aria-expanded={emojiOpen} aria-label="Add emoji" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><Smile className="h-4 w-4" /></button>
+                    {emojiOpen && <div className="absolute bottom-10 left-0 z-20 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#171d2b]">{["😊","👍","❤️","✨","🔥","🎁","🙏","👏"].map((emoji) => <button key={emoji} type="button" onClick={() => { setDraft((value) => `${value}${emoji}`); setEmojiOpen(false); }} className="grid h-8 w-8 place-items-center rounded-lg text-lg hover:bg-slate-100 dark:hover:bg-white/10">{emoji}</button>)}</div>}
+                    <span className="ml-auto hidden text-[10px] text-slate-400 sm:inline">Enter to send · Shift + Enter for a new line</span><button type="button" onClick={() => void send()} disabled={sending || !draft.trim() || !isReplyWindowOpen(selected.lastInboundAt)} className="ml-2 inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-4 text-xs font-black text-white shadow-sm disabled:opacity-35">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}<span className="hidden sm:inline">Send</span></button>
+                  </div>
                 </div>
               </footer>
             </>
