@@ -2,6 +2,12 @@ import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
+import {
+  linkButtonsAreComplete,
+  normalizeLinkButtons,
+  readLegacyQuickReplies,
+  type LinkButton,
+} from "@/lib/link-buttons";
 
 export type MessageAutomationSource = "STORY" | "DM";
 export type StoryTriggerType = "MENTION" | "REACTION" | "REPLY";
@@ -18,7 +24,8 @@ export type RawMessageAutomationPayload = {
   keywords?: string[];
   responseFormat?: string;
   message?: string | null;
-  quickReplies?: string[];
+  quickReplies?: unknown;
+  linkButtons?: unknown;
   ctaLink?: string | null;
   ctaButtonTitle?: string | null;
   mediaUrl?: string | null;
@@ -39,7 +46,7 @@ export type NormalizedMessageAutomationPayload = {
   keywords: string[];
   responseFormat: MessageResponseFormat;
   message: string;
-  quickReplies: string[];
+  quickReplies: Array<string | LinkButton>;
   ctaLink?: string;
   ctaButtonTitle?: string;
   mediaUrl?: string;
@@ -56,7 +63,7 @@ export function normalizeMessageAutomationPayload(
 ): NormalizedMessageAutomationPayload {
   const source: MessageAutomationSource = payload.source === "DM" ? "DM" : "STORY";
   const responseFormat: MessageResponseFormat =
-    payload.responseFormat === "LINK"
+    payload.linkButtons || payload.responseFormat === "LINK"
       ? "LINK"
       : payload.responseFormat === "MEDIA"
         ? "MEDIA"
@@ -65,6 +72,12 @@ export function normalizeMessageAutomationPayload(
     source === "DM" && payload.triggerMode === "SPECIFIC_KEYWORD"
       ? "SPECIFIC_KEYWORD"
       : "ANY_MESSAGE";
+  const linkButtons = normalizeLinkButtons(
+    payload.linkButtons ?? payload.quickReplies,
+    payload.ctaButtonTitle,
+    payload.ctaLink
+  );
+  const firstLink = linkButtons[0];
 
   return {
     name: cleanOptional(payload.name)?.slice(0, 120) || `Untitled ${source === "STORY" ? "story" : "DM"} automation`,
@@ -78,15 +91,11 @@ export function normalizeMessageAutomationPayload(
         : [],
     responseFormat,
     message: (payload.message ?? "").trim().slice(0, 1000),
-    quickReplies: Array.from(
-      new Set((payload.quickReplies ?? []).map((reply) => reply.trim()).filter(Boolean))
-    )
-      .slice(0, 4)
-      .map((reply) => Array.from(reply).slice(0, 20).join("")),
-    ctaLink: responseFormat === "LINK" ? normalizeUrl(payload.ctaLink) : undefined,
+    quickReplies: responseFormat === "LINK" ? linkButtons : readLegacyQuickReplies(payload.quickReplies),
+    ctaLink: responseFormat === "LINK" ? firstLink?.url : undefined,
     ctaButtonTitle:
       responseFormat === "LINK"
-        ? Array.from(cleanOptional(payload.ctaButtonTitle) || "Open link").slice(0, 20).join("")
+        ? firstLink?.label
         : undefined,
     mediaUrl: responseFormat === "MEDIA" ? normalizeUrl(payload.mediaUrl) : undefined,
     mediaType: responseFormat === "MEDIA" && payload.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
@@ -109,8 +118,11 @@ export function validateMessageAutomationPayload(
     return "Add at least one DM keyword or choose any incoming message.";
   }
   if (!payload.message) return "Write the DM that AP3K should send.";
-  if (payload.responseFormat === "LINK" && !payload.ctaLink) {
-    return "Add a valid link for the button.";
+  if (
+    payload.responseFormat === "LINK" &&
+    !linkButtonsAreComplete(normalizeLinkButtons(payload.quickReplies, payload.ctaButtonTitle, payload.ctaLink))
+  ) {
+    return "Complete every link label and add a valid destination URL.";
   }
   if (payload.responseFormat === "MEDIA" && !payload.mediaUrl) {
     return "Add a valid public image or video URL.";

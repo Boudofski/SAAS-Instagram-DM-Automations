@@ -46,6 +46,46 @@ describe("normalizeCampaignPayload", () => {
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 
+  it("normalizes and preserves up to three labeled link buttons", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      listener: {
+        ...basePayload.listener,
+        responseFormat: "LINK",
+        linkButtons: [
+          { label: "Guide", url: "example.com/guide" },
+          { label: "Pricing", url: "https://example.com/pricing" },
+          { label: "Book", url: "https://example.com/book" },
+          { label: "Ignored", url: "https://example.com/ignored" },
+        ],
+      },
+    });
+
+    expect(normalized.listener.quickReplies).toEqual([
+      { label: "Guide", url: "https://example.com/guide" },
+      { label: "Pricing", url: "https://example.com/pricing" },
+      { label: "Book", url: "https://example.com/book" },
+    ]);
+    expect(normalized.listener.ctaButtonTitle).toBe("Guide");
+    expect(normalized.listener.ctaLink).toBe("https://example.com/guide");
+    expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
+  });
+
+  it("rejects an incomplete link row", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      listener: {
+        ...basePayload.listener,
+        responseFormat: "LINK",
+        linkButtons: [{ label: "Guide", url: "" }],
+      },
+    });
+
+    expect(validateNormalizedCampaignPayload(normalized)).toBe(
+      "Complete every link label and add a valid destination URL."
+    );
+  });
+
   it("allows any post with a specific keyword", () => {
     const normalized = normalizeCampaignPayload({
       ...basePayload,

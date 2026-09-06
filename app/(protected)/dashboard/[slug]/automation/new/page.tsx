@@ -14,6 +14,7 @@ import { useWizard } from "@/hooks/use-wizard";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
+import { readLinkButtons } from "@/lib/link-buttons";
 import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
@@ -94,6 +95,11 @@ export default function WizardPage({ params, searchParams }: Props) {
       },
       messagingReviewMode
     );
+    const storedLinks = readLinkButtons(
+      automation.listener?.quickReplies,
+      automation.listener?.ctaButtonTitle,
+      automation.listener?.ctaLink
+    );
 
     update({
       campaignName: automation.name ?? "",
@@ -106,12 +112,9 @@ export default function WizardPage({ params, searchParams }: Props) {
       publicReply: automation.listener?.commentReply ?? "",
       publicReply2: automation.listener?.commentReply2 ?? "",
       publicReply3: automation.listener?.commentReply3 ?? "",
-      ctaLink: automation.listener?.ctaLink ?? "",
-      ctaButtonTitle: automation.listener?.ctaButtonTitle ?? "",
-      responseFormat: automation.listener?.responseFormat === "LINK" || automation.listener?.responseFormat === "MEDIA" ? automation.listener.responseFormat : "TEXT",
-      quickReplies: Array.isArray(automation.listener?.quickReplies) ? automation.listener.quickReplies.filter((item: unknown) => typeof item === "string") : [],
-      mediaUrl: automation.listener?.mediaUrl ?? "",
-      mediaType: automation.listener?.mediaType === "VIDEO" ? "VIDEO" : "IMAGE",
+      linkButtons: storedLinks.length
+        ? storedLinks
+        : [{ label: "Get the Link", url: "" }],
       followGateRequired: Boolean(automation.followGateRequired),
       openingDmText: resolveOpeningDmText(automation.listener?.openingDmText),
       openingDmButtonText: resolveOpeningDmButtonText(automation.listener?.openingDmButtonText),
@@ -382,26 +385,16 @@ export default function WizardPage({ params, searchParams }: Props) {
                           <div className="mb-6 flex items-start gap-3">
                             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span>
                             <div>
-                              <p className="text-sm font-black text-slate-950 dark:text-white">Final DM</p>
-                              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">This is the message or link AP3K delivers after the opening button and optional follow check.</p>
+                              <p className="text-sm font-black text-slate-950 dark:text-white">DM with a link</p>
+                              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Add the message and up to three link buttons delivered after the opening button and optional follow check.</p>
                             </div>
                           </div>
                           <MessageResponseEditor
-                            format={data.responseFormat}
                             message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
-                            quickReplies={data.quickReplies}
-                            ctaLink={data.ctaLink}
-                            ctaButtonTitle={data.ctaButtonTitle}
-                            mediaUrl={data.mediaUrl}
-                            mediaType={data.mediaType}
+                            linkButtons={data.linkButtons}
                             onChange={(next) => update({
-                              responseFormat: next.format ?? data.responseFormat,
                               dmMessage: next.message ?? data.dmMessage,
-                              quickReplies: next.quickReplies ?? data.quickReplies,
-                              ctaLink: next.ctaLink ?? data.ctaLink,
-                              ctaButtonTitle: next.ctaButtonTitle ?? data.ctaButtonTitle,
-                              mediaUrl: next.mediaUrl ?? data.mediaUrl,
-                              mediaType: next.mediaType ?? data.mediaType,
+                              linkButtons: next.linkButtons ?? data.linkButtons,
                             })}
                           />
                           <div className="mt-6 border-t border-rf-blue/15 pt-5">
@@ -445,9 +438,9 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? `${commentReplies.length} variation(s)` : "Off", step: 3 as const },
                   { label: "DM", value: data.sendPrivateDm ? "On" : "Off", step: 3 as const },
                   ...(data.sendPrivateDm ? [{ label: "Opening DM", value: `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}`, step: 3 as const }] : []),
-                  ...(data.sendPrivateDm && data.dmMessage ? [{ label: "Final DM", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
+                  ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM with a link", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
                   ...(data.sendPrivateDm ? [{ label: "Follow request", value: data.followGateRequired ? `On · ${data.followRequestButtonText}` : "Off", step: 3 as const }] : []),
-                  ...(data.sendPrivateDm && (data.ctaButtonTitle || data.ctaLink) ? [{ label: "Link button", value: `${data.ctaButtonTitle || "Open link"} -> ${data.ctaLink || "No link yet"}`, step: 3 as const }] : []),
+                  ...(data.sendPrivateDm ? [{ label: "Link buttons", value: data.linkButtons.map((button) => button.label || "Untitled link").join(", "), step: 3 as const }] : []),
                   { label: "Status", value: data.active ? "Live after save" : "Save as draft", step: 4 as const },
                 ].map((row) => (
                   <div key={row.label} className="ap3k-review-row">

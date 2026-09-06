@@ -340,6 +340,32 @@ describe("sendInstagramCommentPrivateReply", () => {
 });
 
 describe("sendInstagramDirectResponse", () => {
+  it("sends up to three labeled links as stacked web buttons", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.links" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-links",
+      message: "Choose a resource",
+      responseFormat: "LINK",
+      linkButtons: [
+        { label: "Guide", url: "https://example.com/guide" },
+        { label: "Pricing", url: "https://example.com/pricing" },
+        { label: "Book", url: "https://example.com/book" },
+      ],
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.links"] });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.message.attachment.payload.buttons).toEqual([
+      { type: "web_url", title: "Guide", url: "https://example.com/guide" },
+      { type: "web_url", title: "Pricing", url: "https://example.com/pricing" },
+      { type: "web_url", title: "Book", url: "https://example.com/book" },
+    ]);
+  });
+
   it("sends text with bounded quick replies and custom payloads", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.direct" } });
 

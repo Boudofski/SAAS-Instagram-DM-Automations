@@ -2,6 +2,7 @@
 
 import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
 import type { WizardData, WizardStep } from "@/hooks/use-wizard";
+import type { LinkButton } from "@/lib/link-buttons";
 import {
   Bookmark,
   Camera,
@@ -180,14 +181,8 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
             <IncomingBubble
               avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />}
               text={data.dmMessage || "Your final message"}
-              button={data.responseFormat === "LINK" ? data.ctaButtonTitle || "Open link" : undefined}
-              media={data.responseFormat === "MEDIA"}
+              buttons={data.linkButtons}
             />
-            {data.quickReplies.length > 0 ? (
-              <div className="ml-10 flex flex-wrap gap-1.5">
-                {data.quickReplies.map((item) => <span key={item} className="rounded-full border border-[#6d5dfc] px-3 py-1.5 text-[10px] font-bold text-[#a9a0ff]">{item}</span>)}
-              </div>
-            ) : null}
           </>
         )}
       </div>
@@ -200,14 +195,17 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
   );
 }
 
-function IncomingBubble({ avatar, text, button, media }: { avatar: React.ReactNode; text: string; button?: string; media?: boolean }) {
+function IncomingBubble({ avatar, text, buttons = [] }: { avatar: React.ReactNode; text: string; buttons?: LinkButton[] }) {
   return (
     <div className="flex items-end gap-2">
       {avatar}
       <div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]">
-        {media ? <div className="grid h-24 place-items-center bg-white/5 text-white/35"><ImageIcon className="h-6 w-6" /></div> : null}
         <p dir="auto" className="whitespace-pre-wrap break-words px-3 py-2.5">{text}</p>
-        {button ? <div className="border-t border-white/10 px-3 py-2 text-center font-black text-white">{button}</div> : null}
+        {buttons.map((button, index) => (
+          <div key={`${button.label}-${index}`} dir="auto" className="border-t border-white/10 px-3 py-2 text-center font-black text-white">
+            {button.label || `Link ${index + 1}`}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -36,7 +36,25 @@ describe("message automation payloads", () => {
   it("rejects missing link and media destinations", () => {
     const link = normalizeMessageAutomationPayload({ source: "STORY", responseFormat: "LINK", message: "Open this" });
     const media = normalizeMessageAutomationPayload({ source: "STORY", responseFormat: "MEDIA", message: "Watch this" });
-    expect(validateMessageAutomationPayload(link)).toBe("Add a valid link for the button.");
+    expect(validateMessageAutomationPayload(link)).toBe("Complete every link label and add a valid destination URL.");
     expect(validateMessageAutomationPayload(media)).toBe("Add a valid public image or video URL.");
+  });
+
+  it("stores three link buttons and mirrors the first for legacy delivery", () => {
+    const payload = normalizeMessageAutomationPayload({
+      source: "DM",
+      responseFormat: "LINK",
+      message: "Choose a resource",
+      linkButtons: [
+        { label: "Guide", url: "example.com/guide" },
+        { label: "Pricing", url: "https://example.com/pricing" },
+        { label: "Book", url: "https://example.com/book" },
+      ],
+    });
+
+    expect(payload.quickReplies).toHaveLength(3);
+    expect(payload.ctaButtonTitle).toBe("Guide");
+    expect(payload.ctaLink).toBe("https://example.com/guide");
+    expect(validateMessageAutomationPayload(payload)).toBeNull();
   });
 });

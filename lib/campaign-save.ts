@@ -4,6 +4,12 @@ import {
   resolveOpeningDmButtonText,
   resolveOpeningDmText,
 } from "@/lib/comment-dm-flow";
+import {
+  linkButtonsAreComplete,
+  normalizeLinkButtons,
+  readLegacyQuickReplies,
+  type LinkButton,
+} from "@/lib/link-buttons";
 
 export type CampaignTriggerMode = "SPECIFIC_KEYWORD" | "ANY_COMMENT";
 export type CampaignMatchingMode = "EXACT" | "CONTAINS" | "SMART_AI";
@@ -36,7 +42,8 @@ export type RawCampaignPayload = {
     ctaLink?: string | null;
     ctaButtonTitle?: string | null;
     responseFormat?: string | null;
-    quickReplies?: string[];
+    quickReplies?: unknown;
+    linkButtons?: unknown;
     mediaUrl?: string | null;
     mediaType?: string | null;
     openingDmText?: string | null;
@@ -71,7 +78,7 @@ export type NormalizedCampaignPayload = {
     ctaLink?: string;
     ctaButtonTitle?: string;
     responseFormat?: "TEXT" | "LINK" | "MEDIA";
-    quickReplies?: string[];
+    quickReplies?: Array<string | LinkButton>;
     mediaUrl?: string;
     mediaType?: "IMAGE" | "VIDEO";
     openingDmText?: string;
@@ -116,6 +123,12 @@ export function normalizeCampaignPayload(
     : payload.listener?.responseFormat === "LINK" || payload.listener?.ctaLink
       ? "LINK"
       : "TEXT";
+  const linkButtons = normalizeLinkButtons(
+    payload.listener?.linkButtons ?? payload.listener?.quickReplies,
+    payload.listener?.ctaButtonTitle,
+    payload.listener?.ctaLink
+  );
+  const firstLink = linkButtons[0];
   const replies = publicReplyEnabled
     ? [
         payload.listener?.commentReply?.trim(),
@@ -146,13 +159,13 @@ export function normalizeCampaignPayload(
       commentReply: replies[0],
       commentReply2: replies[1],
       commentReply3: replies[2],
-      ctaLink: sendPrivateDm ? cleanOptional(payload.listener?.ctaLink) : undefined,
-      ctaButtonTitle: sendPrivateDm ? cleanOptional(payload.listener?.ctaButtonTitle) : undefined,
+      ctaLink: sendPrivateDm && responseFormat === "LINK" ? firstLink?.url : undefined,
+      ctaButtonTitle: sendPrivateDm && responseFormat === "LINK" ? firstLink?.label : undefined,
       responseFormat,
       quickReplies: sendPrivateDm
-        ? Array.from(new Set((payload.listener?.quickReplies ?? []).map((item) => item.trim()).filter(Boolean)))
-            .slice(0, 4)
-            .map((item) => Array.from(item).slice(0, 20).join(""))
+        ? responseFormat === "LINK"
+          ? linkButtons
+          : readLegacyQuickReplies(payload.listener?.quickReplies)
         : [],
       mediaUrl: sendPrivateDm && responseFormat === "MEDIA" ? normalizeUrl(payload.listener?.mediaUrl) : undefined,
       mediaType: sendPrivateDm && responseFormat === "MEDIA" && payload.listener?.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
@@ -179,8 +192,12 @@ export function validateNormalizedCampaignPayload(
     return "This automation needs a DM message.";
   }
 
-  if (payload.sendPrivateDm && payload.listener.responseFormat === "LINK" && !payload.listener.ctaLink) {
-    return "Add a valid button link.";
+  if (
+    payload.sendPrivateDm &&
+    payload.listener.responseFormat === "LINK" &&
+    !linkButtonsAreComplete(normalizeLinkButtons(payload.listener.quickReplies, payload.listener.ctaButtonTitle, payload.listener.ctaLink))
+  ) {
+    return "Complete every link label and add a valid destination URL.";
   }
 
   if (payload.sendPrivateDm && payload.listener.responseFormat === "MEDIA" && !payload.listener.mediaUrl) {

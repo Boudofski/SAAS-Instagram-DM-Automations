@@ -10,6 +10,7 @@ import {
   DEFAULT_OPENING_DM_BUTTON_TEXT,
   DEFAULT_OPENING_DM_TEXT,
 } from "@/lib/comment-dm-flow";
+import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, type LinkButton } from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -30,12 +31,7 @@ export type WizardData = {
   matchingMode: "EXACT" | "CONTAINS";
   sendPrivateDm: boolean;
   dmMessage: string;
-  ctaLink: string;
-  ctaButtonTitle: string;
-  responseFormat: "TEXT" | "LINK" | "MEDIA";
-  quickReplies: string[];
-  mediaUrl: string;
-  mediaType: "IMAGE" | "VIDEO";
+  linkButtons: LinkButton[];
   followGateRequired: boolean;
   openingDmText: string;
   openingDmButtonText: string;
@@ -65,12 +61,7 @@ const INITIAL: WizardData = {
   matchingMode: "CONTAINS",
   sendPrivateDm: true,
   dmMessage: DEFAULT_DM_MESSAGE,
-  ctaLink: "",
-  ctaButtonTitle: DEFAULT_CTA_BUTTON_TITLE,
-  responseFormat: "TEXT",
-  quickReplies: [],
-  mediaUrl: "",
-  mediaType: "IMAGE",
+  linkButtons: [{ label: DEFAULT_LINK_BUTTON_LABEL, url: "" }],
   followGateRequired: false,
   openingDmText: DEFAULT_OPENING_DM_TEXT,
   openingDmButtonText: DEFAULT_OPENING_DM_BUTTON_TEXT,
@@ -109,8 +100,7 @@ export function useWizard(slug: string, automationId?: string) {
       if (data.sendPrivateDm && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
       if (data.sendPrivateDm && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) return false;
       if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
-      if (data.sendPrivateDm && data.responseFormat === "LINK" && !data.ctaLink.trim()) return false;
-      if (data.sendPrivateDm && data.responseFormat === "MEDIA" && !data.mediaUrl.trim()) return false;
+      if (data.sendPrivateDm && !linkButtonsAreComplete(data.linkButtons)) return false;
       return true;
     }
     return true;
@@ -129,12 +119,8 @@ export function useWizard(slug: string, automationId?: string) {
       setError("Choose a comment reply or DM before activating this automation.");
       return;
     }
-    if (data.sendPrivateDm && data.responseFormat === "LINK" && !data.ctaLink.trim()) {
-      setError("Add the button destination URL before activating.");
-      return;
-    }
-    if (data.sendPrivateDm && data.responseFormat === "MEDIA" && !data.mediaUrl.trim()) {
-      setError("Add a public image or video URL before activating.");
+    if (data.sendPrivateDm && !linkButtonsAreComplete(data.linkButtons)) {
+      setError("Complete every link label and add a valid destination URL.");
       return;
     }
     if (data.sendPrivateDm && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) {
@@ -146,6 +132,7 @@ export function useWizard(slug: string, automationId?: string) {
     setError(null);
 
     try {
+      const firstLink = data.linkButtons[0];
       const payload = {
         name: data.campaignName,
         active: typeof activeOverride === "boolean" ? activeOverride : data.active,
@@ -164,12 +151,10 @@ export function useWizard(slug: string, automationId?: string) {
           commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
           commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
           commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
-          ctaLink: data.sendPrivateDm ? data.ctaLink || undefined : undefined,
-          ctaButtonTitle: data.sendPrivateDm ? data.ctaButtonTitle || undefined : undefined,
-          responseFormat: data.responseFormat,
-          quickReplies: data.quickReplies,
-          mediaUrl: data.responseFormat === "MEDIA" ? data.mediaUrl || undefined : undefined,
-          mediaType: data.responseFormat === "MEDIA" ? data.mediaType : undefined,
+          ctaLink: data.sendPrivateDm ? firstLink?.url || undefined : undefined,
+          ctaButtonTitle: data.sendPrivateDm ? firstLink?.label || undefined : undefined,
+          responseFormat: data.sendPrivateDm ? "LINK" : "TEXT",
+          linkButtons: data.sendPrivateDm ? data.linkButtons : [],
           openingDmText: data.sendPrivateDm ? data.openingDmText : undefined,
           openingDmButtonText: data.sendPrivateDm ? data.openingDmButtonText : undefined,
           followRequestDmText: data.sendPrivateDm ? data.followRequestDmText : undefined,
@@ -193,8 +178,7 @@ export function useWizard(slug: string, automationId?: string) {
             payload.listener.commentReply2,
             payload.listener.commentReply3,
           ].filter(Boolean).length,
-          ctaTitlePresent: Boolean(payload.listener.ctaButtonTitle),
-          ctaUrlPresent: Boolean(payload.listener.ctaLink),
+          linkButtonsCount: payload.listener.linkButtons.length,
         });
       }
 

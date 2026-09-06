@@ -64,6 +64,7 @@ import {
 } from "@/lib/instagram-message-event";
 import { openai } from "@/lib/openai";
 import { ensureInstagramButtonCallbacks } from "@/lib/instagram-postback-subscription";
+import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 
 export const maxDuration = 60;
 
@@ -1798,6 +1799,11 @@ async function processConfiguredMessageAutomation(params: {
   const quickReplies = Array.isArray(automation.listener.quickReplies)
     ? automation.listener.quickReplies.filter((item: unknown): item is string => typeof item === "string")
     : [];
+  const linkButtons = readLinkButtons(
+    automation.listener.quickReplies,
+    automation.listener.ctaButtonTitle,
+    automation.listener.ctaLink
+  );
   const payloadMessage = resolveTemplate(automation.listener.prompt, {
         username: profile?.username ? `@${profile.username}` : "",
         first_name: profile?.name?.split(/\s+/)[0] ?? "",
@@ -1824,7 +1830,8 @@ async function processConfiguredMessageAutomation(params: {
     automationId: automation.id,
     message: resolvedMessage,
     responseFormat: needsFollowRequest ? "TEXT" : automation.listener.responseFormat,
-    quickReplies: needsFollowRequest ? [] : quickReplies,
+    quickReplies: needsFollowRequest ? [] : readLegacyQuickReplies(quickReplies),
+    linkButtons: needsFollowRequest ? [] : linkButtons,
     ctaTitle: needsFollowRequest ? undefined : automation.listener.ctaButtonTitle,
     ctaUrl: needsFollowRequest ? undefined : automation.listener.ctaLink,
     mediaUrl: needsFollowRequest ? undefined : automation.listener.mediaUrl,

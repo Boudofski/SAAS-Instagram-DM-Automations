@@ -7,6 +7,7 @@ import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { formatAppReviewActivitySubtitle } from "@/lib/app-review-activity-copy";
 import { filterAppReviewActivity, groupCampaignActivity } from "@/lib/campaign-activity-format";
 import { customerReplyCopy } from "@/lib/customer-reply-copy";
+import { readLinkButtons } from "@/lib/link-buttons";
 import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
@@ -50,6 +51,11 @@ export default async function CampaignDetailPage({ params }: Props) {
   ].filter(Boolean) as string[];
   const hasCommentReply = commentReplies.length > 0;
   const hasDm = sendPrivateDm && Boolean(automation.listener?.prompt);
+  const linkButtons = readLinkButtons(
+    automation.listener?.quickReplies,
+    automation.listener?.ctaButtonTitle,
+    automation.listener?.ctaLink
+  );
   const openingDmText = resolveOpeningDmText(automation.listener?.openingDmText);
   const openingDmButtonText = resolveOpeningDmButtonText(automation.listener?.openingDmButtonText);
   const followRequestDmText = resolveFollowRequestDmText(automation.listener?.followRequestDmText);
@@ -128,7 +134,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
               <FlowConnector />
               {automation.followGateRequired ? <><FlowNode label="2. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}
-              <FlowNode label={automation.followGateRequired ? "3. Direct message" : "2. Direct message"} title={automation.listener?.responseFormat === "LINK" ? "Card / link" : automation.listener?.responseFormat === "MEDIA" ? "Rich media" : "Text message"} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
+              <FlowNode label={automation.followGateRequired ? "3. Direct message" : "2. Direct message"} title={`DM with ${linkButtons.length} link${linkButtons.length === 1 ? "" : "s"}`} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
             </> : <>
               <div className="grid gap-4 md:grid-cols-2">
                 <FlowNode label="1. Post" title={isAnyPost ? "Any post or Reel" : "Selected post or Reel"} body={selectedPostLabel} tone="orange" />
@@ -139,14 +145,14 @@ export default async function CampaignDetailPage({ params }: Props) {
                 <FlowNode label="3. Public reply" title={hasCommentReply ? "Reply to comment" : "Not configured"} body={commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
                 <FlowNode label="4. Opening DM" title={hasDm ? openingDmButtonText : "Not configured"} body={hasDm ? openingDmText : "No DM configured."} tone="blue" disabled={!hasDm} />
               </div>
-              {hasDm ? <><FlowConnector />{automation.followGateRequired ? <><FlowNode label="5. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}<FlowNode label={automation.followGateRequired ? "6. Final DM" : "5. Final DM"} title={automation.listener?.responseFormat === "LINK" ? "Deliver link" : "Deliver response"} body={automation.listener?.prompt || "No final DM configured."} tone="blue" /></> : null}
+              {hasDm ? <><FlowConnector />{automation.followGateRequired ? <><FlowNode label="5. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}<FlowNode label={automation.followGateRequired ? "6. DM with links" : "5. DM with links"} title={`${linkButtons.length} link button${linkButtons.length === 1 ? "" : "s"}`} body={automation.listener?.prompt || "No final DM configured."} tone="blue" /></> : null}
             </>}
 
             <div className="border-t border-slate-200 pt-5 dark:border-white/10">
               <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Saved content</p>
               <div className="grid gap-3 md:grid-cols-2">
                 {!isMessageAutomation ? <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} /> : null}
-                {hasDm ? <ContentBlock label="Final DM" value={automation.listener?.prompt} /> : null}
+                {hasDm ? <ContentBlock label="DM with links" value={[automation.listener?.prompt, ...linkButtons.map((button: { label: string; url: string }) => `${button.label}: ${button.url}`)].filter(Boolean).join("\n")} /> : null}
               </div>
             </div>
           </div>
@@ -307,4 +313,3 @@ function badgeClass(tone: "green" | "blue" | "purple" | "amber" | "red" | "slate
   };
   return tones[tone];
 }
-

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getSafeMetaError } from "@/lib/fetch";
+import { normalizeLinkButtons, type LinkButton } from "@/lib/link-buttons";
 
 export const INSTAGRAM_GRAPH_BASE_URL =
   process.env.INSTAGRAM_GRAPH_BASE_URL ?? "https://graph.instagram.com";
@@ -112,12 +113,13 @@ function normalizeButtonTitle(value?: string | null) {
 function buildButtonPayload(
   message: string,
   ctaTitle?: string | null,
-  ctaUrl?: string | null
+  ctaUrl?: string | null,
+  linkButtons?: LinkButton[]
 ): { message: InstagramMessagePayload; ctaMode: CtaMode } {
   const text = message.trim() || "Here is the link you requested.";
-  const url = normalizeCtaUrl(ctaUrl);
+  const buttons = normalizeLinkButtons(linkButtons, ctaTitle, ctaUrl).filter((button) => button.url);
 
-  if (!url) {
+  if (!buttons.length) {
     return { message: { text }, ctaMode: "none" };
   }
 
@@ -128,13 +130,11 @@ function buildButtonPayload(
         payload: {
           template_type: "button",
           text,
-          buttons: [
-            {
-              type: "web_url",
-              title: normalizeButtonTitle(ctaTitle),
-              url,
-            },
-          ],
+          buttons: buttons.map((button) => ({
+            type: "web_url",
+            title: normalizeButtonTitle(button.label),
+            url: button.url,
+          })),
         },
       },
     },
@@ -170,17 +170,19 @@ function buildPostbackButtonPayload(
 function buildTextFallbackPayload(
   message: string,
   ctaTitle?: string | null,
-  ctaUrl?: string | null
+  ctaUrl?: string | null,
+  linkButtons?: LinkButton[]
 ): { message: InstagramMessagePayload; ctaMode: CtaMode } {
   const text = message.trim() || "Here is the link you requested.";
-  const url = normalizeCtaUrl(ctaUrl);
+  const buttons = normalizeLinkButtons(linkButtons, ctaTitle, ctaUrl).filter((button) => button.url);
 
-  if (!url || text.includes(url)) {
-    return { message: { text }, ctaMode: url ? "text_link_fallback" : "none" };
+  if (!buttons.length) {
+    return { message: { text }, ctaMode: "none" };
   }
 
-  const suffix = ctaTitle?.trim() ? `\n\n${ctaTitle.trim()}: ${url}` : `\n\n${url}`;
-  return { message: { text: text + suffix }, ctaMode: "text_link_fallback" };
+  const missingLinks = buttons.filter((button) => !text.includes(button.url));
+  const suffix = missingLinks.map((button) => `${button.label}: ${button.url}`).join("\n");
+  return { message: { text: suffix ? `${text}\n\n${suffix}` : text }, ctaMode: "text_link_fallback" };
 }
 
 function addQuickReplies(
@@ -260,6 +262,7 @@ function buildConfiguredPrivateReplyPayload(params: {
   message: string;
   responseFormat?: string | null;
   quickReplies?: string[];
+  linkButtons?: LinkButton[];
   ctaTitle?: string | null;
   ctaUrl?: string | null;
   mediaUrl?: string | null;
@@ -289,8 +292,8 @@ function buildConfiguredPrivateReplyPayload(params: {
       };
     }
   }
-  const preferred = params.responseFormat === "LINK" || params.ctaUrl
-    ? buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl)
+  const preferred = params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length
+    ? buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons)
     : { message: { text: params.message.trim() || "Thanks for your message!" } as InstagramMessagePayload, ctaMode: "none" as CtaMode };
   return { ...preferred, message: addQuickReplies(preferred.message, params.automationId, quickReplies) };
 }
@@ -350,6 +353,7 @@ export async function sendInstagramDirectResponse(params: {
   message: string;
   responseFormat?: string | null;
   quickReplies?: string[];
+  linkButtons?: LinkButton[];
   quickReplyPayloads?: string[];
   ctaTitle?: string | null;
   ctaUrl?: string | null;
@@ -399,8 +403,8 @@ export async function sendInstagramDirectResponse(params: {
       responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.followGatePrompt) {
       responseMessage = buildFollowGatePayload(params.automationId, params.followGatePrompt).preferred;
-    } else if (params.responseFormat === "LINK" || params.ctaUrl) {
-      const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl).message;
+    } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
+      const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
     } else {
       responseMessage = {
@@ -424,8 +428,8 @@ export async function sendInstagramDirectResponse(params: {
           buildFollowGatePayload(params.automationId, params.followGatePrompt).fallback
         );
       } else {
-        if (params.responseFormat !== "LINK" && !params.ctaUrl) throw error;
-        const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl).message;
+        if (params.responseFormat !== "LINK" && !params.ctaUrl && !params.linkButtons?.length) throw error;
+        const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
         sent = await postDirectPayload(params, addQuickReplies(fallback, params.automationId, params.quickReplies ?? []));
       }
     }
@@ -558,6 +562,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   automationId?: string;
   responseFormat?: string | null;
   quickReplies?: string[];
+  linkButtons?: LinkButton[];
   mediaUrl?: string | null;
   mediaType?: string | null;
   followGatePrompt?: FollowGatePrompt;
@@ -581,6 +586,7 @@ export async function sendInstagramCommentPrivateReply(params: {
         message: params.message,
         responseFormat: params.responseFormat,
         quickReplies: params.quickReplies,
+        linkButtons: params.linkButtons,
         ctaTitle: params.ctaTitle,
         ctaUrl: params.ctaUrl,
         mediaUrl: params.mediaUrl,
@@ -590,7 +596,7 @@ export async function sendInstagramCommentPrivateReply(params: {
     ? { message: postbackPayload.fallback, ctaMode: "postback_button" as CtaMode }
     : followGatePayload
     ? { message: followGatePayload.fallback, ctaMode: "text_link_fallback" as CtaMode }
-    : buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl);
+    : buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons);
   const usesTemplate = preferred.ctaMode === "button_template" || preferred.ctaMode === "postback_button" || preferred.ctaMode === "follow_gate_card";
 
   try {

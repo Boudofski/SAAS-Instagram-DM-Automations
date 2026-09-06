@@ -4,6 +4,7 @@ import { client } from "@/lib/prisma";
 import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
 import type { NormalizedMessageAutomationPayload } from "@/lib/message-automation";
 import { resolveFollowRequestButtonText, resolveFollowRequestDmText } from "@/lib/comment-dm-flow";
+import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 import type { MATCHING_MODE } from "@prisma/client";
 
 export type CampaignPayload = NormalizedCampaignPayload;
@@ -383,9 +384,9 @@ export const duplicateAutomationQuery = async (
           ? automation.listener.responseFormat
           : "TEXT",
       message: automation.listener.prompt,
-      quickReplies: Array.isArray(automation.listener.quickReplies)
-        ? automation.listener.quickReplies.filter((item): item is string => typeof item === "string")
-        : [],
+      quickReplies: automation.listener.responseFormat === "LINK"
+        ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
+        : readLegacyQuickReplies(automation.listener.quickReplies),
       ctaLink: automation.listener.ctaLink ?? undefined,
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
@@ -428,9 +429,9 @@ export const duplicateAutomationQuery = async (
         automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA"
           ? automation.listener.responseFormat
           : "TEXT",
-      quickReplies: Array.isArray(automation.listener.quickReplies)
-        ? automation.listener.quickReplies.filter((item): item is string => typeof item === "string")
-        : [],
+      quickReplies: automation.listener.responseFormat === "LINK"
+        ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
+        : readLegacyQuickReplies(automation.listener.quickReplies),
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
       openingDmText: automation.listener.openingDmText ?? undefined,

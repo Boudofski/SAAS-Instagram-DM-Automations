@@ -4,13 +4,14 @@ import { saveMessageAutomation } from "@/actions/automation";
 import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
 import DeliveryRules from "@/components/automations/delivery-rules";
 import MessageAutomationPreview from "@/components/automations/message-automation-preview";
-import MessageResponseEditor, { type ResponseFormat } from "@/components/automations/message-response-editor";
+import MessageResponseEditor from "@/components/automations/message-response-editor";
 import {
   DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
   DEFAULT_FOLLOW_REQUEST_DM_TEXT,
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
+import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, readLinkButtons, type LinkButton } from "@/lib/link-buttons";
 import { AtSign, Loader2, MessageCircleReply, SmilePlus, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -24,13 +25,8 @@ type Draft = {
   storyTriggerType: StoryTrigger;
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
   keywords: string[];
-  responseFormat: ResponseFormat;
   message: string;
-  quickReplies: string[];
-  ctaLink: string;
-  ctaButtonTitle: string;
-  mediaUrl: string;
-  mediaType: "IMAGE" | "VIDEO";
+  linkButtons: LinkButton[];
   followGateRequired: boolean;
   followRequestDmText: string;
   followRequestButtonText: string;
@@ -47,13 +43,8 @@ const INITIAL: Draft = {
   storyTriggerType: "MENTION",
   triggerMode: "ANY_MESSAGE",
   keywords: [],
-  responseFormat: "TEXT",
   message: "Thanks for reaching out! Here's what you asked for ✨",
-  quickReplies: [],
-  ctaLink: "",
-  ctaButtonTitle: "Get the Link",
-  mediaUrl: "",
-  mediaType: "IMAGE",
+  linkButtons: [{ label: DEFAULT_LINK_BUTTON_LABEL, url: "" }],
   followGateRequired: false,
   followRequestDmText: DEFAULT_FOLLOW_REQUEST_DM_TEXT,
   followRequestButtonText: DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
@@ -72,21 +63,14 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
 
   useEffect(() => {
     if (!automation?.listener) return;
-    const replies = Array.isArray(automation.listener.quickReplies)
-      ? automation.listener.quickReplies.filter((item: unknown): item is string => typeof item === "string")
-      : [];
+    const storedLinks = readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink);
     setDraft({
       name: automation.name ?? "",
       storyTriggerType: automation.storyTriggerType === "REACTION" || automation.storyTriggerType === "REPLY" ? automation.storyTriggerType : "MENTION",
       triggerMode: automation.triggerMode === "SPECIFIC_KEYWORD" ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE",
       keywords: Array.isArray(automation.keywords) ? automation.keywords.map((item: any) => item.word).filter(Boolean) : [],
-      responseFormat: automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA" ? automation.listener.responseFormat : "TEXT",
       message: automation.listener.prompt ?? "",
-      quickReplies: replies,
-      ctaLink: automation.listener.ctaLink ?? "",
-      ctaButtonTitle: automation.listener.ctaButtonTitle ?? "Get the Link",
-      mediaUrl: automation.listener.mediaUrl ?? "",
-      mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : "IMAGE",
+      linkButtons: storedLinks.length ? storedLinks : [{ label: DEFAULT_LINK_BUTTON_LABEL, url: "" }],
       followGateRequired: Boolean(automation.followGateRequired),
       followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
       followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
@@ -111,7 +95,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   const canContinue = step === 1
     ? source === "STORY" || draft.triggerMode === "ANY_MESSAGE" || draft.keywords.length > 0
     : step === 2
-      ? Boolean(draft.message.trim()) && (draft.responseFormat !== "LINK" || Boolean(draft.ctaLink.trim())) && (draft.responseFormat !== "MEDIA" || Boolean(draft.mediaUrl.trim()))
+      ? Boolean(draft.message.trim()) && linkButtonsAreComplete(draft.linkButtons)
       : Boolean(draft.name.trim());
 
   const addKeyword = () => {
@@ -125,7 +109,15 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
     if (!canContinue) return;
     setSaving(true);
     setError(null);
-    const result = await saveMessageAutomation({ ...draft, source, active: true }, automationId);
+    const firstLink = draft.linkButtons[0];
+    const result = await saveMessageAutomation({
+      ...draft,
+      source,
+      active: true,
+      responseFormat: "LINK",
+      ctaLink: firstLink?.url,
+      ctaButtonTitle: firstLink?.label,
+    }, automationId);
     if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
       router.push(`/dashboard/${slug}/automation/${result.data.id}`);
       router.refresh();
@@ -167,7 +159,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
             )}
 
             {step === 2 && (
-              <section><PhaseHeader title="Compose response message" description="Pick the format and craft the message sent to prospects." /><MessageResponseEditor format={draft.responseFormat} message={draft.message} quickReplies={draft.quickReplies} ctaLink={draft.ctaLink} ctaButtonTitle={draft.ctaButtonTitle} mediaUrl={draft.mediaUrl} mediaType={draft.mediaType} onChange={(next) => setDraft((current) => ({ ...current, ...next, responseFormat: next.format ?? current.responseFormat }))} /></section>
+              <section><PhaseHeader title="DM with a link" description="Write the response and add up to three link buttons." /><MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /></section>
             )}
 
             {step === 3 && (
@@ -190,10 +182,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
             triggerMode={draft.triggerMode}
             keywords={draft.keywords}
             message={draft.message}
-            responseFormat={draft.responseFormat}
-            ctaButtonTitle={draft.ctaButtonTitle}
-            mediaUrl={draft.mediaUrl}
-            quickReplies={draft.quickReplies}
+            linkButtons={draft.linkButtons}
             followGateRequired={draft.followGateRequired}
             followRequestDmText={draft.followRequestDmText}
             followRequestButtonText={draft.followRequestButtonText}
@@ -205,7 +194,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
         <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
           <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
             <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
-            <div className="min-h-0 flex-1"><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} responseFormat={draft.responseFormat} ctaButtonTitle={draft.ctaButtonTitle} mediaUrl={draft.mediaUrl} quickReplies={draft.quickReplies} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></div>
+            <div className="min-h-0 flex-1"><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} linkButtons={draft.linkButtons} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></div>
           </div>
         </div>
       )}

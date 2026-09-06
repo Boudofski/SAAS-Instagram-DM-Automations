@@ -1,8 +1,8 @@
 "use client";
 
 import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
+import type { LinkButton } from "@/lib/link-buttons";
 import { AtSign, Camera, ChevronLeft, ImageIcon, Phone, Plus, Send, SmilePlus, Video } from "lucide-react";
-import Image from "next/image";
 
 type Props = {
   source: "STORY" | "DM";
@@ -11,10 +11,7 @@ type Props = {
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
   keywords: string[];
   message: string;
-  responseFormat: "TEXT" | "LINK" | "MEDIA";
-  ctaButtonTitle: string;
-  mediaUrl: string;
-  quickReplies: string[];
+  linkButtons: LinkButton[];
   followGateRequired: boolean;
   followRequestDmText: string;
   followRequestButtonText: string;
@@ -40,8 +37,7 @@ export default function MessageAutomationPreview(props: Props) {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-end gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-[10px] font-black">A</span><div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]">{props.responseFormat === "MEDIA" ? <div className="relative grid h-28 place-items-center bg-white/5 text-white/35">{props.mediaUrl ? <Image src={props.mediaUrl} alt="Message media preview" fill sizes="260px" className="object-cover" unoptimized /> : <ImageIcon className="h-7 w-7" />}</div> : null}<p dir="auto" className="whitespace-pre-wrap px-3 py-2.5">{props.message || "Your response message"}</p>{props.responseFormat === "LINK" ? <div className="border-t border-white/10 px-3 py-2.5 text-center font-black">{props.ctaButtonTitle || "Open link"}</div> : null}</div></div>
-                {props.quickReplies.length ? <div className="ml-9 flex flex-wrap gap-1.5">{props.quickReplies.map((chip) => <span key={chip} className="rounded-full border border-violet-500/70 px-3 py-1.5 text-[10px] font-bold text-violet-300">{chip}</span>)}</div> : null}
+                <div className="flex items-end gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-[10px] font-black">A</span><div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]"><p dir="auto" className="whitespace-pre-wrap break-words px-3 py-2.5">{props.message || "Your response message"}</p>{props.linkButtons.map((button, index) => <div key={`${button.label}-${index}`} dir="auto" className="border-t border-white/10 px-3 py-2.5 text-center font-black">{button.label || `Link ${index + 1}`}</div>)}</div></div>
                 {props.followGateRequired ? <><div className="flex items-end gap-2 pt-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-[10px] font-black">A</span><div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]"><p dir="auto" className="whitespace-pre-wrap px-3 py-2.5">{props.followRequestDmText}</p></div></div><div dir="auto" className="ml-9 w-fit max-w-[78%] rounded-full bg-[#f1f2f5] px-4 py-2 text-[10px] font-black text-[#3f6fe5]">{props.followRequestButtonText}</div></> : null}
               </div>
             )}
@@ -52,4 +48,3 @@ export default function MessageAutomationPreview(props: Props) {
     </section>
   );
 }
-
