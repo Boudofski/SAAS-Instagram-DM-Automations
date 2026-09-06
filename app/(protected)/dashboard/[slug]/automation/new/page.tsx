@@ -59,7 +59,6 @@ export default function WizardPage({ params, searchParams }: Props) {
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const initializedMessagingReviewDraft = useRef(false);
-  const stepsScrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
@@ -151,15 +150,6 @@ export default function WizardPage({ params, searchParams }: Props) {
     setLoadedEdit(true);
   }, [editId, editing, loadedEdit, messagingReviewMode, commentReplyOnlyReviewMode, update]);
 
-  useEffect(() => {
-    if (step <= 1) return;
-    window.requestAnimationFrame(() => {
-      const container = stepsScrollRef.current;
-      const panel = document.getElementById("current-automation-step");
-      if (container && panel) container.scrollTo({ top: Math.max(0, panel.offsetTop - 16), behavior: reduceMotion ? "auto" : "smooth" });
-    });
-  }, [reduceMotion, step]);
-
   const requestedType = searchParams?.type?.toLowerCase();
   const editingSource = (editing as any)?.data?.source;
   const selectedType = requestedType || (editingSource === "STORY" ? "story" : editingSource === "DM" ? "dm" : editId ? "comment" : undefined);
@@ -201,11 +191,13 @@ export default function WizardPage({ params, searchParams }: Props) {
         <WizardStepper steps={steps} />
       </div>
 
-      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-6 xl:overflow-hidden xl:pb-4">
-        <div ref={stepsScrollRef} className="space-y-4 xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pr-2">
-        {Array.from({ length: Math.max(0, step - 1) }, (_, index) => index + 1).map((completedStep) => (
-          <CompletedStep key={completedStep} number={completedStep} title={STEP_LABELS[completedStep - 1]} summary={commentStepSummary(completedStep, data)} onEdit={() => goTo(completedStep as 1 | 2 | 3 | 4)} />
-        ))}
+      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,720px)_minmax(360px,1fr)] xl:gap-6 xl:overflow-hidden xl:pb-4">
+        <div className="space-y-4 xl:flex xl:min-h-0 xl:flex-col xl:gap-3 xl:space-y-0">
+        {step > 1 ? <div className="grid shrink-0 gap-2 sm:grid-cols-2 xl:flex xl:min-w-0">
+          {Array.from({ length: step - 1 }, (_, index) => index + 1).map((completedStep) => (
+            <CompletedStep key={completedStep} number={completedStep} title={STEP_LABELS[completedStep - 1]} summary={commentStepSummary(completedStep, data)} onEdit={() => goTo(completedStep as 1 | 2 | 3 | 4)} />
+          ))}
+        </div> : null}
         <AnimatePresence mode="wait">
         <motion.main
           id="current-automation-step"
@@ -214,7 +206,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           animate={{ opacity: 1, x: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, x: 10 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-[#0d1220] sm:p-7"
+          className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-[#0d1220] sm:p-7 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain"
         >
           {step === 1 && (
             <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3K should listen for comments. Any post is the fastest option; specific post mode limits the automation to one post or Reel.">
@@ -518,7 +510,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         </AnimatePresence>
         </div>
 
-        <aside className="hidden min-h-0 overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:block xl:p-5">
+        <aside className="hidden min-h-0 overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex xl:p-5">
           <InstagramPhonePreview
             data={data}
             step={step}
@@ -529,10 +521,10 @@ export default function WizardPage({ params, searchParams }: Props) {
       </div>
 
       {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
-          <div className="mx-auto min-h-full max-w-[460px] rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
-            <InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} />
+        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-hidden bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
+          <div className="mx-auto flex h-full max-w-[460px] flex-col overflow-hidden rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
+            <div className="mb-3 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
+            <div className="min-h-0 flex-1"><InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></div>
           </div>
         </div>
       )}
@@ -577,7 +569,7 @@ function StepPanel({ eyebrow, title, description, children }: { eyebrow: string;
 }
 
 function CompletedStep({ number, title, summary, onEdit }: { number: number; title: string; summary: string; onEdit: () => void }) {
-  return <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/[0.07]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-500 text-xs font-black text-white">✓</span><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Step {number} · {title}</p><p className="mt-1 truncate text-sm text-slate-600 dark:text-slate-300">{summary}</p></div><button type="button" onClick={onEdit} className="rounded-lg px-2 py-1 text-xs font-black text-rf-blue hover:bg-white/70 dark:hover:bg-white/10">Edit</button></div>;
+  return <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/[0.07] xl:flex-1"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500 text-xs font-black text-white">✓</span><div className="min-w-0 flex-1"><p className="truncate text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Step {number} · {title}</p><p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-300">{summary}</p></div><button type="button" onClick={onEdit} className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-black text-rf-blue hover:bg-white/70 dark:hover:bg-white/10">Edit</button></div>;
 }
 
 function commentStepSummary(step: number, data: any) {

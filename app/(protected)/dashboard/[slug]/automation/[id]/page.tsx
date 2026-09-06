@@ -85,35 +85,24 @@ export default async function CampaignDetailPage({ params }: Props) {
           : "Draft";
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 text-slate-950 dark:text-white sm:p-6 lg:p-8">
-      <div className="flex animate-[ap3kDashboardRise_0.38s_ease-out_both] flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4 p-4 text-slate-950 dark:text-white sm:p-6 xl:mt-3 xl:h-[calc(100dvh-7.5rem)] xl:min-h-0 xl:overflow-hidden">
+      <header className="flex shrink-0 animate-[ap3kDashboardRise_0.38s_ease-out_both] flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <Link href={`/dashboard/${params.slug}/automation`} className="mb-2 inline-block text-xs text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
+          <Link href={`/dashboard/${params.slug}/automation`} className="mb-1 inline-block text-xs font-bold text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
             ← Automations
           </Link>
-          <p className="ap3k-kicker">Automation detail</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{automation.name}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">{automation.name}</h1>
             <StatusBadge status={statusLabel} />
             <span className="ap3k-badge ap3k-badge-slate">{connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Instagram account"}</span>
             <ReplyBadge commentReply={hasCommentReply} dm={hasDm} />
           </div>
         </div>
         <ActiveAutomationButton id={params.id} disabled={false} disabledReason={null} showRepair={Boolean(automation.needsReview)} />
-      </div>
+      </header>
 
-      <section className="ap3k-card animate-[ap3kDashboardRise_0.45s_ease-out_both] rounded-3xl p-5 transition-all duration-300 hover:shadow-[0_20px_80px_rgba(15,23,42,0.10)]">
-        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="ap3k-kicker">Automation overview</p>
-            <h2 className="mt-1 text-xl font-black">{sourceLabel} workflow</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">AP3K checks the configured interaction, applies your delivery rules, then sends the saved response.</p>
-          </div>
-          <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">
-            {isLive ? "Listening now" : statusLabel}
-          </Badge>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="ap3k-card shrink-0 animate-[ap3kDashboardRise_0.45s_ease-out_both] rounded-3xl p-4 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <InfoTile label="Instagram account" value={connectedIntegration?.instagramUsername ? `@${connectedIntegration.instagramUsername}` : "Not connected"} tone={connectedIntegration ? "green" : "amber"} />
           <InfoTile label="Channel" value={sourceLabel} tone="green" />
           <InfoTile label="Trigger" value={triggerLabel} tone={isMessageAutomation || isAnyComment || keywords.length ? "green" : "amber"} />
@@ -121,136 +110,85 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_330px]">
-        <section className="ap3k-card animate-[ap3kDashboardRise_0.52s_ease-out_both] rounded-3xl p-6">
-          <div className="mb-6">
-            <p className="ap3k-kicker">Workflow</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight">Interaction → rules → response</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The customer-facing path configured for this automation.</p>
-          </div>
-
-          {isMessageAutomation ? <div className="grid gap-4">
-            <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
-            <FlowConnector />
-            <FlowNode label="2. Optional follow request" title={automation.followGateRequired ? "Ask them to follow" : "Send without a follow check"} body={automation.followGateRequired ? `${followRequestButtonText} rechecks their follow before delivery.` : "The saved response is sent immediately."} tone="pink" />
-            <FlowConnector />
-            <FlowNode label="3. Direct message" title={automation.listener?.responseFormat === "LINK" ? "Card / link" : automation.listener?.responseFormat === "MEDIA" ? "Rich media" : "Text message"} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
-          </div> : <div className="grid gap-4">
-            <FlowNode label="1. Comment" title={isAnyPost ? "Any post or Reel" : "Selected post or Reel"} body={selectedPostLabel} tone="orange" />
-            <FlowConnector />
-            <FlowNode label="2. Trigger" title={isAnyComment ? "Any comment" : "Keyword matched"} body={triggerLabel} tone="pink" />
-            <FlowConnector />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FlowNode label="3. Comment reply" title={hasCommentReply ? "Reply to comment" : "Not configured"} body={commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
-              <FlowNode label="4. Opening DM" title={hasDm ? openingDmButtonText : "Not configured"} body={hasDm ? openingDmText : "No DM configured."} tone="blue" disabled={!hasDm} />
-            </div>
-            {hasDm && <>
-              <FlowConnector />
-              {automation.followGateRequired && <>
-                <FlowNode label="5. Optional follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" />
-                <FlowConnector />
-              </>}
-              <FlowNode label={automation.followGateRequired ? "6. Final DM" : "5. Final DM"} title={automation.listener?.responseFormat === "LINK" ? "Deliver link" : "Deliver response"} body={automation.listener?.prompt || "No final DM configured."} tone="blue" />
-            </>}
-          </div>}
-        </section>
-
-        <aside className="ap3k-card animate-[ap3kDashboardRise_0.58s_ease-out_both] rounded-3xl p-6">
-          <p className="ap3k-kicker">Settings</p>
-          <div className="mt-5 space-y-3">
-            <SettingsRow label="Status" value={statusLabel} />
-            <SettingsRow label="Channel" value={sourceLabel} />
-            <SettingsRow label="Trigger" value={triggerLabel} />
-            {!isMessageAutomation && <SettingsRow label="Comment reply" value={hasCommentReply ? `${commentReplies.length} variation${commentReplies.length === 1 ? "" : "s"}` : "Off"} />}
-            <SettingsRow label="DM" value={hasDm ? "Enabled" : "Off"} />
-            <SettingsRow label="Follow request" value={automation.followGateRequired ? "Enabled" : "Off"} />
-          </div>
-          <Link href={editHref} className="ap3k-gradient-button mt-6 block px-4 py-3 text-center text-sm">
-            Edit automation
-          </Link>
-        </aside>
-      </div>
-
-      <section className="grid animate-[ap3kDashboardRise_0.64s_ease-out_both] gap-4 md:grid-cols-4">
+      <section className="grid shrink-0 animate-[ap3kDashboardRise_0.52s_ease-out_both] grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard label="DMs" value={stats?.dmsSent ?? automation.listener?.dmCount ?? 0} detail="DMs sent" />
         <MetricCard label="Comments" value={stats?.commentsReceived ?? automation.listener?.commentCount ?? 0} detail="Comments received" />
         <MetricCard label="Comment replies" value={stats?.repliesSent ?? 0} detail="Replies posted under comments" />
         <MetricCard label="Leads" value={stats?.leadsCollected ?? automation._count?.leads ?? 0} detail="Leads captured" />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
-        <section className="ap3k-card animate-[ap3kDashboardRise_0.7s_ease-out_both] rounded-3xl p-6">
-          <h2 className="text-sm font-black text-slate-950 dark:text-white">Automation content</h2>
-          <div className="mt-5 space-y-5">
-            {!isMessageAutomation && <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} />}
-            {!isMessageAutomation && hasDm && <ContentBlock label={`Opening DM · ${openingDmButtonText}`} value={openingDmText} />}
-            {hasDm && <ContentBlock label="Final DM" value={automation.listener?.prompt} />}
-            {hasDm && automation.followGateRequired && <ContentBlock label={`Follow request · ${followRequestButtonText}`} value={followRequestDmText} />}
-            {(automation.listener?.ctaButtonTitle || automation.listener?.ctaLink) && (
-              <div>
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Link button</p>
-                <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-rf-blue/25 bg-rf-blue/10 px-4 py-3">
-                  <span className="shrink-0 rounded-lg bg-rf-blue/10 px-2 py-1 text-xs font-black text-rf-blue">{automation.listener?.ctaButtonTitle || "Open link"}</span>
-                  {automation.listener?.ctaLink && <span className="truncate text-xs text-slate-500 dark:text-slate-300">{automation.listener.ctaLink}</span>}
-                </div>
+      <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:flex-1 xl:overflow-hidden">
+        <section className="ap3k-card flex min-h-0 animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col overflow-hidden rounded-3xl p-5 sm:p-6">
+          <div className="shrink-0 border-b border-slate-200 pb-4 dark:border-white/10">
+            <p className="ap3k-kicker">Customer journey</p>
+            <h2 className="mt-1 text-xl font-black tracking-tight">Interaction → response</h2>
+          </div>
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain py-5 pr-1">
+            {isMessageAutomation ? <>
+              <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
+              <FlowConnector />
+              {automation.followGateRequired ? <><FlowNode label="2. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}
+              <FlowNode label={automation.followGateRequired ? "3. Direct message" : "2. Direct message"} title={automation.listener?.responseFormat === "LINK" ? "Card / link" : automation.listener?.responseFormat === "MEDIA" ? "Rich media" : "Text message"} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
+            </> : <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FlowNode label="1. Post" title={isAnyPost ? "Any post or Reel" : "Selected post or Reel"} body={selectedPostLabel} tone="orange" />
+                <FlowNode label="2. Trigger" title={isAnyComment ? "Any comment" : "Keyword matched"} body={triggerLabel} tone="pink" />
               </div>
-            )}
-            {commentReplies.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Comment reply variations</p>
-                <div className="grid gap-2">
-                  {commentReplies.map((reply, index) => (
-                    <div key={`${reply}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
-                      <span className="mr-2 font-black text-slate-400">{index + 1}.</span>{reply}
+              <FlowConnector />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FlowNode label="3. Public reply" title={hasCommentReply ? "Reply to comment" : "Not configured"} body={commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
+                <FlowNode label="4. Opening DM" title={hasDm ? openingDmButtonText : "Not configured"} body={hasDm ? openingDmText : "No DM configured."} tone="blue" disabled={!hasDm} />
+              </div>
+              {hasDm ? <><FlowConnector />{automation.followGateRequired ? <><FlowNode label="5. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}<FlowNode label={automation.followGateRequired ? "6. Final DM" : "5. Final DM"} title={automation.listener?.responseFormat === "LINK" ? "Deliver link" : "Deliver response"} body={automation.listener?.prompt || "No final DM configured."} tone="blue" /></> : null}
+            </>}
+
+            <div className="border-t border-slate-200 pt-5 dark:border-white/10">
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Saved content</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {!isMessageAutomation ? <ContentBlock label="Post" value={selectedPostLabel} media={post?.media} /> : null}
+                {hasDm ? <ContentBlock label="Final DM" value={automation.listener?.prompt} /> : null}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside className="flex min-h-0 flex-col gap-4">
+          <section className="ap3k-card shrink-0 animate-[ap3kDashboardRise_0.64s_ease-out_both] rounded-3xl p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="ap3k-kicker">Settings</p>
+              <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">{isLive ? "Listening now" : statusLabel}</Badge>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <SettingsRow label="Channel" value={sourceLabel} />
+              <SettingsRow label="Trigger" value={triggerLabel} />
+              <SettingsRow label="DM" value={hasDm ? "Enabled" : "Off"} />
+              <SettingsRow label="Follow request" value={automation.followGateRequired ? "Enabled" : "Off"} />
+            </div>
+            <Link href={editHref} className="ap3k-gradient-button mt-4 block px-4 py-3 text-center text-sm">Edit automation</Link>
+          </section>
+
+          <section className="ap3k-card flex min-h-[280px] flex-1 animate-[ap3kDashboardRise_0.7s_ease-out_both] flex-col overflow-hidden rounded-3xl p-5">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-white/10">
+              <div><h2 className="text-sm font-black text-slate-950 dark:text-white">Recent activity</h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest 20 events</p></div>
+              <span className="ap3k-badge ap3k-badge-slate">{groupedActivity.length}</span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-3">
+              {groupedActivity.length === 0 ? (
+                <div className="grid h-full min-h-32 place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">No activity yet. Test this automation from another Instagram account.</div>
+              ) : (
+                <div className="divide-y divide-slate-200 dark:divide-white/10">
+                  {groupedActivity.map((item) => (
+                    <div key={item.id} className="flex gap-3 py-3">
+                      <span className={["mt-1 h-2.5 w-2.5 shrink-0 rounded-full", activityDotClass(item.tone)].join(" ")} />
+                      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-black text-slate-950 dark:text-white">{customerReplyCopy(item.title)}</p><span className={["rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}>{item.badge}</span></div><p className="mt-1 line-clamp-2 text-xs text-slate-600 dark:text-slate-300">{item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, true)}</p><p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400"><LocalTime value={item.createdAt} /></p></div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="ap3k-card animate-[ap3kDashboardRise_0.74s_ease-out_both] rounded-3xl p-6">
-          <h2 className="text-sm font-black text-slate-950 dark:text-white">Automation actions</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Edit this automation or jump back to the automation list.</p>
-          <div className="mt-5 grid gap-3">
-            <Link href={editHref} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>✏️</span><span>Edit automation</span></Link>
-            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>＋</span><span>Create another automation</span></Link>
-            <Link href={`/dashboard/${params.slug}/automation`} className="ap3k-review-row text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-rf-pink/30 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span>←</span><span>All automations</span></Link>
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
+        </aside>
       </div>
-
-      <section className="ap3k-card animate-[ap3kDashboardRise_0.8s_ease-out_both] rounded-3xl p-6">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-black text-slate-950 dark:text-white">Recent activity</h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest comments, trigger matches, comment replies, DMs, and lead activity.</p>
-          </div>
-          <span className="ap3k-badge ap3k-badge-slate">Latest 20</span>
-        </div>
-        {groupedActivity.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
-            No activity yet. Trigger this automation from another Instagram account to test it.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-200 dark:divide-white/10">
-            {groupedActivity.map((item) => (
-              <div key={item.id} className="flex gap-3 rounded-2xl py-4 transition hover:bg-slate-50/70 dark:hover:bg-white/[0.03]">
-                <span className={["mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full", activityDotClass(item.tone)].join(" ")} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-black text-slate-950 dark:text-white">{customerReplyCopy(item.title)}</p>
-                    <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}>{item.badge}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, true)}</p>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400"><LocalTime value={item.createdAt} /></p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }

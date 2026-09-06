@@ -1,6 +1,7 @@
 "use client";
 
-import { AtSign, Camera, ChevronLeft, ImageIcon, MessageCircle, Plus, Send, SmilePlus } from "lucide-react";
+import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
+import { AtSign, Camera, ChevronLeft, ImageIcon, Phone, Plus, Send, SmilePlus, Video } from "lucide-react";
 import Image from "next/image";
 
 type Props = {
@@ -25,13 +26,12 @@ export default function MessageAutomationPreview(props: Props) {
     : props.triggerMode === "ANY_MESSAGE" ? "sent you a message" : `sent “${props.keywords[0] || "guide"}”`;
 
   return (
-    <section className="mx-auto w-full max-w-[430px]">
-      <div className="rounded-[3.25rem] bg-[#171b24] p-3 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.65)] ring-1 ring-black/20 dark:ring-white/10">
-        <div className="flex h-[690px] flex-col overflow-hidden rounded-[2.55rem] bg-[#0e0e0f] text-white">
-          <div className="relative flex h-11 items-center justify-between px-7 text-[12px] font-black"><span>9:41</span><span className="absolute left-1/2 top-3 h-5 w-20 -translate-x-1/2 rounded-full bg-black" /><span>••• ▰</span></div>
-          <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4"><ChevronLeft className="h-5 w-5" /><span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 font-black">A</span><p className="flex-1 text-sm font-black">youraccount</p><MessageCircle className="h-5 w-5" /></div>
+    <section className="mx-auto h-full min-h-0 w-full max-w-[480px]">
+      <InstagramPhoneFrame>
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4"><ChevronLeft className="h-5 w-5" /><span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 font-black">A</span><p className="min-w-0 flex-1 truncate text-sm font-black">youraccount</p><Phone className="h-5 w-5" /><Video className="h-5 w-5" /></div>
 
-          <div className="flex-1 overflow-hidden px-4 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5">
             <div className="mx-auto mb-7 w-fit rounded-full bg-white/[0.07] px-4 py-2 text-[10px] font-bold text-white/60">{interaction}</div>
             {props.source === "STORY" && props.step === 1 ? (
               <div className="mx-auto mt-16 max-w-[250px] rounded-3xl border border-white/10 bg-gradient-to-br from-[#39236c] to-[#d92f88] p-6 text-center shadow-xl">
@@ -42,13 +42,13 @@ export default function MessageAutomationPreview(props: Props) {
               <div className="space-y-3">
                 <div className="flex items-end gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-[10px] font-black">A</span><div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]">{props.responseFormat === "MEDIA" ? <div className="relative grid h-28 place-items-center bg-white/5 text-white/35">{props.mediaUrl ? <Image src={props.mediaUrl} alt="Message media preview" fill sizes="260px" className="object-cover" unoptimized /> : <ImageIcon className="h-7 w-7" />}</div> : null}<p dir="auto" className="whitespace-pre-wrap px-3 py-2.5">{props.message || "Your response message"}</p>{props.responseFormat === "LINK" ? <div className="border-t border-white/10 px-3 py-2.5 text-center font-black">{props.ctaButtonTitle || "Open link"}</div> : null}</div></div>
                 {props.quickReplies.length ? <div className="ml-9 flex flex-wrap gap-1.5">{props.quickReplies.map((chip) => <span key={chip} className="rounded-full border border-violet-500/70 px-3 py-1.5 text-[10px] font-bold text-violet-300">{chip}</span>)}</div> : null}
-                {props.followGateRequired ? <div className="flex items-end gap-2 pt-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-[10px] font-black">A</span><div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]"><p dir="auto" className="whitespace-pre-wrap px-3 py-2.5">{props.followRequestDmText}</p><div className="border-t border-white/10 px-3 py-2.5 text-center font-black">{props.followRequestButtonText}</div></div></div> : null}
+                {props.followGateRequired ? <><div className="flex items-end gap-2 pt-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-[10px] font-black">A</span><div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]"><p dir="auto" className="whitespace-pre-wrap px-3 py-2.5">{props.followRequestDmText}</p></div></div><div dir="auto" className="ml-9 w-fit max-w-[78%] rounded-full bg-[#f1f2f5] px-4 py-2 text-[10px] font-black text-[#3f6fe5]">{props.followRequestButtonText}</div></> : null}
               </div>
             )}
           </div>
           <div className="mx-3 mb-3 flex items-center gap-3 rounded-full bg-[#202023] px-3 py-2.5 text-white/40"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#4775ff] text-white"><Camera className="h-4 w-4" /></span><span className="flex-1 text-xs">Message…</span><ImageIcon className="h-5 w-5" /><Send className="h-5 w-5" /><Plus className="h-5 w-5" /></div>
         </div>
-      </div>
+      </InstagramPhoneFrame>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
 import type { WizardData, WizardStep } from "@/hooks/use-wizard";
 import {
   Bookmark,
@@ -41,24 +42,23 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
   }, [step]);
 
   return (
-    <section aria-label="Instagram live preview" className="mx-auto w-full max-w-[430px]">
-      <div className="rounded-[3.25rem] bg-[#171b24] p-3 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.65)] ring-1 ring-black/20 dark:ring-white/10">
-        <div className="relative h-[690px] overflow-hidden rounded-[2.55rem] bg-[#0e0e0f] text-white">
-          <PhoneStatus />
+    <section aria-label="Instagram live preview" className="mx-auto flex h-full min-h-0 w-full max-w-[480px] flex-col">
+      <div className="min-h-0 flex-1">
+        <InstagramPhoneFrame>
           {mode === "dm" ? (
-            <DmPreview data={data} handle={handle} profilePictureUrl={profilePictureUrl} />
-          ) : (
-            <PostPreview
-              data={data}
-              handle={handle}
-              profilePictureUrl={profilePictureUrl}
-              showComments={mode === "comments"}
-            />
-          )}
-        </div>
+              <DmPreview data={data} handle={handle} profilePictureUrl={profilePictureUrl} />
+            ) : (
+              <PostPreview
+                data={data}
+                handle={handle}
+                profilePictureUrl={profilePictureUrl}
+                showComments={mode === "comments"}
+              />
+            )}
+        </InstagramPhoneFrame>
       </div>
 
-      <div className="mx-auto mt-4 grid w-fit grid-cols-3 rounded-full bg-slate-200/80 p-1 dark:bg-white/10">
+      <div className="mx-auto mt-3 grid w-fit shrink-0 grid-cols-3 rounded-full bg-slate-200/80 p-1 dark:bg-white/10">
         {MODES.map((item) => (
           <button
             key={item.value}
@@ -66,7 +66,7 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
             onClick={() => setMode(item.value)}
             aria-pressed={mode === item.value}
             className={[
-              "min-w-24 rounded-full px-4 py-2 text-xs font-black transition-all",
+              "min-w-20 rounded-full px-3 py-2 text-xs font-black transition-all sm:min-w-24 sm:px-4",
               mode === item.value
                 ? "bg-white text-slate-950 shadow-sm dark:bg-white dark:text-slate-950"
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
@@ -80,21 +80,6 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
   );
 }
 
-function PhoneStatus() {
-  return (
-    <div className="flex h-11 items-center justify-between px-7 text-[12px] font-black">
-      <span>9:41</span>
-      <span className="absolute left-1/2 top-3 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
-      <span className="flex items-center gap-1.5">
-        <span className="flex items-end gap-px" aria-hidden="true">
-          {[5, 8, 11, 14].map((height) => <i key={height} className="w-[3px] rounded-sm bg-white" style={{ height }} />)}
-        </span>
-        <span className="h-2.5 w-4 rounded-sm border border-white/80" />
-      </span>
-    </div>
-  );
-}
-
 function PostPreview({ data, handle, profilePictureUrl, showComments }: { data: WizardData; handle: string; profilePictureUrl?: string | null; showComments: boolean }) {
   const sampleComment = data.triggerMode === "ANY_COMMENT"
     ? "This looks amazing!"
@@ -102,7 +87,7 @@ function PostPreview({ data, handle, profilePictureUrl, showComments }: { data: 
   const reply = [data.publicReply, data.publicReply2, data.publicReply3].find((item) => item.trim()) || "Thanks! Please see DMs.";
 
   return (
-    <div className="relative flex h-[646px] flex-col">
+    <div className="relative flex h-full flex-col">
       <div className="flex h-14 items-center border-b border-white/10 px-4">
         <ChevronLeft className="h-5 w-5" />
         <div className="flex-1 text-center">
@@ -167,7 +152,7 @@ function PostPreview({ data, handle, profilePictureUrl, showComments }: { data: 
 
 function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; handle: string; profilePictureUrl?: string | null }) {
   return (
-    <div className="flex h-[646px] flex-col">
+    <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
         <ChevronLeft className="h-5 w-5" />
         <Avatar src={profilePictureUrl} name={handle} size="sm" />
@@ -182,11 +167,13 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
           </div>
         ) : (
           <>
-            <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || "Your opening DM"} button={data.openingDmButtonText || "Continue"} />
+            <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || "Your opening DM"} />
+            <QuickReplyChip text={data.openingDmButtonText || "Continue"} />
             <OutgoingBubble text={data.openingDmButtonText || "Continue"} />
             {data.followGateRequired ? (
               <>
-                <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followRequestDmText || "Follow this account to receive the link."} button={data.followRequestButtonText || "Following"} />
+                <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followRequestDmText || "Follow this account to receive the link."} />
+                <QuickReplyChip text={data.followRequestButtonText || "Following"} />
                 <OutgoingBubble text={data.followRequestButtonText || "Following"} />
               </>
             ) : null}
@@ -228,6 +215,10 @@ function IncomingBubble({ avatar, text, button, media }: { avatar: React.ReactNo
 
 function OutgoingBubble({ text }: { text: string }) {
   return <p dir="auto" className="ml-auto max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4">{text}</p>;
+}
+
+function QuickReplyChip({ text }: { text: string }) {
+  return <div dir="auto" className="ml-9 w-fit max-w-[78%] rounded-full bg-[#f1f2f5] px-4 py-2 text-[11px] font-black text-[#3f6fe5]">{text}</div>;
 }
 
 function Comment({ avatar, username, text, profilePictureUrl }: { avatar: string; username: string; text: string; profilePictureUrl?: string | null }) {

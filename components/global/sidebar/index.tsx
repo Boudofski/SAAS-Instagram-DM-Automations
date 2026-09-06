@@ -98,10 +98,9 @@ export default function Sidebar({ slug }: Props) {
           onClick={() => setExpanded((value) => !value)}
           aria-label={expanded ? "Collapse navigation" : "Expand navigation"}
           title={expanded ? "Collapse menu" : "Expand menu"}
-          className={cn("flex min-h-11 w-full items-center rounded-xl border border-slate-200 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white", expanded ? "gap-2.5 px-3" : "justify-center")}
+          className="flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           {expanded ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-          {expanded && <span>Collapse menu</span>}
         </button>
       </div>
 
