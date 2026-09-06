@@ -137,15 +137,15 @@ export default function InboxClient({ initialConversationId }: { initialConversa
 
   return (
     <div className="mt-3 flex h-[calc(100dvh-9.5rem)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f5f6fa] text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#050816] dark:text-white sm:h-[calc(100dvh-7.5rem)] sm:min-h-[520px]">
-      <header className="flex shrink-0 flex-col gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-[#080c18]/95 lg:flex-row lg:items-center">
-        <div className="min-w-32"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-rf-purple">Instagram</p><h1 className="text-xl font-black tracking-tight">Inbox</h1></div>
-        <label className="relative mx-auto w-full max-w-xl">
+      <header className={["shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-[#080c18]/95 sm:px-4 sm:py-3 lg:flex-nowrap lg:gap-3", selectedId ? "hidden md:flex" : "flex"].join(" ")}>
+        <div className="min-w-0 flex-1 lg:min-w-32 lg:flex-none"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-rf-purple sm:text-[10px]">Instagram</p><h1 className="text-lg font-black tracking-tight sm:text-xl">Inbox</h1></div>
+        <label className="relative order-3 w-full lg:order-none lg:mx-auto lg:max-w-xl">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" className="ap3k-input w-full rounded-xl py-3 pl-11 pr-4 text-sm" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" className="ap3k-input w-full rounded-xl py-2.5 pl-11 pr-4 text-sm sm:py-3" />
         </label>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <span className="hidden text-[11px] font-bold text-emerald-600 dark:text-emerald-300 sm:inline">Updates automatically</span>
-          <button type="button" onClick={() => void refreshAll(true)} aria-label="Refresh conversations and messages" className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-white/10"><RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} /></button>
+          <button type="button" onClick={() => void refreshAll(true)} aria-label="Refresh conversations and messages" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-white/10 sm:h-11 sm:w-11"><RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} /></button>
         </div>
       </header>
 
@@ -174,7 +174,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
         <main className={["min-h-0 overflow-hidden flex-col bg-white dark:bg-[#0d1220]", selectedId ? "flex" : "hidden md:flex"].join(" ")}>
           {!selected ? <EmptyInbox /> : (
             <>
-              <header className="flex h-[72px] items-center gap-3 border-b border-slate-200 px-4 dark:border-white/10">
+              <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-3 dark:border-white/10 sm:h-[72px] sm:px-4">
                 <button type="button" onClick={() => setSelectedId(null)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 md:hidden dark:border-white/10"><ArrowLeft className="h-4 w-4" /></button>
                 <Avatar src={selected.profilePictureUrl} name={selected.recipientUsername || selected.recipientIgId} size="lg" />
                 <div className="min-w-0"><p className="truncate text-sm font-black">{displayName(selected)}</p><p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><Instagram className="h-3.5 w-3.5 text-pink-500" /> Instagram · {isReplyWindowOpen(selected.lastInboundAt) ? "Active now" : "Reply window closed"}</p></div>
