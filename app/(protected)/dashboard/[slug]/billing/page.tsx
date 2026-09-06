@@ -17,7 +17,7 @@ export default async function BillingPage() {
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-7">
+    <div className="mx-auto flex w-full max-w-6xl flex-col px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-6">
       <Billing
         current={(user?.subscription?.plan ?? "FREE") as CustomerPlan}
         usage={usage}

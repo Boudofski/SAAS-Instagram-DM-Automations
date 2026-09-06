@@ -30,11 +30,11 @@ export default function PricingExperience({
 
   return (
     <div className="w-full">
-      <div className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-5" : "mb-8"}`}>
+      <div className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
         <button
           type="button"
           onClick={() => setInterval("month")}
-          className={`rounded-xl px-4 py-2 text-sm font-black transition-all ${
+          className={`rounded-xl px-4 py-2 text-sm font-black transition-all duration-300 ${
             interval === "month"
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
@@ -45,7 +45,7 @@ export default function PricingExperience({
         <button
           type="button"
           onClick={() => setInterval("year")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-all ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-all duration-300 ${
             interval === "year"
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
@@ -58,13 +58,13 @@ export default function PricingExperience({
         </button>
       </div>
 
-      {existingPaid && (
+      {existingPaid && !dashboardCompact ? (
         <p className={`mx-auto max-w-3xl rounded-2xl border border-blue-200 bg-blue-50 px-4 text-center font-bold text-blue-800 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200 ${dashboardCompact ? "mb-5 py-2.5 text-xs sm:text-sm" : "mb-6 py-3 text-sm"}`}>
           You already have a paid subscription. Use <strong>Manage billing</strong> to change plan, billing interval, payment method, or cancellation settings.
         </p>
-      )}
+      ) : null}
 
-      <div className={`grid ${dashboardCompact ? "gap-3 sm:grid-cols-2 xl:grid-cols-4" : "gap-5 md:grid-cols-2 xl:grid-cols-4"}`}>
+      <div className={`grid ${dashboardCompact ? "gap-2.5 sm:grid-cols-2 xl:grid-cols-4" : "gap-5 md:grid-cols-2 xl:grid-cols-4"}`}>
         {PLAN_CARDS.map((plan, index) => {
           const isPaid = plan.id === "PRO" || plan.id === "BUSINESS";
           const paidPlan = isPaid ? (plan.id as PaidPlan) : null;
@@ -98,7 +98,7 @@ export default function PricingExperience({
           }
 
           const visibleFeatures = dashboardCompact
-            ? plan.features.slice(0, 4)
+            ? plan.features.slice(0, 3)
             : compact
               ? plan.features.slice(0, 4)
               : plan.features;
@@ -127,12 +127,12 @@ export default function PricingExperience({
                 </span>
               )}
 
-              <div className={dashboardCompact ? "pt-1" : compact ? "pt-1" : "pt-2"}>
+              <div className={dashboardCompact ? "pt-0.5" : compact ? "pt-1" : "pt-2"}>
                 <h2 className={`${dashboardCompact || compact ? "text-xl" : "text-2xl"} font-black tracking-tight text-slate-950 dark:text-white`}>{plan.name}</h2>
-                <p className={`${dashboardCompact || compact ? "mt-1 min-h-[2.5rem] text-xs leading-5" : "mt-2 min-h-[3rem] text-sm leading-relaxed"} text-slate-500 dark:text-slate-400`}>{plan.description}</p>
+                <p className={`${dashboardCompact || compact ? "mt-1 min-h-[2rem] line-clamp-2 text-[11px] leading-4" : "mt-2 min-h-[3rem] text-sm leading-relaxed"} text-slate-500 dark:text-slate-400`}>{plan.description}</p>
               </div>
 
-              <div className={dashboardCompact || compact ? "mt-3 min-h-[3.8rem]" : "mt-6 min-h-[5rem]"}>
+              <div className={dashboardCompact || compact ? "mt-2 min-h-[3.4rem]" : "mt-6 min-h-[5rem]"}>
                 {plan.id === "CUSTOM" ? (
                   <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>Let&apos;s talk</p>
                 ) : plan.id === "FREE" ? (
@@ -157,7 +157,7 @@ export default function PricingExperience({
                 )}
               </div>
 
-              <div className={`${dashboardCompact || compact ? "mt-3 gap-1.5 border-t pt-3" : "mt-5 gap-3 border-t pt-5"} flex flex-1 flex-col border-slate-100 dark:border-white/[0.08]`}>
+              <div className={`${dashboardCompact || compact ? "mt-2 gap-1 border-t pt-2" : "mt-5 gap-3 border-t pt-5"} flex flex-1 flex-col border-slate-100 dark:border-white/[0.08]`}>
                 {visibleFeatures.map((feature, featureIndex) => (
                   <div
                     key={feature}
@@ -178,7 +178,7 @@ export default function PricingExperience({
 
               <Link
                 href={href}
-                className={`${dashboardCompact || compact ? "mt-4 min-h-10 rounded-xl px-3 text-xs" : "mt-7 min-h-12 rounded-2xl px-5 text-sm"} inline-flex items-center justify-center font-black transition-all duration-200 ${
+                className={`${dashboardCompact || compact ? "mt-3 min-h-10 rounded-xl px-3 text-xs" : "mt-7 min-h-12 rounded-2xl px-5 text-sm"} inline-flex items-center justify-center font-black transition-all duration-200 ${
                   isCurrent
                     ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                     : plan.featured
