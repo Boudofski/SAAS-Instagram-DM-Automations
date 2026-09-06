@@ -36,7 +36,7 @@ export default function PaymentCard({ label, current }: Props) {
       <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">
         {label === "FREE" ? (
-          <span className="text-4xl font-black tracking-tight">Free forever</span>
+          <span className="text-4xl font-black tracking-tight">$0</span>
         ) : (
           <>
             <span className="text-4xl font-black tracking-tight">${plan.monthlyPrice}</span>

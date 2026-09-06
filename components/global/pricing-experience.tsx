@@ -138,7 +138,7 @@ export default function PricingExperience({
                 ) : plan.id === "FREE" ? (
                   <div>
                     <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>
-                      Free forever
+                      $0
                     </p>
                     <p className="mt-1 text-[11px] font-bold text-slate-400">No credit card required</p>
                   </div>

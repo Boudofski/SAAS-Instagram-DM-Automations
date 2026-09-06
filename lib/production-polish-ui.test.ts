@@ -31,12 +31,14 @@ describe("production polish UI contracts", () => {
     expect(sheet).toContain('<SheetTitle className="sr-only">');
   });
 
-  it("presents the free plan without a misleading zero-dollar billing interval", () => {
+  it("presents the free plan as zero dollars without a billing interval", () => {
     const pricing = source("components/global/pricing-experience.tsx");
     const paymentCard = source("components/global/billing/payment-card.tsx");
-    expect(pricing).toContain("Free forever");
+    expect(pricing).toContain("$0");
+    expect(pricing).not.toContain("Free forever");
     expect(pricing).toContain("No credit card required");
-    expect(paymentCard).toContain("Free forever");
+    expect(paymentCard).toContain("$0");
+    expect(paymentCard).not.toContain("Free forever");
     expect(paymentCard).not.toContain("$0/month");
   });
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { PLAN_CARDS, checkoutHref } from "@/lib/billing-plans";
 
 describe("Stripe checkout routing", () => {
-  it("presents Free as an interval-independent allowance, not a zero-dollar bill", () => {
+  it("presents Free as an interval-independent zero-dollar plan", () => {
     const free = PLAN_CARDS.find((plan) => plan.id === "FREE");
 
     expect(free?.description).toContain("keep using it free");
@@ -15,7 +15,8 @@ describe("Stripe checkout routing", () => {
       path.join(process.cwd(), "components/global/pricing-experience.tsx"),
       "utf8"
     );
-    expect(source).toContain("Free forever");
+    expect(source).toContain("$0");
+    expect(source).not.toContain("Free forever");
     expect(source).not.toContain('plan.id === "FREE" && <p');
   });
 
