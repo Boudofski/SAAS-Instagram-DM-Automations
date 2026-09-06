@@ -1,21 +1,20 @@
 "use client";
 
 import { saveMessageAutomation } from "@/actions/automation";
+import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
 import DeliveryRules from "@/components/automations/delivery-rules";
 import MessageAutomationPreview from "@/components/automations/message-automation-preview";
 import MessageResponseEditor, { type ResponseFormat } from "@/components/automations/message-response-editor";
-import WizardStepper, { type StepStatus } from "@/components/global/wizard-stepper";
 import {
   DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
   DEFAULT_FOLLOW_REQUEST_DM_TEXT,
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
-import { AtSign, Eye, Loader2, MessageCircleReply, SmilePlus, X } from "lucide-react";
+import { AtSign, Loader2, MessageCircleReply, SmilePlus, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Source = "STORY" | "DM";
 type StoryTrigger = "MENTION" | "REACTION" | "REPLY";
@@ -69,6 +68,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const stepsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!automation?.listener) return;
@@ -93,10 +93,13 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
     });
   }, [automation]);
 
-  const steps = ["Interaction", "Response", "Rules & name"].map((label, index) => ({
-    label,
-    status: (index + 1 < step ? "done" : index + 1 === step ? "active" : "todo") as StepStatus,
-  }));
+  useEffect(() => {
+    if (step <= 1) return;
+    window.requestAnimationFrame(() => {
+      const container = stepsScrollRef.current;
+      if (container) container.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+  }, [reduceMotion, step]);
 
   const ruleSummary = useMemo(() => {
     const trigger = source === "STORY"
@@ -133,28 +136,16 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:flex xl:h-[calc(100dvh-7.5rem)] xl:min-h-0 xl:flex-col xl:overflow-hidden xl:rounded-2xl xl:border xl:border-slate-200 xl:dark:border-white/10">
-      <header className="sticky top-0 z-40 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/90 sm:px-8">
-        <Link href={`/dashboard/${slug}/automation`} className="text-sm font-semibold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">← Automations</Link>
-        <div className="text-center"><p className="text-sm font-black">{automationId ? "Edit" : "New"} {source === "STORY" ? "story" : "DM"} automation</p><p className="text-xs text-slate-500 dark:text-slate-400">Phase {step} of 3</p></div>
-        <button type="button" onClick={() => setMobilePreviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-rf-purple dark:border-white/10 xl:hidden"><Eye className="h-4 w-4" /> Preview</button>
-        <span className="hidden text-xs font-bold text-slate-400 xl:inline">Official API</span>
-      </header>
-
-      <div className="mx-auto w-full max-w-[1480px] shrink-0 px-4 pt-6 sm:px-8 xl:pt-4"><WizardStepper steps={steps} /></div>
-
-      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-24 sm:px-8 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,720px)_minmax(360px,1fr)] xl:gap-6 xl:overflow-hidden xl:pb-4">
-        <div className="space-y-4 xl:flex xl:min-h-0 xl:flex-col xl:gap-3 xl:space-y-0">
-        {step > 1 ? <div className="grid shrink-0 gap-2 sm:grid-cols-2 xl:flex xl:min-w-0">
-          {Array.from({ length: step - 1 }, (_, index) => index + 1).map((completedStep) => (
-            <MessageCompletedStep key={completedStep} number={completedStep} title={steps[completedStep - 1].label} summary={messageStepSummary(completedStep, source, draft)} onEdit={() => setStep(completedStep)} />
-          ))}
-        </div> : null}
+    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:h-[calc(100dvh-2.5rem)] xl:min-h-[620px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
+      <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+        <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
+          <AutomationWizardToolbar backHref={`/dashboard/${slug}/automation`} currentStep={step} totalSteps={3} accountLabel={source === "STORY" ? "Instagram Stories" : "Instagram DMs"} onOpenPreview={() => setMobilePreviewOpen(true)} />
+          <div ref={stepsScrollRef} className="min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
         <AnimatePresence mode="wait">
-          <motion.main id="current-message-step" key={step} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduceMotion ? undefined : { opacity: 0, x: 10 }} transition={{ duration: 0.22 }} className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#0d1220] sm:p-8 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
+          <motion.main id="current-message-step" key={step} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduceMotion ? undefined : { opacity: 0, x: 10 }} transition={{ duration: 0.22 }} className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full">
             {step === 1 && (
               <section>
-                <PhaseHeader eyebrow="Phase 1" title={source === "STORY" ? "When someone interacts with your story" : "When someone sends you a DM"} description="Set the conditions that launch this automation." />
+                <PhaseHeader title={source === "STORY" ? "When someone interacts with your story" : "When someone sends you a DM"} description="Set the conditions that launch this automation." />
                 {source === "STORY" ? (
                   <div className="grid gap-3 md:grid-cols-3">
                     {STORY_TRIGGERS.map((item) => {
@@ -176,22 +167,22 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
             )}
 
             {step === 2 && (
-              <section><PhaseHeader eyebrow="Phase 2" title="Compose response message" description="Pick the format and craft the message sent to prospects." /><MessageResponseEditor format={draft.responseFormat} message={draft.message} quickReplies={draft.quickReplies} ctaLink={draft.ctaLink} ctaButtonTitle={draft.ctaButtonTitle} mediaUrl={draft.mediaUrl} mediaType={draft.mediaType} onChange={(next) => setDraft((current) => ({ ...current, ...next, responseFormat: next.format ?? current.responseFormat }))} /></section>
+              <section><PhaseHeader title="Compose response message" description="Pick the format and craft the message sent to prospects." /><MessageResponseEditor format={draft.responseFormat} message={draft.message} quickReplies={draft.quickReplies} ctaLink={draft.ctaLink} ctaButtonTitle={draft.ctaButtonTitle} mediaUrl={draft.mediaUrl} mediaType={draft.mediaType} onChange={(next) => setDraft((current) => ({ ...current, ...next, responseFormat: next.format ?? current.responseFormat }))} /></section>
             )}
 
             {step === 3 && (
-              <section><PhaseHeader eyebrow="Phase 3" title="Configure rules & name" description="Name the automation and decide whether the final message is reserved for followers." /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Automation name</label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" /><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Optional follow request</p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /><div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
+              <section><PhaseHeader title="Configure rules & name" description="Name the automation and decide whether the final message is reserved for followers." /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Automation name</label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" /><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Optional follow request</p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /><div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
             )}
 
             {error && <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">{error}</p>}
-            <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-6 dark:border-white/10">
-              <button type="button" onClick={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-600 dark:border-white/10 dark:text-slate-300">Back</button>
-              {step < 3 ? <button type="button" disabled={!canContinue} onClick={() => setStep(step + 1)} className="rounded-xl bg-slate-950 px-6 py-3 text-sm font-black text-white disabled:opacity-35 dark:bg-white dark:text-slate-950">Continue</button> : <button type="button" disabled={!canContinue || saving} onClick={() => void save()} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-7 py-3 text-sm font-black text-white shadow-lg disabled:opacity-40">{saving && <Loader2 className="h-4 w-4 animate-spin" />} Go live</button>}
-            </div>
           </motion.main>
         </AnimatePresence>
-        </div>
-        <aside className="hidden min-h-0 overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex xl:p-5">
+          </div>
+          <div className="hidden shrink-0 border-t border-slate-200 bg-white/95 px-4 py-3 dark:border-white/10 dark:bg-[#0d1220]/95 xl:block">
+            <MessageWizardActions step={step} canContinue={canContinue} saving={saving} onBack={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} onContinue={() => setStep(step + 1)} onSave={() => void save()} />
+          </div>
+        </section>
+        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
           <MessageAutomationPreview
             source={source}
             step={step}
@@ -211,24 +202,34 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       </div>
 
       {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-hidden bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
-          <div className="mx-auto flex h-full max-w-[460px] flex-col overflow-hidden rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="mb-3 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
+        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
+          <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
+            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
             <div className="min-h-0 flex-1"><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} responseFormat={draft.responseFormat} ctaButtonTitle={draft.ctaButtonTitle} mediaUrl={draft.mediaUrl} quickReplies={draft.quickReplies} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></div>
           </div>
         </div>
+      )}
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
+        <MessageWizardActions step={step} canContinue={canContinue} saving={saving} onBack={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} onContinue={() => setStep(step + 1)} onSave={() => void save()} />
+      </div>
+    </div>
+  );
+}
+
+function MessageWizardActions({ step, canContinue, saving, onBack, onContinue, onSave }: { step: number; canContinue: boolean; saving: boolean; onBack: () => void; onContinue: () => void; onSave: () => void }) {
+  return (
+    <div className="flex w-full items-center justify-between gap-3">
+      <button type="button" onClick={onBack} className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-600 dark:border-white/10 dark:text-slate-300">Back</button>
+      {step < 3 ? (
+        <button type="button" disabled={!canContinue} onClick={onContinue} className="rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white disabled:opacity-35 dark:bg-white dark:text-slate-950">Continue</button>
+      ) : (
+        <button type="button" disabled={!canContinue || saving} onClick={onSave} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-7 py-2.5 text-sm font-black text-white shadow-lg disabled:opacity-40">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Go live</button>
       )}
     </div>
   );
 }
 
-function PhaseHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) { return <div className="mb-7"><p className="text-xs font-black uppercase tracking-[0.2em] text-rf-purple">{eyebrow}</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{title}</h1><p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p></div>; }
+function PhaseHeader({ title, description }: { title: string; description: string }) { return <div className="mb-5"><h1 className="text-2xl font-black tracking-tight">{title}</h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p></div>; }
 function Choice({ selected, title, description, onClick }: { selected: boolean; title: string; description: string; onClick: () => void }) { return <button type="button" onClick={onClick} className={["rounded-2xl border p-5 text-left transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="block text-base font-black">{title}</span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">{description}</span></button>; }
 
-function MessageCompletedStep({ number, title, summary, onEdit }: { number: number; title: string; summary: string; onEdit: () => void }) { return <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/[0.07] xl:flex-1"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500 text-xs font-black text-white">✓</span><div className="min-w-0 flex-1"><p className="truncate text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Phase {number} · {title}</p><p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-300">{summary}</p></div><button type="button" onClick={onEdit} className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-black text-rf-blue hover:bg-white/70 dark:hover:bg-white/10">Edit</button></div>; }
-
-function messageStepSummary(step: number, source: Source, draft: Draft) {
-  if (step === 1) return source === "STORY" ? STORY_TRIGGERS.find((item) => item.value === draft.storyTriggerType)?.title || "Story interaction" : draft.triggerMode === "ANY_MESSAGE" ? "Any incoming DM" : draft.keywords.join(", ") || "Specific keyword";
-  if (step === 2) return `${draft.responseFormat === "LINK" ? "Link" : draft.responseFormat === "MEDIA" ? "Rich media" : "Text"} response · ${draft.message.slice(0, 60)}`;
-  return draft.name || "Rules and automation name";
-}

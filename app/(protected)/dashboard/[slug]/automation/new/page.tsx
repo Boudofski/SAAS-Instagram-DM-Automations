@@ -1,6 +1,7 @@
 "use client";
 
 import AutomationTypePicker from "@/components/automations/automation-type-picker";
+import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
 import DeliveryRules from "@/components/automations/delivery-rules";
 import InstagramPhonePreview from "@/components/automations/instagram-phone-preview";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
@@ -8,8 +9,6 @@ import MessageResponseEditor from "@/components/automations/message-response-edi
 import EmptyState from "@/components/global/empty-state";
 import KeywordInput from "@/components/global/keyword-input";
 import PostPicker from "@/components/global/post-picker";
-import WizardStepper from "@/components/global/wizard-stepper";
-import type { StepStatus } from "@/components/global/wizard-stepper";
 import { useQueryAutomationPosts, useQueryAutomations, useQueryUser, useQueryWebhookHealth } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
 import { isAppReviewMode } from "@/lib/app-review-mode";
@@ -27,23 +26,13 @@ import {
   isMessagingReviewMode,
 } from "@/lib/messaging-review-mode";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Eye, Loader2, MessageCircle, RefreshCw, Send, X } from "lucide-react";
-import Link from "next/link";
+import { Loader2, MessageCircle, RefreshCw, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
   params: { slug: string };
   searchParams?: { edit?: string; type?: string };
 };
-
-const STEP_LABELS = ["Choose post", "Trigger", "Actions", "Review & Activate"];
-
-const STEP_TIPS = [
-  "Choose Any post for the easiest launch, or select a specific post or Reel from this Instagram account.",
-  "Use a clear keyword so commenters intentionally trigger the automation.",
-  "Choose what AP3K should do: reply to the comment, send a DM, or both.",
-  "Review the full flow before activating and testing from another Instagram account.",
-];
 
 export default function WizardPage({ params, searchParams }: Props) {
   const { slug } = params;
@@ -59,16 +48,13 @@ export default function WizardPage({ params, searchParams }: Props) {
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const initializedMessagingReviewDraft = useRef(false);
+  const stepsScrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
   const postList: any[] = Array.isArray(posts?.data?.data) ? posts.data.data : [];
   const postsError = posts?.data?.error;
   const hasInstagramConnection = Boolean(instagram);
-  const steps = STEP_LABELS.map((label, i) => ({
-    label,
-    status: (i + 1 < step ? "done" : i + 1 === step ? "active" : "todo") as StepStatus,
-  }));
   const commentReplies = [data.publicReply, data.publicReply2, data.publicReply3].filter((reply) => reply.trim());
   const messagingCapabilityPending = data.sendPrivateDm && (
     webhookHealth?.data?.lastFailure?.errorMessage?.includes("dm_capability_missing") ||
@@ -150,6 +136,14 @@ export default function WizardPage({ params, searchParams }: Props) {
     setLoadedEdit(true);
   }, [editId, editing, loadedEdit, messagingReviewMode, commentReplyOnlyReviewMode, update]);
 
+  useEffect(() => {
+    if (step <= 1) return;
+    window.requestAnimationFrame(() => {
+      const container = stepsScrollRef.current;
+      if (container) container.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+  }, [reduceMotion, step]);
+
   const requestedType = searchParams?.type?.toLowerCase();
   const editingSource = (editing as any)?.data?.source;
   const selectedType = requestedType || (editingSource === "STORY" ? "story" : editingSource === "DM" ? "dm" : editId ? "comment" : undefined);
@@ -174,30 +168,17 @@ export default function WizardPage({ params, searchParams }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-slate-50 xl:mt-3 xl:flex xl:h-[calc(100dvh-7.5rem)] xl:min-h-0 xl:flex-col xl:overflow-hidden xl:rounded-2xl xl:border xl:border-slate-200 xl:dark:border-white/10">
-      <div className="sticky top-0 z-50 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-8">
-        <Link href={`/dashboard/${slug}/automation`} className="text-sm text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
-          Back
-        </Link>
-        <div className="text-center">
-          <p className="text-sm font-bold text-slate-950 dark:text-white">{editId ? "Edit Automation" : "New Automation"}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Instagram comment automation</p>
-        </div>
-        <button type="button" onClick={() => setMobilePreviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-rf-purple dark:border-white/10 xl:hidden"><Eye className="h-4 w-4" /> Preview</button>
-        <span className="hidden w-16 xl:block" />
-      </div>
-
-      <div className="mx-auto w-full max-w-[1480px] shrink-0 px-4 pt-6 sm:px-8 xl:pt-4">
-        <WizardStepper steps={steps} />
-      </div>
-
-      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,720px)_minmax(360px,1fr)] xl:gap-6 xl:overflow-hidden xl:pb-4">
-        <div className="space-y-4 xl:flex xl:min-h-0 xl:flex-col xl:gap-3 xl:space-y-0">
-        {step > 1 ? <div className="grid shrink-0 gap-2 sm:grid-cols-2 xl:flex xl:min-w-0">
-          {Array.from({ length: step - 1 }, (_, index) => index + 1).map((completedStep) => (
-            <CompletedStep key={completedStep} number={completedStep} title={STEP_LABELS[completedStep - 1]} summary={commentStepSummary(completedStep, data)} onEdit={() => goTo(completedStep as 1 | 2 | 3 | 4)} />
-          ))}
-        </div> : null}
+    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-slate-50 xl:mt-3 xl:h-[calc(100dvh-2.5rem)] xl:min-h-[620px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
+      <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+        <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
+          <AutomationWizardToolbar
+            backHref={`/dashboard/${slug}/automation`}
+            currentStep={step}
+            totalSteps={4}
+            accountLabel={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : null}
+            onOpenPreview={() => setMobilePreviewOpen(true)}
+          />
+          <div ref={stepsScrollRef} className="min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
         <AnimatePresence mode="wait">
         <motion.main
           id="current-automation-step"
@@ -206,21 +187,16 @@ export default function WizardPage({ params, searchParams }: Props) {
           animate={{ opacity: 1, x: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, x: 10 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-[#0d1220] sm:p-7 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain"
+          className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full"
         >
           {step === 1 && (
-            <StepPanel eyebrow="Step 1 of 4" title="Name it and choose a post or Reel" description="Choose where AP3K should listen for comments. Any post is the fastest option; specific post mode limits the automation to one post or Reel.">
-              {instagram?.instagramUsername && (
-                <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
-                  Current account: @{instagram.instagramUsername}
-                </p>
-              )}
+            <StepPanel title="Choose a post or Reel" description="Select where AP3K should listen for comments.">
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Automation name</label>
               <input
                 value={data.campaignName}
                 onChange={(event) => update({ campaignName: event.target.value })}
                 placeholder="Example: AI guide automation"
-                className="ap3k-input mb-6 w-full rounded-xl px-4 py-3 text-sm"
+                className="ap3k-input mb-5 w-full rounded-xl px-4 py-3 text-sm"
               />
 
               {postsLoading ? (
@@ -228,24 +204,24 @@ export default function WizardPage({ params, searchParams }: Props) {
               ) : !hasInstagramConnection ? (
                 <EmptyState icon="🔗" title="Connect Instagram first" description="AP3K needs an official Instagram connection before it can listen for comments." ctaLabel="Connect Instagram" ctaHref={`/dashboard/${slug}/integrations`} />
               ) : (
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-4">
                   <button
                     type="button"
                     onClick={() => update({ post: { postid: "ANY", caption: "Any post - triggers on all Instagram posts", media: "", mediaType: "IMAGE" } })}
                     className={[
-                      "flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all",
+                      "flex w-full items-center gap-3 rounded-2xl border-2 p-3.5 text-left transition-all",
                       data.post?.postid === "ANY" ? "border-rf-blue bg-rf-blue/10" : "border-slate-200 bg-white hover:border-rf-blue/40 dark:border-white/10 dark:bg-white/[0.04]",
                     ].join(" ")}
                   >
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-2xl">🌐</span>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-xl">🌐</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-bold text-slate-950 dark:text-white">Any post</span>
-                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Recommended for launch. AP3K checks comments on all posts and Reels from the connected account.</span>
+                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Listen on every post and Reel.</span>
                     </span>
                     {data.post?.postid === "ANY" && <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-bold text-white">✓</span>}
                   </button>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Choose a specific post or Reel</p>
                       <button
@@ -255,7 +231,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-70 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
                       >
                         <RefreshCw className={postsFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
-                        Refresh posts
+                        Refresh
                       </button>
                     </div>
                     {postList.length > 0 ? (
@@ -285,7 +261,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 2 && (
-            <StepPanel eyebrow="Step 2 of 4" title="What comment starts this automation?" description="Choose a keyword trigger or run on every comment. If you want to send a DM, a clear keyword like guide or link is best.">
+            <StepPanel title="What comment starts this automation?" description="Trigger on a keyword or on every comment.">
               <KeywordInput
                 triggerMode={data.triggerMode}
                 keywords={data.keywords}
@@ -297,7 +273,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 3 && (
-            <StepPanel eyebrow="Step 3 of 4" title="What should AP3K do?" description="Choose one or both actions. AP3K can reply under the comment, send a DM to the commenter, or do both.">
+            <StepPanel title="What should AP3K do?" description="Reply publicly, send a DM, or do both.">
               <div className="space-y-5">
                 <section className={[
                   "overflow-hidden rounded-2xl border transition-colors",
@@ -459,7 +435,7 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
 
           {step === 4 && (
-            <StepPanel eyebrow="Step 4 of 4" title="Review & Activate" description="Confirm the account, post, trigger, actions, and status before saving.">
+            <StepPanel title="Review & Activate" description="Check the flow, then save or activate.">
               <div className="mb-6 flex flex-col gap-2">
                 {[
                   { label: "Name", value: data.campaignName || "Untitled automation", step: 1 as const },
@@ -508,9 +484,13 @@ export default function WizardPage({ params, searchParams }: Props) {
           )}
         </motion.main>
         </AnimatePresence>
-        </div>
+          </div>
+          <div className="hidden shrink-0 border-t border-slate-200 bg-white/95 px-4 py-3 dark:border-white/10 dark:bg-[#0d1220]/95 xl:block">
+            <WizardActions step={step} editId={editId} isSubmitting={isSubmitting} canAdvance={canAdvance()} onBack={back} onNext={next} onSaveDraft={() => { update({ active: false }); void activate(false); }} onActivate={() => { update({ active: true }); void activate(true); }} />
+          </div>
+        </section>
 
-        <aside className="hidden min-h-0 overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex xl:p-5">
+        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
           <InstagramPhonePreview
             data={data}
             step={step}
@@ -521,62 +501,73 @@ export default function WizardPage({ params, searchParams }: Props) {
       </div>
 
       {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-hidden bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
-          <div className="mx-auto flex h-full max-w-[460px] flex-col overflow-hidden rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="mb-3 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
+        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
+          <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
+            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
             <div className="min-h-0 flex-1"><InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></div>
           </div>
         </div>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-50 flex shrink-0 items-center justify-between border-t border-slate-200 bg-white/95 px-4 py-3.5 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-10 xl:static">
-        <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{STEP_TIPS[step - 1]}</p>
-        <div className="ml-auto flex items-center gap-3">
-          {step > 1 && (
-            <button type="button" onClick={back} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:border-rf-subtle hover:text-slate-950 disabled:opacity-50 dark:text-slate-400 dark:hover:text-white">
-              Back
-            </button>
-          )}
-          {step < 4 ? (
-            <button type="button" onClick={next} disabled={!canAdvance()} className="ap3k-gradient-button px-7 py-2.5 text-sm disabled:opacity-40">
-              Next
-            </button>
-          ) : (
-            <>
-              <button type="button" onClick={() => { update({ active: false }); void activate(false); }} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:text-slate-300">
-                Save as draft
-              </button>
-              <button type="button" onClick={() => { update({ active: true }); void activate(true); }} disabled={isSubmitting} className="ap3k-gradient-button flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm disabled:opacity-50">
-                {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : editId ? "Update automation" : "Activate automation"}
-              </button>
-            </>
-          )}
-        </div>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
+        <WizardActions step={step} editId={editId} isSubmitting={isSubmitting} canAdvance={canAdvance()} onBack={back} onNext={next} onSaveDraft={() => { update({ active: false }); void activate(false); }} onActivate={() => { update({ active: true }); void activate(true); }} />
       </div>
     </div>
   );
 }
 
-function StepPanel({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children: React.ReactNode }) {
+function WizardActions({
+  step,
+  editId,
+  isSubmitting,
+  canAdvance,
+  onBack,
+  onNext,
+  onSaveDraft,
+  onActivate,
+}: {
+  step: 1 | 2 | 3 | 4;
+  editId?: string;
+  isSubmitting: boolean;
+  canAdvance: boolean;
+  onBack: () => void;
+  onNext: () => void;
+  onSaveDraft: () => void;
+  onActivate: () => void;
+}) {
   return (
-    <div>
-      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-rf-blue">{eyebrow}</p>
-      <h2 className="mb-2 text-2xl font-extrabold tracking-tight">{title}</h2>
-      <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">{description}</p>
-      {children}
+    <div className="flex w-full items-center justify-end gap-2 sm:gap-3">
+      {step > 1 ? (
+        <button type="button" onClick={onBack} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:border-rf-subtle hover:text-slate-950 disabled:opacity-50 dark:border-white/10 dark:text-slate-400 dark:hover:text-white sm:px-6">
+          Back
+        </button>
+      ) : null}
+      {step < 4 ? (
+        <button type="button" onClick={onNext} disabled={!canAdvance} className="ap3k-gradient-button min-w-24 px-7 py-2.5 text-sm disabled:opacity-40">
+          Next
+        </button>
+      ) : (
+        <>
+          <button type="button" onClick={onSaveDraft} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 sm:px-6">
+            <span className="sm:hidden">Draft</span><span className="hidden sm:inline">Save as draft</span>
+          </button>
+          <button type="button" onClick={onActivate} disabled={isSubmitting} className="ap3k-gradient-button flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm disabled:opacity-50 sm:px-8">
+            {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><span className="sm:hidden">{editId ? "Update" : "Activate"}</span><span className="hidden sm:inline">{editId ? "Update automation" : "Activate automation"}</span></>}
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
-function CompletedStep({ number, title, summary, onEdit }: { number: number; title: string; summary: string; onEdit: () => void }) {
-  return <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/[0.07] xl:flex-1"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500 text-xs font-black text-white">✓</span><div className="min-w-0 flex-1"><p className="truncate text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Step {number} · {title}</p><p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-300">{summary}</p></div><button type="button" onClick={onEdit} className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-black text-rf-blue hover:bg-white/70 dark:hover:bg-white/10">Edit</button></div>;
-}
-
-function commentStepSummary(step: number, data: any) {
-  if (step === 1) return data.post?.postid === "ANY" ? "Any post or Reel" : data.post?.caption || "Specific Instagram post";
-  if (step === 2) return data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.join(", ") || "Specific keyword";
-  if (step === 3) return [data.publicReplyEnabled ? "Comment reply" : null, data.sendPrivateDm ? "DM" : null].filter(Boolean).join(" + ") || "Choose an action";
-  return data.active ? "Ready to activate" : "Saved as draft";
+function StepPanel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="mb-1.5 text-2xl font-extrabold tracking-tight">{title}</h2>
+      <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+      {children}
+    </div>
+  );
 }
 
 function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean }) {
@@ -586,3 +577,4 @@ function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean 
     </span>
   );
 }
+

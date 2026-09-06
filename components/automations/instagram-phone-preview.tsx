@@ -239,3 +239,4 @@ function Avatar({ src, name, size }: { src?: string | null; name: string; size: 
     </span>
   );
 }
+
