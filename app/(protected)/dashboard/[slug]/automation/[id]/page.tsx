@@ -141,15 +141,20 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
         </section>
 
-        <section className="ap3k-card order-1 flex min-h-[620px] animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col overflow-hidden rounded-3xl p-3 xl:order-2 xl:min-h-0">
-          <div className="flex shrink-0 items-center justify-between px-1 pb-2">
-            <div><p className="ap3k-kicker">Instagram preview</p><h2 className="mt-0.5 text-sm font-black">Live DM flow</h2></div>
-            <span className="ap3k-badge ap3k-badge-slate">{linkButtons.length} link{linkButtons.length === 1 ? "" : "s"}</span>
+        <section className="ap3k-card order-1 flex min-h-[680px] animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col overflow-hidden rounded-3xl p-3 xl:order-2 xl:min-h-0">
+          <div className="shrink-0 px-1 pb-2">
+            <p className="ap3k-kicker">Instagram preview</p>
+            <h2 className="mt-0.5 text-sm font-black">{isMessageAutomation ? "DM preview" : "Post · Comments · DM"}</h2>
           </div>
           <div className="min-h-0 flex-1">
             <AutomationDetailPhonePreview
               username={connectedIntegration?.instagramUsername}
               profilePictureUrl={connectedIntegration?.profilePictureUrl}
+              isCommentAutomation={!isMessageAutomation}
+              post={post ? { media: post.media, caption: post.caption, postid: post.postid } : null}
+              triggerComment={isAnyComment ? "This looks amazing!" : keywords[0] || "guide"}
+              publicReplyEnabled={hasCommentReply}
+              publicReply={commentReplies[0] || "Thanks! Please check your DMs."}
               sendPrivateDm={hasDm}
               showOpeningSequence={!isMessageAutomation}
               openingDmText={openingDmText}
