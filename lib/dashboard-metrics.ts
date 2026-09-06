@@ -122,13 +122,7 @@ export function getPeriodRange(period: DashboardPeriod, now = new Date()): Dashb
     currentEnd: new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth() + 1, 1)),
     previousStart,
     previousEnd: currentStart,
-    label: currentStart.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" }) +
-      "–" +
-      new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth() + 1, 0)).toLocaleDateString("en", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
+    label: `${currentStart.toLocaleDateString("en", { month: "short", day: "numeric" })}–${new Date(Date.UTC(currentEnd.getUTCFullYear(), currentEnd.getUTCMonth() + 1, 0)).toLocaleDateString("en", { day: "numeric", year: "numeric" })}`,
   };
 }
 

@@ -349,6 +349,55 @@ describe("Meta webhook route security", () => {
     }));
   });
 
+  it("persists inbound Instagram image attachments for the inbox", async () => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    mockFindIntegrationForWebhookAccount.mockResolvedValue({
+      userId: "user-1",
+      token: "token-1",
+      instagramId: "ig-business-1",
+      pageId: "ig-business-1",
+      instagramUsername: "ap3k",
+      status: "CONNECTED",
+      reconnectRequired: false,
+    });
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    mockGetInstagramRecipientProfile.mockResolvedValue({
+      username: "prospect",
+      name: "Prospect",
+      profilePictureUrl: "https://scontent.fbcdn.net/avatar.jpg",
+    });
+
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{
+        id: "ig-business-1",
+        messaging: [{
+          sender: { id: "recipient-1" },
+          recipient: { id: "ig-business-1" },
+          timestamp: Date.now(),
+          message: {
+            mid: "mid.image",
+            attachments: [{ type: "image", payload: { url: "https://scontent.cdninstagram.com/inbound.jpg" } }],
+          },
+        }],
+      }],
+    });
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
+      method: "POST",
+      headers: { "x-hub-signature-256": "sha256=good" },
+      body,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mockUpsertInboundInboxMessage).toHaveBeenCalledWith(expect.objectContaining({
+      userId: "user-1",
+      senderIgId: "recipient-1",
+      content: "Sent an image",
+      messageType: "IMAGE",
+      mediaUrl: "https://scontent.cdninstagram.com/inbound.jpg",
+    }));
+  });
+
   it("rechecks a follow-button postback instead of treating the gate prompt as a duplicate", async () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
     const integration = {

@@ -278,6 +278,7 @@ model InboxMessage {
   direction      String
   content        String
   messageType    String       @default("TEXT")
+  mediaUrl       String?
   status         String       @default("RECEIVED")
   createdAt      DateTime     @default(now())
 

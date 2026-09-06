@@ -594,6 +594,7 @@ export const upsertInboundInboxMessage = async (data: {
   username?: string;
   profilePictureUrl?: string;
   messageType?: string;
+  mediaUrl?: string;
   occurredAt?: Date;
 }) => {
   const occurredAt = data.occurredAt ?? new Date();
@@ -636,6 +637,7 @@ export const upsertInboundInboxMessage = async (data: {
         direction: "INBOUND",
         content: data.content,
         messageType: data.messageType ?? "TEXT",
+        mediaUrl: data.mediaUrl,
         status: "RECEIVED",
         createdAt: occurredAt,
       },

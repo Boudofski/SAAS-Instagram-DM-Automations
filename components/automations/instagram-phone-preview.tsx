@@ -151,9 +151,9 @@ function PostPreview({ data, handle, profilePictureUrl, showComments }: { data: 
           <div className="flex items-center border-b border-white/10 px-5 py-4">
             <p className="flex-1 text-center text-sm font-black">Comments</p><Send className="h-5 w-5" />
           </div>
-          <div className="space-y-5 p-5">
+          <div className="space-y-4 p-5">
             <Comment avatar="U" username="username" text={sampleComment} />
-            {data.publicReplyEnabled ? <Comment profilePictureUrl={profilePictureUrl} avatar={handle} username={handle} text={reply} /> : null}
+            {data.publicReplyEnabled ? <div className="ml-8 border-l border-white/10 pl-3"><Comment profilePictureUrl={profilePictureUrl} avatar={handle} username={handle} text={reply} /></div> : null}
           </div>
           <div className="mt-auto px-5 pb-3">
             <div className="mb-4 flex justify-between text-lg"><span>❤️</span><span>🙌</span><span>🔥</span><span>👏</span><span>🥹</span><span>😍</span><span>😂</span></div>
@@ -175,7 +175,7 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
         <Phone className="h-5 w-5" /><Video className="h-5 w-5" />
       </div>
 
-      <div className="flex-1 space-y-3 overflow-hidden px-4 py-5">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-5">
         {!data.sendPrivateDm ? (
           <div className="grid h-full place-items-center px-8 text-center">
             <div><MessageCircle className="mx-auto h-8 w-8 text-white/30" /><p className="mt-3 text-sm font-black">Direct message is off</p><p className="mt-1 text-xs leading-5 text-white/45">Enable “Send a DM” to preview the private conversation.</p></div>
@@ -219,7 +219,7 @@ function IncomingBubble({ avatar, text, button, media }: { avatar: React.ReactNo
       {avatar}
       <div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]">
         {media ? <div className="grid h-24 place-items-center bg-white/5 text-white/35"><ImageIcon className="h-6 w-6" /></div> : null}
-        <p dir="auto" className="whitespace-pre-wrap px-3 py-2.5">{text}</p>
+        <p dir="auto" className="whitespace-pre-wrap break-words px-3 py-2.5">{text}</p>
         {button ? <div className="border-t border-white/10 px-3 py-2 text-center font-black text-white">{button}</div> : null}
       </div>
     </div>

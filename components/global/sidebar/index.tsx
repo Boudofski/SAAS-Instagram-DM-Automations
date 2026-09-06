@@ -29,9 +29,9 @@ export default function Sidebar({ slug }: Props) {
 
   return (
     <aside className={cn(
-      "fixed bottom-0 left-0 top-0 z-40 hidden flex-col border-r border-slate-200 bg-white/95 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl transition-[width] duration-300 dark:border-white/10 dark:bg-[#0b1020]/95 dark:text-slate-50 lg:flex",
+      "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-y-auto overscroll-contain border-r border-slate-200 bg-white/95 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl transition-[width] duration-300 dark:border-white/10 dark:bg-[#0b1020]/95 dark:text-slate-50 lg:flex",
       expanded ? "w-[260px]" : "w-[84px]"
-    )}>
+    )} data-expanded={expanded ? "true" : "false"}>
       <div className={cn("border-b border-slate-200 py-5 dark:border-white/10", expanded ? "px-5" : "px-3")}>
         <div className={cn("flex items-center", expanded ? "justify-between" : "justify-center")}>
           {expanded ? <AP3KLogo className="text-sm text-slate-950 dark:text-white" /> : <AP3KLogo showText={false} markClassName="h-11 w-11 rounded-2xl" />}

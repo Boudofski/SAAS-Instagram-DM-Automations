@@ -103,7 +103,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
             : "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-pink-50 dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-4">
               <InstagramAvatar src={displayProfilePictureUrl} username={displayInstagramUsername} label={instagram.pageName} size="lg" />
               <div className="min-w-0">
@@ -122,7 +122,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <span className="ap3k-badge ap3k-badge-slate">{planLabel}</span>
               {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green">Fresh</span>}
               {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate">{profileSnapshot.followersCount.toLocaleString()} followers</span>}
@@ -134,8 +134,13 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="flex animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+      <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
+        <div className="mb-3">
+          <p className="ap3k-kicker">Account analytics</p>
+          <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Instagram performance</h2>
+        </div>
+        <div className="mb-3 flex animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
           {[
             ["24h", "Last 24h"],
             ["7d", "Last 7d"],
@@ -146,7 +151,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               key={key}
               href={`/dashboard/${params.slug}?period=${key}`}
               className={[
-                "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black transition-all duration-200",
+                "whitespace-nowrap rounded-xl px-2 py-2 text-center text-[11px] font-black transition-all duration-200 sm:px-3 sm:py-1.5 sm:text-xs",
                 period === key
                   ? "bg-rf-pink/10 text-rf-pink shadow-sm"
                   : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
@@ -155,19 +160,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               {label}
             </Link>
           ))}
-        </div>
-        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{dashboardStats?.period.label ?? "This month"}</p>
-      </div>
-
-      <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
-        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="ap3k-kicker">Account analytics</p>
-            <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Instagram performance</h2>
           </div>
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{dashboardStats?.period.label ?? "This month"}</p>
         </div>
-        <div className="grid grid-flow-col auto-cols-[minmax(140px,1fr)] overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] xl:grid-flow-row xl:grid-cols-5">
+        <div className="grid grid-cols-2 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] sm:grid-cols-3 xl:grid-cols-5">
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}
@@ -219,10 +215,10 @@ function AccountStatCard({ label, value, change, subtitle }: { label: string; va
         : "text-slate-500 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-r border-slate-200 px-4 py-5 transition duration-200 last:border-r-0 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-6">
+    <div className="min-w-0 border-b border-r border-slate-200 px-3 py-4 transition duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-2">
-        <p className="text-2xl font-black leading-none tracking-tight text-slate-950 dark:text-white">{value}</p>
+        <p className="truncate text-xl font-black leading-none tracking-tight text-slate-950 dark:text-white sm:text-2xl">{value}</p>
         <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}>{change?.label ?? "—"}</span>
       </div>
       <p className="mt-2 text-[11px] leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>

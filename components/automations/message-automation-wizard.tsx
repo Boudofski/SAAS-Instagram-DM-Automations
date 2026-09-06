@@ -15,7 +15,7 @@ import { AtSign, Eye, Loader2, MessageCircleReply, SmilePlus, X } from "lucide-r
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Source = "STORY" | "DM";
 type StoryTrigger = "MENTION" | "REACTION" | "REPLY";
@@ -69,6 +69,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const stepsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!automation?.listener) return;
@@ -95,7 +96,11 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
 
   useEffect(() => {
     if (step <= 1) return;
-    window.requestAnimationFrame(() => document.getElementById("current-message-step")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
+    window.requestAnimationFrame(() => {
+      const container = stepsScrollRef.current;
+      const panel = document.getElementById("current-message-step");
+      if (container && panel) container.scrollTo({ top: Math.max(0, panel.offsetTop - 16), behavior: reduceMotion ? "auto" : "smooth" });
+    });
   }, [reduceMotion, step]);
 
   const steps = ["Interaction", "Response", "Rules & name"].map((label, index) => ({
@@ -138,18 +143,18 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-white">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/90 sm:px-8">
+    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:flex xl:h-[calc(100dvh-7.5rem)] xl:min-h-0 xl:flex-col xl:overflow-hidden xl:rounded-2xl xl:border xl:border-slate-200 xl:dark:border-white/10">
+      <header className="sticky top-0 z-40 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/90 sm:px-8">
         <Link href={`/dashboard/${slug}/automation`} className="text-sm font-semibold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">← Automations</Link>
         <div className="text-center"><p className="text-sm font-black">{automationId ? "Edit" : "New"} {source === "STORY" ? "story" : "DM"} automation</p><p className="text-xs text-slate-500 dark:text-slate-400">Phase {step} of 3</p></div>
         <button type="button" onClick={() => setMobilePreviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-rf-purple dark:border-white/10 xl:hidden"><Eye className="h-4 w-4" /> Preview</button>
         <span className="hidden text-xs font-bold text-slate-400 xl:inline">Official API</span>
       </header>
 
-      <div className="mx-auto max-w-[1480px] px-4 pt-6 sm:px-8"><WizardStepper steps={steps} /></div>
+      <div className="mx-auto w-full max-w-[1480px] shrink-0 px-4 pt-6 sm:px-8 xl:pt-4"><WizardStepper steps={steps} /></div>
 
-      <div className="mx-auto grid max-w-[1480px] gap-6 px-4 py-6 sm:px-8 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-10">
-        <div className="space-y-4">
+      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 sm:px-8 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-6 xl:overflow-hidden xl:pb-4">
+        <div ref={stepsScrollRef} className="space-y-4 xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pr-2">
         {Array.from({ length: Math.max(0, step - 1) }, (_, index) => index + 1).map((completedStep) => (
           <MessageCompletedStep key={completedStep} number={completedStep} title={steps[completedStep - 1].label} summary={messageStepSummary(completedStep, source, draft)} onEdit={() => setStep(completedStep)} />
         ))}
@@ -194,7 +199,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
           </motion.main>
         </AnimatePresence>
         </div>
-        <aside className="hidden h-fit rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:sticky xl:top-24 xl:block xl:p-6">
+        <aside className="hidden min-h-0 overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:block xl:p-5">
           <MessageAutomationPreview
             source={source}
             step={step}

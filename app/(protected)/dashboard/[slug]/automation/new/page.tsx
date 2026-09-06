@@ -56,10 +56,10 @@ export default function WizardPage({ params, searchParams }: Props) {
   const { data: webhookHealth } = useQueryWebhookHealth();
   const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId);
-  const [manualMedia, setManualMedia] = useState("");
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const initializedMessagingReviewDraft = useRef(false);
+  const stepsScrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
@@ -153,7 +153,11 @@ export default function WizardPage({ params, searchParams }: Props) {
 
   useEffect(() => {
     if (step <= 1) return;
-    window.requestAnimationFrame(() => document.getElementById("current-automation-step")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
+    window.requestAnimationFrame(() => {
+      const container = stepsScrollRef.current;
+      const panel = document.getElementById("current-automation-step");
+      if (container && panel) container.scrollTo({ top: Math.max(0, panel.offsetTop - 16), behavior: reduceMotion ? "auto" : "smooth" });
+    });
   }, [reduceMotion, step]);
 
   const requestedType = searchParams?.type?.toLowerCase();
@@ -179,22 +183,9 @@ export default function WizardPage({ params, searchParams }: Props) {
     );
   }
 
-  const selectManualMedia = () => {
-    const value = manualMedia.trim();
-    if (!value) return;
-    update({
-      post: {
-        postid: value,
-        caption: value.startsWith("http") ? "Manual Instagram post URL" : `Manual media ID ${value}`,
-        media: value,
-        mediaType: "IMAGE",
-      },
-    });
-  };
-
   return (
-    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-slate-50">
-      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-8">
+    <div className="min-h-screen bg-[#f5f6fa] text-slate-950 dark:bg-[#050816] dark:text-slate-50 xl:mt-3 xl:flex xl:h-[calc(100dvh-7.5rem)] xl:min-h-0 xl:flex-col xl:overflow-hidden xl:rounded-2xl xl:border xl:border-slate-200 xl:dark:border-white/10">
+      <div className="sticky top-0 z-50 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-8">
         <Link href={`/dashboard/${slug}/automation`} className="text-sm text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
           Back
         </Link>
@@ -206,12 +197,12 @@ export default function WizardPage({ params, searchParams }: Props) {
         <span className="hidden w-16 xl:block" />
       </div>
 
-      <div className="mx-auto w-full max-w-[1480px] px-4 pt-6 sm:px-8">
+      <div className="mx-auto w-full max-w-[1480px] shrink-0 px-4 pt-6 sm:px-8 xl:pt-4">
         <WizardStepper steps={steps} />
       </div>
 
-      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-10">
-        <div className="space-y-4">
+      <div className="mx-auto grid w-full max-w-[1480px] gap-6 px-4 py-6 pb-28 sm:px-8 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,720px)_minmax(390px,1fr)] xl:gap-6 xl:overflow-hidden xl:pb-4">
+        <div ref={stepsScrollRef} className="space-y-4 xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pr-2">
         {Array.from({ length: Math.max(0, step - 1) }, (_, index) => index + 1).map((completedStep) => (
           <CompletedStep key={completedStep} number={completedStep} title={STEP_LABELS[completedStep - 1]} summary={commentStepSummary(completedStep, data)} onEdit={() => goTo(completedStep as 1 | 2 | 3 | 4)} />
         ))}
@@ -296,7 +287,6 @@ export default function WizardPage({ params, searchParams }: Props) {
                   </div>
 
                   {postsError && <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">{postsError}</p>}
-                  <ManualMediaFallback value={manualMedia} selected={data.post?.postid !== "ANY" ? data.post?.postid ?? null : null} onChange={setManualMedia} onSelect={selectManualMedia} compact={postList.length > 0} />
                 </div>
               )}
             </StepPanel>
@@ -528,7 +518,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         </AnimatePresence>
         </div>
 
-        <aside className="hidden h-fit rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:sticky xl:top-24 xl:block xl:p-6">
+        <aside className="hidden min-h-0 overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:block xl:p-5">
           <InstagramPhonePreview
             data={data}
             step={step}
@@ -547,7 +537,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 py-3.5 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-10">
+      <div className="fixed inset-x-0 bottom-0 z-50 flex shrink-0 items-center justify-between border-t border-slate-200 bg-white/95 px-4 py-3.5 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 sm:px-10 xl:static">
         <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{STEP_TIPS[step - 1]}</p>
         <div className="ml-auto flex items-center gap-3">
           {step > 1 && (
@@ -602,19 +592,5 @@ function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean 
     <span className={["relative h-6 w-11 shrink-0 rounded-full transition-colors", enabled ? (green ? "bg-rf-green" : "bg-rf-blue") : "bg-slate-300"].join(" ")}>
       <span className={["absolute top-1 h-4 w-4 rounded-full bg-white transition-all", enabled ? "left-6" : "left-1"].join(" ")} />
     </span>
-  );
-}
-
-function ManualMediaFallback({ value, selected, onChange, onSelect, compact }: { value: string; selected: string | null; onChange: (value: string) => void; onSelect: () => void; compact?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-white/[0.04]">
-      <h3 className="text-sm font-black text-slate-950 dark:text-white">{compact ? "Can't find a post? Paste media ID or URL manually." : "No posts found. Add a media ID manually."}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Use media ID from the currently connected Instagram account only. A post URL can be saved as a reference, but webhook matching is most reliable with the Instagram media ID.</p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Instagram media ID or post URL" className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm" />
-        <button type="button" onClick={onSelect} disabled={!value.trim()} className="ap3k-gradient-button px-5 py-3 text-sm disabled:opacity-40">Use this post</button>
-      </div>
-      {selected && selected === value.trim() && <p className="mt-3 text-xs font-semibold text-rf-green">Manual post selected.</p>}
-    </div>
   );
 }

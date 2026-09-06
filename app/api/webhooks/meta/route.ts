@@ -1385,7 +1385,21 @@ async function processEntry(
     const actionPayload = parsed.ok
       ? parsed.data.quickReplyPayload ?? parsed.data.postback?.payload
       : undefined;
-    const inboundContent = dmText || (storyInteraction === "MENTION" ? "Mentioned you in a story" : storyInteraction === "REACTION" ? "Reacted to your story" : storyInteraction === "REPLY" ? "Replied to your story" : parsed.ok && parsed.data.postback?.title ? parsed.data.postback.title : "Instagram message");
+    const inboundAttachment = parsed.ok ? parsed.data.attachments.find((attachment) => attachment.url) : undefined;
+    const inboundMediaUrl = inboundAttachment?.url ?? (parsed.ok ? parsed.data.replyToStory?.url : undefined);
+    const inboundMessageType = storyInteraction
+      ? `STORY_${storyInteraction}`
+      : actionPayload
+        ? "QUICK_REPLY"
+        : inboundAttachment?.type?.toUpperCase() ?? "TEXT";
+    const attachmentLabel = inboundAttachment?.type === "video"
+      ? "Sent a video"
+      : inboundAttachment?.type === "reel"
+        ? "Shared a Reel"
+        : inboundAttachment
+          ? "Sent an image"
+          : "Instagram message";
+    const inboundContent = dmText || (storyInteraction === "MENTION" ? "Mentioned you in a story" : storyInteraction === "REACTION" ? "Reacted to your story" : storyInteraction === "REPLY" ? "Replied to your story" : parsed.ok && parsed.data.postback?.title ? parsed.data.postback.title : attachmentLabel);
 
     // Echo messages are copies of outbound messages sent by the IG account — skip them.
     if (parsed.ok && parsed.data.isEcho) {
@@ -1462,12 +1476,13 @@ async function processEntry(
           metaMessageId: parsed.ok ? parsed.data.messageMid : undefined,
           username: senderProfile?.username,
           profilePictureUrl: senderProfile?.profilePictureUrl,
-          messageType: storyInteraction ? `STORY_${storyInteraction}` : actionPayload ? "QUICK_REPLY" : "TEXT",
+          messageType: inboundMessageType,
+          mediaUrl: inboundMediaUrl,
           occurredAt: parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : undefined,
         }).catch((error) => console.warn("[inbox] inbound persistence failed", { message: error instanceof Error ? error.message : String(error) }));
       }
 
-      if (!senderId || (!dmText && !storyInteraction && !actionPayload)) {
+      if (!senderId || (!dmText && !storyInteraction && !actionPayload && !inboundMediaUrl)) {
         console.log("[webhook] inbound DM missing required fields — ignoring", {
           hasSenderId: Boolean(senderId),
           hasMessageText: Boolean(dmText),

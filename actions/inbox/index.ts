@@ -42,7 +42,6 @@ export async function getInstagramContacts() {
       take: 500,
       include: {
         automation: { select: { id: true, name: true, source: true } },
-        messages: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     }),
     client.lead.findMany({
@@ -62,7 +61,6 @@ export async function getInstagramContacts() {
       recipientUsername: lead.igUsername,
       profilePictureUrl: null,
       lastMessageAt: lead.createdAt,
-      messages: lead.commentText ? [{ content: lead.commentText }] : [],
       automation: lead.automation,
     });
   }
