@@ -214,7 +214,7 @@ function IncomingBubble({ avatar, text, button, media }: { avatar: React.ReactNo
 }
 
 function OutgoingBubble({ text }: { text: string }) {
-  return <p dir="auto" className="ml-auto max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4">{text}</p>;
+  return <p dir="auto" className="ml-auto w-fit max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4">{text}</p>;
 }
 
 function QuickReplyChip({ text }: { text: string }) {
@@ -239,4 +239,3 @@ function Avatar({ src, name, size }: { src?: string | null; name: string; size: 
     </span>
   );
 }
-
