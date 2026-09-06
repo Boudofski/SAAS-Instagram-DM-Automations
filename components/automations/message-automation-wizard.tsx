@@ -140,7 +140,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
           <AutomationWizardToolbar backHref={`/dashboard/${slug}/automation`} currentStep={step} totalSteps={3} accountLabel={source === "STORY" ? "Instagram Stories" : "Instagram DMs"} onOpenPreview={() => setMobilePreviewOpen(true)} />
-          <div ref={stepsScrollRef} className="min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
+          <div ref={stepsScrollRef} data-automation-scroll-region className="min-w-0 [overflow-anchor:none] xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
         <AnimatePresence mode="wait">
           <motion.main id="current-message-step" key={step} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduceMotion ? undefined : { opacity: 0, x: 10 }} transition={{ duration: 0.22 }} className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full">
             {step === 1 && (
@@ -232,4 +232,3 @@ function MessageWizardActions({ step, canContinue, saving, onBack, onContinue, o
 
 function PhaseHeader({ title, description }: { title: string; description: string }) { return <div className="mb-5"><h1 className="text-2xl font-black tracking-tight">{title}</h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p></div>; }
 function Choice({ selected, title, description, onClick }: { selected: boolean; title: string; description: string; onClick: () => void }) { return <button type="button" onClick={onClick} className={["rounded-2xl border p-5 text-left transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="block text-base font-black">{title}</span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">{description}</span></button>; }
-

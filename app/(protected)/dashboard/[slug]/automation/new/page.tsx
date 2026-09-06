@@ -178,7 +178,7 @@ export default function WizardPage({ params, searchParams }: Props) {
             accountLabel={instagram?.instagramUsername ? `@${instagram.instagramUsername}` : null}
             onOpenPreview={() => setMobilePreviewOpen(true)}
           />
-          <div ref={stepsScrollRef} className="min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
+          <div ref={stepsScrollRef} data-automation-scroll-region className="min-w-0 [overflow-anchor:none] xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
         <AnimatePresence mode="wait">
         <motion.main
           id="current-automation-step"
@@ -577,4 +577,3 @@ function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean 
     </span>
   );
 }
-

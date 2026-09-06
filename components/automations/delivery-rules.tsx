@@ -18,9 +18,33 @@ export default function DeliveryRules({
   followRequestButtonText,
   onChange,
 }: Props) {
+  const toggleFollowGate = (button: HTMLButtonElement) => {
+    const pageScrollLeft = window.scrollX;
+    const pageScrollTop = window.scrollY;
+    const scrollRegion = button.closest<HTMLElement>("[data-automation-scroll-region]");
+    const regionScrollLeft = scrollRegion?.scrollLeft ?? 0;
+    const regionScrollTop = scrollRegion?.scrollTop ?? 0;
+
+    onChange({ followGateRequired: !followGateRequired });
+
+    window.requestAnimationFrame(() => {
+      if (scrollRegion) {
+        scrollRegion.scrollLeft = regionScrollLeft;
+        scrollRegion.scrollTop = regionScrollTop;
+      }
+      window.scrollTo(pageScrollLeft, pageScrollTop);
+    });
+  };
+
   return (
-    <div className="space-y-3">
-      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="space-y-3 [overflow-anchor:none]">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={followGateRequired}
+        onClick={(event) => toggleFollowGate(event.currentTarget)}
+        className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-rf-purple/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-purple/40 dark:border-white/10 dark:bg-white/[0.04]"
+      >
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple">
           <UserCheck className="h-5 w-5" />
         </span>
@@ -32,16 +56,10 @@ export default function DeliveryRules({
             Optional. AP3K checks their follow after they tap the button, then sends your final DM only when verified.
           </span>
         </span>
-        <input
-          type="checkbox"
-          checked={followGateRequired}
-          onChange={(event) => onChange({ followGateRequired: event.target.checked })}
-          className="peer sr-only"
-        />
-        <span aria-hidden="true" className="relative mt-1 h-6 w-11 shrink-0 rounded-full bg-slate-300 transition peer-checked:bg-rf-purple dark:bg-slate-700">
-          <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+        <span aria-hidden="true" className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition ${followGateRequired ? "bg-rf-purple" : "bg-slate-300 dark:bg-slate-700"}`}>
+          <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${followGateRequired ? "left-6" : "left-1"}`} />
         </span>
-      </label>
+      </button>
 
       {followGateRequired ? (
         <div className="rounded-2xl border border-rf-purple/20 bg-rf-purple/[0.06] p-4 dark:border-rf-purple/30 dark:bg-rf-purple/[0.09] sm:p-5">
