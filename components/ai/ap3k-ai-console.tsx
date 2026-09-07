@@ -1,9 +1,9 @@
 "use client";
 
-import { addAiKnowledgeAction, deleteAiKnowledgeAction, saveAiWorkspaceAction, testAiWorkspaceAction } from "@/actions/ai-workspace";
+import { addAiKnowledgeAction, clearAiPlaygroundAction, deleteAiKnowledgeAction, saveAiWorkspaceAction, savePlaygroundMessageAsKnowledgeAction, testAiWorkspaceAction } from "@/actions/ai-workspace";
 import { AI_PROTECTION_CATEGORIES, AI_REPLY_TONES, aiToneLabel, type AiProtectionAction, type AiProtectionRules, type AiReplyTone } from "@/lib/ai-reply-config";
 import type { AiKnowledgeItem } from "@/lib/ai-workspace";
-import { BookOpen, Bot, Check, Loader2, MessageCircle, MessagesSquare, Plus, Send, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen, Bot, Check, Loader2, MessageCircle, MessagesSquare, Plus, RotateCcw, Send, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -19,6 +19,8 @@ type Profile = {
   knowledge: AiKnowledgeItem[];
 };
 
+type PlaygroundMessage = { id: string; role: string; content: string; createdAt: Date | string };
+
 const tabs = ["Overview", "Knowledge", "Behavior", "Playground"] as const;
 type Tab = (typeof tabs)[number];
 
@@ -29,7 +31,7 @@ const protectionLabels: Record<(typeof AI_PROTECTION_CATEGORIES)[number], [strin
   BEGGING_SOLICITATION: ["Begging & solicitation", "Requests for money, gifts, free products, or donations"],
 };
 
-export default function Ap3kAiConsole({ slug, initial, plan }: { slug: string; initial: Profile; plan: string }) {
+export default function Ap3kAiConsole({ slug, initial, plan, initialPlaygroundMessages = [] }: { slug: string; initial: Profile; plan: string; initialPlaygroundMessages?: PlaygroundMessage[] }) {
   const router = useRouter();
   const unlocked = plan === "PRO" || plan === "BUSINESS";
   const [tab, setTab] = useState<Tab>("Overview");
@@ -77,7 +79,7 @@ export default function Ap3kAiConsole({ slug, initial, plan }: { slug: string; i
         {tab === "Overview" ? <Overview profile={profile} setProfile={setProfile} complete={complete} unlocked={unlocked} onOpen={setTab} /> : null}
         {tab === "Knowledge" ? <Knowledge items={profile.knowledge} unlocked={unlocked} onRefresh={() => router.refresh()} /> : null}
         {tab === "Behavior" ? <Behavior profile={profile} setProfile={setProfile} unlocked={unlocked} /> : null}
-        {tab === "Playground" ? <Playground unlocked={unlocked} ready={profile.knowledge.length > 0} /> : null}
+        {tab === "Playground" ? <Playground unlocked={unlocked} ready={profile.knowledge.length > 0} initialMessages={initialPlaygroundMessages} /> : null}
       </section>
       {notice ? <p role="status" className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">{notice}</p> : null}
     </main>
@@ -98,7 +100,51 @@ function Behavior({ profile, setProfile, unlocked }: { profile: Profile; setProf
   return <div className="mx-auto max-w-4xl"><Header icon={Bot} title="Behavior" detail="One voice and safety policy is shared by every AI-enabled automation." /><div className="mt-6 space-y-5"><Field label="AI role" value={profile.role} disabled={!unlocked} onChange={(role) => setProfile({ ...profile, role })} maxLength={120} /><TextField label="Brand voice & persona" value={profile.brandVoice} disabled={!unlocked} onChange={(brandVoice) => setProfile({ ...profile, brandVoice })} maxLength={1600} /><div><p className="mb-2 text-xs font-black uppercase tracking-wider text-slate-500">Default tone</p><div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1 dark:bg-white/[0.05]">{AI_REPLY_TONES.map((tone) => <button key={tone} type="button" disabled={!unlocked} onClick={() => setProfile({ ...profile, defaultTone: tone })} className={`rounded-lg px-2 py-3 text-xs font-black ${profile.defaultTone === tone ? "bg-white text-violet-600 shadow dark:bg-violet-500/20 dark:text-violet-200" : "text-slate-500"}`}>{aiToneLabel(tone)}</button>)}</div></div><TextField label="Guardrails & escalation" value={profile.guardrails} disabled={!unlocked} onChange={(guardrails) => setProfile({ ...profile, guardrails })} maxLength={2400} /><div><div className="mb-3 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-500" /><p className="text-xs font-black uppercase tracking-wider text-slate-500">Comment protection</p></div><div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-white/10 dark:border-white/10">{AI_PROTECTION_CATEGORIES.map((category) => { const [title, detail] = protectionLabels[category]; const canDelete = category !== "UNANSWERABLE"; return <div key={category} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-sm font-black">{title}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div>{canDelete ? <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-white/[0.05]">{(["SKIP", "DELETE"] as AiProtectionAction[]).map((action) => <button key={action} type="button" disabled={!unlocked} onClick={() => setProfile({ ...profile, protectionRules: { ...profile.protectionRules, [category]: action } })} className={`rounded-lg px-3 py-2 text-[10px] font-black ${profile.protectionRules[category] === action ? action === "DELETE" ? "bg-red-500 text-white" : "bg-white text-slate-900 shadow dark:bg-slate-700 dark:text-white" : "text-slate-500"}`}>{action === "SKIP" ? "Skip reply" : "Delete"}</button>)}</div> : <span className="rounded-lg bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-500 dark:bg-white/[0.05]">Skip reply</span>}</div>; })}</div></div></div></div>;
 }
 
-function Playground({ unlocked, ready }: { unlocked: boolean; ready: boolean }) { const [message, setMessage] = useState(""); const [reply, setReply] = useState(""); const [pending, start] = useTransition(); const send = () => start(async () => { const result = await testAiWorkspaceAction(message); setReply(result.data); }); return <div className="mx-auto flex min-h-[450px] max-w-3xl flex-col"><Header icon={MessagesSquare} title="Playground" detail="Test the saved provider, knowledge, voice, and guardrails before enabling an automation." />{!ready ? <p className="mt-5 rounded-xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">Add at least one knowledge note for a meaningful test.</p> : null}<div className="flex flex-1 flex-col justify-end pt-8">{reply ? <div className="mb-4 max-w-[85%] rounded-2xl rounded-bl-md bg-violet-500/10 px-4 py-3 text-sm leading-6 text-slate-800 dark:text-slate-100"><span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-violet-500">AP3K AI</span>{reply}</div> : <div className="grid flex-1 place-items-center text-center"><div><Sparkles className="mx-auto h-7 w-7 text-violet-500" /><p className="mt-3 font-black">Ask a customer-style question</p><p className="mt-1 text-sm text-slate-500">Playground generations count toward the monthly AI limit.</p></div></div>}<div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-white/[0.03]"><input value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }} disabled={!unlocked || pending} placeholder="What do you sell?" className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none" /><button type="button" onClick={send} disabled={!unlocked || !message.trim() || pending} aria-label="Send test" className="grid h-11 w-11 place-items-center rounded-xl bg-violet-600 text-white disabled:opacity-35">{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button></div></div></div>; }
+function Playground({ unlocked, ready, initialMessages }: { unlocked: boolean; ready: boolean; initialMessages: PlaygroundMessage[] }) {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState(initialMessages);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  const send = () => {
+    const prompt = message.trim();
+    if (!prompt || pending || !unlocked) return;
+    setMessage("");
+    setNotice(null);
+    const optimistic: PlaygroundMessage = { id: `pending-${Date.now()}`, role: "user", content: prompt, createdAt: new Date() };
+    setMessages((current) => [...current, optimistic]);
+    start(async () => {
+      const result = await testAiWorkspaceAction(prompt);
+      if (result.status === 200 && result.userMessage && result.assistantMessage) {
+        setMessages((current) => [...current.filter((item) => item.id !== optimistic.id), result.userMessage!, result.assistantMessage!]);
+      } else {
+        if ("userMessage" in result && result.userMessage) {
+          setMessages((current) => [...current.filter((item) => item.id !== optimistic.id), result.userMessage!]);
+        }
+        setNotice(result.data);
+      }
+    });
+  };
+
+  const clear = () => start(async () => {
+    const result = await clearAiPlaygroundAction();
+    if (result.status === 200) setMessages([]);
+    setNotice(result.data);
+  });
+
+  return <div className="mx-auto flex min-h-[540px] max-w-3xl flex-col">
+    <div className="flex items-start justify-between gap-4"><Header icon={MessagesSquare} title="Playground" detail="Test your saved knowledge, voice, and guardrails in a persistent conversation." />{messages.length ? <button type="button" onClick={clear} disabled={pending} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-white/[0.06]"><RotateCcw className="h-3.5 w-3.5" /> Clear</button> : null}</div>
+    {!ready ? <p className="mt-5 rounded-xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">Add at least one knowledge note for a meaningful test.</p> : null}
+    <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50/70 p-3 dark:bg-white/[0.02] sm:p-4">
+      {!messages.length ? <div className="grid min-h-[280px] place-items-center text-center"><div><Sparkles className="mx-auto h-7 w-7 text-violet-500" /><p className="mt-3 font-black">Ask a customer-style question</p><p className="mt-1 text-sm text-slate-500">Your conversation is saved. Tests count toward the monthly AI limit.</p></div></div> : null}
+      {messages.map((item) => <div key={item.id} className={`group w-fit max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${item.role === "user" ? "ml-auto rounded-br-md bg-violet-600 text-white" : "rounded-bl-md bg-white text-slate-800 shadow-sm dark:bg-white/[0.07] dark:text-slate-100"}`}><span className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-70">{item.role === "user" ? "You" : "AP3K AI"}</span><span className="whitespace-pre-wrap">{item.content}</span>{item.role === "user" && !item.id.startsWith("pending-") ? <button type="button" onClick={() => start(async () => { const result = await savePlaygroundMessageAsKnowledgeAction(item.id); setNotice(result.data); })} className="mt-2 block text-[10px] font-black underline decoration-white/40 underline-offset-2">Save as business knowledge</button> : null}</div>)}
+      {pending ? <div className="flex w-fit items-center gap-2 rounded-2xl bg-white px-4 py-3 text-xs text-slate-500 shadow-sm dark:bg-white/[0.07]"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…</div> : null}
+    </div>
+    {notice ? <p role="status" className="mt-3 text-xs font-semibold text-slate-500">{notice}</p> : null}
+    <div className="mt-3 flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-white/[0.03]"><input value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }} disabled={!unlocked || pending} maxLength={1000} placeholder="Ask a customer question…" className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none" /><button type="button" onClick={send} disabled={!unlocked || !message.trim() || pending} aria-label="Send test" className="grid h-11 w-11 place-items-center rounded-xl bg-violet-600 text-white disabled:opacity-35">{pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button></div>
+    <p className="mt-2 text-[10px] text-slate-500">Chats are private to this workspace. Only facts you explicitly save are added to Knowledge.</p>
+  </div>;
+}
 
 function SetupRow({ done, icon: Icon, title, detail, action, onClick }: { done: boolean; icon: typeof Bot; title: string; detail: string; action: string; onClick: () => void }) { return <button type="button" onClick={onClick} className="flex w-full items-center gap-4 rounded-2xl border border-slate-200 p-4 text-left transition hover:border-violet-400/40 dark:border-white/10"><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${done ? "bg-emerald-500/15 text-emerald-500" : "bg-slate-100 text-slate-400 dark:bg-white/[0.05]"}`}>{done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}</span><span className="min-w-0 flex-1"><span className="block font-black">{title}</span><span className="mt-1 block text-sm text-slate-500">{detail}</span></span><span className="hidden text-xs font-black text-violet-500 sm:block">{action}</span></button>; }
 function SkillCard({ enabled, disabled, icon: Icon, title, detail, onToggle }: { enabled: boolean; disabled: boolean; icon: typeof Bot; title: string; detail: string; onToggle: () => void }) { return <button type="button" disabled={disabled} onClick={onToggle} className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition disabled:opacity-50 ${enabled ? "border-violet-400/35 bg-violet-500/[0.07]" : "border-slate-200 dark:border-white/10"}`}><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-500"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><span className="block font-black">{title}</span><span className="mt-1 block text-xs leading-5 text-slate-500">{detail}</span></span><span className={`relative mt-1 h-7 w-12 shrink-0 rounded-full ${enabled ? "bg-violet-500" : "bg-slate-300 dark:bg-slate-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} /></span></button>; }

@@ -5,6 +5,19 @@ import {
   type StripeBillingInterval,
   type StripePlan,
 } from "@/lib/stripe-config";
+import { AP3K_PRICING } from "@/lib/billing-plans";
+
+function expectedPrice(plan: StripePlan, interval: StripeBillingInterval) {
+  if (plan === "BUSINESS") return interval === "year" ? AP3K_PRICING.BUSINESS_ANNUAL : AP3K_PRICING.BUSINESS_MONTHLY;
+  return interval === "year" ? AP3K_PRICING.PRO_ANNUAL : AP3K_PRICING.PRO_MONTHLY;
+}
+
+function assertConfiguredPrice(price: { active: boolean; currency: string; unit_amount: number | null; recurring?: { interval: string } | null }, plan: StripePlan, interval: StripeBillingInterval) {
+  const expectedAmount = expectedPrice(plan, interval) * 100;
+  if (!price.active || price.currency.toLowerCase() !== "usd" || price.unit_amount !== expectedAmount || price.recurring?.interval !== interval) {
+    throw new Error(`Stripe ${plan.toLowerCase()} ${interval} price does not match the published AP3K catalog.`);
+  }
+}
 
 function getExplicitNewCatalogPriceId(
   plan: StripePlan,
@@ -27,7 +40,11 @@ export async function resolveStripePriceId(
 ) {
   // New catalog variables, when explicitly configured, are authoritative.
   const explicitNewCatalog = getExplicitNewCatalogPriceId(plan, interval);
-  if (explicitNewCatalog) return explicitNewCatalog;
+  if (explicitNewCatalog) {
+    const price = await stripe.prices.retrieve(explicitNewCatalog);
+    assertConfiguredPrice(price, plan, interval);
+    return explicitNewCatalog;
+  }
 
   // Prefer stable lookup keys over legacy Creator/Agency environment variables.
   // This prevents old production price IDs from silently overriding the new
@@ -39,8 +56,15 @@ export async function resolveStripePriceId(
     limit: 1,
   });
   const lookupPrice = prices.data[0]?.id;
-  if (lookupPrice) return lookupPrice;
+  if (lookupPrice) {
+    assertConfiguredPrice(prices.data[0], plan, interval);
+    return lookupPrice;
+  }
 
   // Last-resort compatibility for older deployments before lookup keys existed.
-  return getStripePriceIdFromEnv(plan, interval) ?? null;
+  const legacyPriceId = getStripePriceIdFromEnv(plan, interval) ?? null;
+  if (!legacyPriceId) return null;
+  const legacyPrice = await stripe.prices.retrieve(legacyPriceId);
+  assertConfiguredPrice(legacyPrice, plan, interval);
+  return legacyPriceId;
 }
