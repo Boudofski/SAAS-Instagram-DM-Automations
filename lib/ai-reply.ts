@@ -2,6 +2,12 @@ import OpenAI from "openai";
 import { client } from "@/lib/prisma";
 import { decryptAiProviderSecret } from "@/lib/ai-provider-crypto";
 import {
+  AI_PROVIDER_IDS,
+  AI_PROVIDERS,
+  getAiProviderDefinition,
+  type AiProviderId,
+} from "@/lib/ai-providers";
+import {
   normalizeAiProtectionRules,
   normalizeAiReplyTone,
   type AiProtectionAction,
@@ -19,6 +25,7 @@ export type AiCommentDecision =
   | { action: "SKIP"; category: "UNANSWERABLE"; reason: string };
 
 type ProviderInput = {
+  providerId: AiProviderId;
   baseUrl: string;
   model: string;
   apiKey: string;
@@ -30,6 +37,12 @@ function createProvider(input: ProviderInput) {
     baseURL: input.baseUrl.replace(/\/+$/, ""),
     timeout: 18_000,
     maxRetries: 1,
+    ...(input.providerId === "openrouter" ? {
+      defaultHeaders: {
+        "HTTP-Referer": "https://ap3k.com",
+        "X-OpenRouter-Title": "AP3K",
+      },
+    } : {}),
   });
 }
 
@@ -97,9 +110,9 @@ async function runCompletion(
       response_format: { type: "json_object" },
     });
   } catch (error) {
-    // AgentRouter models do not all expose structured-output support. The
-    // prompt and strict parser still require JSON, so retry once without the
-    // optional response_format field when the gateway rejects the request.
+    // Not every provider/model exposes structured-output support. The prompt
+    // and strict parser still require JSON, so retry once without the optional
+    // response_format field when a compatible endpoint rejects it.
     const status = error instanceof OpenAI.APIError ? error.status : undefined;
     if (status !== 400 && status !== 422) throw error;
     completion = await client.chat.completions.create(request);
@@ -108,23 +121,26 @@ async function runCompletion(
   return parseModelJson(completion.choices[0]?.message?.content ?? "");
 }
 
-export async function getAiProviderPublicConfig() {
-  const config = await client.aiProviderConfig.findUnique({ where: { id: "primary" } });
-  return config ?? {
-    id: "primary",
-    enabled: false,
-    providerName: "AgentRouter",
-    baseUrl: "https://co.agentrouter.org/v1",
-    model: "glm-5.3",
-    encryptedApiKey: null,
-    apiKeyHint: null,
-    lastTestedAt: null,
-    lastTestStatus: null,
-    lastTestError: null,
-    updatedBy: null,
-    createdAt: null,
-    updatedAt: null,
-  };
+export async function getAiProviderPublicConfigs() {
+  const stored = await client.aiProviderConfig.findMany({
+    where: { id: { in: [...AI_PROVIDER_IDS] } },
+  });
+  const byId = new Map(stored.map((config) => [config.id, config]));
+
+  return AI_PROVIDERS.map((provider) => {
+    const config = byId.get(provider.id);
+    return {
+      id: provider.id,
+      enabled: config?.enabled ?? false,
+      providerName: provider.name,
+      baseUrl: provider.baseUrl,
+      model: config?.model || provider.defaultModel,
+      apiKeyHint: config?.apiKeyHint ?? null,
+      lastTestedAt: config?.lastTestedAt ?? null,
+      lastTestStatus: config?.lastTestStatus ?? null,
+      lastTestError: config?.lastTestError ?? null,
+    };
+  });
 }
 
 export async function getAiWorkspaceRuntimeConfig(userId: string) {
@@ -132,11 +148,16 @@ export async function getAiWorkspaceRuntimeConfig(userId: string) {
 }
 
 async function loadEnabledProvider(): Promise<ProviderInput> {
-  const config = await client.aiProviderConfig.findUnique({ where: { id: "primary" } });
+  const config = await client.aiProviderConfig.findFirst({
+    where: { enabled: true, id: { in: [...AI_PROVIDER_IDS] } },
+    orderBy: { updatedAt: "desc" },
+  });
   if (!config?.enabled) throw new Error("AI replies are disabled by the administrator.");
-  if (!config.baseUrl || !config.model || !config.encryptedApiKey) throw new Error("AI provider configuration is incomplete.");
+  const provider = getAiProviderDefinition(config.id);
+  if (!provider || !config.model || !config.encryptedApiKey) throw new Error("AI provider configuration is incomplete.");
   return {
-    baseUrl: config.baseUrl,
+    providerId: provider.id,
+    baseUrl: provider.baseUrl,
     model: config.model,
     apiKey: decryptAiProviderSecret(config.encryptedApiKey),
   };

@@ -11,7 +11,7 @@ import { V2Badge } from "@/components/admin-v2/v2-badge";
 import { AdminPageHeader, AdminSurface } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
 import { AiProviderSettings } from "@/components/admin-v2/ai-provider-settings";
-import { getAiProviderPublicConfig } from "@/lib/ai-reply";
+import { getAiProviderPublicConfigs } from "@/lib/ai-reply";
 import { aiProviderEncryptionReady } from "@/lib/ai-provider-crypto";
 
 function configTone(value: boolean) {
@@ -19,9 +19,9 @@ function configTone(value: boolean) {
 }
 
 export default async function AdminSystemPage() {
-  const [snapshot, aiProvider] = await Promise.all([
+  const [snapshot, aiProviders] = await Promise.all([
     getAdminV2SystemSnapshot(),
-    getAiProviderPublicConfig(),
+    getAiProviderPublicConfigs(),
   ]);
   const guardrails = adminDangerZoneStatus();
   const environment = adminEnvironmentLabel();
@@ -42,16 +42,10 @@ export default async function AdminSystemPage() {
 
       <AiProviderSettings
         encryptionReady={aiProviderEncryptionReady()}
-        config={{
-          enabled: aiProvider.enabled,
-          providerName: aiProvider.providerName,
-          baseUrl: aiProvider.baseUrl,
-          model: aiProvider.model,
-          apiKeyHint: aiProvider.apiKeyHint,
-          lastTestStatus: aiProvider.lastTestStatus,
-          lastTestError: aiProvider.lastTestError,
-          lastTestedAt: aiProvider.lastTestedAt?.toISOString() ?? null,
-        }}
+        configs={aiProviders.map((provider) => ({
+          ...provider,
+          lastTestedAt: provider.lastTestedAt?.toISOString() ?? null,
+        }))}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">

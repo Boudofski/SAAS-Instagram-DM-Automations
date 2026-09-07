@@ -259,11 +259,11 @@ model Listener {
 }
 
 model AiProviderConfig {
-  id              String    @id @default("primary")
+  id              String    @id @default("google")
   enabled         Boolean   @default(false)
-  providerName    String    @default("AgentRouter")
-  baseUrl         String    @default("https://co.agentrouter.org/v1")
-  model           String    @default("glm-5.3")
+  providerName    String    @default("Google AI Studio")
+  baseUrl         String    @default("https://generativelanguage.googleapis.com/v1beta/openai")
+  model           String    @default("gemini-3.5-flash-lite")
   encryptedApiKey String?
   apiKeyHint      String?
   lastTestedAt    DateTime?

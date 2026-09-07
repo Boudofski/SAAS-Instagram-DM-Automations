@@ -197,6 +197,7 @@ In Vercel → Project → Settings → Environment Variables, add every variable
 | `STRIPE_PRICE_ID_CREATOR` | Creator recurring price ID |
 | `STRIPE_PRICE_ID_AGENCY` | Agency recurring price ID |
 | `STRIPE_WEBHOOK_SECRET` | Secret from Vercel webhook endpoint (see below) |
+| `AI_CONFIG_ENCRYPTION_KEY` | 32-byte secret used only to encrypt provider API keys at rest |
 
 ### 4. Stripe Webhook (Production)
 
@@ -225,6 +226,24 @@ using `META_APP_SECRET`. Comment and messaging receipts are stored in
 send attempts are stored in `MessageLog`.
 
 AP3k only sends a private reply/DM to users who commented or messaged the connected Instagram account. It does not scrape Instagram, log in with passwords, or send unsolicited DMs.
+
+### AP3K AI provider setup
+
+Open **Admin → System & safety → AP3K AI routing**. AP3K stores a separate encrypted key for Google AI Studio, Groq Cloud, and OpenRouter, while routing traffic through only one active provider.
+
+For each provider:
+
+1. Open **Get API key**, create a key on the provider's official site, and paste it into AP3K.
+2. Choose a listed model or enter another model ID supported by that provider.
+3. Save the configuration, run **Test saved connection**, then select **Make active provider**.
+
+Recommended free starting points:
+
+- Google AI Studio: `gemini-3.5-flash-lite`
+- Groq Cloud: `openai/gpt-oss-20b`
+- OpenRouter: `openrouter/free`
+
+Gemini 1.5 and 2.0 Flash are intentionally not offered because Google has shut them down. Provider free tiers and model availability can change, so the model field accepts current provider model IDs without requiring a deployment.
 
 ### Why real comments may not trigger in Meta development mode
 
@@ -291,4 +310,4 @@ prisma/               # Schema + migrations
 - **Plan enforcement** — FREE plan limit (3 automations) is tracked in the DB schema but not yet enforced on the backend. Activation is not blocked for FREE users. Marked as TODO.
 - **Story reply automations** — the DB schema supports story reply triggers but the wizard UI does not expose them.
 - **Token refresh** — Instagram long-lived tokens expire after 60 days. AP3k refreshes near expiry when the user profile is loaded, but users may need to reconnect if Meta revokes a token or permissions change.
-- **Legacy Smart AI matching** — the older trigger-matching mode still uses `OPENAI_API_KEY`. AP3K AI comment and DM replies use the encrypted AgentRouter provider configured in the admin dashboard.
+- **Legacy Smart AI matching** — the older trigger-matching mode still uses `OPENAI_API_KEY`. AP3K AI comment and DM replies use the encrypted provider selected in the admin dashboard.
