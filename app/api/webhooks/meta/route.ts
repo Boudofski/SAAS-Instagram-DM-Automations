@@ -1077,74 +1077,18 @@ async function processEntry(
       let aiReplyCategory: string | null = null;
 
       if (aiReplyEnabled && automation.userId) {
-        const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId);
-        const aiQuota = aiWorkspace.aiCommentsEnabled ? await reserveAiReplyQuota({
-          userId: automation.userId,
-          automationId: automation.id,
-          channel: "COMMENT",
-          igUserId: commenterId,
-          mediaId,
-          commentId,
-          keyword: matchedKeyword,
-        }) : { ok: false as const, reason: "ai_comments_disabled" as const, plan: automation.User?.subscription?.plan ?? "FREE", used: 0, limit: 0, periodLabel: "", reservationId: null };
-        if (!aiQuota.ok) {
-          await createMessageLog({
+        try {
+          const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId);
+          const aiQuota = aiWorkspace.aiCommentsEnabled ? await reserveAiReplyQuota({
+            userId: automation.userId,
             automationId: automation.id,
-            recipientIgId: commenterId,
-            mediaId,
-            commentId,
-            messageType: "COMMENT_REPLY",
-            status: "SKIPPED",
-            errorMessage: "ai_reply_limit_reached",
-          });
-          await createAutomationEvent({
-            automationId: automation.id,
-            eventType: "COMMENT_SKIPPED",
+            channel: "COMMENT",
             igUserId: commenterId,
             mediaId,
             commentId,
             keyword: matchedKeyword,
-            meta: {
-              reason: "ai_reply_limit_reached",
-              aiReplyEnabled: true,
-              plan: aiQuota.plan,
-              used: aiQuota.used,
-              limit: aiQuota.limit,
-            },
-          });
-        } else {
-          const decision = await generateAiCommentDecision({
-            comment: commentText,
-            postCaption: automation.posts?.[0]?.caption,
-            instructions: listener.aiReplyInstructions,
-            tone: listener.aiReplyTone,
-            protectionRules: listener.aiProtectionRules,
-            workspace: aiWorkspace,
-          });
-          aiReplyCategory = decision.category;
-
-          if ("reason" in decision && decision.reason === "ai_provider_unavailable") {
-            await releaseAiReplyReservation(aiQuota.reservationId);
-          } else {
-            await completeAiReplyReservation(aiQuota.reservationId, {
-              action: decision.action,
-              category: decision.category,
-              tone: listener.aiReplyTone,
-              reason: "reason" in decision ? decision.reason : null,
-            });
-          }
-
-          if (decision.action === "REPLY") {
-            chosenReply = decision.reply;
-          } else {
-            let protectionError: string | undefined;
-            if (decision.action === "DELETE") {
-              try {
-                await withRetry(() => deleteInstagramComment(commentId, token));
-              } catch (deleteError) {
-                protectionError = formatSafeMetaError(deleteError);
-              }
-            }
+          }) : { ok: false as const, reason: "ai_comments_disabled" as const, plan: automation.User?.subscription?.plan ?? "FREE", used: 0, limit: 0, periodLabel: "", reservationId: null };
+          if (!aiQuota.ok) {
             await createMessageLog({
               automationId: automation.id,
               recipientIgId: commenterId,
@@ -1152,7 +1096,7 @@ async function processEntry(
               commentId,
               messageType: "COMMENT_REPLY",
               status: "SKIPPED",
-              errorMessage: protectionError ? "ai_protection_delete_failed" : decision.reason,
+              errorMessage: aiQuota.reason,
             });
             await createAutomationEvent({
               automationId: automation.id,
@@ -1162,14 +1106,98 @@ async function processEntry(
               commentId,
               keyword: matchedKeyword,
               meta: {
-                reason: protectionError ? "ai_protection_delete_failed" : decision.reason,
-                category: decision.category,
-                protectionAction: decision.action,
-                deleted: decision.action === "DELETE" && !protectionError,
-                ...(protectionError ? { error: protectionError } : {}),
+                reason: aiQuota.reason,
+                aiReplyEnabled: true,
+                plan: aiQuota.plan,
+                used: aiQuota.used,
+                limit: aiQuota.limit,
               },
             });
+          } else {
+            const decision = await generateAiCommentDecision({
+              comment: commentText,
+              postCaption: automation.posts?.[0]?.caption,
+              instructions: listener.aiReplyInstructions,
+              tone: listener.aiReplyTone,
+              protectionRules: listener.aiProtectionRules,
+              workspace: aiWorkspace,
+            });
+            aiReplyCategory = decision.category;
+
+            if ("reason" in decision && decision.reason === "ai_provider_unavailable") {
+              await releaseAiReplyReservation(aiQuota.reservationId);
+            } else {
+              await completeAiReplyReservation(aiQuota.reservationId, {
+                action: decision.action,
+                category: decision.category,
+                tone: listener.aiReplyTone,
+                reason: "reason" in decision ? decision.reason : null,
+              });
+            }
+
+            if (decision.action === "REPLY") {
+              chosenReply = decision.reply;
+            } else {
+              let protectionError: string | undefined;
+              if (decision.action === "DELETE") {
+                try {
+                  await withRetry(() => deleteInstagramComment(commentId, token));
+                } catch (deleteError) {
+                  protectionError = formatSafeMetaError(deleteError);
+                }
+              }
+              await createMessageLog({
+                automationId: automation.id,
+                recipientIgId: commenterId,
+                mediaId,
+                commentId,
+                messageType: "COMMENT_REPLY",
+                status: "SKIPPED",
+                errorMessage: protectionError ? "ai_protection_delete_failed" : decision.reason,
+              });
+              await createAutomationEvent({
+                automationId: automation.id,
+                eventType: "COMMENT_SKIPPED",
+                igUserId: commenterId,
+                mediaId,
+                commentId,
+                keyword: matchedKeyword,
+                meta: {
+                  reason: protectionError ? "ai_protection_delete_failed" : decision.reason,
+                  category: decision.category,
+                  protectionAction: decision.action,
+                  deleted: decision.action === "DELETE" && !protectionError,
+                  ...(protectionError ? { error: protectionError } : {}),
+                },
+              });
+            }
           }
+        } catch (aiError) {
+          console.error("[webhook] AI comment reply failed", {
+            automationId: automation.id,
+            commentId,
+            error: aiError instanceof Error ? aiError.message : "unknown_ai_error",
+          });
+          await Promise.allSettled([
+            createMessageLog({
+              automationId: automation.id,
+              recipientIgId: commenterId,
+              mediaId,
+              commentId,
+              messageType: "COMMENT_REPLY",
+              status: "SKIPPED",
+              errorMessage: "ai_reply_unavailable",
+            }),
+            createAutomationEvent({
+              automationId: automation.id,
+              eventType: "COMMENT_SKIPPED",
+              igUserId: commenterId,
+              mediaId,
+              commentId,
+              keyword: matchedKeyword,
+              meta: { reason: "ai_reply_unavailable", aiReplyEnabled: true },
+            }),
+          ]);
         }
       }
 
@@ -1793,29 +1821,39 @@ async function processConfiguredMessageAutomation(params: {
         link: automation.listener.ctaLink ?? "",
       });
   if (automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
-    const workspace = await getAiWorkspaceRuntimeConfig(automation.userId);
-    if (workspace.aiRepliesEnabled) {
-      const quota = await reserveAiReplyQuota({
-        userId: automation.userId,
-        automationId: automation.id,
-        channel: "DM",
-        igUserId: senderId,
-        keyword: matchedKeyword,
-      });
-      if (quota.ok) {
-        const generated = await generateAiDmReply({
-          message: inboundText,
-          workspace,
-          automationInstructions: automation.listener.prompt,
+    try {
+      const workspace = await getAiWorkspaceRuntimeConfig(automation.userId);
+      if (workspace.aiRepliesEnabled) {
+        const quota = await reserveAiReplyQuota({
+          userId: automation.userId,
+          automationId: automation.id,
+          channel: "DM",
+          igUserId: senderId,
+          keyword: matchedKeyword,
         });
-        if (generated.ok) {
-          payloadMessage = generated.reply;
-          aiGenerated = true;
-          await completeAiReplyReservation(quota.reservationId, { channel: "DM", outcome: "generated" });
-        } else {
-          await releaseAiReplyReservation(quota.reservationId);
+        if (quota.ok) {
+          const generated = await generateAiDmReply({
+            message: inboundText,
+            workspace,
+            automationInstructions: automation.listener.prompt,
+          });
+          if (generated.ok) {
+            payloadMessage = generated.reply;
+            aiGenerated = true;
+            await completeAiReplyReservation(quota.reservationId, { channel: "DM", outcome: "generated" });
+          } else {
+            await releaseAiReplyReservation(quota.reservationId);
+          }
         }
       }
+    } catch (aiError) {
+      // A provider or quota failure must not swallow the webhook. The saved
+      // message remains a safe fallback and the automation can still reply.
+      console.error("[webhook] AI DM generation failed; using saved fallback", {
+        automationId: automation.id,
+        senderId,
+        error: aiError instanceof Error ? aiError.message : "unknown_ai_error",
+      });
     }
   }
   const resolvedMessage = needsFollowRequest

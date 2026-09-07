@@ -117,6 +117,10 @@ export async function testAiWorkspaceAction(message: string) {
     await completeAiReplyReservation(quota.reservationId, { channel: "PLAYGROUND", outcome: "generated" });
     return { status: 200 as const, data: result.reply };
   } catch (error) {
-    return { status: 400 as const, data: error instanceof Error ? error.message : "Could not test AP3K AI." };
+    console.error("[ap3k-ai] playground request failed", error);
+    return {
+      status: 503 as const,
+      data: "AP3K AI could not complete this test. Please try again; if it continues, check the active provider in Admin.",
+    };
   }
 }

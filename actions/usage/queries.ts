@@ -185,7 +185,13 @@ export async function reserveAiReplyQuota(input: AiReplyReservationInput) {
   const date = input.date ?? new Date();
 
   return client.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.userId}))`;
+    // PostgreSQL declares pg_advisory_xact_lock as returning `void`.
+    // Prisma cannot deserialize that type, so selecting it without a cast
+    // aborts every AI quota reservation before the provider is called.
+    // Keep the transaction-scoped lock, but expose its result as text.
+    await tx.$queryRaw<Array<{ lockResult: string }>>`
+      SELECT pg_advisory_xact_lock(hashtext(${input.userId}))::text AS "lockResult"
+    `;
 
     const user = await tx.user.findUnique({
       where: { id: input.userId },

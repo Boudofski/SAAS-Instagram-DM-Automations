@@ -141,6 +141,18 @@ describe("usage query helpers", () => {
     expect(mockAutomationEventCreate).not.toHaveBeenCalled();
   });
 
+  it("casts the PostgreSQL advisory lock result to a Prisma-supported type", async () => {
+    await reserveAiReplyQuota({
+      userId: "user-1",
+      channel: "PLAYGROUND",
+      date: new Date("2026-05-24T12:00:00Z"),
+    });
+
+    const sqlTemplate = mockQueryRaw.mock.calls[0]?.[0] as readonly string[];
+    expect(sqlTemplate.join("?")).toContain("pg_advisory_xact_lock");
+    expect(sqlTemplate.join("?")).toContain('::text AS "lockResult"');
+  });
+
   it("atomically reserves the last available Pro AI decision", async () => {
     mockUserFindUnique.mockResolvedValue({ subscription: { plan: "PRO" } });
     mockAutomationEventCount.mockResolvedValue(499);

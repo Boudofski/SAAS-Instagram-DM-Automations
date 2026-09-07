@@ -5,6 +5,7 @@ const mockCreateWebhookEvent = vi.fn();
 const mockUpdateWebhookEvent = vi.fn();
 const mockVerifyMetaSignature = vi.fn();
 const mockFindAutomationById = vi.fn();
+const mockFindAutomationForDM = vi.fn();
 const mockFindPendingCommentDmActionForText = vi.fn();
 const mockFindIntegrationForWebhookAccount = vi.fn();
 const mockIsDuplicate = vi.fn();
@@ -18,10 +19,13 @@ const mockGetInstagramRecipientProfile = vi.fn();
 const mockSendInstagramDirectResponse = vi.fn();
 const mockResolveIntegrationSendToken = vi.fn();
 const mockCanSendStaticReply = vi.fn();
+const mockReserveAiReplyQuota = vi.fn();
+const mockGetAiWorkspaceRuntimeConfig = vi.fn();
+const mockGenerateAiDmReply = vi.fn();
 
 vi.mock("@/actions/webhook/queries", () => ({
   findAutomationForCommentWithReason: vi.fn(),
-  findAutomationForDM: vi.fn(),
+  findAutomationForDM: (...args: unknown[]) => mockFindAutomationForDM(...args),
   findAutomationForStory: vi.fn(),
   findPendingCommentDmActionForText: (...args: unknown[]) => mockFindPendingCommentDmActionForText(...args),
   findAutomationById: (...args: unknown[]) => mockFindAutomationById(...args),
@@ -73,6 +77,15 @@ vi.mock("@/lib/send-token", () => ({
 
 vi.mock("@/actions/usage/queries", () => ({
   canSendStaticReply: (...args: unknown[]) => mockCanSendStaticReply(...args),
+  reserveAiReplyQuota: (...args: unknown[]) => mockReserveAiReplyQuota(...args),
+  completeAiReplyReservation: vi.fn(),
+  releaseAiReplyReservation: vi.fn(),
+}));
+
+vi.mock("@/lib/ai-reply", () => ({
+  getAiWorkspaceRuntimeConfig: (...args: unknown[]) => mockGetAiWorkspaceRuntimeConfig(...args),
+  generateAiDmReply: (...args: unknown[]) => mockGenerateAiDmReply(...args),
+  generateAiCommentDecision: vi.fn(),
 }));
 
 vi.mock("@/lib/app-review-mode", () => ({
@@ -112,6 +125,7 @@ describe("Meta webhook route security", () => {
     mockUpdateWebhookEvent.mockResolvedValue({});
     mockVerifyMetaSignature.mockReturnValue(signatureResult(false));
     mockFindAutomationById.mockResolvedValue(null);
+    mockFindAutomationForDM.mockResolvedValue(null);
     mockFindPendingCommentDmActionForText.mockResolvedValue(null);
     mockFindIntegrationForWebhookAccount.mockResolvedValue(null);
     mockIsDuplicate.mockResolvedValue(false);
@@ -125,6 +139,8 @@ describe("Meta webhook route security", () => {
     mockSendInstagramDirectResponse.mockResolvedValue({ ok: true, messageIds: ["mid.outbound"] });
     mockResolveIntegrationSendToken.mockReturnValue({ ok: false, reason: "token_missing" });
     mockCanSendStaticReply.mockResolvedValue({ ok: true });
+    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({ aiRepliesEnabled: true });
+    mockGenerateAiDmReply.mockResolvedValue({ ok: true, reply: "AI reply" });
   });
 
   it("does not persist failed GET verification attempts", async () => {
@@ -395,6 +411,70 @@ describe("Meta webhook route security", () => {
       content: "Sent an image",
       messageType: "IMAGE",
       mediaUrl: "https://scontent.cdninstagram.com/inbound.jpg",
+    }));
+  });
+
+  it("uses the saved DM fallback when AI quota reservation fails", async () => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    const integration = {
+      userId: "user-1",
+      token: "token-1",
+      instagramId: "ig-business-1",
+      pageId: "ig-business-1",
+      instagramUsername: "ap3k",
+      status: "CONNECTED",
+      reconnectRequired: false,
+    };
+    const automation = {
+      id: "automation-1",
+      userId: "user-1",
+      active: true,
+      followGateRequired: false,
+      typingIndicator: false,
+      deliveryDelaySeconds: 0,
+      listener: {
+        prompt: "Saved fallback reply",
+        responseFormat: "TEXT",
+        quickReplies: [],
+        ctaButtonTitle: null,
+        ctaLink: null,
+        mediaUrl: null,
+        mediaType: null,
+        aiDmReplyEnabled: true,
+      },
+      User: { integrations: [integration] },
+    };
+    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    mockFindAutomationForDM.mockResolvedValue({ automation, matchedKeyword: "any message" });
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    mockReserveAiReplyQuota.mockRejectedValue(new Error("quota database unavailable"));
+
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{
+        id: "ig-business-1",
+        messaging: [{
+          sender: { id: "recipient-1" },
+          recipient: { id: "ig-business-1" },
+          timestamp: Date.now(),
+          message: { mid: "mid.inbound", text: "What do you sell?" },
+        }],
+      }],
+    });
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
+      method: "POST",
+      headers: { "x-hub-signature-256": "sha256=good" },
+      body,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
+      recipientId: "recipient-1",
+      automationId: "automation-1",
+      message: "Saved fallback reply",
+    }));
+    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith("webhook-event-1", expect.objectContaining({
+      status: "PROCESSED",
     }));
   });
 
