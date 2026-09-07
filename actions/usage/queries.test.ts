@@ -6,24 +6,46 @@ const mockAutomationEventCount = vi.fn();
 const mockAutomationCount = vi.fn();
 const mockIntegrationCount = vi.fn();
 const mockAutomationFindFirst = vi.fn();
+const mockQueryRaw = vi.fn();
+const mockAutomationEventCreate = vi.fn();
+const mockAutomationEventUpdateMany = vi.fn();
+const mockAutomationEventDeleteMany = vi.fn();
+const mockTransaction = vi.fn(async (callback: (tx: any) => unknown) => callback({
+  $queryRaw: (...args: any[]) => mockQueryRaw(...args),
+  user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
+  automationEvent: {
+    count: (...args: any[]) => mockAutomationEventCount(...args),
+    create: (...args: any[]) => mockAutomationEventCreate(...args),
+    updateMany: (...args: any[]) => mockAutomationEventUpdateMany(...args),
+    deleteMany: (...args: any[]) => mockAutomationEventDeleteMany(...args),
+  },
+}));
 
 vi.mock("@/lib/prisma", () => ({
   client: {
     user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
     messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
-    automationEvent: { count: (...args: any[]) => mockAutomationEventCount(...args) },
+    automationEvent: {
+      count: (...args: any[]) => mockAutomationEventCount(...args),
+      updateMany: (...args: any[]) => mockAutomationEventUpdateMany(...args),
+      deleteMany: (...args: any[]) => mockAutomationEventDeleteMany(...args),
+    },
     automation: {
       count: (...args: any[]) => mockAutomationCount(...args),
       findFirst: (...args: any[]) => mockAutomationFindFirst(...args),
     },
     integrations: { count: (...args: any[]) => mockIntegrationCount(...args) },
+    $transaction: (callback: (tx: any) => unknown) => mockTransaction(callback),
   },
 }));
 
 import {
   canActivateCampaign,
   canSendStaticReply,
+  completeAiReplyReservation,
   getUserMonthlyUsage,
+  releaseAiReplyReservation,
+  reserveAiReplyQuota,
 } from "@/actions/usage/queries";
 
 beforeEach(() => {
@@ -35,6 +57,10 @@ beforeEach(() => {
   mockAutomationCount.mockResolvedValue(0);
   mockIntegrationCount.mockResolvedValue(0);
   mockAutomationFindFirst.mockResolvedValue(null);
+  mockQueryRaw.mockResolvedValue(undefined);
+  mockAutomationEventCreate.mockResolvedValue({ id: "reservation-1" });
+  mockAutomationEventUpdateMany.mockResolvedValue({ count: 1 });
+  mockAutomationEventDeleteMany.mockResolvedValue({ count: 1 });
 });
 
 describe("usage query helpers", () => {
@@ -94,7 +120,56 @@ describe("usage query helpers", () => {
     expect(result.reason).toBe("static_reply_limit_reached");
   });
 
-  it("uses the one-time 500-reply window during an active launch trial", async () => {
+  it("hard-blocks AI on Free before creating a provider reservation", async () => {
+    const result = await reserveAiReplyQuota({
+      userId: "user-1",
+      automationId: "automation-1",
+      commentId: "comment-1",
+      date: new Date("2026-05-24T12:00:00Z"),
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: "ai_reply_limit_reached", limit: 0 });
+    expect(mockQueryRaw).toHaveBeenCalledOnce();
+    expect(mockAutomationEventCreate).not.toHaveBeenCalled();
+  });
+
+  it("atomically reserves the last available Pro AI decision", async () => {
+    mockUserFindUnique.mockResolvedValue({ subscription: { plan: "PRO" } });
+    mockAutomationEventCount.mockResolvedValue(499);
+
+    const result = await reserveAiReplyQuota({
+      userId: "user-1",
+      automationId: "automation-1",
+      igUserId: "ig-user-1",
+      commentId: "comment-1",
+      date: new Date("2026-05-24T12:00:00Z"),
+    });
+
+    expect(result).toMatchObject({ ok: true, used: 500, limit: 500, reservationId: "reservation-1" });
+    expect(mockQueryRaw.mock.invocationCallOrder[0]).toBeLessThan(mockAutomationEventCount.mock.invocationCallOrder[0]);
+    expect(mockAutomationEventCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        automationId: "automation-1",
+        eventType: "AI_REPLY_GENERATED",
+        commentId: "comment-1",
+      }),
+    }));
+  });
+
+  it("completes successful reservations and releases provider failures", async () => {
+    await completeAiReplyReservation("reservation-1", { action: "REPLY", category: "SAFE" });
+    await releaseAiReplyReservation("reservation-2");
+
+    expect(mockAutomationEventUpdateMany).toHaveBeenCalledWith({
+      where: { id: "reservation-1", eventType: "AI_REPLY_GENERATED" },
+      data: { meta: { status: "completed", action: "REPLY", category: "SAFE" } },
+    });
+    expect(mockAutomationEventDeleteMany).toHaveBeenCalledWith({
+      where: { id: "reservation-2", eventType: "AI_REPLY_GENERATED" },
+    });
+  });
+
+  it("uses the one-time 50-reply window during an active launch trial", async () => {
     const startsAt = new Date("2026-05-20T12:00:00Z");
     const endsAt = new Date("2026-06-03T12:00:00Z");
     mockUserFindUnique.mockResolvedValue({
@@ -102,18 +177,18 @@ describe("usage query helpers", () => {
         plan: "FREE",
         welcomeTrialStartedAt: startsAt,
         welcomeTrialEndsAt: endsAt,
-        welcomeTrialReplyLimit: 500,
+        welcomeTrialReplyLimit: 50,
       },
     });
-    mockMessageLogCount.mockResolvedValueOnce(300).mockResolvedValueOnce(120);
+    mockMessageLogCount.mockResolvedValueOnce(30).mockResolvedValueOnce(12);
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
-    expect(usage.staticReplies).toMatchObject({ used: 420, limit: 500, remaining: 80, blocked: false });
+    expect(usage.staticReplies).toMatchObject({ used: 42, limit: 50, remaining: 8, blocked: false });
     expect(usage.periodStart).toEqual(startsAt);
     expect(usage.periodEnd).toEqual(endsAt);
     expect(usage.periodLabel).toBe("14-day launch trial");
-    expect(usage.welcomeTrial).toMatchObject({ active: true, replyLimit: 500 });
+    expect(usage.welcomeTrial).toMatchObject({ active: true, replyLimit: 50 });
   });
 
   it("starts the normal Free allowance fresh after the launch trial ends", async () => {
@@ -123,7 +198,7 @@ describe("usage query helpers", () => {
         plan: "FREE",
         welcomeTrialStartedAt: new Date("2026-05-06T12:00:00Z"),
         welcomeTrialEndsAt: endsAt,
-        welcomeTrialReplyLimit: 500,
+        welcomeTrialReplyLimit: 50,
       },
     });
 
@@ -139,7 +214,7 @@ describe("usage query helpers", () => {
     });
   });
 
-  it("does not reset the 500-reply trial when it crosses a month boundary", async () => {
+  it("does not reset the 50-reply trial when it crosses a month boundary", async () => {
     const startsAt = new Date("2026-08-25T12:00:00Z");
     const endsAt = new Date("2026-09-08T12:00:00Z");
     mockUserFindUnique.mockResolvedValue({
@@ -147,7 +222,7 @@ describe("usage query helpers", () => {
         plan: "FREE",
         welcomeTrialStartedAt: startsAt,
         welcomeTrialEndsAt: endsAt,
-        welcomeTrialReplyLimit: 500,
+        welcomeTrialReplyLimit: 50,
       },
     });
 
@@ -164,7 +239,7 @@ describe("usage query helpers", () => {
 
   it("falls back to sent automation events when message logs are missing", async () => {
     mockMessageLogCount.mockResolvedValue(0);
-    mockAutomationEventCount.mockResolvedValueOnce(2).mockResolvedValueOnce(3);
+    mockAutomationEventCount.mockResolvedValueOnce(0).mockResolvedValueOnce(2).mockResolvedValueOnce(3);
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 

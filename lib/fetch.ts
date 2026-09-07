@@ -105,6 +105,23 @@ async function postGraph(
   }
 }
 
+async function deleteGraph(path: string, token: string, context: { endpointName: string }) {
+  if (shouldPreferInstagramGraph()) {
+    return axios.delete(`${INSTAGRAM_GRAPH_API_BASE_URL}/${path}`, { headers: graphHeaders(token) });
+  }
+
+  try {
+    return await axios.delete(`${META_GRAPH_API_BASE_URL}/${path}`, { headers: graphHeaders(token) });
+  } catch (facebookErr) {
+    if (!shouldTryInstagramGraph(facebookErr)) throw facebookErr;
+    console.warn("[meta-api] facebook graph delete failed — trying instagram graph", {
+      endpointName: context.endpointName,
+      facebookGraphError: getSafeMetaError(facebookErr),
+    });
+    return axios.delete(`${INSTAGRAM_GRAPH_API_BASE_URL}/${path}`, { headers: graphHeaders(token) });
+  }
+}
+
 export const sendDm = async (
   userId: string,
   receiverId: string,
@@ -179,6 +196,14 @@ export const sendMediaComment = async (
     token,
     { endpointName: "media_comments" }
   );
+};
+
+export const deleteInstagramComment = async (commentId: string, token: string) => {
+  console.log("[meta-api] delete protected Instagram comment", {
+    endpointFamily: shouldPreferInstagramGraph() ? "instagram_graph" : "facebook_graph_instagram_business",
+    hasCommentId: Boolean(commentId),
+  });
+  return deleteGraph(commentId, token, { endpointName: "delete_instagram_comment" });
 };
 
 const WEBHOOK_SUBSCRIBED_FIELDS = INSTAGRAM_WEBHOOK_FIELDS_CSV;

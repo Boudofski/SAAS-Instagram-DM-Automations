@@ -13,6 +13,7 @@ import {
 import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, type LinkButton } from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { DEFAULT_AI_PROTECTION_RULES, type AiProtectionRules, type AiReplyTone } from "@/lib/ai-reply-config";
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
@@ -41,6 +42,10 @@ export type WizardData = {
   publicReply2: string;
   publicReply3: string;
   publicReplyEnabled: boolean;
+  aiReplyEnabled: boolean;
+  aiReplyTone: AiReplyTone;
+  aiReplyInstructions: string;
+  aiProtectionRules: AiProtectionRules;
   active: boolean;
 };
 
@@ -71,6 +76,10 @@ const INITIAL: WizardData = {
   publicReply2: DEFAULT_PUBLIC_REPLIES[1],
   publicReply3: DEFAULT_PUBLIC_REPLIES[2],
   publicReplyEnabled: true,
+  aiReplyEnabled: false,
+  aiReplyTone: "FRIENDLY",
+  aiReplyInstructions: "",
+  aiProtectionRules: DEFAULT_AI_PROTECTION_RULES,
   active: true,
 };
 
@@ -89,14 +98,15 @@ export function useWizard(slug: string, automationId?: string) {
   const goTo = (s: WizardStep) => setStep(s);
 
   const hasCommentReply =
-    data.publicReplyEnabled &&
-    [data.publicReply, data.publicReply2, data.publicReply3].some((reply) => reply.trim());
+    data.aiReplyEnabled ||
+    (data.publicReplyEnabled && [data.publicReply, data.publicReply2, data.publicReply3].some((reply) => reply.trim()));
 
   const canAdvance = (): boolean => {
     if (step === 1) return !!data.post;
     if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
     if (step === 3) {
       if (!hasCommentReply && !data.sendPrivateDm) return false;
+      if (data.aiReplyEnabled && !data.aiReplyInstructions.trim()) return false;
       if (data.sendPrivateDm && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
       if (data.sendPrivateDm && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) return false;
       if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
@@ -117,6 +127,10 @@ export function useWizard(slug: string, automationId?: string) {
     }
     if (!hasCommentReply && !data.sendPrivateDm) {
       setError("Choose a comment reply or DM before activating this automation.");
+      return;
+    }
+    if (data.aiReplyEnabled && !data.aiReplyInstructions.trim()) {
+      setError("Add AI reply instructions before activating this automation.");
       return;
     }
     if (data.sendPrivateDm && !linkButtonsAreComplete(data.linkButtons)) {
@@ -151,6 +165,10 @@ export function useWizard(slug: string, automationId?: string) {
           commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
           commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
           commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
+          aiReplyEnabled: data.aiReplyEnabled,
+          aiReplyTone: data.aiReplyTone,
+          aiReplyInstructions: data.aiReplyEnabled ? data.aiReplyInstructions : undefined,
+          aiProtectionRules: data.aiProtectionRules,
           ctaLink: data.sendPrivateDm ? firstLink?.url || undefined : undefined,
           ctaButtonTitle: data.sendPrivateDm ? firstLink?.label || undefined : undefined,
           responseFormat: data.sendPrivateDm ? "LINK" : "TEXT",

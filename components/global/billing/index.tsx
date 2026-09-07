@@ -53,7 +53,7 @@ export default function Billing({
             </div>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-300">
               {launchTrialActive
-                ? "Your one-time 500-reply allowance stays active for 14 days after connecting Instagram. The normal Free allowance starts fresh when it ends."
+                ? "Your one-time 50-reply allowance stays active for 14 days after connecting Instagram. The normal Free allowance starts fresh when it ends."
                 : "Usage refreshes monthly. Automations remain unlimited and each workspace supports one connected Instagram account."}
             </p>
           </div>
@@ -78,8 +78,9 @@ export default function Billing({
         </div>
 
         {usage && (
-          <div className="mt-4 grid gap-2 lg:grid-cols-2">
+          <div className={`mt-4 grid gap-2 ${current === "FREE" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
             <UsageBar label="Automated replies" metric={usage.staticReplies} />
+            {current !== "FREE" ? <UsageBar label="AI replies" metric={usage.aiReplies} helper="Generated public comment replies this month." /> : null}
             <UsageBar label="Active automations" metric={usage.activeCampaigns} helper="Unlimited automations are included." />
           </div>
         )}

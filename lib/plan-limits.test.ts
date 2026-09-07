@@ -26,7 +26,7 @@ describe("plan limits", () => {
       label: "Pro",
       activeCampaigns: "unlimited",
       staticRepliesPerMonth: 5000,
-      aiRepliesPerMonth: 0,
+      aiRepliesPerMonth: 500,
       exportLeads: true,
     });
   });
@@ -35,7 +35,7 @@ describe("plan limits", () => {
     expect(getPlanLimits("AGENCY")).toMatchObject({
       label: "Business",
       staticRepliesPerMonth: 20000,
-      aiRepliesPerMonth: 0,
+      aiRepliesPerMonth: 2000,
       connectedInstagramAccounts: 1,
     });
   });

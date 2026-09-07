@@ -85,7 +85,13 @@ function PostPreview({ data, handle, profilePictureUrl, showComments }: { data: 
   const sampleComment = data.triggerMode === "ANY_COMMENT"
     ? "This looks amazing!"
     : data.keywords[0] || "guide";
-  const reply = [data.publicReply, data.publicReply2, data.publicReply3].find((item) => item.trim()) || "Thanks! Please see DMs.";
+  const reply = data.aiReplyEnabled
+    ? data.aiReplyTone === "FUN"
+      ? "Love this! Thanks for joining the conversation ✨"
+      : data.aiReplyTone === "PROFESSIONAL"
+        ? "Thank you for your comment. We appreciate your interest."
+        : "Thanks for your comment! Happy to help 😊"
+    : [data.publicReply, data.publicReply2, data.publicReply3].find((item) => item.trim()) || "Thanks! Please see DMs.";
 
   return (
     <div className="relative flex h-full flex-col">
@@ -139,7 +145,7 @@ function PostPreview({ data, handle, profilePictureUrl, showComments }: { data: 
           </div>
           <div className="space-y-4 p-5">
             <Comment avatar="U" username="username" text={sampleComment} />
-            {data.publicReplyEnabled ? <div className="ml-8 border-l border-white/10 pl-3"><Comment profilePictureUrl={profilePictureUrl} avatar={handle} username={handle} text={reply} /></div> : null}
+            {data.publicReplyEnabled || data.aiReplyEnabled ? <div className="ml-8 border-l border-white/10 pl-3"><Comment profilePictureUrl={profilePictureUrl} avatar={handle} username={handle} text={reply} /></div> : null}
           </div>
           <div className="mt-auto px-5 pb-3">
             <div className="mb-4 flex justify-between text-lg"><span>❤️</span><span>🙌</span><span>🔥</span><span>👏</span><span>🥹</span><span>😍</span><span>😂</span></div>

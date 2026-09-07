@@ -36,6 +36,7 @@ import {
   sendDm,
   sendCommentReply,
   sendMediaComment,
+  deleteInstagramComment,
 } from "@/lib/fetch";
 import {
   sendInstagramCommentPrivateReply,
@@ -55,7 +56,13 @@ import {
 } from "@/lib/comment-dm-flow";
 import { resolveTemplate } from "@/lib/template";
 import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/send-token";
-import { canSendStaticReply } from "@/actions/usage/queries";
+import {
+  canSendStaticReply,
+  completeAiReplyReservation,
+  releaseAiReplyReservation,
+  reserveAiReplyQuota,
+} from "@/actions/usage/queries";
+import { generateAiCommentDecision } from "@/lib/ai-reply";
 import {
   parseMessagingItem,
   classifyStoryInteraction,
@@ -848,7 +855,8 @@ async function processEntry(
         listener.commentReply2,
         listener.commentReply3,
       ].filter(Boolean) as string[];
-      const publicReplyEnabled = replyVariants.length > 0;
+      const aiReplyEnabled = listener.aiReplyEnabled === true;
+      const publicReplyEnabled = aiReplyEnabled || replyVariants.length > 0;
       const privateDmEnabled = automation.sendPrivateDm !== false;
 
       if (!publicReplyEnabled) {
@@ -1067,10 +1075,104 @@ async function processEntry(
       // 5. Send public comment reply — pick a random non-empty variation
       // Primary: threaded reply via POST /{commentId}/replies (Advanced Access)
       // Fallback: top-level @mention comment via POST /{mediaId}/comments (Standard Access)
-      const chosenReply =
-        publicReplyEnabled
-          ? replyVariants[Math.floor(Math.random() * replyVariants.length)]
-          : null;
+      let chosenReply = publicReplyEnabled && !aiReplyEnabled
+        ? replyVariants[Math.floor(Math.random() * replyVariants.length)]
+        : null;
+      let aiReplyCategory: string | null = null;
+
+      if (aiReplyEnabled && automation.userId) {
+        const aiQuota = await reserveAiReplyQuota({
+          userId: automation.userId,
+          automationId: automation.id,
+          igUserId: commenterId,
+          mediaId,
+          commentId,
+          keyword: matchedKeyword,
+        });
+        if (!aiQuota.ok) {
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "COMMENT_REPLY",
+            status: "SKIPPED",
+            errorMessage: "ai_reply_limit_reached",
+          });
+          await createAutomationEvent({
+            automationId: automation.id,
+            eventType: "COMMENT_SKIPPED",
+            igUserId: commenterId,
+            mediaId,
+            commentId,
+            keyword: matchedKeyword,
+            meta: {
+              reason: "ai_reply_limit_reached",
+              aiReplyEnabled: true,
+              plan: aiQuota.plan,
+              used: aiQuota.used,
+              limit: aiQuota.limit,
+            },
+          });
+        } else {
+          const decision = await generateAiCommentDecision({
+            comment: commentText,
+            postCaption: automation.posts?.[0]?.caption,
+            instructions: listener.aiReplyInstructions,
+            tone: listener.aiReplyTone,
+            protectionRules: listener.aiProtectionRules,
+          });
+          aiReplyCategory = decision.category;
+
+          if ("reason" in decision && decision.reason === "ai_provider_unavailable") {
+            await releaseAiReplyReservation(aiQuota.reservationId);
+          } else {
+            await completeAiReplyReservation(aiQuota.reservationId, {
+              action: decision.action,
+              category: decision.category,
+              tone: listener.aiReplyTone,
+              reason: "reason" in decision ? decision.reason : null,
+            });
+          }
+
+          if (decision.action === "REPLY") {
+            chosenReply = decision.reply;
+          } else {
+            let protectionError: string | undefined;
+            if (decision.action === "DELETE") {
+              try {
+                await withRetry(() => deleteInstagramComment(commentId, token));
+              } catch (deleteError) {
+                protectionError = formatSafeMetaError(deleteError);
+              }
+            }
+            await createMessageLog({
+              automationId: automation.id,
+              recipientIgId: commenterId,
+              mediaId,
+              commentId,
+              messageType: "COMMENT_REPLY",
+              status: "SKIPPED",
+              errorMessage: protectionError ? "ai_protection_delete_failed" : decision.reason,
+            });
+            await createAutomationEvent({
+              automationId: automation.id,
+              eventType: "COMMENT_SKIPPED",
+              igUserId: commenterId,
+              mediaId,
+              commentId,
+              keyword: matchedKeyword,
+              meta: {
+                reason: protectionError ? "ai_protection_delete_failed" : decision.reason,
+                category: decision.category,
+                protectionAction: decision.action,
+                deleted: decision.action === "DELETE" && !protectionError,
+                ...(protectionError ? { error: protectionError } : {}),
+              },
+            });
+          }
+        }
+      }
 
       if (chosenReply) {
         const replyText = resolveTemplate(chosenReply, templateVars);
@@ -1165,6 +1267,8 @@ async function processEntry(
             publicReplyTextHash: hashNormalizedText(normalizeMatchText(outboundPublicReplyText)),
             normalizedPublicReplyText: normalizeMatchText(outboundPublicReplyText),
             mentionOmitted: publicReplyErrorMessage === "commenter_username_missing_mention_omitted",
+            replyMode: aiReplyEnabled ? "AI" : "SAVED",
+            ...(aiReplyCategory ? { aiReplyCategory } : {}),
             ...(publicReplyErrorMessage && !publicReplySent ? { error: publicReplyErrorMessage } : {}),
           },
         });

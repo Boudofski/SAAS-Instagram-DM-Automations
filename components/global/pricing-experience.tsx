@@ -97,12 +97,7 @@ export default function PricingExperience({
             cta = "Manage in portal";
           }
 
-          const visibleFeatures = dashboardCompact
-            ? plan.features.slice(0, 3)
-            : compact
-              ? plan.features.slice(0, 4)
-              : plan.features;
-          const remainingFeatures = Math.max(0, plan.features.length - visibleFeatures.length);
+          const visibleFeatures = plan.features;
 
           return (
             <article
@@ -171,9 +166,6 @@ export default function PricingExperience({
                     <span>{feature}</span>
                   </div>
                 ))}
-                {(dashboardCompact || compact) && remainingFeatures > 0 && (
-                  <p className="px-1 pt-1 text-[11px] font-bold text-violet-600 dark:text-violet-300">+{remainingFeatures} more included</p>
-                )}
               </div>
 
               <Link

@@ -10,6 +10,7 @@ export const HUMAN_EVENT: Record<string, string> = {
   DM_FAILED: "DM failed",
   DM_SKIPPED: "DM skipped",
   PUBLIC_REPLY_FAILED: "Reply failed",
+  AI_REPLY_GENERATED: "AI reply generated",
   DUPLICATE_SKIPPED: "Duplicate skipped",
   SELF_COMMENT_SKIPPED: "Self-comment skipped",
   COMMENT_SKIPPED: "Comment skipped",

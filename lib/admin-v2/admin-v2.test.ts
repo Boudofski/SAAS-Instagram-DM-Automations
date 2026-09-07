@@ -76,13 +76,11 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
     expect(panel).toContain("useState(false)");
   });
 
-  it("overview page renders all 6 stat cards", () => {
+  it("overview page renders the four primary health metrics", () => {
     const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
     expect(overview).toContain("Total users");
     expect(overview).toContain("Connected accounts");
     expect(overview).toContain("Active automations");
-    expect(overview).toContain("Replies today");
-    expect(overview).toContain("Leads today");
     expect(overview).toContain("Failed today");
   });
 
@@ -185,9 +183,9 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
     expect(badge).toContain('"Broken"');
   });
 
-  it("overview page has System health section", () => {
+  it("overview page has a focused attention section", () => {
     const overview = read("app/(protected)/ap3k-admin-v2/overview/page.tsx");
-    expect(overview).toContain("System health");
+    expect(overview).toContain("Requires attention");
     expect(overview).toContain("getAdminV2SystemHealth");
   });
 
@@ -232,12 +230,11 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
     expect(users).toContain("Last activity");
   });
 
-  it("replies page uses approved title", () => {
+  it("keeps the replies route available without crowding the primary nav", () => {
     const replies = read("app/(protected)/ap3k-admin-v2/replies/page.tsx");
     expect(replies).toContain('eyebrow="Replies"');
-    // Nav label remains "Replies" not "Reply Library"
     const nav = read("components/admin-v2/nav.tsx");
-    expect(nav).toContain('label: "Replies"');
+    expect(nav).not.toContain('label: "Replies"');
     expect(nav).not.toContain("Reply Library");
   });
 

@@ -10,6 +10,12 @@ import {
   readLegacyQuickReplies,
   type LinkButton,
 } from "@/lib/link-buttons";
+import {
+  normalizeAiProtectionRules,
+  normalizeAiReplyTone,
+  type AiProtectionRules,
+  type AiReplyTone,
+} from "@/lib/ai-reply-config";
 
 export type CampaignTriggerMode = "SPECIFIC_KEYWORD" | "ANY_COMMENT";
 export type CampaignMatchingMode = "EXACT" | "CONTAINS" | "SMART_AI";
@@ -39,6 +45,10 @@ export type RawCampaignPayload = {
     commentReply?: string | null;
     commentReply2?: string | null;
     commentReply3?: string | null;
+    aiReplyEnabled?: boolean;
+    aiReplyTone?: string | null;
+    aiReplyInstructions?: string | null;
+    aiProtectionRules?: unknown;
     ctaLink?: string | null;
     ctaButtonTitle?: string | null;
     responseFormat?: string | null;
@@ -75,6 +85,10 @@ export type NormalizedCampaignPayload = {
     commentReply?: string;
     commentReply2?: string;
     commentReply3?: string;
+    aiReplyEnabled?: boolean;
+    aiReplyTone?: AiReplyTone;
+    aiReplyInstructions?: string;
+    aiProtectionRules?: AiProtectionRules;
     ctaLink?: string;
     ctaButtonTitle?: string;
     responseFormat?: "TEXT" | "LINK" | "MEDIA";
@@ -117,6 +131,7 @@ export function normalizeCampaignPayload(
 
   const postid = payload.post?.postid?.trim() ?? "";
   const publicReplyEnabled = payload.publicReplyEnabled !== false;
+  const aiReplyEnabled = payload.listener?.aiReplyEnabled === true;
   const sendPrivateDm = payload.sendPrivateDm !== false;
   const responseFormat = payload.listener?.responseFormat === "MEDIA"
     ? "MEDIA"
@@ -159,6 +174,10 @@ export function normalizeCampaignPayload(
       commentReply: replies[0],
       commentReply2: replies[1],
       commentReply3: replies[2],
+      aiReplyEnabled,
+      aiReplyTone: normalizeAiReplyTone(payload.listener?.aiReplyTone),
+      aiReplyInstructions: aiReplyEnabled ? cleanOptional(payload.listener?.aiReplyInstructions)?.slice(0, 1600) : undefined,
+      aiProtectionRules: normalizeAiProtectionRules(payload.listener?.aiProtectionRules),
       ctaLink: sendPrivateDm && responseFormat === "LINK" ? firstLink?.url : undefined,
       ctaButtonTitle: sendPrivateDm && responseFormat === "LINK" ? firstLink?.label : undefined,
       responseFormat,
@@ -209,7 +228,10 @@ export function validateNormalizedCampaignPayload(
     payload.listener.commentReply2,
     payload.listener.commentReply3,
   ].filter(Boolean).length;
-  if (!payload.sendPrivateDm && publicReplyCount === 0) {
+  if (payload.listener.aiReplyEnabled && !payload.listener.aiReplyInstructions) {
+    return "Add instructions so AI knows what it can safely answer.";
+  }
+  if (!payload.sendPrivateDm && publicReplyCount === 0 && !payload.listener.aiReplyEnabled) {
     return "Choose a comment reply or DM before activating this automation.";
   }
 
@@ -219,6 +241,7 @@ export function validateNormalizedCampaignPayload(
 export function summarizeCampaignPayload(
   payload: NormalizedCampaignPayload,
   publicReplyEnabled = Boolean(
+    payload.listener.aiReplyEnabled ||
     payload.listener.commentReply ||
       payload.listener.commentReply2 ||
       payload.listener.commentReply3

@@ -6,6 +6,7 @@ import type { NormalizedMessageAutomationPayload } from "@/lib/message-automatio
 import { resolveFollowRequestButtonText, resolveFollowRequestDmText } from "@/lib/comment-dm-flow";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 import type { MATCHING_MODE } from "@prisma/client";
+import { normalizeAiProtectionRules, normalizeAiReplyTone } from "@/lib/ai-reply-config";
 
 export type CampaignPayload = NormalizedCampaignPayload;
 
@@ -423,6 +424,10 @@ export const duplicateAutomationQuery = async (
       commentReply: automation.listener.commentReply ?? undefined,
       commentReply2: automation.listener.commentReply2 ?? undefined,
       commentReply3: automation.listener.commentReply3 ?? undefined,
+      aiReplyEnabled: automation.listener.aiReplyEnabled,
+      aiReplyTone: normalizeAiReplyTone(automation.listener.aiReplyTone),
+      aiReplyInstructions: automation.listener.aiReplyInstructions ?? undefined,
+      aiProtectionRules: normalizeAiProtectionRules(automation.listener.aiProtectionRules),
       ctaLink: automation.listener.ctaLink ?? undefined,
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       responseFormat:

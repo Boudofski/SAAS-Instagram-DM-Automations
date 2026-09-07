@@ -33,6 +33,7 @@ export function statusTone(status: string): Tone {
 
 export function eventTone(eventType: string): Tone {
   if (eventType === "PUBLIC_REPLY_SENT" || eventType === "KEYWORD_MATCHED" || eventType === "DM_SENT") return "green";
+  if (eventType === "AI_REPLY_GENERATED") return "pink";
   if (eventType.includes("FAILED") || eventType.includes("LOOP_GUARD")) return "red";
   if (eventType.includes("SKIPPED") || eventType === "NO_MATCH") return "amber";
   if (eventType === "COMMENT_RECEIVED" || eventType === "WEBHOOK_RECEIVED") return "blue";

@@ -7,9 +7,9 @@ describe("Stripe checkout routing", () => {
   it("presents Free as an interval-independent zero-dollar plan", () => {
     const free = PLAN_CARDS.find((plan) => plan.id === "FREE");
 
-    expect(free?.description).toContain("keep using it free");
-    expect(free?.features).toContain("500 replies during your 14-day launch trial");
-    expect(free?.features).toContain("Then 50 automated replies every month");
+    expect(free?.description).toContain("50 replies for 14 days");
+    expect(free?.features).toContain("50 replies during your 14-day launch trial");
+    expect(free?.features).toContain("Comment replies + DMs");
 
     const source = fs.readFileSync(
       path.join(process.cwd(), "components/global/pricing-experience.tsx"),
@@ -17,6 +17,7 @@ describe("Stripe checkout routing", () => {
     );
     expect(source).toContain("$0");
     expect(source).not.toContain("Free forever");
+    expect(source).not.toContain("more included");
     expect(source).not.toContain('plan.id === "FREE" && <p');
   });
 

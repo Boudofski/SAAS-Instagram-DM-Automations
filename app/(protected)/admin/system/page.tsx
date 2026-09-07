@@ -10,13 +10,19 @@ import { StatCard } from "@/components/admin-v2/stat-card";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import { AdminPageHeader, AdminSurface } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
+import { AiProviderSettings } from "@/components/admin-v2/ai-provider-settings";
+import { getAiProviderPublicConfig } from "@/lib/ai-reply";
+import { aiProviderEncryptionReady } from "@/lib/ai-provider-crypto";
 
 function configTone(value: boolean) {
   return value ? "green" as const : "amber" as const;
 }
 
 export default async function AdminSystemPage() {
-  const snapshot = await getAdminV2SystemSnapshot();
+  const [snapshot, aiProvider] = await Promise.all([
+    getAdminV2SystemSnapshot(),
+    getAiProviderPublicConfig(),
+  ]);
   const guardrails = adminDangerZoneStatus();
   const environment = adminEnvironmentLabel();
   const emailAllowlistConfigured = Boolean(process.env.ADMIN_EMAILS?.trim());
@@ -32,6 +38,20 @@ export default async function AdminSystemPage() {
         title="Operational control"
         description="High-level runtime health, deployment configuration, and owner guardrails. Secrets and raw Instagram access tokens are intentionally excluded."
         actions={<V2Badge tone={environment === "Production" ? "green" : "amber"}>{environment}</V2Badge>}
+      />
+
+      <AiProviderSettings
+        encryptionReady={aiProviderEncryptionReady()}
+        config={{
+          enabled: aiProvider.enabled,
+          providerName: aiProvider.providerName,
+          baseUrl: aiProvider.baseUrl,
+          model: aiProvider.model,
+          apiKeyHint: aiProvider.apiKeyHint,
+          lastTestStatus: aiProvider.lastTestStatus,
+          lastTestError: aiProvider.lastTestError,
+          lastTestedAt: aiProvider.lastTestedAt?.toISOString() ?? null,
+        }}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">

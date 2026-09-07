@@ -8,7 +8,7 @@ export const REFERRAL_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const FOUNDING_PARTNER_LIMIT = 10;
 export const REFERRAL_REWARD_CENTS = 900;
 export const WELCOME_TRIAL_DAYS = 14;
-export const WELCOME_TRIAL_REPLY_LIMIT = 500;
+export const WELCOME_TRIAL_REPLY_LIMIT = 50;
 
 const REFERRAL_CODE_PATTERN = /^[A-Z0-9-]{6,24}$/;
 

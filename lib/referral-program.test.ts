@@ -94,7 +94,7 @@ describe("referral program", () => {
       data: {
         welcomeTrialStartedAt: now,
         welcomeTrialEndsAt: new Date("2026-09-15T12:00:00Z"),
-        welcomeTrialReplyLimit: 500,
+        welcomeTrialReplyLimit: 50,
       },
     });
   });

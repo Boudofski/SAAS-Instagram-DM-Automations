@@ -150,6 +150,37 @@ describe("normalizeCampaignPayload", () => {
     expect(normalized.listener.commentReply3).toBeUndefined();
   });
 
+  it("keeps AI reply independent from saved comment replies", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: false,
+      publicReplyEnabled: false,
+      listener: {
+        ...basePayload.listener,
+        aiReplyEnabled: true,
+        aiReplyTone: "PROFESSIONAL",
+        aiReplyInstructions: "Answer product questions using only the post caption.",
+        aiProtectionRules: { INSULTS_HATE: "DELETE", CRITIQUE_NEGATIVE: "SKIP" },
+      },
+    });
+
+    expect(normalized.listener.commentReply).toBeUndefined();
+    expect(normalized.listener.aiReplyEnabled).toBe(true);
+    expect(normalized.listener.aiReplyTone).toBe("PROFESSIONAL");
+    expect(normalized.listener.aiProtectionRules?.UNANSWERABLE).toBe("SKIP");
+    expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
+  });
+
+  it("requires instructions when AI reply is enabled", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      listener: { ...basePayload.listener, aiReplyEnabled: true, aiReplyInstructions: " " },
+    });
+    expect(validateNormalizedCampaignPayload(normalized)).toBe(
+      "Add instructions so AI knows what it can safely answer."
+    );
+  });
+
   it("accepts the corrected carousel enum and maps the legacy typo", () => {
     expect(normalizeCampaignMediaType("CAROUSEL_ALBUM")).toBe("CAROUSEL_ALBUM");
     expect(normalizeCampaignMediaType("CAROSEL_ALBUM")).toBe("CAROUSEL_ALBUM");

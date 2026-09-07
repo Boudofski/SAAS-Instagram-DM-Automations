@@ -3,9 +3,7 @@ import {
   AlertTriangle,
   Instagram,
   Megaphone,
-  MessageCircleMore,
   ShieldCheck,
-  UserRoundPlus,
   Users,
 } from "lucide-react";
 import {
@@ -55,12 +53,10 @@ export default async function AdminV2OverviewPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total users" value={stats.totalUsers} icon={<Users className="h-4 w-4" />} />
         <StatCard label="Connected accounts" value={stats.connectedAccounts} icon={<Instagram className="h-4 w-4" />} tone="pink" />
         <StatCard label="Active automations" value={stats.activeCampaigns} icon={<Megaphone className="h-4 w-4" />} tone="blue" />
-        <StatCard label="Replies today" value={stats.repliesToday} icon={<MessageCircleMore className="h-4 w-4" />} tone="green" />
-        <StatCard label="Leads today" value={stats.leadsToday} icon={<UserRoundPlus className="h-4 w-4" />} tone="green" />
         <StatCard
           label="Failed today"
           value={stats.failedToday}
@@ -71,40 +67,6 @@ export default async function AdminV2OverviewPage() {
       </div>
 
       <section>
-        <AdminSectionHeader
-          title="System health"
-          description="Fast checks for the areas most likely to affect customer automations."
-        />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <HealthTile
-            label="Accounts needing attention"
-            value={health.attentionAccounts}
-            ok={health.attentionAccounts === 0}
-            href="/admin/accounts"
-          />
-          <HealthTile
-            label="Automations needing review"
-            value={health.campaignsNeedingReview}
-            ok={health.campaignsNeedingReview === 0}
-            href="/admin/campaigns"
-          />
-          <HealthTile
-            label="Failed actions today"
-            value={stats.failedToday}
-            ok={stats.failedToday === 0}
-            href="/admin/diagnostics"
-          />
-          <HealthTile
-            label="Active automations"
-            value={stats.activeCampaigns}
-            ok={stats.activeCampaigns > 0}
-            href="/admin/campaigns"
-          />
-        </div>
-      </section>
-
-      {needsAttention && (
-        <section>
           <AdminSectionHeader
             title="Requires attention"
             action={
@@ -113,7 +75,8 @@ export default async function AdminV2OverviewPage() {
               </Link>
             }
           />
-          <div className="grid gap-2">
+          <div className="grid gap-2 lg:grid-cols-3">
+            {!needsAttention && <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.045] px-4 py-4 text-xs text-emerald-200 lg:col-span-3">No accounts, automations, or failed sends need attention.</div>}
             {health.attentionAccounts > 0 && (
               <AttentionRow
                 message={`${health.attentionAccounts} Instagram account${health.attentionAccounts !== 1 ? "s" : ""} disconnected, expired, or require reconnection.`}
@@ -136,8 +99,7 @@ export default async function AdminV2OverviewPage() {
               />
             )}
           </div>
-        </section>
-      )}
+      </section>
 
       <section>
         <AdminSectionHeader
@@ -180,35 +142,6 @@ export default async function AdminV2OverviewPage() {
         </AdminSurface>
       </section>
     </div>
-  );
-}
-
-function HealthTile({
-  label,
-  value,
-  ok,
-  href,
-}: {
-  label: string;
-  value: number;
-  ok: boolean;
-  href: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`group rounded-2xl border p-4 transition hover:-translate-y-0.5 sm:p-5 ${
-        ok
-          ? "border-emerald-500/15 bg-emerald-500/[0.045] hover:border-emerald-500/25"
-          : "border-amber-500/20 bg-amber-500/[0.055] hover:border-amber-500/35"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[10px] font-black uppercase leading-4 tracking-[0.13em] text-slate-500">{label}</p>
-        <span className="text-xs text-slate-700 transition group-hover:translate-x-0.5 group-hover:text-slate-400">→</span>
-      </div>
-      <p className={`mt-3 text-2xl font-black tabular-nums ${ok ? "text-emerald-300" : "text-amber-200"}`}>{value}</p>
-    </Link>
   );
 }
 

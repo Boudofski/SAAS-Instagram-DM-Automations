@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  Activity,
   BadgeDollarSign,
   ChevronRight,
   CircleGauge,
@@ -13,7 +12,6 @@ import {
   Instagram,
   Megaphone,
   Menu,
-  MessageCircleMore,
   ScrollText,
   ShieldCheck,
   Stethoscope,
@@ -36,14 +34,12 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Users", href: "/admin/users", icon: Users },
       { label: "Accounts", href: "/admin/accounts", icon: Instagram },
       { label: "Automations", href: "/admin/campaigns", icon: Megaphone },
-      { label: "Replies", href: "/admin/replies", icon: MessageCircleMore },
       { label: "Billing", href: "/admin/billing", icon: BadgeDollarSign },
     ],
   },
   {
     label: "Monitor",
     items: [
-      { label: "Activity", href: "/admin/activity", icon: Activity },
       { label: "Diagnostics", href: "/admin/diagnostics", icon: Stethoscope },
       { label: "Audit", href: "/admin/audit", icon: ScrollText },
       { label: "System & Safety", href: "/admin/system", icon: ShieldCheck },

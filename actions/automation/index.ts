@@ -64,6 +64,14 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
     const validationError = validateNormalizedCampaignPayload(cleanPayload);
     const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
 
+    if (cleanPayload.listener.aiReplyEnabled) {
+      const aiProfile = await findUser(user.id);
+      const aiPlan = aiProfile?.subscription?.plan ?? "FREE";
+      if (aiPlan !== "PRO" && aiPlan !== "BUSINESS") {
+        return { status: 403, data: "AI replies are available on Pro and Business plans." };
+      }
+    }
+
     if (process.env.NODE_ENV !== "production") {
       console.info("[campaign-save] normalized payload", {
         action: "saveCampaign",

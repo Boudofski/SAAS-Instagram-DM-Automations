@@ -235,6 +235,10 @@ model Listener {
   commentReply   String?
   commentReply2  String?
   commentReply3  String?
+  aiReplyEnabled        Boolean @default(false)
+  aiReplyTone           String @default("FRIENDLY")
+  aiReplyInstructions   String?
+  aiProtectionRules     Json?
   ctaLink        String?
   ctaButtonTitle String?
   responseFormat String     @default("TEXT")
@@ -247,6 +251,22 @@ model Listener {
   followRequestButtonText  String?
   dmCount        Int        @default(0)
   commentCount   Int        @default(0)
+}
+
+model AiProviderConfig {
+  id              String   @id @default("primary")
+  enabled         Boolean  @default(false)
+  providerName    String   @default("AgentRouter")
+  baseUrl         String   @default("https://co.agentrouter.org/v1")
+  model           String   @default("")
+  encryptedApiKey String?
+  apiKeyHint      String?
+  lastTestedAt    DateTime?
+  lastTestStatus  String?
+  lastTestError   String?
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Conversation {
@@ -447,6 +467,7 @@ enum EVENT_TYPE {
   PUBLIC_REPLY_SENT
   DM_FAILED
   PUBLIC_REPLY_FAILED
+  AI_REPLY_GENERATED
   DUPLICATE_SKIPPED
   SELF_COMMENT_SKIPPED
   COMMENT_SKIPPED

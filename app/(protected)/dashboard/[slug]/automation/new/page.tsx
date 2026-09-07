@@ -6,6 +6,7 @@ import DeliveryRules from "@/components/automations/delivery-rules";
 import InstagramPhonePreview from "@/components/automations/instagram-phone-preview";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
+import AiCommentReplyEditor from "@/components/automations/ai-comment-reply-editor";
 import EmptyState from "@/components/global/empty-state";
 import KeywordInput from "@/components/global/keyword-input";
 import PostPicker from "@/components/global/post-picker";
@@ -15,6 +16,7 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { readLinkButtons } from "@/lib/link-buttons";
+import { DEFAULT_AI_PROTECTION_RULES } from "@/lib/ai-reply-config";
 import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
@@ -53,6 +55,8 @@ export default function WizardPage({ params, searchParams }: Props) {
   const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
+  const customerPlan = user?.data?.subscription?.plan ?? "FREE";
+  const aiReplyAvailable = customerPlan === "PRO" || customerPlan === "BUSINESS";
   const postList: any[] = Array.isArray(posts?.data?.data) ? posts.data.data : [];
   const postsError = posts?.data?.error;
   const hasInstagramConnection = Boolean(instagram);
@@ -112,6 +116,10 @@ export default function WizardPage({ params, searchParams }: Props) {
       publicReply: automation.listener?.commentReply ?? "",
       publicReply2: automation.listener?.commentReply2 ?? "",
       publicReply3: automation.listener?.commentReply3 ?? "",
+      aiReplyEnabled: Boolean(automation.listener?.aiReplyEnabled),
+      aiReplyTone: automation.listener?.aiReplyTone === "FUN" || automation.listener?.aiReplyTone === "PROFESSIONAL" ? automation.listener.aiReplyTone : "FRIENDLY",
+      aiReplyInstructions: automation.listener?.aiReplyInstructions ?? "",
+      aiProtectionRules: automation.listener?.aiProtectionRules ?? DEFAULT_AI_PROTECTION_RULES,
       linkButtons: storedLinks.length
         ? storedLinks
         : [{ label: "Get the Link", url: "" }],
@@ -321,6 +329,21 @@ export default function WizardPage({ params, searchParams }: Props) {
                   )}
                 </section>
 
+                <AiCommentReplyEditor
+                  enabled={data.aiReplyEnabled}
+                  available={aiReplyAvailable}
+                  planLabel={customerPlan === "BUSINESS" ? "Business" : customerPlan === "PRO" ? "Pro" : "Free"}
+                  tone={data.aiReplyTone}
+                  instructions={data.aiReplyInstructions}
+                  protections={data.aiProtectionRules}
+                  onChange={(next) => update({
+                    ...(typeof next.enabled === "boolean" ? { aiReplyEnabled: next.enabled } : {}),
+                    ...(next.tone ? { aiReplyTone: next.tone } : {}),
+                    ...(typeof next.instructions === "string" ? { aiReplyInstructions: next.instructions } : {}),
+                    ...(next.protections ? { aiProtectionRules: next.protections } : {}),
+                  })}
+                />
+
                 <section className={[
                   "overflow-hidden rounded-2xl border transition-colors",
                   data.sendPrivateDm ? "border-rf-blue/30 bg-rf-blue/[0.04]" : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.03]",
@@ -418,7 +441,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   )}
                 </section>
 
-                {!data.publicReplyEnabled && !data.sendPrivateDm && (
+                {!data.publicReplyEnabled && !data.aiReplyEnabled && !data.sendPrivateDm && (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
                     Choose at least one action: Reply to comment or Send a DM.
                   </p>
@@ -435,7 +458,8 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Account", value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account connected", step: 1 as const },
                   { label: "Post", value: data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? `Selected post ${data.post.postid}` : "Not selected", step: 1 as const },
                   { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
-                  { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? `${commentReplies.length} variation(s)` : "Off", step: 3 as const },
+                  { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? `${commentReplies.length} saved variation(s)` : "Off", step: 3 as const },
+                  { label: "AI reply", value: data.aiReplyEnabled ? `${data.aiReplyTone.charAt(0)}${data.aiReplyTone.slice(1).toLowerCase()} tone` : "Off", step: 3 as const },
                   { label: "DM", value: data.sendPrivateDm ? "On" : "Off", step: 3 as const },
                   ...(data.sendPrivateDm ? [{ label: "Opening DM", value: `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}`, step: 3 as const }] : []),
                   ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM with a link", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
