@@ -21,6 +21,18 @@ describe("Stripe checkout routing", () => {
     expect(source).not.toContain('plan.id === "FREE" && <p');
   });
 
+  it("publishes exactly Free, Pro, and Business without a Custom plan", () => {
+    expect(PLAN_CARDS.map((plan) => plan.id)).toEqual(["FREE", "PRO", "BUSINESS"]);
+    expect(PLAN_CARDS.map((plan) => plan.name)).not.toContain("Custom");
+
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "components/global/pricing-experience.tsx"),
+      "utf8"
+    );
+    expect(source).not.toContain("Let's talk");
+    expect(source).not.toContain("Contact us");
+  });
+
   it("builds checkout routes for every paid plan and billing interval", () => {
     expect(checkoutHref("PRO", "month")).toBe("/payment?plan=pro&interval=month");
     expect(checkoutHref("PRO", "year")).toBe("/payment?plan=pro&interval=year");

@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "AP3K Pricing — Free, Pro & Business Instagram Automation Plans",
   description:
-    "Compare AP3K Free, Pro, Business and Custom plans for Instagram comment replies, DMs, lead tracking and automation analytics. Save with annual billing.",
+    "Compare AP3K Free, Pro and Business plans for Instagram comment replies, DMs, AI, lead tracking and automation analytics. Save with annual billing.",
   alternates: { canonical: "/pricing" },
 };
 

@@ -27,6 +27,8 @@ model User {
   metaOAuthSelections MetaOAuthSelection[]
   referralPartner     ReferralPartner?     @relation("ReferralPartnerOwner")
   referralAttribution ReferralAttribution? @relation("ReferredUser")
+  aiWorkspace         AiWorkspaceConfig?
+  aiUsageEvents       AiUsageEvent[]
 }
 
 model Subscription {
@@ -204,6 +206,7 @@ model Automation {
   messageLogs          MessageLog[]
   webhookEvents        WebhookEvent[]
   conversations        Conversation[]
+  aiUsageEvents        AiUsageEvent[]
 }
 
 model Dms {
@@ -227,46 +230,80 @@ model Post {
 }
 
 model Listener {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  Automation     Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  automationId   String     @unique @db.Uuid
-  listener       LISTENERS  @default(MESSAGE)
-  prompt         String
-  commentReply   String?
-  commentReply2  String?
-  commentReply3  String?
-  aiReplyEnabled        Boolean @default(false)
-  aiReplyTone           String @default("FRIENDLY")
-  aiReplyInstructions   String?
-  aiProtectionRules     Json?
-  ctaLink        String?
-  ctaButtonTitle String?
-  responseFormat String     @default("TEXT")
-  quickReplies   Json?
-  mediaUrl       String?
-  mediaType      String?
-  openingDmText            String?
-  openingDmButtonText      String?
-  followRequestDmText      String?
-  followRequestButtonText  String?
-  dmCount        Int        @default(0)
-  commentCount   Int        @default(0)
+  id                      String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Automation              Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  automationId            String     @unique @db.Uuid
+  listener                LISTENERS  @default(MESSAGE)
+  prompt                  String
+  commentReply            String?
+  commentReply2           String?
+  commentReply3           String?
+  aiReplyEnabled          Boolean    @default(false)
+  aiReplyTone             String     @default("FRIENDLY")
+  aiReplyInstructions     String?
+  aiProtectionRules       Json?
+  aiDmReplyEnabled        Boolean    @default(false)
+  ctaLink                 String?
+  ctaButtonTitle          String?
+  responseFormat          String     @default("TEXT")
+  quickReplies            Json?
+  mediaUrl                String?
+  mediaType               String?
+  openingDmText           String?
+  openingDmButtonText     String?
+  openingDmEnabled        Boolean    @default(true)
+  followRequestDmText     String?
+  followRequestButtonText String?
+  dmCount                 Int        @default(0)
+  commentCount            Int        @default(0)
 }
 
 model AiProviderConfig {
-  id              String   @id @default("primary")
-  enabled         Boolean  @default(false)
-  providerName    String   @default("AgentRouter")
-  baseUrl         String   @default("https://co.agentrouter.org/v1")
-  model           String   @default("")
+  id              String    @id @default("primary")
+  enabled         Boolean   @default(false)
+  providerName    String    @default("AgentRouter")
+  baseUrl         String    @default("https://co.agentrouter.org/v1")
+  model           String    @default("glm-5.3")
   encryptedApiKey String?
   apiKeyHint      String?
   lastTestedAt    DateTime?
   lastTestStatus  String?
   lastTestError   String?
   updatedBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model AiWorkspaceConfig {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String   @unique @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiRepliesEnabled  Boolean  @default(false)
+  aiCommentsEnabled Boolean  @default(false)
+  role              String   @default("Helpful Instagram assistant")
+  brandVoice        String   @default("Friendly, clear, concise, and human")
+  guardrails        String?
+  defaultTone       String   @default("FRIENDLY")
+  protectionRules   Json?
+  knowledge         Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AiUsageEvent {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String      @db.Uuid
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  automationId String?     @db.Uuid
+  automation   Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  channel      String
+  status       String      @default("RESERVED")
+  meta         Json?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([automationId, createdAt])
 }
 
 model Conversation {

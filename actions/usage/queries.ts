@@ -89,11 +89,10 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         automation: { userId },
       },
     }),
-    client.automationEvent.count({
+    client.aiUsageEvent.count({
       where: {
-        eventType: "AI_REPLY_GENERATED",
+        userId,
         createdAt: { gte: effectiveStart, lt: effectiveEnd },
-        automation: { userId },
       },
     }),
     client.automation.count({ where: { userId, active: true, archivedAt: null } }),
@@ -165,7 +164,8 @@ export async function canSendAiReply(userId: string, date = new Date()) {
 
 type AiReplyReservationInput = {
   userId: string;
-  automationId: string;
+  automationId?: string | null;
+  channel?: "COMMENT" | "DM" | "PLAYGROUND";
   igUserId?: string | null;
   mediaId?: string | null;
   commentId?: string | null;
@@ -199,11 +199,10 @@ export async function reserveAiReplyQuota(input: AiReplyReservationInput) {
       ? resetAt
       : period.enforcementStart;
 
-    const used = await tx.automationEvent.count({
+    const used = await tx.aiUsageEvent.count({
       where: {
-        eventType: "AI_REPLY_GENERATED",
+        userId: input.userId,
         createdAt: { gte: effectiveStart, lt: period.monthEnd },
-        automation: { userId: input.userId },
       },
     });
 
@@ -219,18 +218,20 @@ export async function reserveAiReplyQuota(input: AiReplyReservationInput) {
       };
     }
 
-    const reservation = await tx.automationEvent.create({
+    const reservation = await tx.aiUsageEvent.create({
       data: {
-        automationId: input.automationId,
-        eventType: "AI_REPLY_GENERATED",
-        igUserId: input.igUserId ?? undefined,
-        mediaId: input.mediaId ?? undefined,
-        commentId: input.commentId ?? undefined,
-        keyword: input.keyword ?? undefined,
+        userId: input.userId,
+        automationId: input.automationId ?? undefined,
+        channel: input.channel ?? "COMMENT",
+        status: "RESERVED",
         meta: {
           status: "reserved",
           quotaPlan: plan,
           quotaPeriod: period.periodLabel,
+          igUserId: input.igUserId ?? null,
+          mediaId: input.mediaId ?? null,
+          commentId: input.commentId ?? null,
+          keyword: input.keyword ?? null,
         },
       },
       select: { id: true },
@@ -251,16 +252,25 @@ export async function completeAiReplyReservation(
   reservationId: string,
   meta: Record<string, string | number | boolean | null>
 ) {
-  await client.automationEvent.updateMany({
-    where: { id: reservationId, eventType: "AI_REPLY_GENERATED" },
-    data: { meta: { status: "completed", ...meta } },
+  const completed = await client.aiUsageEvent.updateMany({
+    where: { id: reservationId },
+    data: { status: "COMPLETED", meta: { status: "completed", ...meta } },
   });
+  if (!completed.count) return;
+  const usage = await client.aiUsageEvent.findUnique({ where: { id: reservationId }, select: { automationId: true, channel: true } });
+  if (usage?.automationId) {
+    await client.automationEvent.create({
+      data: {
+        automationId: usage.automationId,
+        eventType: "AI_REPLY_GENERATED",
+        meta: { status: "completed", channel: usage.channel, ...meta },
+      },
+    });
+  }
 }
 
 export async function releaseAiReplyReservation(reservationId: string) {
-  await client.automationEvent.deleteMany({
-    where: { id: reservationId, eventType: "AI_REPLY_GENERATED" },
-  });
+  await client.aiUsageEvent.deleteMany({ where: { id: reservationId } });
 }
 
 export async function canActivateCampaign(userId: string, automationId?: string) {

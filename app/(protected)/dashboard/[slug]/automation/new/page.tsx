@@ -12,6 +12,7 @@ import KeywordInput from "@/components/global/keyword-input";
 import PostPicker from "@/components/global/post-picker";
 import { useQueryAutomationPosts, useQueryAutomations, useQueryUser, useQueryWebhookHealth } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
+import { getAiWorkspace } from "@/actions/ai-workspace";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
@@ -50,13 +51,15 @@ export default function WizardPage({ params, searchParams }: Props) {
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId);
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [aiCommentsReady, setAiCommentsReady] = useState(false);
   const initializedMessagingReviewDraft = useRef(false);
   const stepsScrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
   const customerPlan = user?.data?.subscription?.plan ?? "FREE";
-  const aiReplyAvailable = customerPlan === "PRO" || customerPlan === "BUSINESS";
+  const aiPlanAvailable = customerPlan === "PRO" || customerPlan === "BUSINESS";
+  const aiReplyAvailable = aiPlanAvailable && aiCommentsReady;
   const postList: any[] = Array.isArray(posts?.data?.data) ? posts.data.data : [];
   const postsError = posts?.data?.error;
   const hasInstagramConnection = Boolean(instagram);
@@ -71,6 +74,22 @@ export default function WizardPage({ params, searchParams }: Props) {
     commentReplyOnlyReviewMode ? "DMs are disabled in this comment-reply review mode." : null,
     messagingCapabilityPending ? "Instagram DM access may still be pending for this account. Test with a real comment before recording." : null,
   ].filter(Boolean) as string[];
+
+  useEffect(() => {
+    if (!aiPlanAvailable) {
+      setAiCommentsReady(false);
+      return;
+    }
+    let cancelled = false;
+    void getAiWorkspace()
+      .then((result) => {
+        if (!cancelled) setAiCommentsReady(Boolean(result.profile.aiCommentsEnabled));
+      })
+      .catch(() => {
+        if (!cancelled) setAiCommentsReady(false);
+      });
+    return () => { cancelled = true; };
+  }, [aiPlanAvailable]);
 
   useEffect(() => {
     if (commentReplyOnlyReviewMode && data.sendPrivateDm) {
@@ -126,6 +145,7 @@ export default function WizardPage({ params, searchParams }: Props) {
       followGateRequired: Boolean(automation.followGateRequired),
       openingDmText: resolveOpeningDmText(automation.listener?.openingDmText),
       openingDmButtonText: resolveOpeningDmButtonText(automation.listener?.openingDmButtonText),
+      openingDmEnabled: automation.listener?.openingDmEnabled !== false,
       followRequestDmText: resolveFollowRequestDmText(automation.listener?.followRequestDmText),
       followRequestButtonText: resolveFollowRequestButtonText(automation.listener?.followRequestButtonText),
       sendPrivateDm: commentReplyOnlyReviewMode ? false : preparedDm.sendPrivateDm,
@@ -179,7 +199,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   }
 
   return (
-    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-slate-50 xl:mt-3 xl:h-[calc(100dvh-2.5rem)] xl:min-h-[620px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
+    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-slate-50 xl:mt-3 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
       <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
           <AutomationWizardToolbar
@@ -292,7 +312,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ].join(" ")}>
                   <button
                     type="button"
-                    onClick={() => update({ publicReplyEnabled: !data.publicReplyEnabled })}
+                    onClick={() => update({ publicReplyEnabled: !data.publicReplyEnabled, ...(!data.publicReplyEnabled ? { aiReplyEnabled: false } : {}) })}
                     className="flex w-full items-center justify-between gap-4 p-5 text-left"
                   >
                     <span className="flex min-w-0 items-start gap-3">
@@ -332,12 +352,14 @@ export default function WizardPage({ params, searchParams }: Props) {
                 <AiCommentReplyEditor
                   enabled={data.aiReplyEnabled}
                   available={aiReplyAvailable}
+                  workspaceReady={aiCommentsReady}
                   planLabel={customerPlan === "BUSINESS" ? "Business" : customerPlan === "PRO" ? "Pro" : "Free"}
                   tone={data.aiReplyTone}
                   instructions={data.aiReplyInstructions}
                   protections={data.aiProtectionRules}
+                  settingsHref={`/dashboard/${slug}/ai`}
                   onChange={(next) => update({
-                    ...(typeof next.enabled === "boolean" ? { aiReplyEnabled: next.enabled } : {}),
+                    ...(typeof next.enabled === "boolean" ? { aiReplyEnabled: next.enabled, ...(next.enabled ? { publicReplyEnabled: false } : {}) } : {}),
                     ...(next.tone ? { aiReplyTone: next.tone } : {}),
                     ...(typeof next.instructions === "string" ? { aiReplyInstructions: next.instructions } : {}),
                     ...(next.protections ? { aiProtectionRules: next.protections } : {}),
@@ -376,51 +398,34 @@ export default function WizardPage({ params, searchParams }: Props) {
                       </button>
 
                       {data.sendPrivateDm && (
-                        <div className="border-t border-rf-blue/15 p-5 pt-4">
-                          <div className="mb-6 rounded-2xl border border-rf-blue/20 bg-rf-blue/[0.05] p-4 dark:border-rf-blue/25 dark:bg-rf-blue/[0.08] sm:p-5">
+                        <div className="space-y-4 border-t border-rf-blue/15 p-4 sm:p-5">
+                          <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/[0.05] p-4 dark:border-rf-blue/25 dark:bg-rf-blue/[0.08] sm:p-5">
                             <div className="mb-4 flex items-start gap-3">
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">1</span>
                               <div>
-                                <p className="text-sm font-black text-slate-950 dark:text-white">Opening DM</p>
-                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Sent first. The person taps this button to ask for your final message.</p>
+                                <p className="text-sm font-black text-slate-950 dark:text-white">DM with links</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">The required delivery message. Add one to three link buttons.</p>
                               </div>
                             </div>
-                            <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">Message</label>
-                            <textarea
-                              value={data.openingDmText}
-                              onChange={(event) => update({ openingDmText: event.target.value })}
-                              maxLength={640}
-                              rows={5}
-                              dir="auto"
-                              className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
+                            <MessageResponseEditor
+                              message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
+                              linkButtons={data.linkButtons}
+                              onChange={(next) => update({
+                                dmMessage: next.message ?? data.dmMessage,
+                                linkButtons: next.linkButtons ?? data.linkButtons,
+                              })}
                             />
-                            <label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">
-                              Continue button
-                              <input
-                                value={data.openingDmButtonText}
-                                onChange={(event) => update({ openingDmButtonText: event.target.value })}
-                                maxLength={20}
-                                className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm"
-                              />
-                            </label>
                           </div>
 
-                          <div className="mb-6 flex items-start gap-3">
-                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span>
-                            <div>
-                              <p className="text-sm font-black text-slate-950 dark:text-white">DM with a link</p>
-                              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Add the message and up to three link buttons delivered after the opening button and optional follow check.</p>
-                            </div>
+                          <div className={`overflow-hidden rounded-2xl border transition ${data.openingDmEnabled ? "border-violet-400/30 bg-violet-500/[0.05]" : "border-slate-200 dark:border-white/10"}`}>
+                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-left sm:p-5">
+                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span><span><span className="block text-sm font-black text-slate-950 dark:text-white">Opening DM <span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400">Optional</span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately.</span></span></span>
+                              <Toggle enabled={data.openingDmEnabled} />
+                            </button>
+                            {data.openingDmEnabled ? <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">Opening message</label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">Continue button<input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label></div> : null}
                           </div>
-                          <MessageResponseEditor
-                            message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
-                            linkButtons={data.linkButtons}
-                            onChange={(next) => update({
-                              dmMessage: next.message ?? data.dmMessage,
-                              linkButtons: next.linkButtons ?? data.linkButtons,
-                            })}
-                          />
-                          <div className="mt-6 border-t border-rf-blue/15 pt-5">
+
+                          {data.openingDmEnabled ? <div className="rounded-2xl border border-slate-200 p-4 dark:border-white/10 sm:p-5">
                             <div className="mb-3 flex items-start gap-3">
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">3</span>
                               <div>
@@ -434,7 +439,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                               followRequestButtonText={data.followRequestButtonText}
                               onChange={(next) => update(next)}
                             />
-                          </div>
+                          </div> : null}
                         </div>
                       )}
                     </>
@@ -461,7 +466,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? `${commentReplies.length} saved variation(s)` : "Off", step: 3 as const },
                   { label: "AI reply", value: data.aiReplyEnabled ? `${data.aiReplyTone.charAt(0)}${data.aiReplyTone.slice(1).toLowerCase()} tone` : "Off", step: 3 as const },
                   { label: "DM", value: data.sendPrivateDm ? "On" : "Off", step: 3 as const },
-                  ...(data.sendPrivateDm ? [{ label: "Opening DM", value: `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}`, step: 3 as const }] : []),
+                  ...(data.sendPrivateDm ? [{ label: "Opening DM", value: data.openingDmEnabled ? `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}` : "Off · final DM sends immediately", step: 3 as const }] : []),
                   ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM with a link", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
                   ...(data.sendPrivateDm ? [{ label: "Follow request", value: data.followGateRequired ? `On · ${data.followRequestButtonText}` : "Off", step: 3 as const }] : []),
                   ...(data.sendPrivateDm ? [{ label: "Link buttons", value: data.linkButtons.map((button) => button.label || "Untitled link").join(", "), step: 3 as const }] : []),

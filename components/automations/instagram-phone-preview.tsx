@@ -174,10 +174,8 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
           </div>
         ) : (
           <>
-            <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || "Your opening DM"} />
-            <QuickReplyChip text={data.openingDmButtonText || "Continue"} />
-            <OutgoingBubble text={data.openingDmButtonText || "Continue"} />
-            {data.followGateRequired ? (
+            {data.openingDmEnabled ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || "Your opening DM"} /><QuickReplyChip text={data.openingDmButtonText || "Continue"} /><OutgoingBubble text={data.openingDmButtonText || "Continue"} /></> : null}
+            {data.openingDmEnabled && data.followGateRequired ? (
               <>
                 <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followRequestDmText || "Follow this account to receive the link."} />
                 <QuickReplyChip text={data.followRequestButtonText || "Following"} />

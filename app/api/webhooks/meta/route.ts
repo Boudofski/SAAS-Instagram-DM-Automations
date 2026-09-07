@@ -21,8 +21,6 @@ import {
   createWebhookEvent,
   updateWebhookEvent,
   mergeWebhookEventPayload,
-  createChatHistory,
-  getChatHistory,
   trackResponse,
   upsertInboundInboxMessage,
   recordOutboundInboxMessage,
@@ -33,7 +31,6 @@ import { normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
 import {
   formatSafeMetaError,
   getSafeMetaError,
-  sendDm,
   sendCommentReply,
   sendMediaComment,
   deleteInstagramComment,
@@ -62,14 +59,13 @@ import {
   releaseAiReplyReservation,
   reserveAiReplyQuota,
 } from "@/actions/usage/queries";
-import { generateAiCommentDecision } from "@/lib/ai-reply";
+import { generateAiCommentDecision, generateAiDmReply, getAiWorkspaceRuntimeConfig } from "@/lib/ai-reply";
 import {
   parseMessagingItem,
   classifyStoryInteraction,
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "@/lib/instagram-message-event";
-import { openai } from "@/lib/openai";
 import { ensureInstagramButtonCallbacks } from "@/lib/instagram-postback-subscription";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 
@@ -1081,14 +1077,16 @@ async function processEntry(
       let aiReplyCategory: string | null = null;
 
       if (aiReplyEnabled && automation.userId) {
-        const aiQuota = await reserveAiReplyQuota({
+        const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId);
+        const aiQuota = aiWorkspace.aiCommentsEnabled ? await reserveAiReplyQuota({
           userId: automation.userId,
           automationId: automation.id,
+          channel: "COMMENT",
           igUserId: commenterId,
           mediaId,
           commentId,
           keyword: matchedKeyword,
-        });
+        }) : { ok: false as const, reason: "ai_comments_disabled" as const, plan: automation.User?.subscription?.plan ?? "FREE", used: 0, limit: 0, periodLabel: "", reservationId: null };
         if (!aiQuota.ok) {
           await createMessageLog({
             automationId: automation.id,
@@ -1121,6 +1119,7 @@ async function processEntry(
             instructions: listener.aiReplyInstructions,
             tone: listener.aiReplyTone,
             protectionRules: listener.aiProtectionRules,
+            workspace: aiWorkspace,
           });
           aiReplyCategory = decision.category;
 
@@ -1379,27 +1378,41 @@ async function processEntry(
         }
       }
 
-      // 6. Send an editable opening DM. The final payload is released only
-      // after the recipient explicitly taps the continue button.
-      const dmMessageText = resolveTemplate(resolveOpeningDmText(listener.openingDmText), templateVars);
-      const fullWidthButtonsReady = await ensureInstagramButtonCallbacks(integrationRaw?.id, token);
+      // 6. Send either the optional opening DM or the final configured payload
+      // immediately. Existing automations retain the opening step by default.
+      const openingDmEnabled = listener.openingDmEnabled !== false;
+      const dmMessageText = resolveTemplate(
+        openingDmEnabled ? resolveOpeningDmText(listener.openingDmText) : listener.prompt,
+        templateVars
+      );
+      const fullWidthButtonsReady = openingDmEnabled
+        ? await ensureInstagramButtonCallbacks(integrationRaw?.id, token)
+        : false;
+      const directLinkButtons = openingDmEnabled
+        ? []
+        : readLinkButtons(listener.quickReplies, listener.ctaButtonTitle, listener.ctaLink);
       const dmResult = await sendInstagramCommentPrivateReply({
         // Prefer the card-style button the user configured. If either Meta
         // subscription cannot be verified/repaired, retain the proven
         // messages-webhook quick-reply fallback instead of dropping taps.
-        preferQuickReplyForPostback: !fullWidthButtonsReady,
+        preferQuickReplyForPostback: openingDmEnabled && !fullWidthButtonsReady,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
         commenterId,
         message: dmMessageText,
         automationId: automation.id,
-        responseFormat: "TEXT",
-        quickReplies: [],
-        postbackButton: {
+        responseFormat: openingDmEnabled ? "TEXT" : listener.responseFormat,
+        quickReplies: openingDmEnabled ? [] : readLegacyQuickReplies(Array.isArray(listener.quickReplies) ? listener.quickReplies : []),
+        linkButtons: directLinkButtons,
+        ctaTitle: openingDmEnabled ? undefined : listener.ctaButtonTitle,
+        ctaUrl: openingDmEnabled ? undefined : listener.ctaLink,
+        mediaUrl: openingDmEnabled ? undefined : listener.mediaUrl,
+        mediaType: openingDmEnabled ? undefined : listener.mediaType,
+        postbackButton: openingDmEnabled ? {
           title: resolveOpeningDmButtonText(listener.openingDmButtonText),
           payload: openingDmActionPayload(automation.id, commentId),
-        },
+        } : undefined,
       });
 
       if (dmResult.ok) {
@@ -1411,7 +1424,7 @@ async function processEntry(
           commentId,
           messageType: "DM",
           status: "SENT",
-          errorMessage: "opening_dm_sent",
+          errorMessage: openingDmEnabled ? "opening_dm_sent" : "final_dm_payload_sent",
         });
         await createAutomationEvent({
           automationId: automation.id,
@@ -1420,13 +1433,13 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode, dmFlowStep: "OPENING" },
+          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode, dmFlowStep: openingDmEnabled ? "OPENING" : "FINAL" },
         });
         await trackResponse(automation.id, "DM");
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
-          errorMessage: "opening_dm_sent",
+          errorMessage: openingDmEnabled ? "opening_dm_sent" : "final_dm_payload_sent",
           processedAt: new Date(),
         });
       } else {
@@ -1654,6 +1667,7 @@ async function processEntry(
           webhookEventId: webhookEvent.id,
           messageMid: parsed.ok ? parsed.data.messageMid : undefined,
           matchedKeyword: storyInteraction ? `story_${storyInteraction.toLowerCase()}` : dmFlowAction?.type.toLowerCase() ?? "message",
+          inboundText: dmText || inboundContent,
           dmFlowAction: callbackRequested ? dmFlowAction : null,
         });
         continue;
@@ -1663,49 +1677,9 @@ async function processEntry(
       const result = await findAutomationForDM(dmText, pageId);
 
       if (!result) {
-        // No DM automation configured or no keyword matched.
-        // Check for an active SMARTAI conversation before giving up.
         console.log(`[webhook] inbound DM — no keyword automation matched senderId=${senderId}`, {
-          hint: "DM keyword automations are not enabled yet — configure a DM automation with keywords to respond automatically",
+          hint: "Configure a DM automation with keywords or Any incoming DM to respond automatically.",
         });
-        try {
-          const chatHistory = await getChatHistory(pageId, senderId);
-          if (chatHistory.history.length > 0 && chatHistory.automationId) {
-            const automation = await findAutomationById(chatHistory.automationId);
-            if (
-              automation?.listener?.listener === "SMARTAI" &&
-              automation.User?.subscription?.plan === "PRO" &&
-              process.env.OPENAI_API_KEY
-            ) {
-              const smartAiResolution = resolveIntegrationSendToken(automation.User?.integrations?.[0]);
-              const instagramBusinessAccountId = automation.User?.integrations?.[0]?.instagramId;
-              if (smartAiResolution.ok && instagramBusinessAccountId) {
-                const token = smartAiResolution.token;
-                const aiResp = await openai.chat.completions.create({
-                  model: "gpt-4o-mini",
-                  messages: [
-                    {
-                      role: "assistant",
-                      content: `${automation.listener.prompt}: Keep responses under 2 sentences`,
-                    },
-                    ...chatHistory.history,
-                    { role: "user", content: dmText },
-                  ],
-                });
-                const aiText = aiResp.choices[0].message.content;
-                if (aiText) {
-                  await Promise.all([
-                    createChatHistory(automation.id, pageId, dmText, senderId),
-                    createChatHistory(automation.id, pageId, aiText, senderId),
-                  ]);
-                  await withRetry(() => sendDm(instagramBusinessAccountId, senderId, aiText, token));
-                }
-              }
-            }
-          }
-        } catch {
-          // Continuation path is non-critical — swallow errors
-        }
         await updateWebhookEvent(webhookEvent.id, {
           status: "PROCESSED",
           errorMessage: INBOUND_MESSAGE_NO_AUTOMATION,
@@ -1738,7 +1712,7 @@ async function processEntry(
         continue;
       }
 
-      if (automation.listener?.listener !== "SMARTAI") {
+      if (automation.listener) {
         await processConfiguredMessageAutomation({
           automation,
           pageId,
@@ -1747,115 +1721,17 @@ async function processEntry(
           webhookEventId: webhookEvent.id,
           messageMid: parsed.ok ? parsed.data.messageMid : undefined,
           matchedKeyword,
+          inboundText: dmText,
         });
         continue;
       }
 
-      const dmIntegrationRaw = automation.User?.integrations?.[0];
-      const dmTokenResolution = resolveIntegrationSendToken(dmIntegrationRaw);
-      const instagramBusinessAccountId = dmIntegrationRaw?.instagramId;
-      if (!dmTokenResolution.ok || !automation.listener || !instagramBusinessAccountId) {
-        const diag = tokenResolutionDiagnostics(dmIntegrationRaw);
-        console.warn("[webhook] DM automation token or listener missing", {
-          automationId: automation.id,
-          reason: dmTokenResolution.ok ? undefined : dmTokenResolution.reason,
-          hasListener: Boolean(automation.listener),
-          hasInstagramBusinessAccountId: Boolean(instagramBusinessAccountId),
-          ...diag,
-        });
-        await updateWebhookEvent(webhookEvent.id, {
-          automationId: automation.id,
-          status: "FAILED",
-          errorMessage: !instagramBusinessAccountId
-            ? "instagram_business_account_missing"
-            : !automation.listener
-              ? "listener_missing"
-              : "token_missing",
-          processedAt: new Date(),
-        });
-        continue;
-      }
-      const token = dmTokenResolution.token;
-
-      const templateVars = {
-        username: "",
-        first_name: "",
-        keyword: matchedKeyword,
-        link: automation.listener.ctaLink ?? "",
-      };
-
-      const isSmartAi =
-        automation.listener.listener === "SMARTAI" &&
-        automation.User?.subscription?.plan === "PRO" &&
-        !!process.env.OPENAI_API_KEY;
-
-      let dmMessageText = resolveTemplate(automation.listener.prompt, templateVars);
-
-      if (isSmartAi) {
-        try {
-          await createChatHistory(automation.id, pageId, dmText, senderId);
-          const aiResp = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "assistant",
-                content: `${dmMessageText}: Keep responses under 2 sentences`,
-              },
-            ],
-          });
-          dmMessageText = aiResp.choices[0].message.content ?? dmMessageText;
-          await createChatHistory(automation.id, pageId, dmMessageText, senderId);
-        } catch {
-          // SMARTAI unavailable — fall through with resolved prompt
-        }
-      }
-
-      try {
-        const dmResult = await withRetry(() => sendDm(instagramBusinessAccountId, senderId, dmMessageText, token));
-        const sent = dmResult.status === 200;
-        await createMessageLog({
-          automationId: automation.id,
-          recipientIgId: senderId,
-          messageType: "DM",
-          status: sent ? "SENT" : "FAILED",
-        });
-        await createAutomationEvent({
-          automationId: automation.id,
-          eventType: sent ? "DM_SENT" : "DM_FAILED",
-          igUserId: senderId,
-          keyword: matchedKeyword,
-        });
-        if (sent) await trackResponse(automation.id, "DM");
-        await updateWebhookEvent(webhookEvent.id, {
-          automationId: automation.id,
-          status: sent ? "PROCESSED" : "FAILED",
-          errorMessage: sent ? "dm_sent" : "dm_failed",
-          processedAt: new Date(),
-        });
-      } catch (err) {
-        const safeError = formatSafeMetaError(err);
-        console.warn("[webhook] DM send failed", getSafeMetaError(err));
-        await createMessageLog({
-          automationId: automation.id,
-          recipientIgId: senderId,
-          messageType: "DM",
-          status: "FAILED",
-          errorMessage: safeError,
-        });
-        await createAutomationEvent({
-          automationId: automation.id,
-          eventType: "DM_FAILED",
-          igUserId: senderId,
-          keyword: matchedKeyword,
-          meta: { error: safeError },
-        });
-        await updateWebhookEvent(webhookEvent.id, {
-          automationId: automation.id,
-          status: "FAILED",
-          errorMessage: `dm_failed: ${safeError}`,
-          processedAt: new Date(),
-        });
-      }
+      await updateWebhookEvent(webhookEvent.id, {
+        automationId: automation.id,
+        status: "FAILED",
+        errorMessage: "listener_missing",
+        processedAt: new Date(),
+      });
     }
   }
 }
@@ -1872,9 +1748,10 @@ async function processConfiguredMessageAutomation(params: {
   webhookEventId: string;
   messageMid?: string;
   matchedKeyword: string;
+  inboundText: string;
   dmFlowAction?: CommentDmAction | null;
 }) {
-  const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword, dmFlowAction = null } = params;
+  const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword, inboundText, dmFlowAction = null } = params;
   const integration = selectIntegrationForWebhook(automation.User?.integrations, pageId) ?? automation.User?.integrations?.[0];
   const tokenResolution = resolveIntegrationSendToken(integration);
   const instagramBusinessAccountId = integration?.instagramId;
@@ -1908,12 +1785,39 @@ async function processConfiguredMessageAutomation(params: {
     automation.listener.ctaButtonTitle,
     automation.listener.ctaLink
   );
-  const payloadMessage = resolveTemplate(automation.listener.prompt, {
+  let aiGenerated = false;
+  let payloadMessage = resolveTemplate(automation.listener.prompt, {
         username: profile?.username ? `@${profile.username}` : "",
         first_name: profile?.name?.split(/\s+/)[0] ?? "",
         keyword: matchedKeyword,
         link: automation.listener.ctaLink ?? "",
       });
+  if (automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
+    const workspace = await getAiWorkspaceRuntimeConfig(automation.userId);
+    if (workspace.aiRepliesEnabled) {
+      const quota = await reserveAiReplyQuota({
+        userId: automation.userId,
+        automationId: automation.id,
+        channel: "DM",
+        igUserId: senderId,
+        keyword: matchedKeyword,
+      });
+      if (quota.ok) {
+        const generated = await generateAiDmReply({
+          message: inboundText,
+          workspace,
+          automationInstructions: automation.listener.prompt,
+        });
+        if (generated.ok) {
+          payloadMessage = generated.reply;
+          aiGenerated = true;
+          await completeAiReplyReservation(quota.reservationId, { channel: "DM", outcome: "generated" });
+        } else {
+          await releaseAiReplyReservation(quota.reservationId);
+        }
+      }
+    }
+  }
   const resolvedMessage = needsFollowRequest
     ? resolveTemplate(resolveFollowRequestDmText(automation.listener.followRequestDmText), {
         username: profile?.username ? `@${profile.username}` : "",
@@ -1933,13 +1837,13 @@ async function processConfiguredMessageAutomation(params: {
     recipientId: senderId,
     automationId: automation.id,
     message: resolvedMessage,
-    responseFormat: needsFollowRequest ? "TEXT" : automation.listener.responseFormat,
-    quickReplies: needsFollowRequest ? [] : readLegacyQuickReplies(quickReplies),
-    linkButtons: needsFollowRequest ? [] : linkButtons,
-    ctaTitle: needsFollowRequest ? undefined : automation.listener.ctaButtonTitle,
-    ctaUrl: needsFollowRequest ? undefined : automation.listener.ctaLink,
-    mediaUrl: needsFollowRequest ? undefined : automation.listener.mediaUrl,
-    mediaType: needsFollowRequest ? undefined : automation.listener.mediaType,
+    responseFormat: needsFollowRequest || aiGenerated ? "TEXT" : automation.listener.responseFormat,
+    quickReplies: needsFollowRequest || aiGenerated ? [] : readLegacyQuickReplies(quickReplies),
+    linkButtons: needsFollowRequest || aiGenerated ? [] : linkButtons,
+    ctaTitle: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaButtonTitle,
+    ctaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaLink,
+    mediaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaUrl,
+    mediaType: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaType,
     postbackButton: needsFollowRequest
       ? {
           title: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
@@ -1967,7 +1871,7 @@ async function processConfiguredMessageAutomation(params: {
     igUserId: senderId,
     keyword: matchedKeyword,
     meta: {
-      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : automation.listener.responseFormat,
+      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : aiGenerated ? "AI_TEXT" : automation.listener.responseFormat,
       dmFlowAction: dmFlowAction?.type,
       followRequired: Boolean(automation.followGateRequired),
       followVerified: automation.followGateRequired ? profile?.followsBusiness === true : undefined,

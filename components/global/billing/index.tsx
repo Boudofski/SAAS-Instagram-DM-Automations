@@ -80,7 +80,7 @@ export default function Billing({
         {usage && (
           <div className={`mt-4 grid gap-2 ${current === "FREE" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
             <UsageBar label="Automated replies" metric={usage.staticReplies} />
-            {current !== "FREE" ? <UsageBar label="AI replies" metric={usage.aiReplies} helper="Generated public comment replies this month." /> : null}
+            {current !== "FREE" ? <UsageBar label="AI replies" metric={usage.aiReplies} helper="Comment replies, DM replies, and playground tests this month." /> : null}
             <UsageBar label="Active automations" metric={usage.activeCampaigns} helper="Unlimited automations are included." />
           </div>
         )}

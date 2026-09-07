@@ -57,4 +57,23 @@ describe("message automation payloads", () => {
     expect(payload.ctaLink).toBe("https://example.com/guide");
     expect(validateMessageAutomationPayload(payload)).toBeNull();
   });
+
+  it("uses AI text mode with a safe fallback and no link payload", () => {
+    const payload = normalizeMessageAutomationPayload({
+      source: "DM",
+      triggerMode: "ANY_MESSAGE",
+      message: "A person will reply soon.",
+      aiReplyEnabled: true,
+      followGateRequired: true,
+      responseFormat: "LINK",
+      linkButtons: [{ label: "Ignored", url: "https://example.com" }],
+    });
+
+    expect(payload.aiReplyEnabled).toBe(true);
+    expect(payload.responseFormat).toBe("TEXT");
+    expect(payload.quickReplies).toEqual([]);
+    expect(payload.ctaLink).toBeUndefined();
+    expect(payload.followGateRequired).toBe(false);
+    expect(validateMessageAutomationPayload(payload)).toBeNull();
+  });
 });

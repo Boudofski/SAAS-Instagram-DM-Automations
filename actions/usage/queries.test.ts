@@ -10,14 +10,16 @@ const mockQueryRaw = vi.fn();
 const mockAutomationEventCreate = vi.fn();
 const mockAutomationEventUpdateMany = vi.fn();
 const mockAutomationEventDeleteMany = vi.fn();
+const mockAiUsageFindUnique = vi.fn();
 const mockTransaction = vi.fn(async (callback: (tx: any) => unknown) => callback({
   $queryRaw: (...args: any[]) => mockQueryRaw(...args),
   user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
   automationEvent: {
+    create: (...args: any[]) => mockAutomationEventCreate(...args),
+  },
+  aiUsageEvent: {
     count: (...args: any[]) => mockAutomationEventCount(...args),
     create: (...args: any[]) => mockAutomationEventCreate(...args),
-    updateMany: (...args: any[]) => mockAutomationEventUpdateMany(...args),
-    deleteMany: (...args: any[]) => mockAutomationEventDeleteMany(...args),
   },
 }));
 
@@ -27,8 +29,13 @@ vi.mock("@/lib/prisma", () => ({
     messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
     automationEvent: {
       count: (...args: any[]) => mockAutomationEventCount(...args),
+      create: (...args: any[]) => mockAutomationEventCreate(...args),
+    },
+    aiUsageEvent: {
+      count: (...args: any[]) => mockAutomationEventCount(...args),
       updateMany: (...args: any[]) => mockAutomationEventUpdateMany(...args),
       deleteMany: (...args: any[]) => mockAutomationEventDeleteMany(...args),
+      findUnique: (...args: any[]) => mockAiUsageFindUnique(...args),
     },
     automation: {
       count: (...args: any[]) => mockAutomationCount(...args),
@@ -61,6 +68,7 @@ beforeEach(() => {
   mockAutomationEventCreate.mockResolvedValue({ id: "reservation-1" });
   mockAutomationEventUpdateMany.mockResolvedValue({ count: 1 });
   mockAutomationEventDeleteMany.mockResolvedValue({ count: 1 });
+  mockAiUsageFindUnique.mockResolvedValue({ automationId: null, channel: "COMMENT" });
 });
 
 describe("usage query helpers", () => {
@@ -150,8 +158,8 @@ describe("usage query helpers", () => {
     expect(mockAutomationEventCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         automationId: "automation-1",
-        eventType: "AI_REPLY_GENERATED",
-        commentId: "comment-1",
+        userId: "user-1",
+        channel: "COMMENT",
       }),
     }));
   });
@@ -161,11 +169,11 @@ describe("usage query helpers", () => {
     await releaseAiReplyReservation("reservation-2");
 
     expect(mockAutomationEventUpdateMany).toHaveBeenCalledWith({
-      where: { id: "reservation-1", eventType: "AI_REPLY_GENERATED" },
-      data: { meta: { status: "completed", action: "REPLY", category: "SAFE" } },
+      where: { id: "reservation-1" },
+      data: { status: "COMPLETED", meta: { status: "completed", action: "REPLY", category: "SAFE" } },
     });
     expect(mockAutomationEventDeleteMany).toHaveBeenCalledWith({
-      where: { id: "reservation-2", eventType: "AI_REPLY_GENERATED" },
+      where: { id: "reservation-2" },
     });
   });
 

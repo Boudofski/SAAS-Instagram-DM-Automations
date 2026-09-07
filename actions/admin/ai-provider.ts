@@ -24,13 +24,12 @@ export async function saveAiProviderAction(formData: FormData) {
   const enabled = formData.get("enabled") === "true";
   const providerName = String(formData.get("providerName") ?? "AgentRouter").trim().slice(0, 60) || "AgentRouter";
   const rawBaseUrl = String(formData.get("baseUrl") ?? "").trim();
-  const model = String(formData.get("model") ?? "").trim().slice(0, 120);
+  const model = String(formData.get("model") ?? "glm-5.3").trim().slice(0, 120) || "glm-5.3";
   const apiKey = String(formData.get("apiKey") ?? "").trim();
   const before = await client.aiProviderConfig.findUnique({ where: { id: "primary" } });
 
   try {
     const baseUrl = safeProviderUrl(rawBaseUrl);
-    if (!model) throw new Error("Add the exact model identifier from your provider.");
     if (apiKey && !aiProviderEncryptionReady()) throw new Error("AI_CONFIG_ENCRYPTION_KEY must be configured before saving an API key.");
     if (enabled && !apiKey && !before?.encryptedApiKey) throw new Error("Add an API key before enabling AI replies.");
 

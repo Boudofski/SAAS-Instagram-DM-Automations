@@ -35,6 +35,7 @@ export type RawMessageAutomationPayload = {
   deliveryDelaySeconds?: number;
   followRequestDmText?: string | null;
   followRequestButtonText?: string | null;
+  aiReplyEnabled?: boolean;
 };
 
 export type NormalizedMessageAutomationPayload = {
@@ -56,6 +57,7 @@ export type NormalizedMessageAutomationPayload = {
   deliveryDelaySeconds: DeliveryDelaySeconds;
   followRequestDmText: string;
   followRequestButtonText: string;
+  aiReplyEnabled: boolean;
 };
 
 export function normalizeMessageAutomationPayload(
@@ -63,7 +65,7 @@ export function normalizeMessageAutomationPayload(
 ): NormalizedMessageAutomationPayload {
   const source: MessageAutomationSource = payload.source === "DM" ? "DM" : "STORY";
   const responseFormat: MessageResponseFormat =
-    payload.linkButtons || payload.responseFormat === "LINK"
+    !payload.aiReplyEnabled && (payload.linkButtons || payload.responseFormat === "LINK")
       ? "LINK"
       : payload.responseFormat === "MEDIA"
         ? "MEDIA"
@@ -91,19 +93,23 @@ export function normalizeMessageAutomationPayload(
         : [],
     responseFormat,
     message: (payload.message ?? "").trim().slice(0, 1000),
-    quickReplies: responseFormat === "LINK" ? linkButtons : readLegacyQuickReplies(payload.quickReplies),
-    ctaLink: responseFormat === "LINK" ? firstLink?.url : undefined,
+    quickReplies: payload.aiReplyEnabled ? [] : responseFormat === "LINK" ? linkButtons : readLegacyQuickReplies(payload.quickReplies),
+    ctaLink: !payload.aiReplyEnabled && responseFormat === "LINK" ? firstLink?.url : undefined,
     ctaButtonTitle:
-      responseFormat === "LINK"
+      !payload.aiReplyEnabled && responseFormat === "LINK"
         ? firstLink?.label
         : undefined,
     mediaUrl: responseFormat === "MEDIA" ? normalizeUrl(payload.mediaUrl) : undefined,
     mediaType: responseFormat === "MEDIA" && payload.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
-    followGateRequired: Boolean(payload.followGateRequired),
+    // AI answers the inbound message immediately. A follow gate would consume
+    // quota before hiding that generated answer and later send the fallback,
+    // so it is intentionally unavailable for AI responses.
+    followGateRequired: payload.aiReplyEnabled ? false : Boolean(payload.followGateRequired),
     typingIndicator: false,
     deliveryDelaySeconds: 0,
     followRequestDmText: resolveFollowRequestDmText(payload.followRequestDmText),
     followRequestButtonText: resolveFollowRequestButtonText(payload.followRequestButtonText),
+    aiReplyEnabled: payload.aiReplyEnabled === true,
   };
 }
 

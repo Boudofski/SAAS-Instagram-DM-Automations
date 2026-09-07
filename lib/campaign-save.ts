@@ -58,6 +58,7 @@ export type RawCampaignPayload = {
     mediaType?: string | null;
     openingDmText?: string | null;
     openingDmButtonText?: string | null;
+    openingDmEnabled?: boolean;
     followRequestDmText?: string | null;
     followRequestButtonText?: string | null;
   } | null;
@@ -97,6 +98,7 @@ export type NormalizedCampaignPayload = {
     mediaType?: "IMAGE" | "VIDEO";
     openingDmText?: string;
     openingDmButtonText?: string;
+    openingDmEnabled?: boolean;
     followRequestDmText?: string;
     followRequestButtonText?: string;
   };
@@ -133,6 +135,7 @@ export function normalizeCampaignPayload(
   const publicReplyEnabled = payload.publicReplyEnabled !== false;
   const aiReplyEnabled = payload.listener?.aiReplyEnabled === true;
   const sendPrivateDm = payload.sendPrivateDm !== false;
+  const openingDmEnabled = sendPrivateDm && payload.listener?.openingDmEnabled !== false;
   const responseFormat = payload.listener?.responseFormat === "MEDIA"
     ? "MEDIA"
     : payload.listener?.responseFormat === "LINK" || payload.listener?.ctaLink
@@ -158,7 +161,7 @@ export function normalizeCampaignPayload(
     matchingMode,
     triggerMode,
     sendPrivateDm,
-    followGateRequired: Boolean(payload.followGateRequired),
+    followGateRequired: openingDmEnabled && Boolean(payload.followGateRequired),
     typingIndicator: false,
     deliveryDelaySeconds: 0,
     post: {
@@ -190,6 +193,7 @@ export function normalizeCampaignPayload(
       mediaType: sendPrivateDm && responseFormat === "MEDIA" && payload.listener?.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
       openingDmText: sendPrivateDm ? resolveOpeningDmText(payload.listener?.openingDmText) : undefined,
       openingDmButtonText: sendPrivateDm ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText) : undefined,
+      openingDmEnabled,
       followRequestDmText: sendPrivateDm ? resolveFollowRequestDmText(payload.listener?.followRequestDmText) : undefined,
       followRequestButtonText: sendPrivateDm ? resolveFollowRequestButtonText(payload.listener?.followRequestButtonText) : undefined,
     },
@@ -228,9 +232,6 @@ export function validateNormalizedCampaignPayload(
     payload.listener.commentReply2,
     payload.listener.commentReply3,
   ].filter(Boolean).length;
-  if (payload.listener.aiReplyEnabled && !payload.listener.aiReplyInstructions) {
-    return "Add instructions so AI knows what it can safely answer.";
-  }
   if (!payload.sendPrivateDm && publicReplyCount === 0 && !payload.listener.aiReplyEnabled) {
     return "Choose a comment reply or DM before activating this automation.";
   }

@@ -25,7 +25,7 @@ export function AiProviderSettings({ config, encryptionReady }: Props) {
   const [enabled, setEnabled] = useState(config.enabled);
   const [providerName, setProviderName] = useState(config.providerName);
   const [baseUrl, setBaseUrl] = useState(config.baseUrl);
-  const [model, setModel] = useState(config.model);
+  const [model, setModel] = useState(config.model || "glm-5.3");
   const [apiKey, setApiKey] = useState("");
   const [hasSavedKey, setHasSavedKey] = useState(Boolean(config.apiKeyHint));
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -67,9 +67,9 @@ export function AiProviderSettings({ config, encryptionReady }: Props) {
         <div className="flex items-start gap-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-violet-400/20 bg-violet-400/10 text-violet-300"><Bot className="h-5 w-5" /></span>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-300">AI comment replies</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-300">AP3K AI provider</p>
             <h2 className="mt-1 text-base font-black text-white">OpenAI-compatible provider</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">One protected provider powers AI replies. Campaign-level tone, instructions, and safety rules stay with each automation.</p>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">One encrypted AgentRouter connection powers comment replies, DM replies, and the AP3K AI playground. User knowledge and behavior stay isolated by workspace.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -83,12 +83,12 @@ export function AiProviderSettings({ config, encryptionReady }: Props) {
       <form onSubmit={save} className="p-5 sm:p-6">
         <div className="grid gap-4 lg:grid-cols-2">
           <Field label="Provider name" value={providerName} onChange={setProviderName} placeholder="AgentRouter" />
-          <Field label="Model ID" value={model} onChange={setModel} placeholder="Provider model identifier" />
+          <Field label="Model ID" value={model} onChange={setModel} placeholder="glm-5.3" helper="Use glm-5.3 for the current AgentRouter setup." />
           <div className="lg:col-span-2"><Field label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder="https://co.agentrouter.org/v1" inputMode="url" /></div>
           <label className="block lg:col-span-2">
             <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500"><KeyRound className="h-3.5 w-3.5" /> API key</span>
             <input type="password" autoComplete="new-password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={config.apiKeyHint ? `Stored securely · ends in ${config.apiKeyHint}` : "Paste a provider API key"} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-black/15 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/10" />
-            <span className="mt-1.5 block text-[11px] text-slate-500">Leave blank to keep the existing key. The key is encrypted before it reaches the database.</span>
+            <span className="mt-1.5 block text-[11px] text-slate-500">Paste the AgentRouter API key here. Leave it blank later to keep the saved key. AP3K encrypts it before database storage.</span>
           </label>
         </div>
 
@@ -105,6 +105,6 @@ export function AiProviderSettings({ config, encryptionReady }: Props) {
   );
 }
 
-function Field({ label, value, onChange, placeholder, inputMode }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; inputMode?: "url" }) {
-  return <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} inputMode={inputMode} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-black/15 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/10" /></label>;
+function Field({ label, value, onChange, placeholder, inputMode, helper }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; inputMode?: "url"; helper?: string }) {
+  return <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} inputMode={inputMode} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-black/15 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/10" />{helper ? <span className="mt-1.5 block text-[11px] text-slate-500">{helper}</span> : null}</label>;
 }

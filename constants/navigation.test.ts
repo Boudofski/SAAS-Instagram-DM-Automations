@@ -14,6 +14,7 @@ describe("primary navigation", () => {
       { label: "Home", href: "/dashboard/user_slug" },
       { label: "Contacts", href: "/dashboard/user_slug/contacts" },
       { label: "Automations", href: "/dashboard/user_slug/automation" },
+      { label: "AP3K AI", href: "/dashboard/user_slug/ai" },
       { label: "Inbox", href: "/dashboard/user_slug/inbox" },
       { label: "Instagram Account", href: "/dashboard/user_slug/account" },
       { label: "Billing", href: "/dashboard/user_slug/billing" },

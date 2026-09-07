@@ -1,6 +1,7 @@
 "use client";
 
 import { saveMessageAutomation } from "@/actions/automation";
+import { getAiWorkspace } from "@/actions/ai-workspace";
 import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
 import DeliveryRules from "@/components/automations/delivery-rules";
 import MessageAutomationPreview from "@/components/automations/message-automation-preview";
@@ -12,7 +13,7 @@ import {
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
 import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, readLinkButtons, type LinkButton } from "@/lib/link-buttons";
-import { AtSign, Loader2, MessageCircleReply, SmilePlus, X } from "lucide-react";
+import { AtSign, Bot, Loader2, MessageCircleReply, SmilePlus, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +31,7 @@ type Draft = {
   followGateRequired: boolean;
   followRequestDmText: string;
   followRequestButtonText: string;
+  aiReplyEnabled: boolean;
 };
 
 const STORY_TRIGGERS = [
@@ -48,6 +50,7 @@ const INITIAL: Draft = {
   followGateRequired: false,
   followRequestDmText: DEFAULT_FOLLOW_REQUEST_DM_TEXT,
   followRequestButtonText: DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
+  aiReplyEnabled: false,
 };
 
 export default function MessageAutomationWizard({ slug, source, automationId, automation }: { slug: string; source: Source; automationId?: string; automation?: any }) {
@@ -59,6 +62,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState(false);
   const stepsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,8 +78,16 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       followGateRequired: Boolean(automation.followGateRequired),
       followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
       followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
+      aiReplyEnabled: Boolean(automation.listener.aiDmReplyEnabled),
     });
   }, [automation]);
+
+  useEffect(() => {
+    void getAiWorkspace().then((result) => {
+      const paid = result.plan === "PRO" || result.plan === "BUSINESS";
+      setAiAvailable(paid && result.profile.aiRepliesEnabled);
+    }).catch(() => setAiAvailable(false));
+  }, []);
 
   useEffect(() => {
     if (step <= 1) return;
@@ -95,7 +107,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   const canContinue = step === 1
     ? source === "STORY" || draft.triggerMode === "ANY_MESSAGE" || draft.keywords.length > 0
     : step === 2
-      ? Boolean(draft.message.trim()) && linkButtonsAreComplete(draft.linkButtons)
+      ? Boolean(draft.message.trim()) && (draft.aiReplyEnabled || linkButtonsAreComplete(draft.linkButtons))
       : Boolean(draft.name.trim());
 
   const addKeyword = () => {
@@ -114,9 +126,9 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       ...draft,
       source,
       active: true,
-      responseFormat: "LINK",
-      ctaLink: firstLink?.url,
-      ctaButtonTitle: firstLink?.label,
+      responseFormat: draft.aiReplyEnabled ? "TEXT" : "LINK",
+      ctaLink: draft.aiReplyEnabled ? undefined : firstLink?.url,
+      ctaButtonTitle: draft.aiReplyEnabled ? undefined : firstLink?.label,
     }, automationId);
     if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
       router.push(`/dashboard/${slug}/automation/${result.data.id}`);
@@ -128,7 +140,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
   };
 
   return (
-    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:h-[calc(100dvh-2.5rem)] xl:min-h-[620px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
+    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
       <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
           <AutomationWizardToolbar backHref={`/dashboard/${slug}/automation`} currentStep={step} totalSteps={3} accountLabel={source === "STORY" ? "Instagram Stories" : "Instagram DMs"} onOpenPreview={() => setMobilePreviewOpen(true)} />
@@ -159,11 +171,28 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
             )}
 
             {step === 2 && (
-              <section><PhaseHeader title="DM with a link" description="Write the response and add up to three link buttons." /><MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /></section>
+              <section>
+                <PhaseHeader title="Choose the DM response" description="Send a saved message or let AP3K AI answer from your shared knowledge." />
+                <div className="mb-5 grid gap-3 sm:grid-cols-2">
+                  <Choice selected={!draft.aiReplyEnabled} title="Saved response" description="A predictable message with up to three link buttons." onClick={() => setDraft({ ...draft, aiReplyEnabled: false })} />
+                  <button type="button" disabled={!aiAvailable} onClick={() => setDraft({ ...draft, aiReplyEnabled: true, followGateRequired: false })} className={["rounded-2xl border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50", draft.aiReplyEnabled ? "border-violet-500 bg-violet-500/10 ring-2 ring-violet-500/15" : "border-slate-200 bg-slate-50 hover:border-violet-400/40 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}>
+                    <span className="flex items-center gap-2 text-base font-black"><Sparkles className="h-4 w-4 text-violet-500" /> AP3K AI reply <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-violet-500">Pro</span></span>
+                    <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">Answers in your voice using AP3K AI knowledge.</span>
+                    {!aiAvailable ? <span className="mt-3 flex items-center gap-1.5 text-xs font-bold text-violet-500"><Bot className="h-3.5 w-3.5" /> Enable AI Replies in AP3K AI first</span> : null}
+                  </button>
+                </div>
+                {draft.aiReplyEnabled ? (
+                  <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5">
+                    <p className="text-sm font-black">AI response enabled</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. The message below is sent only if the provider is unavailable.</p>
+                    <label className="mt-4 block text-xs font-black uppercase tracking-wider text-slate-500">Safe fallback message<textarea value={draft.message} onChange={(event) => setDraft({ ...draft, message: event.target.value })} rows={4} maxLength={1000} dir="auto" className="ap3k-textarea mt-2 w-full rounded-xl px-4 py-3 text-sm" /></label>
+                  </div>
+                ) : <MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} />}
+              </section>
             )}
 
             {step === 3 && (
-              <section><PhaseHeader title="Configure rules & name" description="Name the automation and decide whether the final message is reserved for followers." /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Automation name</label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" /><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Optional follow request</p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /><div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
+              <section><PhaseHeader title="Configure rules & name" description={draft.aiReplyEnabled ? "Name the automation. AI replies are sent immediately after a matching message." : "Name the automation and decide whether the saved response is reserved for followers."} /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Automation name</label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" />{draft.aiReplyEnabled ? <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5"><p className="text-sm font-black">Immediate AI response</p><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Follow requests are disabled for AI replies so AP3K never generates and hides an answer. Your saved fallback is used only if the provider is unavailable.</p></div> : <><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Optional follow request</p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /></>}<div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
             )}
 
             {error && <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">{error}</p>}

@@ -3,13 +3,13 @@ export type PaidPlan = Exclude<CustomerPlan, "FREE">;
 export type BillingInterval = "month" | "year";
 
 export type PlanCard = {
-  id: CustomerPlan | "CUSTOM";
+  id: CustomerPlan;
   name: string;
   description: string;
   monthlyPrice: number | null;
   annualPrice: number | null;
   annualSavingsPercent: number | null;
-  replyLimit: number | "custom";
+  replyLimit: number;
   featured?: boolean;
   features: string[];
 };
@@ -68,23 +68,7 @@ export const PLAN_CARDS: PlanCard[] = [
       "20,000 automated replies/month",
       "2,000 AI replies/month",
       "High-volume comment and DM automation",
-      "Monthly usage resets on every billing interval",
-    ],
-  },
-  {
-    id: "CUSTOM",
-    name: "Custom",
-    description: "For brands and agencies that need volume beyond Business.",
-    monthlyPrice: null,
-    annualPrice: null,
-    annualSavingsPercent: null,
-    replyLimit: "custom",
-    features: [
-      "Everything in Business",
-      "Custom saved-reply and AI volume",
-      "Tailored contract and pricing",
-      "Volume planning and onboarding support",
-      "Plan built around your workflow",
+      "Monthly AI and automation usage resets automatically",
     ],
   },
 ];

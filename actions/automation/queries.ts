@@ -160,6 +160,7 @@ export const createCompleteMessageAutomation = async (
           mediaType: payload.mediaType,
           followRequestDmText: payload.followRequestDmText,
           followRequestButtonText: payload.followRequestButtonText,
+          aiDmReplyEnabled: payload.aiReplyEnabled,
         },
       },
     },
@@ -219,6 +220,7 @@ export const updateCompleteMessageAutomation = async (
             mediaType: payload.mediaType,
             followRequestDmText: payload.followRequestDmText,
             followRequestButtonText: payload.followRequestButtonText,
+            aiDmReplyEnabled: payload.aiReplyEnabled,
           },
         },
       },
@@ -397,6 +399,7 @@ export const duplicateAutomationQuery = async (
       deliveryDelaySeconds: 0,
       followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
       followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
+      aiReplyEnabled: automation.listener.aiDmReplyEnabled,
     });
   }
 
@@ -441,6 +444,7 @@ export const duplicateAutomationQuery = async (
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
       openingDmText: automation.listener.openingDmText ?? undefined,
       openingDmButtonText: automation.listener.openingDmButtonText ?? undefined,
+      openingDmEnabled: automation.listener.openingDmEnabled,
       followRequestDmText: automation.listener.followRequestDmText ?? undefined,
       followRequestButtonText: automation.listener.followRequestButtonText ?? undefined,
     },

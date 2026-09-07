@@ -291,4 +291,4 @@ prisma/               # Schema + migrations
 - **Plan enforcement** — FREE plan limit (3 automations) is tracked in the DB schema but not yet enforced on the backend. Activation is not blocked for FREE users. Marked as TODO.
 - **Story reply automations** — the DB schema supports story reply triggers but the wizard UI does not expose them.
 - **Token refresh** — Instagram long-lived tokens expire after 60 days. AP3k refreshes near expiry when the user profile is loaded, but users may need to reconnect if Meta revokes a token or permissions change.
-- **Smart AI matching** — requires a valid `OPENAI_API_KEY`. If missing or the call fails, the automation silently skips the DM.
+- **Legacy Smart AI matching** — the older trigger-matching mode still uses `OPENAI_API_KEY`. AP3K AI comment and DM replies use the encrypted AgentRouter provider configured in the admin dashboard.

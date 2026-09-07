@@ -171,14 +171,12 @@ describe("normalizeCampaignPayload", () => {
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 
-  it("requires instructions when AI reply is enabled", () => {
+  it("allows workspace knowledge to replace campaign-specific AI instructions", () => {
     const normalized = normalizeCampaignPayload({
       ...basePayload,
       listener: { ...basePayload.listener, aiReplyEnabled: true, aiReplyInstructions: " " },
     });
-    expect(validateNormalizedCampaignPayload(normalized)).toBe(
-      "Add instructions so AI knows what it can safely answer."
-    );
+    expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 
   it("accepts the corrected carousel enum and maps the legacy typo", () => {
@@ -204,6 +202,19 @@ describe("normalizeCampaignPayload", () => {
     });
 
     expect(normalized.sendPrivateDm).toBe(true);
+    expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
+  });
+
+  it("supports sending the final DM immediately without an opening DM", () => {
+    const normalized = normalizeCampaignPayload({
+      ...basePayload,
+      sendPrivateDm: true,
+      followGateRequired: true,
+      listener: { ...basePayload.listener, openingDmEnabled: false },
+    });
+
+    expect(normalized.listener.openingDmEnabled).toBe(false);
+    expect(normalized.followGateRequired).toBe(false);
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 

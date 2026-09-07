@@ -16,7 +16,6 @@ Meta/API/database field names remain unchanged internally where compatibility re
 - Free — $0, 50 automated replies/month.
 - Pro — $9/month or $79/year, 5,000 automated replies/month.
 - Business — $29/month or $279/year, 20,000 automated replies/month.
-- Custom — contact AP3K for volume beyond Business.
 
 One successfully sent Comment reply counts as one automated reply. One successfully sent DM counts as one automated reply. When both send for one matched comment, two automated replies are used. Failed/skipped sends do not count. Annual subscriptions still receive monthly usage resets.
 

@@ -64,35 +64,20 @@ export default function PricingExperience({
         </p>
       ) : null}
 
-      <div className={`grid ${dashboardCompact ? "gap-2.5 sm:grid-cols-2 xl:grid-cols-4" : "gap-5 md:grid-cols-2 xl:grid-cols-4"}`}>
+      <div className={`mx-auto grid w-full max-w-[1180px] ${dashboardCompact ? "gap-3 md:grid-cols-3" : "gap-5 md:grid-cols-3"}`}>
         {PLAN_CARDS.map((plan, index) => {
           const isPaid = plan.id === "PRO" || plan.id === "BUSINESS";
           const paidPlan = isPaid ? (plan.id as PaidPlan) : null;
           const isCurrent = Boolean(currentPlan && plan.id === currentPlan);
-          const price =
-            plan.id === "CUSTOM"
-              ? null
-              : interval === "year"
-                ? plan.annualPrice
-                : plan.monthlyPrice;
+          const price = interval === "year" ? plan.annualPrice : plan.monthlyPrice;
 
-          let href =
-            plan.id === "FREE"
-              ? "/sign-up"
-              : plan.id === "CUSTOM"
-                ? "mailto:support@ap3k.com?subject=AP3K%20Custom%20Plan"
-                : checkoutHref(paidPlan!, interval);
-          let cta =
-            plan.id === "FREE"
-              ? "Start free"
-              : plan.id === "CUSTOM"
-                ? "Contact us"
-                : `Choose ${plan.name}`;
+          let href = plan.id === "FREE" ? "/sign-up" : checkoutHref(paidPlan!, interval);
+          let cta = plan.id === "FREE" ? "Start free" : `Choose ${plan.name}`;
 
           if (isCurrent) {
             href = existingPaid ? "#manage-billing" : "/dashboard";
             cta = "Current plan";
-          } else if (existingPaid && plan.id !== "CUSTOM") {
+          } else if (existingPaid) {
             href = "#manage-billing";
             cta = "Manage in portal";
           }
@@ -128,9 +113,7 @@ export default function PricingExperience({
               </div>
 
               <div className={dashboardCompact || compact ? "mt-2 min-h-[3.4rem]" : "mt-6 min-h-[5rem]"}>
-                {plan.id === "CUSTOM" ? (
-                  <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>Let&apos;s talk</p>
-                ) : plan.id === "FREE" ? (
+                {plan.id === "FREE" ? (
                   <div>
                     <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>
                       $0
