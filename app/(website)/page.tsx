@@ -15,6 +15,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -221,9 +222,21 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="border-b border-slate-200/80 bg-white/85 px-4 py-6 backdrop-blur dark:border-white/8 dark:bg-[#0b0c15]/90 sm:px-8">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[10px] font-black uppercase tracking-[0.17em] text-slate-500 dark:text-slate-400 sm:text-xs">
-            <span>Instagram Business + Creator</span><span className="text-violet-400">•</span><span>Supported API access</span><span className="text-violet-400">•</span><span>No scraping</span><span className="text-violet-400">•</span><span>No code</span>
+        <section aria-label="AP3K trust and platform credentials" className="border-b border-slate-200/80 bg-white/85 px-4 py-6 backdrop-blur dark:border-white/8 dark:bg-[#0b0c15]/90 sm:px-8">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8">
+            <div className="shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:border-white/15">
+              <Image
+                src="/media/meta-business-partner.jpg"
+                alt="Meta Business Partner"
+                width={400}
+                height={229}
+                sizes="(max-width: 640px) 150px, 170px"
+                className="h-auto w-[150px] rounded-lg sm:w-[170px]"
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[10px] font-black uppercase tracking-[0.17em] text-slate-500 dark:text-slate-400 sm:text-xs">
+              <span>Instagram Business + Creator</span><span className="text-violet-400">•</span><span>Supported API access</span><span className="text-violet-400">•</span><span>No scraping</span><span className="text-violet-400">•</span><span>No code</span>
+            </div>
           </div>
         </section>
 
