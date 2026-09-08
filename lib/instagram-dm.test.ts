@@ -276,7 +276,8 @@ describe("sendInstagramCommentPrivateReply", () => {
     const fallbackBody = mockedAxios.post.mock.calls[1][1] as any;
     expect(fallbackBody.recipient).toEqual({ comment_id: COMMENT_ID });
     expect(fallbackBody.message.text).toContain("❌ Not Following Yet!");
-    expect(fallbackBody.message.text).toContain("https://www.instagram.com/ap3k/");
+    expect(fallbackBody.message.text).toContain("Follow @ap3k");
+    expect(fallbackBody.message.text).not.toContain("https://");
     expect(fallbackBody.message.quick_replies).toEqual([
       {
         content_type: "text",
@@ -520,7 +521,8 @@ describe("sendInstagramDirectResponse", () => {
     expect(result).toEqual({ ok: true, messageIds: ["mid.follow-quick"] });
     const body = mockedAxios.post.mock.calls[0][1] as any;
     expect(body.message.attachment).toBeUndefined();
-    expect(body.message.text).toContain("https://www.instagram.com/ap3k/");
+    expect(body.message.text).toContain("Follow @ap3k");
+    expect(body.message.text).not.toContain("https://");
     expect(body.message.quick_replies).toEqual([{
       content_type: "text",
       title: "I followed ✅",
@@ -547,7 +549,7 @@ describe("sendInstagramDirectResponse", () => {
     expect(card.buttons[1].payload).toBe("AP3K_FOLLOW_CHECK:automation-4");
   });
 
-  it("falls back to a profile link and verification quick reply when the card is rejected", async () => {
+  it("falls back to clean handle copy and a verification quick reply when the card is rejected", async () => {
     mockedAxios.post
       .mockRejectedValueOnce(metaGenericError(100))
       .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.direct-fallback" } });
@@ -564,7 +566,8 @@ describe("sendInstagramDirectResponse", () => {
     expect(result.ok).toBe(true);
     const fallback = mockedAxios.post.mock.calls[1][1] as any;
     expect(fallback.message.text).toContain("⚠️ Verification delayed");
-    expect(fallback.message.text).toContain("https://www.instagram.com/ap3k/");
+    expect(fallback.message.text).toContain("Follow @ap3k");
+    expect(fallback.message.text).not.toContain("https://");
     expect(fallback.message.quick_replies[0].payload).toBe("AP3K_FOLLOW_CHECK:automation-5");
   });
 });
