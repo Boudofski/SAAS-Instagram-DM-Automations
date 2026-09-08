@@ -29,6 +29,7 @@ model User {
   referralAttribution ReferralAttribution? @relation("ReferredUser")
   aiWorkspace         AiWorkspaceConfig?
   aiUsageEvents       AiUsageEvent[]
+  aiChatMessages      AiChatMessage[]
 }
 
 model Subscription {
@@ -304,6 +305,18 @@ model AiUsageEvent {
 
   @@index([userId, createdAt])
   @@index([automationId, createdAt])
+}
+
+model AiChatMessage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  context   String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, context, createdAt])
 }
 
 model Conversation {

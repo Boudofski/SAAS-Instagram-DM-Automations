@@ -37,14 +37,12 @@ For the campaign wizard save flow, retest:
 - Create campaign with any post and any comment.
 - Save as draft and activate campaign.
 
-## Optional Vercel Build Integration
+## Vercel Build Integration
 
-For most projects, prefer running `npm run db:migrate:deploy` as an explicit release step before deploying.
-
-If you intentionally want Vercel to apply migrations during deploy, configure the project build command to run migrations before the build only when production `DATABASE_URL` is present:
+AP3K uses the `vercel-build` package script. Production deployments apply pending migrations before compiling the application. Preview and local builds do not mutate the production schema. The script prefers `DATABASE_URL_UNPOOLED` and falls back to `DATABASE_URL` only when a direct connection is unavailable:
 
 ```bash
-npm run db:migrate:deploy && npm run build
+npm run vercel-build
 ```
 
-Use this only if the deployment environment reliably has the production database URL and your team accepts migrations running automatically during deploy.
+Keep `DATABASE_URL_UNPOOLED` configured in the production Vercel environment. A failed migration stops the deployment before new code can depend on an unapplied schema.

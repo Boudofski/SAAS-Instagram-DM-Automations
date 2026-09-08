@@ -23,9 +23,16 @@ function hasAiPlan(plan?: string | null) {
 export async function getAiWorkspace() {
   const profile = await currentProfile();
   const workspace = await client.aiWorkspaceConfig.findUnique({ where: { userId: profile.id } });
+  const playgroundMessages = await client.aiChatMessage.findMany({
+    where: { userId: profile.id, context: "PLAYGROUND" },
+    orderBy: { createdAt: "desc" },
+    take: 60,
+    select: { id: true, role: true, content: true, createdAt: true },
+  });
   return {
     profile: normalizeAiWorkspace(workspace),
     plan: profile.subscription?.plan ?? "FREE",
+    playgroundMessages: playgroundMessages.reverse(),
   };
 }
 
@@ -107,20 +114,70 @@ export async function testAiWorkspaceAction(message: string) {
     const prompt = message.trim().slice(0, 1000);
     if (!prompt) return { status: 400 as const, data: "Write a message to test." };
     const workspace = normalizeAiWorkspace(await client.aiWorkspaceConfig.findUnique({ where: { userId: profile.id } }));
+    const history = await client.aiChatMessage.findMany({
+      where: { userId: profile.id, context: "PLAYGROUND" },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { role: true, content: true },
+    });
     const quota = await reserveAiReplyQuota({ userId: profile.id, channel: "PLAYGROUND" });
     if (!quota.ok) return { status: 429 as const, data: "Your monthly AI reply limit has been reached." };
-    const result = await generateAiDmReply({ message: prompt, workspace });
+    const userMessage = await client.aiChatMessage.create({
+      data: { userId: profile.id, context: "PLAYGROUND", role: "user", content: prompt },
+      select: { id: true, role: true, content: true, createdAt: true },
+    });
+    const result = await generateAiDmReply({
+      message: prompt,
+      workspace,
+      history: history.reverse().map((item) => ({ role: item.role === "assistant" ? "assistant" : "user", content: item.content })),
+    });
     if (!result.ok) {
       await releaseAiReplyReservation(quota.reservationId);
-      return { status: 503 as const, data: "The AI provider is unavailable. Check the Admin provider connection." };
+      return { status: 503 as const, data: "The AI provider is unavailable. Check the Admin provider connection.", userMessage };
     }
     await completeAiReplyReservation(quota.reservationId, { channel: "PLAYGROUND", outcome: "generated" });
-    return { status: 200 as const, data: result.reply };
+    const assistantMessage = await client.aiChatMessage.create({
+      data: { userId: profile.id, context: "PLAYGROUND", role: "assistant", content: result.reply },
+      select: { id: true, role: true, content: true, createdAt: true },
+    });
+    return { status: 200 as const, data: result.reply, userMessage, assistantMessage };
   } catch (error) {
     console.error("[ap3k-ai] playground request failed", error);
     return {
       status: 503 as const,
       data: "AP3K AI could not complete this test. Please try again; if it continues, check the active provider in Admin.",
     };
+  }
+}
+
+export async function clearAiPlaygroundAction() {
+  try {
+    const profile = await currentProfile();
+    await client.aiChatMessage.deleteMany({ where: { userId: profile.id, context: "PLAYGROUND" } });
+    return { status: 200 as const, data: "Conversation cleared." };
+  } catch {
+    return { status: 400 as const, data: "Could not clear the conversation." };
+  }
+}
+
+export async function savePlaygroundMessageAsKnowledgeAction(messageId: string) {
+  try {
+    const profile = await currentProfile();
+    if (!hasAiPlan(profile.subscription?.plan)) return { status: 403 as const, data: "Upgrade to Pro to add AI knowledge." };
+    const message = await client.aiChatMessage.findFirst({ where: { id: messageId, userId: profile.id, context: "PLAYGROUND", role: "user" } });
+    if (!message) return { status: 404 as const, data: "Message not found." };
+    const existing = await client.aiWorkspaceConfig.findUnique({ where: { userId: profile.id } });
+    const current = normalizeAiWorkspace(existing);
+    if (current.knowledge.length >= 12) return { status: 400 as const, data: "You can save up to 12 focused knowledge notes." };
+    const knowledge = normalizeKnowledge([...current.knowledge, {
+      id: crypto.randomUUID(),
+      title: `Playground note ${current.knowledge.length + 1}`,
+      content: message.content,
+    }]);
+    await client.aiWorkspaceConfig.upsert({ where: { userId: profile.id }, create: { userId: profile.id, knowledge }, update: { knowledge } });
+    revalidatePath(`/dashboard/${profile.clerkId}/ai`);
+    return { status: 200 as const, data: "Saved to Knowledge. Review it there before using AI live." };
+  } catch {
+    return { status: 400 as const, data: "Could not save this message to Knowledge." };
   }
 }

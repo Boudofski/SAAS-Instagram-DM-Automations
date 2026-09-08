@@ -16,7 +16,6 @@ describe("primary navigation", () => {
       { label: "Automations", href: "/dashboard/user_slug/automation" },
       { label: "AP3K AI", href: "/dashboard/user_slug/ai" },
       { label: "Inbox", href: "/dashboard/user_slug/inbox" },
-      { label: "Instagram Account", href: "/dashboard/user_slug/account" },
       { label: "Billing", href: "/dashboard/user_slug/billing" },
       { label: "Refer & earn", href: "/dashboard/user_slug/referrals" },
       { label: "Settings", href: "/dashboard/user_slug/settings" },
