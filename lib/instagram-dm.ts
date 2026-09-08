@@ -20,6 +20,9 @@ export type FollowGatePromptState = "INITIAL" | "NOT_FOLLOWING" | "UNAVAILABLE";
 export type FollowGatePrompt = {
   username?: string | null;
   state: FollowGatePromptState;
+  message?: string | null;
+  verificationButtonTitle?: string | null;
+  verificationPayload?: string | null;
 };
 
 type InstagramMessagePayload =
@@ -229,29 +232,26 @@ export function getInstagramFollowGatePromptCopy(prompt: FollowGatePrompt) {
 
 function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) {
   const copy = getInstagramFollowGatePromptCopy(prompt);
-  const verificationPayload = `AP3K_FOLLOW_CHECK:${automationId}`;
+  const verificationPayload = prompt.verificationPayload?.trim() || `AP3K_FOLLOW_CHECK:${automationId}`;
+  const text = prompt.message?.trim() || copy.text;
+  const verificationButtonTitle = normalizeButtonTitle(prompt.verificationButtonTitle || "I followed ✅");
   const preferred: InstagramMessagePayload = {
     attachment: {
       type: "template",
       payload: {
-        template_type: "generic",
-        elements: [
-          {
-            title: copy.title,
-            subtitle: copy.subtitle,
-            buttons: [
-              { type: "web_url", title: "Follow", url: copy.profileUrl },
-              { type: "postback", title: "I followed ✅", payload: verificationPayload },
-            ],
-          },
+        template_type: "button",
+        text,
+        buttons: [
+          { type: "web_url", title: "Follow", url: copy.profileUrl },
+          { type: "postback", title: verificationButtonTitle, payload: verificationPayload },
         ],
       },
     },
   };
   const fallback = addQuickReplies(
-    { text: `${copy.text}\n\nFollow: ${copy.profileUrl}` },
+    { text: `${text}\n\nFollow: ${copy.profileUrl}` },
     automationId,
-    ["I followed ✅"],
+    [verificationButtonTitle],
     [verificationPayload]
   );
   return { preferred, fallback, copy };

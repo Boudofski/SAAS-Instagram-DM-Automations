@@ -12,9 +12,10 @@ let appChecked: { key: string; ready: boolean; expiresAt: number } | null = null
 let appInFlight: Promise<boolean> | null = null;
 
 /**
- * A full-width Instagram postback button needs both levels of subscription:
- * the connected professional account and the AP3K Meta app webhook object.
- * If either repair is unavailable callers safely keep using message quick replies.
+ * The connected professional account's `subscribed_apps` response is the
+ * authoritative runtime capability check for postback buttons. The app-level
+ * endpoint is still audited and repaired when Meta allows it, but an app-token
+ * lookup failure must not downgrade a healthy Instagram Login connection.
  */
 export async function ensureInstagramButtonCallbacks(
   integrationId: string | undefined,
@@ -22,7 +23,14 @@ export async function ensureInstagramButtonCallbacks(
 ): Promise<boolean> {
   const accountReady = await ensureInstagramPostbackSubscription(integrationId, token);
   if (!accountReady) return false;
-  return ensureInstagramAppPostbackSubscription();
+
+  const appAuditReady = await ensureInstagramAppPostbackSubscription();
+  if (!appAuditReady) {
+    console.warn("[webhook-subscription] app-level audit unavailable; account-level postbacks are ready", {
+      integrationId,
+    });
+  }
+  return true;
 }
 
 export async function ensureInstagramPostbackSubscription(integrationId: string | undefined, token: string): Promise<boolean> {
