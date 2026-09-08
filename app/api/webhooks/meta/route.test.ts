@@ -224,7 +224,7 @@ describe("Meta webhook route security", () => {
     expect(mockCreateWebhookEvent).not.toHaveBeenCalled();
   });
 
-  it("releases the final DM after the opening button when the follow request is off", async () => {
+  it("uses the automation-owned integration when releasing the final DM", async () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
     const integration = {
       userId: "user-1",
@@ -235,7 +235,11 @@ describe("Meta webhook route security", () => {
       status: "CONNECTED",
       reconnectRequired: false,
     };
-    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    mockFindIntegrationForWebhookAccount.mockResolvedValue({
+      ...integration,
+      userId: "stale-user",
+      token: "stale-token",
+    });
     mockFindAutomationById.mockResolvedValue({
       id: "automation-1",
       userId: "user-1",

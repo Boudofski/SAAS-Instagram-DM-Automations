@@ -443,6 +443,32 @@ describe("sendInstagramDirectResponse", () => {
     }]);
   });
 
+  it("keeps the follow journey usable when Instagram rejects both interactive formats", async () => {
+    mockedAxios.post
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-text" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-follow",
+      message: "Nearly there! Follow me and tap below.",
+      postbackButton: {
+        title: "Following",
+        payload: "AP3K_FOLLOW_CHECK:automation-follow",
+      },
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-text"] });
+    const textFallbackBody = mockedAxios.post.mock.calls[2][1] as any;
+    expect(textFallbackBody.recipient).toEqual({ id: COMMENTER_ID });
+    expect(textFallbackBody.message).toEqual({
+      text: "Nearly there! Follow me and tap below.\n\nReply “Following” to continue.",
+    });
+  });
+
   it("sends Follow and I followed as two clickable card buttons", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-gate" } });
 

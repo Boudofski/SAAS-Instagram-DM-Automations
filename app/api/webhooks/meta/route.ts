@@ -1654,6 +1654,9 @@ async function processEntry(
       const callbackAutomation = fallbackAction?.automation ?? (dmFlowAction
         ? await findAutomationById(dmFlowAction.automationId)
         : null);
+      const callbackIntegration = callbackAutomation
+        ? selectIntegrationForWebhook(callbackAutomation.User?.integrations, pageId)
+        : undefined;
       if (dmFlowAction) {
         console.log("[webhook] comment DM callback resolved", {
           automationId: dmFlowAction.automationId,
@@ -1668,9 +1671,20 @@ async function processEntry(
         : null;
       const callbackIsAllowed = Boolean(
         callbackAutomation?.active &&
-        callbackAutomation.userId === inboxIntegration?.userId &&
+        callbackIntegration &&
+        callbackIntegration.status !== "DISCONNECTED" &&
+        callbackIntegration.reconnectRequired !== true &&
         (dmFlowAction?.type !== "OPENING_CONTINUE" || callbackAutomation.source === "COMMENT")
       );
+      if (dmFlowAction && !callbackIsAllowed) {
+        console.warn("[webhook] comment DM callback rejected", {
+          automationId: dmFlowAction.automationId,
+          action: dmFlowAction.type,
+          active: callbackAutomation?.active === true,
+          accountMatched: Boolean(callbackIntegration),
+          source: callbackAutomation?.source,
+        });
+      }
       const directAutomation = callbackIsAllowed
         ? callbackAutomation
         : storyAutomation;
@@ -1795,6 +1809,11 @@ async function processConfiguredMessageAutomation(params: {
 
   const usageAllowed = await canSendStaticReply(automation.userId);
   if (!usageAllowed.ok) {
+    console.warn("[webhook] configured DM blocked by plan usage", {
+      automationId: automation.id,
+      callbackAction: dmFlowAction?.type,
+      reason: usageAllowed.reason,
+    });
     await createAutomationEvent({ automationId: automation.id, eventType: "DM_SKIPPED", igUserId: senderId, keyword: matchedKeyword, meta: { reason: usageAllowed.reason } });
     await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "IGNORED", errorMessage: usageAllowed.reason, processedAt: new Date() });
     return;
@@ -1895,6 +1914,14 @@ async function processConfiguredMessageAutomation(params: {
   const errorMessage = result.ok
     ? undefined
     : [result.metaError.status, result.metaError.code, result.metaError.message].filter(Boolean).join(": ") || "meta_api_error";
+  console.log("[webhook] configured DM delivery completed", {
+    automationId: automation.id,
+    callbackAction: dmFlowAction?.type,
+    step: needsFollowRequest ? "FOLLOW_REQUEST" : "FINAL",
+    sent,
+    messageIdCount: result.ok ? result.messageIds.length : 0,
+    error: errorMessage,
+  });
   await createMessageLog({
     automationId: automation.id,
     recipientIgId: senderId,
