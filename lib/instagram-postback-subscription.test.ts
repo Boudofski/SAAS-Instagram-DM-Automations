@@ -15,6 +15,8 @@ describe("existing-account button subscription repair", () => {
     vi.clearAllMocks();
     process.env.INSTAGRAM_APP_ID = "app-1";
     process.env.INSTAGRAM_APP_SECRET = "secret-1";
+    delete process.env.META_APP_ID;
+    delete process.env.META_APP_SECRET;
     process.env.INSTAGRAM_LOGIN_ENABLED = "true";
     process.env.META_VERIFY_TOKEN = "verify-token";
     process.env.NEXT_PUBLIC_HOST_URL = "https://ap3k.com";
@@ -53,14 +55,69 @@ describe("existing-account button subscription repair", () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
   });
 
-  it("enables full-width buttons when the account is ready even if the app audit is unavailable", async () => {
+  it("falls back when the account is ready but the app audit is unavailable", async () => {
     process.env.INSTAGRAM_APP_ID = "account-ready-app-audit-unavailable";
     vi.mocked(axios.get)
       .mockResolvedValueOnce({ data: { data: [{ id: "account-ready-app-audit-unavailable", subscribed_fields: ["comments", "messages", "messaging_postbacks"] }] } })
       .mockRejectedValueOnce(new Error("app token endpoint unavailable"));
 
-    await expect(ensureInstagramButtonCallbacks("account-ready-audit-failed", "token")).resolves.toBe(true);
+    await expect(ensureInstagramButtonCallbacks("account-ready-audit-failed", "token")).resolves.toBe(false);
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("tries the parent Meta app before the Instagram Login app", async () => {
+    process.env.META_APP_ID = "parent-meta-app";
+    process.env.META_APP_SECRET = "parent-meta-secret";
+    process.env.INSTAGRAM_APP_ID = "instagram-login-app";
+    process.env.INSTAGRAM_APP_SECRET = "instagram-login-secret";
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (String(url).includes("parent-meta-app")) {
+        return {
+          data: {
+            data: [{
+              object: "instagram",
+              active: true,
+              callback_url: "https://ap3k.com/api/webhooks/meta",
+              fields: [{ name: "comments" }, { name: "messages" }, { name: "messaging_postbacks" }],
+            }],
+          },
+        };
+      }
+      throw new Error("Instagram app endpoint must not be needed");
+    });
+
+    await expect(ensureInstagramAppPostbackSubscription()).resolves.toBe(true);
+    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(axios.get).toHaveBeenCalledWith(
+      expect.stringContaining("/parent-meta-app/subscriptions"),
+      expect.anything()
+    );
+  });
+
+  it("falls back to the Instagram app when the parent Meta app cannot be audited", async () => {
+    process.env.META_APP_ID = "parent-meta-app-fallback";
+    process.env.META_APP_SECRET = "parent-meta-secret";
+    process.env.INSTAGRAM_APP_ID = "instagram-fallback-app";
+    process.env.INSTAGRAM_APP_SECRET = "instagram-login-secret";
+    vi.mocked(axios.get)
+      .mockRejectedValueOnce(new Error("parent app unavailable"))
+      .mockResolvedValueOnce({
+        data: {
+          data: [{
+            object: "instagram",
+            active: true,
+            callback_url: "https://ap3k.com/api/webhooks/meta",
+            fields: [{ name: "comments" }, { name: "messages" }, { name: "messaging_postbacks" }],
+          }],
+        },
+      });
+
+    await expect(ensureInstagramAppPostbackSubscription()).resolves.toBe(true);
+    expect(axios.get).toHaveBeenCalledTimes(2);
+    expect(axios.get).toHaveBeenLastCalledWith(
+      expect.stringContaining("/instagram-fallback-app/subscriptions"),
+      expect.anything()
+    );
   });
 
   it("recognizes a complete app-level Instagram webhook subscription", async () => {
