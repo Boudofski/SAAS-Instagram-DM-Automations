@@ -249,8 +249,9 @@ describe("sendInstagramCommentPrivateReply", () => {
     });
     const body = mockedAxios.post.mock.calls[0][1] as any;
     expect(body.recipient).toEqual({ comment_id: COMMENT_ID });
-    expect(body.message.attachment.payload.template_type).toBe("generic");
-    expect(body.message.attachment.payload.elements[0].buttons).toEqual([
+    expect(body.message.attachment.payload.template_type).toBe("button");
+    expect(body.message.attachment.payload.text).toContain("Follow @ap3k");
+    expect(body.message.attachment.payload.buttons).toEqual([
       { type: "web_url", title: "Follow", url: "https://www.instagram.com/ap3k/" },
       { type: "postback", title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-gate" },
     ]);
@@ -478,16 +479,23 @@ describe("sendInstagramDirectResponse", () => {
       recipientId: COMMENTER_ID,
       automationId: "automation-3",
       message: "Protected payload",
-      followGatePrompt: { username: "ap3k", state: "INITIAL" },
+      followGatePrompt: {
+        username: "ap3k",
+        state: "INITIAL",
+        message: "Follow to unlock this guide.",
+        verificationButtonTitle: "Done ✅",
+        verificationPayload: "AP3K_FOLLOW_CHECK:automation-3:comment-9",
+      },
     });
 
     expect(result).toEqual({ ok: true, messageIds: ["mid.follow-gate"] });
     const body = mockedAxios.post.mock.calls[0][1] as any;
-    const card = body.message.attachment.payload.elements[0];
-    expect(card.title).toBe("Follow to unlock");
+    const card = body.message.attachment.payload;
+    expect(card.template_type).toBe("button");
+    expect(card.text).toBe("Follow to unlock this guide.");
     expect(card.buttons).toEqual([
       { type: "web_url", title: "Follow", url: "https://www.instagram.com/ap3k/" },
-      { type: "postback", title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-3" },
+      { type: "postback", title: "Done ✅", payload: "AP3K_FOLLOW_CHECK:automation-3:comment-9" },
     ]);
   });
 
@@ -503,9 +511,10 @@ describe("sendInstagramDirectResponse", () => {
       followGatePrompt: { username: "ap3k", state: "NOT_FOLLOWING" },
     });
 
-    const card = (mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0];
-    expect(card.title).toBe("❌ Not Following Yet!");
-    expect(card.subtitle).toContain("tap I followed ✅ again");
+    const card = (mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload;
+    expect(card.template_type).toBe("button");
+    expect(card.text).toContain("❌ Not Following Yet!");
+    expect(card.text).toContain("tap I followed ✅ again");
     expect(card.buttons[1].payload).toBe("AP3K_FOLLOW_CHECK:automation-4");
   });
 

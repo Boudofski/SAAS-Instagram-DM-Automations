@@ -6,6 +6,7 @@ const findUnique = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/prisma", () => ({ client: { integrations: { findUnique } } }));
 import {
   ensureInstagramAppPostbackSubscription,
+  ensureInstagramButtonCallbacks,
   ensureInstagramPostbackSubscription,
 } from "./instagram-postback-subscription";
 
@@ -50,6 +51,16 @@ describe("existing-account button subscription repair", () => {
     vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { success: true } });
     expect(await ensureInstagramPostbackSubscription("other-app-account", "token")).toBe(true);
     expect(axios.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("enables full-width buttons when the account is ready even if the app audit is unavailable", async () => {
+    process.env.INSTAGRAM_APP_ID = "account-ready-app-audit-unavailable";
+    vi.mocked(axios.get)
+      .mockResolvedValueOnce({ data: { data: [{ id: "account-ready-app-audit-unavailable", subscribed_fields: ["comments", "messages", "messaging_postbacks"] }] } })
+      .mockRejectedValueOnce(new Error("app token endpoint unavailable"));
+
+    await expect(ensureInstagramButtonCallbacks("account-ready-audit-failed", "token")).resolves.toBe(true);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("recognizes a complete app-level Instagram webhook subscription", async () => {

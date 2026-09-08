@@ -1886,6 +1886,12 @@ async function processConfiguredMessageAutomation(params: {
   const fullWidthButtonsReady = needsFollowRequest
     ? await ensureInstagramButtonCallbacks(integration?.id, token)
     : false;
+  const followPromptState = dmFlowAction?.type === "FOLLOW_CHECK"
+    ? profile
+      ? "NOT_FOLLOWING" as const
+      : "UNAVAILABLE" as const
+    : "INITIAL" as const;
+  const followVerificationButtonTitle = resolveFollowRequestButtonText(automation.listener.followRequestButtonText);
 
   const result = await sendInstagramDirectResponse({
     preferQuickReplyForPostback: needsFollowRequest && !fullWidthButtonsReady,
@@ -1901,9 +1907,18 @@ async function processConfiguredMessageAutomation(params: {
     ctaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaLink,
     mediaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaUrl,
     mediaType: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaType,
-    postbackButton: needsFollowRequest
+    followGatePrompt: needsFollowRequest && fullWidthButtonsReady
       ? {
-          title: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
+          username: integration?.instagramUsername,
+          state: followPromptState,
+          message: followPromptState === "INITIAL" ? resolvedMessage : undefined,
+          verificationButtonTitle: followVerificationButtonTitle,
+          verificationPayload: followRequestActionPayload(automation.id, dmFlowAction?.flowId),
+        }
+      : undefined,
+    postbackButton: needsFollowRequest && !fullWidthButtonsReady
+      ? {
+          title: followVerificationButtonTitle,
           payload: followRequestActionPayload(automation.id, dmFlowAction?.flowId),
         }
       : undefined,
