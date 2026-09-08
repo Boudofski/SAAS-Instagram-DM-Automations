@@ -249,7 +249,7 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
     },
   };
   const fallback = addQuickReplies(
-    { text: `${text}\n\nFollow: ${copy.profileUrl}` },
+    { text },
     automationId,
     [verificationButtonTitle],
     [verificationPayload]
