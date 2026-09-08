@@ -66,7 +66,6 @@ import {
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
 } from "@/lib/instagram-message-event";
-import { ensureInstagramButtonCallbacks } from "@/lib/instagram-postback-subscription";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 
 export const maxDuration = 60;
@@ -1413,17 +1412,14 @@ async function processEntry(
         openingDmEnabled ? resolveOpeningDmText(listener.openingDmText) : listener.prompt,
         templateVars
       );
-      const fullWidthButtonsReady = openingDmEnabled
-        ? await ensureInstagramButtonCallbacks(integrationRaw?.id, token)
-        : false;
       const directLinkButtons = openingDmEnabled
         ? []
         : readLinkButtons(listener.quickReplies, listener.ctaButtonTitle, listener.ctaLink);
       const dmResult = await sendInstagramCommentPrivateReply({
-        // Prefer the card-style button the user configured. If either Meta
-        // subscription cannot be verified/repaired, retain the proven
-        // messages-webhook quick-reply fallback instead of dropping taps.
-        preferQuickReplyForPostback: openingDmEnabled && !fullWidthButtonsReady,
+        // Meta accepts and renders Instagram postback templates for this app,
+        // but does not deliver their tap events. Native quick replies arrive
+        // on the messages webhook with the same payload and are reliable.
+        preferQuickReplyForPostback: openingDmEnabled,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1895,9 +1891,6 @@ async function processConfiguredMessageAutomation(params: {
         link: automation.listener.ctaLink ?? "",
       })
     : payloadMessage;
-  const fullWidthButtonsReady = needsFollowRequest
-    ? await ensureInstagramButtonCallbacks(integration?.id, token)
-    : false;
   const followPromptState = dmFlowAction?.type === "FOLLOW_CHECK"
     ? profile
       ? "NOT_FOLLOWING" as const
@@ -1906,7 +1899,7 @@ async function processConfiguredMessageAutomation(params: {
   const followVerificationButtonTitle = resolveFollowRequestButtonText(automation.listener.followRequestButtonText);
 
   const result = await sendInstagramDirectResponse({
-    preferQuickReplyForPostback: needsFollowRequest && !fullWidthButtonsReady,
+    preferQuickReplyForPostback: needsFollowRequest,
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,
@@ -1919,7 +1912,7 @@ async function processConfiguredMessageAutomation(params: {
     ctaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaLink,
     mediaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaUrl,
     mediaType: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaType,
-    followGatePrompt: needsFollowRequest && fullWidthButtonsReady
+    followGatePrompt: needsFollowRequest
       ? {
           username: integration?.instagramUsername,
           state: followPromptState,
@@ -1928,12 +1921,7 @@ async function processConfiguredMessageAutomation(params: {
           verificationPayload: followRequestActionPayload(automation.id, dmFlowAction?.flowId),
         }
       : undefined,
-    postbackButton: needsFollowRequest && !fullWidthButtonsReady
-      ? {
-          title: followVerificationButtonTitle,
-          payload: followRequestActionPayload(automation.id, dmFlowAction?.flowId),
-        }
-      : undefined,
+    postbackButton: undefined,
   });
 
   const sent = result.ok;

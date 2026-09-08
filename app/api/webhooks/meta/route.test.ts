@@ -548,6 +548,7 @@ describe("Meta webhook route security", () => {
     expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
       recipientId: "recipient-1",
       automationId: "automation-1",
+      preferQuickReplyForPostback: true,
       followGatePrompt: {
         username: "ap3k",
         state: "NOT_FOLLOWING",

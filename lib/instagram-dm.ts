@@ -402,7 +402,8 @@ export async function sendInstagramDirectResponse(params: {
       const payload = buildPostbackButtonPayload(params.message, params.postbackButton);
       responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.followGatePrompt) {
-      responseMessage = buildFollowGatePayload(params.automationId, params.followGatePrompt).preferred;
+      const payload = buildFollowGatePayload(params.automationId, params.followGatePrompt);
+      responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
       const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
