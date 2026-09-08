@@ -12,10 +12,12 @@ let appChecked: { key: string; ready: boolean; expiresAt: number } | null = null
 let appInFlight: Promise<boolean> | null = null;
 
 /**
- * The connected professional account's `subscribed_apps` response is the
- * authoritative runtime capability check for postback buttons. The app-level
- * endpoint is still audited and repaired when Meta allows it, but an app-token
- * lookup failure must not downgrade a healthy Instagram Login connection.
+ * Full-width template buttons emit `messaging_postbacks`. Meta delivers those
+ * callbacks only when BOTH the professional account and the parent Meta app
+ * are subscribed. Never advertise the full-width button capability from the
+ * account-level `subscribed_apps` response alone: Instagram will render the
+ * button, but taps silently disappear when the app webhook is missing the
+ * field.
  */
 export async function ensureInstagramButtonCallbacks(
   integrationId: string | undefined,
@@ -24,13 +26,15 @@ export async function ensureInstagramButtonCallbacks(
   const accountReady = await ensureInstagramPostbackSubscription(integrationId, token);
   if (!accountReady) return false;
 
-  const appAuditReady = await ensureInstagramAppPostbackSubscription();
-  if (!appAuditReady) {
-    console.warn("[webhook-subscription] app-level audit unavailable; account-level postbacks are ready", {
+  const appReady = await ensureInstagramAppPostbackSubscription();
+  if (!appReady) {
+    console.warn("[webhook-subscription] full-width callbacks unavailable; using message quick reply", {
       integrationId,
+      accountReady,
+      appReady,
     });
   }
-  return true;
+  return appReady;
 }
 
 export async function ensureInstagramPostbackSubscription(integrationId: string | undefined, token: string): Promise<boolean> {
@@ -83,16 +87,16 @@ async function refresh(integrationId: string, token: string): Promise<boolean> {
 }
 
 export async function ensureInstagramAppPostbackSubscription(): Promise<boolean> {
-  const credentials = getMetaAppCredentials();
+  const credentials = getMetaAppCredentialCandidates();
   const verifyToken = process.env.META_VERIFY_TOKEN?.trim();
   const callbackUrl = `${getApplicationUrl()}/api/webhooks/meta`;
   if (!credentials || !verifyToken || process.env.VERCEL_ENV === "preview") return false;
 
-  const cacheKey = `${credentials.appId}:${callbackUrl}`;
+  const cacheKey = `${credentials.map((candidate) => candidate.appId).join(":")}:${callbackUrl}`;
   if (appChecked?.key === cacheKey && appChecked.expiresAt > Date.now()) return appChecked.ready;
   if (appInFlight) return appInFlight;
 
-  appInFlight = refreshAppSubscription(credentials, verifyToken, callbackUrl)
+  appInFlight = refreshAppSubscriptions(credentials, verifyToken, callbackUrl)
     .then((ready) => {
       appChecked = { key: cacheKey, ready, expiresAt: Date.now() + (ready ? 300_000 : 60_000) };
       return ready;
@@ -103,21 +107,45 @@ export async function ensureInstagramAppPostbackSubscription(): Promise<boolean>
   return appInFlight;
 }
 
-function getMetaAppCredentials(): { appId: string; appSecret: string } | null {
-  const useInstagramLogin = process.env.INSTAGRAM_LOGIN_ENABLED === "true";
-  const appId = (useInstagramLogin ? process.env.INSTAGRAM_APP_ID : process.env.META_APP_ID)
-    ?? process.env.INSTAGRAM_APP_ID
-    ?? process.env.META_APP_ID;
-  const appSecret = (useInstagramLogin ? process.env.INSTAGRAM_APP_SECRET : process.env.META_APP_SECRET)
-    ?? process.env.INSTAGRAM_APP_SECRET
-    ?? process.env.META_APP_SECRET;
-  return appId?.trim() && appSecret?.trim()
-    ? { appId: appId.trim(), appSecret: appSecret.trim() }
-    : null;
+type MetaAppCredential = {
+  appId: string;
+  appSecret: string;
+  source: "meta" | "instagram";
+};
+
+function getMetaAppCredentialCandidates(): MetaAppCredential[] | null {
+  const candidates: MetaAppCredential[] = [];
+  const metaAppId = process.env.META_APP_ID?.trim();
+  const metaAppSecret = process.env.META_APP_SECRET?.trim();
+  const instagramAppId = process.env.INSTAGRAM_APP_ID?.trim();
+  const instagramAppSecret = (process.env.INSTAGRAM_APP_SECRET ?? process.env.META_APP_SECRET)?.trim();
+
+  // The /{app-id}/subscriptions endpoint belongs to the parent Meta app, so
+  // always try its credential pair first. Instagram Login can expose a
+  // separate app identifier; retain it as a compatibility fallback.
+  if (metaAppId && metaAppSecret) {
+    candidates.push({ appId: metaAppId, appSecret: metaAppSecret, source: "meta" });
+  }
+  if (instagramAppId && instagramAppSecret && instagramAppId !== metaAppId) {
+    candidates.push({ appId: instagramAppId, appSecret: instagramAppSecret, source: "instagram" });
+  }
+
+  return candidates.length ? candidates : null;
+}
+
+async function refreshAppSubscriptions(
+  candidates: MetaAppCredential[],
+  verifyToken: string,
+  callbackUrl: string
+): Promise<boolean> {
+  for (const credentials of candidates) {
+    if (await refreshAppSubscription(credentials, verifyToken, callbackUrl)) return true;
+  }
+  return false;
 }
 
 async function refreshAppSubscription(
-  credentials: { appId: string; appSecret: string },
+  credentials: MetaAppCredential,
   verifyToken: string,
   callbackUrl: string
 ): Promise<boolean> {
@@ -155,12 +183,14 @@ async function refreshAppSubscription(
     const repaired = result.status >= 200 && result.status < 300 && result.data?.success === true;
     console.log("[webhook-subscription] app button callbacks refresh", {
       ready: repaired,
+      credentialSource: credentials.source,
       callbackUrl,
       subscribedFields: fields,
     });
     return repaired;
   } catch (error) {
     console.warn("[webhook-subscription] app button callbacks unavailable; using message quick reply", {
+      credentialSource: credentials.source,
       error: getSafeMetaError(error),
     });
     return false;

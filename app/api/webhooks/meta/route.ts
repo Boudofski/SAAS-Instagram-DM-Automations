@@ -1527,6 +1527,18 @@ async function processEntry(
     const parsed = parseMessagingItem(messagingItem);
     const senderId = parsed.ok ? parsed.data.senderId : (messagingItem.sender?.id ? String(messagingItem.sender.id) : undefined);
     const dmText = parsed.ok ? (parsed.data.messageText ?? "") : (messagingItem.message?.text ?? "");
+    console.log("[webhook] messaging item received", parsed.ok
+      ? {
+          hasSenderId: parsed.diagnostics.hasSenderId,
+          hasMessageText: parsed.diagnostics.hasMessageText,
+          hasQuickReply: parsed.diagnostics.hasQuickReply,
+          hasPostback: parsed.diagnostics.hasPostback,
+          isEcho: parsed.diagnostics.isEcho,
+        }
+      : {
+          parseFailureReason: parsed.reason,
+          ...parsed.diagnostics,
+        });
     const storyInteraction = parsed.ok ? classifyStoryInteraction(parsed.data) : null;
     const actionPayload = parsed.ok
       ? parsed.data.quickReplyPayload ?? parsed.data.postback?.payload
