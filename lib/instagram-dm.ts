@@ -418,10 +418,25 @@ export async function sendInstagramDirectResponse(params: {
       sent = await postDirectPayload(params, responseMessage);
     } catch (error) {
       if (params.postbackButton && shouldTryTextFallback(error)) {
-        sent = await postDirectPayload(
-          params,
-          buildPostbackButtonPayload(params.message, params.postbackButton).fallback
-        );
+        try {
+          sent = await postDirectPayload(
+            params,
+            buildPostbackButtonPayload(params.message, params.postbackButton).fallback
+          );
+        } catch (quickReplyError) {
+          // Some Instagram account/client combinations accept a normal DM but
+          // reject interactive controls. Keep the journey usable: the webhook
+          // text fallback resolves this exact reply only against a recent
+          // pending AP3K flow.
+          const replyInstruction = `Reply “${normalizeButtonTitle(params.postbackButton.title)}” to continue.`;
+          console.warn("[meta-api] Instagram direct-message controls unavailable — sending reply instruction", {
+            firstError: buildMetaError(error),
+            quickReplyError: buildMetaError(quickReplyError),
+          });
+          sent = await postDirectPayload(params, {
+            text: `${params.message.trim() || "Tap below to continue."}\n\n${replyInstruction}`,
+          });
+        }
       } else if (params.followGatePrompt && shouldTryTextFallback(error)) {
         sent = await postDirectPayload(
           params,
