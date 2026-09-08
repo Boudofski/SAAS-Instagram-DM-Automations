@@ -1,10 +1,11 @@
 import { BLOG_POSTS } from "@/lib/blog";
+import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import type { MetadataRoute } from "next";
 
 const baseUrl = "https://ap3k.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const updated = new Date("2026-09-01T00:00:00Z");
+  const updated = new Date("2026-09-08T00:00:00Z");
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: updated, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/pricing`, lastModified: updated, changeFrequency: "monthly", priority: 0.9 },
@@ -23,5 +24,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...blogPages];
+  const commercialPages: MetadataRoute.Sitemap = [
+    ...COMMERCIAL_PAGES.map((page) => ({
+      url: `${baseUrl}/${page.slug}`,
+      lastModified: updated,
+      changeFrequency: "monthly" as const,
+      priority: page.slug === "manychat-alternative" ? 0.9 : 0.85,
+    })),
+    { url: `${baseUrl}/ar/instagram-dm-automation`, lastModified: updated, changeFrequency: "monthly" as const, priority: 0.85 },
+  ];
+
+  return [...staticPages, ...commercialPages, ...blogPages];
 }

@@ -43,7 +43,7 @@ describe("production polish UI contracts", () => {
   });
 
   it("keeps plan entitlements aligned with the product model", () => {
-    expect(getPlanLimits("FREE")).toMatchObject({ connectedInstagramAccounts: 1, staticRepliesPerMonth: 50 });
+    expect(getPlanLimits("FREE")).toMatchObject({ connectedInstagramAccounts: 1, activeCampaigns: 5, staticRepliesPerMonth: 500, aiRepliesPerMonth: 0 });
     expect(getPlanLimits("PRO")).toMatchObject({ connectedInstagramAccounts: 1, staticRepliesPerMonth: 5000 });
     expect(getPlanLimits("BUSINESS")).toMatchObject({ connectedInstagramAccounts: 1, staticRepliesPerMonth: 20000 });
   });

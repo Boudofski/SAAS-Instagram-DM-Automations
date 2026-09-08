@@ -35,12 +35,6 @@ export type UsageSummary = {
   aiReplies: UsageMetric;
   activeCampaigns: UsageMetric;
   connectedAccounts: UsageMetric;
-  welcomeTrial?: {
-    active: boolean;
-    startsAt: Date;
-    endsAt: Date;
-    replyLimit: number;
-  } | null;
 };
 
 export const UNLIMITED_LIMIT = 999_999;
@@ -59,8 +53,8 @@ const BUSINESS_LIMITS: PlanLimits = {
 export const PLAN_LIMITS: Record<ProductPlan, PlanLimits> = {
   FREE: {
     label: "Free",
-    activeCampaigns: "unlimited",
-    staticRepliesPerMonth: 50,
+    activeCampaigns: 5,
+    staticRepliesPerMonth: 500,
     aiRepliesPerMonth: 0,
     connectedInstagramAccounts: 1,
     publicReplyFallback: true,
@@ -155,5 +149,5 @@ export function formatCampaignLimitFeature(limit: PlanLimit) {
 }
 
 export function formatConnectedAccountsHelper(_planLabel: string, _metric: Pick<UsageMetric, "limit">) {
-  return "AP3K supports 1 connected Instagram account and unlimited automations for that account.";
+  return "AP3K supports 1 connected Instagram Business or Creator account per workspace.";
 }

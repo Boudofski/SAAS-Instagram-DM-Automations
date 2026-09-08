@@ -120,7 +120,7 @@ describe("usage query helpers", () => {
   });
 
   it("blocks static replies when the monthly limit is reached", async () => {
-    mockMessageLogCount.mockResolvedValueOnce(50).mockResolvedValueOnce(0);
+    mockMessageLogCount.mockResolvedValueOnce(500).mockResolvedValueOnce(0);
 
     const result = await canSendStaticReply("user-1", new Date("2026-05-24T12:00:00Z"));
 
@@ -189,7 +189,7 @@ describe("usage query helpers", () => {
     });
   });
 
-  it("uses the one-time 50-reply window during an active launch trial", async () => {
+  it("ignores legacy launch-trial fields and uses the monthly Free entitlement", async () => {
     const startsAt = new Date("2026-05-20T12:00:00Z");
     const endsAt = new Date("2026-06-03T12:00:00Z");
     mockUserFindUnique.mockResolvedValue({
@@ -204,57 +204,11 @@ describe("usage query helpers", () => {
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
-    expect(usage.staticReplies).toMatchObject({ used: 42, limit: 50, remaining: 8, blocked: false });
-    expect(usage.periodStart).toEqual(startsAt);
-    expect(usage.periodEnd).toEqual(endsAt);
-    expect(usage.periodLabel).toBe("14-day launch trial");
-    expect(usage.welcomeTrial).toMatchObject({ active: true, replyLimit: 50 });
-  });
-
-  it("starts the normal Free allowance fresh after the launch trial ends", async () => {
-    const endsAt = new Date("2026-05-20T12:00:00Z");
-    mockUserFindUnique.mockResolvedValue({
-      subscription: {
-        plan: "FREE",
-        welcomeTrialStartedAt: new Date("2026-05-06T12:00:00Z"),
-        welcomeTrialEndsAt: endsAt,
-        welcomeTrialReplyLimit: 50,
-      },
-    });
-
-    const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
-
-    expect(usage.staticReplies.limit).toBe(50);
-    expect(usage.periodStart).toEqual(endsAt);
-    expect(usage.welcomeTrial?.active).toBe(false);
-    expect(mockMessageLogCount).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        createdAt: { gte: endsAt, lt: new Date("2026-06-01T00:00:00Z") },
-      }),
-    });
-  });
-
-  it("does not reset the 50-reply trial when it crosses a month boundary", async () => {
-    const startsAt = new Date("2026-08-25T12:00:00Z");
-    const endsAt = new Date("2026-09-08T12:00:00Z");
-    mockUserFindUnique.mockResolvedValue({
-      subscription: {
-        plan: "FREE",
-        welcomeTrialStartedAt: startsAt,
-        welcomeTrialEndsAt: endsAt,
-        welcomeTrialReplyLimit: 50,
-      },
-    });
-
-    const usage = await getUserMonthlyUsage("user-1", new Date("2026-09-02T12:00:00Z"));
-
-    expect(usage.periodStart).toEqual(startsAt);
-    expect(usage.periodEnd).toEqual(endsAt);
-    expect(mockMessageLogCount).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        createdAt: { gte: startsAt, lt: endsAt },
-      }),
-    });
+    expect(usage.staticReplies).toMatchObject({ used: 42, limit: 500, remaining: 458, blocked: false });
+    expect(usage.periodStart).toEqual(new Date("2026-05-01T00:00:00Z"));
+    expect(usage.periodEnd).toEqual(new Date("2026-06-01T00:00:00Z"));
+    expect(usage.periodLabel).toBe("May 2026");
+    expect("welcomeTrial" in usage).toBe(false);
   });
 
   it("falls back to sent automation events when message logs are missing", async () => {
@@ -278,8 +232,8 @@ describe("usage query helpers", () => {
     });
   });
 
-  it("allows unlimited active campaigns on Free", async () => {
-    mockAutomationCount.mockResolvedValue(1);
+  it("allows Free campaign activation while fewer than five are active", async () => {
+    mockAutomationCount.mockResolvedValue(4);
 
     const result = await canActivateCampaign("user-1");
 
@@ -287,12 +241,20 @@ describe("usage query helpers", () => {
   });
 
   it("allows saving an already-active campaign on Free", async () => {
-    mockAutomationCount.mockResolvedValue(1);
+    mockAutomationCount.mockResolvedValue(5);
     mockAutomationFindFirst.mockResolvedValue({ id: "automation-1" });
 
     const result = await canActivateCampaign("user-1", "automation-1");
 
     expect(result.ok).toBe(true);
+  });
+
+  it("blocks a sixth active campaign on Free", async () => {
+    mockAutomationCount.mockResolvedValue(5);
+
+    const result = await canActivateCampaign("user-1");
+
+    expect(result).toMatchObject({ ok: false, reason: "active_campaign_limit_reached" });
   });
 
   it("allows Creator active campaigns", async () => {
@@ -357,8 +319,8 @@ describe("usage query helpers", () => {
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
-    expect(usage.staticReplies.limit).toBe(50);
-    expect(usage.activeCampaigns.limit).toBe("unlimited");
+    expect(usage.staticReplies.limit).toBe(500);
+    expect(usage.activeCampaigns.limit).toBe(5);
     expect(usage.connectedAccounts.limit).toBe(1);
   });
 
@@ -374,6 +336,6 @@ describe("usage query helpers", () => {
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
-    expect(usage.staticReplies.limit).toBe(50); // Plan default
+    expect(usage.staticReplies.limit).toBe(500); // Plan default
   });
 });

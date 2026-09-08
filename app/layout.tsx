@@ -1,6 +1,7 @@
 import ReactQueryProvider from "@/providers/react-query-provider";
 import ReduxProvider from "@/providers/redux-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import TrackingScripts from "@/components/global/tracking-scripts";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
@@ -8,7 +9,7 @@ import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 const siteDescription =
-  "AP3K automates Instagram comments, stories, and DMs with clear replies, lead tracking, inbox management, and automation analytics for Business and Creator accounts.";
+  "Automatically reply to Instagram comments, send the promised link by DM, and track every lead—without complicated flows or code.";
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </ReduxProvider>
           <Toaster />
         </ThemeProvider>
+        <TrackingScripts />
       </body>
     </html>
   );

@@ -14,11 +14,11 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "What counts toward my automated-reply allowance?",
-    a: "Each successfully sent Comment reply and each successfully sent DM counts as one automated reply. Failed or skipped actions do not count.",
+    a: "Each successfully sent Comment reply and each successfully sent DM counts as one automated action. Failed or skipped actions do not count.",
   },
   {
     q: "Do annual plans still reset usage every month?",
-    a: "Yes. Annual billing only changes how you pay. Your automated-reply allowance resets every month just like a monthly subscription.",
+    a: "Yes. Annual billing only changes how you pay. Your automated-action allowance resets every month just like a monthly subscription.",
   },
   {
     q: "Which Instagram accounts are supported?",
@@ -30,7 +30,7 @@ const FAQ = [
   },
   {
     q: "How many automations can I create?",
-    a: "Automations are unlimited on Free, Pro and Business. The monthly automated-reply allowance is what scales with your plan.",
+    a: "Free includes up to five active automations. Pro and Business include unlimited active automations. You can keep drafts without activating them until you have room.",
   },
   {
     q: "What is the difference between a Comment reply and a DM?",
@@ -56,7 +56,7 @@ export default function PricingPage() {
               Start free. <span className="ap3k-gradient-text">Save more annually.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-              One Instagram account, unlimited automations, comment replies and DMs. Choose the reply volume that fits your audience.
+              One Instagram account, 500 automated actions and up to five active automations on Free. Upgrade when your audience or AI usage grows.
             </p>
           </FadeIn>
         </section>

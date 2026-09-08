@@ -7,8 +7,10 @@ describe("Stripe checkout routing", () => {
   it("presents Free as an interval-independent zero-dollar plan", () => {
     const free = PLAN_CARDS.find((plan) => plan.id === "FREE");
 
-    expect(free?.description).toContain("50 replies for 14 days");
-    expect(free?.features).toContain("50 replies during your 14-day launch trial");
+    expect(free?.replyLimit).toBe(500);
+    expect(free?.features).toContain("500 automated actions/month");
+    expect(free?.features).toContain("Up to 5 active automations");
+    expect(free?.features).toContain("No AI replies");
     expect(free?.features).toContain("Comment replies + DMs");
 
     const source = fs.readFileSync(

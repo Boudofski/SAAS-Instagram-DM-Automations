@@ -21,6 +21,9 @@ export default function WebsiteFooter() {
               <Link href="/#how-it-works" className={linkClass}>How it works</Link>
               <Link href="/pricing" className={linkClass}>Pricing</Link>
               <Link href="/blog" className={linkClass}>Blog</Link>
+              <Link href="/instagram-dm-automation" className={linkClass}>Instagram DM automation</Link>
+              <Link href="/instagram-comment-automation" className={linkClass}>Comment automation</Link>
+              <Link href="/manychat-alternative" className={linkClass}>ManyChat alternative</Link>
             </div>
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-400">Popular guides</p>

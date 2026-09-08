@@ -72,6 +72,15 @@ const BENEFITS = [
   },
 ] as const;
 
+const SOLUTION_PAGES = [
+  ["Instagram DM automation", "/instagram-dm-automation", "Automate useful private follow-up after comments, stories, and messages."],
+  ["Comment-to-DM automation", "/instagram-comment-to-dm", "Turn a clear Instagram keyword into the promised DM or link."],
+  ["Instagram automation for creators", "/instagram-automation-for-creators", "Deliver guides, launch details, and product links without repetitive inbox work."],
+  ["Instagram automation for coaches", "/instagram-automation-for-coaches", "Move high-intent comments toward a resource, application, or booking."],
+  ["Instagram automation for ecommerce", "/instagram-automation-for-ecommerce", "Connect product interest to the right storefront destination."],
+  ["A focused ManyChat alternative", "/manychat-alternative", "Use a simpler Instagram-first workflow when you do not need a broad multi-channel builder."],
+] as const;
+
 const FAQS = [
   ["What does AP3K automate?", "AP3K watches new comments, story interactions, and incoming DMs. When an interaction matches your automation, it can publish a comment reply, send a DM, or run both actions."],
   ["Which Instagram accounts can connect to AP3K?", "AP3K supports Instagram Business and Creator accounts through Instagram's official authorization flow. Personal Instagram accounts must be changed to a professional account before connecting."],
@@ -81,7 +90,7 @@ const FAQS = [
   ["Will a new automation respond to old interactions?", "No. Automations react to eligible new events received after they are active. They do not go backward through comments or messages that already existed."],
   ["How do I test an automation before promoting it?", "Activate the automation, then trigger it from a different Instagram account. Check the public reply, AP3K Inbox, activity, DM content, and link button before sending traffic to it."],
   ["Will AP3K reply to its own automated comments?", "No. AP3K ignores replies from the connected Instagram account and duplicate comment events so an automation cannot create a reply loop."],
-  ["What is included in the AP3K launch trial?", "Connect an eligible Instagram Business or Creator account and AP3K unlocks 50 automated replies for 14 days. After the one-time trial ends, the Free plan includes 50 automated replies each month."],
+  ["What is included in the AP3K Free plan?", "Free includes 500 automated actions each month, one Instagram Business or Creator account, and up to five active automations. AI replies are available on paid plans."],
   ["How does the AP3K referral program work?", "Share your tracked link from the Refer & earn dashboard. When a new referred user connects Instagram and completes a qualifying paid Pro or Business invoice, eligible Founding 10 partners earn a $9 AP3K account credit."],
 ] as const;
 
@@ -133,6 +142,7 @@ function ProductVideo({
             muted
             loop
             playsInline
+            poster={priority ? "/media/ap3k-product-01.jpg" : undefined}
             preload={priority ? "auto" : "metadata"}
             aria-label={label}
             className="aspect-[240/426] w-full bg-black object-cover"
@@ -177,28 +187,28 @@ export default async function LandingPage() {
           <div className="pointer-events-none absolute left-1/2 top-0 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
           <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16 xl:gap-20">
-            <FadeIn className="max-w-[760px] lg:py-8">
+            <div className="max-w-[760px] lg:py-8">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
-                <Sparkles className="h-4 w-4" /> Instagram automation, simplified
+                <Sparkles className="h-4 w-4" /> Instagram Comment &amp; DM Automation
               </div>
               <h1 className="mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
-                Your Instagram <span className="sm:block">just got smarter.</span>
+                Turn Instagram Comments <span className="sm:block">Into Customers.</span>
               </h1>
               <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">
-                Turn Instagram comments into instant comment replies, DMs, and trackable leads—without living in your inbox.
+                Automatically reply to comments, send the promised link by DM, and track every lead—without complicated flows or code.
               </p>
-              <p className="mt-4 text-sm font-bold text-white/85">50 automated replies free for 14 days after connecting. No credit card required.</p>
+              <p className="mt-4 text-sm font-bold text-white/85">500 automated actions every month. No credit card required.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
-                  Start free <ArrowRight className="h-4 w-4" />
+                  Start Free — No Credit Card <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a href="#how-it-works" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur-xl transition duration-200 hover:bg-white/16">
                   See how it works
                 </a>
               </div>
-            </FadeIn>
+            </div>
 
-            <FadeIn delay={0.08} className="relative flex min-h-[430px] items-center justify-center sm:min-h-[500px] lg:min-h-[620px]">
+            <div className="relative flex min-h-[430px] items-center justify-center sm:min-h-[500px] lg:min-h-[620px]">
               <div className="ap3k-ring-one pointer-events-none absolute h-[78%] w-[78%] rounded-full border border-white/10 bg-white/[0.05] blur-[1px]" />
               <div className="ap3k-ring-two pointer-events-none absolute h-[62%] w-[62%] rounded-full border border-white/10" />
               <ProductVideo
@@ -207,7 +217,7 @@ export default async function LandingPage() {
                 className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
                 priority
               />
-            </FadeIn>
+            </div>
           </div>
         </section>
 
@@ -360,10 +370,31 @@ export default async function LandingPage() {
             <FadeIn className="mb-8 text-center">
               <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Simple pricing</p>
               <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Start free. Save more annually.</h2>
-              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Connect Instagram for a one-time 14-day trial with 50 replies. Then stay Free with 50 replies/month, choose Pro at $9/month, or Business at $29/month.</p>
+              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Start Free with 500 automated actions each month and up to 5 active automations, choose Pro at $9/month, or Business at $29/month.</p>
             </FadeIn>
             <FadeIn delay={0.04}><PricingExperience compact /></FadeIn>
             <div className="mt-8 text-center"><Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">See the full plan comparison <ArrowRight className="h-4 w-4" /></Link></div>
+          </div>
+        </section>
+
+        <section className="border-y border-slate-200 bg-white px-4 py-20 dark:border-white/10 dark:bg-[#0b0c15] sm:px-8 lg:px-16">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Explore by goal</p>
+              <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Start with the Instagram outcome you need.</h2>
+              <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-400">See practical workflows, interactive examples, honest limitations, and setup tutorials for each use case.</p>
+            </FadeIn>
+            <StaggerContainer className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {SOLUTION_PAGES.map(([title, href, description]) => (
+                <StaggerItem key={href}>
+                  <Link href={href} className="group block h-full rounded-3xl border border-slate-200 bg-[#fafafe] p-6 transition hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-violet-400/30">
+                    <h3 className="text-lg font-black">{title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{description}</p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+                  </Link>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
           </div>
         </section>
 

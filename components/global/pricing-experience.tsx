@@ -173,7 +173,7 @@ export default function PricingExperience({
           <div className="mb-8 text-center">
             <p className="ap3k-kicker">Compare plans</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">Plans, side by side</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Real AP3K features and limits—no feature placeholders or hidden reply terminology.</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Real AP3K features and limits, with every successful comment reply and DM counted as one automated action.</p>
           </div>
           <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white/90 shadow-sm dark:border-white/10 dark:bg-[#0f1012]">
             <table className="w-full min-w-[720px] border-collapse text-left text-sm">

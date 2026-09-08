@@ -11,7 +11,7 @@ function UpgradeCard({}: Props) {
         Upgrade to Pro
       </span>
       <p className="relative text-sm text-slate-700 dark:text-rf-muted">
-        Get 5,000 automated replies and full analytics.
+        Get 5,000 automated actions, AI replies, and full analytics.
       </p>
       <PaymentButton />
     </div>

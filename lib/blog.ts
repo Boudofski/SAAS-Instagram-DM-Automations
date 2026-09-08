@@ -141,7 +141,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Keep reply volume in mind",
-        paragraphs: ["In AP3K, each successfully sent Comment reply and each successfully sent DM counts as one automated reply. If one matching comment triggers both actions, that campaign run uses two automated replies. Failed or skipped actions do not count."],
+        paragraphs: ["In AP3K, each successfully sent Comment reply and each successfully sent DM counts as one automated action. If one matching comment triggers both actions, that campaign run uses two automated actions. Failed or skipped actions do not count."],
       },
     ],
   },
@@ -386,7 +386,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Watch reply volume",
-        paragraphs: ["A campaign that replies publicly and sends a DM performs two actions for each successful run. Any Comment can therefore consume more automated reply volume than a narrow keyword campaign. Review campaign activity and plan scope accordingly."],
+        paragraphs: ["A campaign that replies publicly and sends a DM performs two actions for each successful run. Any Comment can therefore consume more automated-action volume than a narrow keyword campaign. Review campaign activity and plan scope accordingly."],
       },
       {
         heading: "Switch to a keyword when intent becomes mixed",
