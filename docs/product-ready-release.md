@@ -13,7 +13,7 @@ Meta/API/database field names remain unchanged internally where compatibility re
 
 ## Plans
 
-- Free — $0, 50 automated replies/month.
+- Free — $0, 500 automated actions/month, 1 Instagram account, and 5 active automations.
 - Pro — $9/month or $79/year, 5,000 automated replies/month.
 - Business — $29/month or $279/year, 20,000 automated replies/month.
 

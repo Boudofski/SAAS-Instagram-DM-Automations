@@ -82,7 +82,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Billing",
     title: "Plans, usage, and AI limits",
     summary: "Free is $0; Pro and Business add monthly reply capacity and AP3K AI.",
-    steps: ["Free includes a 14-day, 50-reply launch allowance.", "Pro includes 5,000 automated replies and 500 AI replies per month.", "Business includes 20,000 automated replies and 2,000 AI replies per month.", "One successful public comment reply or DM counts as one automated reply.", "Open Billing to see current usage; paid subscribers use Manage billing for plan, payment, invoices, or cancellation."],
+    steps: ["Free includes 500 automated actions per month, 1 Instagram account, and up to 5 active automations.", "Free does not include AI replies.", "Pro includes 5,000 automated actions and 500 AI replies per month.", "Business includes 20,000 automated actions and 2,000 AI replies per month.", "One successful public comment reply or DM counts as one automated action.", "Open Billing to see current usage; paid subscribers use Manage billing for plan, payment, invoices, or cancellation."],
   },
   {
     slug: "billing-troubleshooting",

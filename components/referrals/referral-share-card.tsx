@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
   const [copied, setCopied] = useState(false);
-  const shareText = "Connect Instagram to AP3K and get 50 automated replies free for 14 days.";
+  const shareText = "Connect Instagram to AP3K and get 500 automated actions every month for free.";
 
   async function copyLink() {
     try {

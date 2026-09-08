@@ -21,8 +21,7 @@ export default function Billing({
   canManageBilling = false,
   billing,
 }: Props) {
-  const launchTrialActive = Boolean(usage?.welcomeTrial?.active);
-  const planLabel = launchTrialActive ? "Free launch trial" : usage?.planLabel ?? planDisplayName(current);
+  const planLabel = usage?.planLabel ?? planDisplayName(current);
   const paid = current !== "FREE" && canManageBilling;
 
   return (
@@ -33,7 +32,7 @@ export default function Billing({
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
             Plans, usage &amp; subscription
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Manage your plan and monthly automated-reply usage.</p>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Manage your plan and monthly automated-action usage.</p>
         </div>
         {canManageBilling && <ManageBillingButton />}
       </div>
@@ -52,9 +51,7 @@ export default function Billing({
               )}
             </div>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-300">
-              {launchTrialActive
-                ? "Your one-time 50-reply allowance stays active for 14 days after connecting Instagram. The normal Free allowance starts fresh when it ends."
-                : "Usage refreshes monthly. Automations remain unlimited and each workspace supports one connected Instagram account."}
+              Usage refreshes monthly. Free includes up to 5 active automations; paid plans include unlimited automations. Each workspace supports one connected Instagram account.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[390px]">
@@ -65,10 +62,8 @@ export default function Billing({
             />
             <BillingFact
               icon={<CalendarDays className="h-4 w-4" />}
-              label={launchTrialActive ? "Trial ends" : billing?.cancelAtPeriodEnd ? "Access until" : "Next renewal"}
-              value={launchTrialActive && usage?.welcomeTrial
-                ? formatDate(usage.welcomeTrial.endsAt.toISOString())
-                : billing?.renewsAt
+              label={billing?.cancelAtPeriodEnd ? "Access until" : "Next renewal"}
+              value={billing?.renewsAt
                   ? formatDate(billing.renewsAt)
                   : usage
                     ? `${usage.periodLabel} usage`
@@ -79,12 +74,12 @@ export default function Billing({
 
         {usage && (
           <div className={`mt-4 grid gap-2 ${current === "FREE" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
-            <UsageBar label="Automated replies" metric={usage.staticReplies} />
+            <UsageBar label="Automated actions" metric={usage.staticReplies} />
             {current !== "FREE" ? <UsageBar label="AI replies" metric={usage.aiReplies} helper="Comment replies, DM replies, and playground tests this month." /> : null}
-            <UsageBar label="Active automations" metric={usage.activeCampaigns} helper="Unlimited automations are included." />
+            <UsageBar label="Active automations" metric={usage.activeCampaigns} helper={current === "FREE" ? "Free includes up to 5 active automations." : "Unlimited automations are included."} />
           </div>
         )}
-        <p className="mt-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">One successful comment reply or DM counts as one automated reply.</p>
+        <p className="mt-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">One successful comment reply or DM counts as one automated action.</p>
       </section>
 
       <section>

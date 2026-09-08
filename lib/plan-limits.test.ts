@@ -13,8 +13,8 @@ import {
 describe("plan limits", () => {
   it("defines the Free limits", () => {
     expect(getPlanLimits("FREE")).toMatchObject({
-      activeCampaigns: "unlimited",
-      staticRepliesPerMonth: 50,
+      activeCampaigns: 5,
+      staticRepliesPerMonth: 500,
       aiRepliesPerMonth: 0,
       connectedInstagramAccounts: 1,
       exportLeads: false,

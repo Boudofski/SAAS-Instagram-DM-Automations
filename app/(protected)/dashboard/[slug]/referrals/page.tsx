@@ -21,7 +21,7 @@ export default async function ReferralsPage() {
         <div>
           <p className="ap3k-kicker">Founding 10 referral program</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Refer friends. Earn Pro credits.</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">They get 50 replies for 14 days. You earn $9 when they become a paid customer.</p>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">They get 500 automated actions every month for free. You earn $9 when they become a paid customer.</p>
         </div>
         <span className={`ap3k-badge ${dashboard.founderRank ? "ap3k-badge-green" : dashboard.founderSlotsRemaining > 0 ? "ap3k-badge-amber" : "ap3k-badge-slate"}`}>
           {dashboard.founderRank
@@ -54,7 +54,7 @@ export default async function ReferralsPage() {
           <h2 className="mt-1 text-xl font-black">Four steps to your credit</h2>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <Step number="1" title="Share your tracked link" text="The referral must create a new AP3K account through your link." icon={<Link2 className="h-4 w-4" />} />
-            <Step number="2" title="They connect Instagram" text="A real Business or Creator account unlocks their 14-day, 50-reply trial." icon={<Instagram className="h-4 w-4" />} />
+            <Step number="2" title="They connect Instagram" text="A real Business or Creator account unlocks their 500-action monthly Free plan." icon={<Instagram className="h-4 w-4" />} />
             <Step number="3" title="They buy Pro or Business" text="Stripe must confirm a successful USD payment of at least $9." icon={<BadgeDollarSign className="h-4 w-4" />} />
             <Step number="4" title="Your $9 credit is issued" text="The credit is attached to your AP3K Stripe customer and applies to a future invoice." icon={<Gift className="h-4 w-4" />} />
           </div>

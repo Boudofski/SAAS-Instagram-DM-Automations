@@ -7,8 +7,6 @@ export const REFERRAL_COOKIE = "ap3k_ref";
 export const REFERRAL_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const FOUNDING_PARTNER_LIMIT = 10;
 export const REFERRAL_REWARD_CENTS = 900;
-export const WELCOME_TRIAL_DAYS = 14;
-export const WELCOME_TRIAL_REPLY_LIMIT = 50;
 
 const REFERRAL_CODE_PATTERN = /^[A-Z0-9-]{6,24}$/;
 
@@ -68,34 +66,12 @@ export async function getOrCreateReferralPartner(userId: string) {
 }
 
 export async function activateConnectionBenefits(userId: string, now = new Date()) {
-  const trialEndsAt = new Date(now.getTime() + WELCOME_TRIAL_DAYS * 24 * 60 * 60 * 1000);
-
-  return client.$transaction(async (transaction) => {
-    const [trial, attribution] = await Promise.all([
-      transaction.subscription.updateMany({
-        where: {
-          userId,
-          plan: "FREE",
-          welcomeTrialStartedAt: null,
-        },
-        data: {
-          welcomeTrialStartedAt: now,
-          welcomeTrialEndsAt: trialEndsAt,
-          welcomeTrialReplyLimit: WELCOME_TRIAL_REPLY_LIMIT,
-        },
-      }),
-      transaction.referralAttribution.updateMany({
-        where: { referredUserId: userId, connectedAt: null },
-        data: { connectedAt: now, status: "CONNECTED" },
-      }),
-    ]);
-
-    return {
-      trialActivated: trial.count > 0,
-      referralConnected: attribution.count > 0,
-      trialEndsAt,
-    };
+  const attribution = await client.referralAttribution.updateMany({
+    where: { referredUserId: userId, connectedAt: null },
+    data: { connectedAt: now, status: "CONNECTED" },
   });
+
+  return { referralConnected: attribution.count > 0 };
 }
 
 type QualifyingPayment = {

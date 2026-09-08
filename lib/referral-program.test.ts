@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
   const client = {
     $transaction: vi.fn(),
     referralPartner: { findUnique: vi.fn(), create: vi.fn(), count: vi.fn() },
-    referralAttribution: { groupBy: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+    referralAttribution: { groupBy: vi.fn(), findMany: vi.fn(), count: vi.fn(), updateMany: vi.fn() },
     referralReward: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -56,8 +56,7 @@ import {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.client.$transaction.mockImplementation(async (callback: any) => callback(mocks.transaction));
-  mocks.transaction.subscription.updateMany.mockResolvedValue({ count: 1 });
-  mocks.transaction.referralAttribution.updateMany.mockResolvedValue({ count: 1 });
+  mocks.client.referralAttribution.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe("referral program", () => {
@@ -83,19 +82,15 @@ describe("referral program", () => {
     expect(mocks.transaction.referralAttribution.create).toHaveBeenCalledTimes(1);
   });
 
-  it("starts the 14-day trial and marks a referred user as connected", async () => {
+  it("marks a referred user as connected without creating a separate trial entitlement", async () => {
     const now = new Date("2026-09-01T12:00:00Z");
 
     const result = await activateConnectionBenefits("user-1", now);
 
-    expect(result).toMatchObject({ trialActivated: true, referralConnected: true });
-    expect(mocks.transaction.subscription.updateMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", plan: "FREE", welcomeTrialStartedAt: null },
-      data: {
-        welcomeTrialStartedAt: now,
-        welcomeTrialEndsAt: new Date("2026-09-15T12:00:00Z"),
-        welcomeTrialReplyLimit: 50,
-      },
+    expect(result).toEqual({ referralConnected: true });
+    expect(mocks.client.referralAttribution.updateMany).toHaveBeenCalledWith({
+      where: { referredUserId: "user-1", connectedAt: null },
+      data: { connectedAt: now, status: "CONNECTED" },
     });
   });
 
