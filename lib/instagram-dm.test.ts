@@ -499,6 +499,35 @@ describe("sendInstagramDirectResponse", () => {
     ]);
   });
 
+  it("uses a reliable quick reply for follow verification when requested", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-quick" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-quick-follow",
+      message: "Follow to unlock this guide.",
+      preferQuickReplyForPostback: true,
+      followGatePrompt: {
+        username: "ap3k",
+        state: "INITIAL",
+        verificationButtonTitle: "I followed ✅",
+        verificationPayload: "AP3K_FOLLOW_CHECK:automation-quick-follow",
+      },
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-quick"] });
+    const body = mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.message.attachment).toBeUndefined();
+    expect(body.message.text).toContain("https://www.instagram.com/ap3k/");
+    expect(body.message.quick_replies).toEqual([{
+      content_type: "text",
+      title: "I followed ✅",
+      payload: "AP3K_FOLLOW_CHECK:automation-quick-follow",
+    }]);
+  });
+
   it("returns the retry card when a follow still cannot be verified", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.retry" } });
 
