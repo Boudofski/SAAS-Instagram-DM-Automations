@@ -3,7 +3,6 @@ import WebsiteNav from "@/components/global/website-nav";
 import AutomationDemo from "@/components/website/automation-demo";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 
 const canonical = "/ar/instagram-dm-automation";
@@ -53,13 +52,18 @@ export default function ArabicInstagramDmAutomationPage() {
               <h1 className="mt-5 text-4xl font-black leading-[1.12] tracking-tight sm:text-6xl">حوّل تعليقات إنستغرام إلى عملاء.</h1>
               <p className="mt-6 max-w-2xl text-lg leading-9 text-white/80">ردّ على التعليقات تلقائياً، وأرسل الرابط الموعود برسالة خاصة، وتابع كل عميل محتمل—من دون تدفقات معقدة أو برمجة.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-violet-700 shadow-xl">ابدأ مجاناً — من دون بطاقة <ArrowLeft className="h-4 w-4" /></Link>
+                <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-violet-700 shadow-xl">ابدأ الآن <ArrowLeft className="h-4 w-4" /></Link>
                 <a href="#example" className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 py-4 text-sm font-black">شاهد المثال</a>
               </div>
               <p className="mt-4 text-xs font-bold text-white/65">500 إجراء آلي شهرياً · حساب إنستغرام واحد · 5 أتمتات نشطة</p>
             </div>
-            <div className="mx-auto w-full max-w-[430px] overflow-hidden rounded-[2.4rem] border border-white/20 bg-black p-2 shadow-2xl">
-              <Image src="/media/ap3k-product-03.jpg" alt="مثال عملي لأتمتة رسائل إنستغرام عبر AP3K" width={1156} height={2056} priority sizes="(max-width: 1024px) 80vw, 430px" className="aspect-[9/16] w-full rounded-[2rem] object-cover object-top" />
+            <div className="ap3k-product-float relative mx-auto w-full max-w-[390px]">
+              <div aria-hidden="true" className="pointer-events-none absolute -inset-12 rounded-[4rem] bg-fuchsia-300/30 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[2.6rem] border border-white/25 bg-black p-2 shadow-[0_34px_110px_rgba(10,3,35,.52)]">
+                <video autoPlay muted loop playsInline poster="/media/ap3k-product-03.jpg" preload="metadata" aria-label="مثال عملي لأتمتة رسائل إنستغرام عبر AP3K" className="aspect-[1200/2128] w-full rounded-[2.15rem] bg-black object-cover object-top">
+                  <source src="/media/instagram-features_04.mp4" type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </section>
@@ -98,7 +102,7 @@ export default function ArabicInstagramDmAutomationPage() {
         <section className="bg-gradient-to-r from-violet-700 to-fuchsia-600 px-4 py-16 text-center text-white sm:px-8">
           <h2 className="text-3xl font-black sm:text-5xl">ابدأ أول أتمتة مجاناً.</h2>
           <p className="mt-4 text-white/75">500 إجراء آلي كل شهر، من دون بطاقة ائتمان.</p>
-          <Link href="/sign-up" className="mt-7 inline-flex rounded-full bg-white px-7 py-4 text-sm font-black text-violet-700">ابدأ مجاناً</Link>
+          <Link href="/sign-up" className="mt-7 inline-flex rounded-full bg-white px-7 py-4 text-sm font-black text-violet-700">ابدأ الآن</Link>
         </section>
       </main>
       <div dir="ltr"><WebsiteFooter /></div>

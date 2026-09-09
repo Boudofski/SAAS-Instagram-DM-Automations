@@ -5,7 +5,9 @@ export type CommercialPage = {
   description: string;
   keyword: string;
   media: string;
+  video: string;
   mediaAlt: string;
+  theme: "violet" | "blue" | "fuchsia" | "rose" | "cyan" | "indigo" | "pink" | "emerald" | "orange";
   proof: string;
   workflow: { title: string; body: string }[];
   useCases: { title: string; body: string }[];
@@ -28,7 +30,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Send useful, timely Instagram DMs after comments, story interactions, or incoming messages—and see every delivery in one clear workspace.",
     keyword: "GUIDE",
     media: "/media/ap3k-product-03.jpg",
+    video: "/media/instagram-features_04.mp4",
     mediaAlt: "AP3K product example showing a story interaction becoming an Instagram DM",
+    theme: "violet",
     proof: "Use a supported trigger, write the message once, and let AP3K deliver the follow-up while intent is fresh.",
     workflow: [
       { title: "Connect Instagram", body: "Authorize one Business or Creator account without sharing its password." },
@@ -59,7 +63,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Match a keyword or any eligible new comment, publish a natural public reply, and optionally continue the conversation in DM.",
     keyword: "PRICE",
     media: "/media/ap3k-product-01.jpg",
+    video: "/media/instagram-features_01.mp4",
     mediaAlt: "AP3K product example showing Instagram comments and automated replies",
+    theme: "blue",
     proof: "Keep the public acknowledgment and private follow-up independent, so every campaign does only what the audience expects.",
     workflow: [
       { title: "Pick a post or Reel", body: "Limit the automation to specific media or listen across eligible posts." },
@@ -90,7 +96,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Connect a clear post call-to-action to a private follow-up: detect the comment, acknowledge it if useful, and send the promised message or link.",
     keyword: "LINK",
     media: "/media/ap3k-product-04.jpg",
+    video: "/media/smm-templates_03.mp4",
     mediaAlt: "AP3K comment-to-DM example with an Instagram link button",
+    theme: "fuchsia",
     proof: "A short comment-to-DM flow is easier to test, easier to understand, and more trustworthy for the person receiving it.",
     workflow: [
       { title: "Make one promise", body: "Tell people exactly what to comment and what they will receive." },
@@ -121,7 +129,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Respond to the right comments and DMs with saved messages or paid AI—while keeping triggers, tone, and delivery limits under your control.",
     keyword: "DETAILS",
     media: "/media/ap3k-product-01.jpg",
+    video: "/media/smm-features_02.mp4",
     mediaAlt: "Instagram auto reply product example created with AP3K",
+    theme: "rose",
     proof: "AP3K separates deterministic automation from AI, so a predictable saved reply never silently turns into generated copy.",
     workflow: [
       { title: "Choose the channel", body: "Decide whether the reply belongs under the post or inside the DM conversation." },
@@ -152,7 +162,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Turn eligible story interactions into organized DM follow-up for launches, resources, registrations, and product interest.",
     keyword: "STORY",
     media: "/media/ap3k-product-02.jpg",
+    video: "/media/instagram-features_03.mp4",
     mediaAlt: "AP3K Instagram Story interaction and DM automation example",
+    theme: "cyan",
     proof: "Keep the response close to the story context and give people one useful next step instead of a generic message.",
     workflow: [
       { title: "Connect a professional account", body: "Authorize the Instagram Business or Creator profile used for the story." },
@@ -183,7 +195,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "AP3K is built for teams that want focused Instagram comment, story, and DM automation without learning a broad multi-channel flow builder.",
     keyword: "START",
     media: "/media/ap3k-templates.jpg",
+    video: "/media/templates_03-v2.mp4",
     mediaAlt: "AP3K focused Instagram automation product experience",
+    theme: "indigo",
     proof: "Choose AP3K when a clear four-step Instagram workflow matters more than operating a broad cross-channel marketing platform.",
     workflow: [
       { title: "Connect Instagram", body: "Start with one Business or Creator account per AP3K workspace." },
@@ -214,7 +228,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Deliver guides, links, launch details, and answers from Instagram comments and stories without spending the day repeating the same DM.",
     keyword: "CREATOR",
     media: "/media/ap3k-product-04.jpg",
+    video: "/media/templates_05.mp4",
     mediaAlt: "Creator Instagram automation example with a direct-message link",
+    theme: "pink",
     proof: "Keep the audience experience personal by automating the repeated delivery step while preserving the conversation for real replies.",
     workflow: [
       { title: "Choose one offer", body: "Tie the automation to one Reel, resource, product, or launch." },
@@ -245,7 +261,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Use Instagram comments as a clear intent signal, then send the right resource, application, or booking step by DM.",
     keyword: "COACHING",
     media: "/media/ap3k-product-03.jpg",
+    video: "/media/smm-templates_02.mp4",
     mediaAlt: "Instagram coaching lead automation and DM example",
+    theme: "emerald",
     proof: "A useful coaching flow answers the immediate request before asking the prospect to book or share more information.",
     workflow: [
       { title: "Choose a high-intent post", body: "Use content that naturally leads to a guide, consultation, or program question." },
@@ -276,7 +294,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
     description: "Respond to product interest on Instagram, send the correct page by DM, and track which campaign created the lead.",
     keyword: "SHOP",
     media: "/media/ap3k-product-04.jpg",
+    video: "/media/ecom-features_01.mp4",
     mediaAlt: "Instagram ecommerce comment-to-product-link automation example",
+    theme: "orange",
     proof: "Make the destination match the product shown in the post so the customer lands on the answer they expected.",
     workflow: [
       { title: "Select the product content", body: "Scope the automation to the correct post or Reel." },

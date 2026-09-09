@@ -66,7 +66,7 @@ export default function BlogPage() {
               <h2 className="mt-3 text-3xl font-black tracking-tight">Build your first comment-to-DM campaign.</h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">Connect an Instagram Business or Creator account, choose a trigger, then decide whether AP3K should reply to the comment, send a DM, or both.</p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href="/sign-up" className="ap3k-gradient-button px-6 py-3 text-sm">Start free</Link>
+                <Link href="/sign-up" className="ap3k-gradient-button px-6 py-3 text-sm">GET STARTED</Link>
                 <Link href="/pricing" className="ap3k-outline-button px-6 py-3 text-sm">See pricing</Link>
               </div>
             </div>

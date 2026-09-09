@@ -72,7 +72,7 @@ export default function PricingExperience({
           const price = interval === "year" ? plan.annualPrice : plan.monthlyPrice;
 
           let href = plan.id === "FREE" ? "/sign-up" : checkoutHref(paidPlan!, interval);
-          let cta = plan.id === "FREE" ? "Start free" : `Choose ${plan.name}`;
+          let cta = plan.id === "FREE" ? "GET STARTED" : `Choose ${plan.name}`;
 
           if (isCurrent) {
             href = existingPaid ? "#manage-billing" : "/dashboard";
