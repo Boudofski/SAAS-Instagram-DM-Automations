@@ -169,7 +169,7 @@ export default function BlogPostPage({ params }: Props) {
               <h2 className="mt-2 text-2xl font-black tracking-tight">Turn your next Instagram comment into an action.</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Start with one campaign, one clear trigger, and a useful Comment reply or DM. You can expand after you see the full flow working.</p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <Link href="/sign-up" className="ap3k-gradient-button px-5 py-2.5 text-center text-sm">Start free</Link>
+                <Link href="/sign-up" className="ap3k-gradient-button px-5 py-2.5 text-center text-sm">GET STARTED</Link>
                 <Link href="/pricing" className="ap3k-outline-button px-5 py-2.5 text-center text-sm">Compare plans</Link>
               </div>
             </aside>

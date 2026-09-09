@@ -9,6 +9,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import {
   ArrowRight,
   CheckCircle2,
+  BadgeCheck,
   MessageCircle,
   Reply,
   Send,
@@ -201,11 +202,27 @@ export default async function LandingPage() {
               <p className="mt-4 text-sm font-bold text-white/85">500 automated actions every month. No credit card required.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
-                  Start Free — No Credit Card <ArrowRight className="h-4 w-4" />
+                  GET STARTED <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a href="#how-it-works" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur-xl transition duration-200 hover:bg-white/16">
                   See how it works
                 </a>
+              </div>
+              <div aria-label="AP3K platform credentials" className="mt-6 flex flex-wrap items-center gap-3">
+                <div className="overflow-hidden rounded-xl border border-white/20 bg-white p-1 shadow-[0_10px_30px_rgba(27,8,61,0.2)]">
+                  <Image
+                    src="/media/meta-business-partner.jpg"
+                    alt="Meta Business Partner"
+                    width={400}
+                    height={229}
+                    sizes="116px"
+                    className="h-auto w-[116px] rounded-lg"
+                  />
+                </div>
+                <div className="inline-flex min-h-[50px] items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-black text-white shadow-sm backdrop-blur-xl">
+                  <BadgeCheck className="h-5 w-5 text-emerald-300" />
+                  Official Instagram API
+                </div>
               </div>
             </div>
 
@@ -218,24 +235,6 @@ export default async function LandingPage() {
                 className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
                 priority
               />
-            </div>
-          </div>
-        </section>
-
-        <section aria-label="AP3K trust and platform credentials" className="border-b border-slate-200/80 bg-white/85 px-4 py-6 backdrop-blur dark:border-white/8 dark:bg-[#0b0c15]/90 sm:px-8">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8">
-            <div className="shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:border-white/15">
-              <Image
-                src="/media/meta-business-partner.jpg"
-                alt="Meta Business Partner"
-                width={400}
-                height={229}
-                sizes="(max-width: 640px) 150px, 170px"
-                className="h-auto w-[150px] rounded-lg sm:w-[170px]"
-              />
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[10px] font-black uppercase tracking-[0.17em] text-slate-500 dark:text-slate-400 sm:text-xs">
-              <span>Instagram Business + Creator</span><span className="text-violet-400">•</span><span>Supported API access</span><span className="text-violet-400">•</span><span>No scraping</span><span className="text-violet-400">•</span><span>No code</span>
             </div>
           </div>
         </section>
@@ -308,7 +307,7 @@ export default async function LandingPage() {
                           </div>
                         ))}
                       </div>
-                      <Link href="/sign-up" className="mt-8 hidden items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5 lg:inline-flex">Try it free <ArrowRight className="h-4 w-4" /></Link>
+                      <Link href="/sign-up" className="mt-8 hidden items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5 lg:inline-flex">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
                     </div>
                     <div className="mx-auto flex w-full items-center justify-center">
                       <ProductVideo src={benefit.src} label={benefit.label} className="w-[min(60vw,250px)] sm:w-[260px] lg:w-full lg:max-w-[300px]" />
@@ -317,36 +316,6 @@ export default async function LandingPage() {
                 </FadeIn>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16 lg:py-24">
-          <div className="mx-auto max-w-6xl">
-            <FadeIn className="text-center">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Less busywork</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Stop doing overtime. Start replying in real time.</h2>
-              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Build the automation once, then let AP3K handle the repetitive first touch while you stay in control.</p>
-            </FadeIn>
-            <div className="mt-12 grid gap-5 lg:grid-cols-2">
-              <FadeIn>
-                <div className="h-full rounded-[2rem] border border-rose-200 bg-rose-50/80 p-7 shadow-sm dark:border-rose-400/15 dark:bg-rose-400/[0.045] sm:p-9">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-500">Without automation</p>
-                  <h3 className="mt-4 text-2xl font-black">You are doing the same work again and again.</h3>
-                  <div className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
-                    {["Watch comments manually", "Copy the same replies", "Jump between comments and inbox", "Lose leads when response time slips"].map((item) => <p key={item} className="flex gap-3"><span className="font-black text-rose-500">×</span>{item}</p>)}
-                  </div>
-                </div>
-              </FadeIn>
-              <FadeIn delay={0.06}>
-                <div className="h-full rounded-[2rem] border border-emerald-200 bg-emerald-50/80 p-7 shadow-sm dark:border-emerald-400/15 dark:bg-emerald-400/[0.045] sm:p-9">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">With AP3K</p>
-                  <h3 className="mt-4 text-2xl font-black">The first response happens automatically.</h3>
-                  <div className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
-                    {["Automation listens for eligible interactions", "Trigger matches automatically", "Configured response sends", "Activity and leads stay organized"].map((item) => <p key={item} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />{item}</p>)}
-                  </div>
-                </div>
-              </FadeIn>
-            </div>
           </div>
         </section>
 
@@ -455,7 +424,7 @@ export default async function LandingPage() {
             <h2 className="mt-5 text-4xl font-black tracking-[-0.055em] sm:text-6xl">Start automating Instagram today.</h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">Create your first automation, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition hover:-translate-y-0.5">Start free <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition hover:-translate-y-0.5">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
               <Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">View pricing</Link>
             </div>
           </FadeIn>
