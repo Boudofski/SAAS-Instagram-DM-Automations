@@ -208,12 +208,12 @@ export default async function LandingPage() {
                   See how it works
                 </a>
               </div>
-              <div aria-label="AP3K platform credentials" className="mt-5 flex flex-wrap items-center gap-2.5">
-                <div className="inline-flex h-9 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-3.5 text-xs font-semibold text-white/90 shadow-sm backdrop-blur-xl">
-                  <Infinity aria-hidden="true" className="h-5 w-5 shrink-0 stroke-[2.5] text-[#66b4ff]" />
+              <div aria-label="AP3K platform credentials" className="mt-5 flex flex-wrap items-center gap-2">
+                <div className="inline-flex h-8 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-2.5 text-[11px] font-semibold text-white/90 shadow-sm backdrop-blur-xl sm:h-9 sm:px-3.5 sm:text-xs">
+                  <Infinity aria-hidden="true" className="h-4 w-4 shrink-0 stroke-[2.5] text-[#66b4ff] sm:h-5 sm:w-5" />
                   Meta Business Partner
                 </div>
-                <div className="inline-flex h-9 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-3.5 text-xs font-semibold text-white/90 shadow-sm backdrop-blur-xl">
+                <div className="inline-flex h-8 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-2.5 text-[11px] font-semibold text-white/90 shadow-sm backdrop-blur-xl sm:h-9 sm:px-3.5 sm:text-xs">
                   <BadgeCheck className="h-4 w-4 shrink-0 text-white/75" />
                   Official Instagram API
                 </div>
