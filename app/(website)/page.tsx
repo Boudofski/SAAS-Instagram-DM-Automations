@@ -10,13 +10,13 @@ import {
   ArrowRight,
   CheckCircle2,
   BadgeCheck,
+  Infinity,
   MessageCircle,
   Reply,
   Send,
   Sparkles,
   Users,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -208,19 +208,13 @@ export default async function LandingPage() {
                   See how it works
                 </a>
               </div>
-              <div aria-label="AP3K platform credentials" className="mt-6 flex flex-wrap items-center gap-3">
-                <div className="overflow-hidden rounded-xl border border-white/20 bg-white p-1 shadow-[0_10px_30px_rgba(27,8,61,0.2)]">
-                  <Image
-                    src="/media/meta-business-partner.jpg"
-                    alt="Meta Business Partner"
-                    width={400}
-                    height={229}
-                    sizes="116px"
-                    className="h-auto w-[116px] rounded-lg"
-                  />
+              <div aria-label="AP3K platform credentials" className="mt-5 flex flex-wrap items-center gap-2.5">
+                <div className="inline-flex h-9 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-3.5 text-xs font-semibold text-white/90 shadow-sm backdrop-blur-xl">
+                  <Infinity aria-hidden="true" className="h-5 w-5 shrink-0 stroke-[2.5] text-[#66b4ff]" />
+                  Meta Business Partner
                 </div>
-                <div className="inline-flex min-h-[50px] items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-black text-white shadow-sm backdrop-blur-xl">
-                  <BadgeCheck className="h-5 w-5 text-emerald-300" />
+                <div className="inline-flex h-9 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-3.5 text-xs font-semibold text-white/90 shadow-sm backdrop-blur-xl">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-white/75" />
                   Official Instagram API
                 </div>
               </div>
