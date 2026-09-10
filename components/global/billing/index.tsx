@@ -12,6 +12,7 @@ type Props = {
   current?: CustomerPlan;
   usage?: UsageSummary;
   canManageBilling?: boolean;
+  billingLinked?: boolean;
   billing?: BillingSnapshot | null;
 };
 
@@ -19,6 +20,7 @@ export default function Billing({
   current = "FREE",
   usage,
   canManageBilling = false,
+  billingLinked = false,
   billing,
 }: Props) {
   const planLabel = usage?.planLabel ?? planDisplayName(current);
@@ -34,7 +36,7 @@ export default function Billing({
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Manage your plan and monthly automated-action usage.</p>
         </div>
-        {canManageBilling && <ManageBillingButton paid={current !== "FREE"} />}
+        {canManageBilling && <ManageBillingButton paid={current !== "FREE"} billingLinked={billingLinked} />}
       </div>
 
       <section className="overflow-hidden rounded-3xl border border-rf-pink/20 bg-gradient-to-br from-white via-orange-50/40 to-pink-50/50 p-4 shadow-sm dark:border-rf-pink/20 dark:from-[#151312] dark:via-[#101217] dark:to-[#171018] sm:p-5">
@@ -58,7 +60,7 @@ export default function Billing({
             <BillingFact
               icon={<CreditCard className="h-4 w-4" />}
               label="Subscription"
-              value={billing?.status ? friendlyStatus(billing.status, billing.cancelAtPeriodEnd) : current === "FREE" ? "Free" : "Paid"}
+              value={billing?.status ? friendlyStatus(billing.status, billing.cancelAtPeriodEnd) : current === "FREE" ? "Free" : billingLinked ? "Paid" : "Plan access active"}
             />
             <BillingFact
               icon={<CalendarDays className="h-4 w-4" />}
