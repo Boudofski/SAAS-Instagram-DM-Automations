@@ -17,6 +17,7 @@ import {
 } from "@/lib/ai-reply-config";
 import { knowledgeContext, normalizeAiWorkspace } from "@/lib/ai-workspace";
 import { ap3kSupportKnowledge } from "@/lib/ap3k-help";
+import { collectAiLinkOptions, parseAiDmModelReply } from "@/lib/ai-dm-links";
 
 type ModelCategory = AiProtectionCategory | "SAFE";
 
@@ -218,10 +219,11 @@ export async function generateAiDmReply(input: {
   workspace: ReturnType<typeof normalizeAiWorkspace>;
   automationInstructions?: string | null;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
-}): Promise<{ ok: true; reply: string } | { ok: false }> {
+}): Promise<{ ok: true; reply: string; linkButton?: { label: string; url: string } } | { ok: false }> {
   try {
     const provider = await loadEnabledProvider();
-    const completion = await createProvider(provider).chat.completions.create({
+    const linkOptions = collectAiLinkOptions(input.workspace.knowledge, input.automationInstructions);
+    const request = {
       model: provider.model,
       temperature: 0.25,
       max_tokens: 260,
@@ -237,7 +239,15 @@ export async function generateAiDmReply(input: {
             input.automationInstructions ? `Automation guidance: ${input.automationInstructions.slice(0, 1600)}` : "",
             "Use only the knowledge below for factual claims. If it does not contain the answer, say you are not sure and offer human help.",
             knowledgeContext(input.workspace.knowledge) || "No business knowledge has been added yet.",
-            "Reply in the same language as the customer. Stay concise, natural, and under 500 characters. Return only the reply text.",
+            "Reply in the same language as the customer. Stay concise, natural, and under 500 characters.",
+            linkOptions.length
+              ? [
+                  "When one approved link directly helps answer the customer's request, select exactly one linkId from APPROVED LINKS and provide a short buttonLabel (maximum 20 characters).",
+                  "Do not write any URL in the reply text. Do not select a link merely to promote it.",
+                  `APPROVED LINKS: ${JSON.stringify(linkOptions.map(({ id, url, defaultLabel, sourceTitle }) => ({ id, url, defaultLabel, sourceTitle })))}`,
+                ].join("\n")
+              : "No approved links are available. Do not include or invent a URL.",
+            'Return JSON only: {"reply":"...","linkId":"link_1 or null","buttonLabel":"short action or null"}.',
           ].filter(Boolean).join("\n\n"),
         },
         ...(input.history ?? []).slice(-10).map((item) => ({
@@ -246,9 +256,21 @@ export async function generateAiDmReply(input: {
         })),
         { role: "user" as const, content: input.message.slice(0, 1000) },
       ],
-    });
-    const reply = (completion.choices[0]?.message?.content ?? "").replace(/\s+/g, " ").trim().slice(0, 500);
-    return reply ? { ok: true, reply } : { ok: false };
+    } satisfies OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
+    const providerClient = createProvider(provider);
+    let completion: OpenAI.Chat.Completions.ChatCompletion;
+    try {
+      completion = await providerClient.chat.completions.create({
+        ...request,
+        response_format: { type: "json_object" },
+      });
+    } catch (error) {
+      const status = error instanceof OpenAI.APIError ? error.status : undefined;
+      if (status !== 400 && status !== 422) throw error;
+      completion = await providerClient.chat.completions.create(request);
+    }
+    const parsed = parseAiDmModelReply(completion.choices[0]?.message?.content ?? "", linkOptions);
+    return parsed.reply ? { ok: true, ...parsed } : { ok: false };
   } catch (error) {
     console.error("[ai-dm-reply] generation skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });
     return { ok: false };
