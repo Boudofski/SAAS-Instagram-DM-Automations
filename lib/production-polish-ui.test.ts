@@ -34,6 +34,9 @@ describe("production polish UI contracts", () => {
   it("makes the notification bell an interactive, accessible workspace menu", () => {
     const notification = source("components/global/navbar/notification/index.tsx");
     expect(notification).toContain("<PopoverTrigger asChild>");
+    expect(notification).toContain("<Popover open={open} onOpenChange={setOpen}>");
+    expect(notification).toContain("const closeNotifications = () => setOpen(false)");
+    expect(notification.match(/onClick=\{closeNotifications\}/g)).toHaveLength(2);
     expect(notification).toContain('aria-label="Open notifications"');
     expect(notification).toContain("You&apos;re all caught up");
     expect(notification).toContain("/inbox");
