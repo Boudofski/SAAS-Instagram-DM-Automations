@@ -10,7 +10,13 @@ type PortalResponse = {
   error?: { message?: string };
 };
 
-export function ManageBillingButton({ paid = true }: { paid?: boolean }) {
+export function ManageBillingButton({
+  paid = true,
+  billingLinked = true,
+}: {
+  paid?: boolean;
+  billingLinked?: boolean;
+}) {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +56,13 @@ export function ManageBillingButton({ paid = true }: { paid?: boolean }) {
         className="h-11 rounded-xl border-slate-200 bg-white/80 px-4 font-bold text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:hover:bg-white/[0.10]"
       >
         {isPending ? <Loader2 aria-hidden="true" className="animate-spin" /> : <CreditCard aria-hidden="true" />}
-        {isPending ? "Opening billing…" : paid ? "Manage or cancel subscription" : "Manage billing"}
+        {isPending
+          ? "Checking billing…"
+          : paid && billingLinked
+            ? "Manage or cancel subscription"
+            : paid
+              ? "Check billing status"
+              : "Manage billing"}
       </Button>
       {error && <p role="alert" className="max-w-xs text-xs font-semibold text-red-600 dark:text-red-300">{error}</p>}
     </div>
