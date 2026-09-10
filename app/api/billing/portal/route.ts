@@ -82,7 +82,11 @@ export async function POST(_request: Request) {
     }
 
     if (!customerId) {
-      return errorResponse(409, "customer_not_linked", "No Stripe billing profile is linked to this account.");
+      return errorResponse(
+        409,
+        "customer_not_linked",
+        "No Stripe subscription is linked to this AP3K account. If you were charged, contact support@ap3k.com with the billing email."
+      );
     }
 
     const session = await stripe.billingPortal.sessions.create({
