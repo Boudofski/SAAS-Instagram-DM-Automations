@@ -66,4 +66,11 @@ describe("production polish UI contracts", () => {
     expect(wizard).toContain("aiReplyEnabled: false");
     expect(wizard).toContain("openingDmEnabled: false");
   });
+
+  it("shows the saved DM AI mode on automation details", () => {
+    const detail = source("app/(protected)/dashboard/[slug]/automation/[id]/page.tsx");
+    expect(detail).toContain("automation.listener?.aiDmReplyEnabled === true");
+    expect(detail).toContain('title={aiDmReplyEnabled ? "AP3K AI reply"');
+    expect(detail).toContain('isMessageAutomation ? aiDmReplyEnabled ? "Enabled"');
+  });
 });
