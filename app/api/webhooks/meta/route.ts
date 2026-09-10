@@ -1841,6 +1841,7 @@ async function processConfiguredMessageAutomation(params: {
     automation.listener.ctaLink
   );
   let aiGenerated = false;
+  let aiLinkButtons: Array<{ label: string; url: string }> = [];
   let payloadMessage = resolveTemplate(automation.listener.prompt, {
         username: profile?.username ? `@${profile.username}` : "",
         first_name: profile?.name?.split(/\s+/)[0] ?? "",
@@ -1866,6 +1867,7 @@ async function processConfiguredMessageAutomation(params: {
           });
           if (generated.ok) {
             payloadMessage = generated.reply;
+            aiLinkButtons = generated.linkButton ? [generated.linkButton] : [];
             aiGenerated = true;
             await completeAiReplyReservation(quota.reservationId, { channel: "DM", outcome: "generated" });
           } else {
@@ -1905,9 +1907,9 @@ async function processConfiguredMessageAutomation(params: {
     recipientId: senderId,
     automationId: automation.id,
     message: resolvedMessage,
-    responseFormat: needsFollowRequest || aiGenerated ? "TEXT" : automation.listener.responseFormat,
+    responseFormat: needsFollowRequest ? "TEXT" : aiGenerated ? (aiLinkButtons.length ? "LINK" : "TEXT") : automation.listener.responseFormat,
     quickReplies: needsFollowRequest || aiGenerated ? [] : readLegacyQuickReplies(quickReplies),
-    linkButtons: needsFollowRequest || aiGenerated ? [] : linkButtons,
+    linkButtons: needsFollowRequest ? [] : aiGenerated ? aiLinkButtons : linkButtons,
     ctaTitle: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaButtonTitle,
     ctaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaLink,
     mediaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaUrl,
@@ -1951,7 +1953,7 @@ async function processConfiguredMessageAutomation(params: {
     igUserId: senderId,
     keyword: matchedKeyword,
     meta: {
-      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : aiGenerated ? "AI_TEXT" : automation.listener.responseFormat,
+      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : aiGenerated ? (aiLinkButtons.length ? "AI_LINK" : "AI_TEXT") : automation.listener.responseFormat,
       dmFlowAction: dmFlowAction?.type,
       followRequired: Boolean(automation.followGateRequired),
       followVerified: automation.followGateRequired ? profile?.followsBusiness === true : undefined,
