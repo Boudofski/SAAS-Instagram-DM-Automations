@@ -34,7 +34,7 @@ export default function Billing({
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Manage your plan and monthly automated-action usage.</p>
         </div>
-        {canManageBilling && <ManageBillingButton />}
+        {canManageBilling && <ManageBillingButton paid={current !== "FREE"} />}
       </div>
 
       <section className="overflow-hidden rounded-3xl border border-rf-pink/20 bg-gradient-to-br from-white via-orange-50/40 to-pink-50/50 p-4 shadow-sm dark:border-rf-pink/20 dark:from-[#151312] dark:via-[#101217] dark:to-[#171018] sm:p-5">
