@@ -45,7 +45,9 @@ describe("production polish UI contracts", () => {
     const page = source("app/(protected)/dashboard/[slug]/billing/page.tsx");
     const billing = source("components/global/billing/index.tsx");
     expect(page).toContain('customerId || currentPlan !== "FREE"');
-    expect(billing).toContain('paid={current !== "FREE"}');
+    expect(page).toContain('billingLinked={Boolean(customerId)}');
+    expect(billing).toContain('paid={current !== "FREE"} billingLinked={billingLinked}');
+    expect(billing).toContain('"Plan access active"');
   });
 
   it("presents the free plan as zero dollars without a billing interval", () => {
