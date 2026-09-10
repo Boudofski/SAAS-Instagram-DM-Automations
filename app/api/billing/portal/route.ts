@@ -2,6 +2,7 @@ import { dashboardPath } from "@/lib/dashboard";
 import { getApplicationUrl } from "@/lib/app-url";
 import { client } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { recoverOwnedStripeCustomerId } from "@/lib/stripe-customer-recovery";
 import { getStripeSecretKey } from "@/lib/stripe-config";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
@@ -41,7 +42,9 @@ export async function POST(_request: Request) {
     where: { clerkId: clerkUser.id },
     select: {
       clerkId: true,
-      subscription: { select: { customerId: true } },
+      id: true,
+      email: true,
+      subscription: { select: { customerId: true, plan: true } },
     },
   });
 
@@ -49,20 +52,39 @@ export async function POST(_request: Request) {
     return errorResponse(404, "user_not_found", "Your AP3K account could not be found.");
   }
 
-  const customerId = user.subscription?.customerId;
-  if (!customerId) {
-    return errorResponse(409, "customer_not_linked", "No Stripe billing profile is linked to this account.");
-  }
-
   if (!getStripeSecretKey()) {
     console.error("[stripe-portal] unavailable", {
       operation: "create_customer_portal_session",
-      customerLinked: true,
+      customerLinked: Boolean(user.subscription?.customerId),
     });
     return errorResponse(503, "stripe_unavailable", "Billing management is temporarily unavailable.");
   }
 
   try {
+    let customerId = user.subscription?.customerId ?? null;
+    if (!customerId) {
+      customerId = await recoverOwnedStripeCustomerId(stripe, {
+        clerkId: user.clerkId,
+        email: user.email,
+      });
+
+      if (customerId) {
+        await client.subscription.upsert({
+          where: { userId: user.id },
+          create: {
+            userId: user.id,
+            customerId,
+            plan: user.subscription?.plan ?? "FREE",
+          },
+          update: { customerId },
+        });
+      }
+    }
+
+    if (!customerId) {
+      return errorResponse(409, "customer_not_linked", "No Stripe billing profile is linked to this account.");
+    }
+
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${getApplicationUrl()}${dashboardPath(user.clerkId)}/billing`,
@@ -79,7 +101,7 @@ export async function POST(_request: Request) {
   } catch (error) {
     console.error("[stripe-portal] session creation failed", {
       operation: "create_customer_portal_session",
-      customerLinked: true,
+      customerLinked: Boolean(user.subscription?.customerId),
       ...safeStripeError(error),
     });
     return errorResponse(502, "portal_session_failed", "Could not open billing management. Please try again.");
