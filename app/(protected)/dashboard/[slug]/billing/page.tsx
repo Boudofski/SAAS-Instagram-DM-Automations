@@ -1,7 +1,7 @@
 import { onUserInfo } from "@/actions/user";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import Billing from "@/components/global/billing";
-import { getBillingSnapshot } from "@/lib/billing-snapshot";
+import { getBillingLookup } from "@/lib/billing-snapshot";
 import type { CustomerPlan } from "@/lib/billing-plans";
 import { getStripeSecretKey } from "@/lib/stripe-config";
 
@@ -13,9 +13,11 @@ export default async function BillingPage() {
   const currentPlan = (user?.subscription?.plan ?? "FREE") as CustomerPlan;
   const customerId = user?.subscription?.customerId ?? null;
   const stripeConfigured = Boolean(getStripeSecretKey());
-  const [usage, billing] = await Promise.all([
+  const [usage, billingLookup] = await Promise.all([
     user?.id ? getUserMonthlyUsage(user.id) : undefined,
-    stripeConfigured && customerId ? getBillingSnapshot(customerId) : null,
+    stripeConfigured && customerId
+      ? getBillingLookup(customerId)
+      : Promise.resolve({ state: "none" as const, snapshot: null }),
   ]);
 
   return (
@@ -23,9 +25,9 @@ export default async function BillingPage() {
       <Billing
         current={currentPlan}
         usage={usage}
-        canManageBilling={Boolean(stripeConfigured && (customerId || currentPlan !== "FREE"))}
-        billingLinked={Boolean(customerId)}
-        billing={billing}
+        billingEmail={user?.email}
+        billingState={billingLookup.state}
+        billing={billingLookup.snapshot}
       />
     </div>
   );

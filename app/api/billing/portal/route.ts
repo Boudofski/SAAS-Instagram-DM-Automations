@@ -1,5 +1,6 @@
 import { dashboardPath } from "@/lib/dashboard";
 import { getApplicationUrl } from "@/lib/app-url";
+import { getBillingLookup } from "@/lib/billing-snapshot";
 import { client } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { recoverOwnedStripeCustomerId } from "@/lib/stripe-customer-recovery";
@@ -13,6 +14,7 @@ type PortalErrorCode =
   | "not_authenticated"
   | "user_not_found"
   | "customer_not_linked"
+  | "subscription_not_found"
   | "stripe_unavailable"
   | "portal_session_failed";
 
@@ -86,6 +88,22 @@ export async function POST(_request: Request) {
         409,
         "customer_not_linked",
         "No Stripe subscription is linked to this AP3K account. If you were charged, contact support@ap3k.com with the billing email."
+      );
+    }
+
+    const billingLookup = await getBillingLookup(customerId);
+    if (billingLookup.state === "none") {
+      return errorResponse(
+        409,
+        "subscription_not_found",
+        "This workspace has internal AP3K access and no Stripe subscription or invoices to manage."
+      );
+    }
+    if (billingLookup.state === "unavailable") {
+      return errorResponse(
+        503,
+        "stripe_unavailable",
+        "Stripe billing status is temporarily unavailable. Please try again."
       );
     }
 

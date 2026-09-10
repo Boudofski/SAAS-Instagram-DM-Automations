@@ -4,27 +4,30 @@ import PricingExperience from "@/components/global/pricing-experience";
 import { planDisplayName, type CustomerPlan } from "@/lib/billing-plans";
 import type { BillingSnapshot } from "@/lib/billing-snapshot";
 import { getBillingUsagePresentation, type BillingMetricKind } from "@/lib/billing-presentation";
+import { isManageableSubscriptionStatus } from "@/lib/billing-snapshot";
 import { isUnlimited, type UsageSummary } from "@/lib/plan-limits";
-import { CalendarDays, CreditCard } from "lucide-react";
+import { CalendarDays, CreditCard, Info } from "lucide-react";
 import { ManageBillingButton } from "./manage-billing-button";
 
 type Props = {
   current?: CustomerPlan;
   usage?: UsageSummary;
-  canManageBilling?: boolean;
-  billingLinked?: boolean;
+  billingEmail?: string;
+  billingState?: "none" | "subscription" | "unavailable";
   billing?: BillingSnapshot | null;
 };
 
 export default function Billing({
   current = "FREE",
   usage,
-  canManageBilling = false,
-  billingLinked = false,
+  billingEmail,
+  billingState = "none",
   billing,
 }: Props) {
   const planLabel = usage?.planLabel ?? planDisplayName(current);
-  const paid = current !== "FREE" && canManageBilling;
+  const hasStripeSubscription = billingState === "subscription" && Boolean(billing);
+  const activeStripeSubscription = hasStripeSubscription && isManageableSubscriptionStatus(billing?.status);
+  const internalAccess = current !== "FREE" && billingState === "none";
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -36,8 +39,27 @@ export default function Billing({
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Manage your plan and monthly automated-action usage.</p>
         </div>
-        {canManageBilling && <ManageBillingButton paid={current !== "FREE"} billingLinked={billingLinked} />}
+        {hasStripeSubscription && <ManageBillingButton activeSubscription={activeStripeSubscription} />}
       </div>
+
+      {internalAccess ? (
+        <section className="flex gap-3 rounded-2xl border border-violet-300/40 bg-violet-50/80 p-4 text-violet-950 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-100">
+          <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-violet-500" />
+          <div>
+            <p className="text-sm font-black">Internal plan access</p>
+            <p className="mt-1 text-xs leading-5 text-violet-800/80 dark:text-violet-200/80">
+              This workspace has complimentary AP3K access and is not billed through Stripe. There is no recurring charge, cancellation, or invoice history.
+              {billingEmail ? ` Account: ${billingEmail}.` : ""}
+            </p>
+          </div>
+        </section>
+      ) : null}
+
+      {billingState === "unavailable" ? (
+        <p role="status" className="rounded-2xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
+          Stripe billing status is temporarily unavailable. Refresh this page before starting another checkout.
+        </p>
+      ) : null}
 
       <section className="overflow-hidden rounded-3xl border border-rf-pink/20 bg-gradient-to-br from-white via-orange-50/40 to-pink-50/50 p-4 shadow-sm dark:border-rf-pink/20 dark:from-[#151312] dark:via-[#101217] dark:to-[#171018] sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -46,6 +68,7 @@ export default function Billing({
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{planLabel}</h2>
               <span className="ap3k-badge ap3k-badge-green">Active</span>
+              {internalAccess ? <span className="ap3k-badge ap3k-badge-slate">Internal access</span> : null}
               {billing?.interval && (
                 <span className="ap3k-badge ap3k-badge-slate">
                   {billing.interval === "year" ? "Annual billing" : "Monthly billing"}
@@ -60,13 +83,15 @@ export default function Billing({
             <BillingFact
               icon={<CreditCard className="h-4 w-4" />}
               label="Subscription"
-              value={billing?.status ? friendlyStatus(billing.status, billing.cancelAtPeriodEnd) : current === "FREE" ? "Free" : billingLinked ? "Paid" : "Plan access active"}
+              value={billing?.status ? friendlyStatus(billing.status, billing.cancelAtPeriodEnd) : current === "FREE" ? "Free" : internalAccess ? "Internal access" : "Status unavailable"}
             />
             <BillingFact
               icon={<CalendarDays className="h-4 w-4" />}
-              label={billing?.cancelAtPeriodEnd ? "Access until" : "Next renewal"}
+              label={internalAccess ? "Billing" : billing?.cancelAtPeriodEnd ? "Access until" : "Next renewal"}
               value={billing?.renewsAt
                   ? formatDate(billing.renewsAt)
+                  : internalAccess
+                    ? "No recurring charge"
                   : usage
                     ? `${usage.periodLabel} usage`
                     : "Monthly reset"}
@@ -90,7 +115,7 @@ export default function Billing({
           <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">Plans</h2>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Paid subscribers change plans and payment details securely in the billing portal.</p>
         </div>
-        <PricingExperience compact dashboardCompact currentPlan={current} existingPaid={paid} />
+        <PricingExperience compact dashboardCompact currentPlan={current} existingPaid={activeStripeSubscription} internalPlanAccess={internalAccess} />
       </section>
     </div>
   );
