@@ -73,4 +73,10 @@ describe("production polish UI contracts", () => {
     expect(detail).toContain('title={aiDmReplyEnabled ? "AP3K AI reply"');
     expect(detail).toContain('isMessageAutomation ? aiDmReplyEnabled ? "Enabled"');
   });
+
+  it("labels AI DM automations accurately in the automation table", () => {
+    const table = source("components/dashboard/automation-table.tsx");
+    expect(table).toContain('automation.listener?.aiDmReplyEnabled ? "AI DM replies active"');
+    expect(table).toContain("{modeLabel}");
+  });
 });

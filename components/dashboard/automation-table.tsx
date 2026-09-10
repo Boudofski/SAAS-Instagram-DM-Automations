@@ -253,6 +253,11 @@ function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMo
   const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
   const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode, messagingReviewMode);
+  const modeLabel = source === "DM"
+    ? automation.listener?.aiDmReplyEnabled ? "AI DM replies active" : "Saved DM replies active"
+    : source === "STORY"
+      ? `Story automation · ${storyTriggerLabel(automation.storyTriggerType)}`
+      : mode.full;
   const status = campaignStatus(automation);
   const replySummary = getReplySummary(automation);
 
@@ -266,7 +271,7 @@ function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMo
               {automation.name || "Untitled automation"}
             </Link>
             <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <span className="truncate">{mode.full}</span>
+              <span className="truncate">{modeLabel}</span>
               {automation.currentAccountLabel && (
                 <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 dark:bg-white/[0.07] dark:text-slate-400 2xl:inline-flex">
                   {automation.currentAccountLabel}
