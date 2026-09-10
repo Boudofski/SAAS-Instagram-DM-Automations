@@ -10,18 +10,20 @@ export const dynamic = "force-dynamic";
 export default async function BillingPage() {
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
+  const currentPlan = (user?.subscription?.plan ?? "FREE") as CustomerPlan;
   const customerId = user?.subscription?.customerId ?? null;
+  const stripeConfigured = Boolean(getStripeSecretKey());
   const [usage, billing] = await Promise.all([
     user?.id ? getUserMonthlyUsage(user.id) : undefined,
-    getStripeSecretKey() && customerId ? getBillingSnapshot(customerId) : null,
+    stripeConfigured && customerId ? getBillingSnapshot(customerId) : null,
   ]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-6">
       <Billing
-        current={(user?.subscription?.plan ?? "FREE") as CustomerPlan}
+        current={currentPlan}
         usage={usage}
-        canManageBilling={Boolean(customerId && getStripeSecretKey())}
+        canManageBilling={Boolean(stripeConfigured && (customerId || currentPlan !== "FREE"))}
         billing={billing}
       />
     </div>

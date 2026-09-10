@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockCurrentUser = vi.fn();
 const mockUserFindUnique = vi.fn();
+const mockSubscriptionUpsert = vi.fn();
 const mockPortalCreate = vi.fn();
+const mockCustomerList = vi.fn();
+const mockSubscriptionList = vi.fn();
+const mockCheckoutSessionList = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: (...args: unknown[]) => mockCurrentUser(...args),
@@ -11,11 +15,17 @@ vi.mock("@clerk/nextjs/server", () => ({
 vi.mock("@/lib/prisma", () => ({
   client: {
     user: { findUnique: (...args: unknown[]) => mockUserFindUnique(...args) },
+    subscription: { upsert: (...args: unknown[]) => mockSubscriptionUpsert(...args) },
   },
 }));
 
 vi.mock("@/lib/stripe", () => ({
   stripe: {
+    customers: { list: (...args: unknown[]) => mockCustomerList(...args) },
+    subscriptions: { list: (...args: unknown[]) => mockSubscriptionList(...args) },
+    checkout: {
+      sessions: { list: (...args: unknown[]) => mockCheckoutSessionList(...args) },
+    },
     billingPortal: {
       sessions: { create: (...args: unknown[]) => mockPortalCreate(...args) },
     },
@@ -42,9 +52,15 @@ describe("Stripe Customer Portal route", () => {
     vi.stubEnv("VERCEL_URL", "");
     mockCurrentUser.mockResolvedValue({ id: "clerk-user-a" });
     mockUserFindUnique.mockResolvedValue({
+      id: "user-a",
       clerkId: "clerk-user-a",
-      subscription: { customerId: "cus_owned_by_a" },
+      email: "owner@example.com",
+      subscription: { customerId: "cus_owned_by_a", plan: "PRO" },
     });
+    mockCustomerList.mockResolvedValue({ data: [] });
+    mockSubscriptionList.mockResolvedValue({ data: [] });
+    mockCheckoutSessionList.mockResolvedValue({ data: [] });
+    mockSubscriptionUpsert.mockResolvedValue({});
     mockPortalCreate.mockResolvedValue({ url: "https://billing.stripe.test/session-a" });
   });
 
@@ -75,7 +91,12 @@ describe("Stripe Customer Portal route", () => {
   });
 
   it("does not create a session without a linked Stripe customer", async () => {
-    mockUserFindUnique.mockResolvedValue({ clerkId: "clerk-user-a", subscription: { customerId: null } });
+    mockUserFindUnique.mockResolvedValue({
+      id: "user-a",
+      clerkId: "clerk-user-a",
+      email: "owner@example.com",
+      subscription: { customerId: null, plan: "PRO" },
+    });
 
     const response = await POST(portalRequest());
 
@@ -90,7 +111,12 @@ describe("Stripe Customer Portal route", () => {
     expect(response.status).toBe(200);
     expect(mockUserFindUnique).toHaveBeenCalledWith({
       where: { clerkId: "clerk-user-a" },
-      select: { clerkId: true, subscription: { select: { customerId: true } } },
+      select: {
+        clerkId: true,
+        id: true,
+        email: true,
+        subscription: { select: { customerId: true, plan: true } },
+      },
     });
     expect(mockPortalCreate).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_owned_by_a" }));
   });
@@ -102,6 +128,31 @@ describe("Stripe Customer Portal route", () => {
       customer: "cus_owned_by_a",
       return_url: "https://preview.ap3k.test/dashboard/clerk-user-a/billing",
     });
+  });
+
+  it("recovers and persists a provably owned Stripe customer after a webhook delay", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      id: "user-a",
+      clerkId: "clerk-user-a",
+      email: "owner@example.com",
+      subscription: { customerId: null, plan: "PRO" },
+    });
+    mockCustomerList.mockResolvedValue({
+      data: [{ id: "cus_recovered", email: "owner@example.com", created: 10 }],
+    });
+    mockSubscriptionList.mockResolvedValue({
+      data: [{ status: "active", metadata: { clerkId: "clerk-user-a" } }],
+    });
+
+    const response = await POST(portalRequest());
+
+    expect(response.status).toBe(200);
+    expect(mockSubscriptionUpsert).toHaveBeenCalledWith({
+      where: { userId: "user-a" },
+      create: { userId: "user-a", customerId: "cus_recovered", plan: "PRO" },
+      update: { customerId: "cus_recovered" },
+    });
+    expect(mockPortalCreate).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_recovered" }));
   });
 
   it("ignores browser-supplied customer and user identifiers", async () => {

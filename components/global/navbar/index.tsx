@@ -86,7 +86,7 @@ function NavBar({ slug }: Props) {
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {!isCampaignList && <CreateAutomation slug={slug} />}
           <ThemeToggle compact />
-          <Notification />
+          <Notification slug={slug} />
         </div>
       </div>
     )
