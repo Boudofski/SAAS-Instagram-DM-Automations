@@ -24,6 +24,7 @@ export default async function BillingPage() {
         current={currentPlan}
         usage={usage}
         canManageBilling={Boolean(stripeConfigured && (customerId || currentPlan !== "FREE"))}
+        billingLinked={Boolean(customerId)}
         billing={billing}
       />
     </div>
