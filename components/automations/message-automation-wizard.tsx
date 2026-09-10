@@ -184,7 +184,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
                 {draft.aiReplyEnabled ? (
                   <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5">
                     <p className="text-sm font-black">AI response enabled</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. The message below is sent only if the provider is unavailable.</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. When a saved knowledge URL answers the request, AI can attach it as one native Instagram button. The message below is sent only if the provider is unavailable.</p>
                     <label className="mt-4 block text-xs font-black uppercase tracking-wider text-slate-500">Safe fallback message<textarea value={draft.message} onChange={(event) => setDraft({ ...draft, message: event.target.value })} rows={4} maxLength={1000} dir="auto" className="ap3k-textarea mt-2 w-full rounded-xl px-4 py-3 text-sm" /></label>
                   </div>
                 ) : <MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} />}

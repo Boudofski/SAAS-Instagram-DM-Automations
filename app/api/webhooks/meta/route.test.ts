@@ -482,6 +482,77 @@ describe("Meta webhook route security", () => {
     }));
   });
 
+  it("sends an approved AI-selected URL as a native Instagram button", async () => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    const integration = {
+      userId: "user-1",
+      token: "token-1",
+      instagramId: "ig-business-1",
+      pageId: "ig-business-1",
+      instagramUsername: "useap3k",
+      status: "CONNECTED",
+      reconnectRequired: false,
+    };
+    const automation = {
+      id: "automation-1",
+      userId: "user-1",
+      active: true,
+      followGateRequired: false,
+      typingIndicator: false,
+      deliveryDelaySeconds: 0,
+      listener: {
+        prompt: "Saved fallback reply",
+        responseFormat: "TEXT",
+        quickReplies: [],
+        ctaButtonTitle: null,
+        ctaLink: null,
+        mediaUrl: null,
+        mediaType: null,
+        aiDmReplyEnabled: true,
+      },
+      User: { integrations: [integration] },
+    };
+    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    mockFindAutomationForDM.mockResolvedValue({ automation, matchedKeyword: "any message" });
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    mockReserveAiReplyQuota.mockResolvedValue({ ok: true, reservationId: "reservation-1" });
+    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({ aiRepliesEnabled: true, knowledge: [] });
+    mockGenerateAiDmReply.mockResolvedValue({
+      ok: true,
+      reply: "Create your free AP3K account here.",
+      linkButton: { label: "GET STARTED", url: "https://ap3k.com/sign-up" },
+    });
+
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{
+        id: "ig-business-1",
+        messaging: [{
+          sender: { id: "recipient-1" },
+          recipient: { id: "ig-business-1" },
+          timestamp: Date.now(),
+          message: { mid: "mid.ai-link", text: "How do I start?" },
+        }],
+      }],
+    });
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
+      method: "POST",
+      headers: { "x-hub-signature-256": "sha256=good" },
+      body,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
+      recipientId: "recipient-1",
+      message: "Create your free AP3K account here.",
+      responseFormat: "LINK",
+      linkButtons: [{ label: "GET STARTED", url: "https://ap3k.com/sign-up" }],
+    }));
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(expect.objectContaining({
+      meta: expect.objectContaining({ responseFormat: "AI_LINK" }),
+    }));
+  });
+
   it("rechecks a follow-button postback instead of treating the gate prompt as a duplicate", async () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
     const integration = {
