@@ -18,6 +18,7 @@ type Props = {
   dashboardCompact?: boolean;
   currentPlan?: CustomerPlan;
   existingPaid?: boolean;
+  internalPlanAccess?: boolean;
 };
 
 export default function PricingExperience({
@@ -25,6 +26,7 @@ export default function PricingExperience({
   dashboardCompact = false,
   currentPlan,
   existingPaid = false,
+  internalPlanAccess = false,
 }: Props) {
   const [interval, setInterval] = useState<BillingInterval>("year");
 
@@ -76,7 +78,7 @@ export default function PricingExperience({
 
           if (isCurrent) {
             href = existingPaid ? "#manage-billing" : "/dashboard";
-            cta = "Current plan";
+            cta = internalPlanAccess ? "Internal access" : "Current plan";
           } else if (existingPaid) {
             href = "#manage-billing";
             cta = "Manage in portal";
@@ -153,6 +155,9 @@ export default function PricingExperience({
 
               <Link
                 href={href}
+                aria-disabled={isCurrent}
+                tabIndex={isCurrent ? -1 : undefined}
+                onClick={isCurrent ? (event) => event.preventDefault() : undefined}
                 className={`${dashboardCompact || compact ? "mt-3 min-h-10 rounded-xl px-3 text-xs" : "mt-7 min-h-12 rounded-2xl px-5 text-sm"} inline-flex items-center justify-center font-black transition-all duration-200 ${
                   isCurrent
                     ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"

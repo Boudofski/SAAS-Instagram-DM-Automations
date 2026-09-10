@@ -6,6 +6,7 @@ import {
 } from "@/lib/stripe-config";
 import { resolveStripePriceId } from "@/lib/stripe-pricing";
 import { stripe } from "@/lib/stripe";
+import { getBillingLookup, isManageableSubscriptionStatus } from "@/lib/billing-snapshot";
 import { prepareReferralCreditForCheckout } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -29,17 +30,26 @@ export async function GET(req: NextRequest) {
       subscription: { select: { plan: true, customerId: true } },
     },
   });
-  if (
-    existing?.subscription?.customerId &&
-    existing.subscription.plan !== "FREE"
-  ) {
-    return NextResponse.json(
-      {
-        status: 409,
-        error: "An active paid subscription already exists. Manage your plan from Billing.",
-      },
-      { status: 409 }
-    );
+  if (existing?.subscription?.customerId) {
+    const billingLookup = await getBillingLookup(existing.subscription.customerId);
+    if (billingLookup.state === "unavailable") {
+      return NextResponse.json(
+        { status: 503, error: "Stripe billing status is temporarily unavailable. Please try again." },
+        { status: 503 }
+      );
+    }
+    if (
+      billingLookup.state === "subscription" &&
+      isManageableSubscriptionStatus(billingLookup.snapshot.status)
+    ) {
+      return NextResponse.json(
+        {
+          status: 409,
+          error: "An active paid subscription already exists. Manage your plan from Billing.",
+        },
+        { status: 409 }
+      );
+    }
   }
 
   let priceId: string | null = null;

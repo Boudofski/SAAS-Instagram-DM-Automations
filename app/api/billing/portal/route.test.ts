@@ -7,6 +7,7 @@ const mockPortalCreate = vi.fn();
 const mockCustomerList = vi.fn();
 const mockSubscriptionList = vi.fn();
 const mockCheckoutSessionList = vi.fn();
+const mockBillingLookup = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: (...args: unknown[]) => mockCurrentUser(...args),
@@ -30,6 +31,10 @@ vi.mock("@/lib/stripe", () => ({
       sessions: { create: (...args: unknown[]) => mockPortalCreate(...args) },
     },
   },
+}));
+
+vi.mock("@/lib/billing-snapshot", () => ({
+  getBillingLookup: (...args: unknown[]) => mockBillingLookup(...args),
 }));
 
 import { POST } from "@/app/api/billing/portal/route";
@@ -61,6 +66,10 @@ describe("Stripe Customer Portal route", () => {
     mockSubscriptionList.mockResolvedValue({ data: [] });
     mockCheckoutSessionList.mockResolvedValue({ data: [] });
     mockSubscriptionUpsert.mockResolvedValue({});
+    mockBillingLookup.mockResolvedValue({
+      state: "subscription",
+      snapshot: { status: "active" },
+    });
     mockPortalCreate.mockResolvedValue({ url: "https://billing.stripe.test/session-a" });
   });
 
@@ -102,6 +111,18 @@ describe("Stripe Customer Portal route", () => {
 
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({ error: { code: "customer_not_linked" } });
+    expect(mockPortalCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not open an empty portal for internal plan access", async () => {
+    mockBillingLookup.mockResolvedValue({ state: "none", snapshot: null });
+
+    const response = await POST(portalRequest());
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "subscription_not_found" },
+    });
     expect(mockPortalCreate).not.toHaveBeenCalled();
   });
 

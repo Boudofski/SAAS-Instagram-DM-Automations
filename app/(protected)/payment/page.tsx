@@ -8,6 +8,7 @@ import {
 } from "@/lib/stripe-config";
 import { resolveStripePriceId } from "@/lib/stripe-pricing";
 import { stripe } from "@/lib/stripe";
+import { getBillingLookup, isManageableSubscriptionStatus } from "@/lib/billing-snapshot";
 import { prepareReferralCreditForCheckout } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -90,11 +91,23 @@ export default async function PaymentPage({ searchParams }: Props) {
       subscription: { select: { plan: true, customerId: true } },
     },
   });
-  if (
-    existing?.subscription?.customerId &&
-    existing.subscription.plan !== "FREE"
-  ) {
-    redirect(`${dashboardPath(user.id)}/billing`);
+  if (existing?.subscription?.customerId) {
+    const billingLookup = await getBillingLookup(existing.subscription.customerId);
+    if (billingLookup.state === "unavailable") {
+      return (
+        <StatusCard
+          title="Billing status unavailable"
+          body="Stripe could not confirm your current subscription. Please refresh before trying another checkout."
+          tone="error"
+        />
+      );
+    }
+    if (
+      billingLookup.state === "subscription" &&
+      isManageableSubscriptionStatus(billingLookup.snapshot.status)
+    ) {
+      redirect(`${dashboardPath(user.id)}/billing`);
+    }
   }
 
   const selectedPlan = parseStripePlan(plan);

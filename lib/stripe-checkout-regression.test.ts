@@ -57,4 +57,21 @@ describe("Stripe checkout routing", () => {
     expect(redirectIndex).toBeGreaterThan(catchIndex);
     expect(source.slice(createSessionIndex, catchIndex)).not.toContain("redirect(");
   });
+
+  it("blocks duplicate checkout only when Stripe confirms a manageable subscription", () => {
+    const page = fs.readFileSync(
+      path.join(process.cwd(), "app/(protected)/payment/page.tsx"),
+      "utf8"
+    );
+    const route = fs.readFileSync(
+      path.join(process.cwd(), "app/(protected)/api/payment/route.ts"),
+      "utf8"
+    );
+
+    for (const source of [page, route]) {
+      expect(source).toContain("getBillingLookup");
+      expect(source).toContain("isManageableSubscriptionStatus");
+      expect(source).not.toContain('existing.subscription.plan !== "FREE"');
+    }
+  });
 });

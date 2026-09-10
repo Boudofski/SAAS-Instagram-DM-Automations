@@ -11,11 +11,9 @@ type PortalResponse = {
 };
 
 export function ManageBillingButton({
-  paid = true,
-  billingLinked = true,
+  activeSubscription = true,
 }: {
-  paid?: boolean;
-  billingLinked?: boolean;
+  activeSubscription?: boolean;
 }) {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,11 +56,9 @@ export function ManageBillingButton({
         {isPending ? <Loader2 aria-hidden="true" className="animate-spin" /> : <CreditCard aria-hidden="true" />}
         {isPending
           ? "Checking billing…"
-          : paid && billingLinked
+          : activeSubscription
             ? "Manage or cancel subscription"
-            : paid
-              ? "Check billing status"
-              : "Manage billing"}
+            : "View invoices and billing history"}
       </Button>
       {error && <p role="alert" className="max-w-xs text-xs font-semibold text-red-600 dark:text-red-300">{error}</p>}
     </div>

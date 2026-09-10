@@ -44,13 +44,18 @@ describe("production polish UI contracts", () => {
     expect(notification).not.toContain("Notifications coming later");
   });
 
-  it("keeps paid subscription management visible during Stripe webhook recovery", () => {
+  it("separates internal access from real Stripe subscription management", () => {
     const page = source("app/(protected)/dashboard/[slug]/billing/page.tsx");
     const billing = source("components/global/billing/index.tsx");
-    expect(page).toContain('customerId || currentPlan !== "FREE"');
-    expect(page).toContain('billingLinked={Boolean(customerId)}');
-    expect(billing).toContain('paid={current !== "FREE"} billingLinked={billingLinked}');
-    expect(billing).toContain('"Plan access active"');
+    const manageButton = source("components/global/billing/manage-billing-button.tsx");
+    expect(page).toContain("getBillingLookup(customerId)");
+    expect(page).toContain("billingState={billingLookup.state}");
+    expect(page).not.toContain('customerId || currentPlan !== "FREE"');
+    expect(billing).toContain('billingState === "subscription"');
+    expect(billing).toContain('billingState === "none"');
+    expect(billing).toContain("Internal plan access");
+    expect(billing).toContain("No recurring charge");
+    expect(manageButton).not.toContain("Check billing status");
   });
 
   it("presents the free plan as zero dollars without a billing interval", () => {
