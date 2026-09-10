@@ -31,6 +31,23 @@ describe("production polish UI contracts", () => {
     expect(sheet).toContain('<SheetTitle className="sr-only">');
   });
 
+  it("makes the notification bell an interactive, accessible workspace menu", () => {
+    const notification = source("components/global/navbar/notification/index.tsx");
+    expect(notification).toContain("<PopoverTrigger asChild>");
+    expect(notification).toContain('aria-label="Open notifications"');
+    expect(notification).toContain("You&apos;re all caught up");
+    expect(notification).toContain("/inbox");
+    expect(notification).toContain("/billing");
+    expect(notification).not.toContain("Notifications coming later");
+  });
+
+  it("keeps paid subscription management visible during Stripe webhook recovery", () => {
+    const page = source("app/(protected)/dashboard/[slug]/billing/page.tsx");
+    const billing = source("components/global/billing/index.tsx");
+    expect(page).toContain('customerId || currentPlan !== "FREE"');
+    expect(billing).toContain('paid={current !== "FREE"}');
+  });
+
   it("presents the free plan as zero dollars without a billing interval", () => {
     const pricing = source("components/global/pricing-experience.tsx");
     const paymentCard = source("components/global/billing/payment-card.tsx");
