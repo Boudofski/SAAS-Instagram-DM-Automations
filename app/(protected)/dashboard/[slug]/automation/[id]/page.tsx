@@ -49,10 +49,11 @@ export default async function CampaignDetailPage({ params }: Props) {
     automation.listener?.commentReply2,
     automation.listener?.commentReply3,
   ].filter(Boolean) as string[];
-  const aiReplyEnabled = automation.listener?.aiReplyEnabled === true;
+  const aiCommentReplyEnabled = automation.listener?.aiReplyEnabled === true;
+  const aiDmReplyEnabled = isMessageAutomation && automation.listener?.aiDmReplyEnabled === true;
   const aiTone = automation.listener?.aiReplyTone === "FUN" ? "Fun" : automation.listener?.aiReplyTone === "PROFESSIONAL" ? "Professional" : "Friendly";
   const aiReplyPreview = aiTone === "Fun" ? "Love this! Thanks for joining the conversation ✨" : aiTone === "Professional" ? "Thank you for your comment. We appreciate your interest." : "Thanks for your comment! Happy to help 😊";
-  const hasCommentReply = aiReplyEnabled || commentReplies.length > 0;
+  const hasCommentReply = aiCommentReplyEnabled || commentReplies.length > 0;
   const hasDm = sendPrivateDm && Boolean(automation.listener?.prompt);
   const linkButtons = readLinkButtons(
     automation.listener?.quickReplies,
@@ -129,7 +130,12 @@ export default async function CampaignDetailPage({ params }: Props) {
               <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
               <FlowConnector />
               {automation.followGateRequired ? <><FlowNode label="2. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}
-              <FlowNode label={automation.followGateRequired ? "3. Direct message" : "2. Direct message"} title={`DM with ${linkButtons.length} link${linkButtons.length === 1 ? "" : "s"}`} body={automation.listener?.prompt || "No DM configured."} tone="blue" />
+              <FlowNode
+                label={automation.followGateRequired ? "3. Direct message" : "2. Direct message"}
+                title={aiDmReplyEnabled ? "AP3K AI reply" : `DM with ${linkButtons.length} link${linkButtons.length === 1 ? "" : "s"}`}
+                body={aiDmReplyEnabled ? `Answers from workspace knowledge. Fallback: ${automation.listener?.prompt || "No fallback configured."}` : automation.listener?.prompt || "No DM configured."}
+                tone="blue"
+              />
             </> : <>
               <div className="grid gap-2.5 md:grid-cols-2">
                 <FlowNode label="1. Post" title={isAnyPost ? "Any post or Reel" : "Selected post or Reel"} body={selectedPostLabel} tone="orange" />
@@ -137,7 +143,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               </div>
               <FlowConnector />
               <div className="grid gap-2.5 md:grid-cols-2">
-                <FlowNode label="3. Public reply" title={hasCommentReply ? aiReplyEnabled ? `AI reply · ${aiTone}` : "Saved comment reply" : "Not configured"} body={aiReplyEnabled ? automation.listener?.aiReplyInstructions || "AI reply instructions" : commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
+                <FlowNode label="3. Public reply" title={hasCommentReply ? aiCommentReplyEnabled ? `AI reply · ${aiTone}` : "Saved comment reply" : "Not configured"} body={aiCommentReplyEnabled ? automation.listener?.aiReplyInstructions || "AI reply instructions" : commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
                 <FlowNode label="4. Opening DM" title={hasDm && openingDmEnabled ? openingDmButtonText : "Skipped"} body={hasDm && openingDmEnabled ? openingDmText : "The final DM is delivered immediately."} tone="blue" disabled={!hasDm || !openingDmEnabled} />
               </div>
               {hasDm ? <><FlowConnector />{openingDmEnabled && automation.followGateRequired ? <><FlowNode label="5. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}<FlowNode label={openingDmEnabled && automation.followGateRequired ? "6. Final DM" : "5. Final DM"} title={`${linkButtons.length} link button${linkButtons.length === 1 ? "" : "s"}`} body={automation.listener?.prompt || "No final DM configured."} tone="blue" /></> : null}
@@ -158,7 +164,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               post={post ? { media: post.media, caption: post.caption, postid: post.postid } : null}
               triggerComment={isAnyComment ? "This looks amazing!" : keywords[0] || "guide"}
               publicReplyEnabled={hasCommentReply}
-              publicReply={aiReplyEnabled ? aiReplyPreview : commentReplies[0] || "Thanks! Please check your DMs."}
+              publicReply={aiCommentReplyEnabled ? aiReplyPreview : commentReplies[0] || "Thanks! Please check your DMs."}
               sendPrivateDm={hasDm}
               showOpeningSequence={openingDmEnabled}
               openingDmText={openingDmText}
@@ -183,7 +189,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               <SettingsRow label="Trigger" value={triggerLabel} />
               <SettingsRow label="DM" value={hasDm ? "Enabled" : "Off"} />
               {!isMessageAutomation ? <SettingsRow label="Opening DM" value={openingDmEnabled ? "Enabled" : "Off"} /> : null}
-              <SettingsRow label="AI reply" value={aiReplyEnabled ? aiTone : "Off"} />
+              <SettingsRow label="AI reply" value={isMessageAutomation ? aiDmReplyEnabled ? "Enabled" : "Off" : aiCommentReplyEnabled ? aiTone : "Off"} />
               <SettingsRow label="Follow request" value={automation.followGateRequired ? "Enabled" : "Off"} />
             </div>
             <Link href={editHref} className="ap3k-gradient-button mt-3 block px-4 py-2.5 text-center text-sm">Edit automation</Link>
