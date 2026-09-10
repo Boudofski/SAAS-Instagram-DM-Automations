@@ -8,15 +8,18 @@ import {
 } from "@/components/ui/popover";
 import { Bell, CheckCircle2, CreditCard, Inbox } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 
 type Props = {
   slug: string;
 };
 
 function Notification({ slug }: Props) {
+  const [open, setOpen] = useState(false);
+  const closeNotifications = () => setOpen(false);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -51,13 +54,13 @@ function Notification({ slug }: Props) {
 
         <div className="grid grid-cols-2 gap-2 border-t border-slate-200 p-3 dark:border-white/10">
           <Button asChild variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-xs font-bold dark:border-white/10 dark:bg-white/[0.04]">
-            <Link href={`/dashboard/${slug}/inbox`}>
+            <Link href={`/dashboard/${slug}/inbox`} onClick={closeNotifications}>
               <Inbox aria-hidden="true" />
               Open inbox
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-xs font-bold dark:border-white/10 dark:bg-white/[0.04]">
-            <Link href={`/dashboard/${slug}/billing`}>
+            <Link href={`/dashboard/${slug}/billing`} onClick={closeNotifications}>
               <CreditCard aria-hidden="true" />
               Billing
             </Link>
