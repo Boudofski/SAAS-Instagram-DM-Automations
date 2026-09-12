@@ -4,6 +4,7 @@ import {
   classifyStoryInteraction,
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
+  INBOUND_SYSTEM_EVENT_SKIPPED,
 } from "./instagram-message-event";
 
 const SENDER_ID = "17841451234567890";
@@ -152,6 +153,21 @@ describe("parseMessagingItem — echo messages", () => {
   });
 });
 
+describe("parseMessagingItem — system events", () => {
+  it.each([
+    ["DELIVERY", { delivery: { mids: [MESSAGE_MID] } }],
+    ["READ", { read: { watermark: TIMESTAMP } }],
+    ["REACTION", { reaction: { action: "react", emoji: "❤️" } }],
+  ])("classifies %s events without treating them as messages", (type, event) => {
+    const result = parseMessagingItem({ sender: { id: SENDER_ID }, ...event });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.systemEventType).toBe(type);
+    expect(result.diagnostics.hasSystemEvent).toBe(true);
+    expect(result.diagnostics.hasMessageText).toBe(false);
+  });
+});
+
 describe("parseMessagingItem — invalid inputs", () => {
   it("returns ok:false for null", () => {
     const result = parseMessagingItem(null);
@@ -204,6 +220,10 @@ describe("error reason constants", () => {
 
   it("INBOUND_MESSAGE_ECHO_SKIPPED is the correct reason for echo messages", () => {
     expect(INBOUND_MESSAGE_ECHO_SKIPPED).toBe("echo_message_skipped");
+  });
+
+  it("INBOUND_SYSTEM_EVENT_SKIPPED is the correct reason for receipts and reactions", () => {
+    expect(INBOUND_SYSTEM_EVENT_SKIPPED).toBe("inbound_system_event_skipped");
   });
 
   it("no_keyword_match is NOT used for inbound message events without automation", () => {

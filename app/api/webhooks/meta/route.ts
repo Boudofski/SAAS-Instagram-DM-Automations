@@ -65,6 +65,7 @@ import {
   classifyStoryInteraction,
   INBOUND_MESSAGE_NO_AUTOMATION,
   INBOUND_MESSAGE_ECHO_SKIPPED,
+  INBOUND_SYSTEM_EVENT_SKIPPED,
 } from "@/lib/instagram-message-event";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 
@@ -1544,7 +1545,7 @@ async function processEntry(
     const inboundMessageType = storyInteraction
       ? `STORY_${storyInteraction}`
       : actionPayload
-        ? "QUICK_REPLY"
+        ? parsed.ok && parsed.data.postback ? "POSTBACK" : "QUICK_REPLY"
         : inboundAttachment?.type?.toUpperCase() ?? "TEXT";
     const attachmentLabel = inboundAttachment?.type === "video"
       ? "Sent a video"
@@ -1574,6 +1575,32 @@ async function processEntry(
       await updateWebhookEvent(echoEvent.id, {
         status: "IGNORED",
         errorMessage: INBOUND_MESSAGE_ECHO_SKIPPED,
+        processedAt: new Date(),
+      });
+      continue;
+    }
+
+    // Receipts and standalone reactions share the messaging envelope but are
+    // not inbound DMs. Record them without profile calls, inbox rows, or a
+    // misleading missing-required-fields warning.
+    if (parsed.ok && parsed.data.systemEventType) {
+      const systemEvent = await createWebhookEvent({
+        eventType: "REAL_MESSAGE_EVENT",
+        eventSource: "META_REAL",
+        field: "messaging",
+        igAccountId: pageId,
+        igUserId: senderId,
+        payload: {
+          ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
+          ...parsed.diagnostics,
+          systemEventType: parsed.data.systemEventType,
+          entryId: entry?.id,
+          object: envelope?.object,
+        },
+      });
+      await updateWebhookEvent(systemEvent.id, {
+        status: "IGNORED",
+        errorMessage: INBOUND_SYSTEM_EVENT_SKIPPED,
         processedAt: new Date(),
       });
       continue;

@@ -216,7 +216,7 @@ function DmPreview({
         ) : (
           <>
             {showOpeningSequence ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={openingDmText} /><ReplyChip text={openingDmButtonText} /><OutgoingBubble text={openingDmButtonText} /></> : null}
-            {followGateRequired ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followRequestDmText} /><ReplyChip text={followRequestButtonText} /><OutgoingBubble text={followRequestButtonText} /></> : null}
+            {followGateRequired ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followRequestDmText} buttons={[{ label: "Follow", url: `https://www.instagram.com/${handle}/` }]} /><ReplyChip text={followRequestButtonText} /><OutgoingBubble text={followRequestButtonText} /></> : null}
             <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={message || "Your DM message"} buttons={linkButtons} />
           </>
         )}
