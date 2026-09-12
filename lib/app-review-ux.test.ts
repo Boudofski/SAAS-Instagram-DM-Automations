@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
 
-const readRepoFile = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
+const readRepoFile = (path: string) =>
+  readFileSync(join(process.cwd(), path), "utf8");
 
 describe("App Review-safe UX", () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -17,26 +18,45 @@ describe("App Review-safe UX", () => {
   });
 
   it("uses customer-facing Comment and DM labels without legacy External DM copy", () => {
-    expect(getCampaignModeLabel(true)).toEqual({ short: "Comment", full: "Comment reply" });
-    expect(getCampaignModeLabel(false)).toEqual({ short: "DM", full: "AP3K DM" });
-    expect(getCampaignModeLabel(true, true)).toEqual({ short: "Comment", full: "Comment reply mode" });
+    expect(getCampaignModeLabel(true)).toEqual({
+      short: "Comment",
+      full: "Comment reply",
+    });
+    expect(getCampaignModeLabel(false)).toEqual({
+      short: "DM",
+      full: "AP3K DM",
+    });
+    expect(getCampaignModeLabel(true, true)).toEqual({
+      short: "Comment",
+      full: "Comment reply mode",
+    });
   });
 
   it("keeps account connection and removal controls on the Instagram account page", () => {
-    const source = readRepoFile("app/(protected)/dashboard/[slug]/account/page.tsx");
+    const source = readRepoFile(
+      "app/(protected)/dashboard/[slug]/account/page.tsx",
+    );
     expect(source).toContain("AccountConnectionActions");
     expect(source).toContain("RemoveInstagramAccountButton");
     expect(source).toContain("One Instagram account per workspace");
   });
 
   it("uses browser-local timestamps for refreshed Instagram profiles", () => {
-    const source = readRepoFile("app/(protected)/dashboard/[slug]/account/page.tsx");
-    expect(source).toContain('import LocalTime from "@/components/global/local-time"');
-    expect(source).toContain('<LocalTime value={snapshot.fetchedAt} prefix="Profile refreshed" />');
+    const source = readRepoFile(
+      "app/(protected)/dashboard/[slug]/account/page.tsx",
+    );
+    expect(source).toContain(
+      'import LocalTime from "@/components/global/local-time"',
+    );
+    expect(source).toMatch(
+      /<LocalTime\s+value=\{snapshot\.fetchedAt\}\s+prefix="Profile refreshed"\s*\/>/,
+    );
   });
 
   it("keeps the automation list aligned with the approved Instagram response model", () => {
-    const source = readRepoFile("app/(protected)/dashboard/[slug]/automation/page.tsx");
+    const source = readRepoFile(
+      "app/(protected)/dashboard/[slug]/automation/page.tsx",
+    );
     expect(source).toContain("AutomationTable");
     expect(source).toContain("Automations");
     expect(source).not.toContain("External DM");

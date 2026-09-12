@@ -27,6 +27,7 @@ type Props = {
   canonicalConnected?: boolean;
   oauthSaveFailed?: boolean;
   directInstagramLogin?: boolean;
+  compact?: boolean;
 };
 
 function IntegrationCard({
@@ -39,6 +40,7 @@ function IntegrationCard({
   canonicalConnected,
   oauthSaveFailed = false,
   directInstagramLogin = false,
+  compact = false,
 }: Props) {
   const [isConnecting, setIsConnecting] = React.useState(false);
   const { userId } = useAuth();
@@ -66,16 +68,22 @@ function IntegrationCard({
       } else {
         toast.error(result.data ?? "Webhook refresh failed");
       }
-      await queryClient.invalidateQueries({ queryKey: ["webhook-health", userId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["webhook-health", userId],
+      });
     },
   });
 
-  const integrated = strategy === "INSTAGRAM"
-    ? getCanonicalInstagramIntegration(data?.data?.integrations)
-    : data?.data?.integrations.find((i: any) => i.name === strategy);
+  const integrated =
+    strategy === "INSTAGRAM"
+      ? getCanonicalInstagramIntegration(data?.data?.integrations)
+      : data?.data?.integrations.find((i: any) => i.name === strategy);
   const isInstagram = strategy === "INSTAGRAM";
   const onboarding = surface === "onboarding";
-  const connected = typeof canonicalConnected === "boolean" ? canonicalConnected : Boolean(integrated);
+  const connected =
+    typeof canonicalConnected === "boolean"
+      ? canonicalConnected
+      : Boolean(integrated);
   const displayIntegration = connected ? integrated : null;
   const displayTitle = onboarding && connected ? "Instagram connected" : title;
   const displayDescription = onboarding
@@ -88,8 +96,9 @@ function IntegrationCard({
       ? "Connect your Instagram Business or Creator account directly. AP3K subscribes comments and messages automatically after authorization."
       : description;
   const lastFailure = formatUserFacingMetaError(
-    health?.data?.subscription?.error ?? health?.data?.lastFailure?.errorMessage,
-    health?.data?.lastFailure?.eventType
+    health?.data?.subscription?.error ??
+      health?.data?.lastFailure?.errorMessage,
+    health?.data?.lastFailure?.eventType,
   );
 
   const onConnect = async () => {
@@ -112,18 +121,48 @@ function IntegrationCard({
   };
 
   return (
-    <div className={[
-      "w-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
-      onboarding ? "sm:p-6" : "",
-    ].join(" ")}>
-      <div className="flex w-full flex-col gap-5 sm:flex-row sm:items-start">
-        <div className="flex w-14 shrink-0 items-center justify-center self-start">{icon}</div>
+    <div
+      className={[
+        "w-full rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
+        compact ? "p-4 sm:p-5" : "p-5",
+        onboarding ? "sm:p-6" : "",
+      ].join(" ")}
+    >
+      <div
+        className={
+          compact
+            ? "flex w-full flex-col gap-3 sm:flex-row sm:items-center"
+            : "flex w-full flex-col gap-5 sm:flex-row sm:items-start"
+        }
+      >
+        <div
+          className={
+            compact
+              ? "hidden w-12 shrink-0 items-center justify-center sm:flex"
+              : "flex w-14 shrink-0 items-center justify-center self-start"
+          }
+        >
+          {icon}
+        </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-xl font-black leading-tight sm:text-2xl">{displayTitle}</h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">{displayDescription}</p>
+          {!compact && (
+            <h3 className="text-xl font-black leading-tight sm:text-2xl">
+              {displayTitle}
+            </h3>
+          )}
+          {!compact && (
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              {displayDescription}
+            </p>
+          )}
           {displayIntegration?.instagramId && (
-            <div className="mt-4 flex min-w-0 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
+            <div
+              className={[
+                "flex min-w-0 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10",
+                compact ? "" : "mt-4",
+              ].join(" ")}
+            >
               <InstagramAvatar
                 src={displayIntegration.profilePictureUrl}
                 username={displayIntegration.instagramUsername}
@@ -141,11 +180,13 @@ function IntegrationCard({
                     Instagram ID: {displayIntegration.instagramId}
                   </p>
                 )}
-                {!appReviewMode && !directInstagramLogin && displayIntegration.pageId && (
-                  <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                    Linked Page ID: {displayIntegration.pageId}
-                  </p>
-                )}
+                {!appReviewMode &&
+                  !directInstagramLogin &&
+                  displayIntegration.pageId && (
+                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                      Linked Page ID: {displayIntegration.pageId}
+                    </p>
+                  )}
               </div>
             </div>
           )}
@@ -153,7 +194,10 @@ function IntegrationCard({
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-52 sm:flex-wrap">
           {onboarding && connected && continueHref ? (
-            <Link href={continueHref} className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-center text-sm font-black text-white">
+            <Link
+              href={continueHref}
+              className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-center text-sm font-black text-white"
+            >
               Create my first campaign
             </Link>
           ) : (
@@ -162,7 +206,11 @@ function IntegrationCard({
               disabled={!isInstagram || isConnecting}
               className="ap3k-gradient-button min-h-11 w-full px-4 text-white disabled:opacity-60"
             >
-              {connected ? "Reconnect Instagram" : isConnecting ? "Connecting..." : "Connect Instagram"}
+              {connected
+                ? "Reconnect Instagram"
+                : isConnecting
+                  ? "Connecting..."
+                  : "Connect Instagram"}
             </Button>
           )}
           {onboarding && connected && (
@@ -176,17 +224,22 @@ function IntegrationCard({
               {isConnecting ? "Connecting..." : "Reconnect Instagram"}
             </Button>
           )}
-          {connected && !directInstagramLogin && !appReviewMode && !onboarding && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => resubscribe.mutate()}
-              disabled={resubscribe.isPending}
-              className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-            >
-              {resubscribe.isPending ? "Refreshing..." : "Refresh webhook subscription"}
-            </Button>
-          )}
+          {connected &&
+            !directInstagramLogin &&
+            !appReviewMode &&
+            !onboarding && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => resubscribe.mutate()}
+                disabled={resubscribe.isPending}
+                className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+              >
+                {resubscribe.isPending
+                  ? "Refreshing..."
+                  : "Refresh webhook subscription"}
+              </Button>
+            )}
           {connected && !appReviewMode && !onboarding && (
             <Button
               type="button"
@@ -200,14 +253,19 @@ function IntegrationCard({
         </div>
       </div>
 
-      {connected && appReviewMode && !oauthSaveFailed && (
+      {connected && appReviewMode && !oauthSaveFailed && !compact && (
         <div className="mt-5 w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-relaxed text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
-          Instagram connected. Comments and public replies are ready for campaigns.
+          Instagram connected. Comments and public replies are ready for
+          campaigns.
         </div>
       )}
-      {connected && appReviewMode && oauthSaveFailed && (
+      {connected && appReviewMode && oauthSaveFailed && !compact && (
         <div className="mt-5 w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
-          Current saved connection{displayIntegration?.instagramUsername ? `: @${displayIntegration.instagramUsername}` : ""}.
+          Current saved connection
+          {displayIntegration?.instagramUsername
+            ? `: @${displayIntegration.instagramUsername}`
+            : ""}
+          .
         </div>
       )}
 
@@ -217,25 +275,42 @@ function IntegrationCard({
             Connection health
           </p>
 
-          {displayIntegration?.instagramId && health?.data?.oauth?.reconnectRequired && (
-            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
-              <p className="font-bold">Reconnect Instagram</p>
-              <p className="mt-1 leading-relaxed">
-                AP3K matched your real comment, but the saved access token is missing or invalid.
-                Click <strong>Reconnect Instagram</strong> above to restore delivery.
-              </p>
-            </div>
-          )}
+          {displayIntegration?.instagramId &&
+            health?.data?.oauth?.reconnectRequired && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+                <p className="font-bold">Reconnect Instagram</p>
+                <p className="mt-1 leading-relaxed">
+                  AP3K matched your real comment, but the saved access token is
+                  missing or invalid. Click <strong>Reconnect Instagram</strong>{" "}
+                  above to restore delivery.
+                </p>
+              </div>
+            )}
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <HealthBadge label="OAuth valid" ok={Boolean(health?.data?.oauth?.tokenUsable)} />
-            <HealthBadge label="Token format" ok={Boolean(health?.data?.oauth?.tokenFormatValid)} />
+            <HealthBadge
+              label="OAuth valid"
+              ok={Boolean(health?.data?.oauth?.tokenUsable)}
+            />
+            <HealthBadge
+              label="Token format"
+              ok={Boolean(health?.data?.oauth?.tokenFormatValid)}
+            />
             <HealthBadge
               label="Webhook subscribed"
-              ok={Boolean(health?.data?.subscription?.subscribed) || Boolean(health?.data?.lastCommentWebhook)}
+              ok={
+                Boolean(health?.data?.subscription?.subscribed) ||
+                Boolean(health?.data?.lastCommentWebhook)
+              }
             />
-            <HealthBadge label="Comment delivery" ok={Boolean(health?.data?.lastCommentWebhook)} />
-            <HealthBadge label="Messaging" ok={!health?.data?.lastFailure?.errorMessage?.includes("dm_")} />
+            <HealthBadge
+              label="Comment delivery"
+              ok={Boolean(health?.data?.lastCommentWebhook)}
+            />
+            <HealthBadge
+              label="Messaging"
+              ok={!health?.data?.lastFailure?.errorMessage?.includes("dm_")}
+            />
           </div>
 
           <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -251,7 +326,9 @@ function IntegrationCard({
               label="Subscription attempted"
               value={
                 health?.data?.subscription?.lastAttemptedAt
-                  ? new Date(health.data.subscription.lastAttemptedAt).toLocaleString()
+                  ? new Date(
+                      health.data.subscription.lastAttemptedAt,
+                    ).toLocaleString()
                   : "Never"
               }
             />
@@ -263,20 +340,38 @@ function IntegrationCard({
                   : "Unknown"
               }
             />
-            <HealthItem label="Last webhook" value={formatHealth(health?.data?.lastWebhook)} />
-            <HealthItem label="Last comment" value={formatHealth(health?.data?.lastCommentWebhook)} />
-            <HealthItem label="Last failure" value={lastFailure.detail ? `${lastFailure.title} · ${lastFailure.detail}` : lastFailure.title} />
+            <HealthItem
+              label="Last webhook"
+              value={formatHealth(health?.data?.lastWebhook)}
+            />
+            <HealthItem
+              label="Last comment"
+              value={formatHealth(health?.data?.lastCommentWebhook)}
+            />
+            <HealthItem
+              label="Last failure"
+              value={
+                lastFailure.detail
+                  ? `${lastFailure.title} · ${lastFailure.detail}`
+                  : lastFailure.title
+              }
+            />
           </div>
 
           {!health?.data?.lastCommentWebhook && (
             <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-              No real comment webhook received yet. Reconnect Instagram, then test with a real comment from another Instagram account.
+              No real comment webhook received yet. Reconnect Instagram, then
+              test with a real comment from another Instagram account.
             </p>
           )}
           {health?.data?.lastCommentWebhook && (
             <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
-              Comment delivery active. Last comment: {new Date(health.data.lastCommentWebhook.createdAt).toLocaleString()}.
-              Outbound DM capability may still depend on Meta messaging approval.
+              Comment delivery active. Last comment:{" "}
+              {new Date(
+                health.data.lastCommentWebhook.createdAt,
+              ).toLocaleString()}
+              . Outbound DM capability may still depend on Meta messaging
+              approval.
             </p>
           )}
         </div>
@@ -308,7 +403,9 @@ function HealthItem({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
         {label}
       </p>
-      <p className="mt-1 break-words font-bold text-slate-800 dark:text-slate-100">{value}</p>
+      <p className="mt-1 break-words font-bold text-slate-800 dark:text-slate-100">
+        {value}
+      </p>
     </div>
   );
 }
@@ -318,7 +415,7 @@ function formatHealth(
     eventType: string;
     status: string;
     createdAt: Date | string;
-  } | null
+  } | null,
 ) {
   if (!event) return "None yet";
   const date = new Date(event.createdAt);
