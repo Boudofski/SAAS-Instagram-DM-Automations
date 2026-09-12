@@ -215,8 +215,8 @@ function DmPreview({
           </div>
         ) : (
           <>
-            {showOpeningSequence ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={openingDmText} /><ReplyChip text={openingDmButtonText} /><OutgoingBubble text={openingDmButtonText} /></> : null}
-            {followGateRequired ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followRequestDmText} buttons={[{ label: "Follow", url: `https://www.instagram.com/${handle}/` }]} /><ReplyChip text={followRequestButtonText} /><OutgoingBubble text={followRequestButtonText} /></> : null}
+            {showOpeningSequence ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={openingDmText} buttons={[{ label: openingDmButtonText, url: "#" }]} /><OutgoingBubble text={openingDmButtonText} /></> : null}
+            {followGateRequired ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followRequestDmText} buttons={[{ label: "Follow", url: `https://www.instagram.com/${handle}/` }, { label: followRequestButtonText, url: "#" }]} /><OutgoingBubble text={followRequestButtonText} /></> : null}
             <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={message || "Your DM message"} buttons={linkButtons} />
           </>
         )}
@@ -236,10 +236,6 @@ function IncomingBubble({ avatar, text, buttons = [] }: { avatar: ReactNode; tex
 
 function OutgoingBubble({ text }: { text: string }) {
   return <p dir="auto" className="ml-auto w-fit max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4">{text}</p>;
-}
-
-function ReplyChip({ text }: { text: string }) {
-  return <div dir="auto" className="ml-9 w-fit max-w-[78%] rounded-full bg-[#f1f2f5] px-4 py-2 text-[11px] font-black text-[#3f6fe5]">{text}</div>;
 }
 
 function Comment({ avatar, username, text, profilePictureUrl }: { avatar: string; username: string; text: string; profilePictureUrl?: string | null }) {

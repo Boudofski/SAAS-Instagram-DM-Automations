@@ -53,7 +53,7 @@ export default function DeliveryRules({
             Ask people to follow before sending the link
           </span>
           <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
-            Optional. Instagram shows a full-width Follow button, then the verification reply in the next message. AP3K sends the final DM only after the reply confirms the follow.
+            Optional. Instagram shows Follow and verification as two full-width buttons in the same message. AP3K sends the final DM only after verification confirms the follow.
           </span>
         </span>
         <span aria-hidden="true" className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition ${followGateRequired ? "bg-rf-purple" : "bg-slate-300 dark:bg-slate-700"}`}>
@@ -94,7 +94,7 @@ export default function DeliveryRules({
             </span>
           </div>
           <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
-            The Follow link is a full-width message button. The verification control stays a quick reply so Instagram reliably sends AP3K the tap event.
+            Both controls appear inside the message. AP3K verifies the callback subscription before using them and falls back safely if Meta does not confirm it.
           </p>
         </div>
       ) : null}

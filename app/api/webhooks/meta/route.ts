@@ -68,6 +68,7 @@ import {
   INBOUND_SYSTEM_EVENT_SKIPPED,
 } from "@/lib/instagram-message-event";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
+import { ensureInstagramButtonCallbacks } from "@/lib/instagram-postback-subscription";
 
 export const maxDuration = 60;
 
@@ -1416,11 +1417,13 @@ async function processEntry(
       const directLinkButtons = openingDmEnabled
         ? []
         : readLinkButtons(listener.quickReplies, listener.ctaButtonTitle, listener.ctaLink);
+      const fullWidthCallbacksReady = openingDmEnabled
+        ? await ensureInstagramButtonCallbacks(integrationRaw?.id, token)
+        : false;
       const dmResult = await sendInstagramCommentPrivateReply({
-        // Meta accepts and renders Instagram postback templates for this app,
-        // but does not deliver their tap events. Native quick replies arrive
-        // on the messages webhook with the same payload and are reliable.
-        preferQuickReplyForPostback: openingDmEnabled,
+        // Use the full-width postback only after both subscription layers are
+        // confirmed. Otherwise retain the native quick-reply fallback.
+        preferQuickReplyForPostback: openingDmEnabled && !fullWidthCallbacksReady,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1926,9 +1929,12 @@ async function processConfiguredMessageAutomation(params: {
       : "UNAVAILABLE" as const
     : "INITIAL" as const;
   const followVerificationButtonTitle = resolveFollowRequestButtonText(automation.listener.followRequestButtonText);
+  const fullWidthCallbacksReady = needsFollowRequest
+    ? await ensureInstagramButtonCallbacks(integration?.id, token)
+    : false;
 
   const result = await sendInstagramDirectResponse({
-    preferQuickReplyForPostback: needsFollowRequest,
+    preferQuickReplyForPostback: needsFollowRequest && !fullWidthCallbacksReady,
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,

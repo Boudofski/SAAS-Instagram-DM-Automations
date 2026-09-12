@@ -174,12 +174,10 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
           </div>
         ) : (
           <>
-            {data.openingDmEnabled ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || "Your opening DM"} /><QuickReplyChip text={data.openingDmButtonText || "Continue"} /><OutgoingBubble text={data.openingDmButtonText || "Continue"} /></> : null}
+            {data.openingDmEnabled ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || "Your opening DM"} buttons={[{ label: data.openingDmButtonText || "Continue", url: "#" }]} /><OutgoingBubble text={data.openingDmButtonText || "Continue"} /></> : null}
             {data.openingDmEnabled && data.followGateRequired ? (
               <>
-                <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followRequestDmText || "Follow this account to receive the link."} buttons={[{ label: "Follow", url: `https://www.instagram.com/${handle}/` }]} />
-                <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text="👇" />
-                <QuickReplyChip text={data.followRequestButtonText || "Following"} />
+                <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followRequestDmText || "Follow this account to receive the link."} buttons={[{ label: "Follow", url: `https://www.instagram.com/${handle}/` }, { label: data.followRequestButtonText || "Following", url: "#" }]} />
                 <OutgoingBubble text={data.followRequestButtonText || "Following"} />
               </>
             ) : null}
@@ -218,10 +216,6 @@ function IncomingBubble({ avatar, text, buttons = [] }: { avatar: React.ReactNod
 
 function OutgoingBubble({ text }: { text: string }) {
   return <p dir="auto" className="ml-auto w-fit max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4">{text}</p>;
-}
-
-function QuickReplyChip({ text }: { text: string }) {
-  return <div dir="auto" className="ml-9 w-fit max-w-[78%] rounded-full bg-[#f1f2f5] px-4 py-2 text-[11px] font-black text-[#3f6fe5]">{text}</div>;
 }
 
 function Comment({ avatar, username, text, profilePictureUrl }: { avatar: string; username: string; text: string; profilePictureUrl?: string | null }) {
