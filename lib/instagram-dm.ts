@@ -248,19 +248,20 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
       },
     },
   };
-  // Postback buttons can render without emitting a webhook. Keep the Follow
-  // action full-width, but use the callback type Instagram reliably delivers.
-  const reliable = addQuickReplies(
-    {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "button",
-          text,
-          buttons: [{ type: "web_url", title: "Follow", url: copy.profileUrl }],
-        },
+  // Instagram silently drops quick replies attached to a button template.
+  // Send the full-width Follow card and verification quick reply separately.
+  const reliable: InstagramMessagePayload = {
+    attachment: {
+      type: "template",
+      payload: {
+        template_type: "button",
+        text,
+        buttons: [{ type: "web_url", title: "Follow", url: copy.profileUrl }],
       },
     },
+  };
+  const verification = addQuickReplies(
+    { text: "👇" },
     automationId,
     [verificationButtonTitle],
     [verificationPayload]
@@ -271,7 +272,7 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
     [verificationButtonTitle],
     [verificationPayload]
   );
-  return { preferred, reliable, fallback, copy };
+  return { preferred, reliable, verification, fallback, copy };
 }
 
 function buildConfiguredPrivateReplyPayload(params: {
@@ -415,12 +416,25 @@ export async function sendInstagramDirectResponse(params: {
     }
 
     let responseMessage: InstagramMessagePayload;
+    let followGateCardSent = false;
     if (params.postbackButton) {
       const payload = buildPostbackButtonPayload(params.message, params.postbackButton);
       responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.followGatePrompt) {
       const payload = buildFollowGatePayload(params.automationId, params.followGatePrompt);
-      responseMessage = params.preferQuickReplyForPostback ? payload.reliable : payload.preferred;
+      if (params.preferQuickReplyForPostback) {
+        try {
+          const followCard = await postDirectPayload(params, payload.reliable);
+          if (followCard) messageIds.push(followCard);
+          followGateCardSent = true;
+          responseMessage = payload.verification;
+        } catch (error) {
+          if (!shouldTryTextFallback(error)) throw error;
+          responseMessage = payload.fallback;
+        }
+      } else {
+        responseMessage = payload.preferred;
+      }
     } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
       const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
@@ -456,9 +470,10 @@ export async function sendInstagramDirectResponse(params: {
           });
         }
       } else if (params.followGatePrompt && shouldTryTextFallback(error)) {
-        sent = await postDirectPayload(
-          params,
-          buildFollowGatePayload(params.automationId, params.followGatePrompt).fallback
+        const followPayload = buildFollowGatePayload(params.automationId, params.followGatePrompt);
+        sent = await postDirectPayload(params, followGateCardSent
+          ? { text: `Reply “${normalizeButtonTitle(params.followGatePrompt.verificationButtonTitle || "I followed ✅")}” to continue.` }
+          : followPayload.fallback
         );
       } else {
         if (params.responseFormat !== "LINK" && !params.ctaUrl && !params.linkButtons?.length) throw error;

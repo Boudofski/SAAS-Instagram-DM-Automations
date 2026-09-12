@@ -53,7 +53,7 @@ export default function DeliveryRules({
             Ask people to follow before sending the link
           </span>
           <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
-            Optional. Instagram shows a Follow button and a verification reply. AP3K sends the final DM only after the reply confirms the follow.
+            Optional. Instagram shows a full-width Follow button, then the verification reply in the next message. AP3K sends the final DM only after the reply confirms the follow.
           </span>
         </span>
         <span aria-hidden="true" className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition ${followGateRequired ? "bg-rf-purple" : "bg-slate-300 dark:bg-slate-700"}`}>
