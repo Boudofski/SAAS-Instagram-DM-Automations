@@ -66,6 +66,7 @@ export const createUser = async (
       },
       select: {
         id: true,
+        email: true,
         firstname: true,
         lastname: true,
         clerkId: true,
@@ -75,6 +76,8 @@ export const createUser = async (
     await createReferralAttribution(transaction, created.id, referralCode);
 
     return {
+      id: created.id,
+      email: created.email,
       firstname: created.firstname,
       lastname: created.lastname,
       clerkId: created.clerkId,

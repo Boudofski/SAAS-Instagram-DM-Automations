@@ -2,14 +2,19 @@ import { onUserInfo } from "@/actions/user";
 import ThemeToggle from "@/components/global/theme-toggle";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 import { ManageSignInSettings } from "@/components/settings/manage-sign-in-settings";
+import { EmailPreferences } from "@/components/settings/email-preferences";
+import { getEmailPreferences } from "@/lib/email/delivery";
 import { getEmailSettingsState } from "@/lib/settings-safety";
-import { LockKeyhole, Palette, ShieldAlert } from "lucide-react";
+import { LockKeyhole, Mail, Palette, ShieldAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 async function SettingsPage() {
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const emailState = getEmailSettingsState(user?.email);
+  const emailPreferences = user?.id
+    ? await getEmailPreferences(user.id)
+    : { productTips: true, weeklyReports: true, promotions: false };
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-6">
@@ -41,6 +46,14 @@ async function SettingsPage() {
           </div>
         </SettingsSection>
       </div>
+
+      <SettingsSection icon={<Mail className="h-4.5 w-4.5" />} label="Email notifications">
+        <div className="mb-4">
+          <h2 className="text-sm font-black text-slate-950 dark:text-white">Choose what reaches your inbox</h2>
+          <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">AP3K keeps optional email useful and gives you direct control.</p>
+        </div>
+        <EmailPreferences preferences={emailPreferences} />
+      </SettingsSection>
 
       <section className="animate-[ap3kDashboardRise_0.6s_ease-out_both] rounded-2xl border border-red-200 bg-red-50/70 p-4 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

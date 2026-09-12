@@ -30,6 +30,45 @@ model User {
   aiWorkspace         AiWorkspaceConfig?
   aiUsageEvents       AiUsageEvent[]
   aiChatMessages      AiChatMessage[]
+  emailPreference     EmailPreference?
+  emailDeliveries     EmailDelivery[]
+}
+
+model EmailPreference {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @unique @db.Uuid
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productTips   Boolean  @default(true)
+  weeklyReports Boolean  @default(true)
+  promotions    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model EmailDelivery {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String?               @db.Uuid
+  user              User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  templateId        String
+  category          String
+  recipient         String
+  subject           String
+  status            EMAIL_DELIVERY_STATUS @default(PENDING)
+  providerMessageId String?               @unique
+  idempotencyKey    String                @unique
+  errorCode         String?
+  errorMessage      String?
+  metadata          Json?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  openedAt          DateTime?
+  clickedAt         DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([templateId, createdAt])
 }
 
 model Subscription {
@@ -533,6 +572,19 @@ enum MESSAGE_TYPE {
 
 enum SEND_STATUS {
   SENT
+  FAILED
+  SKIPPED
+}
+
+enum EMAIL_DELIVERY_STATUS {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+  SUPPRESSED
   FAILED
   SKIPPED
 }

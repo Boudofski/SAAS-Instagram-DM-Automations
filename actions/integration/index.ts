@@ -59,6 +59,7 @@ import {
   normalizeMetaOAuthState,
 } from "@/lib/meta-oauth-state";
 import { INSTAGRAM_WEBHOOK_FIELDS_CSV } from "@/lib/instagram-webhook-subscriptions";
+import { notifyInstagramConnectedEmail } from "@/lib/email/events";
 
 const FACEBOOK_BUSINESS_OAUTH_URL = "https://www.facebook.com/v25.0/dialog/oauth";
 
@@ -400,6 +401,12 @@ async function completeInstagramLoginIntegration(input: {
     }
   } catch {}
 
+  await notifyInstagramConnectedEmail({
+    clerkId: workspaceClerkId,
+    instagramId: profile.id,
+    instagramUsername: profile.username,
+  });
+
   return { status: 200, data: { ...create, reconnectImpact } };
 }
 
@@ -644,6 +651,12 @@ export const onIntegrate = async (code: string, state?: string | null) => {
         await refreshInstagramProfileSnapshotForUser(workspaceClerkId, newIntegrationId, {});
       }
     } catch {}
+
+    await notifyInstagramConnectedEmail({
+      clerkId: workspaceClerkId,
+      instagramId: resolved.instagramBusinessAccountId,
+      instagramUsername: resolved.instagramUsername,
+    });
 
     return { status: 200, data: { ...create, reconnectImpact } };
   } catch (error) {
@@ -1029,6 +1042,12 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
         selectedInstagramUsername: selected.instagramUsername,
         igAccountSource: selected.igAccountSource,
         subscribed: subscriptionAttempt.subscribed,
+      });
+
+      await notifyInstagramConnectedEmail({
+        clerkId: workspaceClerkId,
+        instagramId: selected.instagramBusinessAccountId,
+        instagramUsername: selected.instagramUsername,
       });
     }
   } catch (error) {

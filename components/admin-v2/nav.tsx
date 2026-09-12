@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Instagram,
   Megaphone,
+  MailCheck,
   Menu,
   ScrollText,
   ShieldCheck,
@@ -35,6 +36,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Accounts", href: "/admin/accounts", icon: Instagram },
       { label: "Automations", href: "/admin/campaigns", icon: Megaphone },
       { label: "Billing", href: "/admin/billing", icon: BadgeDollarSign },
+      { label: "Email Center", href: "/admin/emails", icon: MailCheck },
     ],
   },
   {

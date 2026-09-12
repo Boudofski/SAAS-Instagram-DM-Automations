@@ -3,6 +3,7 @@
 import { dashboardPath } from "@/lib/dashboard";
 import { applyPendingReferralRewards, REFERRAL_COOKIE } from "@/lib/referral-program";
 import { stripe } from "@/lib/stripe";
+import { notifyWelcomeEmail } from "@/lib/email/events";
 import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -238,6 +239,13 @@ export const ensureCurrentUserProfile = async () => {
         currentReferralCode()
       );
       clearReferralCode();
+
+      await notifyWelcomeEmail({
+        id: created.id,
+        clerkId: created.clerkId,
+        email: created.email,
+        firstname: created.firstname,
+      });
 
       console.log("[user-provision] AP3K profile created", {
         authenticatedUserPresent: true,

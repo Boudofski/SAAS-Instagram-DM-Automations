@@ -336,6 +336,64 @@ describe("processStripeEvent", () => {
     });
   });
 
+  it("emits deterministic lifecycle emails after billing state is synchronized", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyCustomerEmail = vi.fn(async () => undefined);
+    deps.value.notifyCustomerEmail = notifyCustomerEmail;
+
+    await processStripeEvent(
+      event("checkout.session.completed", checkout({ customer: "cus_alpha" }), "evt_checkout"),
+      deps.value
+    );
+    await processStripeEvent(
+      event(
+        "invoice.payment_failed",
+        { id: "in_failed", parent: { subscription_details: { subscription: "sub_test" } } },
+        "evt_failed"
+      ),
+      deps.value
+    );
+    await processStripeEvent(
+      event("customer.subscription.deleted", subscription({ customer: "cus_alpha" }), "evt_deleted"),
+      deps.value
+    );
+
+    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      userId: USER_A.id,
+      templateId: "plan_activated",
+      stripeEventId: "evt_checkout",
+      planName: "PRO",
+    }));
+    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      userId: USER_A.id,
+      templateId: "payment_failed",
+      stripeEventId: "evt_failed",
+    }));
+    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(3, expect.objectContaining({
+      userId: USER_A.id,
+      templateId: "subscription_canceled",
+      stripeEventId: "evt_deleted",
+    }));
+  });
+
+  it("never rolls back billing when the customer email provider fails", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    deps.value.notifyCustomerEmail = vi.fn(async () => {
+      throw new Error("provider unavailable");
+    });
+
+    await expect(
+      processStripeEvent(
+        event("customer.subscription.deleted", subscription({ customer: "cus_alpha" }), "evt_delete_email_failure"),
+        deps.value
+      )
+    ).resolves.toMatchObject({ outcome: "processed" });
+    expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, {
+      customerId: "cus_alpha",
+      plan: "FREE",
+    });
+  });
+
   it("reverses referral rewards for refunded and disputed invoice charges", async () => {
     const deps = dependencies({});
 
