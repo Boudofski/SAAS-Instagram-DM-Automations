@@ -3,9 +3,6 @@ import PricingExperience from "@/components/global/pricing-experience";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { BLOG_POSTS } from "@/lib/blog";
-import { getAuthenticatedLandingRedirect } from "@/lib/landing-redirect";
-import { client } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 import {
   ArrowRight,
   CheckCircle2,
@@ -18,7 +15,6 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 const VALUE_CARDS = [
   {
@@ -157,25 +153,7 @@ function ProductVideo({
   );
 }
 
-export default async function LandingPage() {
-  const authUser = await currentUser();
-  const profile = authUser
-    ? await client.user.findUnique({
-        where: { clerkId: authUser.id },
-        select: {
-          clerkId: true,
-          integrations: {
-            where: { name: "INSTAGRAM" },
-            select: { id: true, name: true, instagramId: true, status: true, reconnectRequired: true, token: true },
-          },
-          automations: { where: { archivedAt: null }, take: 1, select: { id: true } },
-        },
-      })
-    : null;
-
-  const redirectTo = getAuthenticatedLandingRedirect(authUser, profile);
-  if (redirectTo) redirect(redirectTo);
-
+export default function LandingPage() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema).replace(/</g, "\\u003c") }} />

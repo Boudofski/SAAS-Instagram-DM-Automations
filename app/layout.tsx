@@ -1,7 +1,7 @@
 import ReactQueryProvider from "@/providers/react-query-provider";
 import ReduxProvider from "@/providers/redux-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
-import TrackingScripts from "@/components/global/tracking-scripts";
+import ConsentAwareAnalytics from "@/components/global/consent-aware-analytics";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
@@ -58,7 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </ReduxProvider>
           <Toaster />
         </ThemeProvider>
-        <TrackingScripts />
+        <ConsentAwareAnalytics />
       </body>
     </html>
   );

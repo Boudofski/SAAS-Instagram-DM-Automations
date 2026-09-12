@@ -460,6 +460,16 @@ model WebhookEvent {
   @@index([eventSource, createdAt])
 }
 
+model WebhookRateLimitBucket {
+  key         String   @db.VarChar(64)
+  windowStart DateTime
+  count       Int      @default(1)
+  updatedAt   DateTime @updatedAt
+
+  @@id([key, windowStart])
+  @@index([updatedAt])
+}
+
 model MessageLog {
   id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   automationId  String       @db.Uuid

@@ -1,4 +1,5 @@
 import AP3KLogo from "@/components/global/ap3k-logo";
+import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
 import Link from "next/link";
 
 export default function WebsiteFooter() {
@@ -35,7 +36,10 @@ export default function WebsiteFooter() {
               <p className="font-black uppercase tracking-[0.16em] text-slate-400">Legal</p>
               <Link href="/privacy" className={linkClass}>Privacy</Link>
               <Link href="/terms" className={linkClass}>Terms</Link>
+              <Link href="/cookies" className={linkClass}>Cookies</Link>
+              <Link href="/refund-policy" className={linkClass}>Refunds</Link>
               <Link href="/data-deletion" className={linkClass}>Data Deletion</Link>
+              <CookiePreferencesButton className={linkClass} />
             </div>
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-400">Support</p>
@@ -46,7 +50,7 @@ export default function WebsiteFooter() {
           </div>
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
-          <p className="text-xs text-slate-400">© 2026 AP3K. Instagram comment and DM automation for professional accounts.</p>
+          <p className="text-xs text-slate-400">© 2026 AP3K, operated by CAFUCCI LTD. Instagram automation for professional accounts.</p>
         </div>
       </div>
     </footer>

@@ -18,12 +18,32 @@ const sections = [
     body: "AP3K stores campaign settings, keywords, selected post or media identifiers, Comment reply configuration, DM configuration, CTA links, lead records, activity and delivery records, account information, and subscription data needed to operate the service.",
   },
   {
+    title: "Account, Billing, and Support Data",
+    body: "We process account identifiers, email addresses, subscription status, invoice references, support correspondence, and security or audit records needed to provide and protect AP3K. Payment-card details are handled by Stripe and are not stored by AP3K.",
+  },
+  {
     title: "How We Use Instagram Data",
     body: "AP3K uses Instagram data only to provide comment automation, the Comment replies and DMs you configure, campaign analytics, lead tracking, account management, and related product features requested by the account owner.",
   },
   {
     title: "What We Do Not Do",
     body: "AP3K does not sell Instagram data, scrape Instagram, request your Instagram password, or use browser bots to imitate user activity. Connections are authorized through supported Instagram API flows for professional accounts.",
+  },
+  {
+    title: "Service Providers",
+    body: "AP3K uses service providers including Meta for Instagram access, Clerk for authentication, Stripe for billing, Neon for database hosting, Vercel for application hosting, Resend for transactional email, and configured AI providers when AI features are enabled. Each provider processes only the information needed for its role.",
+  },
+  {
+    title: "Cookies and Measurement",
+    body: "Necessary browser storage supports essential site functions. Optional analytics and marketing tools load only after you accept them through AP3K's cookie controls. You can withdraw that choice from Cookie preferences in the website footer.",
+  },
+  {
+    title: "Retention and Security",
+    body: "AP3K retains information while an account is active and for limited periods afterward when needed for billing, fraud prevention, legal obligations, dispute handling, backups, and security. We use access controls, encryption in transit, signed webhooks, and operational logging, but no online service can guarantee absolute security.",
+  },
+  {
+    title: "Your Choices and Rights",
+    body: "Depending on your location, you may have rights to access, correct, export, restrict, object to, or delete personal information. You may also disconnect Instagram, delete your AP3K account, manage email preferences, and withdraw optional tracking consent.",
   },
   {
     title: "Disconnect And Delete",
@@ -41,7 +61,7 @@ export default function PrivacyPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Privacy Policy</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: August 27, 2026. This policy explains how AP3K handles data used for Instagram comment automation, Comment replies, DMs, analytics, and account management.
+            Last updated: September 12, 2026. AP3K is operated by CAFUCCI LTD. This policy explains how AP3K handles data used for Instagram automation, billing, analytics, and account management.
           </p>
         </div>
 

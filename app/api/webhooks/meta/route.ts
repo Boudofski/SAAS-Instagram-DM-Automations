@@ -69,6 +69,10 @@ import {
 } from "@/lib/instagram-message-event";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 import { ensureInstagramButtonCallbacks } from "@/lib/instagram-postback-subscription";
+import {
+  cleanupWebhookRateLimitBuckets,
+  consumeWebhookAccountRateLimit,
+} from "@/lib/webhook-rate-limit";
 
 export const maxDuration = 60;
 
@@ -154,12 +158,6 @@ export async function POST(req: NextRequest) {
     hasSignature: req.headers.has("x-hub-signature-256"),
     routeVersion: WEBHOOK_ROUTE_VERSION,
   });
-
-  const rateKey = getRateLimitKey(req);
-  if (isRateLimited(`POST:${rateKey}`)) {
-    console.warn("[webhook] request rate limited", { rateKey });
-    return NextResponse.json({ received: true, rate_limited: true }, { status: 200 });
-  }
 
   try {
     const bodyRead = await readBodyWithLimit(req, WEBHOOK_MAX_BODY_BYTES);
@@ -265,26 +263,61 @@ export async function POST(req: NextRequest) {
       return ok();
     }
 
-    // Meta expects a fast acknowledgement. Keep all delivery work alive after
-    // the response so configured 3–30 second delays never invite webhook
-    // retries or duplicate replies.
-    const backgroundProcessing = Promise.all(
-      entries.map((entry: any) =>
-        processEntry(entry, body, signatureResult.verified, requestMeta)
-      )
-    ).catch(async (error) => {
-        console.error("AP3K_WEBHOOK_BACKGROUND_ERROR", {
+    if (!isDryRun) {
+      try {
+        const rateLimit = await consumeWebhookAccountRateLimit(
+          entries.map((entry: any) => String(entry?.id ?? ""))
+        );
+        if (!rateLimit.allowed) {
+          console.warn("[webhook] account rate limited", {
+            accountCount: entries.length,
+            highestCount: rateLimit.highestCount,
+            limit: rateLimit.limit,
+          });
+          await createWebhookEvent({
+            eventType: "WEBHOOK_ACCOUNT_RATE_LIMITED",
+            eventSource: "META_REAL",
+            status: "IGNORED",
+            igAccountId: entries[0]?.id,
+            payload: {
+              routeVersion: WEBHOOK_ROUTE_VERSION,
+              highestCount: rateLimit.highestCount,
+              limit: rateLimit.limit,
+            },
+          }).catch(() => undefined);
+          return ok();
+        }
+      } catch (error) {
+        // Fail open when the limiter store is unavailable. Delivery and usage
+        // enforcement remain safer than silently dropping a legitimate event.
+        console.error("AP3K_WEBHOOK_RATE_LIMIT_ERROR", {
           message: error instanceof Error ? error.message : String(error),
           routeVersion: WEBHOOK_ROUTE_VERSION,
         });
-        await createWebhookEvent({
-          eventType: "WEBHOOK_BACKGROUND_ERROR",
-          eventSource: "META_REAL",
-          status: "FAILED",
-          errorMessage: error instanceof Error ? error.message : String(error),
-          payload: { routeVersion: WEBHOOK_ROUTE_VERSION },
-        }).catch(() => undefined);
+      }
+    }
+
+    // Meta expects a fast acknowledgement. Keep all delivery work alive after
+    // the response so configured 3–30 second delays never invite webhook
+    // retries or duplicate replies.
+    const backgroundProcessing = Promise.all([
+      ...entries.map((entry: any) =>
+        processEntry(entry, body, signatureResult.verified, requestMeta)
+      ),
+      cleanupWebhookRateLimitBuckets().catch(() => 0),
+    ]).catch(async (error) => {
+      console.error("AP3K_WEBHOOK_BACKGROUND_ERROR", {
+        message: error instanceof Error ? error.message : String(error),
+        routeVersion: WEBHOOK_ROUTE_VERSION,
       });
+      await createWebhookEvent({
+        eventType: "WEBHOOK_BACKGROUND_ERROR",
+        eventSource: "META_REAL",
+        status: "FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        payload: { routeVersion: WEBHOOK_ROUTE_VERSION },
+      }).catch(() => undefined);
+    });
 
     if (process.env.VERCEL === "1") {
       waitUntil(backgroundProcessing);
