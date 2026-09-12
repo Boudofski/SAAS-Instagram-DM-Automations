@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOwnerAdmin } from "@/lib/admin";
 import { getApplicationUrl } from "@/lib/app-url";
+import { dashboardEntryPath } from "@/lib/dashboard";
 import { isEmailTemplateId } from "@/lib/email/catalog";
 import { renderAp3kEmail } from "@/lib/email/render";
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   const rendered = await renderAp3kEmail({
     templateId,
     appUrl,
-    preferenceUrl: `${appUrl}/dashboard`,
+    preferenceUrl: `${appUrl}${dashboardEntryPath("/settings#email-preferences")}`,
     recipientHint: "customer@example.com",
     context: {
       firstName: "Alex",

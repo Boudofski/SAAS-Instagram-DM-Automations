@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { Prisma } from "@prisma/client";
 import { client } from "@/lib/prisma";
 import { getApplicationUrl } from "@/lib/app-url";
+import { dashboardEntryPath } from "@/lib/dashboard";
 import { generateAiEmailPersonalization } from "@/lib/ai-reply";
 import { buildEmailTemplate, EMAIL_TEMPLATES, type EmailPreferenceKey, type EmailTemplateContext, type EmailTemplateId } from "@/lib/email/catalog";
 import { renderAp3kEmail } from "@/lib/email/render";
@@ -85,7 +86,7 @@ export async function sendAp3kEmail(input: {
   }
 
   const appUrl = getApplicationUrl();
-  const preferenceUrl = `${appUrl}/dashboard`;
+  const preferenceUrl = `${appUrl}${dashboardEntryPath("/settings#email-preferences")}`;
   const context = input.context ?? {};
   let content = buildEmailTemplate(input.templateId, context, appUrl);
   const allowed = await preferenceAllows(input.userId, definition.preference);
