@@ -12,7 +12,7 @@ import {
 
 describe("existing-account button subscription repair", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     process.env.INSTAGRAM_APP_ID = "app-1";
     process.env.INSTAGRAM_APP_SECRET = "secret-1";
     delete process.env.META_APP_ID;
@@ -55,13 +55,9 @@ describe("existing-account button subscription repair", () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
   });
 
-  it("falls back when the account is ready but the app audit is unavailable", async () => {
-    process.env.INSTAGRAM_APP_ID = "account-ready-app-audit-unavailable";
-    vi.mocked(axios.get)
-      .mockResolvedValueOnce({ data: { data: [{ id: "account-ready-app-audit-unavailable", subscribed_fields: ["comments", "messages", "messaging_postbacks"] }] } })
-      .mockRejectedValueOnce(new Error("app token endpoint unavailable"));
-
+  it("uses the safe fallback for Instagram Login even when subscriptions claim postback support", async () => {
     await expect(ensureInstagramButtonCallbacks("account-ready-audit-failed", "token")).resolves.toBe(false);
+    expect(axios.get).not.toHaveBeenCalled();
     expect(axios.post).not.toHaveBeenCalled();
   });
 
