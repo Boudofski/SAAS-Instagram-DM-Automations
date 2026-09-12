@@ -48,6 +48,7 @@ import {
   activateConnectionBenefits,
   applyPendingReferralRewards,
   createReferralAttribution,
+  getReferralDashboard,
   normalizeReferralCode,
   qualifyReferralPayment,
   reverseReferralRewardForInvoice,
@@ -233,5 +234,36 @@ describe("referral program", () => {
       expect.objectContaining({ amount: 900, currency: "usd" }),
       { idempotencyKey: "ap3k-referral-reversal-reward-1" }
     );
+  });
+
+  it("shows accurate referral totals and excludes reversed credit", async () => {
+    mocks.client.referralPartner.findUnique.mockResolvedValue({
+      id: "partner-1", userId: "referrer-1", code: "AP3K-AB12CD34", founderRank: null,
+    });
+    mocks.client.referralPartner.count.mockResolvedValue(2);
+    mocks.client.referralAttribution.groupBy.mockResolvedValue([
+      { status: "SIGNED_UP", _count: { _all: 3 } },
+      { status: "CONNECTED", _count: { _all: 2 } },
+      { status: "QUALIFIED", _count: { _all: 1 } },
+      { status: "WAITLISTED", _count: { _all: 1 } },
+    ]);
+    mocks.client.referralReward.groupBy.mockResolvedValue([
+      { status: "PENDING", _count: { _all: 1 }, _sum: { amountCents: 900 } },
+      { status: "APPLIED", _count: { _all: 1 }, _sum: { amountCents: 900 } },
+      { status: "REVERSED", _count: { _all: 1 }, _sum: { amountCents: 900 } },
+    ]);
+    mocks.client.referralAttribution.findMany.mockResolvedValue([]);
+
+    const result = await getReferralDashboard("referrer-1");
+
+    expect(result.stats).toMatchObject({
+      invited: 7,
+      connected: 4,
+      qualified: 1,
+      creditEarnedCents: 1800,
+      creditPendingCents: 900,
+      creditAppliedCents: 900,
+    });
+    expect(result.founderSlotsRemaining).toBe(8);
   });
 });
