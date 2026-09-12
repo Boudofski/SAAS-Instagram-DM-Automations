@@ -1,3 +1,5 @@
+import { dashboardEntryPath } from "@/lib/dashboard";
+
 export const EMAIL_TEMPLATE_IDS = [
   "welcome",
   "connect_instagram",
@@ -102,8 +104,8 @@ function dashboard(appUrl: string) {
   return `${appUrl}/dashboard`;
 }
 
-function billing(appUrl: string) {
-  return `${appUrl}/dashboard`;
+function workspace(appUrl: string, destination: string) {
+  return `${appUrl}${dashboardEntryPath(destination)}`;
 }
 
 export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> = {
@@ -161,8 +163,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: `${username(context)} is ready.`,
       paragraphs: ["AP3K can now use the permissions you approved to monitor eligible comments and send the replies and DMs you configure."],
       callout: { title: "Connection confirmed", text: "Build an automation, run the test, then activate it when every message and link looks right.", tone: "success" },
-      cta: { label: "Create automation", url: context.actionUrl || `${appUrl}/dashboard` },
-      secondaryCta: { label: "Manage connection", url: context.secondaryUrl || `${appUrl}/dashboard` },
+      cta: { label: "Create automation", url: context.actionUrl || workspace(appUrl, "/automation/new") },
+      secondaryCta: { label: "Manage connection", url: context.secondaryUrl || workspace(appUrl, "/integrations") },
     }),
   },
   automation_activated: {
@@ -179,7 +181,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: `${automation(context)} is active.`,
       paragraphs: [`AP3K is now monitoring the configured trigger for ${username(context)}. Replies and DMs will follow the exact steps saved in your automation.`],
       callout: { title: "Keep an eye on the first runs", text: "Open Activity after the first real comment to confirm the public reply, DM, link button, and follow gate behaved as expected.", tone: "success" },
-      cta: { label: "View automation", url: context.actionUrl || dashboard(appUrl) },
+      cta: { label: "View automation", url: context.actionUrl || workspace(appUrl, "/automation") },
     }),
   },
   automation_needs_attention: {
@@ -196,7 +198,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: `${automation(context)} needs your attention.`,
       paragraphs: ["AP3K detected a problem that may prevent replies or DMs from being delivered."],
       callout: { title: "What AP3K found", text: context.failureReason?.trim() || "The automation could not complete a recent action. Open its Activity panel for the latest safe diagnostic.", tone: "warning" },
-      cta: { label: "Review automation", url: context.actionUrl || dashboard(appUrl) },
+      cta: { label: "Review automation", url: context.actionUrl || workspace(appUrl, "/automation") },
       closing: "Do not reactivate the automation until its test completes successfully.",
     }),
   },
@@ -215,7 +217,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       paragraphs: ["AP3K no longer has the valid Meta authorization required to monitor comments or send messages. Affected automations remain protected until the connection is restored."],
       bullets: ["Sign in to the correct Facebook and Instagram accounts", "Approve the requested Instagram permissions", "Return to AP3K and run an automation test"],
       callout: { title: "Your password stays with Meta", text: "Reconnect only through the official Meta window opened from AP3K. Never send passwords or access tokens by email.", tone: "warning" },
-      cta: { label: "Reconnect Instagram", url: context.actionUrl || dashboard(appUrl) },
+      cta: { label: "Reconnect Instagram", url: context.actionUrl || workspace(appUrl, "/integrations") },
     }),
   },
   usage_80_percent: {
@@ -235,7 +237,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
         { label: "Actions used", value: formatNumber(context.actionsUsed), detail: `of ${formatNumber(context.actionLimit)}` },
         { label: "Usage", value: `${Math.max(0, Math.min(100, Math.round(context.usagePercent ?? 80)))}%` },
       ],
-      cta: { label: "Review usage", url: context.actionUrl || billing(appUrl) },
+      cta: { label: "Review usage", url: context.actionUrl || workspace(appUrl, "/billing") },
     }),
   },
   usage_limit_reached: {
@@ -252,7 +254,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: "Automated sends are paused.",
       paragraphs: [`You have used ${formatNumber(context.actionsUsed)} of ${formatNumber(context.actionLimit)} monthly automated actions. AP3K will not attempt additional billable sends until the allowance resets or the plan is upgraded.`],
       callout: { title: "Nothing is lost", text: "Your automations and configuration remain saved. They can resume after the monthly reset or a successful plan change.", tone: "danger" },
-      cta: { label: "View plans and usage", url: context.actionUrl || billing(appUrl) },
+      cta: { label: "View plans and usage", url: context.actionUrl || workspace(appUrl, "/billing") },
     }),
   },
   trial_ending: {
@@ -269,7 +271,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: "Keep your automations moving.",
       paragraphs: [`Your AP3K trial allowance ends${context.trialEndsAt ? ` on ${context.trialEndsAt}` : " soon"}. After it ends, your workspace will use the limits included with its current plan.`],
       callout: { title: "No surprise charge", text: "AP3K does not charge a card unless you explicitly complete Stripe checkout for a paid subscription.", tone: "neutral" },
-      cta: { label: "Compare plans", url: context.actionUrl || billing(appUrl) },
+      cta: { label: "Compare plans", url: context.actionUrl || `${appUrl}/pricing` },
     }),
   },
   plan_activated: {
@@ -286,7 +288,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: `Welcome to AP3K ${plan(context)}.`,
       paragraphs: ["Stripe confirmed the subscription and AP3K applied the plan limits to your workspace."],
       callout: { title: "Receipts and invoices", text: "Stripe sends the official payment receipt. You can manage payment details, invoices, and cancellation from AP3K Billing.", tone: "success" },
-      cta: { label: "Open billing", url: context.actionUrl || billing(appUrl) },
+      cta: { label: "Open billing", url: context.actionUrl || workspace(appUrl, "/billing") },
     }),
   },
   payment_failed: {
@@ -303,7 +305,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: "Your latest payment did not complete.",
       paragraphs: ["Stripe could not collect the latest subscription payment. Update the payment method in the secure billing portal to prevent service interruption."],
       callout: { title: "Protect your payment details", text: "AP3K support will never ask you to email card numbers, passwords, or one-time codes.", tone: "danger" },
-      cta: { label: "Manage billing securely", url: context.actionUrl || billing(appUrl) },
+      cta: { label: "Manage billing securely", url: context.actionUrl || workspace(appUrl, "/billing") },
     }),
   },
   subscription_canceled: {
@@ -319,7 +321,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       eyebrow: "SUBSCRIPTION UPDATE",
       headline: "Your cancellation is confirmed.",
       paragraphs: [`Your AP3K ${plan(context)} subscription was canceled${context.periodEnd ? ` and paid access remains available until ${context.periodEnd}` : ""}. Your workspace data and automation drafts remain saved subject to AP3K's retention policy.`],
-      cta: { label: "View billing", url: context.actionUrl || billing(appUrl) },
+      cta: { label: "View billing", url: context.actionUrl || workspace(appUrl, "/billing") },
       closing: "You can choose a new plan from Billing whenever you are ready.",
     }),
   },
@@ -336,7 +338,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       eyebrow: "REFERRAL QUALIFIED",
       headline: "Your referral converted.",
       paragraphs: [`${context.referredName?.trim() || "A referred AP3K user"} completed a qualifying paid purchase. The reward is now being processed under the referral-program rules.`],
-      cta: { label: "View referrals", url: context.actionUrl || dashboard(appUrl) },
+      cta: { label: "View referrals", url: context.actionUrl || workspace(appUrl, "/referrals") },
     }),
   },
   referral_reward: {
@@ -353,7 +355,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: "You earned an AP3K reward.",
       paragraphs: [`Your referral reward${context.rewardLabel ? `—${context.rewardLabel}—` : ""} was applied successfully. Open the referral dashboard for the complete status.`],
       callout: { title: "Thank you for sharing AP3K", text: "Qualified rewards are tied to real paid conversions and may be reversed if the qualifying payment is refunded or disputed.", tone: "success" },
-      cta: { label: "View reward", url: context.actionUrl || dashboard(appUrl) },
+      cta: { label: "View reward", url: context.actionUrl || workspace(appUrl, "/referrals") },
     }),
   },
   support_received: {
@@ -387,8 +389,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       eyebrow: "AP3K SUPPORT",
       headline: `Here is your answer${firstName(context)}.`,
       paragraphs: [context.supportReply?.trim() || "Open the AP3K Help Center for product guides covering Instagram connections, automations, AI replies, billing, and troubleshooting."],
-      cta: { label: "Open AP3K", url: context.actionUrl || dashboard(appUrl) },
-      secondaryCta: { label: "Browse Help Center", url: context.secondaryUrl || `${appUrl}/help` },
+      cta: { label: "Open Help Center", url: context.actionUrl || `${appUrl}/help` },
+      secondaryCta: { label: "Open dashboard", url: context.secondaryUrl || dashboard(appUrl) },
       closing: "AI-generated support can make mistakes. Verify account-specific or billing changes in your dashboard.",
     }),
   },
@@ -428,7 +430,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       headline: `Do not leave Instagram demand unanswered${firstName(context)}.`,
       paragraphs: ["Your AP3K workspace is ready, but no active automation is handling comments yet. Start with one post, one trigger, and one promised link."],
       bullets: ["Choose Any Comment or a specific keyword", "Preview every message on the phone mockup", "Run a real test before activating"],
-      cta: { label: "Finish an automation", url: context.actionUrl || dashboard(appUrl) },
+      cta: { label: "Finish an automation", url: context.actionUrl || workspace(appUrl, "/automation/new") },
     }),
   },
 };

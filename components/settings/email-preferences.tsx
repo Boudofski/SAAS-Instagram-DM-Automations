@@ -16,7 +16,7 @@ const options = [
 
 export function EmailPreferences({ preferences }: Props) {
   return (
-    <form action={updateEmailPreferencesAction} className="space-y-4">
+    <form id="email-preferences" action={updateEmailPreferencesAction} className="scroll-mt-6 space-y-4">
       <div className="space-y-2">
         {options.map((option) => (
           <label key={option.name} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3 transition hover:border-violet-300 dark:border-white/[0.07] dark:bg-white/[0.025] dark:hover:border-violet-400/30">

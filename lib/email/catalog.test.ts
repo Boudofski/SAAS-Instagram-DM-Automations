@@ -46,4 +46,40 @@ describe("AP3K email catalog", () => {
     expect(isEmailTemplateId("reset_every_password")).toBe(false);
     expect(isEmailTemplateId(undefined)).toBe(false);
   });
+
+  it("routes every default CTA to the action promised by its label", () => {
+    const expectedPrimaryUrls = {
+      welcome: "/onboarding/connect",
+      connect_instagram: "/onboarding/connect",
+      instagram_connected: "/dashboard?next=%2Fautomation%2Fnew",
+      automation_activated: "/dashboard?next=%2Fautomation",
+      automation_needs_attention: "/dashboard?next=%2Fautomation",
+      instagram_reconnect: "/dashboard?next=%2Fintegrations",
+      usage_80_percent: "/dashboard?next=%2Fbilling",
+      usage_limit_reached: "/dashboard?next=%2Fbilling",
+      trial_ending: "/pricing",
+      plan_activated: "/dashboard?next=%2Fbilling",
+      payment_failed: "/dashboard?next=%2Fbilling",
+      subscription_canceled: "/dashboard?next=%2Fbilling",
+      referral_qualified: "/dashboard?next=%2Freferrals",
+      referral_reward: "/dashboard?next=%2Freferrals",
+      support_received: "/help",
+      support_reply: "/help",
+      weekly_report: "/dashboard",
+      inactive_workspace: "/dashboard?next=%2Fautomation%2Fnew",
+    } satisfies Record<(typeof EMAIL_TEMPLATE_IDS)[number], string>;
+
+    for (const id of EMAIL_TEMPLATE_IDS) {
+      expect(buildEmailTemplate(id, {}, "https://ap3k.com").cta?.url).toBe(
+        `https://ap3k.com${expectedPrimaryUrls[id]}`
+      );
+    }
+
+    const connected = buildEmailTemplate("instagram_connected", {}, "https://ap3k.com");
+    expect(connected.secondaryCta?.url).toBe(
+      "https://ap3k.com/dashboard?next=%2Fintegrations"
+    );
+    const support = buildEmailTemplate("support_reply", {}, "https://ap3k.com");
+    expect(support.secondaryCta?.url).toBe("https://ap3k.com/dashboard");
+  });
 });
