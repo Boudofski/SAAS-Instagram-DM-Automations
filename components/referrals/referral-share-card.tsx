@@ -10,7 +10,7 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(inviteUrl);
+      await copyText(inviteUrl);
       setCopied(true);
       toast.success("Referral link copied");
       window.setTimeout(() => setCopied(false), 1800);
@@ -48,4 +48,26 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
       </div>
     </div>
   );
+}
+
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // Some mobile and privacy-restricted browsers expose the API but deny access.
+    }
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.select();
+  const copied = document.execCommand("copy");
+  textArea.remove();
+  if (!copied) throw new Error("COPY_FAILED");
 }
