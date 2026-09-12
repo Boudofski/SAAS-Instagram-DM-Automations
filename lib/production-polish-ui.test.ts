@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { getPlanLimits } from "@/lib/plan-limits";
 
-const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
+const source = (path: string) =>
+  readFileSync(join(process.cwd(), path), "utf8");
 
 describe("production polish UI contracts", () => {
   it("respects reduced-motion preferences for reveal animations", () => {
@@ -14,7 +15,9 @@ describe("production polish UI contracts", () => {
   });
 
   it("keeps authentication management inside Clerk", () => {
-    const settings = source("app/(protected)/dashboard/[slug]/settings/page.tsx");
+    const settings = source(
+      "app/(protected)/dashboard/[slug]/settings/page.tsx",
+    );
     const manager = source("components/settings/manage-sign-in-settings.tsx");
     expect(settings).not.toContain("Current password");
     expect(settings).not.toContain("SignOutButton");
@@ -32,11 +35,19 @@ describe("production polish UI contracts", () => {
   });
 
   it("makes the notification bell an interactive, accessible workspace menu", () => {
-    const notification = source("components/global/navbar/notification/index.tsx");
+    const notification = source(
+      "components/global/navbar/notification/index.tsx",
+    );
     expect(notification).toContain("<PopoverTrigger asChild>");
-    expect(notification).toContain("<Popover open={open} onOpenChange={setOpen}>");
-    expect(notification).toContain("const closeNotifications = () => setOpen(false)");
-    expect(notification.match(/onClick=\{closeNotifications\}/g)).toHaveLength(2);
+    expect(notification).toContain(
+      "<Popover open={open} onOpenChange={setOpen}>",
+    );
+    expect(notification).toContain(
+      "const closeNotifications = () => setOpen(false)",
+    );
+    expect(notification.match(/onClick=\{closeNotifications\}/g)).toHaveLength(
+      2,
+    );
     expect(notification).toContain('aria-label="Open notifications"');
     expect(notification).toContain("You&apos;re all caught up");
     expect(notification).toContain("/inbox");
@@ -47,7 +58,9 @@ describe("production polish UI contracts", () => {
   it("separates internal access from real Stripe subscription management", () => {
     const page = source("app/(protected)/dashboard/[slug]/billing/page.tsx");
     const billing = source("components/global/billing/index.tsx");
-    const manageButton = source("components/global/billing/manage-billing-button.tsx");
+    const manageButton = source(
+      "components/global/billing/manage-billing-button.tsx",
+    );
     expect(page).toContain("getBillingLookup(customerId)");
     expect(page).toContain("billingState={billingLookup.state}");
     expect(page).not.toContain('customerId || currentPlan !== "FREE"');
@@ -70,15 +83,32 @@ describe("production polish UI contracts", () => {
   });
 
   it("keeps plan entitlements aligned with the product model", () => {
-    expect(getPlanLimits("FREE")).toMatchObject({ connectedInstagramAccounts: 1, activeCampaigns: 5, staticRepliesPerMonth: 500, aiRepliesPerMonth: 0 });
-    expect(getPlanLimits("PRO")).toMatchObject({ connectedInstagramAccounts: 1, staticRepliesPerMonth: 5000 });
-    expect(getPlanLimits("BUSINESS")).toMatchObject({ connectedInstagramAccounts: 1, staticRepliesPerMonth: 20000 });
+    expect(getPlanLimits("FREE")).toMatchObject({
+      connectedInstagramAccounts: 1,
+      activeCampaigns: 5,
+      staticRepliesPerMonth: 500,
+      aiRepliesPerMonth: 0,
+    });
+    expect(getPlanLimits("PRO")).toMatchObject({
+      connectedInstagramAccounts: 1,
+      staticRepliesPerMonth: 5000,
+    });
+    expect(getPlanLimits("BUSINESS")).toMatchObject({
+      connectedInstagramAccounts: 1,
+      staticRepliesPerMonth: 20000,
+    });
   });
 
   it("keeps automation workspaces inside the desktop viewport", () => {
-    const commentWizard = source("app/(protected)/dashboard/[slug]/automation/new/page.tsx");
-    const messageWizard = source("components/automations/message-automation-wizard.tsx");
-    const detail = source("app/(protected)/dashboard/[slug]/automation/[id]/page.tsx");
+    const commentWizard = source(
+      "app/(protected)/dashboard/[slug]/automation/new/page.tsx",
+    );
+    const messageWizard = source(
+      "components/automations/message-automation-wizard.tsx",
+    );
+    const detail = source(
+      "app/(protected)/dashboard/[slug]/automation/[id]/page.tsx",
+    );
 
     for (const file of [commentWizard, messageWizard, detail]) {
       expect(file).toContain("xl:h-[calc(100dvh-7rem)]");
@@ -95,15 +125,21 @@ describe("production polish UI contracts", () => {
   });
 
   it("shows the saved DM AI mode on automation details", () => {
-    const detail = source("app/(protected)/dashboard/[slug]/automation/[id]/page.tsx");
+    const detail = source(
+      "app/(protected)/dashboard/[slug]/automation/[id]/page.tsx",
+    );
     expect(detail).toContain("automation.listener?.aiDmReplyEnabled === true");
     expect(detail).toContain('title={aiDmReplyEnabled ? "AP3K AI reply"');
-    expect(detail).toContain('isMessageAutomation ? aiDmReplyEnabled ? "Enabled"');
+    expect(detail).toContain(
+      'isMessageAutomation ? aiDmReplyEnabled ? "Enabled"',
+    );
   });
 
   it("labels AI DM automations accurately in the automation table", () => {
     const table = source("components/dashboard/automation-table.tsx");
-    expect(table).toContain('automation.listener?.aiDmReplyEnabled ? "AI DM replies active"');
+    expect(table).toMatch(
+      /automation\.listener\?\.aiDmReplyEnabled\s*\?\s*"AI DM replies active"/,
+    );
     expect(table).toContain("{modeLabel}");
   });
 });
