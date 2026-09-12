@@ -13,6 +13,7 @@ import {
 } from "@/lib/referral-program";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { createHash } from "node:crypto";
+import { notifyBillingEmail } from "@/lib/email/events";
 
 export type StripeOwner = {
   id: string;
@@ -44,6 +45,14 @@ export type StripeWebhookDependencies = {
     clerkIdFingerprint: string;
     customerIdFingerprint: string;
   }): void;
+  notifyCustomerEmail?(input: {
+    userId: string;
+    templateId: "plan_activated" | "payment_failed" | "subscription_canceled";
+    stripeEventId: string;
+    planName?: string | null;
+    periodEnd?: string | null;
+    failureReason?: string | null;
+  }): Promise<unknown>;
 };
 
 export class StripeOwnershipError extends Error {
@@ -81,7 +90,23 @@ const defaultDependencies: StripeWebhookDependencies = {
   warnStaleMetadata(details) {
     console.warn("[stripe-webhook] stale Clerk metadata", details);
   },
+  notifyCustomerEmail: notifyBillingEmail,
 };
+
+async function notifyCustomerSafely(
+  dependencies: StripeWebhookDependencies,
+  input: Parameters<NonNullable<StripeWebhookDependencies["notifyCustomerEmail"]>>[0]
+) {
+  try {
+    await dependencies.notifyCustomerEmail?.(input);
+  } catch (error) {
+    console.warn("[stripe-webhook] non-blocking customer email failure", {
+      templateId: input.templateId,
+      stripeEventId: input.stripeEventId,
+      errorType: error instanceof Error ? error.constructor.name : "UnknownError",
+    });
+  }
+}
 
 export function fingerprintExternalId(value: string) {
   return createHash("sha256").update(value).digest("hex").slice(0, 12);
@@ -229,9 +254,19 @@ export async function processStripeEvent(
       const subscriptionId = stripeId(session.subscription);
       if (subscriptionId) {
         const subscription = await dependencies.retrieveSubscription(subscriptionId);
+        const plan = activePlanForSubscription(subscription);
         await dependencies.syncSubscription(resolution.owner.id, {
           customerId,
-          plan: activePlanForSubscription(subscription),
+          plan,
+        });
+        await notifyCustomerSafely(dependencies, {
+          userId: resolution.owner.id,
+          templateId: "plan_activated",
+          stripeEventId: event.id,
+          planName: plan,
+          periodEnd: (subscription as any).current_period_end
+            ? new Date((subscription as any).current_period_end * 1000).toLocaleDateString("en-US", { dateStyle: "medium" })
+            : null,
         });
       } else {
         // Bind ownership, but never grant paid access from Checkout metadata alone.
@@ -295,6 +330,14 @@ export async function processStripeEvent(
           currency: invoice.currency ?? "",
           paidAt: new Date((invoice.status_transitions?.paid_at ?? event.created) * 1000),
         });
+      } else {
+        await notifyCustomerSafely(dependencies, {
+          userId: resolution.owner.id,
+          templateId: "payment_failed",
+          stripeEventId: event.id,
+          planName: resolution.plan,
+          failureReason: "Stripe could not complete the latest subscription payment. Update the payment method or retry from Billing.",
+        });
       }
       return { outcome: "processed" as const, source: resolution.source };
     }
@@ -333,6 +376,12 @@ export async function processStripeEvent(
       await dependencies.syncSubscription(resolution.owner.id, {
         customerId,
         plan: "FREE",
+      });
+      await notifyCustomerSafely(dependencies, {
+        userId: resolution.owner.id,
+        templateId: "subscription_canceled",
+        stripeEventId: event.id,
+        planName: "Free",
       });
       return { outcome: "processed" as const, source: resolution.source };
     }

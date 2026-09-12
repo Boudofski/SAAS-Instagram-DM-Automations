@@ -22,6 +22,7 @@ import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-st
 import { canActivateCampaign } from "@/actions/usage/queries";
 import { client } from "@/lib/prisma";
 import { refreshInstagramProfileSnapshotForUser } from "@/lib/instagram-profile-snapshot";
+import { notifyAutomationActivatedEmail } from "@/lib/email/events";
 import {
   addKeyWords,
   addListener,
@@ -63,6 +64,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
     const cleanPayload = normalizeCampaignPayload(payload);
     const validationError = validateNormalizedCampaignPayload(cleanPayload);
     const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
+    let activationProfile: Awaited<ReturnType<typeof findUser>> = null;
 
     if (cleanPayload.listener.aiReplyEnabled) {
       const aiProfile = await findUser(user.id);
@@ -100,6 +102,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
 
     if (cleanPayload.active) {
       const profile = await findUser(user.id);
+      activationProfile = profile;
       if ((profile as any)?.status === "SUSPENDED") {
         return {
           status: 403,
@@ -153,7 +156,16 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       | { automations?: { id: string }[]; id?: string }
       | null;
     const id = automationId || savedResult?.automations?.[0]?.id || savedResult?.id;
-    if (saved && id) return { status: 200, data: { id } };
+    if (saved && id) {
+      if (cleanPayload.active && activationProfile?.id) {
+        await notifyAutomationActivatedEmail({
+          userId: activationProfile.id,
+          automationId: id,
+          automationName: cleanPayload.name,
+        });
+      }
+      return { status: 200, data: { id } };
+    }
 
     return { status: 404, data: "Automation not found" };
   } catch (error) {
@@ -216,6 +228,13 @@ export const saveMessageAutomation = async (
       ? await updateCompleteMessageAutomation(automationId, user.id, cleanPayload)
       : await createCompleteMessageAutomation(user.id, cleanPayload);
     if (!saved?.id) return { status: 404, data: "Automation not found" };
+    if (cleanPayload.active && profile?.id) {
+      await notifyAutomationActivatedEmail({
+        userId: profile.id,
+        automationId: saved.id,
+        automationName: cleanPayload.name,
+      });
+    }
     return { status: 200, data: { id: saved.id } };
   } catch (error) {
     console.error("[message-automation-save] save failed", {
@@ -564,6 +583,13 @@ export const activateAutomation = async (id: string, status: boolean) => {
     }
     const activate = await updateAutomation(id, user.id, { active: status });
     if (activate) {
+      if (status && activate.userId) {
+        await notifyAutomationActivatedEmail({
+          userId: activate.userId,
+          automationId: activate.id,
+          automationName: activate.name,
+        });
+      }
       return {
         status: 200,
         data: `Automation ${status ? "activated" : "deactivated"}`,

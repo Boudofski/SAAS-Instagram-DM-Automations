@@ -34,7 +34,7 @@ describe("Clerk migration non-regression invariants", () => {
       /model User \{[\s\S]*?id\s+String\s+@id @default\(dbgenerated\("gen_random_uuid\(\)"\)\) @db\.Uuid/
     );
     expect(schema.match(/@relation\(fields: \[userId\], references: \[id\]/g)).toHaveLength(
-      8
+      10
     );
     expect(schema).not.toContain("references: [clerkId]");
   });
