@@ -1,7 +1,15 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ap3kFormControlClass, nextThemeMode, normalizeThemeMode } from "./theme-mode";
 
 describe("theme mode helpers", () => {
+  it("uses light mode for visitors without a saved preference", () => {
+    const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+    expect(layout).toContain('defaultTheme="light"');
+    expect(layout).toContain("enableSystem={false}");
+  });
+
   it("normalizes unsupported values to system", () => {
     expect(normalizeThemeMode("dark")).toBe("dark");
     expect(normalizeThemeMode("light")).toBe("light");
