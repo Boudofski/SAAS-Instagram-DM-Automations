@@ -1,6 +1,10 @@
 "use client";
 
-import { activateAutomation, deleteAutomation, duplicateAutomation } from "@/actions/automation";
+import {
+  activateAutomation,
+  deleteAutomation,
+  duplicateAutomation,
+} from "@/actions/automation";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -14,6 +18,7 @@ import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
 import { MoreHorizontal } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -49,15 +54,24 @@ export default function AutomationTable({
     const needle = query.trim().toLowerCase();
     const rows = automations.filter((automation) => {
       if (!needle) return true;
-      const keywords = (automation.keywords ?? []).map((keyword: any) => keyword.word).join(" ");
+      const keywords = (automation.keywords ?? [])
+        .map((keyword: any) => keyword.word)
+        .join(" ");
       const post = automation.posts?.[0];
-      return `${automation.name ?? ""} ${keywords} ${post?.caption ?? ""} ${post?.postid ?? ""}`.toLowerCase().includes(needle);
+      return `${automation.name ?? ""} ${keywords} ${post?.caption ?? ""} ${post?.postid ?? ""}`
+        .toLowerCase()
+        .includes(needle);
     });
 
     return rows.sort((a, b) => {
-      if (sort === "active") return Number(Boolean(b.active)) - Number(Boolean(a.active));
-      if (sort === "name") return String(a.name ?? "").localeCompare(String(b.name ?? ""));
-      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+      if (sort === "active")
+        return Number(Boolean(b.active)) - Number(Boolean(a.active));
+      if (sort === "name")
+        return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+      return (
+        new Date(b.createdAt ?? 0).getTime() -
+        new Date(a.createdAt ?? 0).getTime()
+      );
     });
   }, [automations, query, sort]);
 
@@ -83,42 +97,52 @@ export default function AutomationTable({
   }
 
   function handleDelete(id: string) {
-    if (!window.confirm("Delete this automation? This removes it from your account.")) return;
+    if (
+      !window.confirm(
+        "Delete this automation? This removes it from your account.",
+      )
+    )
+      return;
     startTransition(() => {
       void deleteAutomation(id).then(() => router.refresh());
     });
   }
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-3xl">
       {showControls && (
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-2 border-b border-slate-200 p-3 dark:border-white/10 sm:gap-3 sm:p-4 xl:flex-row xl:items-center">
           <div className="relative min-w-0 flex-1">
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search automations, keywords, or content…"
-              className="ap3k-input h-11 rounded-2xl pr-4"
+              className="ap3k-input h-10 rounded-xl pr-4 sm:h-11 sm:rounded-2xl"
             />
           </div>
-          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex shrink-0 items-center gap-2">
             <select
               value={sort}
-              onChange={(event) => setSort(event.target.value as "newest" | "active" | "name")}
-              className="ap3k-select h-11 rounded-2xl px-3 text-sm font-bold"
+              onChange={(event) =>
+                setSort(event.target.value as "newest" | "active" | "name")
+              }
+              aria-label="Sort automations"
+              className="ap3k-select h-10 min-w-0 flex-1 rounded-xl px-3 text-xs font-bold sm:h-11 sm:rounded-2xl sm:text-sm"
             >
               <option value="newest">Newest first</option>
               <option value="active">Active first</option>
               <option value="name">Name A–Z</option>
             </select>
-            <span className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
-              {filtered.length ? `${(safePage - 1) * pageSize + 1}-${Math.min(safePage * pageSize, filtered.length)} of ${filtered.length}` : "0 automations"}
+            <span className="whitespace-nowrap rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 sm:rounded-2xl sm:text-xs">
+              {filtered.length
+                ? `${(safePage - 1) * pageSize + 1}-${Math.min(safePage * pageSize, filtered.length)} of ${filtered.length}`
+                : "0 automations"}
             </span>
           </div>
         </div>
       )}
 
-      <div className="grid gap-3 p-3 xl:hidden">
+      <div className="grid gap-2 p-2 sm:gap-3 sm:p-3 xl:hidden">
         {paged.length === 0 ? (
           <EmptyRows />
         ) : (
@@ -152,7 +176,9 @@ export default function AutomationTable({
         </div>
         <div className="divide-y divide-slate-100 dark:divide-white/10">
           {paged.length === 0 ? (
-            <div className="p-4"><EmptyRows /></div>
+            <div className="p-4">
+              <EmptyRows />
+            </div>
           ) : (
             paged.map((automation) => (
               <CampaignDesktopRow
@@ -184,80 +210,169 @@ export default function AutomationTable({
   );
 }
 
-function CampaignMobileCard({ slug, automation, appReviewMode, messagingReviewMode, isPending, onActivate, onDuplicate, onDelete, compact = false }: any) {
+function CampaignMobileCard({
+  slug,
+  automation,
+  appReviewMode,
+  messagingReviewMode,
+  isPending,
+  onActivate,
+  onDuplicate,
+  onDelete,
+  compact = false,
+}: any) {
   const post = automation.posts?.[0];
   const source = automationSource(automation);
   const isAny = post?.postid === "ANY";
-  const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
-  const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
+  const runs =
+    automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
+  const leads =
+    automation.metrics?.leads ??
+    automation.leads?.length ??
+    automation._count?.leads ??
+    0;
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
-  const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode, messagingReviewMode);
+  const mode = getCampaignModeLabel(
+    automation.sendPrivateDm === false,
+    appReviewMode,
+    messagingReviewMode,
+  );
   const status = campaignStatus(automation);
   const replySummary = getReplySummary(automation);
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045]">
-      <div className="flex items-start gap-3">
-        <CampaignThumb post={post} isAny={isAny} source={source} size="lg" />
+    <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-all duration-300 hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
+      <div className="flex items-start gap-2.5 sm:gap-3">
+        <Link
+          href={`/dashboard/${slug}/automation/${automation.id}`}
+          aria-label={`Open ${automation.name || "automation"}`}
+          className="shrink-0"
+        >
+          <CampaignThumb post={post} isAny={isAny} source={source} />
+        </Link>
         <div className="min-w-0 flex-1">
-          <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
+          <Link
+            href={`/dashboard/${slug}/automation/${automation.id}`}
+            className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
+          >
             {automation.name || "Untitled automation"}
           </Link>
-          <p title={mode.full} className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            {source === "STORY" ? `Story · ${storyTriggerLabel(automation.storyTriggerType)}` : source === "DM" ? `DM · ${automation.triggerMode === "ANY_MESSAGE" ? "Any message" : "Keyword"}` : `${isAny ? "Any post" : "Specific post"} · ${isAnyComment ? "Any comment" : "Keyword trigger"}`}
+          <p
+            title={mode.full}
+            className="mt-0.5 truncate text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs"
+          >
+            {source === "STORY"
+              ? `Story · ${storyTriggerLabel(automation.storyTriggerType)}`
+              : source === "DM"
+                ? `DM · ${automation.triggerMode === "ANY_MESSAGE" ? "Any message" : "Keyword"}`
+                : `${isAny ? "Any post" : "Specific post"} · ${isAnyComment ? "Any comment" : "Keyword trigger"}`}
           </p>
         </div>
         <StatusPill status={status} />
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {automation.currentAccountLabel && <span className="ap3k-badge ap3k-badge-slate">{automation.currentAccountLabel}</span>}
+      <div className="mt-2.5 flex items-center gap-1.5">
         <ReplyPill summary={replySummary} />
-        {compact && <span className="ml-auto text-[11px] font-bold text-slate-400">{runs} runs · {leads} leads</span>}
+        <span className="ml-auto whitespace-nowrap text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          {runs} runs · {leads} leads
+        </span>
       </div>
-      {!compact && <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-        <StatMini label="Runs" value={runs} />
-        <StatMini label="Leads" value={leads} />
-      </div>}
-      {compact ? <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">Manage automation</Link> : <div className="mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))_40px] gap-2">
-        <Link href={automationEditHref(slug, automation)} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
-          {automation.needsReview || automation.stalePost ? "Review" : "Edit"}
+      {compact ? (
+        <Link
+          href={`/dashboard/${slug}/automation/${automation.id}`}
+          className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
+        >
+          Manage automation
         </Link>
-        <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
-          View
-        </Link>
-        <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
-          {automation.active ? "Pause" : "Start"}
-        </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="More automation actions" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-rf-pink/30 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem disabled={isPending} onSelect={() => onDuplicate(automation.id)}>Duplicate automation</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={isPending} onSelect={() => onDelete(automation.id)} className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10">Delete automation</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>}
+      ) : (
+        <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_40px] gap-2">
+          <Link
+            href={`/dashboard/${slug}/automation/${automation.id}`}
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-black text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+          >
+            Open automation
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="More automation actions"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-rf-pink/30 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem asChild>
+                <Link href={automationEditHref(slug, automation)}>
+                  {automation.needsReview || automation.stalePost
+                    ? "Review setup"
+                    : "Edit automation"}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isPending}
+                onSelect={() =>
+                  onActivate(automation.id, !Boolean(automation.active))
+                }
+              >
+                {automation.active ? "Pause automation" : "Start automation"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isPending}
+                onSelect={() => onDuplicate(automation.id)}
+              >
+                Duplicate automation
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={isPending}
+                onSelect={() => onDelete(automation.id)}
+                className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
+              >
+                Delete automation
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </article>
   );
 }
 
-function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMode, isPending, onActivate, onDuplicate, onDelete }: any) {
+function CampaignDesktopRow({
+  slug,
+  automation,
+  appReviewMode,
+  messagingReviewMode,
+  isPending,
+  onActivate,
+  onDuplicate,
+  onDelete,
+}: any) {
   const post = automation.posts?.[0];
   const source = automationSource(automation);
   const isAny = post?.postid === "ANY";
-  const runs = automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
-  const leads = automation.metrics?.leads ?? automation.leads?.length ?? automation._count?.leads ?? 0;
+  const runs =
+    automation.metrics?.runs ?? automation.listener?.commentCount ?? 0;
+  const leads =
+    automation.metrics?.leads ??
+    automation.leads?.length ??
+    automation._count?.leads ??
+    0;
   const isAnyComment = automation.triggerMode === "ANY_COMMENT";
-  const mode = getCampaignModeLabel(automation.sendPrivateDm === false, appReviewMode, messagingReviewMode);
-  const modeLabel = source === "DM"
-    ? automation.listener?.aiDmReplyEnabled ? "AI DM replies active" : "Saved DM replies active"
-    : source === "STORY"
-      ? `Story automation · ${storyTriggerLabel(automation.storyTriggerType)}`
-      : mode.full;
+  const mode = getCampaignModeLabel(
+    automation.sendPrivateDm === false,
+    appReviewMode,
+    messagingReviewMode,
+  );
+  const modeLabel =
+    source === "DM"
+      ? automation.listener?.aiDmReplyEnabled
+        ? "AI DM replies active"
+        : "Saved DM replies active"
+      : source === "STORY"
+        ? `Story automation · ${storyTriggerLabel(automation.storyTriggerType)}`
+        : mode.full;
   const status = campaignStatus(automation);
   const replySummary = getReplySummary(automation);
 
@@ -267,7 +382,10 @@ function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMo
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} source={source} />
           <div className="min-w-0 flex-1">
-            <Link href={`/dashboard/${slug}/automation/${automation.id}`} className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white">
+            <Link
+              href={`/dashboard/${slug}/automation/${automation.id}`}
+              className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
+            >
               {automation.name || "Untitled automation"}
             </Link>
             <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -281,43 +399,87 @@ function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMo
           </div>
         </div>
       </div>
-      <div className="min-w-0"><span className="ap3k-badge ap3k-badge-slate">{source === "STORY" ? "Story" : source === "DM" ? "DM" : "Post"}</span></div>
+      <div className="min-w-0">
+        <span className="ap3k-badge ap3k-badge-slate">
+          {source === "STORY" ? "Story" : source === "DM" ? "DM" : "Post"}
+        </span>
+      </div>
       <div className="min-w-0">
         {source === "STORY" ? (
-          <span className="ap3k-badge ap3k-badge-pink">{storyTriggerLabel(automation.storyTriggerType)}</span>
+          <span className="ap3k-badge ap3k-badge-pink">
+            {storyTriggerLabel(automation.storyTriggerType)}
+          </span>
         ) : source === "DM" && automation.triggerMode === "ANY_MESSAGE" ? (
           <span className="ap3k-badge ap3k-badge-blue">Any DM</span>
         ) : isAnyComment ? (
           <span className="ap3k-badge ap3k-badge-blue">Any</span>
         ) : (automation.keywords ?? []).length ? (
-          <span className="ap3k-badge ap3k-badge-pink">{formatKeywordDisplay(String((automation.keywords ?? [])[0]?.word ?? ""), appReviewMode)}</span>
+          <span className="ap3k-badge ap3k-badge-pink">
+            {formatKeywordDisplay(
+              String((automation.keywords ?? [])[0]?.word ?? ""),
+              appReviewMode,
+            )}
+          </span>
         ) : (
           <span className="ap3k-badge ap3k-badge-slate">No trigger</span>
         )}
       </div>
-      <div className="min-w-0"><ReplyPill summary={replySummary} compact /></div>
+      <div className="min-w-0">
+        <ReplyPill summary={replySummary} compact />
+      </div>
       <div className="font-black text-slate-950 dark:text-white">{runs}</div>
       <div className="font-black text-slate-950 dark:text-white">{leads}</div>
-      <div className="min-w-0"><StatusPill status={status} /></div>
+      <div className="min-w-0">
+        <StatusPill status={status} />
+      </div>
       <div className="flex justify-end">
         <div className="inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
-          <Link href={automationEditHref(slug, automation)} className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
+          <Link
+            href={automationEditHref(slug, automation)}
+            className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
+          >
             Edit
           </Link>
-          <button type="button" disabled={isPending} onClick={() => onActivate(automation.id, !Boolean(automation.active))} className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() =>
+              onActivate(automation.id, !Boolean(automation.active))
+            }
+            className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
+          >
             {automation.active ? "Pause" : "Start"}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300" aria-label="More actions">
+              <button
+                type="button"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300"
+                aria-label="More actions"
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/automation/${automation.id}`}>View detail</Link></DropdownMenuItem>
-              <DropdownMenuItem disabled={isPending} onSelect={() => onDuplicate(automation.id)}>Duplicate</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/${slug}/automation/${automation.id}`}>
+                  View detail
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isPending}
+                onSelect={() => onDuplicate(automation.id)}
+              >
+                Duplicate
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={isPending} onSelect={() => onDelete(automation.id)} className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10">Delete</DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isPending}
+                onSelect={() => onDelete(automation.id)}
+                className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
+              >
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -326,15 +488,35 @@ function CampaignDesktopRow({ slug, automation, appReviewMode, messagingReviewMo
   );
 }
 
-function PaginationFooter({ page, totalPages, total, pageSize, onPageChange }: { page: number; totalPages: number; total: number; pageSize: number; onPageChange: (page: number) => void }) {
+function PaginationFooter({
+  page,
+  totalPages,
+  total,
+  pageSize,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
   return (
     <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
       <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-        Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total} automations
+        Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)}{" "}
+        of {total} automations
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} className="ap3k-table-action disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={page <= 1}
+          className="ap3k-table-action disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Previous
+        </button>
         {pages.map((item) => (
           <button
             key={item}
@@ -350,20 +532,47 @@ function PaginationFooter({ page, totalPages, total, pageSize, onPageChange }: {
             {item}
           </button>
         ))}
-        <button type="button" onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="ap3k-table-action disabled:cursor-not-allowed disabled:opacity-40">Next</button>
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          disabled={page >= totalPages}
+          className="ap3k-table-action disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+        </button>
       </div>
     </div>
   );
 }
 
-function CampaignThumb({ post, isAny, source, size = "sm" }: { post: any; isAny: boolean; source: string; size?: "sm" | "lg" }) {
+function CampaignThumb({
+  post,
+  isAny,
+  source,
+  size = "sm",
+}: {
+  post: any;
+  isAny: boolean;
+  source: string;
+  size?: "sm" | "lg";
+}) {
   const sizeClass = size === "lg" ? "h-12 w-12" : "h-10 w-10";
   if (post?.media && !isAny) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={post.media} alt={post.caption ?? "Automation post"} className={`${sizeClass} flex-shrink-0 rounded-xl object-cover`} />;
+    return (
+      <Image
+        src={post.media}
+        alt={post.caption ?? "Automation post"}
+        width={48}
+        height={48}
+        unoptimized
+        className={`${sizeClass} flex-shrink-0 rounded-xl object-cover`}
+      />
+    );
   }
   return (
-    <div className={`${sizeClass} grid flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300`}>
+    <div
+      className={`${sizeClass} grid flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300`}
+    >
       {source === "STORY" ? "ST" : source === "DM" ? "DM" : isAny ? "∞" : "AP"}
     </div>
   );
@@ -380,12 +589,18 @@ function EmptyRows() {
 function campaignStatus(automation: any) {
   if (automation.archivedAt) return "Archived";
   if (automation.needsReview) return "Needs review";
-  if (!automation.listener || (automationSource(automation) === "COMMENT" && !automation.posts?.length)) return "Draft";
+  if (
+    !automation.listener ||
+    (automationSource(automation) === "COMMENT" && !automation.posts?.length)
+  )
+    return "Draft";
   return automation.active ? "Live" : "Paused";
 }
 
 function automationSource(automation: any) {
-  return automation.source === "STORY" || automation.source === "DM" ? automation.source : "COMMENT";
+  return automation.source === "STORY" || automation.source === "DM"
+    ? automation.source
+    : "COMMENT";
 }
 
 function storyTriggerLabel(value: string) {
@@ -400,41 +615,61 @@ function automationEditHref(slug: string, automation: any) {
 }
 
 function StatusPill({ status }: { status: string }) {
-  const classes = status === "Live"
-    ? "ap3k-badge-green"
-    : status === "Needs review"
-      ? "ap3k-badge-red"
-      : status === "Draft"
-        ? "ap3k-badge-blue"
-        : "ap3k-badge-amber";
-  return <span className={`ap3k-badge whitespace-nowrap ${classes}`}>{status}</span>;
+  const classes =
+    status === "Live"
+      ? "ap3k-badge-green"
+      : status === "Needs review"
+        ? "ap3k-badge-red"
+        : status === "Draft"
+          ? "ap3k-badge-blue"
+          : "ap3k-badge-amber";
+  return (
+    <span className={`ap3k-badge whitespace-nowrap ${classes}`}>{status}</span>
+  );
 }
 
 function getReplySummary(automation: any): ReplySummary {
-  const hasCommentReply = Boolean(automation.listener?.commentReply || automation.listener?.commentReply2 || automation.listener?.commentReply3);
-  const hasDm = automation.sendPrivateDm !== false && Boolean(automation.listener?.prompt);
-  const activeTone = automation.active && !automation.needsReview ? "green" : "amber";
+  const hasCommentReply = Boolean(
+    automation.listener?.commentReply ||
+    automation.listener?.commentReply2 ||
+    automation.listener?.commentReply3,
+  );
+  const hasDm =
+    automation.sendPrivateDm !== false && Boolean(automation.listener?.prompt);
+  const activeTone =
+    automation.active && !automation.needsReview ? "green" : "amber";
 
-  if (hasCommentReply && hasDm) return { label: "Comment + DM", compactLabel: "Both", tone: activeTone };
-  if (hasCommentReply) return { label: "Comment reply", compactLabel: "Comment", tone: activeTone };
+  if (hasCommentReply && hasDm)
+    return { label: "Comment + DM", compactLabel: "Both", tone: activeTone };
+  if (hasCommentReply)
+    return {
+      label: "Comment reply",
+      compactLabel: "Comment",
+      tone: activeTone,
+    };
   if (hasDm) return { label: "DM", compactLabel: "DM", tone: activeTone };
   return { label: "Not set", compactLabel: "Off", tone: "slate" };
 }
 
-function ReplyPill({ summary, compact = false }: { summary: ReplySummary; compact?: boolean }) {
-  const toneClass = summary.tone === "green"
-    ? "ap3k-badge-green"
-    : summary.tone === "amber"
-      ? "ap3k-badge-amber"
-      : "ap3k-badge-slate";
-  return <span title={summary.label} className={`ap3k-badge whitespace-nowrap ${toneClass}`}>{compact ? summary.compactLabel : summary.label}</span>;
-}
-
-function StatMini({ label, value }: { label: string; value: number }) {
+function ReplyPill({
+  summary,
+  compact = false,
+}: {
+  summary: ReplySummary;
+  compact?: boolean;
+}) {
+  const toneClass =
+    summary.tone === "green"
+      ? "ap3k-badge-green"
+      : summary.tone === "amber"
+        ? "ap3k-badge-amber"
+        : "ap3k-badge-slate";
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/[0.12] dark:bg-white/[0.06]">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="font-black text-slate-950 dark:text-white">{value}</p>
-    </div>
+    <span
+      title={summary.label}
+      className={`ap3k-badge whitespace-nowrap ${toneClass}`}
+    >
+      {compact ? summary.compactLabel : summary.label}
+    </span>
   );
 }
