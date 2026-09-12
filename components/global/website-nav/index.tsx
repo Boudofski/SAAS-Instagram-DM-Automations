@@ -21,7 +21,6 @@ export default function WebsiteNav({ current }: Props) {
           <li><Link href="/#how-it-works" className={navClass}>How it works</Link></li>
           <li><Link href="/pricing" className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : navClass}>Pricing</Link></li>
           <li><Link href="/blog" className={current === "blog" ? "text-slate-950 dark:text-rf-text" : navClass}>Blog</Link></li>
-          <li><Link href="/dashboard" className={navClass}>Dashboard</Link></li>
         </ul>
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle compact />
@@ -41,7 +40,6 @@ export default function WebsiteNav({ current }: Props) {
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/pricing">Pricing</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/blog">Blog</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/contact">Support</Link>
-              <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/dashboard">Dashboard</Link>
               <Link className="rounded-xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10" href="/sign-in">Sign in</Link>
             </div>
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-white/10">
