@@ -252,18 +252,27 @@ describe("referral program", () => {
       { status: "APPLIED", _count: { _all: 1 }, _sum: { amountCents: 900 } },
       { status: "REVERSED", _count: { _all: 1 }, _sum: { amountCents: 900 } },
     ]);
-    mocks.client.referralAttribution.findMany.mockResolvedValue([]);
+    mocks.client.referralAttribution.findMany.mockResolvedValue([{
+      id: "attribution-refunded",
+      status: "QUALIFIED",
+      createdAt: new Date("2026-09-01T12:00:00Z"),
+      connectedAt: new Date("2026-09-01T12:30:00Z"),
+      qualifiedAt: new Date("2026-09-01T13:00:00Z"),
+      reward: { status: "REVERSED" },
+      referredUser: { firstname: "Sam" },
+    }]);
 
     const result = await getReferralDashboard("referrer-1");
 
     expect(result.stats).toMatchObject({
       invited: 7,
       connected: 4,
-      qualified: 1,
+      qualified: 2,
       creditEarnedCents: 1800,
       creditPendingCents: 900,
       creditAppliedCents: 900,
     });
     expect(result.founderSlotsRemaining).toBe(8);
+    expect(result.recentReferrals[0]).toMatchObject({ name: "Sam", status: "REVERSED" });
   });
 });

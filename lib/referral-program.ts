@@ -371,6 +371,7 @@ export async function getReferralDashboard(userId: string) {
         createdAt: true,
         connectedAt: true,
         qualifiedAt: true,
+        reward: { select: { status: true } },
         referredUser: { select: { firstname: true } },
       },
     }),
@@ -389,7 +390,7 @@ export async function getReferralDashboard(userId: string) {
     stats: {
       invited: Object.values(counts).reduce((total, count) => total + Number(count), 0),
       connected: Number(counts.CONNECTED ?? 0) + Number(counts.QUALIFIED ?? 0) + Number(counts.WAITLISTED ?? 0),
-      qualified: Number(counts.QUALIFIED ?? 0),
+      qualified: Number(rewardTotals.PENDING?.count ?? 0) + Number(rewardTotals.APPLIED?.count ?? 0),
       creditEarnedCents: (rewardTotals.PENDING?.cents ?? 0) + (rewardTotals.APPLIED?.cents ?? 0),
       creditPendingCents: rewardTotals.PENDING?.cents ?? 0,
       creditAppliedCents: rewardTotals.APPLIED?.cents ?? 0,
@@ -397,7 +398,7 @@ export async function getReferralDashboard(userId: string) {
     recentReferrals: recentReferrals.map((item) => ({
       id: item.id,
       name: item.referredUser.firstname?.trim() || "Friend",
-      status: item.status,
+      status: item.reward?.status === "REVERSED" ? "REVERSED" : item.status,
       createdAt: item.createdAt.toISOString(),
       connectedAt: item.connectedAt?.toISOString() ?? null,
       qualifiedAt: item.qualifiedAt?.toISOString() ?? null,

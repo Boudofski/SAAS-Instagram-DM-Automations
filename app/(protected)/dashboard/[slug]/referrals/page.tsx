@@ -146,6 +146,7 @@ function Step({ number, title, text, icon }: { number: string; title: string; te
 
 function Status({ status }: { status: string }) {
   if (status === "QUALIFIED") return <span className="ap3k-badge ap3k-badge-green">$9 earned</span>;
+  if (status === "REVERSED") return <span className="ap3k-badge ap3k-badge-red">Reward reversed</span>;
   if (status === "CONNECTED") return <span className="ap3k-badge ap3k-badge-amber">Needs a plan</span>;
   if (status === "WAITLISTED") return <span className="ap3k-badge ap3k-badge-slate">Program full</span>;
   return <span className="ap3k-badge ap3k-badge-slate">Needs Instagram</span>;
