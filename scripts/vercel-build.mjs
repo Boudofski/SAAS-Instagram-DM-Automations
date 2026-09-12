@@ -3,7 +3,25 @@ import { spawnSync } from "node:child_process";
 function run(command, args, env = process.env) {
   const result = spawnSync(command, args, { env, shell: false, stdio: "inherit" });
   if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  return result.status ?? 1;
+}
+
+function runOrExit(command, args, env = process.env) {
+  const status = run(command, args, env);
+  if (status !== 0) process.exit(status);
+}
+
+function runMigrationWithRetry(command, args, env) {
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const status = run(command, args, env);
+    if (status === 0) return;
+    if (attempt === attempts) process.exit(status);
+
+    const delayMs = attempt * 5000;
+    console.warn(`Database migration attempt ${attempt} failed; retrying in ${delayMs / 1000}s.`);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs);
+  }
 }
 
 if (process.env.VERCEL_ENV === "production") {
@@ -15,7 +33,11 @@ if (process.env.VERCEL_ENV === "production") {
     ...process.env,
     DATABASE_URL: process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL,
   };
-  run(process.platform === "win32" ? "npx.cmd" : "npx", ["prisma", "migrate", "deploy"], migrationEnv);
+  runMigrationWithRetry(
+    process.platform === "win32" ? "npx.cmd" : "npx",
+    ["prisma", "migrate", "deploy"],
+    migrationEnv
+  );
 }
 
-run(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"]);
+runOrExit(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"]);
