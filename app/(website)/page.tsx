@@ -249,4 +249,161 @@ export default function LandingPage() {
               ))}
             </StaggerContainer>
           </div>
-   
+        </section>
+
+        <section id="features" className="relative bg-[#5521c8] text-white">
+          <div className="relative">
+            {BENEFITS.map((benefit, index) => (
+              <article
+                key={benefit.title}
+                className={`sticky top-16 flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-t border-white/10 px-4 py-8 sm:px-8 sm:py-10 lg:px-16 ${
+                  index === 0
+                    ? "bg-[radial-gradient(circle_at_12%_18%,rgba(244,114,182,0.25),transparent_28rem),linear-gradient(135deg,#5521c8,#7832e3)]"
+                    : index === 1
+                      ? "bg-[radial-gradient(circle_at_86%_22%,rgba(244,114,182,0.22),transparent_28rem),linear-gradient(135deg,#6725d4,#8b35df)]"
+                      : "bg-[radial-gradient(circle_at_18%_78%,rgba(30,41,59,0.26),transparent_30rem),linear-gradient(135deg,#5c22cc,#7431df)]"
+                }`}
+                style={{ zIndex: index + 1 }}
+              >
+                <FadeIn replay amount={0.42} className="mx-auto w-full max-w-6xl">
+                  <div className={`grid items-center gap-7 lg:grid-cols-2 lg:gap-24 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
+                    <div className="text-center lg:text-left">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-fuchsia-200 sm:text-xs">{benefit.kicker}</p>
+                      <h2 className="mx-auto mt-3 max-w-xl text-3xl font-black leading-[0.96] tracking-[-0.05em] sm:text-5xl lg:mx-0 lg:mt-4">{benefit.title}</h2>
+                      <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-white/75 sm:text-base sm:leading-7 lg:mx-0 lg:mt-6 lg:text-lg lg:leading-8">{benefit.body}</p>
+                      <div className="mt-7 hidden space-y-3 lg:block">
+                        {benefit.bullets.map((bullet) => (
+                          <div key={bullet} className="flex items-center gap-3 text-sm font-bold text-white/90">
+                            <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /></span>
+                            {bullet}
+                          </div>
+                        ))}
+                      </div>
+                      <Link href="/sign-up" className="mt-8 hidden items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5 lg:inline-flex">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
+                    </div>
+                    <div className="mx-auto flex w-full items-center justify-center">
+                      <ProductVideo src={benefit.src} label={benefit.label} className="w-[min(60vw,250px)] sm:w-[260px] lg:w-full lg:max-w-[300px]" />
+                    </div>
+                  </div>
+                </FadeIn>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="how-it-works" className="bg-[#f1edfb] px-4 py-20 dark:bg-[#0e1020] sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[0.98fr_1.02fr] lg:gap-24">
+            <FadeIn>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Start in minutes</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">New to automation? Do not overthink it.</h2>
+              <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
+              <div className="mt-8 space-y-3">
+                {[
+                  ["01", "Connect Instagram", "Authorize your professional Instagram account."],
+                  ["02", "Choose a post + trigger", "Use a keyword or any eligible comment."],
+                  ["03", "Choose Actions", "Reply to comment, Send a DM, or enable both."],
+                  ["04", "Activate", "AP3K starts listening and records the activity."],
+                ].map(([num, title, copy]) => (
+                  <div key={num} className="flex gap-4 rounded-2xl border border-violet-200/80 bg-white/90 p-4 shadow-sm dark:border-white/8 dark:bg-white/[0.04]">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-xs font-black text-white">{num}</span>
+                    <div><p className="font-black">{title}</p><p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{copy}</p></div>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.06}>
+              <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-8 shadow-[0_25px_80px_rgba(91,33,200,0.12)] dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-12">
+                <ProductVideo src="/media/templates_05.mp4" label="AP3K automation setup demo" className="max-w-[280px]" />
+              </div>
+            </FadeIn>
+          </div>
+        </section>
+
+        <section id="pricing" className="bg-[#f7f7fb] px-4 py-16 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-20">
+          <div className="mx-auto max-w-7xl">
+            <FadeIn className="mb-8 text-center">
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Simple pricing</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Start free. Save more annually.</h2>
+              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Start Free with 500 automated actions each month and up to 5 active automations, choose Pro at $9/month, or Business at $29/month.</p>
+            </FadeIn>
+            <FadeIn delay={0.04}><PricingExperience compact /></FadeIn>
+            <div className="mt-8 text-center"><Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">See the full plan comparison <ArrowRight className="h-4 w-4" /></Link></div>
+          </div>
+        </section>
+
+        <section className="border-y border-slate-200 bg-white px-4 py-20 dark:border-white/10 dark:bg-[#0b0c15] sm:px-8 lg:px-16">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Explore by goal</p>
+              <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Start with the Instagram outcome you need.</h2>
+              <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-400">See practical workflows, interactive examples, honest limitations, and setup tutorials for each use case.</p>
+            </FadeIn>
+            <StaggerContainer className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {SOLUTION_PAGES.map(([title, href, description]) => (
+                <StaggerItem key={href}>
+                  <Link href={href} className="group block h-full rounded-3xl border border-slate-200 bg-[#fafafe] p-6 transition hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-violet-400/30">
+                    <h3 className="text-lg font-black">{title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{description}</p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+                  </Link>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </div>
+        </section>
+
+        <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div><p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Instagram automation guides</p><h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Learn the strategy behind the automation.</h2></div>
+              <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore the blog <ArrowRight className="h-4 w-4" /></Link>
+            </FadeIn>
+            <StaggerContainer className="mt-10 grid gap-5 md:grid-cols-3">
+              {BLOG_POSTS.slice(0, 3).map((post) => (
+                <StaggerItem key={post.slug}>
+                  <HoverLift>
+                    <Link href={`/blog/${post.slug}`} className="block h-full rounded-[1.8rem] border border-slate-200 bg-[#fafafe] p-6 shadow-sm transition hover:border-violet-200 dark:border-white/8 dark:bg-[#10121d] dark:hover:border-violet-400/20">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">Guide</p>
+                      <h3 className="mt-4 text-xl font-black leading-tight">{post.title}</h3>
+                      <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{post.description}</p>
+                      <span className="mt-6 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Read guide <ArrowRight className="h-4 w-4" /></span>
+                    </Link>
+                  </HoverLift>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </div>
+        </section>
+
+        <section className="bg-[#11131d] px-4 py-20 text-white sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto max-w-4xl">
+            <FadeIn className="text-center"><p className="text-xs font-black uppercase tracking-[0.22em] text-violet-300">FAQs</p><h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">The important questions, answered.</h2></FadeIn>
+            <div className="mt-10 divide-y divide-white/10 border-y border-white/10">
+              {FAQS.map(([question, answer]) => (
+                <details key={question} className="group py-5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-left font-black"><span>{question}</span><span className="text-2xl font-light text-violet-300 transition group-open:rotate-45">+</span></summary>
+                  <p className="max-w-3xl pb-2 pt-4 text-sm leading-7 text-white/62">{answer}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5420ca,#7331e5_50%,#963be5)] px-4 py-20 text-center text-white sm:px-8 lg:py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(244,114,182,0.32),transparent_32rem)]" />
+          <FadeIn className="relative mx-auto max-w-4xl">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Your next comment can become a customer</p>
+            <h2 className="mt-5 text-4xl font-black tracking-[-0.055em] sm:text-6xl">Start automating Instagram today.</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">Create your first automation, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition hover:-translate-y-0.5">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">View pricing</Link>
+            </div>
+          </FadeIn>
+        </section>
+      </main>
+
+      <WebsiteFooter />
+    </div>
+  );
+}
