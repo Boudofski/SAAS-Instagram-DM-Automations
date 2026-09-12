@@ -8,6 +8,7 @@ import {
 } from "@/lib/stripe-config";
 import { resolveStripePriceId } from "@/lib/stripe-pricing";
 import { stripe } from "@/lib/stripe";
+import { checkoutIdempotencyKey, stripeCheckoutTaxOptions } from "@/lib/stripe-checkout";
 import { getBillingLookup, isManageableSubscriptionStatus } from "@/lib/billing-snapshot";
 import { prepareReferralCreditForCheckout } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
@@ -168,6 +169,13 @@ export default async function PaymentPage({ searchParams }: Props) {
       success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${hostUrl}/payment?cancel=true`,
       allow_promotion_codes: true,
+      ...stripeCheckoutTaxOptions(),
+    }, {
+      idempotencyKey: checkoutIdempotencyKey({
+        clerkId: user.id,
+        plan: selectedPlan,
+        interval: selectedInterval,
+      }),
     });
 
     checkoutUrl = session.url;

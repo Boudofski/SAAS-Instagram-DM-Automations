@@ -11,6 +11,7 @@
     "postinstall": "prisma generate",
     "test": "vitest run",
     "test:watch": "vitest",
+    "load:staging": "node scripts/load-test.mjs",
     "clerk:migrate-ids": "tsx scripts/migrate-clerk-user-ids.ts",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate:deploy": "prisma migrate deploy"
@@ -52,7 +53,9 @@
     "@react-email/render": "^2.1.0",
     "@reduxjs/toolkit": "^2.5.0",
     "@tanstack/react-query": "^5.62.7",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/functions": "^3.9.5",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

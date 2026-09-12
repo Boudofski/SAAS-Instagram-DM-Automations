@@ -10,6 +10,10 @@ export const metadata: Metadata = {
 
 const sections = [
   {
+    title: "Service Operator",
+    body: "AP3K is operated by CAFUCCI LTD. These terms form an agreement between the person or organization using AP3K and CAFUCCI LTD.",
+  },
+  {
     title: "What AP3K Does",
     body: "AP3K is an Instagram automation service for professional accounts. It can match configured comment, story, and DM triggers, send eligible replies, track automation activity, and capture leads.",
   },
@@ -42,8 +46,20 @@ const sections = [
     body: "AP3K depends on Instagram API availability, account permissions, rate limits, and platform policies. Features may pause, degrade, or change because of platform limitations or technical issues outside AP3K's control. AP3K does not guarantee uninterrupted service or delivery of every comment reply or DM.",
   },
   {
+    title: "Plans, Billing, and Cancellation",
+    body: "Paid plans renew for the billing interval shown at checkout until canceled. Prices, included usage, and applicable taxes are shown before purchase. You can manage or cancel a paid subscription through AP3K Billing. Cancellation stops future renewals and paid access normally continues until the end of the paid period.",
+  },
+  {
+    title: "Refunds",
+    body: "Payments are handled under the AP3K Refund Policy. Nothing in these terms limits a refund or cancellation right that cannot legally be excluded in your location.",
+  },
+  {
     title: "Limitation of Liability",
     body: "To the maximum extent permitted by law, AP3K and its operators are not liable for indirect, incidental, special, consequential, or punitive damages, including loss of business, revenue, data, or goodwill, arising from your use of or inability to use AP3K.",
+  },
+  {
+    title: "Privacy",
+    body: "AP3K's Privacy Policy explains how personal information and Instagram data are processed. By using AP3K, you acknowledge that processing is necessary to provide the service you request.",
   },
   {
     title: "Changes to These Terms",
@@ -61,7 +77,7 @@ export default function TermsPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Terms of Service</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: September 1, 2026. These terms govern your use of AP3K. By connecting an Instagram account or creating campaigns, you agree to these terms.
+            Last updated: September 12, 2026. These terms govern your use of AP3K. By creating an account, connecting Instagram, or purchasing a plan, you agree to these terms.
           </p>
         </div>
 
