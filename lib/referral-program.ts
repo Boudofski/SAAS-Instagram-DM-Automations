@@ -387,12 +387,10 @@ export async function getReferralDashboard(userId: string) {
     foundersTaken,
     founderSlotsRemaining: Math.max(0, FOUNDING_PARTNER_LIMIT - foundersTaken),
     stats: {
-      invited: recentReferrals.length < 8
-        ? Object.values(counts).reduce((total, count) => total + Number(count), 0)
-        : await client.referralAttribution.count({ where: { partnerId: partner.id } }),
-      connected: Number(counts.CONNECTED ?? 0) + Number(counts.QUALIFIED ?? 0),
+      invited: Object.values(counts).reduce((total, count) => total + Number(count), 0),
+      connected: Number(counts.CONNECTED ?? 0) + Number(counts.QUALIFIED ?? 0) + Number(counts.WAITLISTED ?? 0),
       qualified: Number(counts.QUALIFIED ?? 0),
-      creditEarnedCents: Object.values(rewardTotals).reduce((total, item) => total + item.cents, 0),
+      creditEarnedCents: (rewardTotals.PENDING?.cents ?? 0) + (rewardTotals.APPLIED?.cents ?? 0),
       creditPendingCents: rewardTotals.PENDING?.cents ?? 0,
       creditAppliedCents: rewardTotals.APPLIED?.cents ?? 0,
     },
