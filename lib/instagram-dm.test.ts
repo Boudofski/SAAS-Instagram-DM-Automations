@@ -501,7 +501,9 @@ describe("sendInstagramDirectResponse", () => {
   });
 
   it("uses a reliable quick reply for follow verification when requested", async () => {
-    mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-quick" } });
+    mockedAxios.post
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-card" } })
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-quick" } });
 
     const result = await sendInstagramDirectResponse({
       token: VALID_TOKEN,
@@ -518,9 +520,9 @@ describe("sendInstagramDirectResponse", () => {
       },
     });
 
-    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-quick"] });
-    const body = mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.attachment.payload).toEqual({
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-card", "mid.follow-quick"] });
+    const cardBody = mockedAxios.post.mock.calls[0][1] as any;
+    expect(cardBody.message.attachment.payload).toEqual({
       template_type: "button",
       text: expect.stringContaining("Follow @ap3k"),
       buttons: [{
@@ -529,7 +531,10 @@ describe("sendInstagramDirectResponse", () => {
         url: "https://www.instagram.com/ap3k/",
       }],
     });
-    expect(body.message.quick_replies).toEqual([{
+    expect(cardBody.message.quick_replies).toBeUndefined();
+    const verificationBody = mockedAxios.post.mock.calls[1][1] as any;
+    expect(verificationBody.message.text).toBe("👇");
+    expect(verificationBody.message.quick_replies).toEqual([{
       content_type: "text",
       title: "I followed ✅",
       payload: "AP3K_FOLLOW_CHECK:automation-quick-follow",
@@ -561,6 +566,31 @@ describe("sendInstagramDirectResponse", () => {
     expect(fallback.message.attachment).toBeUndefined();
     expect(fallback.message.text).toContain("Follow @ap3k");
     expect(fallback.message.quick_replies[0].payload).toBe("AP3K_FOLLOW_CHECK:automation-quick-follow-fallback");
+  });
+
+  it("sends a typed-reply instruction when Instagram rejects the separate verification quick reply", async () => {
+    mockedAxios.post
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-card" } })
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-instruction" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-follow-instruction",
+      message: "Follow to unlock this guide.",
+      preferQuickReplyForPostback: true,
+      followGatePrompt: {
+        username: "ap3k",
+        state: "INITIAL",
+        verificationButtonTitle: "I followed ✅",
+      },
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-card", "mid.follow-instruction"] });
+    const instruction = mockedAxios.post.mock.calls[2][1] as any;
+    expect(instruction.message).toEqual({ text: "Reply “I followed ✅” to continue." });
   });
 
   it("returns the retry card when a follow still cannot be verified", async () => {
