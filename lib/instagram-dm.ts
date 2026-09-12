@@ -248,13 +248,30 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
       },
     },
   };
+  // Postback buttons can render without emitting a webhook. Keep the Follow
+  // action full-width, but use the callback type Instagram reliably delivers.
+  const reliable = addQuickReplies(
+    {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text,
+          buttons: [{ type: "web_url", title: "Follow", url: copy.profileUrl }],
+        },
+      },
+    },
+    automationId,
+    [verificationButtonTitle],
+    [verificationPayload]
+  );
   const fallback = addQuickReplies(
     { text },
     automationId,
     [verificationButtonTitle],
     [verificationPayload]
   );
-  return { preferred, fallback, copy };
+  return { preferred, reliable, fallback, copy };
 }
 
 function buildConfiguredPrivateReplyPayload(params: {
@@ -403,7 +420,7 @@ export async function sendInstagramDirectResponse(params: {
       responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.followGatePrompt) {
       const payload = buildFollowGatePayload(params.automationId, params.followGatePrompt);
-      responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
+      responseMessage = params.preferQuickReplyForPostback ? payload.reliable : payload.preferred;
     } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
       const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
@@ -596,7 +613,10 @@ export async function sendInstagramCommentPrivateReply(params: {
   const preferred = postbackPayload
     ? { message: params.preferQuickReplyForPostback ? postbackPayload.fallback : postbackPayload.preferred, ctaMode: "postback_button" as CtaMode }
     : followGatePayload
-    ? { message: followGatePayload.preferred, ctaMode: "follow_gate_card" as CtaMode }
+    ? {
+        message: params.preferQuickReplyForPostback ? followGatePayload.reliable : followGatePayload.preferred,
+        ctaMode: "follow_gate_card" as CtaMode,
+      }
     : buildConfiguredPrivateReplyPayload({
         automationId,
         message: params.message,

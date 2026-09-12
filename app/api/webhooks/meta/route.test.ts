@@ -224,6 +224,37 @@ describe("Meta webhook route security", () => {
     expect(mockCreateWebhookEvent).not.toHaveBeenCalled();
   });
 
+  it("records delivery receipts without treating them as inbound DMs", async () => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{
+        id: "ig-business-1",
+        messaging: [{
+          sender: { id: "recipient-1" },
+          recipient: { id: "ig-business-1" },
+          timestamp: Date.now(),
+          delivery: { mids: ["mid.outbound"] },
+        }],
+      }],
+    });
+
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
+      method: "POST",
+      headers: { "x-hub-signature-256": "sha256=good" },
+      body,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith("webhook-event-1", expect.objectContaining({
+      status: "IGNORED",
+      errorMessage: "inbound_system_event_skipped",
+    }));
+    expect(mockFindIntegrationForWebhookAccount).not.toHaveBeenCalled();
+    expect(mockUpsertInboundInboxMessage).not.toHaveBeenCalled();
+    expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();
+  });
+
   it("uses the automation-owned integration when releasing the final DM", async () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
     const integration = {

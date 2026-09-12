@@ -14,6 +14,7 @@ export type ParsedMessagingData = {
   replyToStory?: { id?: string; url?: string };
   storyMention: boolean;
   isEcho: boolean;
+  systemEventType?: "DELIVERY" | "READ" | "REACTION";
 };
 
 export type MessagingDiagnostics = {
@@ -27,6 +28,7 @@ export type MessagingDiagnostics = {
   hasAttachments: boolean;
   hasStoryContext: boolean;
   isEcho: boolean;
+  hasSystemEvent: boolean;
 };
 
 export type MessagingParseResult =
@@ -44,6 +46,7 @@ const EMPTY_DIAGNOSTICS: MessagingDiagnostics = {
   hasAttachments: false,
   hasStoryContext: false,
   isEcho: false,
+  hasSystemEvent: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -99,6 +102,13 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
           title: typeof m.postback.title === "string" ? m.postback.title : undefined,
         }
       : undefined;
+  const systemEventType = m.delivery && typeof m.delivery === "object"
+    ? "DELIVERY"
+    : m.read && typeof m.read === "object"
+      ? "READ"
+      : m.reaction && typeof m.reaction === "object"
+        ? "REACTION"
+        : undefined;
 
   const diagnostics: MessagingDiagnostics = {
     hasSenderId: Boolean(senderId),
@@ -111,6 +121,7 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
     hasAttachments: attachments.length > 0,
     hasStoryContext: Boolean(replyToStory) || storyMention,
     isEcho,
+    hasSystemEvent: Boolean(systemEventType),
   };
 
   if (!senderId) {
@@ -131,6 +142,7 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
       replyToStory,
       storyMention,
       isEcho,
+      systemEventType,
     },
     diagnostics,
   };
@@ -142,6 +154,7 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
 
 export const INBOUND_MESSAGE_NO_AUTOMATION = "inbound_message_received_no_dm_automation" as const;
 export const INBOUND_MESSAGE_ECHO_SKIPPED = "echo_message_skipped" as const;
+export const INBOUND_SYSTEM_EVENT_SKIPPED = "inbound_system_event_skipped" as const;
 
 export type StoryInteractionType = "MENTION" | "REACTION" | "REPLY";
 

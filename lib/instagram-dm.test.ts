@@ -520,14 +520,47 @@ describe("sendInstagramDirectResponse", () => {
 
     expect(result).toEqual({ ok: true, messageIds: ["mid.follow-quick"] });
     const body = mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.attachment).toBeUndefined();
-    expect(body.message.text).toContain("Follow @ap3k");
-    expect(body.message.text).not.toContain("https://");
+    expect(body.message.attachment.payload).toEqual({
+      template_type: "button",
+      text: expect.stringContaining("Follow @ap3k"),
+      buttons: [{
+        type: "web_url",
+        title: "Follow",
+        url: "https://www.instagram.com/ap3k/",
+      }],
+    });
     expect(body.message.quick_replies).toEqual([{
       content_type: "text",
       title: "I followed ✅",
       payload: "AP3K_FOLLOW_CHECK:automation-quick-follow",
     }]);
+  });
+
+  it("falls back to text plus verification quick reply when the reliable follow card is rejected", async () => {
+    mockedAxios.post
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-quick-fallback" } });
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-quick-follow-fallback",
+      message: "Follow to unlock this guide.",
+      preferQuickReplyForPostback: true,
+      followGatePrompt: {
+        username: "ap3k",
+        state: "INITIAL",
+        verificationButtonTitle: "I followed ✅",
+        verificationPayload: "AP3K_FOLLOW_CHECK:automation-quick-follow-fallback",
+      },
+    });
+
+    expect(result).toEqual({ ok: true, messageIds: ["mid.follow-quick-fallback"] });
+    const fallback = mockedAxios.post.mock.calls[1][1] as any;
+    expect(fallback.message.attachment).toBeUndefined();
+    expect(fallback.message.text).toContain("Follow @ap3k");
+    expect(fallback.message.quick_replies[0].payload).toBe("AP3K_FOLLOW_CHECK:automation-quick-follow-fallback");
   });
 
   it("returns the retry card when a follow still cannot be verified", async () => {
