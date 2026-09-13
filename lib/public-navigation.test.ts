@@ -13,7 +13,8 @@ describe("public website navigation", () => {
   });
 
   it("keeps the public authentication actions available", () => {
-    expect(source).toContain('href="/sign-in"');
-    expect(source).toContain('href="/sign-up"');
+    expect(source).toContain('href={href("/sign-in")}');
+    expect(source).toContain('href={href("/sign-up")}');
+    expect(source).toContain("<LanguageSwitcher");
   });
 });

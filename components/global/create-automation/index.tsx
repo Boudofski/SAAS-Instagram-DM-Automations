@@ -3,12 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { AutomationDuoToneWhite } from "@/icons";
 import Link from "next/link";
+import { useI18n } from "@/providers/i18n-provider";
 
 type Props = {
   slug?: string;
 };
 
 function CreateAutomation({ slug }: Props) {
+  const { t } = useI18n();
   const href = slug ? `/dashboard/${slug}/automation/new` : "/dashboard";
 
   return (
@@ -18,7 +20,7 @@ function CreateAutomation({ slug }: Props) {
     >
       <Link href={href} className="whitespace-nowrap">
         <AutomationDuoToneWhite />
-        <p className="hidden sm:inline">Create Automation</p>
+        <p className="hidden sm:inline">{t("createAutomation")}</p>
       </Link>
     </Button>
   );

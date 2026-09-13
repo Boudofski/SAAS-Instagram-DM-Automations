@@ -61,7 +61,7 @@ export default function PrivacyPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Privacy Policy</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: September 12, 2026. AP3K is operated by CAFUCCI LTD. This policy explains how AP3K handles data used for Instagram automation, billing, analytics, and account management.
+            Last updated: September 13, 2026. This policy explains how AP3K handles data used for Instagram automation, billing, analytics, and account management.
           </p>
         </div>
 

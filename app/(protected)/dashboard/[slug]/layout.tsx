@@ -65,7 +65,7 @@ async function Layout({ children, params }: Props) {
       <ClerkCacheSyncer />
       <div className="ap3k-page overflow-x-hidden">
         <Sidebar slug={params.slug} />
-        <div className="relative z-10 flex min-w-0 flex-col px-3 py-3 transition-[margin] duration-300 lg:ml-[76px] lg:px-6 lg:py-5 lg:peer-data-[expanded=true]:ml-[232px]">
+        <div className="relative z-10 flex min-w-0 flex-col px-3 py-3 transition-[margin] duration-300 lg:ml-[76px] lg:px-6 lg:py-5 lg:peer-data-[expanded=true]:ml-[232px] rtl:lg:ml-0 rtl:lg:mr-[76px] rtl:lg:peer-data-[expanded=true]:ml-0 rtl:lg:peer-data-[expanded=true]:mr-[232px]">
           <NavBar slug={params.slug} />
           {children}
         </div>

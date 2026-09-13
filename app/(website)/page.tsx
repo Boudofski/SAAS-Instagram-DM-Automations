@@ -15,6 +15,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import LocalizedLandingPage from "@/components/i18n/localized-landing-page";
+import { getServerLocale } from "@/lib/i18n/server";
 
 const VALUE_CARDS = [
   {
@@ -154,6 +156,9 @@ function ProductVideo({
 }
 
 export default function LandingPage() {
+  const locale = getServerLocale();
+  if (locale !== "en") return <LocalizedLandingPage locale={locale} />;
+
   return (
     <div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema).replace(/</g, "\\u003c") }} />

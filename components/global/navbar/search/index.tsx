@@ -5,6 +5,7 @@ import type { WorkspaceSearchItem, WorkspaceSearchResults } from "@/lib/workspac
 import { Loader2, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "@/providers/i18n-provider";
 
 const EMPTY_RESULTS: WorkspaceSearchResults = { campaigns: [], keywords: [], leads: [] };
 
@@ -19,6 +20,7 @@ type SearchSection = {
 };
 
 export default function Search() {
+  const { t } = useI18n();
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
@@ -30,10 +32,10 @@ export default function Search() {
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const sections = useMemo<SearchSection[]>(() => [
-    { label: "Automations", items: results.campaigns },
-    { label: "Keywords", items: results.keywords },
-    { label: "Leads", items: results.leads },
-  ], [results]);
+    { label: t("automations"), items: results.campaigns },
+    { label: t("keywords"), items: results.keywords },
+    { label: t("leads"), items: results.leads },
+  ], [results, t]);
   const allItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
   const trimmedQuery = query.trim();
   const canSearch = trimmedQuery.length >= 2;
@@ -75,7 +77,7 @@ export default function Search() {
 
         if (requestId !== requestIdRef.current) return;
         if (!response.ok || !payload.results) {
-          throw new Error(payload.error?.message || "Search is temporarily unavailable.");
+          throw new Error(payload.error?.message || t("searchUnavailable"));
         }
 
         setResults(payload.results);
@@ -83,7 +85,7 @@ export default function Search() {
       } catch (caught) {
         if (controller.signal.aborted || requestId !== requestIdRef.current) return;
         setResults(EMPTY_RESULTS);
-        setError(caught instanceof Error ? caught.message : "Search is temporarily unavailable.");
+        setError(caught instanceof Error ? caught.message : t("searchUnavailable"));
       } finally {
         if (requestId === requestIdRef.current) setIsLoading(false);
       }
@@ -93,7 +95,7 @@ export default function Search() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [canSearch, trimmedQuery]);
+  }, [canSearch, trimmedQuery, t]);
 
   function navigateTo(item: WorkspaceSearchItem) {
     setIsOpen(false);
@@ -142,8 +144,8 @@ export default function Search() {
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => canSearch && setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search automations, keywords, or leads"
-          aria-label="Search automations, keywords, or leads"
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={isOpen && canSearch}
@@ -157,15 +159,15 @@ export default function Search() {
         <div
           id="workspace-search-results"
           role="listbox"
-          aria-label="Workspace search results"
+          aria-label={t("searchResults")}
           className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(420px,70vh)] min-w-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-[#101827]"
         >
           {isLoading && !hasResults ? (
-            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">Searching…</p>
+            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">{t("searching")}</p>
           ) : error ? (
             <p role="alert" className="px-3 py-5 text-center text-sm font-semibold text-red-600 dark:text-red-300">{error}</p>
           ) : !hasResults ? (
-            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">No results for “{trimmedQuery}”.</p>
+            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">{t("noResults")}: “{trimmedQuery}”.</p>
           ) : (
             sections.map((section) => section.items.length > 0 && (
               <div key={section.label} role="group" aria-label={section.label} className="py-1">

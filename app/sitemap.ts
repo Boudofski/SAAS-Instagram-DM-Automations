@@ -1,6 +1,7 @@
 import { BLOG_POSTS } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import type { MetadataRoute } from "next";
+import { SUPPORTED_LOCALES, localizePublicPath } from "@/lib/i18n/config";
 
 const baseUrl = "https://ap3k.com";
 
@@ -36,5 +37,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/ar/instagram-dm-automation`, lastModified: updated, changeFrequency: "monthly" as const, priority: 0.85 },
   ];
 
-  return [...staticPages, ...commercialPages, ...blogPages];
+  const localizedCorePages: MetadataRoute.Sitemap = SUPPORTED_LOCALES
+    .filter((locale) => locale !== "en")
+    .flatMap((locale) => [
+      { url: `${baseUrl}${localizePublicPath("/", locale)}`, lastModified: updated, changeFrequency: "weekly" as const, priority: 0.9 },
+      { url: `${baseUrl}${localizePublicPath("/pricing", locale)}`, lastModified: updated, changeFrequency: "monthly" as const, priority: 0.8 },
+    ]);
+
+  return [...staticPages, ...localizedCorePages, ...commercialPages, ...blogPages];
 }

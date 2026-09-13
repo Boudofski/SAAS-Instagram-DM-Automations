@@ -1,8 +1,11 @@
 "use client";
 
+import { useI18n } from "@/providers/i18n-provider";
+
 type Props = { className?: string };
 
 export default function CookiePreferencesButton({ className = "" }: Props) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -12,7 +15,7 @@ export default function CookiePreferencesButton({ className = "" }: Props) {
         window.location.reload();
       }}
     >
-      Cookie preferences
+      {t("cookiePreferences")}
     </button>
   );
 }
