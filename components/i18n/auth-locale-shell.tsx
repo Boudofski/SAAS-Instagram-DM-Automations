@@ -9,9 +9,21 @@ import { localizePublicPath } from "@/lib/i18n/config";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+// Clerk's community Arabic catalog leaves these visible fields undefined.
+const arabicAuth = {
+  ...arSA,
+  formFieldLabel__emailAddress: "البريد الإلكتروني",
+  formFieldInputPlaceholder__emailAddress: "أدخل بريدك الإلكتروني",
+  formFieldInputPlaceholder__emailAddress_username: "أدخل بريدك الإلكتروني أو اسم المستخدم",
+  formFieldInputPlaceholder__password: "أدخل كلمة المرور",
+  formFieldInputPlaceholder__firstName: "أدخل اسمك الأول",
+  formFieldInputPlaceholder__lastName: "أدخل اسم العائلة",
+  formFieldInputPlaceholder__username: "أدخل اسم المستخدم",
+};
+
 export default function AuthLocaleShell({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
-  const localization = locale === "en" ? undefined : { ar: arSA, de: deDE, es: esES, fr: frFR, pt: ptPT }[locale];
+  const localization = locale === "en" ? undefined : { ar: arabicAuth, de: deDE, es: esES, fr: frFR, pt: ptPT }[locale];
   return (
     <ClerkProvider localization={localization}>
       <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4 py-20 dark:bg-[#080911]">
