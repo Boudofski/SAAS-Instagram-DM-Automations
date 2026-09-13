@@ -131,7 +131,7 @@ export default function PricingExperience({
                     </div>
                     {interval === "year" && paidPlan && (
                       <p className="mt-1 text-[11px] font-black text-emerald-600 dark:text-emerald-300">
-                        Save {plan.annualSavingsPercent}% · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}/mo
+                        {`Save ${plan.annualSavingsPercent}%`} · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}/mo
                       </p>
                     )}
                   </>
