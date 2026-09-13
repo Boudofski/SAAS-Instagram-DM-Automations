@@ -1,6 +1,7 @@
 import { PRIMARY_NAVIGATION, primaryNavigationHref } from "@/constants/menu";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useI18n } from "@/providers/i18n-provider";
 
 type Props = {
   page: string;
@@ -8,6 +9,7 @@ type Props = {
 };
 
 function Items({ page, slug }: Props) {
+  const { t } = useI18n();
   return PRIMARY_NAVIGATION.map((item) => {
     const Icon = item.icon;
     const isActive =
@@ -27,7 +29,7 @@ function Items({ page, slug }: Props) {
         )}
       >
         <Icon className="h-4 w-4" />
-        {item.label}
+        {t(item.messageKey)}
       </Link>
     );
   });

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: "Service Operator",
-    body: "AP3K is operated by CAFUCCI LTD. These terms form an agreement between the person or organization using AP3K and CAFUCCI LTD.",
+    body: "These terms govern the agreement between the person or organization using AP3K and the AP3K service provider identified in the applicable checkout and billing records.",
   },
   {
     title: "What AP3K Does",

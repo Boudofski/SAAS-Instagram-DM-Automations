@@ -2,61 +2,68 @@ import ReactQueryProvider from "@/providers/react-query-provider";
 import ReduxProvider from "@/providers/redux-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import ConsentAwareAnalytics from "@/components/global/consent-aware-analytics";
+import { I18nProvider } from "@/providers/i18n-provider";
+import { getServerLocale } from "@/lib/i18n/server";
+import { LOCALE_DETAILS, localeAlternates } from "@/lib/i18n/config";
+import { SITE_METADATA } from "@/lib/i18n/metadata";
+import PhraseTranslationBridge from "@/providers/phrase-translation-bridge";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
-const siteDescription =
-  "Automatically reply to Instagram comments, send the promised link by DM, and track every lead—without complicated flows or code.";
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://ap3k.com"),
-  title: {
-    default: "AP3K — Instagram Comment & DM Automation",
-    template: "%s",
-  },
-  description: siteDescription,
-  applicationName: "AP3K",
-  alternates: { canonical: "/" },
-  verification: googleVerification ? { google: googleVerification } : undefined,
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export function generateMetadata(): Metadata {
+  const locale = getServerLocale();
+  const site = SITE_METADATA[locale];
+
+  return {
+    metadataBase: new URL("https://ap3k.com"),
+    title: { default: site.title, template: "%s" },
+    description: site.description,
+    applicationName: "AP3K",
+    alternates: { canonical: locale === "en" ? "/" : `/${locale}`, languages: localeAlternates() },
+    verification: googleVerification ? { google: googleVerification } : undefined,
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
-  },
-  openGraph: {
-    title: "AP3K — Instagram Comment & DM Automation",
-    description: siteDescription,
-    url: "https://ap3k.com",
-    siteName: "AP3K",
-    type: "website",
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "AP3K — Instagram Comment & DM Automation",
-    description: siteDescription,
-  },
-};
+    openGraph: {
+      title: site.title,
+      description: site.description,
+      url: locale === "en" ? "https://ap3k.com" : `https://ap3k.com/${locale}`,
+      siteName: "AP3K",
+      type: "website",
+      locale: LOCALE_DETAILS[locale].openGraph,
+    },
+    twitter: { card: "summary_large_image", title: site.title, description: site.description },
+  };
+}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = getServerLocale();
+  const localeDetails = LOCALE_DETAILS[locale];
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={localeDetails.htmlLang} dir={localeDetails.direction} suppressHydrationWarning>
       <body className={jakarta.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <ReduxProvider>
-            <ReactQueryProvider>{children}</ReactQueryProvider>
-          </ReduxProvider>
-          <Toaster />
+          <I18nProvider locale={locale}>
+            <PhraseTranslationBridge locale={locale} />
+            <ReduxProvider>
+              <ReactQueryProvider>{children}</ReactQueryProvider>
+            </ReduxProvider>
+            <Toaster />
+          </I18nProvider>
         </ThemeProvider>
         <ConsentAwareAnalytics />
       </body>

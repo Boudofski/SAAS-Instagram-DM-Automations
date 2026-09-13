@@ -14,10 +14,12 @@ import { PRIMARY_NAVIGATION, primaryNavigationHref } from "@/constants/menu";
 import { planDisplayName } from "@/lib/billing-plans";
 import { ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/providers/i18n-provider";
 
 type Props = { slug: string };
 
 export default function Sidebar({ slug }: Props) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(true);
   const { page } = usePath();
   const { data } = useQueryUser();
@@ -40,16 +42,16 @@ export default function Sidebar({ slug }: Props) {
 
   return (
     <aside className={cn(
-      "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-visible border-r border-slate-200 bg-white/95 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl transition-[width] duration-300 dark:border-white/10 dark:bg-[#0b1020]/95 dark:text-slate-50 lg:flex",
+      "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-visible border-r border-slate-200 bg-white/95 py-0 text-slate-950 shadow-[18px_0_60px_rgba(15,23,42,0.08)] backdrop-blur-2xl transition-[width] duration-300 rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 dark:border-white/10 dark:bg-[#0b1020]/95 dark:text-slate-50 lg:flex",
       expanded ? "w-[232px]" : "w-[76px]"
     )} data-expanded={expanded ? "true" : "false"}>
       <div className={cn("shrink-0 border-b border-slate-200 py-4 dark:border-white/10", expanded ? "px-4" : "px-3")}>
         <div className={cn("flex items-center", expanded ? "justify-between" : "justify-center")}>
           {expanded ? <AP3KLogo className="text-sm text-slate-950 dark:text-white" /> : <AP3KLogo showText={false} markClassName="h-11 w-11 rounded-2xl" />}
         </div>
-        <Link href={`/dashboard/${slug}/account`} title={!expanded ? (instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "Connect Instagram") : undefined} className={cn("mt-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-violet-300 dark:border-white/[0.12] dark:bg-white/[0.06] dark:hover:border-violet-400/40", expanded ? "gap-3 p-2.5" : "justify-center border-0 bg-transparent p-0 dark:bg-transparent")}>
+        <Link href={`/dashboard/${slug}/account`} title={!expanded ? (instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")) : undefined} className={cn("mt-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-violet-300 dark:border-white/[0.12] dark:bg-white/[0.06] dark:hover:border-violet-400/40", expanded ? "gap-3 p-2.5" : "justify-center border-0 bg-transparent p-0 dark:bg-transparent")}>
           <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-          {expanded ? <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "Connect Instagram"}</p><p className="mt-0.5 truncate text-[11px] font-bold text-violet-500">{plan} plan</p></div> : null}
+          {expanded ? <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")}</p><p className="mt-0.5 truncate text-[11px] font-bold text-violet-500">{plan} {t("plan")}</p></div> : null}
         </Link>
       </div>
 
@@ -62,8 +64,8 @@ export default function Sidebar({ slug }: Props) {
             <Link
               key={item.segment}
               href={href}
-              title={!expanded ? item.label : undefined}
-              aria-label={!expanded ? item.label : undefined}
+              title={!expanded ? t(item.messageKey) : undefined}
+              aria-label={!expanded ? t(item.messageKey) : undefined}
               className={cn(
                 "flex min-h-10 items-center rounded-xl text-sm font-bold transition-all duration-200",
                 expanded ? "gap-2.5 px-3 py-2.5" : "justify-center px-0 py-2.5",
@@ -73,7 +75,7 @@ export default function Sidebar({ slug }: Props) {
               )}
             >
               <Icon className="h-4 w-4" />
-              {expanded && item.label}
+              {expanded && t(item.messageKey)}
             </Link>
           );
         })}
@@ -86,8 +88,8 @@ export default function Sidebar({ slug }: Props) {
         <button
           type="button"
           onClick={toggleExpanded}
-          aria-label={expanded ? "Collapse navigation" : "Expand navigation"}
-          title={expanded ? "Collapse menu" : "Expand menu"}
+          aria-label={expanded ? t("collapseNavigation") : t("expandNavigation")}
+          title={expanded ? t("collapseNavigation") : t("expandNavigation")}
           className="mx-auto grid h-10 w-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           {expanded ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
@@ -100,12 +102,12 @@ export default function Sidebar({ slug }: Props) {
             queryClient.clear();
             void signOut({ redirectUrl: "/" });
           }}
-          title={!expanded ? "Sign out" : undefined}
-          aria-label={!expanded ? "Sign out" : undefined}
+          title={!expanded ? t("signOut") : undefined}
+          aria-label={!expanded ? t("signOut") : undefined}
           className={cn("flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white", expanded ? "gap-2 px-3 py-2.5" : "px-0")}
         >
           <LogOut className="h-4 w-4" />
-          {expanded && <span>Sign out</span>}
+          {expanded && <span>{t("signOut")}</span>}
         </button>
       </div>
     </aside>

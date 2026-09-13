@@ -1,8 +1,13 @@
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
+import LanguageSwitcher from "@/components/global/language-switcher";
+import { localizePublicPath } from "@/lib/i18n/config";
+import { getServerMessages } from "@/lib/i18n/server";
 import Link from "next/link";
 
 export default function WebsiteFooter() {
+  const { locale, t } = getServerMessages();
+  const href = (path: string) => localizePublicPath(path, locale);
   const linkClass = "text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text";
 
   return (
@@ -12,45 +17,46 @@ export default function WebsiteFooter() {
           <div className="flex flex-col gap-3">
             <AP3KLogo className="text-sm text-slate-700 dark:text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
             <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
-              Instagram automation for Business and Creator accounts. Reply to comments, stories, and DMs, then manage conversations and leads in one place.
+              {t("footerDescription")}
             </p>
+            <LanguageSwitcher />
           </div>
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">Product</p>
-              <Link href="/#features" className={linkClass}>Features</Link>
-              <Link href="/#how-it-works" className={linkClass}>How it works</Link>
-              <Link href="/pricing" className={linkClass}>Pricing</Link>
-              <Link href="/blog" className={linkClass}>Blog</Link>
-              <Link href="/instagram-dm-automation" className={linkClass}>Instagram DM automation</Link>
-              <Link href="/instagram-comment-automation" className={linkClass}>Comment automation</Link>
-              <Link href="/manychat-alternative" className={linkClass}>ManyChat alternative</Link>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("product")}</p>
+              <Link href={`${href("/")}#features`} className={linkClass}>{t("features")}</Link>
+              <Link href={`${href("/")}#how-it-works`} className={linkClass}>{t("howItWorks")}</Link>
+              <Link href={href("/pricing")} className={linkClass}>{t("pricing")}</Link>
+              <Link href={href("/blog")} className={linkClass}>{t("blog")}</Link>
+              <Link href={href("/instagram-dm-automation")} className={linkClass}>{t("instagramDmAutomation")}</Link>
+              <Link href={href("/instagram-comment-automation")} className={linkClass}>{t("commentAutomation")}</Link>
+              <Link href={href("/manychat-alternative")} className={linkClass}>{t("manychatAlternative")}</Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">Popular guides</p>
-              <Link href="/blog/automate-instagram-dms-from-comments" className={linkClass}>Automate DMs from comments</Link>
-              <Link href="/blog/instagram-comment-reply-vs-dm" className={linkClass}>Comment reply vs DM</Link>
-              <Link href="/blog/turn-instagram-comments-into-leads" className={linkClass}>Comments to leads</Link>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("popularGuides")}</p>
+              <Link href={href("/blog/automate-instagram-dms-from-comments")} className={linkClass}>{t("automateDmsGuide")}</Link>
+              <Link href={href("/blog/instagram-comment-reply-vs-dm")} className={linkClass}>{t("commentReplyVsDm")}</Link>
+              <Link href={href("/blog/turn-instagram-comments-into-leads")} className={linkClass}>{t("commentsToLeads")}</Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">Legal</p>
-              <Link href="/privacy" className={linkClass}>Privacy</Link>
-              <Link href="/terms" className={linkClass}>Terms</Link>
-              <Link href="/cookies" className={linkClass}>Cookies</Link>
-              <Link href="/refund-policy" className={linkClass}>Refunds</Link>
-              <Link href="/data-deletion" className={linkClass}>Data Deletion</Link>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("legal")}</p>
+              <Link href={href("/privacy")} className={linkClass}>{t("privacy")}</Link>
+              <Link href={href("/terms")} className={linkClass}>{t("terms")}</Link>
+              <Link href={href("/cookies")} className={linkClass}>{t("cookies")}</Link>
+              <Link href={href("/refund-policy")} className={linkClass}>{t("refunds")}</Link>
+              <Link href={href("/data-deletion")} className={linkClass}>{t("dataDeletion")}</Link>
               <CookiePreferencesButton className={linkClass} />
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">Support</p>
-              <Link href="/help" className={linkClass}>Knowledge base</Link>
-              <Link href="/contact" className={linkClass}>Contact support</Link>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("support")}</p>
+              <Link href={href("/help")} className={linkClass}>{t("knowledgeBase")}</Link>
+              <Link href={href("/contact")} className={linkClass}>{t("contactSupport")}</Link>
               <a href="mailto:support@ap3k.com" className={linkClass}>support@ap3k.com</a>
             </div>
           </div>
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
-          <p className="text-xs text-slate-400">© 2026 AP3K, operated by CAFUCCI LTD. Instagram automation for professional accounts.</p>
+          <p className="text-xs text-slate-400">{t("footerCopyright")}</p>
         </div>
       </div>
     </footer>

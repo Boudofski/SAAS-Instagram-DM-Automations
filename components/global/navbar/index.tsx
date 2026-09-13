@@ -18,12 +18,15 @@ import Search from "./search";
 import { useClerk } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/global/language-switcher";
+import { useI18n } from "@/providers/i18n-provider";
 
 type Props = {
   slug: string;
 };
 
 function NavBar({ slug }: Props) {
+  const { t } = useI18n();
   const { page, pathname } = usePath();
   const { signOut } = useClerk();
   const queryClient = useQueryClient();
@@ -44,7 +47,7 @@ function NavBar({ slug }: Props) {
         <span className="flex flex-1 items-center gap-x-2 lg:hidden">
           <Sheet
             trigger={<Menu aria-hidden="true" />}
-            triggerLabel="Open navigation"
+            triggerLabel={t("openNavigation")}
             className="lg:hidden"
             contentClassName="h-[100dvh] max-h-[100dvh]"
             side="left"
@@ -60,11 +63,12 @@ function NavBar({ slug }: Props) {
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
                 <Link href={`/dashboard/${slug}/account`} className="mb-2 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.05]">
                   <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "Connect Instagram"}</span><span className="mt-0.5 block text-xs font-bold text-violet-500">{plan} plan</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")}</span><span className="mt-0.5 block text-xs font-bold text-violet-500">{plan} {t("plan")}</span></span>
                 </Link>
                 <div className="flex flex-col py-3">
                   <Items page={page} slug={slug} />
                 </div>
+                <div className="px-1 pb-3"><LanguageSwitcher /></div>
                 <div className="mt-3 border-t border-slate-200 pt-3 dark:border-white/10"><HelpHub slug={slug} mobile /></div>
               </div>
 
@@ -74,7 +78,7 @@ function NavBar({ slug }: Props) {
                   onClick={handleSignOut}
                   className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-pink dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
                 >
-                  Sign out
+                  {t("signOut")}
                 </button>
               </div>
             </div>
@@ -85,6 +89,7 @@ function NavBar({ slug }: Props) {
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {!isCampaignList && <CreateAutomation slug={slug} />}
+          <LanguageSwitcher compact />
           <ThemeToggle compact />
           <Notification slug={slug} />
         </div>

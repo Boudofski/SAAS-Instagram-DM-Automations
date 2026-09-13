@@ -3,13 +3,28 @@ import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
+import LocalizedPricingPage from "@/components/i18n/localized-pricing-page";
+import { getServerLocale } from "@/lib/i18n/server";
+import { localeAlternates, localizePublicPath } from "@/lib/i18n/config";
 
-export const metadata: Metadata = {
-  title: "AP3K Pricing — Free, Pro & Business Instagram Automation Plans",
-  description:
-    "Compare AP3K Free, Pro and Business plans for Instagram comment replies, DMs, AI, lead tracking and automation analytics. Save with annual billing.",
-  alternates: { canonical: "/pricing" },
-};
+const PRICING_METADATA = {
+  en: ["AP3K Pricing — Free, Pro & Business Instagram Automation Plans", "Compare AP3K Free, Pro and Business plans for Instagram comment replies, DMs, AI, lead tracking and automation analytics."],
+  ar: ["أسعار AP3K — خطط أتمتة إنستغرام المجانية والاحترافية والأعمال", "قارن خطط AP3K المجانية والاحترافية والأعمال للردود والرسائل الخاصة والذكاء الاصطناعي ومتابعة العملاء المحتملين."],
+  fr: ["Tarifs AP3K — Offres Instagram Gratuit, Pro et Business", "Comparez les offres AP3K Gratuit, Pro et Business pour les réponses, DM, fonctions d’IA et le suivi des prospects Instagram."],
+  es: ["Precios de AP3K — Planes Gratis, Pro y Business", "Compara los planes Gratis, Pro y Business de AP3K para respuestas, DM, IA y seguimiento de contactos de Instagram."],
+  de: ["AP3K Preise — Instagram-Tarife Kostenlos, Pro und Business", "Vergleiche die AP3K-Tarife Kostenlos, Pro und Business für Antworten, DMs, KI und Instagram-Lead-Erfassung."],
+  pt: ["Preços do AP3K — Planos Grátis, Pro e Business", "Compare os planos Grátis, Pro e Business do AP3K para respostas, DMs, IA e acompanhamento de contactos do Instagram."],
+} as const;
+
+export function generateMetadata(): Metadata {
+  const locale = getServerLocale();
+  const [title, description] = PRICING_METADATA[locale];
+  return {
+    title,
+    description,
+    alternates: { canonical: localizePublicPath("/pricing", locale), languages: localeAlternates("/pricing") },
+  };
+}
 
 const FAQ = [
   {
@@ -43,6 +58,9 @@ const FAQ = [
 ] as const;
 
 export default function PricingPage() {
+  const locale = getServerLocale();
+  if (locale !== "en") return <LocalizedPricingPage locale={locale} />;
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.12),transparent_30rem),radial-gradient(circle_at_84%_12%,rgba(236,72,153,0.10),transparent_30rem)]" />

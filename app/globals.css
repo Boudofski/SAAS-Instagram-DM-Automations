@@ -395,3 +395,14 @@
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }
+html[dir="rtl"] body {
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+html[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+html[dir="rtl"] .text-right {
+  text-align: left;
+}
