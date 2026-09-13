@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { Button } from "@/components/ui/button";
 import { PLAN_CARDS, checkoutHref, type CustomerPlan } from "@/lib/billing-plans";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ export default function PaymentCard({ label, current }: Props) {
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-black">{plan.name}</h2>
-        {isActive && <span className="ap3k-badge ap3k-badge-green">Current</span>}
+        {isActive && <span className="ap3k-badge ap3k-badge-green"><UiText>{"Current"}</UiText></span>}
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1">

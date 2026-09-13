@@ -1,5 +1,6 @@
 "use client";
 
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import TrackingScripts from "@/components/global/tracking-scripts";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -35,7 +36,7 @@ export default function ConsentAwareAnalytics() {
       ) : null}
 
       {ready && consent === null ? (
-        <aside
+        <LocalizedCopy><aside
           role="dialog"
           aria-label="Cookie preferences"
           className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-2xl rounded-2xl border border-white/15 bg-[#111320]/95 p-4 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:p-5"
@@ -48,11 +49,9 @@ export default function ConsentAwareAnalytics() {
             <button type="button" onClick={() => choose("necessary")} className="min-h-11 rounded-xl border border-white/15 px-4 text-xs font-black transition hover:bg-white/10">
               Necessary only
             </button>
-            <button type="button" onClick={() => choose("accepted")} className="ap3k-gradient-button min-h-11 px-5 text-xs">
-              Accept analytics
-            </button>
+            <button type="button" onClick={() => choose("accepted")} className="ap3k-gradient-button min-h-11 px-5 text-xs">Accept analytics</button>
           </div>
-        </aside>
+        </aside></LocalizedCopy>
       ) : null}
     </>
   );

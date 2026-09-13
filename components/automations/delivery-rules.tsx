@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { UserCheck } from "lucide-react";
 
 type DeliveryRuleFields = {
@@ -65,7 +66,7 @@ export default function DeliveryRules({
         <div className="rounded-2xl border border-rf-purple/20 bg-rf-purple/[0.06] p-4 dark:border-rf-purple/30 dark:bg-rf-purple/[0.09] sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple dark:text-violet-300">Follow request DM</p>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple dark:text-violet-300"><UiText>{"Follow request DM"}</UiText></p>
               <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Sent only when the person is not following yet.</p>
             </div>
             <span className="rounded-full bg-rf-purple/10 px-2.5 py-1 text-[11px] font-black text-rf-purple">Optional step</span>

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/actions/automation";
 import AutomationDetailPhonePreview from "@/components/automations/automation-detail-phone-preview";
 import ActiveAutomationButton from "@/components/global/active-automation-button";
@@ -181,7 +182,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         <aside className="order-3 flex min-h-0 flex-col gap-3">
           <section className="ap3k-card shrink-0 animate-[ap3kDashboardRise_0.62s_ease-out_both] rounded-3xl p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="ap3k-kicker">Settings</p>
+              <p className="ap3k-kicker"><UiText>{"Settings"}</UiText></p>
               <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">{isLive ? "Listening now" : statusLabel}</Badge>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -192,12 +193,12 @@ export default async function CampaignDetailPage({ params }: Props) {
               <SettingsRow label="AI reply" value={isMessageAutomation ? aiDmReplyEnabled ? "Enabled" : "Off" : aiCommentReplyEnabled ? aiTone : "Off"} />
               <SettingsRow label="Follow request" value={automation.followGateRequired ? "Enabled" : "Off"} />
             </div>
-            <Link href={editHref} className="ap3k-gradient-button mt-3 block px-4 py-2.5 text-center text-sm">Edit automation</Link>
+            <Link href={editHref} className="ap3k-gradient-button mt-3 block px-4 py-2.5 text-center text-sm"><UiText>{"Edit automation"}</UiText></Link>
           </section>
 
           <section className="ap3k-card flex min-h-[260px] flex-1 animate-[ap3kDashboardRise_0.68s_ease-out_both] flex-col overflow-hidden rounded-3xl p-4">
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-white/10">
-              <div><h2 className="text-sm font-black text-slate-950 dark:text-white">Recent activity</h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest 20 events</p></div>
+              <div><h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Recent activity"}</UiText></h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest 20 events</p></div>
               <span className="ap3k-badge ap3k-badge-slate">{groupedActivity.length}</span>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-3">

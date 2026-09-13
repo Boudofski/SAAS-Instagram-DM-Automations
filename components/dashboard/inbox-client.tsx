@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { getInboxConversations, getInboxMessages, sendInboxReply } from "@/actions/inbox";
 import {
   ArrowDownUp,
@@ -138,13 +139,13 @@ export default function InboxClient({ initialConversationId }: { initialConversa
   return (
     <div className="mt-3 flex h-[calc(100dvh-9.5rem)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f5f6fa] text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#050816] dark:text-white sm:h-[calc(100dvh-7.5rem)] sm:min-h-[520px]">
       <header className={["shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-[#080c18]/95 sm:px-4 sm:py-3 lg:flex-nowrap lg:gap-3", selectedId ? "hidden md:flex" : "flex"].join(" ")}>
-        <div className="min-w-0 flex-1 lg:min-w-32 lg:flex-none"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-rf-purple sm:text-[10px]">Instagram</p><h1 className="text-lg font-black tracking-tight sm:text-xl">Inbox</h1></div>
+        <div className="min-w-0 flex-1 lg:min-w-32 lg:flex-none"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-rf-purple sm:text-[10px]">Instagram</p><h1 className="text-lg font-black tracking-tight sm:text-xl"><UiText>{"Inbox"}</UiText></h1></div>
         <label className="relative order-3 w-full lg:order-none lg:mx-auto lg:max-w-xl">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" className="ap3k-input w-full rounded-xl py-2.5 pl-11 pr-4 text-sm sm:py-3" />
         </label>
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <span className="hidden text-[11px] font-bold text-emerald-600 dark:text-emerald-300 sm:inline">Updates automatically</span>
+          <span className="hidden text-[11px] font-bold text-emerald-600 dark:text-emerald-300 sm:inline"><UiText>{"Updates automatically"}</UiText></span>
           <button type="button" onClick={() => void refreshAll(true)} aria-label="Refresh conversations and messages" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-white/10 sm:h-11 sm:w-11"><RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} /></button>
         </div>
       </header>
@@ -152,9 +153,9 @@ export default function InboxClient({ initialConversationId }: { initialConversa
       <div className={["grid min-h-0 flex-1 overflow-hidden bg-white dark:bg-[#0d1220] md:grid-cols-[300px_minmax(0,1fr)]", foldersExpanded ? "xl:grid-cols-[176px_320px_minmax(0,1fr)]" : "xl:grid-cols-[64px_320px_minmax(0,1fr)]"].join(" ")}>
         <nav aria-label="Inbox folders" className="hidden min-h-0 border-r border-slate-200 bg-slate-50/70 p-2 dark:border-white/10 dark:bg-white/[0.02] xl:flex xl:flex-col">
           <button type="button" onClick={() => setFoldersExpanded((value) => !value)} aria-label={foldersExpanded ? "Collapse inbox folders" : "Expand inbox folders"} title={foldersExpanded ? "Collapse folders" : "Expand folders"} className="mb-3 grid h-10 w-full place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-white hover:text-slate-950 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">{foldersExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}</button>
-          <button type="button" title="All chats" aria-label="All chats" onClick={() => setFilter("all")} className={folderClass(filter === "all", foldersExpanded)}><Inbox className="h-4 w-4 shrink-0" />{foldersExpanded ? <><span className="flex-1 text-left">All chats</span><span>{conversations.length}</span></> : null}</button>
-          <button type="button" title="Unread" aria-label="Unread" onClick={() => setFilter("unread")} className={folderClass(filter === "unread", foldersExpanded)}><Instagram className="h-4 w-4 shrink-0" />{foldersExpanded ? <><span className="flex-1 text-left">Unread</span><span>{unreadTotal}</span></> : null}</button>
-          <button type="button" title="Recent" aria-label="Recent" onClick={() => setFilter("recent")} className={folderClass(filter === "recent", foldersExpanded)}><Clock3 className="h-4 w-4 shrink-0" />{foldersExpanded ? <span className="flex-1 text-left">Recent</span> : null}</button>
+          <button type="button" title="All chats" aria-label="All chats" onClick={() => setFilter("all")} className={folderClass(filter === "all", foldersExpanded)}><Inbox className="h-4 w-4 shrink-0" />{foldersExpanded ? <><span className="flex-1 text-left"><UiText>{"All chats"}</UiText></span><span>{conversations.length}</span></> : null}</button>
+          <button type="button" title="Unread" aria-label="Unread" onClick={() => setFilter("unread")} className={folderClass(filter === "unread", foldersExpanded)}><Instagram className="h-4 w-4 shrink-0" />{foldersExpanded ? <><span className="flex-1 text-left"><UiText>{"Unread"}</UiText></span><span>{unreadTotal}</span></> : null}</button>
+          <button type="button" title="Recent" aria-label="Recent" onClick={() => setFilter("recent")} className={folderClass(filter === "recent", foldersExpanded)}><Clock3 className="h-4 w-4 shrink-0" />{foldersExpanded ? <span className="flex-1 text-left"><UiText>{"Recent"}</UiText></span> : null}</button>
         </nav>
 
         <aside className={["min-h-0 flex-col overflow-hidden border-r border-slate-200 dark:border-white/10", selectedId ? "hidden md:flex" : "flex"].join(" ")}>
@@ -162,7 +163,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
             <label className="relative">
               <span className="sr-only">Conversation folder</span>
               <select value={filter} onChange={(event) => setFilter(event.target.value as ConversationFilter)} className="appearance-none rounded-lg border border-slate-200 bg-transparent py-2 pl-3 pr-8 text-xs font-bold text-slate-600 outline-none dark:border-white/10 dark:text-slate-300">
-                <option value="all">All chats</option><option value="unread">Unread</option><option value="recent">Recent</option>
+                <option value="all"><UiText>{"All chats"}</UiText></option><option value="unread"><UiText>{"Unread"}</UiText></option><option value="recent"><UiText>{"Recent"}</UiText></option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
             </label>
@@ -193,7 +194,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
                   <div className="relative flex items-center gap-1 border-t border-slate-200 pt-2 dark:border-white/10">
                     <button type="button" onClick={() => setEmojiOpen((value) => !value)} aria-expanded={emojiOpen} aria-label="Add emoji" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><Smile className="h-4 w-4" /></button>
                     {emojiOpen && <div className="absolute bottom-10 left-0 z-20 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#171d2b]">{["😊","👍","❤️","✨","🔥","🎁","🙏","👏"].map((emoji) => <button key={emoji} type="button" onClick={() => { setDraft((value) => `${value}${emoji}`); setEmojiOpen(false); }} className="grid h-8 w-8 place-items-center rounded-lg text-lg hover:bg-slate-100 dark:hover:bg-white/10">{emoji}</button>)}</div>}
-                    <span className="ml-auto hidden text-[10px] text-slate-400 sm:inline">Enter to send · Shift + Enter for a new line</span><button type="button" onClick={() => void send()} disabled={sending || !draft.trim() || !isReplyWindowOpen(selected.lastInboundAt)} className="ml-2 inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-4 text-xs font-black text-white shadow-sm disabled:opacity-35">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}<span className="hidden sm:inline">Send</span></button>
+                    <span className="ml-auto hidden text-[10px] text-slate-400 sm:inline">Enter to send · Shift + Enter for a new line</span><button type="button" onClick={() => void send()} disabled={sending || !draft.trim() || !isReplyWindowOpen(selected.lastInboundAt)} className="ml-2 inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-4 text-xs font-black text-white shadow-sm disabled:opacity-35">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}<span className="hidden sm:inline"><UiText>{"Send"}</UiText></span></button>
                   </div>
                 </div>
               </footer>
@@ -212,7 +213,7 @@ function ConversationRow({ conversation, selected, onClick }: { conversation: an
 }
 
 function MessageTimeline({ messages, avatarUrl, name }: { messages: any[]; avatarUrl?: string | null; name: string }) {
-  if (!messages.length) return <p className="m-auto text-sm text-slate-400">No messages in this conversation yet.</p>;
+  if (!messages.length) return <p className="m-auto text-sm text-slate-400"><UiText>{"No messages in this conversation yet."}</UiText></p>;
   let previousDay = "";
   return <div className="space-y-3">{messages.map((message) => {
     const day = formatDay(message.createdAt);

@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import {
   getCurrentWebhookHealth,
   getInstagramConnectUrl,
@@ -271,17 +272,15 @@ function IntegrationCard({
 
       {connected && !appReviewMode && (
         <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300">
-          <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-            Connection health
-          </p>
+          <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Connection health"}</UiText></p>
 
           {displayIntegration?.instagramId &&
             health?.data?.oauth?.reconnectRequired && (
               <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
-                <p className="font-bold">Reconnect Instagram</p>
+                <p className="font-bold"><UiText>{"Reconnect Instagram"}</UiText></p>
                 <p className="mt-1 leading-relaxed">
                   AP3K matched your real comment, but the saved access token is
-                  missing or invalid. Click <strong>Reconnect Instagram</strong>{" "}
+                  missing or invalid. Click <strong><UiText>{"Reconnect Instagram"}</UiText></strong>{" "}
                   above to restore delivery.
                 </p>
               </div>

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { INTEGRATION_CARDS } from "@/constants/integrations";
 import { getCurrentInstagramPermissionHealth } from "@/actions/integration/permission-health";
 import { onUserInfo } from "@/actions/user";
@@ -149,9 +150,7 @@ async function Page({ searchParams }: PageProps) {
       ))}
 
       <section className="rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft sm:p-5">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-          How it works
-        </p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{"How it works"}</UiText></p>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-bold text-slate-700 dark:text-slate-200 sm:text-sm">
           {["Connect", "Create automation", "Test & launch"].map(
             (item, index) => (
@@ -173,9 +172,7 @@ async function Page({ searchParams }: PageProps) {
         <section className="ap3k-panel overflow-hidden p-4 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-                Permission readiness
-              </p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{"Permission readiness"}</UiText></p>
               <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">
                 Instagram capabilities
               </h2>

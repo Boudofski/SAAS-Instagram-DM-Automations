@@ -4,6 +4,7 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
 export const LOCALE_COOKIE = "ap3k_locale";
+export const LOCALE_FLAGS: Record<Locale, string> = { en: "🇬🇧", ar: "🇲🇦", fr: "🇫🇷", es: "🇪🇸", de: "🇩🇪", pt: "🇵🇹" };
 
 export const LOCALE_DETAILS: Record<
   Locale,
@@ -40,14 +41,23 @@ export function stripLocaleFromPath(pathname: string): string {
 }
 
 export function localizePublicPath(pathname: string, locale: Locale): string {
-  const cleanPath = stripLocaleFromPath(pathname);
-  if (locale === DEFAULT_LOCALE) return cleanPath;
-  return cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`;
+  const suffixIndex = pathname.search(/[?#]/);
+  const path = suffixIndex === -1 ? pathname : pathname.slice(0, suffixIndex);
+  const suffix = suffixIndex === -1 ? "" : pathname.slice(suffixIndex);
+  const cleanPath = stripLocaleFromPath(path);
+  if (locale === DEFAULT_LOCALE || isProtectedPath(cleanPath)) return cleanPath + suffix;
+  return (cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`) + suffix;
 }
 
 export function isProtectedPath(pathname: string): boolean {
   const cleanPath = stripLocaleFromPath(pathname);
-  return /^(?:\/dashboard|\/onboarding|\/admin|\/ap3k-admin|\/api)(?:\/|$)/.test(cleanPath);
+  return /^(?:\/dashboard|\/onboarding|\/admin|\/ap3k-admin(?:-v2)?|\/api|\/callback|\/payment|\/account-deletion-preview|\/r)(?:\/|$)/.test(cleanPath);
+}
+
+// Public URLs are authoritative. A stale cookie must never trap '/' in Arabic.
+// Callbacks, payments and APIs must never acquire a language prefix.
+export function resolveRequestLocale(pathname: string, cookie?: string): Locale {
+  return localeFromPath(pathname) ?? (isProtectedPath(pathname) ? normalizeLocale(cookie) : DEFAULT_LOCALE);
 }
 
 export function localeAlternates(pathname = "/") {

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
@@ -75,7 +76,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3K</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Welcome back, {displayName}</h1>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText>{displayName}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           See performance, manage automations, and keep Instagram conversations moving.
         </p>
@@ -91,7 +92,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 Start with a post comment, story interaction, or incoming DM, then choose the response and delivery rules.
               </p>
             </div>
-            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm">Create automation</Link>
+            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm"><UiText>{"Create automation"}</UiText></Link>
           </div>
         </div>
       )}
@@ -137,7 +138,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
         <div className="mb-3">
           <p className="ap3k-kicker">Account analytics</p>
-          <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Instagram performance</h2>
+          <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
         </div>
         <div className="mb-3 flex animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
@@ -184,10 +185,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       <section className="animate-[ap3kDashboardRise_0.82s_ease-out_both]">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="ap3k-kicker">Automations</p>
-            <h2 className="font-black text-slate-950 dark:text-white">Active automations</h2>
+            <p className="ap3k-kicker"><UiText>{"Automations"}</UiText></p>
+            <h2 className="font-black text-slate-950 dark:text-white"><UiText>{"Active automations"}</UiText></h2>
           </div>
-          <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15">View all</Link>
+          <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15"><UiText>{"View all"}</UiText></Link>
         </div>
 
         {isEmpty ? (

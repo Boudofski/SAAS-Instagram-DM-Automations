@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import ReviewDisconnectInstagramButton from "@/components/dashboard/review-disconnect-instagram-button";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import Link from "next/link";
@@ -69,9 +70,7 @@ export default function ReviewInstagramAccountProfile({
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
               Connect an Instagram Business or Creator account to get started.
             </p>
-            <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm">
-              Connect Instagram
-            </Link>
+            <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm"><UiText>{"Connect Instagram"}</UiText></Link>
           </div>
         )}
       </div>

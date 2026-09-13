@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import RemoveInstagramAccountButton from "@/components/dashboard/remove-instagram-account-button";
@@ -70,9 +71,7 @@ export default async function InstagramAccountPage({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-1 py-3 text-slate-950 dark:text-slate-50 sm:gap-4 sm:px-2 sm:py-4 lg:py-6">
       <div className="animate-[ap3kDashboardRise_0.45s_ease-out_both]">
         <p className="ap3k-kicker">Instagram connection</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-          Your Instagram
-        </h1>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Your Instagram"}</UiText></h1>
       </div>
 
       <section className="ap3k-card animate-[ap3kDashboardRise_0.55s_ease-out_both] overflow-hidden rounded-3xl p-0">
@@ -161,9 +160,7 @@ export default async function InstagramAccountPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="ap3k-kicker">Account analytics</p>
-            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-              Performance
-            </h2>
+            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Performance"}</UiText></h2>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               {periodRange.label}
             </p>
@@ -216,9 +213,7 @@ export default async function InstagramAccountPage({
             <Link
               href={`/dashboard/${params.slug}/integrations`}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-            >
-              Manage connection
-              <ExternalLink className="h-4 w-4" />
+            ><UiText>{"Manage connection"}</UiText><ExternalLink className="h-4 w-4" />
             </Link>
             {connected && <RemoveInstagramAccountButton />}
           </div>

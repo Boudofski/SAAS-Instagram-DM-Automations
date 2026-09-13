@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import {
   activateAutomation,
   deleteAutomation,
@@ -129,9 +130,9 @@ export default function AutomationTable({
               aria-label="Sort automations"
               className="ap3k-select h-10 min-w-0 flex-1 rounded-xl px-3 text-xs font-bold sm:h-11 sm:rounded-2xl sm:text-sm"
             >
-              <option value="newest">Newest first</option>
-              <option value="active">Active first</option>
-              <option value="name">Name A–Z</option>
+              <option value="newest"><UiText>{"Newest first"}</UiText></option>
+              <option value="active"><UiText>{"Active first"}</UiText></option>
+              <option value="name"><UiText>{"Name A–Z"}</UiText></option>
             </select>
             <span className="whitespace-nowrap rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 sm:rounded-2xl sm:text-xs">
               {filtered.length
@@ -165,14 +166,14 @@ export default function AutomationTable({
 
       <div className="hidden xl:block">
         <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(132px,.75fr)] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
-          <span>Automation</span>
-          <span>Channel</span>
-          <span>Trigger</span>
-          <span>Actions</span>
-          <span>Runs</span>
-          <span>Leads</span>
-          <span>Status</span>
-          <span className="text-right">Manage</span>
+          <span><UiText>{"Automation"}</UiText></span>
+          <span><UiText>{"Channel"}</UiText></span>
+          <span><UiText>{"Trigger"}</UiText></span>
+          <span><UiText>{"Actions"}</UiText></span>
+          <span><UiText>{"Runs"}</UiText></span>
+          <span><UiText>{"Leads"}</UiText></span>
+          <span><UiText>{"Status"}</UiText></span>
+          <span className="text-right"><UiText>{"Manage"}</UiText></span>
         </div>
         <div className="divide-y divide-slate-100 dark:divide-white/10">
           {paged.length === 0 ? (
@@ -280,17 +281,13 @@ function CampaignMobileCard({
         <Link
           href={`/dashboard/${slug}/automation/${automation.id}`}
           className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
-        >
-          Manage automation
-        </Link>
+        ><UiText>{"Manage automation"}</UiText></Link>
       ) : (
         <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_40px] gap-2">
           <Link
             href={`/dashboard/${slug}/automation/${automation.id}`}
             className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-black text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-          >
-            Open automation
-          </Link>
+          ><UiText>{"Open automation"}</UiText></Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -320,17 +317,13 @@ function CampaignMobileCard({
               <DropdownMenuItem
                 disabled={isPending}
                 onSelect={() => onDuplicate(automation.id)}
-              >
-                Duplicate automation
-              </DropdownMenuItem>
+              ><UiText>{"Duplicate automation"}</UiText></DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={isPending}
                 onSelect={() => onDelete(automation.id)}
                 className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
-              >
-                Delete automation
-              </DropdownMenuItem>
+              ><UiText>{"Delete automation"}</UiText></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -410,9 +403,9 @@ function CampaignDesktopRow({
             {storyTriggerLabel(automation.storyTriggerType)}
           </span>
         ) : source === "DM" && automation.triggerMode === "ANY_MESSAGE" ? (
-          <span className="ap3k-badge ap3k-badge-blue">Any DM</span>
+          <span className="ap3k-badge ap3k-badge-blue"><UiText>{"Any DM"}</UiText></span>
         ) : isAnyComment ? (
-          <span className="ap3k-badge ap3k-badge-blue">Any</span>
+          <span className="ap3k-badge ap3k-badge-blue"><UiText>{"Any"}</UiText></span>
         ) : (automation.keywords ?? []).length ? (
           <span className="ap3k-badge ap3k-badge-pink">
             {formatKeywordDisplay(
@@ -421,7 +414,7 @@ function CampaignDesktopRow({
             )}
           </span>
         ) : (
-          <span className="ap3k-badge ap3k-badge-slate">No trigger</span>
+          <span className="ap3k-badge ap3k-badge-slate"><UiText>{"No trigger"}</UiText></span>
         )}
       </div>
       <div className="min-w-0">
@@ -437,9 +430,7 @@ function CampaignDesktopRow({
           <Link
             href={automationEditHref(slug, automation)}
             className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
-          >
-            Edit
-          </Link>
+          ><UiText>{"Edit"}</UiText></Link>
           <button
             type="button"
             disabled={isPending}
@@ -462,24 +453,18 @@ function CampaignDesktopRow({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem asChild>
-                <Link href={`/dashboard/${slug}/automation/${automation.id}`}>
-                  View detail
-                </Link>
+                <Link href={`/dashboard/${slug}/automation/${automation.id}`}><UiText>{"View detail"}</UiText></Link>
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={isPending}
                 onSelect={() => onDuplicate(automation.id)}
-              >
-                Duplicate
-              </DropdownMenuItem>
+              ><UiText>{"Duplicate"}</UiText></DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={isPending}
                 onSelect={() => onDelete(automation.id)}
                 className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
-              >
-                Delete
-              </DropdownMenuItem>
+              ><UiText>{"Delete"}</UiText></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -514,9 +499,7 @@ function PaginationFooter({
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page <= 1}
           className="ap3k-table-action disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Previous
-        </button>
+        ><UiText>{"Previous"}</UiText></button>
         {pages.map((item) => (
           <button
             key={item}
@@ -537,9 +520,7 @@ function PaginationFooter({
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages}
           className="ap3k-table-action disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Next
-        </button>
+        ><UiText>{"Next"}</UiText></button>
       </div>
     </div>
   );
@@ -580,9 +561,7 @@ function CampaignThumb({
 
 function EmptyRows() {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400">
-      No automations match your search.
-    </div>
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400"><UiText>{"No automations match your search."}</UiText></div>
   );
 }
 

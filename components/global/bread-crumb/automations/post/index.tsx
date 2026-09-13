@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import Loader from "@/components/global/loader";
 import { Button } from "@/components/ui/button";
 import { useAutomationPosts } from "@/hooks/use-automation";
@@ -64,7 +65,7 @@ function PostButton({ id }: Props) {
           </Button>
         </div>
       ) : (
-        <p className="text-text-secondary text-center">No Posts Found</p>
+        <p className="text-text-secondary text-center"><UiText>{"No Posts Found"}</UiText></p>
       )}
     </TriggerButton>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { Badge } from "@/components/ui/badge";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
@@ -56,9 +57,7 @@ export default function CampaignCard({
         <p className="text-sm font-bold text-rf-text truncate mb-2">{safeName}</p>
         <div className="flex gap-1.5 flex-wrap">
           {safeKeywords.length === 0 ? (
-            <span className="text-xs text-rf-muted border border-dashed border-rf-border rounded-full px-2 py-0.5">
-              No keywords
-            </span>
+            <span className="text-xs text-rf-muted border border-dashed border-rf-border rounded-full px-2 py-0.5"><UiText>{"No keywords"}</UiText></span>
           ) : (
             safeKeywords.slice(0, 4).map((kw, i) => (
               <span
@@ -84,7 +83,7 @@ export default function CampaignCard({
         {leadCount !== undefined && (
           <div>
             <p className="text-base font-black text-rf-text">{leadCount}</p>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-rf-muted">Leads</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-rf-muted"><UiText>{"Leads"}</UiText></p>
           </div>
         )}
       </div>

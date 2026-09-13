@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import { getAllAutomation } from "@/actions/automation";
@@ -50,9 +51,7 @@ export default async function AutomationsPage({ params }: Props) {
         <div>
           <p className="ap3k-kicker">Instagram automation</p>
           <div className="mt-1 flex items-baseline gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-              Automations
-            </h1>
+            <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Automations"}</UiText></h1>
             {automations.length > 0 ? (
               <span className="text-xs font-bold text-slate-400 sm:hidden">
                 {automations.length}
@@ -69,8 +68,8 @@ export default async function AutomationsPage({ params }: Props) {
           href={`/dashboard/${params.slug}/automation/new`}
           className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center px-5 text-sm sm:w-auto"
         >
-          <span className="sm:hidden">+ New automation</span>
-          <span className="hidden sm:inline">+ Create Automation</span>
+          <span className="sm:hidden"><UiText>{"+ New automation"}</UiText></span>
+          <span className="hidden sm:inline"><UiText>{"+ Create Automation"}</UiText></span>
         </Link>
       </div>
 

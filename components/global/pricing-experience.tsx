@@ -12,6 +12,7 @@ import {
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 
 type Props = {
   compact?: boolean;
@@ -31,7 +32,7 @@ export default function PricingExperience({
   const [interval, setInterval] = useState<BillingInterval>("year");
 
   return (
-    <div className="w-full">
+    <LocalizedCopy><div className="w-full">
       <div className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
         <button
           type="button"
@@ -130,7 +131,7 @@ export default function PricingExperience({
                     </div>
                     {interval === "year" && paidPlan && (
                       <p className="mt-1 text-[11px] font-black text-emerald-600 dark:text-emerald-300">
-                        Save {plan.annualSavingsPercent}% · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}/mo
+                        {`Save ${plan.annualSavingsPercent}%`} · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}/mo
                       </p>
                     )}
                   </>
@@ -202,6 +203,6 @@ export default function PricingExperience({
           </div>
         </section>
       )}
-    </div>
+    </div></LocalizedCopy>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import Image from "next/image";
@@ -85,7 +86,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
             );
           })}
         </div>
-        <button type="button" onClick={() => setExpanded(true)} className="mt-4 text-sm font-black text-rf-blue transition hover:underline">Show all posts</button>
+        <button type="button" onClick={() => setExpanded(true)} className="mt-4 text-sm font-black text-rf-blue transition hover:underline"><UiText>{"Show all posts"}</UiText></button>
       </div>
     );
   }
@@ -136,8 +137,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
             disabled={currentPage <= 1}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
           >
-            <ChevronLeft className="h-3.5 w-3.5" /> Previous
-          </button>
+            <ChevronLeft className="h-3.5 w-3.5" /><UiText>{" Previous"}</UiText></button>
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {pageNumbers.map((item, index) => item === "…" ? (
               <span key={`ellipsis-${index}`} className="px-1 text-xs text-slate-500">…</span>
@@ -162,8 +162,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
             onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
             disabled={currentPage >= totalPages}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-          >
-            Next <ChevronRight className="h-3.5 w-3.5" />
+          ><UiText>{"Next "}</UiText><ChevronRight className="h-3.5 w-3.5" />
           </button>
         </footer>
       )}

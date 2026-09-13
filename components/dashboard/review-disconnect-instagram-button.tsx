@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { disconnectCurrentInstagramIntegration } from "@/actions/integration";
 import { isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,7 +55,7 @@ export default function ReviewDisconnectInstagramButton({ onDisconnected }: Prop
   if (removed) {
     return (
       <div className="flex flex-col items-start gap-2 sm:items-end">
-        <p className="text-sm font-black text-slate-950 dark:text-white">Instagram not connected</p>
+        <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Instagram not connected"}</UiText></p>
         <p className="max-w-[260px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
           Connection removed. Automation history is preserved.
         </p>
@@ -74,9 +75,7 @@ export default function ReviewDisconnectInstagramButton({ onDisconnected }: Prop
             type="button"
             onClick={() => setShowConfirm(false)}
             className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-          >
-            Cancel
-          </button>
+          ><UiText>{"Cancel"}</UiText></button>
           <button
             type="button"
             onClick={disconnect}
@@ -96,9 +95,7 @@ export default function ReviewDisconnectInstagramButton({ onDisconnected }: Prop
         type="button"
         onClick={() => setShowConfirm(true)}
         className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-      >
-        Remove connection
-      </button>
+      ><UiText>{"Remove connection"}</UiText></button>
       <p className="max-w-[260px] text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
         Remove this Instagram account from AP3K. Automation history is preserved.
       </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
 import type { WizardData, WizardStep } from "@/hooks/use-wizard";
 import type { LinkButton } from "@/lib/link-buttons";
@@ -192,7 +193,7 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
 
       <div className="mx-3 mb-3 flex items-center gap-3 rounded-full bg-[#202023] px-3 py-2.5 text-white/40">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-[#4775ff] text-white"><Camera className="h-4 w-4" /></span>
-        <span className="flex-1 text-xs">Message…</span><ImageIcon className="h-5 w-5" /><MessageCircle className="h-5 w-5" /><Plus className="h-5 w-5" />
+        <span className="flex-1 text-xs"><UiText>{"Message…"}</UiText></span><ImageIcon className="h-5 w-5" /><MessageCircle className="h-5 w-5" /><Plus className="h-5 w-5" />
       </div>
     </div>
   );
@@ -222,7 +223,7 @@ function Comment({ avatar, username, text, profilePictureUrl }: { avatar: string
   return (
     <div className="flex items-start gap-3">
       <Avatar src={profilePictureUrl} name={avatar} size="sm" />
-      <div className="min-w-0 flex-1 text-[11px] leading-4"><p><strong>{username}</strong> <span className="text-white/45">Now</span></p><p className="break-words">{text}</p><p className="mt-1 text-white/35">Reply</p></div>
+      <div className="min-w-0 flex-1 text-[11px] leading-4"><p><strong>{username}</strong> <span className="text-white/45">Now</span></p><p className="break-words">{text}</p><p className="mt-1 text-white/35"><UiText>{"Reply"}</UiText></p></div>
       <Heart className="mt-2 h-4 w-4 text-white/45" />
     </div>
   );

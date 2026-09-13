@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { MessageCircle, MessagesSquare, Sparkles } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
@@ -41,7 +42,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
           ← Back to automations
         </Link>
         <div className="mt-10 max-w-2xl">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-rf-purple">Create automation</p>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-rf-purple"><UiText>{"Create automation"}</UiText></p>
           <h1 className="mt-3 text-4xl font-black tracking-[-0.045em] sm:text-5xl">What should start the conversation?</h1>
           <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">Choose one starting point. You can fine-tune the trigger, message, and delivery rules next.</p>
         </div>

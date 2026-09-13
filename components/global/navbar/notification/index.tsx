@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -61,9 +62,7 @@ function Notification({ slug }: Props) {
           </Button>
           <Button asChild variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-xs font-bold dark:border-white/10 dark:bg-white/[0.04]">
             <Link href={`/dashboard/${slug}/billing`} onClick={closeNotifications}>
-              <CreditCard aria-hidden="true" />
-              Billing
-            </Link>
+              <CreditCard aria-hidden="true" /><UiText>{"Billing"}</UiText></Link>
           </Button>
         </div>
       </PopoverContent>

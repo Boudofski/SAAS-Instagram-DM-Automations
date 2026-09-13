@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { askSupportAssistantAction, clearSupportHistoryAction, getSupportHistoryAction } from "@/actions/support";
 import { cn } from "@/lib/utils";
 import { BookOpen, CircleHelp, ExternalLink, Loader2, Mail, RefreshCw, RotateCcw, Send, Sparkles, X } from "lucide-react";
@@ -24,22 +25,22 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
           aria-label="Help"
         >
           <CircleHelp className="h-[18px] w-[18px] shrink-0" />
-          {expanded ? <span>Help</span> : null}
+          {expanded ? <span><UiText>{"Help"}</UiText></span> : null}
         </button>
         {menuOpen ? (
           <div className={cn("z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-white/10 dark:bg-[#121827] dark:text-white", mobile ? "mt-2" : "fixed bottom-20", !mobile && (expanded ? "left-[244px]" : "left-[88px]"))}>
-            <p className="px-3 pb-2 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Support</p>
+            <p className="px-3 pb-2 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><UiText>{"Support"}</UiText></p>
             <button type="button" onClick={() => { setAssistantOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-violet-50 dark:hover:bg-violet-500/10">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-violet-500"><Sparkles className="h-4 w-4" /></span>
-              <span><span className="block text-sm font-black">Get help</span><span className="block text-xs text-slate-500">Ask AP3K Support Assistant</span></span>
+              <span><span className="block text-sm font-black"><UiText>{"Get help"}</UiText></span><span className="block text-xs text-slate-500">Ask AP3K Support Assistant</span></span>
             </button>
             <HelpLink href="/help" icon={BookOpen} title="Knowledge base" detail="Guides for every AP3K feature" />
             <HelpLink href={`/dashboard/${slug}/account`} icon={RefreshCw} title="Fix Instagram permissions" detail="Reconnect your professional account" />
             <HelpLink href="/contact" icon={Mail} title="Email support" detail="Contact support@ap3k.com" />
             <div className="my-2 border-t border-slate-200 dark:border-white/10" />
             <div className="grid grid-cols-2 gap-1 px-1 pb-1 text-xs font-bold text-slate-500">
-              <Link href="/terms" className="rounded-lg px-2 py-2 hover:bg-slate-100 dark:hover:bg-white/[0.06]">Terms</Link>
-              <Link href="/privacy" className="rounded-lg px-2 py-2 hover:bg-slate-100 dark:hover:bg-white/[0.06]">Privacy</Link>
+              <Link href="/terms" className="rounded-lg px-2 py-2 hover:bg-slate-100 dark:hover:bg-white/[0.06]"><UiText>{"Terms"}</UiText></Link>
+              <Link href="/privacy" className="rounded-lg px-2 py-2 hover:bg-slate-100 dark:hover:bg-white/[0.06]"><UiText>{"Privacy"}</UiText></Link>
             </div>
           </div>
         ) : null}
@@ -121,7 +122,7 @@ function SupportAssistant({ onClose }: { onClose: () => void }) {
           <p className="px-1 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">Support Assistant · AI agent</p>
           {loading ? <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-violet-500" /></div> : null}
           {messages.map((message) => <div key={message.id} className={cn("whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6", message.role === "user" ? "ml-auto max-w-[85%] rounded-br-md bg-violet-600 text-white" : "max-w-[92%] rounded-bl-md bg-slate-100 dark:bg-white/[0.07]")}>{message.content}</div>)}
-          {pending ? <div className="flex w-fit items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs text-slate-500 dark:bg-white/[0.07]"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…</div> : null}
+          {pending ? <div className="flex w-fit items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs text-slate-500 dark:bg-white/[0.07]"><Loader2 className="h-3.5 w-3.5 animate-spin" /><UiText>{" Thinking…"}</UiText></div> : null}
           {notice ? <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-200">{notice}</p> : null}
           <div ref={bottomRef} />
         </div>
