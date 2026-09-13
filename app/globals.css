@@ -399,6 +399,11 @@ html[dir="rtl"] body {
   font-family: Tahoma, Arial, sans-serif;
 }
 
+html[dir="rtl"] main :is(h1, h2, h3, .ap3k-kicker) {
+  letter-spacing: normal;
+  line-height: 1.4;
+}
+
 html[dir="rtl"] .text-left {
   text-align: right;
 }

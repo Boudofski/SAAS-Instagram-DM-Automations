@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTypePicker from "@/components/automations/automation-type-picker";
 import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
 import DeliveryRules from "@/components/automations/delivery-rules";
@@ -222,7 +223,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         >
           {step === 1 && (
             <StepPanel title="Choose a post or Reel" description="Select where AP3K should listen for comments.">
-              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Automation name</label>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{"Automation name"}</UiText></label>
               <input
                 value={data.campaignName}
                 onChange={(event) => update({ campaignName: event.target.value })}
@@ -246,7 +247,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-xl">🌐</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold text-slate-950 dark:text-white">Any post</span>
+                      <span className="block text-sm font-bold text-slate-950 dark:text-white"><UiText>{"Any post"}</UiText></span>
                       <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Listen on every post and Reel.</span>
                     </span>
                     {data.post?.postid === "ANY" && <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-bold text-white">✓</span>}
@@ -254,16 +255,14 @@ export default function WizardPage({ params, searchParams }: Props) {
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="mb-3 flex items-center justify-between gap-3">
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Choose a specific post or Reel</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{"Choose a specific post or Reel"}</UiText></p>
                       <button
                         type="button"
                         onClick={() => void refetchPosts()}
                         disabled={postsFetching}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-70 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
                       >
-                        <RefreshCw className={postsFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
-                        Refresh
-                      </button>
+                        <RefreshCw className={postsFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} /><UiText>{"Refresh"}</UiText></button>
                     </div>
                     {postList.length > 0 ? (
                       <PostPicker
@@ -318,7 +317,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                     <span className="flex min-w-0 items-start gap-3">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple"><MessageCircle className="h-5 w-5" /></span>
                       <span>
-                        <span className="block text-sm font-black text-slate-950 dark:text-white">Reply to comment</span>
+                        <span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Reply to comment"}</UiText></span>
                         <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">Visible under the Instagram post. Add up to three variations to keep replies natural.</span>
                       </span>
                     </span>
@@ -375,7 +374,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                       <div className="flex items-start gap-3">
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-blue/10 text-rf-blue"><Send className="h-5 w-5" /></span>
                         <div>
-                          <p className="text-sm font-black text-slate-950 dark:text-white">Send a DM</p>
+                          <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Send a DM"}</UiText></p>
                           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">DMs are disabled for this review mode. This mode tests comment replies and lead tracking.</p>
                         </div>
                       </div>
@@ -390,7 +389,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                         <span className="flex min-w-0 items-start gap-3">
                           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-blue/10 text-rf-blue"><Send className="h-5 w-5" /></span>
                           <span>
-                            <span className="block text-sm font-black text-slate-950 dark:text-white">Send a DM</span>
+                            <span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Send a DM"}</UiText></span>
                             <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">Sent privately to the commenter&apos;s Instagram inbox.</span>
                           </span>
                         </span>
@@ -403,7 +402,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                             <div className="mb-4 flex items-start gap-3">
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">1</span>
                               <div>
-                                <p className="text-sm font-black text-slate-950 dark:text-white">DM with links</p>
+                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"DM with links"}</UiText></p>
                                 <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">The required delivery message. Add one to three link buttons.</p>
                               </div>
                             </div>
@@ -419,17 +418,17 @@ export default function WizardPage({ params, searchParams }: Props) {
 
                           <div className={`overflow-hidden rounded-2xl border transition ${data.openingDmEnabled ? "border-violet-400/30 bg-violet-500/[0.05]" : "border-slate-200 dark:border-white/10"}`}>
                             <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-left sm:p-5">
-                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span><span><span className="block text-sm font-black text-slate-950 dark:text-white">Opening DM <span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400">Optional</span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately.</span></span></span>
+                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span><span><span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Opening DM "}</UiText><span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400"><UiText>{"Optional"}</UiText></span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately.</span></span></span>
                               <Toggle enabled={data.openingDmEnabled} />
                             </button>
-                            {data.openingDmEnabled ? <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">Opening message</label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">Continue quick reply<input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM.</p></div> : null}
+                            {data.openingDmEnabled ? <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">Continue quick reply<input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM.</p></div> : null}
                           </div>
 
                           {data.openingDmEnabled ? <div className="rounded-2xl border border-slate-200 p-4 dark:border-white/10 sm:p-5">
                             <div className="mb-3 flex items-start gap-3">
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">3</span>
                               <div>
-                                <p className="text-sm font-black text-slate-950 dark:text-white">Optional follow request</p>
+                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Optional follow request"}</UiText></p>
                                 <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Leave this off to send the final DM immediately after the opening button.</p>
                               </div>
                             </div>
@@ -475,7 +474,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   <div key={row.label} className="ap3k-review-row">
                     <span className="w-28 shrink-0 text-xs font-bold text-slate-500 dark:text-slate-300">{row.label}</span>
                     <span className="flex-1 truncate text-xs font-semibold text-slate-950 dark:text-slate-50">{row.value}</span>
-                    <button type="button" onClick={() => goTo(row.step)} className="shrink-0 text-xs text-rf-blue hover:underline">Edit</button>
+                    <button type="button" onClick={() => goTo(row.step)} className="shrink-0 text-xs text-rf-blue hover:underline"><UiText>{"Edit"}</UiText></button>
                   </div>
                 ))}
               </div>
@@ -497,7 +496,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                 ].join(" ")}
               >
                 <span>
-                  <span className="block text-sm font-bold text-slate-950 dark:text-white">Active automation</span>
+                  <span className="block text-sm font-bold text-slate-950 dark:text-white"><UiText>{"Active automation"}</UiText></span>
                   <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3K listens for matching comments and runs the actions you selected.</span>
                 </span>
                 <Toggle enabled={data.active} green />
@@ -560,21 +559,17 @@ function WizardActions({
   return (
     <div className="flex w-full items-center justify-end gap-2 sm:gap-3">
       {step > 1 ? (
-        <button type="button" onClick={onBack} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:border-rf-subtle hover:text-slate-950 disabled:opacity-50 dark:border-white/10 dark:text-slate-400 dark:hover:text-white sm:px-6">
-          Back
-        </button>
+        <button type="button" onClick={onBack} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:border-rf-subtle hover:text-slate-950 disabled:opacity-50 dark:border-white/10 dark:text-slate-400 dark:hover:text-white sm:px-6"><UiText>{"Back"}</UiText></button>
       ) : null}
       {step < 4 ? (
-        <button type="button" onClick={onNext} disabled={!canAdvance} className="ap3k-gradient-button min-w-24 px-7 py-2.5 text-sm disabled:opacity-40">
-          Next
-        </button>
+        <button type="button" onClick={onNext} disabled={!canAdvance} className="ap3k-gradient-button min-w-24 px-7 py-2.5 text-sm disabled:opacity-40"><UiText>{"Next"}</UiText></button>
       ) : (
         <>
           <button type="button" onClick={onSaveDraft} disabled={isSubmitting} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 sm:px-6">
-            <span className="sm:hidden">Draft</span><span className="hidden sm:inline">Save as draft</span>
+            <span className="sm:hidden"><UiText>{"Draft"}</UiText></span><span className="hidden sm:inline"><UiText>{"Save as draft"}</UiText></span>
           </button>
           <button type="button" onClick={onActivate} disabled={isSubmitting} className="ap3k-gradient-button flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm disabled:opacity-50 sm:px-8">
-            {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><span className="sm:hidden">{editId ? "Update" : "Activate"}</span><span className="hidden sm:inline">{editId ? "Update automation" : "Activate automation"}</span></>}
+            {isSubmitting ? <><Loader2 size={14} className="animate-spin" /><UiText>{" Saving..."}</UiText></> : <><span className="sm:hidden">{editId ? "Update" : "Activate"}</span><span className="hidden sm:inline">{editId ? "Update automation" : "Activate automation"}</span></>}
           </button>
         </>
       )}

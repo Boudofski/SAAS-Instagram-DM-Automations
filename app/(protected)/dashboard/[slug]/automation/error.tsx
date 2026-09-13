@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import Link from "next/link";
 
 export default function AutomationError({
@@ -32,9 +33,7 @@ export default function AutomationError({
         <button
           onClick={reset}
           className="ap3k-gradient-button px-5 py-2.5 text-sm"
-        >
-          Try again
-        </button>
+        ><UiText>{"Try again"}</UiText></button>
         <Link
           href="../automation/new"
           className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-950"

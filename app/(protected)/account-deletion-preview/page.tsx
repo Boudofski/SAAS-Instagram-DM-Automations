@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 import { currentUser } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
@@ -39,7 +40,7 @@ export default async function AccountDeletionPreviewPage() {
         </p>
 
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50/80 p-5 dark:border-red-500/25 dark:bg-red-500/[0.07]">
-          <p className="text-sm font-black text-red-800 dark:text-red-200">Danger zone</p>
+          <p className="text-sm font-black text-red-800 dark:text-red-200"><UiText>{"Danger zone"}</UiText></p>
           <p className="mt-2 text-sm leading-relaxed text-red-700 dark:text-red-200/80">
             Open the dialog to review its warning, account-specific confirmation text, spacing,
             and mobile behavior. No deletion can be submitted from this page.

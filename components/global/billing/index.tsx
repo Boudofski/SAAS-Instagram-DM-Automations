@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import PricingExperience from "@/components/global/pricing-experience";
 import { planDisplayName, type CustomerPlan } from "@/lib/billing-plans";
 import type { BillingSnapshot } from "@/lib/billing-snapshot";
@@ -33,7 +34,7 @@ export default function Billing({
     <div className="flex w-full flex-col gap-5">
       <div id="manage-billing" className="ap3k-page-header scroll-mt-24">
         <div>
-          <p className="ap3k-kicker">Billing</p>
+          <p className="ap3k-kicker"><UiText>{"Billing"}</UiText></p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
             Plans, usage &amp; subscription
           </h1>
@@ -64,11 +65,11 @@ export default function Billing({
       <section className="overflow-hidden rounded-3xl border border-rf-pink/20 bg-gradient-to-br from-white via-orange-50/40 to-pink-50/50 p-4 shadow-sm dark:border-rf-pink/20 dark:from-[#151312] dark:via-[#101217] dark:to-[#171018] sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <p className="ap3k-kicker">Current plan</p>
+            <p className="ap3k-kicker"><UiText>{"Current plan"}</UiText></p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{planLabel}</h2>
               <span className="ap3k-badge ap3k-badge-green">Active</span>
-              {internalAccess ? <span className="ap3k-badge ap3k-badge-slate">Internal access</span> : null}
+              {internalAccess ? <span className="ap3k-badge ap3k-badge-slate"><UiText>{"Internal access"}</UiText></span> : null}
               {billing?.interval && (
                 <span className="ap3k-badge ap3k-badge-slate">
                   {billing.interval === "year" ? "Annual billing" : "Monthly billing"}

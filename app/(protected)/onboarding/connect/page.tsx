@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { INTEGRATION_CARDS } from "@/constants/integrations";
 import IntegrationCard from "@/app/(protected)/dashboard/[slug]/integrations/_components/integration-card";
 import { onUserInfo } from "@/actions/user";
@@ -36,7 +37,7 @@ export default async function OnboardingConnectPage() {
               IG
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl font-black leading-tight text-slate-950 dark:text-rf-text sm:text-2xl">Instagram connected</h2>
+              <h2 className="text-xl font-black leading-tight text-slate-950 dark:text-rf-text sm:text-2xl"><UiText>{"Instagram connected"}</UiText></h2>
               <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-rf-muted">
                 AP3K can now receive Instagram comments, send public replies, and track campaign activity for this account.
               </p>

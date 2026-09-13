@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { onUserInfo } from "@/actions/user";
 import ThemeToggle from "@/components/global/theme-toggle";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";
@@ -19,8 +20,8 @@ async function SettingsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-6">
       <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
-        <p className="ap3k-kicker">Preferences</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">Settings</h1>
+        <p className="ap3k-kicker"><UiText>{"Preferences"}</UiText></p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Settings"}</UiText></h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Appearance, sign-in, and account controls.</p>
       </div>
 
@@ -28,8 +29,8 @@ async function SettingsPage() {
         <SettingsSection icon={<Palette className="h-4.5 w-4.5" />} label="Appearance">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-start">
             <div>
-              <h2 className="text-sm font-black text-slate-950 dark:text-white">Theme</h2>
-              <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">Switch AP3K between light and dark mode.</p>
+              <h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Theme"}</UiText></h2>
+              <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Switch AP3K between light and dark mode."}</UiText></p>
             </div>
             <ThemeToggle />
           </div>
@@ -38,7 +39,7 @@ async function SettingsPage() {
         <SettingsSection icon={<LockKeyhole className="h-4.5 w-4.5" />} label="Account & authentication">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Signed-in email</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"><UiText>{"Signed-in email"}</UiText></p>
               <p className="mt-1 truncate text-sm font-black text-slate-800 dark:text-slate-100">{emailState.email}</p>
               <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Password and sign-in security are managed by your authentication provider.</p>
             </div>
@@ -62,7 +63,7 @@ async function SettingsPage() {
             <ShieldAlert className="h-4.5 w-4.5" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Danger zone</p>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600 dark:text-red-300"><UiText>{"Danger zone"}</UiText></p>
               <p className="mt-1 max-w-2xl text-xs leading-5 text-red-800 dark:text-red-200">Permanently delete your automations, Instagram data, leads, billing profile, and sign-in account.</p>
             </div>
           </div>

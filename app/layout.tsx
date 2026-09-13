@@ -6,7 +6,6 @@ import { I18nProvider } from "@/providers/i18n-provider";
 import { getServerLocale } from "@/lib/i18n/server";
 import { LOCALE_DETAILS, localeAlternates } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
-import PhraseTranslationBridge from "@/providers/phrase-translation-bridge";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
@@ -58,14 +57,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={jakarta.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <I18nProvider locale={locale}>
-            <PhraseTranslationBridge locale={locale} />
             <ReduxProvider>
               <ReactQueryProvider>{children}</ReactQueryProvider>
             </ReduxProvider>
             <Toaster />
+            <ConsentAwareAnalytics />
           </I18nProvider>
         </ThemeProvider>
-        <ConsentAwareAnalytics />
       </body>
     </html>
   );

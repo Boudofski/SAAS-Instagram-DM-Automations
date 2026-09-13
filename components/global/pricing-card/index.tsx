@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -85,9 +86,7 @@ export default function PricingCard({
   return (
     <div className="relative overflow-visible">
       {featured && (
-        <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-ap3k-gradient px-4 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-ap3k-glow">
-          Most popular
-        </div>
+        <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-ap3k-gradient px-4 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-ap3k-glow"><UiText>{"Most popular"}</UiText></div>
       )}
       {card}
     </div>

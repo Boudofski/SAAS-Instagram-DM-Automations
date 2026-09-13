@@ -3,7 +3,7 @@ import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
-import LocalizedPricingPage from "@/components/i18n/localized-pricing-page";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import { getServerLocale } from "@/lib/i18n/server";
 import { localeAlternates, localizePublicPath } from "@/lib/i18n/config";
 
@@ -59,10 +59,9 @@ const FAQ = [
 
 export default function PricingPage() {
   const locale = getServerLocale();
-  if (locale !== "en") return <LocalizedPricingPage locale={locale} />;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-rf-text">
+    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.12),transparent_30rem),radial-gradient(circle_at_84%_12%,rgba(236,72,153,0.10),transparent_30rem)]" />
       <WebsiteNav current="pricing" />
 
@@ -111,6 +110,6 @@ export default function PricingPage() {
       </main>
 
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

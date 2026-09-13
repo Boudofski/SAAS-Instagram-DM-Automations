@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import Link from "next/link";
 
 type Props = { params: { slug: string } };
@@ -40,9 +41,7 @@ export default function ReviewDemoPage({ params }: Props) {
         <Link href={`/dashboard/${params.slug}/account`} className="ap3k-gradient-button inline-flex justify-center px-5 py-2.5 text-sm">
           Start with Instagram connection
         </Link>
-        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-outline-button inline-flex justify-center px-5 py-2.5 text-sm">
-          Create automation
-        </Link>
+        <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-outline-button inline-flex justify-center px-5 py-2.5 text-sm"><UiText>{"Create automation"}</UiText></Link>
       </div>
     </div>
   );
