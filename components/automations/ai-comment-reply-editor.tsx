@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import type { AiProtectionRules, AiReplyTone } from "@/lib/ai-reply-config";
 import { LockKeyhole, Settings2, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +28,7 @@ export default function AiCommentReplyEditor({ enabled, available, workspaceRead
         </span>
         <Toggle enabled={enabled} locked={locked} />
       </button>
-      {locked ? <div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">{planLabel === "Free" ? <>Your Free plan includes saved replies. <Link href={settingsHref.replace(/\/ai$/, "/billing")} className="font-black text-violet-600 dark:text-violet-300">Upgrade to Pro</Link> for AP3K AI.</> : !workspaceReady ? <>Enable the AI Comments master switch in <Link href={settingsHref} className="font-black text-violet-600 dark:text-violet-300">AP3K AI</Link> before using it here.</> : "AP3K AI is unavailable right now."}</div> : null}
+      {locked ? <div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">{planLabel === "Free" ? <>Your Free plan includes saved replies. <Link href={settingsHref.replace(/\/ai$/, "/billing")} className="font-black text-violet-600 dark:text-violet-300"><UiText>{"Upgrade to Pro"}</UiText></Link> for AP3K AI.</> : !workspaceReady ? <>Enable the AI Comments master switch in <Link href={settingsHref} className="font-black text-violet-600 dark:text-violet-300"><UiText>{"AP3K AI"}</UiText></Link> before using it here.</> : "AP3K AI is unavailable right now."}</div> : null}
       {enabled ? <div className="space-y-4 border-t border-violet-500/15 p-5"><div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.05] p-4"><p className="text-xs font-black uppercase tracking-wider text-violet-600 dark:text-violet-300">Uses AP3K AI settings</p><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Tone, knowledge, brand voice, guardrails, and comment protection are managed once in AP3K AI.</p><Link href={settingsHref} className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-violet-600 dark:text-violet-300"><Settings2 className="h-3.5 w-3.5" /> Open AP3K AI</Link></div><label className="block"><span className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-wider text-slate-500"><span>Automation focus <span className="font-semibold normal-case tracking-normal text-slate-400">(optional)</span></span><span>{instructions.length}/1600</span></span><textarea value={instructions} onChange={(event) => onChange({ instructions: event.target.value })} maxLength={1600} rows={4} dir="auto" placeholder="Example: Focus on this product launch. Mention the launch date only when asked." className="ap3k-textarea mt-2 w-full resize-y rounded-xl px-4 py-3 text-sm" /></label></div> : null}
     </section>
   );

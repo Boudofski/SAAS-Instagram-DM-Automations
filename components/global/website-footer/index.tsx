@@ -1,12 +1,14 @@
+"use client";
+
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
 import LanguageSwitcher from "@/components/global/language-switcher";
 import { localizePublicPath } from "@/lib/i18n/config";
-import { getServerMessages } from "@/lib/i18n/server";
+import { useI18n } from "@/providers/i18n-provider";
 import Link from "next/link";
 
 export default function WebsiteFooter() {
-  const { locale, t } = getServerMessages();
+  const { locale, t } = useI18n();
   const href = (path: string) => localizePublicPath(path, locale);
   const linkClass = "text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text";
 

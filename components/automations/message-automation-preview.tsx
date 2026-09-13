@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
 import type { LinkButton } from "@/lib/link-buttons";
 import { AtSign, Camera, ChevronLeft, ImageIcon, Phone, Plus, Send, SmilePlus, Video } from "lucide-react";
@@ -42,7 +43,7 @@ export default function MessageAutomationPreview(props: Props) {
               </div>
             )}
           </div>
-          <div className="mx-3 mb-3 flex items-center gap-3 rounded-full bg-[#202023] px-3 py-2.5 text-white/40"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#4775ff] text-white"><Camera className="h-4 w-4" /></span><span className="flex-1 text-xs">Message…</span><ImageIcon className="h-5 w-5" /><Send className="h-5 w-5" /><Plus className="h-5 w-5" /></div>
+          <div className="mx-3 mb-3 flex items-center gap-3 rounded-full bg-[#202023] px-3 py-2.5 text-white/40"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#4775ff] text-white"><Camera className="h-4 w-4" /></span><span className="flex-1 text-xs"><UiText>{"Message…"}</UiText></span><ImageIcon className="h-5 w-5" /><Send className="h-5 w-5" /><Plus className="h-5 w-5" /></div>
         </div>
       </InstagramPhoneFrame>
     </section>

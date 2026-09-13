@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { getAccountDeletionConfirmation } from "@/lib/account-deletion-confirmation";
 import {
   AlertDialog,
@@ -95,9 +96,7 @@ export function DeleteAccountButton({
           variant="destructive"
           className="h-11 rounded-xl px-4 font-bold"
         >
-          <Trash2 aria-hidden="true" />
-          Delete account permanently
-        </Button>
+          <Trash2 aria-hidden="true" /><UiText>{"Delete account permanently"}</UiText></Button>
       </AlertDialogTrigger>
 
       <AlertDialogContent className="border-red-200 dark:border-red-500/30">
@@ -111,9 +110,7 @@ export function DeleteAccountButton({
               activity, AP3K billing profile, and sign-in account. Active Stripe subscriptions
               are canceled immediately. Previous payments are not automatically refunded.
             </span>
-            <span className="block font-semibold text-slate-800 dark:text-slate-200">
-              This action cannot be undone.
-            </span>
+            <span className="block font-semibold text-slate-800 dark:text-slate-200"><UiText>{"This action cannot be undone."}</UiText></span>
             {visualOnly && (
               <span className="block rounded-xl border border-amber-200 bg-amber-50 p-3 font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
                 Preview visual QA only. Account deletion is disabled on this page.
@@ -144,7 +141,7 @@ export function DeleteAccountButton({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Keep my account</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}><UiText>{"Keep my account"}</UiText></AlertDialogCancel>
           <Button
             type="button"
             variant="destructive"

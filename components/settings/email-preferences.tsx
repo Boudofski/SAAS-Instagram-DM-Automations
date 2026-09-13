@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { updateEmailPreferencesAction } from "@/actions/email-preferences";
 
 type Props = {
@@ -34,7 +35,7 @@ export function EmailPreferences({ preferences }: Props) {
         ))}
       </div>
       <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Security, account connection, automation failure, usage-limit, support, and billing emails cannot be disabled because they protect the service you asked AP3K to run.</p>
-      <button type="submit" className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-violet-600/15 transition hover:-translate-y-0.5 hover:shadow-violet-600/25">Save email preferences</button>
+      <button type="submit" className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-violet-600/15 transition hover:-translate-y-0.5 hover:shadow-violet-600/25"><UiText>{"Save email preferences"}</UiText></button>
     </form>
   );
 }

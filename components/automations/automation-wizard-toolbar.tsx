@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/i18n/localized-copy";
 import { ArrowLeft, Eye } from "lucide-react";
 import Link from "next/link";
 
@@ -20,7 +21,7 @@ export default function AutomationWizardToolbar({ backHref, currentStep, totalSt
         className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-600 transition hover:border-rf-purple/30 hover:text-slate-950 dark:border-white/10 dark:text-slate-300 dark:hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Automations</span>
+        <span className="hidden sm:inline"><UiText>{"Automations"}</UiText></span>
       </Link>
 
       <div className="min-w-0 flex-1">
@@ -46,8 +47,7 @@ export default function AutomationWizardToolbar({ backHref, currentStep, totalSt
         onClick={onOpenPreview}
         className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-rf-purple/25 px-3 text-xs font-black text-rf-purple xl:hidden"
       >
-        <Eye className="h-4 w-4" /> Preview
-      </button>
+        <Eye className="h-4 w-4" /><UiText>{" Preview"}</UiText></button>
     </header>
   );
 }
