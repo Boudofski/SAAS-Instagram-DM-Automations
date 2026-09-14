@@ -4,10 +4,6 @@ import { onUserInfo } from "@/actions/user";
 import { dashboardPath } from "@/lib/dashboard";
 import { ClerkCacheSyncer } from "@/providers/clerk-cache-syncer";
 import {
-  PrefetchUserAutomation,
-  PrefetchUserProfile,
-} from "@/react-query/prefetch";
-import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
@@ -56,9 +52,9 @@ async function Layout({ children, params }: Props) {
 
   const query = new QueryClient();
 
-  await PrefetchUserProfile(query);
-
-  await PrefetchUserAutomation(query);
+  // Reuse the authenticated result instead of fetching the same profile again.
+  // Screens fetch their own automation data; unrelated routes need not wait for it.
+  query.setQueryData(["user-profile", currentClerkId], userResult);
 
   return (
     <HydrationBoundary state={dehydrate(query)}>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useUi } from "@/components/i18n/use-ui";
+import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import { saveMessageAutomation } from "@/actions/automation";
 import { getAiWorkspace } from "@/actions/ai-workspace";
@@ -17,7 +19,7 @@ import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, readLinkButtons, typ
 import { AtSign, Bot, Loader2, MessageCircleReply, SmilePlus, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Source = "STORY" | "DM";
 type StoryTrigger = "MENTION" | "REACTION" | "REPLY";
@@ -55,10 +57,11 @@ const INITIAL: Draft = {
 };
 
 export default function MessageAutomationWizard({ slug, source, automationId, automation }: { slug: string; source: Source; automationId?: string; automation?: any }) {
+  const tr = useUi();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(1);
-  const [draft, setDraft] = useState<Draft>(INITIAL);
+  const [draft, setDraft] = useState<Draft>(() => ({ ...INITIAL, message: tr(INITIAL.message), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
   const [keywordDraft, setKeywordDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -98,12 +101,10 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
     });
   }, [reduceMotion, step]);
 
-  const ruleSummary = useMemo(() => {
-    const trigger = source === "STORY"
-      ? draft.storyTriggerType === "MENTION" ? "mentions you in a story" : draft.storyTriggerType === "REACTION" ? "reacts to your story" : "replies to your story"
-      : draft.triggerMode === "ANY_MESSAGE" ? "sends you a DM" : `sends a DM containing ${draft.keywords.join(", ") || "your keyword"}`;
-    return <>When <strong>someone {trigger}</strong>, AP3K will <strong>send them a DM</strong>.</>;
-  }, [draft.keywords, draft.storyTriggerType, draft.triggerMode, source]);
+  const summarySource = source === "STORY"
+    ? draft.storyTriggerType === "MENTION" ? "When someone mentions you in a story, AP3K sends them a DM." : draft.storyTriggerType === "REACTION" ? "When someone reacts to your story, AP3K sends them a DM." : "When someone replies to your story, AP3K sends them a DM."
+    : draft.triggerMode === "ANY_MESSAGE" ? "When someone sends you a DM, AP3K sends them a DM." : "When someone sends a DM containing {keywords}, AP3K sends them a DM.";
+  const ruleSummary = <UiMessage source={summarySource} values={{ keywords: <bdi>{draft.keywords.join(", ") || tr("your keyword")}</bdi> }} />;
 
   const canContinue = step === 1
     ? source === "STORY" || draft.triggerMode === "ANY_MESSAGE" || draft.keywords.length > 0
@@ -123,6 +124,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
     setSaving(true);
     setError(null);
     const firstLink = draft.linkButtons[0];
+    try {
     const result = await saveMessageAutomation({
       ...draft,
       source,
@@ -137,7 +139,8 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       return;
     }
     setError(typeof result.data === "string" ? result.data : "Could not save automation.");
-    setSaving(false);
+    } catch { setError("Could not save automation."); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -156,7 +159,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
                     {STORY_TRIGGERS.map((item) => {
                       const Icon = item.icon;
                       const selected = draft.storyTriggerType === item.value;
-                      return <button key={item.value} type="button" onClick={() => setDraft({ ...draft, storyTriggerType: item.value })} className={["min-h-40 rounded-2xl border p-5 text-left transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="grid h-11 w-11 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple"><Icon className="h-5 w-5" /></span><span className="mt-5 block text-lg font-black">{item.title}</span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">{item.description}</span></button>;
+                      return <button key={item.value} type="button" onClick={() => setDraft({ ...draft, storyTriggerType: item.value })} className={["min-h-40 rounded-2xl border p-5 text-start transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="grid h-11 w-11 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple"><Icon className="h-5 w-5" /></span><span className="mt-5 block text-lg font-black"><UiText>{item.title}</UiText></span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400"><UiText>{item.description}</UiText></span></button>;
                     })}
                   </div>
                 ) : (
@@ -165,7 +168,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
                       <Choice selected={draft.triggerMode === "SPECIFIC_KEYWORD"} title="Specific keyword" description="Launch when the DM contains one of your keywords." onClick={() => setDraft({ ...draft, triggerMode: "SPECIFIC_KEYWORD" })} />
                       <Choice selected={draft.triggerMode === "ANY_MESSAGE"} title="Any incoming DM" description="Launch for every new conversation message." onClick={() => setDraft({ ...draft, triggerMode: "ANY_MESSAGE", keywords: [] })} />
                     </div>
-                    {draft.triggerMode === "SPECIFIC_KEYWORD" && <div><div className="flex gap-2"><input value={keywordDraft} onChange={(event) => setKeywordDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addKeyword(); } }} placeholder='Type a keyword, e.g. "guide"' className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm" /><button type="button" onClick={addKeyword} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 text-sm font-black text-white">+ Add</button></div><div className="mt-3 flex flex-wrap gap-2">{draft.keywords.map((word) => <button key={word} type="button" onClick={() => setDraft({ ...draft, keywords: draft.keywords.filter((item) => item !== word) })} className="rounded-full bg-rf-purple/10 px-3 py-2 text-xs font-bold text-rf-purple">{word} ×</button>)}</div></div>}
+                    {draft.triggerMode === "SPECIFIC_KEYWORD" && <div><div className="flex gap-2"><input value={keywordDraft} onChange={(event) => setKeywordDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addKeyword(); } }} placeholder={tr("Type a keyword, e.g. \"guide\"")} className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm" /><button type="button" onClick={addKeyword} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 text-sm font-black text-white"><UiText>{"+ Add"}</UiText></button></div><div className="mt-3 flex flex-wrap gap-2">{draft.keywords.map((word) => <button key={word} type="button" onClick={() => setDraft({ ...draft, keywords: draft.keywords.filter((item) => item !== word) })} className="rounded-full bg-rf-purple/10 px-3 py-2 text-xs font-bold text-rf-purple">{word} ×</button>)}</div></div>}
                   </div>
                 )}
               </section>
@@ -176,27 +179,27 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
                 <PhaseHeader title="Choose the DM response" description="Send a saved message or let AP3K AI answer from your shared knowledge." />
                 <div className="mb-5 grid gap-3 sm:grid-cols-2">
                   <Choice selected={!draft.aiReplyEnabled} title="Saved response" description="A predictable message with up to three link buttons." onClick={() => setDraft({ ...draft, aiReplyEnabled: false })} />
-                  <button type="button" disabled={!aiAvailable} onClick={() => setDraft({ ...draft, aiReplyEnabled: true, followGateRequired: false })} className={["rounded-2xl border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50", draft.aiReplyEnabled ? "border-violet-500 bg-violet-500/10 ring-2 ring-violet-500/15" : "border-slate-200 bg-slate-50 hover:border-violet-400/40 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}>
-                    <span className="flex items-center gap-2 text-base font-black"><Sparkles className="h-4 w-4 text-violet-500" /> AP3K AI reply <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-violet-500">Pro</span></span>
-                    <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">Answers in your voice using AP3K AI knowledge.</span>
-                    {!aiAvailable ? <span className="mt-3 flex items-center gap-1.5 text-xs font-bold text-violet-500"><Bot className="h-3.5 w-3.5" /> Enable AI Replies in AP3K AI first</span> : null}
+                  <button type="button" disabled={!aiAvailable} onClick={() => setDraft({ ...draft, aiReplyEnabled: true, followGateRequired: false })} className={["rounded-2xl border p-5 text-start transition disabled:cursor-not-allowed disabled:opacity-50", draft.aiReplyEnabled ? "border-violet-500 bg-violet-500/10 ring-2 ring-violet-500/15" : "border-slate-200 bg-slate-50 hover:border-violet-400/40 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}>
+                    <span className="flex items-center gap-2 text-base font-black"><Sparkles className="h-4 w-4 text-violet-500" /> <UiText>{"AP3K AI reply"}</UiText><span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-violet-500"><UiText>{"Pro"}</UiText></span></span>
+                    <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400"><UiText>{"Answers in your voice using AP3K AI knowledge."}</UiText></span>
+                    {!aiAvailable ? <span className="mt-3 flex items-center gap-1.5 text-xs font-bold text-violet-500"><Bot className="h-3.5 w-3.5" /> <UiText>{"Enable AI Replies in AP3K AI first"}</UiText></span> : null}
                   </button>
                 </div>
                 {draft.aiReplyEnabled ? (
                   <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5">
-                    <p className="text-sm font-black">AI response enabled</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. When a saved knowledge URL answers the request, AI can attach it as one native Instagram button. The message below is sent only if the provider is unavailable.</p>
-                    <label className="mt-4 block text-xs font-black uppercase tracking-wider text-slate-500">Safe fallback message<textarea value={draft.message} onChange={(event) => setDraft({ ...draft, message: event.target.value })} rows={4} maxLength={1000} dir="auto" className="ap3k-textarea mt-2 w-full rounded-xl px-4 py-3 text-sm" /></label>
+                    <p className="text-sm font-black"><UiText>{"AI response enabled"}</UiText></p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. When a saved knowledge URL answers the request, AI can attach it as one native Instagram button. The message below is sent only if the provider is unavailable."}</UiText></p>
+                    <label className="mt-4 block text-xs font-black uppercase tracking-wider text-slate-500"><UiText>{"Safe fallback message"}</UiText><textarea value={draft.message} onChange={(event) => setDraft({ ...draft, message: event.target.value })} rows={4} maxLength={1000} dir="auto" className="ap3k-textarea mt-2 w-full rounded-xl px-4 py-3 text-sm" /></label>
                   </div>
                 ) : <MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} />}
               </section>
             )}
 
             {step === 3 && (
-              <section><PhaseHeader title="Configure rules & name" description={draft.aiReplyEnabled ? "Name the automation. AI replies are sent immediately after a matching message." : "Name the automation and decide whether the saved response is reserved for followers."} /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Automation name"}</UiText></label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={source === "STORY" ? "Story mention welcome" : "Guide request DM"} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" />{draft.aiReplyEnabled ? <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5"><p className="text-sm font-black">Immediate AI response</p><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Follow requests are disabled for AI replies so AP3K never generates and hides an answer. Your saved fallback is used only if the provider is unavailable.</p></div> : <><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Optional follow request"}</UiText></p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /></>}<div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple">Rule logic summary</p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
+              <section><PhaseHeader title="Configure rules & name" description={draft.aiReplyEnabled ? "Name the automation. AI replies are sent immediately after a matching message." : "Name the automation and decide whether the saved response is reserved for followers."} /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Automation name"}</UiText></label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={tr(source === "STORY" ? "Story mention welcome" : "Guide request DM")} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" />{draft.aiReplyEnabled ? <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5"><p className="text-sm font-black"><UiText>{"Immediate AI response"}</UiText></p><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Follow requests are disabled for AI replies so AP3K never generates and hides an answer. Your saved fallback is used only if the provider is unavailable."}</UiText></p></div> : <><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Optional follow request"}</UiText></p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /></>}<div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple"><UiText>{"Rule logic summary"}</UiText></p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
             )}
 
-            {error && <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">{error}</p>}
+            {error && <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"><UiText>{error}</UiText></p>}
           </motion.main>
         </AnimatePresence>
           </div>
@@ -221,9 +224,9 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       </div>
 
       {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
+        <div role="dialog" aria-modal="true" aria-label={tr("Instagram preview")} className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
           <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
+            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black"><UiText>{"Instagram preview"}</UiText></p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label={tr("Close preview")} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
             <div className="min-h-0 flex-1"><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} linkButtons={draft.linkButtons} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></div>
           </div>
         </div>
@@ -249,5 +252,5 @@ function MessageWizardActions({ step, canContinue, saving, onBack, onContinue, o
   );
 }
 
-function PhaseHeader({ title, description }: { title: string; description: string }) { return <div className="mb-5"><h1 className="text-2xl font-black tracking-tight">{title}</h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p></div>; }
-function Choice({ selected, title, description, onClick }: { selected: boolean; title: string; description: string; onClick: () => void }) { return <button type="button" onClick={onClick} className={["rounded-2xl border p-5 text-left transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="block text-base font-black">{title}</span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">{description}</span></button>; }
+function PhaseHeader({ title, description }: { title: string; description: string }) { return <div className="mb-5"><h1 className="text-2xl font-black tracking-tight"><UiText>{title}</UiText></h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><UiText>{description}</UiText></p></div>; }
+function Choice({ selected, title, description, onClick }: { selected: boolean; title: string; description: string; onClick: () => void }) { return <button type="button" onClick={onClick} className={["rounded-2xl border p-5 text-start transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="block text-base font-black"><UiText>{title}</UiText></span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400"><UiText>{description}</UiText></span></button>; }
