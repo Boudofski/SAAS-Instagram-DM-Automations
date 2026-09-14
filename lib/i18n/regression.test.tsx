@@ -60,7 +60,7 @@ describe("language-switching regressions", () => {
       expect(source).not.toMatch(/LocalizedLandingPage|LocalizedPricingPage/);
     }
     expect(fs.readFileSync("app/layout.tsx", "utf8")).not.toContain("PhraseTranslationBridge");
-    expect(fs.readFileSync("components/global/language-switcher.tsx", "utf8")).toContain("LOCALE_FLAGS");
+    expect(fs.readFileSync("components/global/language-switcher.tsx", "utf8")).toContain("LanguageFlag");
     expect(fs.readFileSync("middleware.ts", "utf8")).not.toContain("locale !== DEFAULT_LOCALE");
   });
 });

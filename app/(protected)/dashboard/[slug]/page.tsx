@@ -1,3 +1,4 @@
+import { MetricValue, FollowerSubtitle, DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
@@ -76,9 +77,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3K</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText>{displayName}</h1>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText><bdi dir="auto">{displayName}</bdi></h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          See performance, manage automations, and keep Instagram conversations moving.
+          <UiText>{"See performance, manage automations, and keep Instagram conversations moving."}</UiText>
         </p>
       </div>
 
@@ -86,10 +87,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <div className="animate-[ap3kDashboardRise_0.48s_ease-out_both] overflow-hidden rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="ap3k-kicker">Ready to launch</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Create your first Instagram automation</h2>
+              <p className="ap3k-kicker"><UiText>{"Ready to launch"}</UiText></p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white"><UiText>{"Create your first Instagram automation"}</UiText></h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Start with a post comment, story interaction, or incoming DM, then choose the response and delivery rules.
+                <UiText>{"Start with a post comment, story interaction, or incoming DM, then choose the response and delivery rules."}</UiText>
               </p>
             </div>
             <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm"><UiText>{"Create automation"}</UiText></Link>
@@ -110,25 +111,25 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-                    {displayInstagramUsername ? `@${displayInstagramUsername}` : "Instagram connected"}
+                    {displayInstagramUsername ? <bdi dir="ltr">@{displayInstagramUsername}</bdi> : <UiText>{"Instagram connected"}</UiText>}
                   </p>
-                  <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}>{tokenExpired ? "Reconnect" : "Connected"}</span>
+                  <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}><UiText>{tokenExpired ? "Reconnect" : "Connected"}</UiText></span>
                 </div>
                 <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   {tokenExpired
-                    ? "Reconnect Instagram to resume automation activity."
+                    ? <UiText>{"Reconnect Instagram to resume automation activity."}</UiText>
                     : profileSnapshot?.fetchedAt
                       ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
-                      : "Instagram is ready for automation activity."}
+                      : <UiText>{"Instagram is ready for automation activity."}</UiText>}
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <span className="ap3k-badge ap3k-badge-slate">{planLabel}</span>
-              {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green">Fresh</span>}
-              {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate">{profileSnapshot.followersCount.toLocaleString()} followers</span>}
+              <span className="ap3k-badge ap3k-badge-slate"><UiText>{planLabel}</UiText></span>
+              {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green"><UiText>{"Fresh"}</UiText></span>}
+              {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
               <Link href={`/dashboard/${params.slug}/account`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15">
-                {tokenExpired ? "Reconnect Instagram" : "Manage account"}
+                <UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText>
               </Link>
             </div>
           </div>
@@ -137,7 +138,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
         <div className="mb-3">
-          <p className="ap3k-kicker">Account analytics</p>
+          <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
           <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
         </div>
         <div className="mb-3 flex animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -152,17 +153,17 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               key={key}
               href={`/dashboard/${params.slug}?period=${key}`}
               className={[
-                "whitespace-nowrap rounded-xl px-2 py-2 text-center text-[11px] font-black transition-all duration-200 sm:px-3 sm:py-1.5 sm:text-xs",
+                "rounded-xl px-2 py-2 text-center text-[11px] font-black transition-all duration-200 sm:px-3 sm:py-1.5 sm:text-xs",
                 period === key
                   ? "bg-rf-pink/10 text-rf-pink shadow-sm"
                   : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
               ].join(" ")}
             >
-              {label}
+              <UiText>{label}</UiText>
             </Link>
           ))}
           </div>
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{dashboardStats?.period.label ?? "This month"}</p>
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>
         <div className="grid grid-cols-2 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] sm:grid-cols-3 xl:grid-cols-5">
           {dashboardProfileStats.map((stat) => (
@@ -176,7 +177,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                 stat.label === "Replies" ? changes?.staticRepliesUsed :
                 stat.change
               }
-              subtitle={stat.subtitle}
+              subtitle={stat.label === "Followers" ? <FollowerSubtitle fallback={stat.subtitle} count={snapshotComparison?.previous?.followersCount != null ? snapshotComparison?.followerChange : null} percent={snapshotComparison?.followerChangePercent} /> : <UiText>{stat.subtitle}</UiText>}
             />
           ))}
         </div>
@@ -196,7 +197,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             icon="📣"
             title="No automations yet"
             description="Choose a comment, story, or DM trigger, configure the response, and activate it."
-            ctaLabel="Create automation →"
+            ctaLabel="Create automation"
             ctaHref={`/dashboard/${params.slug}/automation/new`}
           />
         ) : (
@@ -207,7 +208,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   );
 }
 
-function AccountStatCard({ label, value, change, subtitle }: { label: string; value: string | number; change?: ChangeSummary; subtitle: string }) {
+function AccountStatCard({ label, value, change, subtitle }: { label: string; value: string | number; change?: ChangeSummary; subtitle: React.ReactNode }) {
   const changeClass =
     change?.tone === "positive"
       ? "text-emerald-600 dark:text-emerald-300"
@@ -217,10 +218,10 @@ function AccountStatCard({ label, value, change, subtitle }: { label: string; va
 
   return (
     <div className="min-w-0 border-b border-r border-slate-200 px-3 py-4 transition duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <p className="truncate text-xl font-black leading-none tracking-tight text-slate-950 dark:text-white sm:text-2xl">{value}</p>
-        <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}>{change?.label ?? "—"}</span>
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"><UiText>{label}</UiText></p>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
+        <p className="min-w-0 break-words text-xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-2xl"><MetricValue value={value} /></p>
+        <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}><MetricValue value={change?.label ?? "—"} /></span>
       </div>
       <p className="mt-2 text-[11px] leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>

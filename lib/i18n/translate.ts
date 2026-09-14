@@ -1,5 +1,6 @@
 import { MESSAGES } from "./messages";
 import { PHRASE_TRANSLATIONS } from "./phrase-translations";
+import { DASHBOARD_COPY } from "./dashboard-copy";
 import { PUBLIC_COPY } from "./public-copy";
 import type { Locale } from "./config";
 
@@ -7,6 +8,7 @@ const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messa
   ...Object.fromEntries(Object.entries(MESSAGES.en).map(([key, source]) => [source, messages[key as keyof typeof messages]])),
   ...PHRASE_TRANSLATIONS[locale as Locale],
   ...PUBLIC_COPY[locale as Locale],
+  ...DASHBOARD_COPY[locale as Locale],
 }])) as Record<Locale, Record<string, string>>;
 
 export function translateUi(source: string, locale: Locale): string {

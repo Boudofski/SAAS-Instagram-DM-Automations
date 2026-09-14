@@ -26,7 +26,7 @@ type Props = {
 };
 
 function NavBar({ slug }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { page, pathname } = usePath();
   const { signOut } = useClerk();
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ function NavBar({ slug }: Props) {
             triggerLabel={t("openNavigation")}
             className="lg:hidden"
             contentClassName="h-[100dvh] max-h-[100dvh]"
-            side="left"
+            side={locale === "ar" ? "right" : "left"}
             closeOnNavigation
           >
             <div className="flex h-full min-h-0 w-full flex-col bg-white text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
@@ -63,7 +63,7 @@ function NavBar({ slug }: Props) {
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
                 <Link href={`/dashboard/${slug}/account`} className="mb-2 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.05]">
                   <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")}</span><span className="mt-0.5 block text-xs font-bold text-violet-500">{plan} {t("plan")}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? <bdi dir="ltr">@{instagram.instagramUsername}</bdi> : t("connectInstagram")}</span><span className="mt-0.5 block text-xs font-bold text-violet-500">{plan} {t("plan")}</span></span>
                 </Link>
                 <div className="flex flex-col py-3">
                   <Items page={page} slug={slug} />
@@ -87,7 +87,7 @@ function NavBar({ slug }: Props) {
         <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 lg:max-w-sm">
           <Search />
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ms-auto flex shrink-0 items-center gap-2">
           {!isCampaignList && <CreateAutomation slug={slug} />}
           <LanguageSwitcher compact />
           <ThemeToggle compact />

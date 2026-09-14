@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/providers/i18n-provider";
+import { translateUi } from "@/lib/i18n/translate";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -29,27 +31,17 @@ const FORMAT_OPTIONS: Record<NonNullable<Props["mode"]>, Intl.DateTimeFormatOpti
 };
 
 export default function LocalTime({ value, empty = "None yet", mode = "dateTime", prefix }: Props) {
-  const [label, setLabel] = useState("");
-
-  useEffect(() => {
-    if (!value) {
-      setLabel(empty);
-      return;
-    }
-
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      setLabel(empty);
-      return;
-    }
-
-    setLabel(date.toLocaleString(undefined, FORMAT_OPTIONS[mode]));
-  }, [empty, mode, value]);
+  const { locale } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const date = value ? new Date(value) : null;
+  const valid = date && !Number.isNaN(date.getTime());
+  const label = mounted && valid ? date.toLocaleString(locale, FORMAT_OPTIONS[mode]) : translateUi(empty, locale);
 
   return (
-    <time dateTime={value ? new Date(value).toISOString() : undefined} suppressHydrationWarning>
-      {prefix && label ? `${prefix} ` : ""}
-      {label || empty}
+    <time dateTime={valid ? date.toISOString() : undefined} suppressHydrationWarning>
+      {prefix && mounted && valid ? `${translateUi(prefix, locale)} ` : ""}
+      <bdi>{label}</bdi>
     </time>
   );
 }

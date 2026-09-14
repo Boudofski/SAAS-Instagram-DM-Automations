@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/providers/i18n-provider";
+import { translateUi } from "@/lib/i18n/translate";
+import { MetricValue, UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import {
   activateAutomation,
@@ -16,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
-import { formatKeywordDisplay } from "@/lib/keyword-display";
 import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
 import { MoreHorizontal } from "lucide-react";
 import Image from "next/image";
@@ -43,6 +45,7 @@ export default function AutomationTable({
   showControls = true,
   pageSize = 12,
 }: AutomationTableProps) {
+  const { locale } = useI18n();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"newest" | "active" | "name">("newest");
   const [page, setPage] = useState(1);
@@ -100,7 +103,7 @@ export default function AutomationTable({
   function handleDelete(id: string) {
     if (
       !window.confirm(
-        "Delete this automation? This removes it from your account.",
+        translateUi("Delete this automation? This removes it from your account.", locale),
       )
     )
       return;
@@ -117,7 +120,7 @@ export default function AutomationTable({
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search automations, keywords, or content…"
+              placeholder={translateUi("Search automations, keywords, or content…", locale)}
               className="ap3k-input h-10 rounded-xl pr-4 sm:h-11 sm:rounded-2xl"
             />
           </div>
@@ -127,7 +130,7 @@ export default function AutomationTable({
               onChange={(event) =>
                 setSort(event.target.value as "newest" | "active" | "name")
               }
-              aria-label="Sort automations"
+              aria-label={translateUi("Sort automations", locale)}
               className="ap3k-select h-10 min-w-0 flex-1 rounded-xl px-3 text-xs font-bold sm:h-11 sm:rounded-2xl sm:text-sm"
             >
               <option value="newest"><UiText>{"Newest first"}</UiText></option>
@@ -136,8 +139,8 @@ export default function AutomationTable({
             </select>
             <span className="whitespace-nowrap rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 sm:rounded-2xl sm:text-xs">
               {filtered.length
-                ? `${(safePage - 1) * pageSize + 1}-${Math.min(safePage * pageSize, filtered.length)} of ${filtered.length}`
-                : "0 automations"}
+                ? <UiMessage source="{start}–{end} of {total}" values={{ start: <MetricValue value={(safePage - 1) * pageSize + 1} />, end: <MetricValue value={Math.min(safePage * pageSize, filtered.length)} />, total: <MetricValue value={filtered.length} /> }} />
+                : <UiText>{"0 automations"}</UiText>}
             </span>
           </div>
         </div>
@@ -165,7 +168,7 @@ export default function AutomationTable({
       </div>
 
       <div className="hidden xl:block">
-        <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(132px,.75fr)] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
+        <div className="grid grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
           <span><UiText>{"Automation"}</UiText></span>
           <span><UiText>{"Channel"}</UiText></span>
           <span><UiText>{"Trigger"}</UiText></span>
@@ -222,6 +225,7 @@ function CampaignMobileCard({
   onDelete,
   compact = false,
 }: any) {
+  const { locale } = useI18n();
   const post = automation.posts?.[0];
   const source = automationSource(automation);
   const isAny = post?.postid === "ANY";
@@ -246,7 +250,7 @@ function CampaignMobileCard({
       <div className="flex items-start gap-2.5 sm:gap-3">
         <Link
           href={`/dashboard/${slug}/automation/${automation.id}`}
-          aria-label={`Open ${automation.name || "automation"}`}
+          aria-label={translateUi("Open {name}", locale).replace("{name}", automation.name || translateUi("Automation", locale))}
           className="shrink-0"
         >
           <CampaignThumb post={post} isAny={isAny} source={source} />
@@ -256,25 +260,22 @@ function CampaignMobileCard({
             href={`/dashboard/${slug}/automation/${automation.id}`}
             className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
           >
-            {automation.name || "Untitled automation"}
+            {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
           </Link>
           <p
-            title={mode.full}
+            title={translateUi(mode.full, locale)}
             className="mt-0.5 truncate text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs"
           >
-            {source === "STORY"
-              ? `Story · ${storyTriggerLabel(automation.storyTriggerType)}`
-              : source === "DM"
-                ? `DM · ${automation.triggerMode === "ANY_MESSAGE" ? "Any message" : "Keyword"}`
-                : `${isAny ? "Any post" : "Specific post"} · ${isAnyComment ? "Any comment" : "Keyword trigger"}`}
+            <UiText>{source === "STORY" ? "Story" : source === "DM" ? "DM" : isAny ? "Any post" : "Specific post"}</UiText>
+            {" · "}<UiText>{source === "STORY" ? storyTriggerLabel(automation.storyTriggerType) : source === "DM" ? (automation.triggerMode === "ANY_MESSAGE" ? "Any message" : "Keyword") : isAnyComment ? "Any comment" : "Keyword trigger"}</UiText>
           </p>
         </div>
         <StatusPill status={status} />
       </div>
       <div className="mt-2.5 flex items-center gap-1.5">
         <ReplyPill summary={replySummary} />
-        <span className="ml-auto whitespace-nowrap text-[11px] font-bold text-slate-500 dark:text-slate-400">
-          {runs} runs · {leads} leads
+        <span className="ms-auto whitespace-nowrap text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          <MetricValue value={runs} /> <UiText>{"Runs"}</UiText> · <MetricValue value={leads} /> <UiText>{"Leads"}</UiText>
         </span>
       </div>
       {compact ? (
@@ -292,7 +293,7 @@ function CampaignMobileCard({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                aria-label="More automation actions"
+                aria-label={translateUi("More automation actions", locale)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-rf-pink/30 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white"
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -301,9 +302,9 @@ function CampaignMobileCard({
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem asChild>
                 <Link href={automationEditHref(slug, automation)}>
-                  {automation.needsReview || automation.stalePost
+                  <UiText>{automation.needsReview || automation.stalePost
                     ? "Review setup"
-                    : "Edit automation"}
+                    : "Edit automation"}</UiText>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -312,7 +313,7 @@ function CampaignMobileCard({
                   onActivate(automation.id, !Boolean(automation.active))
                 }
               >
-                {automation.active ? "Pause automation" : "Start automation"}
+                <UiText>{automation.active ? "Pause automation" : "Start automation"}</UiText>
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={isPending}
@@ -342,6 +343,7 @@ function CampaignDesktopRow({
   onDuplicate,
   onDelete,
 }: any) {
+  const { locale } = useI18n();
   const post = automation.posts?.[0];
   const source = automationSource(automation);
   const isAny = post?.postid === "ANY";
@@ -364,13 +366,13 @@ function CampaignDesktopRow({
         ? "AI DM replies active"
         : "Saved DM replies active"
       : source === "STORY"
-        ? `Story automation · ${storyTriggerLabel(automation.storyTriggerType)}`
+        ? "Story automation"
         : mode.full;
   const status = campaignStatus(automation);
   const replySummary = getReplySummary(automation);
 
   return (
-    <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(132px,.75fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
+    <div className="grid grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} source={source} />
@@ -379,13 +381,13 @@ function CampaignDesktopRow({
               href={`/dashboard/${slug}/automation/${automation.id}`}
               className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
             >
-              {automation.name || "Untitled automation"}
+              {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
             </Link>
             <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <span className="truncate">{modeLabel}</span>
+              <span className="min-w-0 break-words"><UiText>{modeLabel}</UiText>{source === "STORY" && <> · <UiText>{storyTriggerLabel(automation.storyTriggerType)}</UiText></>}</span>
               {automation.currentAccountLabel && (
                 <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 dark:bg-white/[0.07] dark:text-slate-400 2xl:inline-flex">
-                  {automation.currentAccountLabel}
+                  <bdi dir="ltr">{automation.currentAccountLabel}</bdi>
                 </span>
               )}
             </div>
@@ -394,13 +396,13 @@ function CampaignDesktopRow({
       </div>
       <div className="min-w-0">
         <span className="ap3k-badge ap3k-badge-slate">
-          {source === "STORY" ? "Story" : source === "DM" ? "DM" : "Post"}
+          <UiText>{source === "STORY" ? "Story" : source === "DM" ? "DM" : "Post"}</UiText>
         </span>
       </div>
       <div className="min-w-0">
         {source === "STORY" ? (
           <span className="ap3k-badge ap3k-badge-pink">
-            {storyTriggerLabel(automation.storyTriggerType)}
+            <UiText>{storyTriggerLabel(automation.storyTriggerType)}</UiText>
           </span>
         ) : source === "DM" && automation.triggerMode === "ANY_MESSAGE" ? (
           <span className="ap3k-badge ap3k-badge-blue"><UiText>{"Any DM"}</UiText></span>
@@ -408,10 +410,7 @@ function CampaignDesktopRow({
           <span className="ap3k-badge ap3k-badge-blue"><UiText>{"Any"}</UiText></span>
         ) : (automation.keywords ?? []).length ? (
           <span className="ap3k-badge ap3k-badge-pink">
-            {formatKeywordDisplay(
-              String((automation.keywords ?? [])[0]?.word ?? ""),
-              appReviewMode,
-            )}
+            {appReviewMode && <><UiText>{"Keyword"}</UiText>: </>}<bdi dir="auto">{String((automation.keywords ?? [])[0]?.word ?? "")}</bdi>
           </span>
         ) : (
           <span className="ap3k-badge ap3k-badge-slate"><UiText>{"No trigger"}</UiText></span>
@@ -420,8 +419,8 @@ function CampaignDesktopRow({
       <div className="min-w-0">
         <ReplyPill summary={replySummary} compact />
       </div>
-      <div className="font-black text-slate-950 dark:text-white">{runs}</div>
-      <div className="font-black text-slate-950 dark:text-white">{leads}</div>
+      <div className="font-black text-slate-950 dark:text-white"><MetricValue value={runs} /></div>
+      <div className="font-black text-slate-950 dark:text-white"><MetricValue value={leads} /></div>
       <div className="min-w-0">
         <StatusPill status={status} />
       </div>
@@ -439,14 +438,14 @@ function CampaignDesktopRow({
             }
             className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
           >
-            {automation.active ? "Pause" : "Start"}
+            <UiText>{automation.active ? "Pause" : "Start"}</UiText>
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300"
-                aria-label="More actions"
+                aria-label={translateUi("More actions", locale)}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
@@ -490,8 +489,7 @@ function PaginationFooter({
   return (
     <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
       <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-        Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)}{" "}
-        of {total} automations
+        <UiMessage source="{start}–{end} of {total}" values={{ start: <MetricValue value={(page - 1) * pageSize + 1} />, end: <MetricValue value={Math.min(page * pageSize, total)} />, total: <MetricValue value={total} /> }} /> · <UiText>{"Automations"}</UiText>
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -537,12 +535,13 @@ function CampaignThumb({
   source: string;
   size?: "sm" | "lg";
 }) {
+  const { locale } = useI18n();
   const sizeClass = size === "lg" ? "h-12 w-12" : "h-10 w-10";
   if (post?.media && !isAny) {
     return (
       <Image
         src={post.media}
-        alt={post.caption ?? "Automation post"}
+        alt={post.caption ?? translateUi("Automation post", locale)}
         width={48}
         height={48}
         unoptimized
@@ -603,7 +602,7 @@ function StatusPill({ status }: { status: string }) {
           ? "ap3k-badge-blue"
           : "ap3k-badge-amber";
   return (
-    <span className={`ap3k-badge whitespace-nowrap ${classes}`}>{status}</span>
+    <span className={`ap3k-badge whitespace-normal break-words ${classes}`}><UiText>{status}</UiText></span>
   );
 }
 
@@ -637,6 +636,7 @@ function ReplyPill({
   summary: ReplySummary;
   compact?: boolean;
 }) {
+  const { locale } = useI18n();
   const toneClass =
     summary.tone === "green"
       ? "ap3k-badge-green"
@@ -645,10 +645,10 @@ function ReplyPill({
         : "ap3k-badge-slate";
   return (
     <span
-      title={summary.label}
-      className={`ap3k-badge whitespace-nowrap ${toneClass}`}
+      title={translateUi(summary.label, locale)}
+      className={`ap3k-badge whitespace-normal break-words ${toneClass}`}
     >
-      {compact ? summary.compactLabel : summary.label}
+      <UiText>{compact ? summary.compactLabel : summary.label}</UiText>
     </span>
   );
 }
