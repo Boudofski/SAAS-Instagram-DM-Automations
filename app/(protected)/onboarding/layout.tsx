@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { ensureCurrentUserProfile } from "@/actions/user";
 import { redirect } from "next/navigation";
 
@@ -18,10 +19,8 @@ export default async function OnboardingLayout({ children }: { children: React.R
           children
         ) : (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100">
-            <h1 className="text-xl font-black">AP3K workspace setup failed</h1>
-            <p className="mt-2 text-sm leading-relaxed">
-              Your sign-in is valid, but AP3K could not prepare your workspace. Refresh once. If the problem continues, contact support before connecting Instagram.
-            </p>
+            <h1 className="text-xl font-black"><UiText>{"AP3K workspace setup failed"}</UiText></h1>
+            <p className="mt-2 text-sm leading-relaxed"><UiText>{" Your sign-in is valid, but AP3K could not prepare your workspace. Refresh once. If the problem continues, contact support before connecting Instagram. "}</UiText></p>
           </div>
         )}
       </div>

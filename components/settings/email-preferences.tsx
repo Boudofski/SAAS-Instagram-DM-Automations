@@ -28,13 +28,13 @@ export function EmailPreferences({ preferences }: Props) {
               className="mt-1 h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
             />
             <span className="min-w-0">
-              <span className="block text-xs font-black text-slate-900 dark:text-white">{option.title}</span>
-              <span className="mt-1 block text-[11px] leading-5 text-slate-500 dark:text-slate-400">{option.detail}</span>
+              <span className="block text-xs font-black text-slate-900 dark:text-white"><UiText>{option.title}</UiText></span>
+              <span className="mt-1 block text-[11px] leading-5 text-slate-500 dark:text-slate-400"><UiText>{option.detail}</UiText></span>
             </span>
           </label>
         ))}
       </div>
-      <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Security, account connection, automation failure, usage-limit, support, and billing emails cannot be disabled because they protect the service you asked AP3K to run.</p>
+      <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Security, account connection, automation failure, usage-limit, support, and billing emails cannot be disabled because they protect the service you asked AP3K to run."}</UiText></p>
       <button type="submit" className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-violet-600/15 transition hover:-translate-y-0.5 hover:shadow-violet-600/25"><UiText>{"Save email preferences"}</UiText></button>
     </form>
   );

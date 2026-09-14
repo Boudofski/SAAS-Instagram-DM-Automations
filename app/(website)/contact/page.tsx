@@ -1,14 +1,17 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { CircleHelp, CreditCard, Instagram, Mail, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+const pageMetadata: Metadata = {
   title: "Contact AP3K Support",
   description:
     "Contact AP3K support for Instagram connections, automations, Inbox, billing, account access, privacy, and data requests.",
   alternates: { canonical: "/contact" },
 };
+export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/contact"); }
 
 const supportTopics = [
   {
@@ -39,7 +42,7 @@ const supportTopics = [
 
 export default function ContactPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
+    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_0%,rgba(109,40,217,0.16),transparent_28rem),radial-gradient(circle_at_82%_12%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_50%_48%,rgba(255,107,53,0.08),transparent_32rem)] dark:bg-ap3k-radial" />
       <WebsiteNav current="contact" />
 
@@ -106,6 +109,6 @@ export default function ContactPage() {
       </main>
 
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

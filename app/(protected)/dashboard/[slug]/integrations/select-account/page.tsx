@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import {
   getPendingInstagramAccountSelections,
   selectPendingInstagramAccount,
@@ -27,15 +28,9 @@ async function Page({ params }: Props) {
     <div className="flex justify-center p-4 text-slate-950 dark:text-slate-50 sm:p-6 lg:p-8">
       <div className="w-full max-w-5xl">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-            Legacy Meta connection
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">
-            Select an Instagram account
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            This selector is only used by the legacy Facebook Login flow. The new Instagram Login flow connects the Instagram account directly and skips this step.
-          </p>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{" Legacy Meta connection "}</UiText></p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight"><UiText>{" Select an Instagram account "}</UiText></h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400"><UiText>{" This selector is only used by the legacy Facebook Login flow. The new Instagram Login flow connects the Instagram account directly and skips this step. "}</UiText></p>
         </div>
 
         <div className="mt-5 grid gap-4">
@@ -59,11 +54,9 @@ async function Page({ params }: Props) {
                       {account.instagramUsername ? `@${account.instagramUsername}` : account.pageName ?? "Instagram account"}
                     </p>
                     <div className="mt-3 grid gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="font-mono">
-                        Instagram account ID: {account.instagramBusinessAccountId || "Not available"}
+                      <span className="font-mono"><UiText>{" Instagram account ID: "}</UiText>{account.instagramBusinessAccountId || "Not available"}
                       </span>
-                      <span className="font-mono">
-                        Legacy linked Page ID: {account.pageId}
+                      <span className="font-mono"><UiText>{" Legacy linked Page ID: "}</UiText>{account.pageId}
                       </span>
                     </div>
                   </div>
@@ -71,9 +64,7 @@ async function Page({ params }: Props) {
                 <button
                   type="submit"
                   className="rounded-full bg-ap3k-gradient px-5 py-3 text-sm font-black text-white shadow-sm"
-                >
-                  Use this account
-                </button>
+                ><UiText>{" Use this account "}</UiText></button>
               </div>
             </form>
           ))}

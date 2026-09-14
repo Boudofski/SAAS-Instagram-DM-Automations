@@ -1,4 +1,8 @@
 "use client";
+import { UiText } from "@/components/i18n/localized-copy";
+
+import { LocalizedTextarea, LocalizedInput } from "@/components/i18n/localized-controls";
+
 
 import { resolveTemplate } from "@/lib/template";
 import { useState } from "react";
@@ -54,10 +58,8 @@ export default function DmEditor({
     <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
       <div className="flex min-w-0 items-center justify-between gap-4">
         <div className="min-w-0">
-          <span className="text-sm font-semibold text-slate-950 dark:text-white">DM message</span>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-            Sent privately to the commenter&apos;s Instagram inbox.
-          </p>
+          <span className="text-sm font-semibold text-slate-950 dark:text-white"><UiText>{"DM message"}</UiText></span>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-300"><UiText>{" Sent privately to the commenter's Instagram inbox. "}</UiText></p>
         </div>
         <button
           type="button"
@@ -86,7 +88,7 @@ export default function DmEditor({
         </div>
       )}
 
-      <textarea
+      <LocalizedTextarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Hey {{first_name}}! Here's what you asked for → {{link}}"
@@ -110,33 +112,29 @@ export default function DmEditor({
 
       <div className="flex min-w-0 flex-col gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
         <div className="flex items-center gap-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Button link</p>
-          <span className="text-[10px] text-slate-500">optional</span>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500"><UiText>{"Button link"}</UiText></p>
+          <span className="text-[10px] text-slate-500"><UiText>{"optional"}</UiText></span>
         </div>
-        <input
+        <LocalizedInput
           type="text"
           value={ctaButtonTitle}
           onChange={(event) => onCtaButtonTitleChange(event.target.value)}
           placeholder='Button text — e.g. "Get the guide"'
           className="ap3k-input w-full min-w-0 rounded-xl px-4 py-3 text-sm"
         />
-        <input
+        <LocalizedInput
           type="url"
           value={ctaLink}
           onChange={(event) => onCtaLinkChange(event.target.value)}
           placeholder="Button destination URL — e.g. https://yoursite.com/guide"
           className="ap3k-input w-full min-w-0 rounded-xl px-4 py-3 text-sm"
         />
-        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-300">
-          AP3K sends this as an Instagram web button when supported. Long URLs are hidden from the message bubble.
-        </p>
+        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-300"><UiText>{" AP3K sends this as an Instagram web button when supported. Long URLs are hidden from the message bubble. "}</UiText></p>
       </div>
 
       {value && (
         <div className="min-w-0 overflow-hidden rounded-2xl border border-rf-blue/20 bg-rf-blue/5 p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            DM preview
-          </p>
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500"><UiText>{" DM preview "}</UiText></p>
           <div className="flex max-w-full flex-col items-start gap-2 sm:max-w-[85%]">
             <div
               dir="auto"
@@ -156,8 +154,7 @@ export default function DmEditor({
             )}
           </div>
           {hasCta && ctaLink.trim() && (
-            <p className="mt-2 max-w-full overflow-hidden truncate text-[10px] text-slate-500 dark:text-slate-400">
-              Button destination saved privately: {compactUrl(ctaLink)}
+            <p className="mt-2 max-w-full overflow-hidden truncate text-[10px] text-slate-500 dark:text-slate-400"><UiText>{" Button destination saved privately: "}</UiText>{compactUrl(ctaLink)}
             </p>
           )}
         </div>

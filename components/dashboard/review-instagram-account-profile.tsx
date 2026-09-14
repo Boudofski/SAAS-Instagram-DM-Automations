@@ -1,5 +1,4 @@
 "use client";
-
 import { UiText } from "@/components/i18n/localized-copy";
 import ReviewDisconnectInstagramButton from "@/components/dashboard/review-disconnect-instagram-button";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
@@ -41,12 +40,12 @@ export default function ReviewInstagramAccountProfile({
             {liveConnected ? pageName ?? "Instagram Business or Creator profile" : "Connect Instagram to start."}
           </p>
           <p className="mt-1.5 text-sm font-bold text-slate-600 dark:text-slate-300">
-            {liveConnected ? "Profile connected" : "Connect Instagram to view profile details."}
+            <UiText>{liveConnected ? "Profile connected" : "Connect Instagram to view profile details."}</UiText>
           </p>
           <div className="mt-2.5 flex flex-wrap gap-2">
-            {liveConnected && <StatusBadge tone="pink">Official Meta connection</StatusBadge>}
+            {liveConnected && <StatusBadge tone="pink"><UiText>{"Official Meta connection"}</UiText></StatusBadge>}
             <StatusBadge tone={liveConnected ? "green" : "slate"}>
-              {liveConnected ? "Connected" : "Not connected"}
+              <UiText>{liveConnected ? "Connected" : "Not connected"}</UiText>
             </StatusBadge>
           </div>
         </div>
@@ -67,9 +66,7 @@ export default function ReviewInstagramAccountProfile({
           </>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-              Connect an Instagram Business or Creator account to get started.
-            </p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400"><UiText>{" Connect an Instagram Business or Creator account to get started. "}</UiText></p>
             <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm"><UiText>{"Connect Instagram"}</UiText></Link>
           </div>
         )}
@@ -81,7 +78,7 @@ export default function ReviewInstagramAccountProfile({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-xs font-bold text-slate-500 dark:text-slate-400"><UiText>{label}</UiText></span>
       <span className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-100">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
         {value}

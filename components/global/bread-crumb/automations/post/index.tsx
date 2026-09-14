@@ -61,7 +61,7 @@ function PostButton({ id }: Props) {
             disabled={posts.length === 0}
             className="bg-gradient-to-br w-full from-[#3352CC] font-medium text-white to-[#1C2D70]"
           >
-            <Loader state={isPending}>Attach Post</Loader>
+            <Loader state={isPending}><UiText>{"Attach Post"}</UiText></Loader>
           </Button>
         </div>
       ) : (

@@ -102,10 +102,7 @@ async function Page({ searchParams }: PageProps) {
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
           <p className="font-bold">{errorMessage}</p>
           {instagram && (
-            <p className="mt-2 font-semibold">
-              New Instagram connection could not be saved. Your current
-              connected account remains
-              {instagram.instagramUsername
+            <p className="mt-2 font-semibold"><UiText>{" New Instagram connection could not be saved. Your current connected account remains "}</UiText>{instagram.instagramUsername
                 ? ` @${instagram.instagramUsername}`
                 : " unchanged"}
               .
@@ -115,7 +112,7 @@ async function Page({ searchParams }: PageProps) {
             ERROR_STEPS[error] && (
               <ul className="mt-3 list-disc space-y-1 pl-5">
                 {ERROR_STEPS[error].map((step) => (
-                  <li key={step}>{step}</li>
+                  <li key={step}><UiText>{step}</UiText></li>
                 ))}
               </ul>
             )}
@@ -123,18 +120,16 @@ async function Page({ searchParams }: PageProps) {
       )}
 
       <div className="ap3k-panel p-4 sm:p-6">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
-          Instagram connection
-        </p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{" Instagram connection "}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-          {connected ? "Instagram connected" : "Connect Instagram"}
+          <UiText>{connected ? "Instagram connected" : "Connect Instagram"}</UiText>
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-          {connected
+          <UiText>{connected
             ? "Your account is ready for comment, reply, and DM automations."
             : directInstagramLogin
               ? "Connect one Business or Creator Instagram account directly. AP3K uses it for comment, story, and DM automations."
-              : "Connect the Business or Creator Instagram account that owns the posts AP3K should monitor."}
+              : "Connect the Business or Creator Instagram account that owns the posts AP3K should monitor."}</UiText>
         </p>
       </div>
 
@@ -161,7 +156,7 @@ async function Page({ searchParams }: PageProps) {
                 <span className="mx-auto mb-2 grid h-6 w-6 place-items-center rounded-full bg-rf-pink text-[11px] font-black text-white">
                   {index + 1}
                 </span>
-                {item}
+                <UiText>{item}</UiText>
               </div>
             ),
           )}
@@ -173,13 +168,8 @@ async function Page({ searchParams }: PageProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{"Permission readiness"}</UiText></p>
-              <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">
-                Instagram capabilities
-              </h2>
-              <p className="mt-1 hidden text-sm text-slate-600 dark:text-slate-400 sm:block">
-                AP3K checks what this Instagram account actually granted, not
-                just what the app requested.
-              </p>
+              <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white"><UiText>{" Instagram capabilities "}</UiText></h2>
+              <p className="mt-1 hidden text-sm text-slate-600 dark:text-slate-400 sm:block"><UiText>{" AP3K checks what this Instagram account actually granted, not just what the app requested. "}</UiText></p>
             </div>
             <span
               className={[
@@ -191,11 +181,11 @@ async function Page({ searchParams }: PageProps) {
                     : "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
               ].join(" ")}
             >
-              {permissionWarning
+              <UiText>{permissionWarning
                 ? "Action required"
                 : capabilities.authoritative
                   ? "All permissions ready"
-                  : "Permission state unavailable"}
+                  : "Permission state unavailable"}</UiText>
             </span>
           </div>
 
@@ -219,19 +209,17 @@ async function Page({ searchParams }: PageProps) {
 
           {permissionWarning && (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-              <p className="font-black">
-                Reconnect Instagram and enable the missing access.
-              </p>
+              <p className="font-black"><UiText>{" Reconnect Instagram and enable the missing access. "}</UiText></p>
               <p className="mt-1">
-                {missingComments
+                <UiText>{missingComments
                   ? "Comment automations cannot run until Access and manage comments is enabled. "
-                  : ""}
-                {missingMessages
+                  : ""}</UiText>
+                <UiText>{missingMessages
                   ? "DMs cannot be sent until Access and manage messages is enabled. "
-                  : ""}
-                {missingBasic
+                  : ""}</UiText>
+                <UiText>{missingBasic
                   ? "Profile and media access is required for automation setup."
-                  : ""}
+                  : ""}</UiText>
               </p>
             </div>
           )}
@@ -239,9 +227,7 @@ async function Page({ searchParams }: PageProps) {
           {capabilities.tokenDaysRemaining !== null &&
             capabilities.tokenDaysRemaining <= 7 && (
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                <strong>Instagram access expires soon.</strong> Reconnect
-                Instagram to keep automations running without interruption.
-              </div>
+                <strong><UiText>{"Instagram access expires soon."}</UiText></strong><UiText>{" Reconnect Instagram to keep automations running without interruption. "}</UiText></div>
             )}
         </section>
       )}
@@ -263,7 +249,7 @@ function PermissionCard({
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04] sm:rounded-2xl sm:p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-black text-slate-950 dark:text-white">{title}</p>
+        <p className="font-black text-slate-950 dark:text-white"><UiText>{title}</UiText></p>
         <span
           className={[
             "rounded-full border px-2.5 py-1 text-[11px] font-black",
@@ -274,11 +260,11 @@ function PermissionCard({
                 : "border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
           ].join(" ")}
         >
-          {granted ? "Granted" : missing ? "Missing" : "Unknown"}
+          <UiText>{granted ? "Granted" : missing ? "Missing" : "Unknown"}</UiText>
         </span>
       </div>
       <p className="mt-2 hidden text-xs leading-relaxed text-slate-600 dark:text-slate-400 sm:block">
-        {detail}
+        <UiText>{detail}</UiText>
       </p>
     </div>
   );

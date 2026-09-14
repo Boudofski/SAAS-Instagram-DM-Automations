@@ -1,7 +1,7 @@
 import { BLOG_POSTS } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import type { MetadataRoute } from "next";
-import { SUPPORTED_LOCALES, localizePublicPath } from "@/lib/i18n/config";
+import { SUPPORTED_LOCALES, localizePublicPath, localeAlternates } from "@/lib/i18n/config";
 
 const baseUrl = "https://ap3k.com";
 
@@ -34,15 +34,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: page.slug === "manychat-alternative" ? 0.9 : 0.85,
     })),
-    { url: `${baseUrl}/ar/instagram-dm-automation`, lastModified: updated, changeFrequency: "monthly" as const, priority: 0.85 },
   ];
 
-  const localizedCorePages: MetadataRoute.Sitemap = SUPPORTED_LOCALES
-    .filter((locale) => locale !== "en")
-    .flatMap((locale) => [
-      { url: `${baseUrl}${localizePublicPath("/", locale)}`, lastModified: updated, changeFrequency: "weekly" as const, priority: 0.9 },
-      { url: `${baseUrl}${localizePublicPath("/pricing", locale)}`, lastModified: updated, changeFrequency: "monthly" as const, priority: 0.8 },
-    ]);
-
-  return [...staticPages, ...localizedCorePages, ...commercialPages, ...blogPages];
+  return [...staticPages, ...commercialPages, ...blogPages].flatMap((page) => {
+    const path = new URL(page.url).pathname;
+    const languages = Object.fromEntries(Object.entries(localeAlternates(path)).map(([language, value]) => [language, `${baseUrl}${value}`]));
+    return SUPPORTED_LOCALES.map((locale) => ({
+      ...page,
+      url: `${baseUrl}${localizePublicPath(path, locale)}`,
+      alternates: { languages },
+    }));
+  });
 }

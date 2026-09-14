@@ -1,4 +1,6 @@
 "use client";
+import { LocalizedButton } from "@/components/i18n/localized-controls";
+
 
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
@@ -88,7 +90,7 @@ export default function Sidebar({ slug }: Props) {
         <HelpHub slug={slug} expanded={expanded} />
       </div>
       <div className="shrink-0 px-3 pb-2">
-        <button
+        <LocalizedButton
           type="button"
           onClick={toggleExpanded}
           aria-label={expanded ? t("collapseNavigation") : t("expandNavigation")}
@@ -96,11 +98,11 @@ export default function Sidebar({ slug }: Props) {
           className="mx-auto grid h-10 w-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           {expanded ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-        </button>
+        </LocalizedButton>
       </div>
 
       <div className="shrink-0 border-t border-slate-200 p-3 dark:border-white/10">
-        <button
+        <LocalizedButton
           onClick={() => {
             queryClient.clear();
             void signOut({ redirectUrl: "/" });
@@ -111,7 +113,7 @@ export default function Sidebar({ slug }: Props) {
         >
           <LogOut className="h-4 w-4" />
           {expanded && <span>{t("signOut")}</span>}
-        </button>
+        </LocalizedButton>
       </div>
     </aside>
   );

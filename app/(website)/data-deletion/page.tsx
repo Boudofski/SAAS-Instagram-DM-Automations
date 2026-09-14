@@ -1,11 +1,14 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+const pageMetadata: Metadata = {
   title: "Data Deletion Instructions — AP3K",
   description: "How to delete your AP3K account data, Instagram connection, campaigns, leads, and automation records.",
 };
+export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/data-deletion"); }
 
 const cardClass = "rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.10] dark:bg-[#111827] dark:shadow-ap3k-card";
 const mutedClass = "text-sm leading-7 text-slate-600 dark:text-rf-muted";
@@ -13,7 +16,7 @@ const strongClass = "font-bold text-slate-950 dark:text-white";
 
 export default function DataDeletionPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
+    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_0%,rgba(249,115,22,0.10),transparent_28rem),radial-gradient(circle_at_78%_8%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_52%_42%,rgba(139,92,246,0.10),transparent_32rem)] dark:bg-ap3k-radial" />
       <WebsiteNav current="data-deletion" />
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-8">
@@ -87,6 +90,6 @@ export default function DataDeletionPage() {
         </div>
       </main>
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

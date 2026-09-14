@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -23,7 +24,7 @@ export default function StatCard({ label, value, icon, delta, deltaDir = "neutra
         <span className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-black text-rf-pink shadow-inner dark:border-white/10 dark:bg-white/[0.04] dark:text-base">
           {icon}
         </span>
-        {label}
+        <UiText>{label}</UiText>
       </div>
       <div className="text-3xl font-black tracking-tight text-slate-950 dark:text-rf-text">
         {empty ? "—" : value}

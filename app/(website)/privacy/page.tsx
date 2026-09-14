@@ -1,12 +1,15 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+const pageMetadata: Metadata = {
   title: "Privacy Policy — AP3K",
   description: "How AP3K handles Instagram account, campaign, Comment reply, DM, lead, activity, and billing data.",
   alternates: { canonical: "/privacy" },
 };
+export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/privacy"); }
 
 const sections = [
   {
@@ -53,7 +56,7 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
+    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_0%,rgba(249,115,22,0.10),transparent_28rem),radial-gradient(circle_at_78%_8%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_52%_42%,rgba(139,92,246,0.10),transparent_32rem)] dark:bg-ap3k-radial" />
       <WebsiteNav current="privacy" />
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-8">
@@ -83,6 +86,6 @@ export default function PrivacyPage() {
         </div>
       </main>
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

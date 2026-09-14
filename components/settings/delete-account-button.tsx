@@ -1,5 +1,4 @@
 "use client";
-
 import { UiText } from "@/components/i18n/localized-copy";
 import { getAccountDeletionConfirmation } from "@/lib/account-deletion-confirmation";
 import {
@@ -101,27 +100,18 @@ export function DeleteAccountButton({
 
       <AlertDialogContent className="border-red-200 dark:border-red-500/30">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-red-700 dark:text-red-300">
-            Permanently delete your AP3K account?
-          </AlertDialogTitle>
+          <AlertDialogTitle className="text-red-700 dark:text-red-300"><UiText>{" Permanently delete your AP3K account? "}</UiText></AlertDialogTitle>
           <AlertDialogDescription className="space-y-3 text-left leading-relaxed">
-            <span className="block">
-              This permanently removes your campaigns, connected Instagram accounts, leads,
-              activity, AP3K billing profile, and sign-in account. Active Stripe subscriptions
-              are canceled immediately. Previous payments are not automatically refunded.
-            </span>
+            <span className="block"><UiText>{" This permanently removes your campaigns, connected Instagram accounts, leads, activity, AP3K billing profile, and sign-in account. Active Stripe subscriptions are canceled immediately. Previous payments are not automatically refunded. "}</UiText></span>
             <span className="block font-semibold text-slate-800 dark:text-slate-200"><UiText>{"This action cannot be undone."}</UiText></span>
             {visualOnly && (
-              <span className="block rounded-xl border border-amber-200 bg-amber-50 p-3 font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                Preview visual QA only. Account deletion is disabled on this page.
-              </span>
+              <span className="block rounded-xl border border-amber-200 bg-amber-50 p-3 font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"><UiText>{" Preview visual QA only. Account deletion is disabled on this page. "}</UiText></span>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className="space-y-2">
-          <label htmlFor="delete-account-confirmation" className="text-sm font-bold">
-            Type <span className="select-all break-all font-mono text-red-700 dark:text-red-300">{requiredConfirmation}</span>
+          <label htmlFor="delete-account-confirmation" className="text-sm font-bold"><UiText>{" Type "}</UiText><span className="select-all break-all font-mono text-red-700 dark:text-red-300">{requiredConfirmation}</span>
           </label>
           <Input
             id="delete-account-confirmation"
@@ -149,11 +139,11 @@ export function DeleteAccountButton({
             onClick={deleteAccount}
           >
             {isDeleting ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Trash2 aria-hidden="true" />}
-            {visualOnly
+            <UiText>{visualOnly
               ? "Preview only — deletion disabled"
               : isDeleting
                 ? "Deleting account…"
-                : "Delete permanently"}
+                : "Delete permanently"}</UiText>
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

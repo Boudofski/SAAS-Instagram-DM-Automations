@@ -76,7 +76,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink">AP3K</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink"><UiText>{"AP3K"}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText><bdi dir="auto">{displayName}</bdi></h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           <UiText>{"See performance, manage automations, and keep Instagram conversations moving."}</UiText>

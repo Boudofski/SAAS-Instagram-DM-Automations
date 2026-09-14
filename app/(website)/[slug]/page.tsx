@@ -1,3 +1,4 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import CommercialLandingPage from "@/components/website/commercial-landing-page";
 import { COMMERCIAL_PAGES, getCommercialPage } from "@/lib/commercial-pages";
 import type { Metadata } from "next";
@@ -18,7 +19,7 @@ export function generateMetadata({ params }: Props): Metadata {
     ? { "en-US": pathname, ar: "/ar/instagram-dm-automation", "x-default": pathname }
     : undefined;
 
-  return {
+  return localizedMetadata({
     title: `${page.title} | AP3K`,
     description: page.description,
     keywords: [page.eyebrow, "Instagram automation", "AP3K"],
@@ -32,7 +33,7 @@ export function generateMetadata({ params }: Props): Metadata {
       images: [{ url: `${SITE_URL}${page.media}`, width: 1156, height: 2056, alt: page.mediaAlt }],
     },
     twitter: { card: "summary_large_image", title: page.title, description: page.description, images: [`${SITE_URL}${page.media}`] },
-  };
+  }, pathname);
 }
 
 export default function CommercialPageRoute({ params }: Props) {

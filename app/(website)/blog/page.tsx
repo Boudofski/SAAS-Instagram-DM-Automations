@@ -1,3 +1,5 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
@@ -7,7 +9,7 @@ import { ArrowRight, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
+const pageMetadata: Metadata = {
   title: "AP3K Blog — Instagram Comment & DM Automation Guides",
   description:
     "Practical guides for Instagram comment automation, DMs, creator lead generation, triggers and campaign strategy.",
@@ -19,10 +21,11 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
+export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/blog"); }
 
 export default function BlogPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
+    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,0.12),transparent_30rem),radial-gradient(circle_at_80%_12%,rgba(236,72,153,0.10),transparent_32rem)]" />
       <WebsiteNav current="blog" />
       <main className="relative z-10">
@@ -74,6 +77,6 @@ export default function BlogPage() {
         </section>
       </main>
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

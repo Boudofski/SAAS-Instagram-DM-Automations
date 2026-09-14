@@ -1,12 +1,15 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+const pageMetadata: Metadata = {
   title: "Cookie Policy — AP3K",
   description: "How AP3K uses necessary storage and optional analytics and marketing technologies.",
   alternates: { canonical: "/cookies" },
 };
+export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/cookies"); }
 
 const sections = [
   ["Necessary storage", "AP3K uses essential browser storage and cookies for authentication, security, preferences, and core product functions. These cannot be disabled through the optional tracking control."],
@@ -17,7 +20,7 @@ const sections = [
 
 export default function CookiePolicyPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-white">
+    <LocalizedCopy><div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-white">
       <WebsiteNav />
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
         <p className="ap3k-kicker">Legal</p>
@@ -33,6 +36,6 @@ export default function CookiePolicyPage() {
         </div>
       </main>
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

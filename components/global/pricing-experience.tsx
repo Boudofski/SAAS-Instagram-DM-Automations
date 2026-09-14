@@ -1,4 +1,6 @@
 "use client";
+import { UiText } from "@/components/i18n/localized-copy";
+
 
 import {
   PLAN_CARDS,
@@ -42,9 +44,7 @@ export default function PricingExperience({
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           }`}
-        >
-          Monthly
-        </button>
+        ><UiText>{" Monthly "}</UiText></button>
         <button
           type="button"
           onClick={() => setInterval("year")}
@@ -53,18 +53,12 @@ export default function PricingExperience({
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           }`}
-        >
-          Annual
-          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-300">
-            Save up to 27%
-          </span>
+        ><UiText>{" Annual "}</UiText><span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-300"><UiText>{" Save up to 27% "}</UiText></span>
         </button>
       </div>
 
       {existingPaid && !dashboardCompact ? (
-        <p className={`mx-auto max-w-3xl rounded-2xl border border-blue-200 bg-blue-50 px-4 text-center font-bold text-blue-800 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200 ${dashboardCompact ? "mb-5 py-2.5 text-xs sm:text-sm" : "mb-6 py-3 text-sm"}`}>
-          You already have a paid subscription. Use <strong>Manage billing</strong> to change plan, billing interval, payment method, or cancellation settings.
-        </p>
+        <p className={`mx-auto max-w-3xl rounded-2xl border border-blue-200 bg-blue-50 px-4 text-center font-bold text-blue-800 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200 ${dashboardCompact ? "mb-5 py-2.5 text-xs sm:text-sm" : "mb-6 py-3 text-sm"}`}><UiText>{" You already have a paid subscription. Use "}</UiText><strong><UiText>{"Manage billing"}</UiText></strong><UiText>{" to change plan, billing interval, payment method, or cancellation settings. "}</UiText></p>
       ) : null}
 
       <div className={`mx-auto grid w-full max-w-[1180px] ${dashboardCompact ? "gap-3 md:grid-cols-3" : "gap-5 md:grid-cols-3"}`}>
@@ -101,13 +95,10 @@ export default function PricingExperience({
             >
               {plan.featured && (
                 <div className={`absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-rf-pink font-black text-white shadow-lg ${dashboardCompact ? "px-3 py-1 text-[10px]" : "px-4 py-1.5 text-xs"}`}>
-                  <Sparkles className="h-3.5 w-3.5" /> Most popular
-                </div>
+                  <Sparkles className="h-3.5 w-3.5" /><UiText>{" Most popular "}</UiText></div>
               )}
               {isCurrent && (
-                <span className="absolute right-3 top-3 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  Current
-                </span>
+                <span className="absolute right-3 top-3 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300"><UiText>{" Current "}</UiText></span>
               )}
 
               <div className={dashboardCompact ? "pt-0.5" : compact ? "pt-1" : "pt-2"}>
@@ -121,7 +112,7 @@ export default function PricingExperience({
                     <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>
                       $0
                     </p>
-                    <p className="mt-1 text-[11px] font-bold text-slate-400">No credit card required</p>
+                    <p className="mt-1 text-[11px] font-bold text-slate-400"><UiText>{"No credit card required"}</UiText></p>
                   </div>
                 ) : (
                   <>
@@ -131,8 +122,7 @@ export default function PricingExperience({
                     </div>
                     {interval === "year" && paidPlan && (
                       <p className="mt-1 text-[11px] font-black text-emerald-600 dark:text-emerald-300">
-                        {`Save ${plan.annualSavingsPercent}%`} · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}/mo
-                      </p>
+                        {`Save ${plan.annualSavingsPercent}%`} · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}<UiText>{"/mo "}</UiText></p>
                     )}
                   </>
                 )}
@@ -177,17 +167,17 @@ export default function PricingExperience({
       {!compact && (
         <section className="mt-20">
           <div className="mb-8 text-center">
-            <p className="ap3k-kicker">Compare plans</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">Plans, side by side</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Real AP3K features and limits, with every successful comment reply and DM counted as one automated action.</p>
+            <p className="ap3k-kicker"><UiText>{"Compare plans"}</UiText></p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl"><UiText>{"Plans, side by side"}</UiText></h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400"><UiText>{"Real AP3K features and limits, with every successful comment reply and DM counted as one automated action."}</UiText></p>
           </div>
           <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white/90 shadow-sm dark:border-white/10 dark:bg-[#0f1012]">
             <table className="w-full min-w-[720px] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/10">
-                  <th className="px-6 py-5 font-black text-slate-500">Feature</th>
-                  <th className="bg-orange-500/[0.06] px-6 py-5 font-black text-orange-500">Pro</th>
-                  <th className="px-6 py-5 font-black text-slate-950 dark:text-white">Business</th>
+                  <th className="px-6 py-5 font-black text-slate-500"><UiText>{"Feature"}</UiText></th>
+                  <th className="bg-orange-500/[0.06] px-6 py-5 font-black text-orange-500"><UiText>{"Pro"}</UiText></th>
+                  <th className="px-6 py-5 font-black text-slate-950 dark:text-white"><UiText>{"Business"}</UiText></th>
                 </tr>
               </thead>
               <tbody>

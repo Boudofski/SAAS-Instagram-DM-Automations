@@ -34,14 +34,14 @@ export default function PaymentCard({ label, current }: Props) {
         <h2 className="text-xl font-black">{plan.name}</h2>
         {isActive && <span className="ap3k-badge ap3k-badge-green"><UiText>{"Current"}</UiText></span>}
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{plan.description}</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400"><UiText>{plan.description}</UiText></p>
       <div className="mt-5 flex items-baseline gap-1">
         {label === "FREE" ? (
           <span className="text-4xl font-black tracking-tight">$0</span>
         ) : (
           <>
             <span className="text-4xl font-black tracking-tight">${plan.monthlyPrice}</span>
-            <span className="text-sm text-slate-500 dark:text-rf-muted">/month</span>
+            <span className="text-sm text-slate-500 dark:text-rf-muted"><UiText>{"/month"}</UiText></span>
           </>
         )}
       </div>
@@ -49,7 +49,7 @@ export default function PaymentCard({ label, current }: Props) {
         {plan.features.map((feature) => (
           <p key={feature} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300">
             <CircleCheck className="h-4 w-4 flex-shrink-0 text-orange-500" />
-            {feature}
+            <UiText>{feature}</UiText>
           </p>
         ))}
       </div>
