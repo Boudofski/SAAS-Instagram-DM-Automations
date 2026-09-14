@@ -72,7 +72,7 @@ function SupportAssistant({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     let active = true;
-    void getSupportHistoryAction().then((result) => { if (active) setMessages(result.messages); }).catch(() => { if (active) setNotice("Could not load support history. Please try again."); }).finally(() => { if (active) setLoading(false); });
+    void getSupportHistoryAction().then((result) => { if (active) { setMessages(result.messages); if (result.status !== 200) setNotice("Could not load support history. Please try again."); } }).catch(() => { if (active) setNotice("Could not load support history. Please try again."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
   useEffect(() => {
@@ -117,7 +117,7 @@ function SupportAssistant({ onClose }: { onClose: () => void }) {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     setPending(true);
-    try { await clearSupportHistoryAction(); setMessages([]); setNotice(null); }
+    try { const result = await clearSupportHistoryAction(); if (result.status !== 200) throw new Error("clear failed"); setMessages([]); setNotice(null); }
     catch { setNotice("Could not clear support history. Please try again."); }
     finally { requestInFlight.current = false; setPending(false); }
   };

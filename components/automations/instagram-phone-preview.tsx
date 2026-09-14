@@ -40,7 +40,7 @@ const MODES: Array<{ value: PreviewMode; label: string }> = [
 export default function InstagramPhonePreview({ data, step, username, profilePictureUrl }: Props) {
   const tr = useUi();
   const [mode, setMode] = useState<PreviewMode>(step === 1 ? "post" : step === 2 ? "comments" : "dm");
-  const handle = username?.replace(/^@/, "") || "youraccount";
+  const handle = username?.replace(/^@/, "") || tr("youraccount");
 
   useEffect(() => {
     setMode(step === 1 ? "post" : step === 2 ? "comments" : "dm");

@@ -1752,6 +1752,38 @@ export const SETUP_ROWS: readonly (readonly [string, string, string, string, str
     "El acceso a mensajes directos de Instagram puede estar pendiente en esta cuenta. Prueba con un comentario real antes de grabar.",
     "Der Instagram-DM-Zugriff für dieses Konto steht möglicherweise noch aus. Teste vor der Aufnahme mit einem echten Kommentar.",
     "O acesso a mensagens diretas do Instagram pode ainda estar pendente nesta conta. Teste com um comentário real antes de gravar."
+  ],
+  [
+    "Write a question first.",
+    "اكتب سؤالًا أولًا.",
+    "Écrivez d’abord une question.",
+    "Escribe una pregunta primero.",
+    "Schreibe zuerst eine Frage.",
+    "Escreva primeiro uma pergunta."
+  ],
+  [
+    "You have reached today's support-assistant limit. Email support@ap3k.com for more help.",
+    "لقد بلغت الحد اليومي لمساعد الدعم. راسل support@ap3k.com لمزيد من المساعدة.",
+    "Vous avez atteint la limite quotidienne de l’assistant. Écrivez à support@ap3k.com pour obtenir de l’aide.",
+    "Has alcanzado el límite diario del asistente. Escribe a support@ap3k.com para obtener más ayuda.",
+    "Du hast das Tageslimit des Supportassistenten erreicht. Schreibe für weitere Hilfe an support@ap3k.com.",
+    "Atingiu o limite diário do assistente. Envie um email para support@ap3k.com para obter mais ajuda."
+  ],
+  [
+    "The support assistant is unavailable. Please use the Knowledge base or email support@ap3k.com.",
+    "مساعد الدعم غير متاح. يُرجى استخدام قاعدة المعرفة أو مراسلة support@ap3k.com.",
+    "L’assistant est indisponible. Consultez la base de connaissances ou écrivez à support@ap3k.com.",
+    "El asistente no está disponible. Consulta la base de conocimientos o escribe a support@ap3k.com.",
+    "Der Supportassistent ist nicht verfügbar. Nutze die Wissensdatenbank oder schreibe an support@ap3k.com.",
+    "O assistente está indisponível. Consulte a base de conhecimento ou envie um email para support@ap3k.com."
+  ],
+  [
+    "Support is unavailable right now. Email support@ap3k.com.",
+    "الدعم غير متاح حاليًا. راسل support@ap3k.com.",
+    "L’assistance est indisponible pour le moment. Écrivez à support@ap3k.com.",
+    "El soporte no está disponible ahora. Escribe a support@ap3k.com.",
+    "Der Support ist derzeit nicht verfügbar. Schreibe an support@ap3k.com.",
+    "O suporte está indisponível neste momento. Envie um email para support@ap3k.com."
   ]
 ];
 
