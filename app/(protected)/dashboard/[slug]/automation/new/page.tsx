@@ -41,7 +41,12 @@ type Props = {
   searchParams?: { edit?: string; type?: string };
 };
 
-export default function WizardPage({ params, searchParams }: Props) {
+export default function WizardPage(props: Props) {
+  if (!props.searchParams?.edit && !props.searchParams?.type) return <AutomationTypePicker slug={props.params.slug} />;
+  return <AutomationSetup {...props} />;
+}
+
+function AutomationSetup({ params, searchParams }: Props) {
   const tr = useUi();
   const { slug } = params;
   const editId = searchParams?.edit;
@@ -463,7 +468,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                   { label: "Name", value: data.campaignName || tr("Untitled automation"), step: 1 as const },
                   { label: "Account", value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : tr("No account connected"), step: 1 as const },
                   { label: "Post", value: data.post?.postid === "ANY" ? tr("Any post") : data.post?.postid ? tr("Selected post {id}").replace("{id}", data.post.postid) : tr("Not selected"), step: 1 as const },
-                  { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? tr("Any comment") : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
+                  { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? tr("Any comment") : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode, tr)).join(", "), step: 2 as const },
                   { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? tr("Saved replies: {count}").replace("{count}", String(commentReplies.length)) : tr("Off"), step: 3 as const },
                   { label: "AI reply", value: data.aiReplyEnabled ? tr(data.aiReplyTone === "FUN" ? "Fun tone" : data.aiReplyTone === "PROFESSIONAL" ? "Professional tone" : "Friendly tone") : tr("Off"), step: 3 as const },
                   { label: "DM", value: data.sendPrivateDm ? tr("On") : tr("Off"), step: 3 as const },

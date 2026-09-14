@@ -112,7 +112,7 @@ export default function KeywordInput({
                 KW_COLOURS[i % KW_COLOURS.length]
               )}
             >
-              {formatKeywordDisplay(kw, appReviewMode)}
+              {formatKeywordDisplay(kw, appReviewMode, tr)}
               <button
                 type="button"
                 onClick={() => onRemove(kw)}
