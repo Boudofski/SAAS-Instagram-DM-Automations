@@ -2,6 +2,7 @@ import { SUPPORTED_LOCALES, type Locale } from "./config";
 
 // Source copy stays intact; placeholders are interpolated only at explicit UI sites.
 export const DASHBOARD_ROWS: readonly (readonly [string, string, string, string, string, string])[] = [
+  ["{plan} plan", "خطة {plan}", "Offre {plan}", "Plan {plan}", "Tarif {plan}", "Plano {plan}"],
   ["DM", "رسالة خاصة", "DM", "DM", "DM", "DM"],
   ["AP3K DM", "رسائل AP3K الخاصة", "DM AP3K", "DM de AP3K", "AP3K-DM", "DM da AP3K"],
   ["Current account", "الحساب الحالي", "Compte actuel", "Cuenta actual", "Aktuelles Konto", "Conta atual"],

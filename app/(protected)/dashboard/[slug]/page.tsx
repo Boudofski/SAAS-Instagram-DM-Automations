@@ -127,7 +127,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <span className="ap3k-badge ap3k-badge-slate"><UiText>{planLabel}</UiText></span>
               {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green"><UiText>{"Fresh"}</UiText></span>}
-              {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
+              {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate gap-1"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
               <Link href={`/dashboard/${params.slug}/account`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15">
                 <UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText>
               </Link>
