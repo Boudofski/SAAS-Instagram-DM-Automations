@@ -1,4 +1,6 @@
 "use client";
+import { useUi } from "@/components/i18n/use-ui";
+import { UiText } from "@/components/i18n/localized-copy";
 
 import { cn } from "@/lib/utils";
 import { isAppReviewMode } from "@/lib/app-review-mode";
@@ -23,6 +25,7 @@ const KW_COLOURS = [
 export default function KeywordInput({
   triggerMode, keywords, onTriggerModeChange, onAdd, onRemove,
 }: Props) {
+  const tr = useUi();
   const [value, setValue] = useState("");
   const appReviewMode = isAppReviewMode();
 
@@ -53,24 +56,23 @@ export default function KeywordInput({
             type="button"
             onClick={() => onTriggerModeChange(mode.value)}
             className={cn(
-              "rounded-2xl border-2 p-4 text-left transition-all",
+              "rounded-2xl border-2 p-4 text-start transition-all",
               triggerMode === mode.value
                 ? "border-rf-blue bg-rf-blue/10 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] dark:bg-rf-blue/15"
                 : "border-slate-200 bg-white hover:border-rf-blue/40 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-rf-blue/50 dark:hover:bg-white/[0.07]"
             )}
           >
-            <span className="text-sm font-black text-slate-950 dark:text-white">{mode.label}</span>
-            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-300">{mode.desc}</span>
+            <span className="text-sm font-black text-slate-950 dark:text-white"><UiText>{mode.label}</UiText></span>
+            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-300"><UiText>{mode.desc}</UiText></span>
           </button>
         ))}
       </div>
 
       {triggerMode === "ANY_COMMENT" && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100">
-          <p className="font-bold">Every comment will trigger this automation.</p>
+          <p className="font-bold"><UiText>{"Every comment will trigger this automation."}</UiText></p>
           <p className="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-200/80">
-            AP3K automatically ignores your own replies to prevent loops. Use this when every commenter should get the same response.
-          </p>
+            <UiText>{"AP3K automatically ignores your own replies to prevent loops. Use this when every commenter should get the same response."}</UiText></p>
         </div>
       )}
 
@@ -83,7 +85,7 @@ export default function KeywordInput({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          placeholder='Type a keyword (e.g. "link", "guide", "yes")'
+          placeholder={tr("Type a keyword (e.g. \"link\", \"guide\", \"yes\")")}
           className="ap3k-input flex-1 rounded-xl px-4 py-3 text-sm"
         />
         <button
@@ -92,13 +94,11 @@ export default function KeywordInput({
           disabled={!value.trim()}
           className="ap3k-gradient-button disabled:opacity-40 text-sm px-5"
         >
-          + Add
-        </button>
+          <UiText>{"+ Add"}</UiText></button>
       </div>
       {keywords.length === 0 && (
         <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-          Add at least one word people will comment intentionally. Example: if the post says comment GUIDE, add guide here.
-        </p>
+          <UiText>{"Add at least one word people will comment intentionally. Example: if the post says comment GUIDE, add guide here."}</UiText></p>
       )}
 
       {/* Keyword chips */}

@@ -45,7 +45,6 @@ function NavBar({ slug }: Props) {
   };
 
   return (
-    currentPage && (
       <div className="sticky top-3 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/82 p-2 text-slate-950 shadow-sm backdrop-blur-xl transition-shadow duration-300 hover:shadow-md dark:border-white/10 dark:bg-[#0B1020]/80 dark:text-slate-50 sm:flex-nowrap lg:justify-end">
         <span className="flex flex-1 items-center gap-x-2 lg:hidden">
           <Sheet
@@ -87,17 +86,16 @@ function NavBar({ slug }: Props) {
             </div>
           </Sheet>
         </span>
-        <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 lg:max-w-sm">
+        {currentPage && <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 lg:max-w-sm">
           <Search />
-        </div>
+        </div>}
         <div className="ms-auto flex shrink-0 items-center gap-2">
-          {!isCampaignList && <CreateAutomation slug={slug} />}
+          {currentPage && !isCampaignList && <CreateAutomation slug={slug} />}
           <LanguageSwitcher compact />
           <ThemeToggle compact />
           <Notification slug={slug} />
         </div>
       </div>
-    )
   );
 }
 

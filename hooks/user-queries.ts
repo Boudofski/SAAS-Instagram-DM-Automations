@@ -35,22 +35,22 @@ export const useQueryUser = () => {
   });
 };
 
-export const useQueryAutomationPosts = () => {
+export const useQueryAutomationPosts = (enabled = true) => {
   const { userId } = useAuth();
   const fetchPosts = async () => await getProfilePostsPaginated();
 
   return useQuery({
     queryKey: ["instagram-media", userId, "paginated-all"],
     queryFn: fetchPosts,
-    enabled: Boolean(userId),
+    enabled: enabled && Boolean(userId),
   });
 };
 
-export const useQueryWebhookHealth = () => {
+export const useQueryWebhookHealth = (enabled = true) => {
   const { userId } = useAuth();
   return useQuery({
     queryKey: ["webhook-health", userId],
     queryFn: getCurrentWebhookHealth,
-    enabled: Boolean(userId),
+    enabled: enabled && Boolean(userId),
   });
 };

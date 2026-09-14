@@ -1,5 +1,6 @@
 "use client";
 
+import { useUi } from "@/components/i18n/use-ui";
 import {
   saveCampaign,
 } from "@/actions/automation";
@@ -87,8 +88,9 @@ const INITIAL: WizardData = {
 
 export function useWizard(slug: string, automationId?: string) {
   const router = useRouter();
+  const tr = useUi();
   const [step, setStep] = useState<WizardStep>(1);
-  const [data, setData] = useState<WizardData>(INITIAL);
+  const [data, setData] = useState<WizardData>(() => ({ ...INITIAL, dmMessage: tr(INITIAL.dmMessage), publicReply: tr(INITIAL.publicReply), publicReply2: tr(INITIAL.publicReply2), publicReply3: tr(INITIAL.publicReply3), openingDmText: tr(INITIAL.openingDmText), openingDmButtonText: tr(INITIAL.openingDmButtonText), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

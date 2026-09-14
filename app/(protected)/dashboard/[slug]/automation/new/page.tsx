@@ -1,5 +1,7 @@
 "use client";
 
+import { useUi } from "@/components/i18n/use-ui";
+import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTypePicker from "@/components/automations/automation-type-picker";
 import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
@@ -40,14 +42,16 @@ type Props = {
 };
 
 export default function WizardPage({ params, searchParams }: Props) {
+  const tr = useUi();
   const { slug } = params;
   const editId = searchParams?.edit;
+  const needsCommentData = searchParams?.type === "comment" || Boolean(editId);
   const appReviewMode = isAppReviewMode();
   const messagingReviewMode = isMessagingReviewMode();
   const commentReplyOnlyReviewMode = appReviewMode && !messagingReviewMode;
-  const { data: posts, isLoading: postsLoading, isFetching: postsFetching, refetch: refetchPosts } = useQueryAutomationPosts();
+  const { data: posts, isLoading: postsLoading, isFetching: postsFetching, refetch: refetchPosts } = useQueryAutomationPosts(needsCommentData);
   const { data: user } = useQueryUser();
-  const { data: webhookHealth } = useQueryWebhookHealth();
+  const { data: webhookHealth } = useQueryWebhookHealth(needsCommentData);
   const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId);
   const [loadedEdit, setLoadedEdit] = useState(false);
@@ -77,7 +81,7 @@ export default function WizardPage({ params, searchParams }: Props) {
   ].filter(Boolean) as string[];
 
   useEffect(() => {
-    if (!aiPlanAvailable) {
+    if (!aiPlanAvailable || !needsCommentData) {
       setAiCommentsReady(false);
       return;
     }
@@ -90,7 +94,7 @@ export default function WizardPage({ params, searchParams }: Props) {
         if (!cancelled) setAiCommentsReady(false);
       });
     return () => { cancelled = true; };
-  }, [aiPlanAvailable]);
+  }, [aiPlanAvailable, needsCommentData]);
 
   useEffect(() => {
     if (commentReplyOnlyReviewMode && data.sendPrivateDm) {
@@ -227,7 +231,7 @@ export default function WizardPage({ params, searchParams }: Props) {
               <input
                 value={data.campaignName}
                 onChange={(event) => update({ campaignName: event.target.value })}
-                placeholder="Example: AI guide automation"
+                placeholder={tr("Example: AI guide automation")}
                 className="ap3k-input mb-5 w-full rounded-xl px-4 py-3 text-sm"
               />
 
@@ -241,14 +245,14 @@ export default function WizardPage({ params, searchParams }: Props) {
                     type="button"
                     onClick={() => update({ post: { postid: "ANY", caption: "Any post - triggers on all Instagram posts", media: "", mediaType: "IMAGE" } })}
                     className={[
-                      "flex w-full items-center gap-3 rounded-2xl border-2 p-3.5 text-left transition-all",
+                      "flex w-full items-center gap-3 rounded-2xl border-2 p-3.5 text-start transition-all",
                       data.post?.postid === "ANY" ? "border-rf-blue bg-rf-blue/10" : "border-slate-200 bg-white hover:border-rf-blue/40 dark:border-white/10 dark:bg-white/[0.04]",
                     ].join(" ")}
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rf-blue/15 text-xl">🌐</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-bold text-slate-950 dark:text-white"><UiText>{"Any post"}</UiText></span>
-                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Listen on every post and Reel.</span>
+                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400"><UiText>{"Listen on every post and Reel."}</UiText></span>
                     </span>
                     {data.post?.postid === "ANY" && <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-bold text-white">✓</span>}
                   </button>
@@ -279,8 +283,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                       />
                     ) : (
                       <p className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                        No media loaded yet. Click Refresh posts, reconnect Instagram, or use Any post.
-                      </p>
+                        <UiText>{"No media loaded yet. Click Refresh posts, reconnect Instagram, or use Any post."}</UiText></p>
                     )}
                   </div>
 
@@ -312,13 +315,13 @@ export default function WizardPage({ params, searchParams }: Props) {
                   <button
                     type="button"
                     onClick={() => update({ publicReplyEnabled: !data.publicReplyEnabled, ...(!data.publicReplyEnabled ? { aiReplyEnabled: false } : {}) })}
-                    className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                    className="flex w-full items-center justify-between gap-4 p-5 text-start"
                   >
                     <span className="flex min-w-0 items-start gap-3">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple"><MessageCircle className="h-5 w-5" /></span>
                       <span>
                         <span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Reply to comment"}</UiText></span>
-                        <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">Visible under the Instagram post. Add up to three variations to keep replies natural.</span>
+                        <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400"><UiText>{"Visible under the Instagram post. Add up to three variations to keep replies natural."}</UiText></span>
                       </span>
                     </span>
                     <Toggle enabled={data.publicReplyEnabled} />
@@ -333,7 +336,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                           { field: "publicReply3", label: "Reply 3" },
                         ].map((item) => (
                           <div key={item.field}>
-                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{item.label}</label>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{item.label}</UiText></label>
                             <textarea
                               value={(data as any)[item.field]}
                               onChange={(event) => update({ [item.field]: event.target.value } as any)}
@@ -375,7 +378,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-blue/10 text-rf-blue"><Send className="h-5 w-5" /></span>
                         <div>
                           <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Send a DM"}</UiText></p>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">DMs are disabled for this review mode. This mode tests comment replies and lead tracking.</p>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400"><UiText>{"DMs are disabled for this review mode. This mode tests comment replies and lead tracking."}</UiText></p>
                         </div>
                       </div>
                     </div>
@@ -384,13 +387,13 @@ export default function WizardPage({ params, searchParams }: Props) {
                       <button
                         type="button"
                         onClick={() => update({ sendPrivateDm: !data.sendPrivateDm })}
-                        className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                        className="flex w-full items-center justify-between gap-4 p-5 text-start"
                       >
                         <span className="flex min-w-0 items-start gap-3">
                           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-blue/10 text-rf-blue"><Send className="h-5 w-5" /></span>
                           <span>
                             <span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Send a DM"}</UiText></span>
-                            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">Sent privately to the commenter&apos;s Instagram inbox.</span>
+                            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400"><UiText>{"Sent privately to the commenter's Instagram inbox."}</UiText></span>
                           </span>
                         </span>
                         <Toggle enabled={data.sendPrivateDm} />
@@ -403,7 +406,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">1</span>
                               <div>
                                 <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"DM with links"}</UiText></p>
-                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">The required delivery message. Add one to three link buttons.</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"The required delivery message. Add one to three link buttons."}</UiText></p>
                               </div>
                             </div>
                             <MessageResponseEditor
@@ -417,11 +420,11 @@ export default function WizardPage({ params, searchParams }: Props) {
                           </div>
 
                           <div className={`overflow-hidden rounded-2xl border transition ${data.openingDmEnabled ? "border-violet-400/30 bg-violet-500/[0.05]" : "border-slate-200 dark:border-white/10"}`}>
-                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-left sm:p-5">
-                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span><span><span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Opening DM "}</UiText><span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400"><UiText>{"Optional"}</UiText></span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately.</span></span></span>
+                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-start sm:p-5">
+                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span><span><span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Opening DM "}</UiText><span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400"><UiText>{"Optional"}</UiText></span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately."}</UiText></span></span></span>
                               <Toggle enabled={data.openingDmEnabled} />
                             </button>
-                            {data.openingDmEnabled ? <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">Continue quick reply<input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM.</p></div> : null}
+                            {data.openingDmEnabled ? <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Continue quick reply"}</UiText><input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM."}</UiText></p></div> : null}
                           </div>
 
                           {data.openingDmEnabled ? <div className="rounded-2xl border border-slate-200 p-4 dark:border-white/10 sm:p-5">
@@ -429,7 +432,7 @@ export default function WizardPage({ params, searchParams }: Props) {
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">3</span>
                               <div>
                                 <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Optional follow request"}</UiText></p>
-                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Leave this off to send the final DM immediately after the opening button.</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Leave this off to send the final DM immediately after the opening button."}</UiText></p>
                               </div>
                             </div>
                             <DeliveryRules
@@ -447,8 +450,7 @@ export default function WizardPage({ params, searchParams }: Props) {
 
                 {!data.publicReplyEnabled && !data.aiReplyEnabled && !data.sendPrivateDm && (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                    Choose at least one action: Reply to comment or Send a DM.
-                  </p>
+                    <UiText>{"Choose at least one action: Reply to comment or Send a DM."}</UiText></p>
                 )}
               </div>
             </StepPanel>
@@ -458,32 +460,32 @@ export default function WizardPage({ params, searchParams }: Props) {
             <StepPanel title="Review & Activate" description="Check the flow, then save or activate.">
               <div className="mb-6 flex flex-col gap-2">
                 {[
-                  { label: "Name", value: data.campaignName || "Untitled automation", step: 1 as const },
-                  { label: "Account", value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : "No account connected", step: 1 as const },
-                  { label: "Post", value: data.post?.postid === "ANY" ? "Any post" : data.post?.postid ? `Selected post ${data.post.postid}` : "Not selected", step: 1 as const },
-                  { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? "Any comment" : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
-                  { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? `${commentReplies.length} saved variation(s)` : "Off", step: 3 as const },
-                  { label: "AI reply", value: data.aiReplyEnabled ? `${data.aiReplyTone.charAt(0)}${data.aiReplyTone.slice(1).toLowerCase()} tone` : "Off", step: 3 as const },
-                  { label: "DM", value: data.sendPrivateDm ? "On" : "Off", step: 3 as const },
-                  ...(data.sendPrivateDm ? [{ label: "Opening DM", value: data.openingDmEnabled ? `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}` : "Off · final DM sends immediately", step: 3 as const }] : []),
+                  { label: "Name", value: data.campaignName || tr("Untitled automation"), step: 1 as const },
+                  { label: "Account", value: instagram?.instagramUsername ? `@${instagram.instagramUsername}` : tr("No account connected"), step: 1 as const },
+                  { label: "Post", value: data.post?.postid === "ANY" ? tr("Any post") : data.post?.postid ? tr("Selected post {id}").replace("{id}", data.post.postid) : tr("Not selected"), step: 1 as const },
+                  { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? tr("Any comment") : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode)).join(", "), step: 2 as const },
+                  { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? tr("Saved replies: {count}").replace("{count}", String(commentReplies.length)) : tr("Off"), step: 3 as const },
+                  { label: "AI reply", value: data.aiReplyEnabled ? tr(data.aiReplyTone === "FUN" ? "Fun tone" : data.aiReplyTone === "PROFESSIONAL" ? "Professional tone" : "Friendly tone") : tr("Off"), step: 3 as const },
+                  { label: "DM", value: data.sendPrivateDm ? tr("On") : tr("Off"), step: 3 as const },
+                  ...(data.sendPrivateDm ? [{ label: "Opening DM", value: data.openingDmEnabled ? `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}` : tr("Off · final DM sends immediately"), step: 3 as const }] : []),
                   ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM with a link", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
-                  ...(data.sendPrivateDm ? [{ label: "Follow request", value: data.followGateRequired ? `On · ${data.followRequestButtonText}` : "Off", step: 3 as const }] : []),
-                  ...(data.sendPrivateDm ? [{ label: "Link buttons", value: data.linkButtons.map((button) => button.label || "Untitled link").join(", "), step: 3 as const }] : []),
-                  { label: "Status", value: data.active ? "Live after save" : "Save as draft", step: 4 as const },
+                  ...(data.sendPrivateDm ? [{ label: "Follow request", value: data.followGateRequired ? `${tr("On")} · ${data.followRequestButtonText}` : tr("Off"), step: 3 as const }] : []),
+                  ...(data.sendPrivateDm ? [{ label: "Link buttons", value: data.linkButtons.map((button) => button.label || tr("Untitled link")).join(", "), step: 3 as const }] : []),
+                  { label: "Status", value: data.active ? tr("Live after save") : tr("Save as draft"), step: 4 as const },
                 ].map((row) => (
                   <div key={row.label} className="ap3k-review-row">
-                    <span className="w-28 shrink-0 text-xs font-bold text-slate-500 dark:text-slate-300">{row.label}</span>
-                    <span className="flex-1 truncate text-xs font-semibold text-slate-950 dark:text-slate-50">{row.value}</span>
+                    <span className="w-28 shrink-0 text-xs font-bold text-slate-500 dark:text-slate-300"><UiText>{row.label}</UiText></span>
+                    <span className="flex-1 truncate text-xs font-semibold text-slate-950 dark:text-slate-50"><bdi>{row.value}</bdi></span>
                     <button type="button" onClick={() => goTo(row.step)} className="shrink-0 text-xs text-rf-blue hover:underline"><UiText>{"Edit"}</UiText></button>
                   </div>
                 ))}
               </div>
 
-              {error && <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">{error}</p>}
+              {error && <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400"><UiText>{error}</UiText></p>}
               {reviewWarnings.length > 0 && (
                 <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  <p className="font-black">Health warnings</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">{reviewWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+                  <p className="font-black"><UiText>{"Health warnings"}</UiText></p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">{reviewWarnings.map((warning) => <li key={warning}><UiText>{warning}</UiText></li>)}</ul>
                 </div>
               )}
 
@@ -491,13 +493,13 @@ export default function WizardPage({ params, searchParams }: Props) {
                 type="button"
                 onClick={() => update({ active: !data.active })}
                 className={[
-                  "mb-6 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
+                  "mb-6 flex w-full items-center justify-between rounded-2xl border p-4 text-start transition-colors",
                   data.active ? "border-rf-green/25 bg-rf-green/10" : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
                 ].join(" ")}
               >
                 <span>
                   <span className="block text-sm font-bold text-slate-950 dark:text-white"><UiText>{"Active automation"}</UiText></span>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">When enabled, AP3K listens for matching comments and runs the actions you selected.</span>
+                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400"><UiText>{"When enabled, AP3K listens for matching comments and runs the actions you selected."}</UiText></span>
                 </span>
                 <Toggle enabled={data.active} green />
               </button>
@@ -522,9 +524,9 @@ export default function WizardPage({ params, searchParams }: Props) {
       </div>
 
       {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Instagram preview" className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
+        <div role="dialog" aria-modal="true" aria-label={tr("Instagram preview")} className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
           <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black">Instagram preview</p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label="Close preview" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
+            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black"><UiText>{"Instagram preview"}</UiText></p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label={tr("Close preview")} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
             <div className="min-h-0 flex-1"><InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></div>
           </div>
         </div>
@@ -569,7 +571,7 @@ function WizardActions({
             <span className="sm:hidden"><UiText>{"Draft"}</UiText></span><span className="hidden sm:inline"><UiText>{"Save as draft"}</UiText></span>
           </button>
           <button type="button" onClick={onActivate} disabled={isSubmitting} className="ap3k-gradient-button flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm disabled:opacity-50 sm:px-8">
-            {isSubmitting ? <><Loader2 size={14} className="animate-spin" /><UiText>{" Saving..."}</UiText></> : <><span className="sm:hidden">{editId ? "Update" : "Activate"}</span><span className="hidden sm:inline">{editId ? "Update automation" : "Activate automation"}</span></>}
+            {isSubmitting ? <><Loader2 size={14} className="animate-spin" /><UiText>{" Saving..."}</UiText></> : <><span className="sm:hidden"><UiText>{editId ? "Update" : "Activate"}</UiText></span><span className="hidden sm:inline"><UiText>{editId ? "Update automation" : "Activate automation"}</UiText></span></>}
           </button>
         </>
       )}
@@ -580,8 +582,8 @@ function WizardActions({
 function StepPanel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="mb-1.5 text-2xl font-extrabold tracking-tight">{title}</h2>
-      <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+      <h2 className="mb-1.5 text-2xl font-extrabold tracking-tight"><UiText>{title}</UiText></h2>
+      <p className="mb-5 text-sm text-slate-500 dark:text-slate-400"><UiText>{description}</UiText></p>
       {children}
     </div>
   );
@@ -590,7 +592,7 @@ function StepPanel({ title, description, children }: { title: string; descriptio
 function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean }) {
   return (
     <span className={["relative h-6 w-11 shrink-0 rounded-full transition-colors", enabled ? (green ? "bg-rf-green" : "bg-rf-blue") : "bg-slate-300"].join(" ")}>
-      <span className={["absolute top-1 h-4 w-4 rounded-full bg-white transition-all", enabled ? "left-6" : "left-1"].join(" ")} />
+      <span className={["absolute top-1 h-4 w-4 rounded-full bg-white transition-all", enabled ? "start-6" : "start-1"].join(" ")} />
     </span>
   );
 }

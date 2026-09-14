@@ -39,12 +39,11 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
     <div className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950 dark:bg-[#050816] dark:text-white sm:px-8 sm:py-14">
       <div className="mx-auto max-w-5xl">
         <Link href={`/dashboard/${slug}/automation`} className="text-sm font-semibold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
-          ← Back to automations
-        </Link>
+          <UiText>{"← Back to automations"}</UiText></Link>
         <div className="mt-10 max-w-2xl">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-rf-purple"><UiText>{"Create automation"}</UiText></p>
-          <h1 className="mt-3 text-4xl font-black tracking-[-0.045em] sm:text-5xl">What should start the conversation?</h1>
-          <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">Choose one starting point. You can fine-tune the trigger, message, and delivery rules next.</p>
+          <h1 className="mt-3 text-4xl font-black tracking-[-0.045em] sm:text-5xl"><UiText>{"What should start the conversation?"}</UiText></h1>
+          <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300"><UiText>{"Choose one starting point. You can fine-tune the trigger, message, and delivery rules next."}</UiText></p>
         </div>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
@@ -64,10 +63,10 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                   <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-lg`}>
                     <Icon className="h-6 w-6" />
                   </span>
-                  <span className="mt-8 text-xs font-black uppercase tracking-[0.18em] text-slate-400">{item.eyebrow}</span>
-                  <span className="mt-2 text-2xl font-black tracking-tight">{item.title}</span>
-                  <span className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.description}</span>
-                  <span className="mt-6 inline-flex items-center text-sm font-black text-rf-purple">Build this flow <span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span>
+                  <span className="mt-8 text-xs font-black uppercase tracking-[0.18em] text-slate-400"><UiText>{item.eyebrow}</UiText></span>
+                  <span className="mt-2 text-2xl font-black tracking-tight"><UiText>{item.title}</UiText></span>
+                  <span className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300"><UiText>{item.description}</UiText></span>
+                  <span className="mt-6 inline-flex items-center text-sm font-black text-rf-purple"><UiText>{"Build this flow"}</UiText><span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span>
                 </Link>
               </motion.div>
             );
