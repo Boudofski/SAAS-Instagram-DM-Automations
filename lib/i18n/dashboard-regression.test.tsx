@@ -30,7 +30,7 @@ describe("dashboard screenshot regressions", () => {
     for (const flag of flags) {
       expect(flag).toContain('<svg');
       expect(flag).toContain('<path');
-      expect(flag).not.toMatch(/[\u{1F1E6}-\u{1F1FF}]/u);
+      expect(flag).not.toMatch(/\uD83C[\uDDE6-\uDDFF]/);
     }
   });
   it("localizes actual automation rows and preserves user names and keywords in every language", () => {

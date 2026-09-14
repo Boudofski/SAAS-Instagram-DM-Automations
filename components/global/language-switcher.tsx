@@ -15,7 +15,7 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
   const [isPending, startTransition] = useTransition();
 
   const changeLocale = (nextLocale: Locale) => {
-    if (nextLocale === locale || isPending) return;
+    if (nextLocale === locale) return;
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `${LOCALE_COOKIE}=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
     setLocale(nextLocale);
@@ -25,7 +25,9 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
     const suffix = window.location.search + window.location.hash;
     const destination = localizePublicPath(pathname, nextLocale);
     startTransition(() => {
-      if (destination !== pathname) router.push(destination + suffix, { scroll: false });
+      // A new navigation supersedes an in-flight one, including a return
+      // to the current URL. Keep the menu usable on slow connections.
+      router.push(destination + suffix, { scroll: false });
     });
   };
 
@@ -41,7 +43,7 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="z-[100] w-52 rounded-2xl p-1.5 shadow-xl">
         {SUPPORTED_LOCALES.map((option) => (
-          <DropdownMenuItem key={option} disabled={isPending} onSelect={() => changeLocale(option)}
+          <DropdownMenuItem key={option} onSelect={() => changeLocale(option)}
             className="min-h-11 cursor-pointer gap-3 rounded-xl px-3" lang={LOCALE_DETAILS[option].htmlLang}>
             <LanguageFlag locale={option} />
             <span className="flex-1" dir="auto">{LOCALE_DETAILS[option].nativeName}</span>
