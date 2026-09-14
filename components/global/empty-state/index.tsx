@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -16,12 +17,12 @@ export default function EmptyState({ icon, title, description, ctaLabel, ctaHref
         {icon}
       </div>
       <div>
-        <h3 className="mb-1.5 text-lg font-black text-slate-950 dark:text-rf-text">{title}</h3>
-        <p className="max-w-xs text-sm leading-relaxed text-slate-500 dark:text-rf-muted">{description}</p>
+        <h3 className="mb-1.5 text-lg font-black text-slate-950 dark:text-rf-text"><UiText>{title}</UiText></h3>
+        <p className="max-w-xs text-sm leading-relaxed text-slate-500 dark:text-rf-muted"><UiText>{description}</UiText></p>
       </div>
       {ctaLabel && ctaHref && (
         <Button asChild className="ap3k-gradient-button px-5">
-          <Link href={ctaHref}>{ctaLabel}</Link>
+          <Link href={ctaHref}><UiText>{ctaLabel}</UiText></Link>
         </Button>
       )}
     </div>

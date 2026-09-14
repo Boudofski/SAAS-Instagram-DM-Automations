@@ -4,7 +4,6 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
 export const LOCALE_COOKIE = "ap3k_locale";
-export const LOCALE_FLAGS: Record<Locale, string> = { en: "🇬🇧", ar: "🇲🇦", fr: "🇫🇷", es: "🇪🇸", de: "🇩🇪", pt: "🇵🇹" };
 
 export const LOCALE_DETAILS: Record<
   Locale,

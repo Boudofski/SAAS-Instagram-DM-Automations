@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/providers/i18n-provider";
+import { translateUi } from "@/lib/i18n/translate";
 import { UiText } from "@/components/i18n/localized-copy";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +18,7 @@ type Props = {
 };
 
 function Notification({ slug }: Props) {
+  const { locale } = useI18n();
   const [open, setOpen] = useState(false);
   const closeNotifications = () => setOpen(false);
 
@@ -24,8 +27,8 @@ function Notification({ slug }: Props) {
       <PopoverTrigger asChild>
         <Button
           type="button"
-          aria-label="Open notifications"
-          title="Notifications"
+          aria-label={translateUi("Open notifications", locale)}
+          title={translateUi("Notifications", locale)}
           variant="outline"
           size="icon"
           className="h-11 w-11 rounded-xl border-slate-200 bg-white text-rf-pink shadow-sm hover:bg-slate-50 hover:text-rf-pink dark:border-white/10 dark:bg-white/[0.04] dark:text-rf-pink dark:hover:bg-white/[0.08]"
@@ -39,17 +42,17 @@ function Notification({ slug }: Props) {
         className="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border-slate-200 bg-white p-0 text-slate-950 shadow-2xl dark:border-white/10 dark:bg-[#111827] dark:text-white"
       >
         <div className="border-b border-slate-200 px-4 py-3 dark:border-white/10">
-          <p className="text-sm font-black">Notifications</p>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Workspace and billing updates</p>
+          <p className="text-sm font-black"><UiText>{"Notifications"}</UiText></p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400"><UiText>{"Workspace and billing updates"}</UiText></p>
         </div>
 
         <div className="px-4 py-5 text-center">
           <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
             <CheckCircle2 aria-hidden="true" className="h-5 w-5" />
           </span>
-          <p className="mt-3 text-sm font-black">You&apos;re all caught up</p>
+          <p className="mt-3 text-sm font-black"><UiText>{"You're all caught up"}</UiText></p>
           <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-            Important automation, account, and billing updates will appear here.
+            <UiText>{"Important automation, account, and billing updates will appear here."}</UiText>
           </p>
         </div>
 
@@ -57,7 +60,7 @@ function Notification({ slug }: Props) {
           <Button asChild variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-xs font-bold dark:border-white/10 dark:bg-white/[0.04]">
             <Link href={`/dashboard/${slug}/inbox`} onClick={closeNotifications}>
               <Inbox aria-hidden="true" />
-              Open inbox
+              <UiText>{"Open inbox"}</UiText>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-xs font-bold dark:border-white/10 dark:bg-white/[0.04]">

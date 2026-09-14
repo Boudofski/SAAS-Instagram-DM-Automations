@@ -48,8 +48,8 @@ describe("production polish UI contracts", () => {
     expect(notification.match(/onClick=\{closeNotifications\}/g)).toHaveLength(
       2,
     );
-    expect(notification).toContain('aria-label="Open notifications"');
-    expect(notification).toContain("You&apos;re all caught up");
+    expect(notification).toContain('aria-label={translateUi("Open notifications", locale)}');
+    expect(notification).toContain("You're all caught up");
     expect(notification).toContain("/inbox");
     expect(notification).toContain("/billing");
     expect(notification).not.toContain("Notifications coming later");

@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/providers/i18n-provider";
+import { translateUi } from "@/lib/i18n/translate";
 import { cn } from "@/lib/utils";
 import { nextThemeMode } from "@/lib/theme-mode";
 import { Moon, Sun } from "lucide-react";
@@ -17,6 +19,7 @@ type Props = {
 };
 
 export default function ThemeToggle({ compact = false, className }: Props) {
+  const { locale } = useI18n();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -53,7 +56,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
     return (
       <button
         type="button"
-        aria-label={`Theme: ${active.label}. Switch theme.`}
+        aria-label={translateUi("Theme: {theme}. Switch theme.", locale).replace("{theme}", translateUi(active.label, locale))}
         onClick={() => setTheme(nextThemeMode(activeTheme))}
         className={cn(
           "grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white/85 text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:border-violet-400/40 dark:hover:text-white",
@@ -71,7 +74,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
         "grid w-full grid-cols-2 rounded-full border border-slate-200 bg-slate-100/80 p-1 shadow-inner dark:border-white/10 dark:bg-white/[0.05] sm:w-[190px]",
         className
       )}
-      aria-label="Theme selector"
+      aria-label={translateUi("Theme selector", locale)}
     >
       {THEMES.map((item) => {
         const Icon = item.icon;
@@ -90,7 +93,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
             )}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span>{item.label}</span>
+            <span>{translateUi(item.label, locale)}</span>
           </button>
         );
       })}

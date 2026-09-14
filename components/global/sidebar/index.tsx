@@ -51,7 +51,7 @@ export default function Sidebar({ slug }: Props) {
         </div>
         <Link href={`/dashboard/${slug}/account`} title={!expanded ? (instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")) : undefined} className={cn("mt-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-violet-300 dark:border-white/[0.12] dark:bg-white/[0.06] dark:hover:border-violet-400/40", expanded ? "gap-3 p-2.5" : "justify-center border-0 bg-transparent p-0 dark:bg-transparent")}>
           <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-          {expanded ? <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")}</p><p className="mt-0.5 truncate text-[11px] font-bold text-violet-500">{plan} {t("plan")}</p></div> : null}
+          {expanded ? <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{instagram?.instagramUsername ? <bdi dir="ltr">@{instagram.instagramUsername}</bdi> : t("connectInstagram")}</p><p className="mt-0.5 truncate text-[11px] font-bold text-violet-500">{plan} {t("plan")}</p></div> : null}
         </Link>
       </div>
 
