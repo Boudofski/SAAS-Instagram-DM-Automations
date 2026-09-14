@@ -12,7 +12,7 @@ let locale: Locale = "en";
 let step: WizardStep = 1;
 const data: WizardData = {
   campaignName: "Save مرحبا", post: { postid: "ANY", media: "", mediaType: "IMAGE", caption: "Any post - triggers on all Instagram posts" },
-  triggerMode: "SPECIFIC_KEYWORD", keywords: ["Hello مرحبا"], matchingMode: "CONTAINS",
+  triggerMode: "SPECIFIC_KEYWORD", keywords: ["hello مرحبا"], matchingMode: "CONTAINS",
   publicReplyEnabled: true, publicReply: "Keep my reply unchanged", publicReply2: "", publicReply3: "",
   sendPrivateDm: true, dmMessage: "Keep my DM unchanged", linkButtons: [{ label: "Save", url: "https://example.com" }],
   openingDmEnabled: true, openingDmText: "Keep my opener", openingDmButtonText: "Continue",
@@ -28,7 +28,7 @@ vi.mock("@/hooks/user-queries", () => ({
   useQueryAutomationPosts: () => ({ data: { data: { data: [] } } }), useQueryWebhookHealth: () => ({}), useQueryAutomations: () => ({}),
   useQueryUser: () => ({ data: { data: { integrations: [{ id: "fixture", name: "INSTAGRAM", token: "fixture", instagramUsername: "boudofi" }], subscription: { plan: "FREE" } } } }),
 }));
-vi.mock("@/lib/app-review-mode", () => ({ isAppReviewMode: () => false }));
+vi.mock("@/lib/app-review-mode", () => ({ isAppReviewMode: () => true }));
 vi.mock("@/lib/messaging-review-mode", () => ({ isMessagingReviewMode: () => false, applyMessagingReviewCampaignDefaults: (value: unknown) => value }));
 const plain = (html: string) => html.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#x27;/g, "'").replace(/&quot;/g, '"');
 
@@ -51,7 +51,8 @@ describe("automation setup localization", () => {
         expect(text).toContain(translateUi(headings[step - 1], locale));
         if (locale !== "en") expect(text).not.toContain(headings[step - 1]);
         if (step === 3) { expect(text).toContain("Keep my DM unchanged"); expect(text).toContain("Keep my reply unchanged"); }
-        if (step === 4) { expect(text).toContain("Save مرحبا"); expect(text).toContain("Hello مرحبا"); }
+        if (step === 4 && locale !== "en") expect(text).not.toContain("Keyword:");
+        if (step === 4) { expect(text).toContain("Save مرحبا"); expect(text).toContain("hello مرحبا"); }
         expect(html).not.toContain("Step</span>1");
         if (locale === "en") { if (english) expect(html).toBe(english); english = html; }
       }
@@ -71,8 +72,8 @@ describe("automation setup localization", () => {
   });
   it("translates generated preview events while preserving customer messages, keywords and button labels", () => {
     for (locale of SUPPORTED_LOCALES) {
-      const html = renderToStaticMarkup(<MessageAutomationPreview source="DM" step={2} trigger="MENTION" triggerMode="SPECIFIC_KEYWORD" keywords={["Hello مرحبا"]} message="Keep my DM unchanged" linkButtons={[{ label: "Save", url: "https://example.com" }]} followGateRequired followRequestDmText="Keep my follow request" followRequestButtonText="Following" />);
-      expect(html).toContain("Hello مرحبا"); expect(html).toContain("Keep my DM unchanged"); expect(html).toContain("Keep my follow request"); expect(html).toContain('dir="auto"');
+      const html = renderToStaticMarkup(<MessageAutomationPreview source="DM" step={2} trigger="MENTION" triggerMode="SPECIFIC_KEYWORD" keywords={["hello مرحبا"]} message="Keep my DM unchanged" linkButtons={[{ label: "Save", url: "https://example.com" }]} followGateRequired followRequestDmText="Keep my follow request" followRequestButtonText="Following" />);
+      expect(html).toContain("hello مرحبا"); expect(html).toContain("Keep my DM unchanged"); expect(html).toContain("Keep my follow request"); expect(html).toContain('dir="auto"');
       expect(plain(html)).toContain(translateUi("Follow", locale));
     }
   });

@@ -1784,6 +1784,14 @@ export const SETUP_ROWS: readonly (readonly [string, string, string, string, str
     "El soporte no está disponible ahora. Escribe a support@ap3k.com.",
     "Der Support ist derzeit nicht verfügbar. Schreibe an support@ap3k.com.",
     "O suporte está indisponível neste momento. Envie um email para support@ap3k.com."
+  ],
+  [
+    "Keyword: {word}",
+    "الكلمة المفتاحية: {word}",
+    "Mot-clé : {word}",
+    "Palabra clave: {word}",
+    "Schlüsselwort: {word}",
+    "Palavra-chave: {word}"
   ]
 ];
 

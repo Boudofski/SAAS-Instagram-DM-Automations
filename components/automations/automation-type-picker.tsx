@@ -66,7 +66,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                   <span className="mt-8 text-xs font-black uppercase tracking-[0.18em] text-slate-400"><UiText>{item.eyebrow}</UiText></span>
                   <span className="mt-2 text-2xl font-black tracking-tight"><UiText>{item.title}</UiText></span>
                   <span className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300"><UiText>{item.description}</UiText></span>
-                  <span className="mt-6 inline-flex items-center text-sm font-black text-rf-purple"><UiText>{"Build this flow"}</UiText><span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span>
+                  <span className="mt-6 inline-flex items-center text-sm font-black text-rf-purple"><UiText>{"Build this flow"}</UiText><span className="ms-2 transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">→</span></span>
                 </Link>
               </motion.div>
             );
