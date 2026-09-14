@@ -1,5 +1,8 @@
 "use client";
 
+import { UiMessage } from "@/components/i18n/dashboard-values";
+import { UiText } from "@/components/i18n/localized-copy";
+
 import ThemeToggle from "@/components/global/theme-toggle";
 import { PAGE_BREAD_CRUMBS } from "@/constants/pages";
 import { usePath } from "@/hooks/user-nav";
@@ -63,7 +66,7 @@ function NavBar({ slug }: Props) {
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
                 <Link href={`/dashboard/${slug}/account`} className="mb-2 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.05]">
                   <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? <bdi dir="ltr">@{instagram.instagramUsername}</bdi> : t("connectInstagram")}</span><span className="mt-0.5 block text-xs font-bold text-violet-500">{plan} {t("plan")}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? <bdi dir="ltr">@{instagram.instagramUsername}</bdi> : t("connectInstagram")}</span><span className="mt-0.5 block text-xs font-bold text-violet-500"><UiMessage source="{plan} plan" values={{ plan: <bdi><UiText>{plan}</UiText></bdi> }} /></span></span>
                 </Link>
                 <div className="flex flex-col py-3">
                   <Items page={page} slug={slug} />

@@ -1,3 +1,4 @@
+import { DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
@@ -159,10 +160,10 @@ export default async function InstagramAccountPage({
       <section className="ap3k-card animate-[ap3kDashboardRise_0.64s_ease-out_both] rounded-3xl p-3.5 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="ap3k-kicker">Account analytics</p>
+            <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Performance"}</UiText></h2>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              {periodRange.label}
+              <DashboardPeriodLabel period={period} start={periodRange.currentStart} end={periodRange.currentEnd} />
             </p>
           </div>
           <PeriodSelector slug={params.slug} active={period} />
