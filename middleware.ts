@@ -21,7 +21,6 @@ export default clerkMiddleware(async (auth, req) => {
   const requestedPath = req.nextUrl.pathname;
   const pathLocale = localeFromPath(requestedPath);
   const pathname = stripLocaleFromPath(requestedPath);
-  const hasDedicatedLocalizedRoute = requestedPath === "/ar/instagram-dm-automation";
 
   if (pathname === "/") {
     const { userId } = await auth();
@@ -52,10 +51,6 @@ export default clerkMiddleware(async (auth, req) => {
   requestHeaders.set("x-ap3k-locale", locale);
 
   if (pathLocale) {
-    if (hasDedicatedLocalizedRoute) {
-      const response = NextResponse.next({ request: { headers: requestHeaders } });
-      return response;
-    }
     const destination = req.nextUrl.clone();
     destination.pathname = pathname;
     const response = NextResponse.rewrite(destination, { request: { headers: requestHeaders } });

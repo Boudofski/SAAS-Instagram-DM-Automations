@@ -1,16 +1,19 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+const pageMetadata: Metadata = {
   title: "Refund Policy — AP3K",
   description: "AP3K subscription cancellation and refund policy.",
   alternates: { canonical: "/refund-policy" },
 };
+export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/refund-policy"); }
 
 export default function RefundPolicyPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-white">
+    <LocalizedCopy><div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-white">
       <WebsiteNav />
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
         <p className="ap3k-kicker">Billing</p>
@@ -23,6 +26,6 @@ export default function RefundPolicyPage() {
         </div>
       </main>
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }

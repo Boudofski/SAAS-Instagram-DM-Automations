@@ -1,5 +1,4 @@
 "use client";
-
 import { UiText } from "@/components/i18n/localized-copy";
 import {
   getCurrentWebhookHealth,
@@ -149,12 +148,12 @@ function IntegrationCard({
         <div className="min-w-0 flex-1">
           {!compact && (
             <h3 className="text-xl font-black leading-tight sm:text-2xl">
-              {displayTitle}
+              <UiText>{displayTitle}</UiText>
             </h3>
           )}
           {!compact && (
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              {displayDescription}
+              <UiText>{displayDescription}</UiText>
             </p>
           )}
           {displayIntegration?.instagramId && (
@@ -177,15 +176,13 @@ function IntegrationCard({
                     : "Instagram connected"}
                 </p>
                 {!appReviewMode && (
-                  <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                    Instagram ID: {displayIntegration.instagramId}
+                  <p className="truncate text-[11px] text-slate-500 dark:text-slate-400"><UiText>{" Instagram ID: "}</UiText>{displayIntegration.instagramId}
                   </p>
                 )}
                 {!appReviewMode &&
                   !directInstagramLogin &&
                   displayIntegration.pageId && (
-                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                      Linked Page ID: {displayIntegration.pageId}
+                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400"><UiText>{" Linked Page ID: "}</UiText>{displayIntegration.pageId}
                     </p>
                   )}
               </div>
@@ -198,20 +195,18 @@ function IntegrationCard({
             <Link
               href={continueHref}
               className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-center text-sm font-black text-white"
-            >
-              Create my first campaign
-            </Link>
+            ><UiText>{" Create my first campaign "}</UiText></Link>
           ) : (
             <Button
               onClick={onConnect}
               disabled={!isInstagram || isConnecting}
               className="ap3k-gradient-button min-h-11 w-full px-4 text-white disabled:opacity-60"
             >
-              {connected
+              <UiText>{connected
                 ? "Reconnect Instagram"
                 : isConnecting
                   ? "Connecting..."
-                  : "Connect Instagram"}
+                  : "Connect Instagram"}</UiText>
             </Button>
           )}
           {onboarding && connected && (
@@ -222,7 +217,7 @@ function IntegrationCard({
               disabled={!isInstagram || isConnecting}
               className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
             >
-              {isConnecting ? "Connecting..." : "Reconnect Instagram"}
+              <UiText>{isConnecting ? "Connecting..." : "Reconnect Instagram"}</UiText>
             </Button>
           )}
           {connected &&
@@ -236,9 +231,9 @@ function IntegrationCard({
                 disabled={resubscribe.isPending}
                 className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
               >
-                {resubscribe.isPending
+                <UiText>{resubscribe.isPending
                   ? "Refreshing..."
-                  : "Refresh webhook subscription"}
+                  : "Refresh webhook subscription"}</UiText>
               </Button>
             )}
           {connected && !appReviewMode && !onboarding && (
@@ -247,23 +242,16 @@ function IntegrationCard({
               variant="outline"
               disabled
               className="min-h-11 w-full cursor-not-allowed border-red-200 bg-white px-4 text-sm font-bold text-red-400 opacity-70 dark:border-red-500/30 dark:bg-white/[0.04] dark:text-red-300"
-            >
-              Contact support to disconnect
-            </Button>
+            ><UiText>{" Contact support to disconnect "}</UiText></Button>
           )}
         </div>
       </div>
 
       {connected && appReviewMode && !oauthSaveFailed && !compact && (
-        <div className="mt-5 w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-relaxed text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
-          Instagram connected. Comments and public replies are ready for
-          campaigns.
-        </div>
+        <div className="mt-5 w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-relaxed text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100"><UiText>{" Instagram connected. Comments and public replies are ready for campaigns. "}</UiText></div>
       )}
       {connected && appReviewMode && oauthSaveFailed && !compact && (
-        <div className="mt-5 w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
-          Current saved connection
-          {displayIntegration?.instagramUsername
+        <div className="mt-5 w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100"><UiText>{" Current saved connection "}</UiText>{displayIntegration?.instagramUsername
             ? `: @${displayIntegration.instagramUsername}`
             : ""}
           .
@@ -278,11 +266,7 @@ function IntegrationCard({
             health?.data?.oauth?.reconnectRequired && (
               <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
                 <p className="font-bold"><UiText>{"Reconnect Instagram"}</UiText></p>
-                <p className="mt-1 leading-relaxed">
-                  AP3K matched your real comment, but the saved access token is
-                  missing or invalid. Click <strong><UiText>{"Reconnect Instagram"}</UiText></strong>{" "}
-                  above to restore delivery.
-                </p>
+                <p className="mt-1 leading-relaxed"><UiText>{" AP3K matched your real comment, but the saved access token is missing or invalid. Click "}</UiText><strong><UiText>{"Reconnect Instagram"}</UiText></strong>{" "}<UiText>{" above to restore delivery. "}</UiText></p>
               </div>
             )}
 
@@ -358,20 +342,13 @@ function IntegrationCard({
           </div>
 
           {!health?.data?.lastCommentWebhook && (
-            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-              No real comment webhook received yet. Reconnect Instagram, then
-              test with a real comment from another Instagram account.
-            </p>
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"><UiText>{" No real comment webhook received yet. Reconnect Instagram, then test with a real comment from another Instagram account. "}</UiText></p>
           )}
           {health?.data?.lastCommentWebhook && (
-            <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
-              Comment delivery active. Last comment:{" "}
+            <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"><UiText>{" Comment delivery active. Last comment:"}</UiText>{" "}
               {new Date(
                 health.data.lastCommentWebhook.createdAt,
-              ).toLocaleString()}
-              . Outbound DM capability may still depend on Meta messaging
-              approval.
-            </p>
+              ).toLocaleString()}<UiText>{" . Outbound DM capability may still depend on Meta messaging approval. "}</UiText></p>
           )}
         </div>
       )}
@@ -391,7 +368,7 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
           : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
       ].join(" ")}
     >
-      {label}: {ok ? "ok" : "check"}
+      <UiText>{label}</UiText>: <UiText>{ok ? "ok" : "check"}</UiText>
     </span>
   );
 }
@@ -400,7 +377,7 @@ function HealthItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-        {label}
+        <UiText>{label}</UiText>
       </p>
       <p className="mt-1 break-words font-bold text-slate-800 dark:text-slate-100">
         {value}

@@ -100,9 +100,7 @@ export default async function CampaignDetailPage({ params }: Props) {
     <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-3 p-3 text-slate-950 dark:text-white sm:p-4 xl:mt-2 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden">
       <header className="flex shrink-0 animate-[ap3kDashboardRise_0.38s_ease-out_both] items-center justify-between gap-3">
         <div>
-          <Link href={`/dashboard/${params.slug}/automation`} className="mb-1 inline-block text-xs font-bold text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
-            ← Automations
-          </Link>
+          <Link href={`/dashboard/${params.slug}/automation`} className="mb-1 inline-block text-xs font-bold text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"><UiText>{" ← Automations "}</UiText></Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">{automation.name}</h1>
             <StatusBadge status={statusLabel} />
@@ -123,8 +121,8 @@ export default async function CampaignDetailPage({ params }: Props) {
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)_300px] xl:overflow-hidden">
         <section className="ap3k-card order-2 flex min-h-[480px] animate-[ap3kDashboardRise_0.54s_ease-out_both] flex-col overflow-hidden rounded-3xl p-4 xl:order-1 xl:min-h-0">
           <div className="shrink-0 border-b border-slate-200 pb-3 dark:border-white/10">
-            <p className="ap3k-kicker">Customer journey</p>
-            <h2 className="mt-1 text-lg font-black tracking-tight">Interaction → response</h2>
+            <p className="ap3k-kicker"><UiText>{"Customer journey"}</UiText></p>
+            <h2 className="mt-1 text-lg font-black tracking-tight"><UiText>{"Interaction → response"}</UiText></h2>
           </div>
           <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain py-3 pr-1">
             {isMessageAutomation ? <>
@@ -154,8 +152,8 @@ export default async function CampaignDetailPage({ params }: Props) {
 
         <section className="ap3k-card order-1 flex min-h-[680px] animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col overflow-hidden rounded-3xl p-3 xl:order-2 xl:min-h-0">
           <div className="shrink-0 px-1 pb-2">
-            <p className="ap3k-kicker">Instagram preview</p>
-            <h2 className="mt-0.5 text-sm font-black">{isMessageAutomation ? "DM preview" : "Post · Comments · DM"}</h2>
+            <p className="ap3k-kicker"><UiText>{"Instagram preview"}</UiText></p>
+            <h2 className="mt-0.5 text-sm font-black"><UiText>{isMessageAutomation ? "DM preview" : "Post · Comments · DM"}</UiText></h2>
           </div>
           <div className="min-h-0 flex-1">
             <AutomationDetailPhonePreview
@@ -198,18 +196,18 @@ export default async function CampaignDetailPage({ params }: Props) {
 
           <section className="ap3k-card flex min-h-[260px] flex-1 animate-[ap3kDashboardRise_0.68s_ease-out_both] flex-col overflow-hidden rounded-3xl p-4">
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-white/10">
-              <div><h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Recent activity"}</UiText></h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest 20 events</p></div>
+              <div><h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Recent activity"}</UiText></h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400"><UiText>{"Latest 20 events"}</UiText></p></div>
               <span className="ap3k-badge ap3k-badge-slate">{groupedActivity.length}</span>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-3">
               {groupedActivity.length === 0 ? (
-                <div className="grid h-full min-h-32 place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">No activity yet. Test this automation from another Instagram account.</div>
+                <div className="grid h-full min-h-32 place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400"><UiText>{"No activity yet. Test this automation from another Instagram account."}</UiText></div>
               ) : (
                 <div className="divide-y divide-slate-200 dark:divide-white/10">
                   {groupedActivity.map((item) => (
                     <div key={item.id} className="flex gap-3 py-3">
                       <span className={["mt-1 h-2.5 w-2.5 shrink-0 rounded-full", activityDotClass(item.tone)].join(" ")} />
-                      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-black text-slate-950 dark:text-white">{customerReplyCopy(item.title)}</p><span className={["rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}>{item.badge}</span></div><p className="mt-1 line-clamp-2 text-xs text-slate-600 dark:text-slate-300">{item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, true)}</p><p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400"><LocalTime value={item.createdAt} /></p></div>
+                      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-black text-slate-950 dark:text-white">{customerReplyCopy(item.title)}</p><span className={["rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase", badgeClass(item.tone)].join(" ")}><UiText>{item.badge}</UiText></span></div><p className="mt-1 line-clamp-2 text-xs text-slate-600 dark:text-slate-300">{item.actorLabel ? `${item.actorLabel} · ` : ""}{formatAppReviewActivitySubtitle(item.subtitle, true)}</p><p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400"><LocalTime value={item.createdAt} /></p></div>
                     </div>
                   ))}
                 </div>
@@ -242,11 +240,11 @@ function StatusBadge({ status }: { status: string }) {
       : status === "Draft"
         ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
         : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200";
-  return <Badge className={className} variant="outline">● {status}</Badge>;
+  return <Badge className={className} variant="outline">● <UiText>{status}</UiText></Badge>;
 }
 
 function ReplyBadge({ commentReply, dm }: { commentReply: boolean; dm: boolean }) {
-  if (!commentReply && !dm) return <span className="ap3k-badge ap3k-badge-slate">Actions not configured</span>;
+  if (!commentReply && !dm) return <span className="ap3k-badge ap3k-badge-slate"><UiText>{"Actions not configured"}</UiText></span>;
   return <span className="ap3k-badge ap3k-badge-green">{replySummary(commentReply, dm)}</span>;
 }
 
@@ -259,9 +257,9 @@ function FlowNode({ label, title, body, tone, disabled = false }: { label: strin
   };
   return (
     <div className={`rounded-2xl border bg-gradient-to-br to-white p-3.5 transition-all duration-300 hover:-translate-y-0.5 dark:bg-[#101827] ${disabled ? "opacity-60 grayscale" : ""} ${tones[tone]}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.16em]">{label}</p>
-      <h3 className="mt-1 text-base font-black text-slate-950 dark:text-white">{title}</h3>
-      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{body}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.16em]"><UiText>{label}</UiText></p>
+      <h3 className="mt-1 text-base font-black text-slate-950 dark:text-white"><UiText>{title}</UiText></h3>
+      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300"><UiText>{body}</UiText></p>
     </div>
   );
 }
@@ -273,7 +271,7 @@ function FlowConnector() {
 function SettingsRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-white/10 dark:bg-white/[0.04]">
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"><UiText>{label}</UiText></p>
       <p className="mt-0.5 truncate text-xs font-black text-slate-950 dark:text-white">{value}</p>
     </div>
   );
@@ -282,7 +280,7 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="ap3k-card flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"><UiText>{label}</UiText></p>
       <p className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
     </div>
   );

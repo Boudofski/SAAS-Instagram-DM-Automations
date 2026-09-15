@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { cn } from "@/lib/utils";
 
 type ChecklistItem = {
@@ -17,8 +18,8 @@ export default function OnboardingChecklist({ items }: Props) {
   return (
     <div className="ap3k-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-black text-slate-900 dark:text-rf-text">Getting started</h3>
-        <span className="text-xs text-slate-500 dark:text-rf-muted">{doneCount} of {items.length} done</span>
+        <h3 className="text-sm font-black text-slate-900 dark:text-rf-text"><UiText>{"Getting started"}</UiText></h3>
+        <span className="text-xs text-slate-500 dark:text-rf-muted">{doneCount}<UiText>{" of "}</UiText>{items.length}<UiText>{" done"}</UiText></span>
       </div>
 
       {/* Progress bar */}
@@ -40,14 +41,14 @@ export default function OnboardingChecklist({ items }: Props) {
                   : "border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/15 dark:bg-white/[0.03] dark:text-rf-subtle"
               )}
             >
-              {item.done ? "✓" : ""}
+              <UiText>{item.done ? "✓" : ""}</UiText>
             </span>
             {item.href && !item.done ? (
               <a href={item.href} className="font-semibold text-pink-600 hover:text-pink-700 dark:text-rf-pink dark:hover:text-rf-purple">
-                {item.label}
+                <UiText>{item.label}</UiText>
               </a>
             ) : (
-              <span className={item.done ? "text-slate-900 dark:text-rf-text" : "text-slate-600 dark:text-rf-muted"}>{item.label}</span>
+              <span className={item.done ? "text-slate-900 dark:text-rf-text" : "text-slate-600 dark:text-rf-muted"}><UiText>{item.label}</UiText></span>
             )}
           </li>
         ))}

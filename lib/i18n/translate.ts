@@ -1,3 +1,5 @@
+import { EXTENDED_COPY } from "./extended-copy";
+import { REMAINING_COPY } from "./remaining-copy";
 import { SETUP_COPY } from "./setup-copy";
 import { MESSAGES } from "./messages";
 import { PHRASE_TRANSLATIONS } from "./phrase-translations";
@@ -6,11 +8,13 @@ import { PUBLIC_COPY } from "./public-copy";
 import type { Locale } from "./config";
 
 const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messages]) => [locale, {
+  ...EXTENDED_COPY[locale as Locale],
   ...Object.fromEntries(Object.entries(MESSAGES.en).map(([key, source]) => [source, messages[key as keyof typeof messages]])),
   ...PHRASE_TRANSLATIONS[locale as Locale],
   ...PUBLIC_COPY[locale as Locale],
   ...DASHBOARD_COPY[locale as Locale],
   ...SETUP_COPY[locale as Locale],
+  ...REMAINING_COPY[locale as Locale],
 }])) as Record<Locale, Record<string, string>>;
 
 export function translateUi(source: string, locale: Locale): string {
@@ -19,4 +23,8 @@ export function translateUi(source: string, locale: Locale): string {
   const translated = catalogs[locale][key];
   if (!translated) return source;
   return `${source.match(/^\s*/)?.[0] ?? ""}${translated}${source.match(/\s*$/)?.[0] ?? ""}`;
+}
+
+export function hasUiTranslation(source: string, locale: Locale): boolean {
+  return locale === "en" || Object.prototype.hasOwnProperty.call(catalogs[locale], source.replace(/\s+/g, " ").trim());
 }

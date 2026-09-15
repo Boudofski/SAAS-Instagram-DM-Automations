@@ -71,7 +71,7 @@ export default async function InstagramAccountPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-1 py-3 text-slate-950 dark:text-slate-50 sm:gap-4 sm:px-2 sm:py-4 lg:py-6">
       <div className="animate-[ap3kDashboardRise_0.45s_ease-out_both]">
-        <p className="ap3k-kicker">Instagram connection</p>
+        <p className="ap3k-kicker"><UiText>{"Instagram connection"}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Your Instagram"}</UiText></h1>
       </div>
 
@@ -101,11 +101,11 @@ export default async function InstagramAccountPage({
                         : "ap3k-badge ap3k-badge-amber"
                     }
                   >
-                    {tokenExpired
+                    <UiText>{tokenExpired
                       ? "Reconnect"
                       : connected
                         ? "Connected"
-                        : "Not connected"}
+                        : "Not connected"}</UiText>
                   </span>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-slate-300 sm:text-sm">
@@ -130,7 +130,7 @@ export default async function InstagramAccountPage({
                         : "ap3k-badge ap3k-badge-amber"
                     }
                   >
-                    {connectionReady ? "Comments ready" : "Connection required"}
+                    <UiText>{connectionReady ? "Comments ready" : "Connection required"}</UiText>
                   </span>
                   <span
                     className={
@@ -139,11 +139,11 @@ export default async function InstagramAccountPage({
                         : "ap3k-badge ap3k-badge-slate"
                     }
                   >
-                    {connectionReady ? "DMs ready" : "Actions paused"}
+                    <UiText>{connectionReady ? "DMs ready" : "Actions paused"}</UiText>
                   </span>
                   {profileSnapshotDisplay.label !== "Missing" ? (
                     <span className="ap3k-badge border-white/15 bg-white/[0.08] text-slate-200">
-                      {profileSnapshotDisplay.label}
+                      <UiText>{profileSnapshotDisplay.label}</UiText>
                     </span>
                   ) : null}
                 </div>
@@ -179,9 +179,7 @@ export default async function InstagramAccountPage({
               <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
             </>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 sm:col-span-2 lg:col-span-3">
-              Connect Instagram to enable account stats.
-            </p>
+            <p className="rounded-xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 sm:col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
           )}
         </div>
       </section>
@@ -193,12 +191,8 @@ export default async function InstagramAccountPage({
               <Settings2 className="h-4 w-4" />
             </span>
             <div>
-              <h2 className="text-sm font-black text-slate-950 dark:text-white">
-                Connection settings
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage or remove this account
-              </p>
+              <h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{" Connection settings "}</UiText></h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><UiText>{" Manage or remove this account "}</UiText></p>
             </div>
           </div>
           <span className="text-sm text-slate-400 transition-transform group-open:rotate-180">
@@ -206,10 +200,7 @@ export default async function InstagramAccountPage({
           </span>
         </summary>
         <div className="border-t border-slate-200 p-4 dark:border-white/10">
-          <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400">
-            One Instagram account per workspace. Removing it permanently clears
-            its automations and history.
-          </p>
+          <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{" One Instagram account per workspace. Removing it permanently clears its automations and history. "}</UiText></p>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Link
               href={`/dashboard/${params.slug}/integrations`}
@@ -244,7 +235,7 @@ function PeriodSelector({ slug, active }: { slug: string; active: string }) {
               : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
           ].join(" ")}
         >
-          {label}
+          <UiText>{label}</UiText>
         </Link>
       ))}
     </div>
@@ -262,7 +253,7 @@ function SettingsStatCard({
     <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-white dark:border-white/10 dark:bg-white/[0.025] dark:hover:bg-white/[0.04] sm:p-3.5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
-          {label}
+          <UiText>{label}</UiText>
         </p>
         <p
           className={[

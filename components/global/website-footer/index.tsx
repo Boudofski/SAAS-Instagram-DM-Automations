@@ -1,4 +1,6 @@
 "use client";
+import { UiText } from "@/components/i18n/localized-copy";
+
 
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
@@ -53,7 +55,7 @@ export default function WebsiteFooter() {
               <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("support")}</p>
               <Link href={href("/help")} className={linkClass}>{t("knowledgeBase")}</Link>
               <Link href={href("/contact")} className={linkClass}>{t("contactSupport")}</Link>
-              <a href="mailto:support@ap3k.com" className={linkClass}>support@ap3k.com</a>
+              <a href="mailto:support@ap3k.com" className={linkClass}><UiText>{"support@ap3k.com"}</UiText></a>
             </div>
           </div>
         </div>

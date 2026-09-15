@@ -1,3 +1,4 @@
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import Image from "next/image";
 
 type BlogVisualVariant =
@@ -34,7 +35,7 @@ export function getBlogVisualSrc(variant: BlogVisualVariant) {
 
 export default function BlogVisual({ variant, alt, caption, compact = false }: Props) {
   return (
-    <figure className="group">
+    <LocalizedCopy><figure className="group">
       <div
         className={`relative isolate overflow-hidden border border-violet-500/20 bg-[#120923] shadow-[0_24px_70px_rgba(88,28,180,0.22)] ${compact ? "aspect-[16/9] rounded-t-[22px]" : "aspect-[16/9] rounded-[28px]"}`}
       >
@@ -53,6 +54,6 @@ export default function BlogVisual({ variant, alt, caption, compact = false }: P
           {caption}
         </figcaption>
       )}
-    </figure>
+    </figure></LocalizedCopy>
   );
 }

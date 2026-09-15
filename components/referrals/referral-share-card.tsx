@@ -1,4 +1,6 @@
 "use client";
+import { LocalizedButton } from "@/components/i18n/localized-controls";
+
 
 import { Check, Copy, Send } from "lucide-react";
 import { useState } from "react";
@@ -44,9 +46,9 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? t("copied") : t("copyInviteLink")}
         </button>
-        <button type="button" onClick={shareLink} aria-label={t("shareReferralLink")} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08] sm:px-4">
+        <LocalizedButton type="button" onClick={shareLink} aria-label={t("shareReferralLink")} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08] sm:px-4">
           <Send className="h-4 w-4" /><span className="hidden sm:inline">{t("share")}</span>
-        </button>
+        </LocalizedButton>
       </div>
     </div>
   );

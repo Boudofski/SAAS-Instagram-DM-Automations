@@ -1,3 +1,8 @@
+import { localizedMetadata } from "@/lib/i18n/page-metadata";
+import { getServerLocale } from "@/lib/i18n/server";
+import { translateUi } from "@/lib/i18n/translate";
+import { localizePublicPath } from "@/lib/i18n/config";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
@@ -21,7 +26,7 @@ export function generateMetadata({ params }: Props): Metadata {
   if (!post) return {};
   const socialImage = `${SITE_URL}${getBlogVisualSrc(post.visual)}`;
 
-  return {
+  return localizedMetadata({
     title: `${post.title} | AP3K`,
     description: post.description,
     keywords: post.keywords,
@@ -42,7 +47,7 @@ export function generateMetadata({ params }: Props): Metadata {
       description: post.description,
       images: [socialImage],
     },
-  };
+  }, `/blog/${post.slug}`);
 }
 
 export default function BlogPostPage({ params }: Props) {
@@ -58,22 +63,24 @@ export default function BlogPostPage({ params }: Props) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     .map(({ item }) => item);
+  const locale = getServerLocale();
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: post.title,
-    description: post.description,
+    headline: translateUi(post.title, locale),
+    description: translateUi(post.description, locale),
+    inLanguage: locale,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
-    mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
+    mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
     author: { "@type": "Organization", name: "AP3K", url: SITE_URL },
     publisher: { "@type": "Organization", name: "AP3K", url: SITE_URL },
     image: `${SITE_URL}${getBlogVisualSrc(post.visual)}`,
-    keywords: post.keywords.join(", "),
+    keywords: post.keywords.map(key => translateUi(key, locale)).join(", "),
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
+    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
@@ -196,10 +203,10 @@ export default function BlogPostPage({ params }: Props) {
         </section>
       </main>
       <WebsiteFooter />
-    </div>
+    </div></LocalizedCopy>
   );
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
+  return new Intl.DateTimeFormat(getServerLocale(), { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 }

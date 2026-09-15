@@ -49,7 +49,7 @@ export default async function AutomationsPage({ params }: Props) {
     <div className="relative flex flex-col gap-3 px-1 py-3 text-slate-950 dark:text-slate-50 sm:gap-5 sm:p-6 lg:p-8">
       <div className="ap3k-page-header">
         <div>
-          <p className="ap3k-kicker">Instagram automation</p>
+          <p className="ap3k-kicker"><UiText>{"Instagram automation"}</UiText></p>
           <div className="mt-1 flex items-baseline gap-2">
             <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Automations"}</UiText></h1>
             {automations.length > 0 ? (
@@ -75,22 +75,14 @@ export default async function AutomationsPage({ params }: Props) {
 
       {automations.length === 0 ? (
         <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-8 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
-          <p className="ap3k-kicker">AP3K Automations</p>
-          <h2 className="mt-3 text-2xl font-black text-slate-950 dark:text-white">
-            Turn interactions into conversations and leads
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Start from a post comment, a story interaction, or an incoming DM.
-            Then craft the response and choose exactly how AP3K should deliver
-            it.
-          </p>
+          <p className="ap3k-kicker"><UiText>{"AP3K Automations"}</UiText></p>
+          <h2 className="mt-3 text-2xl font-black text-slate-950 dark:text-white"><UiText>{" Turn interactions into conversations and leads "}</UiText></h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300"><UiText>{" Start from a post comment, a story interaction, or an incoming DM. Then craft the response and choose exactly how AP3K should deliver it. "}</UiText></p>
           <div className="mt-6 flex flex-col gap-4 sm:flex-row">
             <Link
               href={`/dashboard/${params.slug}/automation/new`}
               className="ap3k-gradient-button inline-flex items-center justify-center px-6 py-3 text-sm"
-            >
-              Create your first automation →
-            </Link>
+            ><UiText>{" Create your first automation → "}</UiText></Link>
           </div>
         </div>
       ) : (

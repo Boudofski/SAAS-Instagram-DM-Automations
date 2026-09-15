@@ -1,5 +1,4 @@
 "use client";
-
 import { UiText } from "@/components/i18n/localized-copy";
 import { Input } from "@/components/ui/input";
 import { useEditAutomation } from "@/hooks/use-automation";
@@ -54,12 +53,10 @@ function AutomationBreadCrumb({ id }: Props) {
         </span>
       </div>
       <div className="flex gap-x-5 ml-auto">
-        <p className="text-text-secondary/60 text-sm">
-          All pages are automatically Saved
-        </p>
+        <p className="text-text-secondary/60 text-sm"><UiText>{" All pages are automatically Saved "}</UiText></p>
         <div className="flex gap-x-5">
-          <p className="text-text-secondary text-sm">Changes Saved</p>
-          <p className="text-text-secondary text-sm">Undo | Redo</p>
+          <p className="text-text-secondary text-sm"><UiText>{"Changes Saved"}</UiText></p>
+          <p className="text-text-secondary text-sm"><UiText>{"Undo | Redo"}</UiText></p>
         </div>
       </div>
       <ActiveAutomationButton id={id} />

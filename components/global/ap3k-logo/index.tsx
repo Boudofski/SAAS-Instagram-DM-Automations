@@ -1,3 +1,4 @@
+import { UiText } from "@/components/i18n/localized-copy";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -22,9 +23,7 @@ export default function AP3KLogo({ className, markClassName, showText = true }: 
         </svg>
       </div>
       {showText && (
-        <span className="text-[1.05em] font-black leading-none tracking-[-0.055em]">
-          AP3K
-        </span>
+        <span className="text-[1.05em] font-black leading-none tracking-[-0.055em]"><UiText>{" AP3K "}</UiText></span>
       )}
     </div>
   );
