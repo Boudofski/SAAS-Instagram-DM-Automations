@@ -31,7 +31,7 @@ export default function LocalizedCopy({ children }: { children: ReactNode }) {
 }
 
 // Safe for a single UI label; the caller explicitly excludes user content.
-export function UiText({ children }: { children: string }) {
+export function UiText({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
-  return <>{translateUi(children, locale)}</>;
+  return <>{localizeCopyTree(children, locale)}</>;
 }

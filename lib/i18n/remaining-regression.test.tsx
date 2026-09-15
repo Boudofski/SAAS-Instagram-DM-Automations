@@ -16,6 +16,8 @@ vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: state.lo
 vi.mock("./server", () => ({ getServerLocale: () => state.locale }));
 vi.mock("@/components/global/website-nav", () => ({ default: () => null }));
 vi.mock("@/components/global/website-footer", () => ({ default: () => null }));
+import LocalizedCopy, { UiText } from "@/components/i18n/localized-copy";
+import CommercialLandingPage from "@/components/website/commercial-landing-page";
 import HelpCenter from "@/components/help/help-center";
 import PrivacyPage, { generateMetadata as privacyMetadata } from "@/app/(website)/privacy/page";
 import { generateMetadata as commercialMetadata } from "@/app/(website)/[slug]/page";
@@ -29,6 +31,22 @@ function prose(value: unknown, field = ""): string[] {
 }
 
 describe("complete public localization and search metadata", () => {
+  it("renders nested translation wrappers without passing arrays to the string translator", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      state.locale = locale;
+      const html = renderToStaticMarkup(<LocalizedCopy><div><UiText>{"Privacy Policy"}</UiText></div></LocalizedCopy>);
+      expect(html).toContain(translateUi("Privacy Policy", locale));
+    }
+  });
+  it("renders every commercial landing page in every language", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      state.locale = locale;
+      for (const page of COMMERCIAL_PAGES) {
+        const html = renderToStaticMarkup(<CommercialLandingPage page={page} />);
+        expect(html).toContain("AP3K");
+      }
+    }
+  });
   it("covers every commercial page, help article and blog content field", () => {
     for (const locale of SUPPORTED_LOCALES.filter(l => l !== "en")) {
       for (const source of prose([COMMERCIAL_PAGES, BLOG_POSTS, AP3K_HELP_ARTICLES])) {
