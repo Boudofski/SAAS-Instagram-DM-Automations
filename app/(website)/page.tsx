@@ -175,7 +175,7 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
                 <Sparkles className="h-4 w-4" /> Instagram Comment &amp; DM Automation
               </div>
-              <h1 className="mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
+              <h1 className="ap3k-home-title mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
                 Turn Instagram Comments <span className="sm:block">Into Customers.</span>
               </h1>
               <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">

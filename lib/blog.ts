@@ -1,4 +1,5 @@
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
+import growthPosts from "./content/growth/en.json";
 
 export type BlogSection = {
   heading: string;
@@ -24,6 +25,7 @@ export type BlogPost = {
 };
 
 export const BLOG_POSTS: BlogPost[] = [
+  ...growthPosts as BlogPost[],
   {
     slug: "automate-instagram-dms-from-comments",
     title: "How to Automate Instagram DMs From Comments",

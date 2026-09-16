@@ -1,4 +1,5 @@
 import { EXTENDED_COPY } from "./extended-copy";
+import { GROWTH_COPY } from "./growth-copy";
 import { REMAINING_COPY } from "./remaining-copy";
 import { SETUP_COPY } from "./setup-copy";
 import { MESSAGES } from "./messages";
@@ -15,6 +16,7 @@ const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messa
   ...DASHBOARD_COPY[locale as Locale],
   ...SETUP_COPY[locale as Locale],
   ...REMAINING_COPY[locale as Locale],
+  ...GROWTH_COPY[locale as Locale],
 }])) as Record<Locale, Record<string, string>>;
 
 export function translateUi(source: string, locale: Locale): string {
