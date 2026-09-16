@@ -7,6 +7,7 @@ import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual, { getBlogVisualSrc } from "@/components/website/blog-visual";
+import GrowthGuideExtras, { GrowthSectionSources } from "@/components/website/growth-guide-extras";
 import { BLOG_POSTS, getBlogPost } from "@/lib/blog";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
@@ -39,7 +40,7 @@ export function generateMetadata({ params }: Props): Metadata {
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       siteName: "AP3K",
-      images: [{ url: socialImage, width: 1440, height: 810, alt: post.visualAlt }],
+      images: [{ url: socialImage, width: 1440, height: 810, alt: translateUi(post.visualAlt, getServerLocale()) }],
     },
     twitter: {
       card: "summary_large_image",
@@ -154,10 +155,13 @@ export default function BlogPostPage({ params }: Props) {
                       </ul>
                     )}
                   </div>
+                  <GrowthSectionSources slug={post.slug} index={index} />
                 </section>
               </FadeIn>
             ))}
           </div>
+
+          <GrowthGuideExtras slug={post.slug} />
 
           <FadeIn>
             <div className="mt-12 border-t border-slate-200 pt-6 dark:border-white/10">
