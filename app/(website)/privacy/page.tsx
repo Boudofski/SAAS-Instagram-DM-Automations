@@ -1,3 +1,5 @@
+import { COMPANY_COPY } from "@/lib/i18n/company-copy";
+import CompanyDetails from "@/components/website/company-details";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
@@ -12,6 +14,7 @@ const pageMetadata: Metadata = {
 export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/privacy"); }
 
 const sections = [
+  { title: "Service Operator", body: COMPANY_COPY.en.privacyBody },
   {
     title: "Instagram Data We Collect",
     body: "AP3K collects account and profile information only after you authorize an Instagram Business or Creator account. This may include the Instagram account ID, username, profile information made available by the Instagram API, media identifiers used for campaigns, comment identifiers used to match campaign triggers, and connection status.",
@@ -64,7 +67,7 @@ export default function PrivacyPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Privacy Policy</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: September 13, 2026. This policy explains how AP3K handles data used for Instagram automation, billing, analytics, and account management.
+            {COMPANY_COPY.en.privacyIntro}
           </p>
         </div>
 
@@ -84,6 +87,7 @@ export default function PrivacyPage() {
             <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink hover:underline">support@ap3k.com</a>.
           </p>
         </div>
+        <CompanyDetails />
       </main>
       <WebsiteFooter />
     </div></LocalizedCopy>

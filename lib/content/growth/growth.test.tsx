@@ -28,7 +28,7 @@ describe("localized growth guides", () => {
   it("renders authored language copies, source links, screenshots and correct search metadata", () => {
     for (const [locale, posts] of Object.entries({ en, ar, fr, es, de, pt })) {
       state.locale = locale as Locale;
-      for (const [index, post] of posts.entries()) {
+      for (const [index, post] of Array.from(posts.entries())) {
         expect(post.slug).toBe(en[index].slug);
         expect(translateUi(en[index].title, state.locale)).toBe(post.title);
         const html = renderToStaticMarkup(<BlogPage params={{ slug: post.slug }} />);

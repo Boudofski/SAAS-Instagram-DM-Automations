@@ -1,4 +1,5 @@
 "use client";
+import CompanyDetails from "@/components/website/company-details";
 import { UiText } from "@/components/i18n/localized-copy";
 
 
@@ -61,6 +62,7 @@ export default function WebsiteFooter() {
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
           <p className="text-xs text-slate-400">{t("footerCopyright")}</p>
+          <CompanyDetails compact />
         </div>
       </div>
     </footer>

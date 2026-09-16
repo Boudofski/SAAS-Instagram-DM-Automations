@@ -1,3 +1,4 @@
+import { COMPANY_SCHEMA } from "@/lib/company";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
@@ -75,7 +76,7 @@ export default function BlogPostPage({ params }: Props) {
     dateModified: post.updatedAt,
     mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
     author: { "@type": "Organization", name: "AP3K", url: SITE_URL },
-    publisher: { "@type": "Organization", name: "AP3K", url: SITE_URL },
+    publisher: COMPANY_SCHEMA,
     image: `${SITE_URL}${getBlogVisualSrc(post.visual)}`,
     keywords: post.keywords.map(key => translateUi(key, locale)).join(", "),
   };
