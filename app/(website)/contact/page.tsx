@@ -1,3 +1,5 @@
+import { COMPANY_SCHEMA } from "@/lib/company";
+import CompanyDetails from "@/components/website/company-details";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
@@ -44,6 +46,7 @@ export default function ContactPage() {
   return (
     <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-rf-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_0%,rgba(109,40,217,0.16),transparent_28rem),radial-gradient(circle_at_82%_12%,rgba(236,72,153,0.14),transparent_30rem),radial-gradient(circle_at_50%_48%,rgba(255,107,53,0.08),transparent_32rem)] dark:bg-ap3k-radial" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(COMPANY_SCHEMA).replace(/</g, "\\u003c") }} />
       <WebsiteNav current="contact" />
 
       <main className="relative z-10 mx-auto max-w-5xl px-4 py-14 sm:px-8 sm:py-20">
@@ -106,6 +109,7 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
+        <CompanyDetails />
       </main>
 
       <WebsiteFooter />

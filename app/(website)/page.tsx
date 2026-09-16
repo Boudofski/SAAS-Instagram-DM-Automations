@@ -1,3 +1,4 @@
+import { COMPANY_SCHEMA } from "@/lib/company";
 import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
 import PricingExperience from "@/components/global/pricing-experience";
 import WebsiteFooter from "@/components/global/website-footer";
@@ -108,6 +109,7 @@ const softwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "AP3K",
+  publisher: COMPANY_SCHEMA,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   url: "https://ap3k.com",

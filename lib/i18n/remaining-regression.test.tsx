@@ -20,6 +20,8 @@ import LocalizedCopy, { UiText } from "@/components/i18n/localized-copy";
 import CommercialLandingPage from "@/components/website/commercial-landing-page";
 import HelpCenter from "@/components/help/help-center";
 import PrivacyPage, { generateMetadata as privacyMetadata } from "@/app/(website)/privacy/page";
+import TermsPage from "@/app/(website)/terms/page";
+import { COMPANY_COPY } from "./company-copy";
 import { generateMetadata as commercialMetadata } from "@/app/(website)/[slug]/page";
 
 function prose(value: unknown, field = ""): string[] {
@@ -31,6 +33,20 @@ function prose(value: unknown, field = ""): string[] {
 }
 
 describe("complete public localization and search metadata", () => {
+  it("identifies AP3K LLC in terms and privacy in every language with an isolated mailing address", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      state.locale = locale;
+      for (const Page of [TermsPage, PrivacyPage]) {
+        const html = renderToStaticMarkup(<Page />);
+        expect(html).toContain("AP3K LLC");
+        expect(html).toContain(COMPANY_COPY[locale].mailing);
+        expect(html).toContain('<bdi dir="ltr">2026-002082793</bdi>');
+        expect(html).toContain("30 N Gould St, Ste N, Sheridan, WY 82801, United States");
+        expect(html).not.toContain("provider identified in the applicable checkout");
+        if (locale !== "en") expect(html).not.toContain(COMPANY_COPY.en.operator);
+      }
+    }
+  });
   it("renders nested translation wrappers without passing arrays to the string translator", () => {
     for (const locale of SUPPORTED_LOCALES) {
       state.locale = locale;

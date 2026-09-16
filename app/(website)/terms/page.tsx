@@ -1,3 +1,5 @@
+import { COMPANY_COPY } from "@/lib/i18n/company-copy";
+import CompanyDetails from "@/components/website/company-details";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
@@ -14,7 +16,7 @@ export function generateMetadata(): Metadata { return localizedMetadata(pageMeta
 const sections = [
   {
     title: "Service Operator",
-    body: "These terms govern the agreement between the person or organization using AP3K and the AP3K service provider identified in the applicable checkout and billing records.",
+    body: COMPANY_COPY.en.termsBody,
   },
   {
     title: "What AP3K Does",
@@ -80,7 +82,7 @@ export default function TermsPage() {
           <p className="ap3k-kicker">Legal</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Terms of Service</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-rf-muted">
-            Last updated: September 12, 2026. These terms govern your use of AP3K. By creating an account, connecting Instagram, or purchasing a plan, you agree to these terms.
+            {COMPANY_COPY.en.termsIntro}
           </p>
         </div>
 
@@ -100,6 +102,7 @@ export default function TermsPage() {
             <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink hover:underline">support@ap3k.com</a>.
           </p>
         </div>
+        <CompanyDetails />
       </main>
       <WebsiteFooter />
     </div></LocalizedCopy>

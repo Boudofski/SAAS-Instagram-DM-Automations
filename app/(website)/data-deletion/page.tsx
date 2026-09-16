@@ -1,3 +1,4 @@
+import CompanyDetails from "@/components/website/company-details";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
@@ -88,6 +89,7 @@ export default function DataDeletionPage() {
             Contact <a href="mailto:support@ap3k.com" className="font-bold text-rf-pink hover:underline">support@ap3k.com</a> for help with account or data deletion.
           </p>
         </div>
+        <CompanyDetails />
       </main>
       <WebsiteFooter />
     </div></LocalizedCopy>
