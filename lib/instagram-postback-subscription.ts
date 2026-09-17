@@ -24,15 +24,8 @@ export async function ensureInstagramButtonCallbacks(
   token: string
 ): Promise<boolean> {
   if (!integrationId) return false;
-  const integration = await client.integrations.findUnique({
-    where: { id: integrationId },
-    select: { igAccountSource: true },
-  });
-  // Instagram Login accepts and renders template postback buttons but does
-  // not emit their tap callback. Page-linked Facebook Login does. Never send
-  // a dead full-width action to an Instagram Login integration.
-  if (integration?.igAccountSource === "instagram_login") return false;
-
+  // Instagram Login also supports postback callbacks. Gate button delivery on
+  // the actual account and app subscriptions, not the connection method.
   const accountReady = await ensureInstagramPostbackSubscription(integrationId, token);
   if (!accountReady) return false;
 
