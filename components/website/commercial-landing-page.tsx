@@ -1,3 +1,4 @@
+import Breadcrumbs from "@/components/seo/breadcrumbs";
 import { UiText } from "@/components/i18n/localized-copy";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
@@ -117,6 +118,7 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
           <div aria-hidden="true" className="pointer-events-none absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-white/10 blur-[130px]" />
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.08fr_.92fr]">
             <div>
+              <Breadcrumbs items={[{ name: page.eyebrow, path: `/${page.slug}` }]} />
               <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">{page.eyebrow}</p>
               <h1 className="mt-5 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.05em] sm:text-6xl lg:text-7xl">{page.title}</h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-white/80 sm:text-lg">{page.description}</p>

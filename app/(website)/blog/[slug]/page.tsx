@@ -1,3 +1,5 @@
+import Breadcrumbs from "@/components/seo/breadcrumbs";
+import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import { COMPANY_SCHEMA } from "@/lib/company";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -65,6 +67,7 @@ export default function BlogPostPage({ params }: Props) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     .map(({ item }) => item);
+  const products = COMMERCIAL_PAGES.filter(page => page.tutorials.some(guide => guide.slug === post.slug));
   const locale = getServerLocale();
   const jsonLd = {
     "@context": "https://schema.org",
@@ -91,6 +94,7 @@ export default function BlogPostPage({ params }: Props) {
       <WebsiteNav current="blog" />
       <main className="relative z-10">
         <article className="mx-auto max-w-4xl px-4 pb-20 pt-14 sm:px-8 sm:pt-20">
+          <Breadcrumbs items={[{ name: "Blog", path: "/blog" }, { name: post.title, path: `/blog/${post.slug}` }]} />
           <FadeIn>
             <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-300">
               <ArrowLeft className="h-4 w-4" /> All guides
@@ -180,6 +184,9 @@ export default function BlogPostPage({ params }: Props) {
               <p className="ap3k-kicker">Try the workflow</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Turn your next Instagram comment into an action.</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Start with one campaign, one clear trigger, and a useful Comment reply or DM. You can expand after you see the full flow working.</p>
+              {products.length > 0 && <ul className="mt-4 space-y-2">
+                {products.map(page => <li key={page.slug}><Link href={`/${page.slug}`} className="text-sm font-bold underline underline-offset-4">{page.eyebrow}</Link></li>)}
+              </ul>}
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className="ap3k-gradient-button px-5 py-2.5 text-center text-sm">GET STARTED</Link>
                 <Link href="/pricing" className="ap3k-outline-button px-5 py-2.5 text-center text-sm">Compare plans</Link>

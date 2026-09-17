@@ -1,3 +1,6 @@
+import { translateUi } from "@/lib/i18n/translate";
+import { localizePublicPath } from "@/lib/i18n/config";
+import { SITE_METADATA } from "@/lib/i18n/metadata";
 import { COMPANY_SCHEMA } from "@/lib/company";
 import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
 import PricingExperience from "@/components/global/pricing-experience";
@@ -159,11 +162,24 @@ function ProductVideo({
 
 export default function LandingPage() {
   const locale = getServerLocale();
+  const localizedSoftware = { ...softwareSchema, inLanguage: locale,
+    url: `https://ap3k.com${localizePublicPath("/", locale)}`,
+    description: SITE_METADATA[locale].description };
+  const localizedFaq = { ...faqSchema, inLanguage: locale,
+    mainEntity: FAQS.map(([question, answer]) => ({
+      "@type": "Question", name: translateUi(question, locale),
+      acceptedAnswer: { "@type": "Answer", text: translateUi(answer, locale) },
+    })) };
+  const websiteSchema = { "@context": "https://schema.org", "@type": "WebSite",
+    "@id": "https://ap3k.com/#website", url: "https://ap3k.com/", name: "AP3K",
+    alternateName: "AP3K DM Automation", publisher: COMPANY_SCHEMA };
+
 
   return (
     <LocalizedCopy><div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema).replace(/</g, "\\u003c") }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedSoftware).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedFaq).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c") }} />
       <WebsiteNav current="home" />
 
       <main>
