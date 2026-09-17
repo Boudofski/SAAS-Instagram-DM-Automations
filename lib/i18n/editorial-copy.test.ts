@@ -45,6 +45,24 @@ describe("reviewed product language", () => {
     expect(translateUi("Leads", "pt")).toBe("Potenciais clientes");
   });
 
+  it("keeps concrete feature instructions and keyword examples meaningful", () => {
+    const keywordExamples = [
+      ["Match the CTA in the caption, such as COACHING, PLAN, or BOOK.", ["COACHING", "PLAN", "BOOK"]],
+      ["Use SHOP, SIZE, PRICE, or another keyword that fits the caption.", ["SHOP", "SIZE", "PRICE"]],
+    ] as const;
+    for (const locale of locales) {
+      for (const [source, keywords] of keywordExamples) {
+        for (const keyword of keywords) expect(translateUi(source, locale)).toContain(keyword);
+      }
+      expect(translateUi("Yes, when the configured DM supports a valid HTTPS link button.", locale)).toContain("HTTPS");
+      expect(translateUi("Yes, when the configured DM supports a valid HTTPS link button.", locale)).not.toContain("%s");
+    }
+    expect(translateUi("Creators", "ar")).toBe("صانعو المحتوى");
+    expect(translateUi("Coaches", "ar")).toBe("المدرّبون");
+    expect(translateUi("Billing and plans", "ar")).toBe("الفوترة والخطط");
+    expect(translateUi("Cookie Policy — AP3K", "ar")).toContain("ملفات تعريف الارتباط");
+  });
+
   it("keeps English and unmatched customer text unchanged", () => {
     const customerText = "My campaign — مرحبًا — Bonjour @my_account https://example.com";
     for (const locale of locales) expect(translateUi(customerText, locale)).toBe(customerText);
