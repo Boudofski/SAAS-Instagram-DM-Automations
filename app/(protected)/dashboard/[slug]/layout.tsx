@@ -1,3 +1,4 @@
+import { getInstagramAccountMenu } from "@/actions/instagram-accounts";
 import NavBar from "@/components/global/navbar";
 import Sidebar from "@/components/global/sidebar";
 import { onUserInfo } from "@/actions/user";
@@ -25,7 +26,7 @@ type Props = {
 };
 
 async function Layout({ children, params }: Props) {
-  const userResult = await onUserInfo();
+  const [userResult, accountMenu] = await Promise.all([onUserInfo(), getInstagramAccountMenu()]);
 
   // A valid Clerk session can briefly exist before AP3K provisions its local row,
   // especially after an account is deleted and recreated with the same email.
@@ -55,6 +56,7 @@ async function Layout({ children, params }: Props) {
   // Reuse the authenticated result instead of fetching the same profile again.
   // Screens fetch their own automation data; unrelated routes need not wait for it.
   query.setQueryData(["user-profile", currentClerkId], userResult);
+  query.setQueryData(["instagram-account-menu", currentClerkId], accountMenu);
 
   return (
     <HydrationBoundary state={dehydrate(query)}>

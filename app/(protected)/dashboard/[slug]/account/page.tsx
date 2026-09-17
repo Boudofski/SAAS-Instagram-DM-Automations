@@ -200,7 +200,7 @@ export default async function InstagramAccountPage({
           </span>
         </summary>
         <div className="border-t border-slate-200 p-4 dark:border-white/10">
-          <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{" One Instagram account per workspace. Removing it permanently clears its automations and history. "}</UiText></p>
+          <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{" Removing this Instagram account permanently deletes only its automations, contacts, inbox, analytics, and AI knowledge. Your other accounts stay unchanged. "}</UiText></p>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Link
               href={`/dashboard/${params.slug}/integrations`}

@@ -50,8 +50,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const [usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
-        getUserFacingStats(userResult.data.id, period),
-        getCampaignTableMetrics(userResult.data.id),
+        getUserFacingStats(userResult.data.id, period, new Date(), instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
+        getCampaignTableMetrics(userResult.data.id, instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
         getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period),
       ])
     : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }];

@@ -350,7 +350,7 @@ export async function adminPauseCampaignsForAccountAction(formData: FormData) {
 
   try {
     const result = await client.automation.updateMany({
-      where: { userId: row.userId, active: true, archivedAt: null },
+      where: { userId: row.userId, integrationId, active: true, archivedAt: null },
       data: { active: false, needsReview: true, reviewReason: `Admin paused: ${reason}` },
     });
 

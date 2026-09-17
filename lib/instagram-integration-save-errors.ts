@@ -40,7 +40,7 @@ export function reviewSafeInstagramOAuthErrorMessage(error: string) {
     case "duplicate_instagram_account":
       return "This Instagram account is already connected to another AP3K workspace. Remove it there first or contact support.";
     case "plan_limit_reached":
-      return "Your current plan supports one Instagram account. Remove the existing account before connecting another.";
+      return "Your Instagram account limit has been reached. Upgrade your plan to connect more accounts.";
     case "token_exchange_failed":
     case "profile_fetch_failed":
       return "Instagram authorization could not be completed. Please try again.";
@@ -57,7 +57,7 @@ export function standardInstagramOAuthErrorMessage(error: string) {
     case "duplicate_instagram_account":
       return "This Instagram account is already connected to another AP3K workspace. Remove it there first or contact support.";
     case "plan_limit_reached":
-      return "Your current plan supports one Instagram account. Remove the existing account before connecting another.";
+      return "Your Instagram account limit has been reached. Upgrade your plan to connect more accounts.";
     case "missing_local_profile":
       return "Your AP3K workspace could not be found. Sign in again and retry.";
     case "token_exchange_failed":

@@ -41,6 +41,7 @@ import { dashboardPath } from "@/lib/dashboard";
 import { planReconnectCleanup } from "@/lib/account-webhook-diagnostics";
 import { planReconnectCampaignImpact } from "@/lib/campaign-health";
 import { client } from "@/lib/prisma";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import {
   classifyInstagramIntegrationSaveError,
@@ -168,41 +169,9 @@ async function applyReconnectCampaignImpact(input: {
   nextInstagramId?: string | null;
   nextUsername?: string | null;
 }) {
-  const dbUser = await client.user.findUnique({
-    where: { clerkId: input.clerkId },
-    select: {
-      id: true,
-      automations: {
-        where: { archivedAt: null },
-        select: { id: true, active: true, posts: { select: { postid: true } } },
-      },
-    },
-  });
-  if (!dbUser) return null;
-
-  const impact = planReconnectCampaignImpact({
-    previousInstagramId: input.previousInstagramId,
-    previousUsername: input.previousUsername,
-    nextInstagramId: input.nextInstagramId,
-    nextUsername: input.nextUsername,
-    campaigns: dbUser.automations,
-  });
-  if (!impact.changed || impact.affectedCampaignIds.length === 0) return impact;
-
-  await client.automation.updateMany({
-    where: { userId: dbUser.id, id: { in: impact.affectedCampaignIds } },
-    data: {
-      active: false,
-      needsReview: true,
-      reviewReason: impact.reason,
-    },
-  });
-  console.log("[oauth] reconnect impact applied", {
-    accountChanged: impact.changed,
-    affectedCampaigns: impact.affectedCampaignIds.length,
-    pausedCampaigns: impact.pauseCampaignIds.length,
-  });
-  return impact;
+  // A different Instagram identity is a new account, never a replacement.
+  // Reconnecting the same identity leaves its campaigns attached and unchanged.
+  return null;
 }
 
 function getOAuthClientId() {
@@ -395,7 +364,7 @@ async function completeInstagramLoginIntegration(input: {
 
   try {
     const freshIntegrations = await getIntegrations(workspaceClerkId);
-    const newIntegrationId = getCanonicalInstagramIntegration(freshIntegrations?.integrations)?.id;
+    const newIntegrationId = create.integrationId;
     if (newIntegrationId) {
       await refreshInstagramProfileSnapshotForUser(workspaceClerkId, newIntegrationId, {});
     }
@@ -646,7 +615,7 @@ export const onIntegrate = async (code: string, state?: string | null) => {
     // Seed initial profile snapshot for newly created integration (non-fatal)
     try {
       const freshIntegrations = await getIntegrations(workspaceClerkId);
-      const newIntegrationId = getCanonicalInstagramIntegration(freshIntegrations?.integrations)?.id;
+      const newIntegrationId = create.integrationId;
       if (newIntegrationId) {
         await refreshInstagramProfileSnapshotForUser(workspaceClerkId, newIntegrationId, {});
       }
@@ -684,7 +653,8 @@ export const resubscribeCurrentInstagramWebhooks = async () => {
 
   try {
     const integration = await getIntegrations(workspaceClerkId);
-    const instagram = integration?.integrations[0];
+    const selectedId = await currentInstagramAccountId(workspaceClerkId);
+    const instagram = integration?.integrations.find((account) => account.id === selectedId);
 
     if (!instagram?.token || (!instagram.pageId && !instagram.instagramId)) {
       return { status: 404, data: "Connect Instagram before resubscribing webhooks" };
@@ -748,7 +718,7 @@ export const repairCurrentInstagramConnection = async () => {
     select: {
       id: true,
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", id: await currentInstagramAccountId(workspaceClerkId) },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -762,7 +732,7 @@ export const repairCurrentInstagramConnection = async () => {
         },
       },
       automations: {
-        where: { archivedAt: null },
+        where: { archivedAt: null, integrationId: await currentInstagramAccountId(workspaceClerkId) },
         select: {
           id: true,
           name: true,
@@ -772,7 +742,7 @@ export const repairCurrentInstagramConnection = async () => {
           User: {
             select: {
               integrations: {
-                where: { name: "INSTAGRAM" },
+                where: { name: "INSTAGRAM", id: await currentInstagramAccountId(workspaceClerkId) },
                 select: {
                   id: true,
                   userId: true,
@@ -915,7 +885,8 @@ export const getRecentSelectedFacebookPageContent = async () => {
     (await getCurrentWorkspaceClerkId()) ?? user.id;
 
   const integrations = await getIntegrations(workspaceClerkId);
-  const integration = getCanonicalInstagramIntegration(integrations?.integrations);
+  const selectedId = await currentInstagramAccountId(workspaceClerkId);
+  const integration = getCanonicalInstagramIntegration(integrations?.integrations.filter((account) => account.id === selectedId));
   const pageId = integration?.pageId ?? null;
   const pageName = integration?.pageName ?? null;
 
@@ -983,6 +954,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
   // redirect() throws NEXT_REDIRECT internally — if called inside a try block the
   // catch misclassifies it as database_save_failed and then redirects to the error
   // page even though the save succeeded. Track the error outside and redirect after.
+  let selectedIntegrationId: string | undefined;
   let integrationError: string | null = null;
 
   try {
@@ -1010,7 +982,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
         });
       }
 
-      await createIntegration(
+      const savedIntegration = await createIntegration(
         workspaceClerkId,
         selected.pageAccessToken,
         expireDate,
@@ -1025,6 +997,8 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
         selected.diagnostics,
         subscriptionAttempt
       );
+
+      selectedIntegrationId = savedIntegration.integrationId;
 
       // Non-fatal cleanup — must not be able to poison the success path
       try {
@@ -1065,6 +1039,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
   if (integrationError) {
     return redirect(`${dashboardPath(workspaceClerkId)}/integrations?integration_error=${integrationError}`);
   }
+  if (selectedIntegrationId) return redirect(`/api/instagram/selected?integrationId=${encodeURIComponent(selectedIntegrationId)}`);
   return redirect(`${dashboardPath(workspaceClerkId)}/integrations`);
 };
 

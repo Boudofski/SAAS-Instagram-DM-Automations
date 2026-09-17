@@ -64,9 +64,9 @@ function firstString(values: unknown[]) {
   return null;
 }
 
-export async function getUserFacingMetrics(userId: string, range?: DateRange): Promise<UserFacingMetrics> {
+export async function getUserFacingMetrics(userId: string, range?: DateRange, integrationId?: string): Promise<UserFacingMetrics> {
   const byUserAutomation = {
-    automation: { userId },
+    automation: { userId, ...(integrationId ? { integrationId } : {}) },
     ...rangeWhere(range),
   };
 
@@ -89,7 +89,7 @@ export async function getUserFacingMetrics(userId: string, range?: DateRange): P
   ] = await Promise.all([
     client.webhookEvent.findMany({
       where: {
-        automation: { userId },
+        automation: { userId, ...(integrationId ? { integrationId } : {}) },
         eventType: { in: [...REAL_COMMENT_TYPES] },
         commentId: { not: null },
         ...rangeWhere(range),
@@ -121,12 +121,12 @@ export async function getUserFacingMetrics(userId: string, range?: DateRange): P
       where: { ...byUserAutomation, eventType: "DM_SKIPPED" },
       select: { id: true, commentId: true, meta: true },
     }),
-    client.lead.count({ where: { automation: { userId }, ...rangeWhere(range) } }),
-    client.automation.count({ where: { userId, active: true } }),
-    client.integrations.count({ where: { userId } }),
+    client.lead.count({ where: { automation: { userId, ...(integrationId ? { integrationId } : {}) }, ...rangeWhere(range) } }),
+    client.automation.count({ where: { userId, ...(integrationId ? { integrationId } : {}), active: true } }),
+    client.integrations.count({ where: { userId, ...(integrationId ? { id: integrationId } : {}) } }),
     client.webhookEvent.findFirst({
       where: {
-        automation: { userId },
+        automation: { userId, ...(integrationId ? { integrationId } : {}) },
         eventType: { in: [...REAL_COMMENT_TYPES] },
         commentId: { not: null },
       },
@@ -187,12 +187,13 @@ export async function getUserFacingMetrics(userId: string, range?: DateRange): P
 export async function getUserFacingStats(
   userId: string,
   period: DashboardPeriod,
-  now = new Date()
+  now = new Date(),
+  integrationId?: string
 ): Promise<UserFacingStatsComparison> {
   const periodRange = getPeriodRange(period, now);
   const [current, previous] = await Promise.all([
-    getUserFacingMetrics(userId, { gte: periodRange.currentStart, lt: periodRange.currentEnd }),
-    getUserFacingMetrics(userId, { gte: periodRange.previousStart, lt: periodRange.previousEnd }),
+    getUserFacingMetrics(userId, { gte: periodRange.currentStart, lt: periodRange.currentEnd }, integrationId),
+    getUserFacingMetrics(userId, { gte: periodRange.previousStart, lt: periodRange.previousEnd }, integrationId),
   ]);
 
   return {

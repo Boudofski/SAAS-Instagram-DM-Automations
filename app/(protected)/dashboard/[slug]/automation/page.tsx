@@ -21,7 +21,7 @@ export default async function AutomationsPage({ params }: Props) {
     result.status === 200 && Array.isArray(result.data) ? result.data : [];
   const metrics =
     userResult.status === 200 && userResult.data?.id
-      ? await getCampaignTableMetrics(userResult.data.id)
+      ? await getCampaignTableMetrics(userResult.data.id, userResult.data.integrations[0]?.id ?? "00000000-0000-0000-0000-000000000000")
       : {};
   const currentIntegration =
     userResult.status === 200

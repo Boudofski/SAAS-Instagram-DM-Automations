@@ -39,9 +39,10 @@ export default function RemoveInstagramAccountButton() {
 
       toast.success("Instagram account removed.");
       setOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-      await queryClient.invalidateQueries({ queryKey: ["webhook-health"] });
-      router.refresh();
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      window.localStorage.setItem("ap3k-account-changed", `removed:${Date.now()}`);
+      window.location.reload();
     } catch {
       toast.error("Instagram account could not be removed. Please try again.");
     } finally {
@@ -67,7 +68,7 @@ export default function RemoveInstagramAccountButton() {
               <AlertTriangle className="h-5 w-5" />
             </div>
             <AlertDialogTitle className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{" Remove Instagram account? "}</UiText></AlertDialogTitle>
-            <AlertDialogDescription className="pt-1 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300"><UiText>{" This will permanently disconnect this Instagram account, stop all automations, and delete its settings, stats, and activity history. This action cannot be undone. "}</UiText></AlertDialogDescription>
+            <AlertDialogDescription className="pt-1 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300"><UiText>{" Removing this Instagram account permanently deletes only its automations, contacts, inbox, analytics, and AI knowledge. Your other accounts stay unchanged. "}</UiText></AlertDialogDescription>
           </AlertDialogHeader>
         </div>
 

@@ -86,7 +86,7 @@ const INITIAL: WizardData = {
   active: true,
 };
 
-export function useWizard(slug: string, automationId?: string) {
+export function useWizard(slug: string, automationId?: string, integrationId = "") {
   const router = useRouter();
   const tr = useUi();
   const [step, setStep] = useState<WizardStep>(1);
@@ -200,7 +200,7 @@ export function useWizard(slug: string, automationId?: string) {
         });
       }
 
-      const saved = await saveCampaign(payload, automationId);
+      const saved = await saveCampaign(payload, automationId, integrationId);
 
       const savedData = saved.data;
       const campaignId =

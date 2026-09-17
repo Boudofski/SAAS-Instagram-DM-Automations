@@ -1,4 +1,5 @@
 import { dashboardPath } from "@/lib/dashboard";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 
 export const MIN_WORKSPACE_SEARCH_LENGTH = 2;
@@ -44,10 +45,11 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
 
   if (!user) return null;
 
+  const integrationId = await currentInstagramAccountId(clerkId);
   const [campaignRows, keywordRows, leadRows] = await Promise.all([
     client.automation.findMany({
       where: {
-        userId: user.id,
+        userId: user.id, integrationId,
         archivedAt: null,
         name: { contains: query, mode: "insensitive" },
       },
@@ -62,7 +64,7 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
     client.keyword.findMany({
       where: {
         word: { contains: query, mode: "insensitive" },
-        Automation: { userId: user.id, archivedAt: null },
+        Automation: { userId: user.id, integrationId, archivedAt: null },
       },
       orderBy: { word: "asc" },
       take: WORKSPACE_SEARCH_RESULT_LIMIT,
@@ -74,7 +76,7 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
     }),
     client.lead.findMany({
       where: {
-        automation: { userId: user.id, archivedAt: null },
+        automation: { userId: user.id, integrationId, archivedAt: null },
         OR: [
           { igUsername: { contains: query, mode: "insensitive" } },
           { commentText: { contains: query, mode: "insensitive" } },

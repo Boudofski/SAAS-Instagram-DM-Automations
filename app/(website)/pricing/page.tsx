@@ -41,7 +41,7 @@ const FAQ = [
   },
   {
     q: "How many Instagram accounts can I connect?",
-    a: "Each AP3K workspace currently supports one connected Instagram account. Reconnecting another account replaces the current connection while automation history stays saved.",
+    a: "Free includes 1 Instagram account, Pro includes 3, and Business includes 10. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.",
   },
   {
     q: "How many automations can I create?",

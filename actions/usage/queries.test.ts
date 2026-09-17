@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUserFindUnique = vi.fn();
+const mockDeletedReplyUsageCount = vi.fn();
 const mockMessageLogCount = vi.fn();
 const mockAutomationEventCount = vi.fn();
 const mockAutomationCount = vi.fn();
@@ -26,6 +27,7 @@ const mockTransaction = vi.fn(async (callback: (tx: any) => unknown) => callback
 vi.mock("@/lib/prisma", () => ({
   client: {
     user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
+    deletedReplyUsage: { count: (...args: any[]) => mockDeletedReplyUsageCount(...args) },
     messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
     automationEvent: {
       count: (...args: any[]) => mockAutomationEventCount(...args),
@@ -60,6 +62,7 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   mockUserFindUnique.mockResolvedValue({ subscription: { plan: "FREE" } });
   mockMessageLogCount.mockResolvedValue(0);
+  mockDeletedReplyUsageCount.mockResolvedValue(0);
   mockAutomationEventCount.mockResolvedValue(0);
   mockAutomationCount.mockResolvedValue(0);
   mockIntegrationCount.mockResolvedValue(0);
@@ -213,6 +216,7 @@ describe("usage query helpers", () => {
 
   it("falls back to sent automation events when message logs are missing", async () => {
     mockMessageLogCount.mockResolvedValue(0);
+  mockDeletedReplyUsageCount.mockResolvedValue(0);
     mockAutomationEventCount.mockResolvedValueOnce(0).mockResolvedValueOnce(2).mockResolvedValueOnce(3);
 
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
@@ -337,5 +341,22 @@ describe("usage query helpers", () => {
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
     expect(usage.staticReplies.limit).toBe(500); // Plan default
+  });
+});
+
+
+describe("shared multi-account usage", () => {
+  it("reports all connected accounts rather than clamping the count to one", async () => {
+    mockUserFindUnique.mockResolvedValue({ subscription: { plan: "BUSINESS" } });
+    mockIntegrationCount.mockResolvedValue(7);
+    const usage = await getUserMonthlyUsage("user-1");
+    expect(usage.connectedAccounts).toMatchObject({ used: 7, limit: 10, remaining: 3 });
+    expect(usage.staticReplies.limit).toBe(20000);
+  });
+  it("does not refund already consumed replies when an account or campaign is deleted", async () => {
+    mockDeletedReplyUsageCount.mockResolvedValue(500);
+    const result = await canSendStaticReply("user-1");
+    expect(result.ok).toBe(false);
+    expect(result.usage.staticReplies.used).toBe(500);
   });
 });

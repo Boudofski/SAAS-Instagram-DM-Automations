@@ -1,3 +1,4 @@
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { resolveInstagramMediaConnection } from "@/lib/instagram-media";
 import { client } from "@/lib/prisma";
@@ -144,6 +145,7 @@ async function refreshCampaignMediaForClerkUser(clerkId: string, campaigns: Camp
     where: { clerkId },
     select: {
       integrations: {
+        where: { id: await currentInstagramAccountId(clerkId) },
         select: {
           name: true,
           token: true,

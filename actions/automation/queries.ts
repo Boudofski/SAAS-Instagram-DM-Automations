@@ -1,5 +1,6 @@
 "use server";
 
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
 import type { NormalizedMessageAutomationPayload } from "@/lib/message-automation";
@@ -53,6 +54,7 @@ export const createAutomation = async (clerkId: string, id?: string) => {
     data: {
       automations: {
         create: {
+          integrationId: await currentInstagramAccountId(clerkId),
           ...(id && { id }),
         },
       },
@@ -69,6 +71,7 @@ export const createCompleteAutomation = async (
     data: {
       automations: {
         create: {
+          integrationId: await currentInstagramAccountId(clerkId),
           name: payload.name,
           active: payload.active,
           needsReview: false,
@@ -127,6 +130,7 @@ export const createCompleteMessageAutomation = async (
   return client.automation.create({
     data: {
       userId: user.id,
+      integrationId: await currentInstagramAccountId(clerkId),
       name: payload.name,
       active: payload.active,
       source: payload.source,
@@ -174,7 +178,7 @@ export const updateCompleteMessageAutomation = async (
   payload: NormalizedMessageAutomationPayload
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
   if (!automation) return null;
@@ -239,7 +243,7 @@ export const getAutomation = async (clerkId: string) => {
         orderBy: {
           createdAt: "asc",
         },
-        where: { archivedAt: null },
+        where: { archivedAt: null, integrationId: await currentInstagramAccountId(clerkId) },
         include: {
           keywords: true,
           listener: true,
@@ -256,7 +260,7 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
     where: {
       id,
       archivedAt: null,
-      User: { clerkId },
+      User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId),
     },
     include: {
       keywords: true,
@@ -266,7 +270,7 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
       User: {
         select: {
           subscription: true,
-          integrations: true,
+          integrations: { where: { id: await currentInstagramAccountId(clerkId) } },
         },
       },
     },
@@ -279,8 +283,8 @@ export const updateAutomation = async (
   update: { name?: string; active?: boolean; matchingMode?: MATCHING_MODE }
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
-    select: { id: true, userId: true, needsReview: true, reviewReason: true, User: { select: { status: true, integrations: { select: { status: true, reconnectRequired: true } } } } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    select: { id: true, userId: true, needsReview: true, reviewReason: true, User: { select: { status: true, integrations: { where: { id: await currentInstagramAccountId(clerkId) }, select: { status: true, reconnectRequired: true, planLocked: true } } } } },
   });
 
   if (!automation) {
@@ -296,7 +300,7 @@ export const updateAutomation = async (
   if (update.active === true) {
     if (automation.needsReview) return null;
     if (automation.User?.status === "SUSPENDED") return null;
-    if (automation.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+    if (automation.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired || item.planLocked)) {
       return null;
     }
   }
@@ -318,7 +322,7 @@ export const updateCompleteAutomation = async (
   payload: CampaignPayload
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -460,7 +464,7 @@ export const deleteAutomationQuery = async (
   return await client.automation.deleteMany({
     where: {
       id: automationId,
-      User: { clerkId },
+      User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId),
     },
   });
 };
@@ -474,7 +478,7 @@ export const addListener = async (
   ctaLink?: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -511,7 +515,7 @@ export const addTrigger = async (
   trigger: string[]
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -560,7 +564,7 @@ export const addKeyWords = async (
   keywords: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -593,7 +597,7 @@ export const deleteKeywordsQuery = async (
   clerkId: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -623,7 +627,7 @@ export const addPosts = async (
   }[]
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -656,7 +660,7 @@ export const getAutomationAnalytics = async (
   clerkId: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -711,7 +715,7 @@ export const getAutomationActivity = async (
   clerkId: string
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId } },
+    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
     select: { id: true },
   });
 
@@ -766,11 +770,11 @@ export const getDashboardActivity = async (clerkId: string) => {
     where: { clerkId },
     select: {
       automations: {
-        where: { archivedAt: null },
+        where: { archivedAt: null, integrationId: await currentInstagramAccountId(clerkId) },
         select: { id: true },
       },
       integrations: {
-        where: { name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
+        where: { id: await currentInstagramAccountId(clerkId), name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
         select: {
           instagramId: true,
           webhookAccountId: true,

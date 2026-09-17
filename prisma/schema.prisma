@@ -32,6 +32,7 @@ model User {
   aiChatMessages      AiChatMessage[]
   emailPreference     EmailPreference?
   emailDeliveries     EmailDelivery[]
+  deletedReplyUsage   DeletedReplyUsage[]
 }
 
 model EmailPreference {
@@ -181,6 +182,11 @@ model Integrations {
   lastAdminNote                      String?
   lastAdminActionAt                  DateTime?
   snapshots                          InstagramAccountSnapshot[]
+  planLocked                         Boolean                    @default(false)
+  automations                        Automation[]
+  conversations                      Conversation[]
+  aiConfig                           InstagramAiConfig?
+  aiChats                            AiChatMessage[]
 
   @@index([metaAppScopedUserId])
 }
@@ -217,6 +223,8 @@ model MetaOAuthSelection {
 }
 
 model Automation {
+  integrationId        String?           @db.Uuid
+  integration          Integrations?     @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                 String            @default("Untitled")
   createdAt            DateTime          @default(now())
@@ -247,6 +255,8 @@ model Automation {
   webhookEvents        WebhookEvent[]
   conversations        Conversation[]
   aiUsageEvents        AiUsageEvent[]
+
+  @@index([userId, integrationId])
 }
 
 model Dms {
@@ -330,6 +340,23 @@ model AiWorkspaceConfig {
   updatedAt         DateTime @updatedAt
 }
 
+model InstagramAiConfig {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String       @db.Uuid
+  integrationId     String       @unique @db.Uuid
+  integration       Integrations @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  aiRepliesEnabled  Boolean      @default(false)
+  aiCommentsEnabled Boolean      @default(false)
+  role              String       @default("Helpful Instagram assistant")
+  brandVoice        String       @default("Friendly, clear, concise, and human")
+  guardrails        String?
+  defaultTone       String       @default("FRIENDLY")
+  protectionRules   Json?
+  knowledge         Json?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
 model AiUsageEvent {
   id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String      @db.Uuid
@@ -347,18 +374,23 @@ model AiUsageEvent {
 }
 
 model AiChatMessage {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  context   String
-  role      String
-  content   String
-  createdAt DateTime @default(now())
+  integrationId String?       @db.Uuid
+  integration   Integrations? @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String        @db.Uuid
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  context       String
+  role          String
+  content       String
+  createdAt     DateTime      @default(now())
 
   @@index([userId, context, createdAt])
+  @@index([userId, integrationId, context])
 }
 
 model Conversation {
+  integrationId     String?        @db.Uuid
+  integration       Integrations?  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String         @db.Uuid
   user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -374,7 +406,9 @@ model Conversation {
   updatedAt         DateTime       @updatedAt
   messages          InboxMessage[]
 
-  @@unique([userId, recipientIgId])
+  @@unique([userId, recipientIgId]) // Legacy index retained until the new release is live.
+  @@unique([integrationId, recipientIgId])
+  @@index([userId, integrationId, lastMessageAt])
   @@index([userId, lastMessageAt])
 }
 
@@ -597,4 +631,15 @@ enum EMAIL_DELIVERY_STATUS {
   SUPPRESSED
   FAILED
   SKIPPED
+}
+
+// Billing-only counters survive campaign/account removal until the owner deletes
+// the AP3K account. No Instagram identity or message content is retained here.
+model DeletedReplyUsage {
+  id        String   @id @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime
+
+  @@index([userId, createdAt])
 }

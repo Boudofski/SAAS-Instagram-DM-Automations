@@ -41,7 +41,7 @@ describe("instagram account settings stats", () => {
 
     const stats = await getInstagramAccountSettingsStats("user-a", "integration-a", range);
 
-    expect(mockGetUserFacingMetrics).toHaveBeenCalledWith("user-a", range);
+    expect(mockGetUserFacingMetrics).toHaveBeenCalledWith("user-a", range, "integration-a");
     expect(mockGetInstagramSnapshotComparisonForUser).toHaveBeenCalledWith("user-a", "integration-a", "month");
     expect(stats.comments.value).toBe(22);
   });

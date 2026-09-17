@@ -47,7 +47,8 @@ describe("InstagramAvatar", () => {
     expect(dashboard).toContain("<InstagramAvatar");
     expect(account).toContain("<InstagramAvatar");
     expect(review).toContain("<InstagramAvatar");
-    expect(sidebar).toContain("<InstagramAvatar");
+    expect(sidebar).toContain("<InstagramAccountSwitcher");
+    expect(readFileSync("components/dashboard/instagram-account-switcher.tsx", "utf8")).toContain("<InstagramAvatar");
     expect(dashboard).not.toContain("@next/next/no-img-element");
     expect(account).not.toContain("@next/next/no-img-element");
     expect(review).not.toContain("@next/next/no-img-element");

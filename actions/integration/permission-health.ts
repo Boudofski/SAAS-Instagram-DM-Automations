@@ -5,6 +5,7 @@ import {
   getInstagramPermissionCapabilities,
   type InstagramPermissionCapabilities,
 } from "@/lib/instagram-permissions";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -31,7 +32,7 @@ export async function getCurrentInstagramPermissionHealth(): Promise<{
     where: { clerkId: workspaceClerkId },
     select: {
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", id: await currentInstagramAccountId(workspaceClerkId), planLocked: false },
         orderBy: { createdAt: "desc" },
         select: {
           instagramId: true,

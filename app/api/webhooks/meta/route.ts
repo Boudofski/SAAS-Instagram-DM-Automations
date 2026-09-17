@@ -1,3 +1,4 @@
+import type { Integrations } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createHash } from "crypto";
@@ -614,7 +615,7 @@ async function processEntry(
       const integrationRaw = selectIntegrationForWebhook(
         automation.User?.integrations,
         pageId,
-        matchedIntegrationId
+        automation.integrationId ?? matchedIntegrationId
       );
       const selfComment = getSelfCommentReason({
         commenterId,
@@ -1112,7 +1113,7 @@ async function processEntry(
 
       if (aiReplyEnabled && automation.userId) {
         try {
-          const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId);
+          const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
           const aiQuota = aiWorkspace.aiCommentsEnabled ? await reserveAiReplyQuota({
             userId: automation.userId,
             automationId: automation.id,
@@ -1688,6 +1689,7 @@ async function processEntry(
         }
         await upsertInboundInboxMessage({
           userId: inboxIntegration.userId,
+          integrationId: inboxIntegration.id,
           senderIgId: senderId,
           content: inboundContent,
           metaMessageId: parsed.ok ? parsed.data.messageMid : undefined,
@@ -1723,7 +1725,7 @@ async function processEntry(
         : null;
       const dmFlowAction = payloadAction ?? fallbackAction?.action ?? null;
       const callbackAutomation = fallbackAction?.automation ?? (dmFlowAction
-        ? await findAutomationById(dmFlowAction.automationId)
+        ? await findAutomationById(dmFlowAction.automationId, pageId)
         : null);
       const callbackIntegration = callbackAutomation
         ? selectIntegrationForWebhook(callbackAutomation.User?.integrations, pageId)
@@ -1745,6 +1747,8 @@ async function processEntry(
         callbackIntegration &&
         callbackIntegration.status !== "DISCONNECTED" &&
         callbackIntegration.reconnectRequired !== true &&
+        !callbackIntegration.planLocked &&
+        callbackAutomation?.integrationId === callbackIntegration.id &&
         (dmFlowAction?.type !== "OPENING_CONTINUE" || callbackAutomation.source === "COMMENT")
       );
       if (dmFlowAction && !callbackIsAllowed) {
@@ -1865,7 +1869,8 @@ async function processConfiguredMessageAutomation(params: {
   dmFlowAction?: CommentDmAction | null;
 }) {
   const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword, inboundText, dmFlowAction = null } = params;
-  const integration = selectIntegrationForWebhook(automation.User?.integrations, pageId) ?? automation.User?.integrations?.[0];
+  const integration = selectIntegrationForWebhook<Integrations>(automation.User?.integrations, pageId, automation.integrationId ?? undefined);
+  if (!integration || integration.id !== automation.integrationId || integration.planLocked) return;
   const tokenResolution = resolveIntegrationSendToken(integration);
   const instagramBusinessAccountId = integration?.instagramId;
   if (!automation.listener || !automation.userId || !tokenResolution.ok || !instagramBusinessAccountId) {
@@ -1913,7 +1918,7 @@ async function processConfiguredMessageAutomation(params: {
       });
   if (automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
     try {
-      const workspace = await getAiWorkspaceRuntimeConfig(automation.userId);
+      const workspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
       if (workspace.aiRepliesEnabled) {
         const quota = await reserveAiReplyQuota({
           userId: automation.userId,
@@ -2032,6 +2037,7 @@ async function processConfiguredMessageAutomation(params: {
       trackResponse(automation.id, "DM"),
       recordOutboundInboxMessage({
         userId: automation.userId,
+        integrationId: integration!.id,
         recipientIgId: senderId,
         automationId: automation.id,
         content: resolvedMessage,
@@ -2244,7 +2250,7 @@ function selectIntegrationForWebhook<T extends {
   const byId = matchedIntegrationId
     ? integrations?.find((integration) => integration.id === matchedIntegrationId)
     : undefined;
-  if (byId) return byId;
+  if (matchedIntegrationId) return byId && [byId.webhookAccountId, byId.instagramId, byId.businessId, byId.pageId].some((id) => id && String(id).trim() === String(entryId).trim()) ? byId : undefined;
 
   return integrations?.find((integration) =>
     [integration.webhookAccountId, integration.instagramId, integration.businessId, integration.pageId]

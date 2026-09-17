@@ -39,15 +39,15 @@ export async function getAccountWebhookDiagnosticsForIntegration(integrationId?:
         ? {
             OR: [
               { igAccountId: { in: accountIds } },
-              { automation: { userId: integration.userId } },
+              { automation: { userId: integration.userId, integrationId: integration.id } },
             ],
           }
-        : { automation: { userId: integration.userId } },
+        : { automation: { userId: integration.userId, integrationId: integration.id } },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
     client.automation.findMany({
-      where: { userId: integration.userId ?? undefined, archivedAt: null },
+      where: { userId: integration.userId ?? undefined, integrationId: integration.id, archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
@@ -145,7 +145,7 @@ async function eventsForIntegration(integration: IntegrationLike) {
     integration.businessId,
   ].filter((value): value is string => Boolean(value));
   return client.webhookEvent.findMany({
-    where: ids.length ? { igAccountId: { in: ids } } : { automation: { userId: integration.userId } },
+    where: ids.length ? { igAccountId: { in: ids } } : { automation: { userId: integration.userId, integrationId: integration.id } },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -153,7 +153,7 @@ async function eventsForIntegration(integration: IntegrationLike) {
 
 async function campaignsForIntegration(integration: IntegrationLike) {
   return client.automation.findMany({
-    where: { userId: integration.userId ?? undefined, archivedAt: null },
+    where: { userId: integration.userId ?? undefined, integrationId: integration.id, archivedAt: null },
     include: { posts: { select: { postid: true } } },
   });
 }

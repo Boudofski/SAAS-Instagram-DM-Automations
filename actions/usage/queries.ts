@@ -86,7 +86,8 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         }),
   ]);
 
-  const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback;
+  const deletedReplies = await client.deletedReplyUsage.count({ where: { userId, createdAt: { gte: effectiveStart, lt: effectiveEnd } } });
+  const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback + deletedReplies;
 
   return {
     plan,
@@ -98,7 +99,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     staticReplies: makeUsageMetric(staticReplies, staticLimit),
     aiReplies: makeUsageMetric(aiReplies, aiLimit),
     activeCampaigns: makeUsageMetric(activeCampaigns, campaignLimit),
-    connectedAccounts: makeUsageMetric(Math.min(connectedAccounts, 1), accountLimit),
+    connectedAccounts: makeUsageMetric(connectedAccounts, accountLimit),
   };
 }
 

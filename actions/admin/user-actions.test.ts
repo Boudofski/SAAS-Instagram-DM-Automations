@@ -1,3 +1,4 @@
+vi.mock("@/actions/user/queries", () => ({ syncSubscriptionForUser: (userId: string, props: any) => mockSubscriptionUpsert({ where: { userId }, update: props, create: { userId, ...props } }) }));
 import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
 
 const mockRequireOwnerAdmin = vi.fn();

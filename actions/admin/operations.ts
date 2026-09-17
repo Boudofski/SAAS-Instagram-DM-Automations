@@ -391,14 +391,14 @@ export async function setCampaignActiveAction(formData: FormData) {
     run: async () => {
       const before = await client.automation.findUnique({
         where: { id: automationId },
-        include: { User: { select: { id: true, status: true, integrations: { select: { status: true, reconnectRequired: true } } } } },
+        include: { User: { select: { id: true, status: true } }, integration: { select: { status: true, reconnectRequired: true, planLocked: true } } },
       });
       if (!before) throw new Error("Campaign not found.");
       if (desired) {
         if (before.needsReview) throw new Error(before.reviewReason ?? "Campaign needs review before activation.");
         if (before.archivedAt) throw new Error("Archived campaigns cannot be activated.");
         if (before.User?.status === "SUSPENDED") throw new Error("Suspended users cannot activate campaigns.");
-        if (before.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired)) {
+        if (!before.integration || before.integration.status !== "CONNECTED" || before.integration.reconnectRequired || before.integration.planLocked) {
           throw new Error("Campaign cannot activate while integration is disconnected or reconnect-required.");
         }
         const activation = before.userId ? await canActivateCampaign(before.userId, automationId) : { ok: false };
@@ -435,6 +435,7 @@ export async function duplicateCampaignAction(formData: FormData) {
       const after = await client.automation.create({
         data: {
           userId: before.userId,
+          integrationId: before.integrationId,
           name: `${before.name || "Untitled campaign"} copy`,
           active: false,
           needsReview: false,

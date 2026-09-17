@@ -3,25 +3,28 @@
 import { onCurrentUser } from "@/actions/user";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { sendInstagramDirectResponse } from "@/lib/instagram-dm";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
 
 async function currentProfile() {
   const clerk = await onCurrentUser();
-  return client.user.findUnique({
+  const integrationId = await currentInstagramAccountId(clerk.id);
+  const profile = await client.user.findUnique({
     where: { clerkId: clerk.id },
     select: {
       id: true,
-      integrations: true,
+      integrations: { where: { id: integrationId } },
     },
   });
+  return profile ? { ...profile, integrationId } : null;
 }
 
 export async function getInboxConversations() {
   const profile = await currentProfile();
   if (!profile) return { status: 404, data: [] };
   const conversations = await client.conversation.findMany({
-    where: { userId: profile.id },
+    where: { userId: profile.id, integrationId: profile.integrationId },
     orderBy: { lastMessageAt: "desc" },
     take: 100,
     include: {
@@ -37,7 +40,7 @@ export async function getInstagramContacts() {
   if (!profile) return { status: 404, data: [] };
   const [conversations, leads] = await Promise.all([
     client.conversation.findMany({
-      where: { userId: profile.id },
+      where: { userId: profile.id, integrationId: profile.integrationId },
       orderBy: { lastMessageAt: "desc" },
       take: 500,
       include: {
@@ -45,7 +48,7 @@ export async function getInstagramContacts() {
       },
     }),
     client.lead.findMany({
-      where: { automation: { userId: profile.id } },
+      where: { automation: { userId: profile.id, integrationId: profile.integrationId } },
       orderBy: { createdAt: "desc" },
       take: 500,
       include: { automation: { select: { id: true, name: true, source: true } } },
@@ -77,7 +80,7 @@ export async function getInboxMessages(conversationId: string) {
   const profile = await currentProfile();
   if (!profile) return { status: 404, data: [] };
   const conversation = await client.conversation.findFirst({
-    where: { id: conversationId, userId: profile.id },
+    where: { id: conversationId, userId: profile.id, integrationId: profile.integrationId },
     select: { id: true },
   });
   if (!conversation) return { status: 404, data: [] };
@@ -94,7 +97,7 @@ export async function markConversationRead(conversationId: string) {
   const profile = await currentProfile();
   if (!profile) return { status: 404 };
   const updated = await client.conversation.updateMany({
-    where: { id: conversationId, userId: profile.id },
+    where: { id: conversationId, userId: profile.id, integrationId: profile.integrationId },
     data: { unreadCount: 0 },
   });
   return { status: updated.count ? 200 : 404 };
@@ -106,7 +109,7 @@ export async function sendInboxReply(conversationId: string, rawMessage: string)
   const profile = await currentProfile();
   if (!profile) return { status: 404, data: "Account not found." };
   const conversation = await client.conversation.findFirst({
-    where: { id: conversationId, userId: profile.id },
+    where: { id: conversationId, userId: profile.id, integrationId: profile.integrationId },
   });
   if (!conversation) return { status: 404, data: "Conversation not found." };
   if (!conversation.lastInboundAt || Date.now() - conversation.lastInboundAt.getTime() > 24 * 60 * 60 * 1000) {

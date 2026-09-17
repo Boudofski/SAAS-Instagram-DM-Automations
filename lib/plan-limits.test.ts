@@ -27,6 +27,7 @@ describe("plan limits", () => {
       activeCampaigns: "unlimited",
       staticRepliesPerMonth: 5000,
       aiRepliesPerMonth: 500,
+      connectedInstagramAccounts: 3,
       exportLeads: true,
     });
   });
@@ -36,7 +37,7 @@ describe("plan limits", () => {
       label: "Business",
       staticRepliesPerMonth: 20000,
       aiRepliesPerMonth: 2000,
-      connectedInstagramAccounts: 1,
+      connectedInstagramAccounts: 10,
     });
   });
 

@@ -2,21 +2,16 @@
 import { LocalizedButton } from "@/components/i18n/localized-controls";
 
 
-import { UiMessage } from "@/components/i18n/dashboard-values";
-import { UiText } from "@/components/i18n/localized-copy";
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePath } from "@/hooks/user-nav";
 import AP3KLogo from "../ap3k-logo";
-import InstagramAvatar from "@/components/dashboard/instagram-avatar";
+import InstagramAccountSwitcher from "@/components/dashboard/instagram-account-switcher";
 import HelpHub from "@/components/help/help-hub";
-import { useQueryUser } from "@/hooks/user-queries";
 import { useClerk } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
-import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { PRIMARY_NAVIGATION, primaryNavigationHref } from "@/constants/menu";
-import { planDisplayName } from "@/lib/billing-plans";
 import { ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/providers/i18n-provider";
@@ -27,11 +22,8 @@ export default function Sidebar({ slug }: Props) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(true);
   const { page } = usePath();
-  const { data } = useQueryUser();
   const { signOut } = useClerk();
   const queryClient = useQueryClient();
-  const instagram = getCanonicalInstagramIntegration(data?.data?.integrations);
-  const plan = planDisplayName(data?.data?.subscription?.plan);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("ap3k-sidebar-expanded");
@@ -54,10 +46,7 @@ export default function Sidebar({ slug }: Props) {
         <div className={cn("flex items-center", expanded ? "justify-between" : "justify-center")}>
           {expanded ? <AP3KLogo className="text-sm text-slate-950 dark:text-white" /> : <AP3KLogo showText={false} markClassName="h-11 w-11 rounded-2xl" />}
         </div>
-        <Link href={`/dashboard/${slug}/account`} title={!expanded ? (instagram?.instagramUsername ? `@${instagram.instagramUsername}` : t("connectInstagram")) : undefined} className={cn("mt-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-violet-300 dark:border-white/[0.12] dark:bg-white/[0.06] dark:hover:border-violet-400/40", expanded ? "gap-3 p-2.5" : "justify-center border-0 bg-transparent p-0 dark:bg-transparent")}>
-          <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-          {expanded ? <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{instagram?.instagramUsername ? <bdi dir="ltr">@{instagram.instagramUsername}</bdi> : t("connectInstagram")}</p><p className="mt-0.5 truncate text-[11px] font-bold text-violet-500"><UiMessage source="{plan} plan" values={{ plan: <bdi><UiText>{plan}</UiText></bdi> }} /></p></div> : null}
-        </Link>
+        <InstagramAccountSwitcher slug={slug} expanded={expanded} />
       </div>
 
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-3 py-3">

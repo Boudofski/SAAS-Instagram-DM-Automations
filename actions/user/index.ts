@@ -147,7 +147,7 @@ async function resolveWorkspaceProfile(
   };
 }
 
-function warnIfPageTokenNearExpiry(profile: Awaited<ReturnType<typeof findUser>>) {
+function warnIfPageTokenNearExpiry(profile: { integrations: { id: string; expiresAt: Date | null }[] } | null) {
   const integration = profile?.integrations[0];
   if (!integration?.expiresAt) return;
 

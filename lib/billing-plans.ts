@@ -50,6 +50,7 @@ export const PLAN_CARDS: PlanCard[] = [
     featured: true,
     features: [
       "Everything in Free",
+      "Up to 3 Instagram accounts",
       "5,000 automated actions/month",
       "500 AI replies/month",
       "AI tone, instructions, and comment protection",
@@ -66,6 +67,7 @@ export const PLAN_CARDS: PlanCard[] = [
     replyLimit: 20_000,
     features: [
       "Everything in Pro",
+      "Up to 10 Instagram accounts",
       "20,000 automated actions/month",
       "2,000 AI replies/month",
       "High-volume comment and DM automation",
@@ -80,7 +82,7 @@ export const PLAN_COMPARISON = [
   { feature: "Annual savings", pro: "Save 27%", business: "Save 20%" },
   { feature: "Automated actions / month", pro: "5,000", business: "20,000" },
   { feature: "AI replies / month", pro: "500", business: "2,000" },
-  { feature: "Instagram accounts", pro: "1", business: "1" },
+  { feature: "Instagram accounts", pro: "3", business: "10" },
   { feature: "Automations", pro: "Unlimited", business: "Unlimited" },
   { feature: "Keyword triggers", pro: "Included", business: "Included" },
   { feature: "Any Comment trigger", pro: "Included", business: "Included" },

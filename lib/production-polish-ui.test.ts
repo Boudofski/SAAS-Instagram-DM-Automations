@@ -90,11 +90,11 @@ describe("production polish UI contracts", () => {
       aiRepliesPerMonth: 0,
     });
     expect(getPlanLimits("PRO")).toMatchObject({
-      connectedInstagramAccounts: 1,
+      connectedInstagramAccounts: 3,
       staticRepliesPerMonth: 5000,
     });
     expect(getPlanLimits("BUSINESS")).toMatchObject({
-      connectedInstagramAccounts: 1,
+      connectedInstagramAccounts: 10,
       staticRepliesPerMonth: 20000,
     });
   });

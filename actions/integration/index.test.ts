@@ -1,3 +1,4 @@
+vi.mock("@/lib/instagram-account-scope", () => ({ currentInstagramAccountId: vi.fn(async () => "integration-1") }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockCurrentUser = vi.fn();

@@ -22,8 +22,8 @@ describe("Clerk migration non-regression invariants", () => {
     const dashboardLayout = source(
       "app/(protected)/dashboard/[slug]/layout.tsx"
     );
-    expect(userQueries).toContain("where: {\n      clerkId,");
-    expect(dashboardLayout).toContain("const userResult = await onUserInfo()");
+    expect(userQueries).toContain("where: { clerkId }");
+    expect(dashboardLayout).toContain("Promise.all([onUserInfo(), getInstagramAccountMenu()])");
     expect(dashboardLayout).toContain("params.slug !== currentClerkId");
     expect(dashboardLayout).toContain("redirect(dashboardPath(currentClerkId))");
   });
@@ -34,7 +34,7 @@ describe("Clerk migration non-regression invariants", () => {
       /model User \{[\s\S]*?id\s+String\s+@id @default\(dbgenerated\("gen_random_uuid\(\)"\)\) @db\.Uuid/
     );
     expect(schema.match(/@relation\(fields: \[userId\], references: \[id\]/g)).toHaveLength(
-      10
+      11
     );
     expect(schema).not.toContain("references: [clerkId]");
   });

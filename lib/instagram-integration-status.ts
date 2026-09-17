@@ -2,6 +2,7 @@ import { getInstagramPermissionCapabilities } from "@/lib/instagram-permissions"
 
 export type InstagramIntegrationStatusBase = {
   id?: string | null;
+  planLocked?: boolean;
   name?: string | null;
   instagramId?: string | null;
   instagramUsername?: string | null;
@@ -29,6 +30,7 @@ export function isCanonicalInstagramConnected(integration: InstagramIntegrationS
     integration.instagramId &&
     integration.status === "CONNECTED" &&
     !integration.reconnectRequired &&
+    !integration.planLocked &&
     !explicitlyMissingCorePermission &&
     !explicitlyExpired &&
     hasUsableIntegrationToken(integration)
