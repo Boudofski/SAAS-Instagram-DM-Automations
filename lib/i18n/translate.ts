@@ -1,3 +1,4 @@
+import EDITORIAL_COPY from "./editorial-copy.json";
 import { AUTOMATION_DEFAULT_COPY } from "./automation-default-copy";
 import { ACCOUNT_PLAN_COPY } from "./account-plan-copy";
 import { COMPANY_TRANSLATIONS } from "./company-copy";
@@ -23,6 +24,8 @@ const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messa
   ...COMPANY_TRANSLATIONS[locale as Locale],
   ...ACCOUNT_PLAN_COPY[locale as Locale],
   ...AUTOMATION_DEFAULT_COPY[locale as Locale],
+  // Reviewed wording overrides legacy machine translations and older phrase catalogs.
+  ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[locale as Locale],
 }])) as Record<Locale, Record<string, string>>;
 
 export function translateUi(source: string, locale: Locale): string {
