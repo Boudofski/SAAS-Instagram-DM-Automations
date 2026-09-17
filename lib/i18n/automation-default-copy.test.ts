@@ -6,7 +6,7 @@ import { DEFAULT_OPENING_DM_TEXT, DEFAULT_FOLLOW_REQUEST_DM_TEXT } from "../comm
 describe("localized automation suggestions", () => {
   it("provides every template in every supported non-English language", () => {
     for (const locale of ["ar", "fr", "es", "de", "pt"] as const) {
-      expect(Object.keys(AUTOMATION_DEFAULT_COPY[locale]!)).toHaveLength(10);
+      expect(Object.keys(AUTOMATION_DEFAULT_COPY[locale]!)).toHaveLength(11);
       for (const [source, translation] of Object.entries(AUTOMATION_DEFAULT_COPY[locale]!)) {
         expect(translation).not.toBe(source);
         expect(translateUi(source, locale)).toBe(translation);
