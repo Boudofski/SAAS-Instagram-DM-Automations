@@ -120,6 +120,7 @@ describe("softDisconnectIntegrationForUser", () => {
     vi.clearAllMocks();
     mockClient.$transaction.mockImplementation(async (operation: any) => operation(mockClient));
     mockClient.$queryRaw = vi.fn(async () => []);
+    mockClient.subscription = { findUnique: vi.fn(async () => ({ plan: "FREE" })) };
     mockClient.integrations.update.mockResolvedValue({ id: "current-integration" });
     mockClient.integrations.findUnique.mockResolvedValue(null);
     mockClient.automation.updateMany.mockResolvedValue({ count: 2 });

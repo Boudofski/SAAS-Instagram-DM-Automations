@@ -188,7 +188,8 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
         reviewReason: "Instagram account disconnected.",
       },
     });
-    await syncInstagramAccountEntitlements(tx, user.id, user.subscription?.plan ?? "FREE");
+    const currentSubscription = await tx.subscription.findUnique({ where: { userId: user.id }, select: { plan: true } });
+      await syncInstagramAccountEntitlements(tx, user.id, currentSubscription?.plan ?? "FREE");
     return { updated, paused };
   });
 
@@ -398,11 +399,7 @@ export const createIntegration = async (
       await tx.automation.updateMany({ where: { userId: user.id, integrationId: null }, data: { integrationId: account.id } });
       await tx.conversation.updateMany({ where: { userId: user.id, integrationId: null }, data: { integrationId: account.id } });
       await tx.aiChatMessage.updateMany({ where: { userId: user.id, integrationId: null, context: "PLAYGROUND" }, data: { integrationId: account.id } });
-      const legacy = await tx.aiWorkspaceConfig.findUnique({ where: { userId: user.id } });
-      if (legacy) {
-        const { id, createdAt, updatedAt, ...config } = legacy;
-        await tx.instagramAiConfig.upsert({ where: { integrationId: account.id }, create: { ...config, protectionRules: config.protectionRules ?? undefined, knowledge: config.knowledge ?? undefined, integrationId: account.id }, update: {} });
-      }
+
     }
     return { firstname: user.firstname, lastname: user.lastname, clerkId, integrationId: account.id, userId: user.id };
   }, { timeout: 20000 });

@@ -78,7 +78,7 @@ export default function InstagramAccountSwitcher({ slug, expanded = true }: { sl
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/account`} className="gap-2"><Settings className="h-4 w-4" />{copy.manage}</Link></DropdownMenuItem>
-        {data?.additionsEnabled && (atLimit ? <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/billing`} className="gap-2 text-violet-600"><Plus className="h-4 w-4 shrink-0" />{copy.upgrade}</Link></DropdownMenuItem> : <DropdownMenuItem disabled={busy || !data} onSelect={() => void connect()} className="gap-2 text-violet-600"><Plus className="h-4 w-4" />{copy.add}</DropdownMenuItem>)}
+        {data?.additionsEnabled && (atLimit ? <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/${data.plan === "BUSINESS" ? "account" : "billing"}`} className="gap-2 text-violet-600"><Plus className="h-4 w-4 shrink-0" />{data.plan === "BUSINESS" ? copy.manage : copy.upgrade}</Link></DropdownMenuItem> : <DropdownMenuItem disabled={busy || !data} onSelect={() => void connect()} className="gap-2 text-violet-600"><Plus className="h-4 w-4" />{copy.add}</DropdownMenuItem>)}
         <p className="px-2 py-2 text-xs leading-relaxed text-slate-500">{copy.shared}</p>
       </DropdownMenuContent>
     </DropdownMenu>

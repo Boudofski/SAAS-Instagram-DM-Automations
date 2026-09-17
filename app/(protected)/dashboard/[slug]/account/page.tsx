@@ -207,7 +207,7 @@ export default async function InstagramAccountPage({
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
             ><UiText>{"Manage connection"}</UiText><ExternalLink className="h-4 w-4" />
             </Link>
-            {connected && <RemoveInstagramAccountButton />}
+            {connected && <RemoveInstagramAccountButton integrationId={instagram!.id} />}
           </div>
         </div>
       </details>

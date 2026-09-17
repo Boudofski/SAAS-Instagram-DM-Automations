@@ -16,12 +16,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export default function RemoveInstagramAccountButton() {
-  const router = useRouter();
+export default function RemoveInstagramAccountButton({ integrationId }: { integrationId: string }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -31,7 +29,7 @@ export default function RemoveInstagramAccountButton() {
 
     setIsRemoving(true);
     try {
-      const result = await removeCurrentInstagramAccount();
+      const result = await removeCurrentInstagramAccount(integrationId);
       if (result.status !== 200) {
         toast.error(result.data);
         return;
