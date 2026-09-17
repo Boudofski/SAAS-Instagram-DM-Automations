@@ -13,7 +13,7 @@ import {
 } from "@/lib/comment-dm-flow";
 import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, type LinkButton } from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DEFAULT_AI_PROTECTION_RULES, type AiProtectionRules, type AiReplyTone } from "@/lib/ai-reply-config";
 
 export type WizardStep = 1 | 2 | 3 | 4;
@@ -91,6 +91,19 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
   const tr = useUi();
   const [step, setStep] = useState<WizardStep>(1);
   const [data, setData] = useState<WizardData>(() => ({ ...INITIAL, dmMessage: tr(INITIAL.dmMessage), publicReply: tr(INITIAL.publicReply), publicReply2: tr(INITIAL.publicReply2), publicReply3: tr(INITIAL.publicReply3), openingDmText: tr(INITIAL.openingDmText), openingDmButtonText: tr(INITIAL.openingDmButtonText), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
+  const previousTr = useRef(tr);
+  useEffect(() => {
+    const before = previousTr.current;
+    previousTr.current = tr;
+    if (automationId || before === tr) return;
+    setData(current => {
+      const next = { ...current };
+      const fields = ["dmMessage", "publicReply", "publicReply2", "publicReply3", "openingDmText", "openingDmButtonText", "followRequestDmText", "followRequestButtonText"] as const;
+      for (const field of fields) if (current[field] === before(INITIAL[field])) next[field] = tr(INITIAL[field]);
+      next.linkButtons = current.linkButtons.map(button => button.label === before(DEFAULT_LINK_BUTTON_LABEL) ? { ...button, label: tr(DEFAULT_LINK_BUTTON_LABEL) } : button);
+      return next;
+    });
+  }, [tr, automationId]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
