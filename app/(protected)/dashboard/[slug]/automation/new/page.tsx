@@ -407,9 +407,36 @@ function AutomationSetup({ params, searchParams }: Props) {
 
                       {data.sendPrivateDm && (
                         <div className="space-y-4 border-t border-rf-blue/15 p-4 sm:p-5">
+                          <div className={`overflow-hidden rounded-2xl border transition ${data.openingDmEnabled ? "border-violet-400/30 bg-violet-500/[0.05]" : "border-slate-200 dark:border-white/10"}`}>
+                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-start sm:p-5">
+                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">1</span><span><span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Opening DM "}</UiText><span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400"><UiText>{"Optional"}</UiText></span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately."}</UiText></span></span></span>
+                              <Toggle enabled={data.openingDmEnabled} />
+                            </button>
+                            <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Continue quick reply"}</UiText><input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM."}</UiText></p></div>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 p-4 dark:border-white/10 sm:p-5">
+                            <div className="mb-3 flex items-start gap-3">
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">2</span>
+                              <div>
+                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Optional follow request"}</UiText></p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Leave this off to send the final DM immediately after the opening button."}</UiText></p>
+                              </div>
+                            </div>
+                            {!data.openingDmEnabled ? <p className="mb-3 text-sm leading-6 text-slate-500 dark:text-slate-400"><UiText>{"Enable Opening DM to use a follow request. Its button tap starts the follow-check step."}</UiText></p> : null}
+                            <fieldset disabled={!data.openingDmEnabled} className={!data.openingDmEnabled ? "opacity-50" : ""}>
+                            <DeliveryRules
+                              followGateRequired={data.followGateRequired}
+                              followRequestDmText={data.followRequestDmText}
+                              followRequestButtonText={data.followRequestButtonText}
+                              onChange={(next) => { if (data.openingDmEnabled) update(next); }}
+                            />
+                            </fieldset>
+                          </div>
+
                           <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/[0.05] p-4 dark:border-rf-blue/25 dark:bg-rf-blue/[0.08] sm:p-5">
                             <div className="mb-4 flex items-start gap-3">
-                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">1</span>
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">3</span>
                               <div>
                                 <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"DM with links"}</UiText></p>
                                 <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"The required delivery message. Add one to three link buttons."}</UiText></p>
@@ -425,29 +452,7 @@ function AutomationSetup({ params, searchParams }: Props) {
                             />
                           </div>
 
-                          <div className={`overflow-hidden rounded-2xl border transition ${data.openingDmEnabled ? "border-violet-400/30 bg-violet-500/[0.05]" : "border-slate-200 dark:border-white/10"}`}>
-                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-start sm:p-5">
-                              <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">2</span><span><span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Opening DM "}</UiText><span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400"><UiText>{"Optional"}</UiText></span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately."}</UiText></span></span></span>
-                              <Toggle enabled={data.openingDmEnabled} />
-                            </button>
-                            {data.openingDmEnabled ? <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Continue quick reply"}</UiText><input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM."}</UiText></p></div> : null}
-                          </div>
 
-                          {data.openingDmEnabled ? <div className="rounded-2xl border border-slate-200 p-4 dark:border-white/10 sm:p-5">
-                            <div className="mb-3 flex items-start gap-3">
-                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">3</span>
-                              <div>
-                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Optional follow request"}</UiText></p>
-                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Leave this off to send the final DM immediately after the opening button."}</UiText></p>
-                              </div>
-                            </div>
-                            <DeliveryRules
-                              followGateRequired={data.followGateRequired}
-                              followRequestDmText={data.followRequestDmText}
-                              followRequestButtonText={data.followRequestButtonText}
-                              onChange={(next) => update(next)}
-                            />
-                          </div> : null}
                         </div>
                       )}
                     </>
