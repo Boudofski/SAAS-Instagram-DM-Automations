@@ -55,10 +55,31 @@ describe("existing-account button subscription repair", () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
   });
 
-  it("uses the safe fallback for Instagram Login even when subscriptions claim postback support", async () => {
-    await expect(ensureInstagramButtonCallbacks("account-ready-audit-failed", "token")).resolves.toBe(false);
-    expect(axios.get).not.toHaveBeenCalled();
+  it("enables Instagram Login buttons when account and app subscriptions are ready", async () => {
+    process.env.INSTAGRAM_APP_ID = "ig-buttons-ready";
+    vi.mocked(axios.get)
+      .mockResolvedValueOnce({ data: { data: [{ id: "ig-buttons-ready", subscribed_fields: ["comments", "messages", "messaging_postbacks"] }] } })
+      .mockResolvedValueOnce({ data: { data: [{ object: "instagram", active: true,
+        callback_url: "https://ap3k.com/api/webhooks/meta",
+        fields: [{ name: "comments" }, { name: "messages" }, { name: "messaging_postbacks" }],
+      }] } });
+    await expect(ensureInstagramButtonCallbacks("ig-buttons-ready", "token")).resolves.toBe(true);
+    expect(axios.get).toHaveBeenCalledTimes(2);
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("keeps quick replies when the account is ready but the app check fails", async () => {
+    process.env.INSTAGRAM_APP_ID = "ig-buttons-app-unavailable";
+    vi.mocked(axios.get)
+      .mockResolvedValueOnce({ data: { data: [{ id: "ig-buttons-app-unavailable", subscribed_fields: ["comments", "messages", "messaging_postbacks"] }] } })
+      .mockRejectedValueOnce(new Error("app unavailable"));
+    await expect(ensureInstagramButtonCallbacks("ig-buttons-app-unavailable", "token")).resolves.toBe(false);
+  });
+
+  it("keeps quick replies when the account subscription fails", async () => {
+    vi.mocked(axios.get).mockRejectedValue(new Error("account unavailable"));
+    await expect(ensureInstagramButtonCallbacks("ig-buttons-account-unavailable", "token")).resolves.toBe(false);
+    expect(axios.get).toHaveBeenCalledTimes(1);
   });
 
   it("tries the parent Meta app before the Instagram Login app", async () => {
