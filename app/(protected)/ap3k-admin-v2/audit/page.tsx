@@ -27,6 +27,7 @@ type SearchParams = {
 type Props = { searchParams?: SearchParams };
 
 const ACTION_OPTIONS = [
+  { value: "ADMIN_USER_DELETED", label: "Account deleted" },
   { value: "ADMIN_USER_SUSPENDED", label: "User suspended" },
   { value: "ADMIN_USER_REACTIVATED", label: "User reactivated" },
   { value: "ADMIN_PLAN_CHANGED", label: "Plan changed" },

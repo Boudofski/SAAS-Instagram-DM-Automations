@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { DirectoryToolbar } from "@/components/admin-v2/directory-toolbar";
+import type { DirectoryFilters } from "@/lib/admin-v2/directory-filters";
 import { getAdminV2Accounts, getAdminV2AccountCount } from "@/lib/admin-v2/queries";
 import { V2Table, V2Pagination } from "@/components/admin-v2/v2-table";
 import { V2Badge, accountHealth } from "@/components/admin-v2/v2-badge";
@@ -6,7 +9,7 @@ import { AccountActionsCell } from "@/components/admin-v2/account-actions-cell";
 import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
 
-type Props = { searchParams?: { page?: string } };
+type Props = { searchParams?: DirectoryFilters & { page?: string } };
 
 function webhookState(mode: string | null): { label: string; tone: "green" | "amber" | "slate" } {
   if (!mode) return { label: "Unknown", tone: "slate" };
@@ -20,8 +23,8 @@ function webhookState(mode: string | null): { label: string; tone: "green" | "am
 export default async function AdminV2AccountsPage({ searchParams }: Props) {
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
   const [accounts, total] = await Promise.all([
-    getAdminV2Accounts(page),
-    getAdminV2AccountCount(),
+    getAdminV2Accounts(page, searchParams),
+    getAdminV2AccountCount(searchParams),
   ]);
 
   const rows = accounts.map((account) => {
@@ -35,7 +38,7 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
         </p>
         {account.pageName && <p className="mt-0.5 truncate text-[11px] text-slate-500">{account.pageName}</p>}
       </div>,
-      <span key="owner" className="break-all text-[11px] text-slate-400 sm:break-normal">{account.ownerEmail ?? "—"}</span>,
+      <div key="owner" className="min-w-0 space-y-2">{account.ownerId ? <Link href={`/admin/users/${account.ownerId}`} className="break-all text-xs text-violet-300 hover:underline">{account.ownerEmail}</Link> : "No owner"}<p className="text-xs text-slate-400">{account.automationCount} automations</p>{account.planLocked && <V2Badge tone="amber">Plan locked</V2Badge>}</div>,
       <V2Badge key="health" tone={health.tone}>{health.label}</V2Badge>,
       <V2Badge key="webhook" tone={webhook.tone}>{webhook.label}</V2Badge>,
       account.oauthLastError ? (
@@ -78,12 +81,13 @@ export default async function AdminV2AccountsPage({ searchParams }: Props) {
         description="Connection health, webhook subscription state, and safe account controls. Raw access tokens are never displayed."
       />
 
+      <DirectoryToolbar filters={searchParams ?? {}} kind="accounts" />
       <V2Table
         headers={["Account", "Owner", "Health", "Webhook", "Last error", "Connected", "Meta IDs", "Actions"]}
         rows={rows}
         empty="No Instagram accounts found."
       />
-      <V2Pagination page={page} total={total} base="/admin/accounts" />
+      <V2Pagination page={page} total={total} base="/admin/accounts" filters={searchParams} />
     </div>
   );
 }

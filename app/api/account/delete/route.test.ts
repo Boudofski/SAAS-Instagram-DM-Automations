@@ -42,7 +42,7 @@ vi.mock("@/lib/stripe-config", () => ({
 import { POST } from "@/app/api/account/delete/route";
 
 function request(
-  confirmation = "DELETE owner@example.com",
+  confirmation = "DELETE",
   origin = "https://ap3k.test"
 ) {
   return new Request("https://ap3k.test/api/account/delete", {
@@ -103,7 +103,7 @@ describe("self-service account deletion route", () => {
   });
 
   it("rejects requests from a different origin before authentication or cleanup", async () => {
-    const response = await POST(request("DELETE owner@example.com", "https://evil.example"));
+    const response = await POST(request("DELETE", "https://evil.example"));
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({ error: { code: "invalid_origin" } });
@@ -126,7 +126,7 @@ describe("self-service account deletion route", () => {
     expect(mockClerkUserDelete).not.toHaveBeenCalled();
   });
 
-  it("requires the account-specific typed confirmation", async () => {
+  it("rejects email-bearing confirmation; requires DELETE only", async () => {
     const response = await POST(request("DELETE another@example.com"));
 
     expect(response.status).toBe(400);

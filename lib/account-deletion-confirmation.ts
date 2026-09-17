@@ -1,12 +1,9 @@
 export const ACCOUNT_DELETION_CONFIRMATION_PREFIX = "DELETE";
 
-export function getAccountDeletionConfirmation(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  return normalizedEmail
-    ? `${ACCOUNT_DELETION_CONFIRMATION_PREFIX} ${normalizedEmail}`
-    : ACCOUNT_DELETION_CONFIRMATION_PREFIX;
+export function getAccountDeletionConfirmation(_email?: string) {
+  return ACCOUNT_DELETION_CONFIRMATION_PREFIX;
 }
 
-export function isAccountDeletionConfirmationValid(value: string, email: string) {
-  return value.trim().toLowerCase() === getAccountDeletionConfirmation(email).toLowerCase();
+export function isAccountDeletionConfirmationValid(value: string, _email?: string) {
+  return value.trim().toUpperCase() === ACCOUNT_DELETION_CONFIRMATION_PREFIX;
 }

@@ -19,6 +19,14 @@ export type ActionSafetyMeta = {
 };
 
 export const ACTION_SAFETY: Record<string, ActionSafetyMeta> = {
+  ADMIN_USER_DELETED: {
+    severity: "HIGH",
+    confirmationWord: "DELETE",
+    reasonRequired: true,
+    reversible: false,
+    reversalNote: null,
+    warningCopy: "Permanently removes the customer, every Instagram connection and sign-in access. Cancels active subscriptions without automatically refunding payments.",
+  },
   ADMIN_USER_SUSPENDED: {
     severity: "CRITICAL",
     confirmationWord: "SUSPEND",

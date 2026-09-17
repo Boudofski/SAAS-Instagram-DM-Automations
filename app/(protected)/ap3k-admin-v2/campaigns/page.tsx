@@ -39,6 +39,7 @@ export default async function AdminV2CampaignsPage({ searchParams }: Props) {
       <div key="name" className="min-w-0">
         <p className="max-w-[220px] truncate font-bold text-slate-100" title={campaign.name}>{campaign.name}</p>
         <p className="mt-0.5 break-all text-[11px] text-slate-500 sm:break-normal sm:truncate">{campaign.ownerEmail ?? "—"}</p>
+        <p className="mt-1 text-xs text-violet-300">{campaign.instagramUsername ? `@${campaign.instagramUsername}` : "No Instagram connection"}</p>
       </div>,
       <V2Badge key="status" tone={health.tone}>{health.label}</V2Badge>,
       keyword,

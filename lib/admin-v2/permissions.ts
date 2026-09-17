@@ -7,6 +7,7 @@ export type AdminRole = "owner" | "support";
 
 export const OWNER_CAPABILITIES = [
   // Mutations
+  "delete_user",
   "suspend_user",
   "reactivate_user",
   "change_plan",
