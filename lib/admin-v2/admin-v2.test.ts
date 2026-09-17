@@ -86,7 +86,7 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
 
   it("users table renders empty state", () => {
     const users = read("app/(protected)/ap3k-admin-v2/users/page.tsx");
-    expect(users).toContain("No users found.");
+    expect(users).toContain("No matching users.");
   });
 
   it("campaigns table renders empty state", () => {
@@ -225,8 +225,8 @@ describe("Admin v2 — Phase 1.5 operator UX", () => {
     expect(users).toContain("repliesToday");
     expect(users).toContain("leadsToday");
     expect(users).toContain("lastActivity");
-    expect(users).toContain("Replies today");
-    expect(users).toContain("Leads today");
+    expect(users).toContain("sends today");
+    expect(users).toContain("leads today");
     expect(users).toContain("Last activity");
   });
 
@@ -339,7 +339,7 @@ describe("Admin v2 — Phase 2D.1 Plan & Billing user detail", () => {
 
   it("users list page has View details link to user detail route", () => {
     const users = read("app/(protected)/ap3k-admin-v2/users/page.tsx");
-    expect(users).toContain("View details");
+    expect(users).toContain("Manage user");
     expect(users).toContain("/admin/users/");
   });
 

@@ -5,9 +5,9 @@ export default async function AdminV2Layout({ children }: { children: React.Reac
   const admin = await requireOwnerAdmin();
 
   return (
-    <div className="min-h-screen bg-[#050816] text-slate-50">
+    <div dir="ltr" lang="en" className="min-h-screen bg-[#050816] text-slate-50">
       <AdminV2Nav email={admin.email} />
-      <main className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6">
+      <main className="min-h-screen px-4 py-6 sm:px-6 lg:ml-[264px] lg:px-8">
         {children}
       </main>
     </div>

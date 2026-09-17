@@ -1,3 +1,7 @@
+import { DeleteUserButton } from "@/components/admin-v2/delete-user-button";
+import { AccountActionsCell } from "@/components/admin-v2/account-actions-cell";
+import { accountHealth } from "@/components/admin-v2/v2-badge";
+import { isOwnerAdminIdentity } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, CircleUserRound, Clock3, CreditCard, Gauge, ShieldCheck } from "lucide-react";
@@ -190,6 +194,27 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
         </AdminSurface>
       )}
 
+      <section>
+        <AdminSectionHeader title={`Instagram accounts · ${user.accounts.length}`} description="Each connection has its own automations, contacts, inbox and AI knowledge. Plan usage is shared by this AP3K user." />
+        {user.accounts.length === 0 ? <AdminSurface className="p-6 text-sm text-slate-400">No Instagram accounts connected.</AdminSurface> :
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{user.accounts.map(account => {
+            const health = accountHealth(account);
+            return <AdminSurface key={account.id} className="flex min-w-0 flex-col gap-4 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="break-all text-base font-bold">{account.instagramUsername ? `@${account.instagramUsername}` : "Unnamed Instagram account"}</h3>
+                <V2Badge tone={health.tone}>{health.label}</V2Badge>
+              </div>
+              {account.planLocked && <V2Badge tone="amber">Locked by plan limit</V2Badge>}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white/5 p-3"><p className="text-xl font-bold">{account._count.automations}</p><p className="text-xs text-slate-400">Automations</p></div>
+                <div className="rounded-xl bg-white/5 p-3"><p className="text-xl font-bold">{account._count.conversations}</p><p className="text-xs text-slate-400">Conversations</p></div>
+              </div>
+              <p className="text-xs text-slate-400">Connection expiry: {account.expiresAt ? <LocalTime value={account.expiresAt} mode="date" /> : "Not provided"}</p>
+              <AccountActionsCell integrationId={account.id} instagramUsername={account.instagramUsername} status={account.status} reconnectRequired={account.reconnectRequired} />
+            </AdminSurface>;
+          })}</div>}
+      </section>
+
       <InternalOverridesCard user={user} usage={usage} />
 
       <UserActionsPanel
@@ -199,6 +224,11 @@ export default async function AdminV2UserDetailPage({ params }: Props) {
         plan={user.plan}
         hasActiveOverrides={Boolean(user.overrideReason && (!user.overrideExpiresAt || new Date(user.overrideExpiresAt) > new Date()))}
       />
+
+      {!isOwnerAdminIdentity({ clerkId: user.clerkId, email: user.email }) && <AdminSurface className="flex flex-col gap-4 border-red-400/20 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 className="font-bold text-red-300">Delete customer account</h2><p className="mt-1 max-w-xl text-sm text-slate-400">Permanently remove this AP3K user and every connected account. Use suspension above for temporary access restrictions.</p></div>
+        <DeleteUserButton userId={user.id} email={user.email} accountCount={user.accounts.length} />
+      </AdminSurface>}
 
       <section>
         <AdminSectionHeader

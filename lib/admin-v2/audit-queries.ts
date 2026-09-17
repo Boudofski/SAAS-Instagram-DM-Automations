@@ -156,7 +156,7 @@ export function summarizeAuditValue(value: Record<string, unknown> | null): stri
 export function auditActionTone(
   action: string
 ): "green" | "amber" | "red" | "blue" | "pink" | "slate" {
-  if (action === "ADMIN_USER_SUSPENDED") return "red";
+  if (action === "ADMIN_USER_DELETED" || action === "ADMIN_USER_SUSPENDED") return "red";
   if (action === "ADMIN_USER_REACTIVATED") return "green";
   if (action === "ADMIN_PLAN_CHANGED") return "blue";
   if (action === "ADMIN_USER_USAGE_RESET") return "amber";

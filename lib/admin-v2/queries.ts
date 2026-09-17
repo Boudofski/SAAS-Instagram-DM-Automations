@@ -1,6 +1,7 @@
 // lib/admin-v2/queries.ts
 // ALL queries in this file are read-only. NEVER select the `token` field from Integrations.
 import { client } from "@/lib/prisma";
+import { userDirectoryWhere, accountDirectoryWhere, type DirectoryFilters } from "./directory-filters";
 
 const LIST_LIMIT = 50;
 const ACTIVITY_LIMIT = 100;
@@ -24,11 +25,28 @@ export type AdminV2User = {
   plan: string;
   instagramUsername: string | null;
   integrationStatus: string | null;
+  accounts: AdminUserAccount[];
   automationCount: number;
   repliesToday: number;
   leadsToday: number;
   lastActivity: Date | null;
 };
+
+export type AdminUserAccount = {
+  id: string;
+  instagramUsername: string | null;
+  status: string;
+  reconnectRequired: boolean;
+  expiresAt: Date | null;
+  planLocked: boolean;
+  oauthLastError: string | null;
+  _count: { automations: number; conversations: number };
+};
+const userAccountSelect = {
+  id: true, instagramUsername: true, status: true, reconnectRequired: true,
+  expiresAt: true, planLocked: true, oauthLastError: true,
+  _count: { select: { automations: true, conversations: true } },
+} as const;
 
 export type AdminV2Account = {
   id: string;
@@ -40,6 +58,9 @@ export type AdminV2Account = {
   webhookSubscriptionMode: string | null;
   oauthLastError: string | null;
   ownerEmail: string | null;
+  ownerId: string | null;
+  planLocked: boolean;
+  automationCount: number;
   createdAt: Date;
   // Raw Meta IDs — included for Advanced panel only, never shown by default
   instagramId: string | null;
@@ -48,6 +69,7 @@ export type AdminV2Account = {
 };
 
 export type AdminV2Campaign = {
+  instagramUsername: string | null;
   id: string;
   name: string;
   active: boolean;
@@ -113,6 +135,7 @@ export type AdminV2UserDetail = {
   createdAt: Date;
   plan: string;
   customerId: string | null;
+  accounts: AdminUserAccount[];
   totalCampaigns: number;
   activeCampaigns: number;
   campaignsNeedingReview: number;
@@ -129,7 +152,7 @@ export type AdminV2UserDetail = {
 
 export async function getAdminV2Stats(): Promise<AdminV2Stats> {
   const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  startOfDay.setUTCHours(0, 0, 0, 0);
 
   const [
     totalUsers,
@@ -143,7 +166,7 @@ export async function getAdminV2Stats(): Promise<AdminV2Stats> {
     client.integrations.count({ where: { status: "CONNECTED" } }),
     client.automation.count({ where: { active: true, archivedAt: null } }),
     client.messageLog.count({
-      where: { messageType: "COMMENT_REPLY", status: "SENT", createdAt: { gte: startOfDay } },
+      where: { status: "SENT", createdAt: { gte: startOfDay } },
     }),
     client.lead.count({ where: { createdAt: { gte: startOfDay } } }),
     client.messageLog.count({ where: { status: "FAILED", createdAt: { gte: startOfDay } } }),
@@ -173,12 +196,13 @@ export async function getAdminV2SystemHealth(): Promise<AdminV2SystemHealth> {
 }
 
 // 1 query with nested selects — replies/leads/lastActivity computed in JS, no N+1.
-export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
+export async function getAdminV2Users(page = 0, filters: DirectoryFilters = {}): Promise<AdminV2User[]> {
   const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  startOfDay.setUTCHours(0, 0, 0, 0);
 
   const rows = await client.user.findMany({
     take: LIST_LIMIT,
+    where: userDirectoryWhere(filters),
     skip: page * LIST_LIMIT,
     orderBy: { createdAt: "desc" },
     select: {
@@ -190,21 +214,16 @@ export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
       createdAt: true,
       subscription: { select: { plan: true } },
       integrations: {
-        select: { instagramUsername: true, status: true },
-        where: { status: "CONNECTED" },
-        take: 1,
+        select: userAccountSelect,
+        orderBy: { createdAt: "asc" },
       },
       _count: { select: { automations: true } },
       automations: {
         select: {
-          messageLogs: {
-            where: { messageType: "COMMENT_REPLY", status: "SENT", createdAt: { gte: startOfDay } },
-            select: { id: true },
-          },
-          leads: {
-            where: { createdAt: { gte: startOfDay } },
-            select: { id: true },
-          },
+          _count: { select: {
+            messageLogs: { where: { status: "SENT", createdAt: { gte: startOfDay } } },
+            leads: { where: { createdAt: { gte: startOfDay } } },
+          } },
           events: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -216,8 +235,8 @@ export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
   });
 
   return rows.map((u) => {
-    const repliesToday = u.automations.reduce((sum, a) => sum + a.messageLogs.length, 0);
-    const leadsToday = u.automations.reduce((sum, a) => sum + a.leads.length, 0);
+    const repliesToday = u.automations.reduce((sum, a) => sum + a._count.messageLogs, 0);
+    const leadsToday = u.automations.reduce((sum, a) => sum + a._count.leads, 0);
     const lastActivity =
       u.automations
         .flatMap((a) => a.events.map((e) => e.createdAt))
@@ -233,6 +252,7 @@ export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
       plan: u.subscription?.plan ?? "FREE",
       instagramUsername: u.integrations[0]?.instagramUsername ?? null,
       integrationStatus: u.integrations[0]?.status ?? null,
+      accounts: u.integrations,
       automationCount: u._count.automations,
       repliesToday,
       leadsToday,
@@ -241,14 +261,15 @@ export async function getAdminV2Users(page = 0): Promise<AdminV2User[]> {
   });
 }
 
-export async function getAdminV2UserCount(): Promise<number> {
-  return client.user.count();
+export async function getAdminV2UserCount(filters: DirectoryFilters = {}): Promise<number> {
+  return client.user.count({ where: userDirectoryWhere(filters) });
 }
 
 // SECURITY: token field is intentionally NOT selected here or anywhere in admin-v2.
-export async function getAdminV2Accounts(page = 0): Promise<AdminV2Account[]> {
+export async function getAdminV2Accounts(page = 0, filters: DirectoryFilters = {}): Promise<AdminV2Account[]> {
   const rows = await client.integrations.findMany({
     take: LIST_LIMIT,
+    where: accountDirectoryWhere(filters),
     skip: page * LIST_LIMIT,
     orderBy: { createdAt: "desc" },
     select: {
@@ -264,7 +285,9 @@ export async function getAdminV2Accounts(page = 0): Promise<AdminV2Account[]> {
       instagramId: true,
       pageId: true,
       businessId: true,
-      User: { select: { email: true } },
+      User: { select: { id: true, email: true } },
+      planLocked: true,
+      _count: { select: { automations: true } },
       // token is NEVER selected
     },
   });
@@ -279,6 +302,9 @@ export async function getAdminV2Accounts(page = 0): Promise<AdminV2Account[]> {
     webhookSubscriptionMode: a.webhookSubscriptionMode,
     oauthLastError: a.oauthLastError,
     ownerEmail: a.User?.email ?? null,
+    ownerId: a.User?.id ?? null,
+    planLocked: a.planLocked,
+    automationCount: a._count.automations,
     createdAt: a.createdAt,
     instagramId: a.instagramId,
     pageId: a.pageId,
@@ -286,8 +312,8 @@ export async function getAdminV2Accounts(page = 0): Promise<AdminV2Account[]> {
   }));
 }
 
-export async function getAdminV2AccountCount(): Promise<number> {
-  return client.integrations.count();
+export async function getAdminV2AccountCount(filters: DirectoryFilters = {}): Promise<number> {
+  return client.integrations.count({ where: accountDirectoryWhere(filters) });
 }
 
 // 1 query with nested events for lastActivity — no N+1.
@@ -307,6 +333,7 @@ export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> 
       matchingMode: true,
       createdAt: true,
       User: { select: { email: true } },
+      integration: { select: { instagramUsername: true } },
       keywords: { select: { word: true }, take: 3 },
       posts: { select: { postid: true }, take: 1 },
       listener: { select: { commentReply: true } },
@@ -330,6 +357,7 @@ export async function getAdminV2Campaigns(page = 0): Promise<AdminV2Campaign[]> 
     matchingMode: c.matchingMode,
     createdAt: c.createdAt,
     ownerEmail: c.User?.email ?? null,
+    instagramUsername: c.integration?.instagramUsername ?? null,
     keywords: c.keywords.map((k) => k.word),
     postScope: c.posts[0]?.postid === "ANY" ? "Any post" : c.posts[0]?.postid ? "Specific post" : "No post",
     hasPublicReply: Boolean(c.listener?.commentReply),
@@ -505,7 +533,7 @@ export async function getAdminV2UserDetail(userId: string): Promise<AdminV2UserD
           },
         },
       },
-      // integrations intentionally not selected — token must never appear in admin-v2
+      integrations: { select: userAccountSelect, orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -530,6 +558,7 @@ export async function getAdminV2UserDetail(userId: string): Promise<AdminV2UserD
     createdAt: user.createdAt,
     plan: user.subscription?.plan ?? "FREE",
     customerId: user.subscription?.customerId ?? null,
+    accounts: user.integrations,
     totalCampaigns: user.automations.length,
     activeCampaigns,
     campaignsNeedingReview,

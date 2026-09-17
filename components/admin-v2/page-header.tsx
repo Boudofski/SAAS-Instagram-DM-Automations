@@ -33,7 +33,7 @@ export function AdminPageHeader({
             </span>
           )}
         </div>
-        <h1 className="mt-2 text-[1.65rem] font-black leading-tight tracking-[-0.035em] text-white sm:text-3xl">
+        <h1 className="mt-2 break-words [overflow-wrap:anywhere] text-[1.65rem] font-black leading-tight tracking-[-0.035em] text-white sm:text-3xl">
           {title}
         </h1>
         {description && (

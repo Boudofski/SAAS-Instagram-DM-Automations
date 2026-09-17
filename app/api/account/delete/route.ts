@@ -1,3 +1,4 @@
+import { deleteAp3kData } from "@/lib/account-deletion-data";
 import { isAccountDeletionConfirmationValid } from "@/lib/account-deletion-confirmation";
 import { client } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -34,74 +35,6 @@ function isStripeResourceMissing(error: unknown) {
   return value.code === "resource_missing" || value.raw?.code === "resource_missing";
 }
 
-async function deleteAp3kData(userId: string, email: string) {
-  await client.$transaction(
-    async (transaction) => {
-      const [automations, integrations] = await Promise.all([
-        transaction.automation.findMany({
-          where: { userId },
-          select: { id: true },
-        }),
-        transaction.integrations.findMany({
-          where: { userId },
-          select: {
-            id: true,
-            instagramId: true,
-            webhookAccountId: true,
-            pageId: true,
-            businessId: true,
-          },
-        }),
-      ]);
-
-      const automationIds = automations.map(({ id }) => id);
-      const integrationIds = integrations.map(({ id }) => id);
-      const accountIds = Array.from(
-        new Set(
-          integrations
-            .flatMap(({ instagramId, webhookAccountId, pageId, businessId }) => [
-              instagramId,
-              webhookAccountId,
-              pageId,
-              businessId,
-            ])
-            .filter((value): value is string => Boolean(value))
-        )
-      );
-
-      if (automationIds.length) {
-        await transaction.dms.deleteMany({
-          where: { automationId: { in: automationIds } },
-        });
-      }
-
-      const webhookOwnership = [
-        ...(automationIds.length ? [{ automationId: { in: automationIds } }] : []),
-        ...(accountIds.length ? [{ igAccountId: { in: accountIds } }] : []),
-      ];
-      if (webhookOwnership.length) {
-        await transaction.webhookEvent.deleteMany({
-          where: { OR: webhookOwnership },
-        });
-      }
-
-      const auditTargetIds = [userId, ...integrationIds, ...automationIds];
-      await transaction.adminAuditLog.deleteMany({
-        where: {
-          OR: [
-            { adminUserId: userId },
-            { adminEmail: { equals: email, mode: "insensitive" } },
-            { targetId: { in: auditTargetIds } },
-          ],
-        },
-      });
-
-      await transaction.user.delete({ where: { id: userId } });
-    },
-    { isolationLevel: "Serializable" }
-  );
-}
-
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return errorResponse(403, "invalid_origin", "This request must come from AP3K.");
@@ -129,17 +62,11 @@ export async function POST(request: Request) {
     },
   });
 
-  const clerkEmail =
-    clerkUser.primaryEmailAddress?.emailAddress ??
-    clerkUser.emailAddresses[0]?.emailAddress ??
-    "";
-  const confirmationEmail = ap3kUser?.email || clerkEmail;
-
-  if (!confirmationEmail || !isAccountDeletionConfirmationValid(confirmation, confirmationEmail)) {
+  if (!isAccountDeletionConfirmationValid(confirmation)) {
     return errorResponse(
       400,
       "confirmation_mismatch",
-      "The confirmation text does not match the signed-in account."
+      "Type DELETE to confirm account deletion."
     );
   }
 

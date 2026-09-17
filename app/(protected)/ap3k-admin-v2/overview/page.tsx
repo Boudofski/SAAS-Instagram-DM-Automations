@@ -1,3 +1,4 @@
+import { AdminRefreshButton } from "@/components/admin-v2/refresh-button";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -37,10 +38,10 @@ export default async function AdminV2OverviewPage() {
     <div className="flex flex-col gap-7 sm:gap-8">
       <AdminPageHeader
         eyebrow="Overview"
-        title="Platform health"
-        description="A focused view of AP3K usage, automation health, and the signals that need owner attention."
+        title="AP3K at a glance"
+        description="Customers, Instagram connections and delivery activity. Today’s counters reset at 00:00 UTC."
         actions={
-          <div
+          <><AdminRefreshButton /><div
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black ${
               needsAttention
                 ? "border-amber-500/20 bg-amber-500/[0.08] text-amber-200"
@@ -48,15 +49,23 @@ export default async function AdminV2OverviewPage() {
             }`}
           >
             {needsAttention ? <AlertTriangle className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-            {needsAttention ? "Review recommended" : "All systems healthy"}
-          </div>
+            {needsAttention ? "Review recommended" : "No current alerts"}
+          </div></>
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <form action="/admin/users" className="flex flex-col gap-3 rounded-2xl border border-violet-400/15 bg-gradient-to-r from-violet-500/10 to-transparent p-5 sm:flex-row">
+        <label htmlFor="admin-customer-search" className="flex items-center text-sm font-bold text-white">Find a customer</label>
+        <input id="admin-customer-search" name="q" maxLength={120} placeholder="Search email, name or Instagram username" className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#101827] px-4 text-base text-white outline-none focus:ring-2 focus:ring-violet-400 sm:text-sm" />
+        <button className="min-h-11 rounded-xl bg-violet-600 px-5 text-sm font-bold text-white hover:bg-violet-500">Search users →</button>
+      </form>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Total users" value={stats.totalUsers} icon={<Users className="h-4 w-4" />} />
         <StatCard label="Connected accounts" value={stats.connectedAccounts} icon={<Instagram className="h-4 w-4" />} tone="pink" />
         <StatCard label="Active automations" value={stats.activeCampaigns} icon={<Megaphone className="h-4 w-4" />} tone="blue" />
+        <StatCard label="Sends today" value={stats.repliesToday} sub="Successful comments and direct messages" tone="blue" />
+        <StatCard label="Leads today" value={stats.leadsToday} sub="Across all connected Instagram accounts" tone="pink" />
         <StatCard
           label="Failed today"
           value={stats.failedToday}
@@ -80,7 +89,7 @@ export default async function AdminV2OverviewPage() {
             {health.attentionAccounts > 0 && (
               <AttentionRow
                 message={`${health.attentionAccounts} Instagram account${health.attentionAccounts !== 1 ? "s" : ""} disconnected, expired, or require reconnection.`}
-                href="/admin/accounts"
+                href="/admin/accounts?status=attention"
                 linkLabel="Review accounts"
               />
             )}

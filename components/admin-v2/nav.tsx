@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import type { LucideIcon } from "lucide-react";
 import {
   BadgeDollarSign,
@@ -33,7 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Manage",
     items: [
       { label: "Users", href: "/admin/users", icon: Users },
-      { label: "Accounts", href: "/admin/accounts", icon: Instagram },
+      { label: "Instagram accounts", href: "/admin/accounts", icon: Instagram },
       { label: "Automations", href: "/admin/campaigns", icon: Megaphone },
       { label: "Billing", href: "/admin/billing", icon: BadgeDollarSign },
       { label: "Email Center", href: "/admin/emails", icon: MailCheck },
@@ -96,7 +97,7 @@ function NavigationGroups({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    "group relative flex min-h-10 items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[12px] font-bold transition-all duration-200",
+                    "group relative flex min-h-11 items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all duration-200",
                     active
                       ? "bg-gradient-to-r from-pink-500/[0.13] via-fuchsia-500/[0.08] to-transparent text-white ring-1 ring-pink-400/10"
                       : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-100"
@@ -148,6 +149,13 @@ export function AdminV2Nav({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   return (
     <>
@@ -172,13 +180,14 @@ export function AdminV2Nav({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-40 -mx-3 mb-4 border-b border-white/[0.065] bg-[#080c16]/92 px-3 py-3 backdrop-blur-2xl sm:-mx-5 sm:px-5 lg:hidden">
+      <header className="sticky top-0 z-40 mb-4 border-b border-white/[0.065] bg-[#080c16]/92 px-3 py-3 backdrop-blur-2xl sm:px-5 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <Link href="/admin/overview" className="min-w-0">
             <Brand compact />
           </Link>
           <button
             type="button"
+            ref={menuRef}
             aria-label="Open admin navigation"
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(true)}
@@ -189,15 +198,11 @@ export function AdminV2Nav({
         </div>
       </header>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-[70] lg:hidden">
-          <button
-            type="button"
-            aria-label="Close admin navigation"
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(88vw,326px)] flex-col border-r border-white/[0.08] bg-[#080c16] p-4 shadow-2xl">
+      <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
+        <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm lg:hidden" />
+        <Dialog.Content dir="ltr" onCloseAutoFocus={(event) => { event.preventDefault(); menuRef.current?.focus(); }} aria-describedby={undefined} className="fixed inset-y-0 left-0 z-[71] flex h-[100dvh] w-[min(88vw,326px)] flex-col border-r border-white/10 bg-[#080c16] p-4 shadow-2xl lg:hidden">
+          <Dialog.Title className="sr-only">Admin navigation</Dialog.Title>
             <div className="flex items-center justify-between gap-3 px-1 py-1">
               <Brand />
               <button
@@ -225,9 +230,9 @@ export function AdminV2Nav({
                 <ExternalLink className="h-4 w-4" />
               </Link>
             </div>
-          </aside>
-        </div>
-      )}
+        </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Legacy invariant kept for the old static test suite only: href="/admin"; Admin v1 is retired. */}
     </>

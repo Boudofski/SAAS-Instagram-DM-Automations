@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireOwnerAdmin();
 
   return (
-    <div className="relative isolate min-h-screen overflow-x-clip bg-[#070a12] text-slate-100">
+    <div dir="ltr" lang="en" className="relative isolate min-h-screen overflow-x-clip bg-[#070a12] text-slate-100">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem] overflow-hidden">
         <div className="absolute -left-40 -top-44 h-[30rem] w-[30rem] rounded-full bg-fuchsia-500/[0.07] blur-[120px]" />
         <div className="absolute right-[5%] -top-56 h-[34rem] w-[34rem] rounded-full bg-blue-500/[0.055] blur-[140px]" />

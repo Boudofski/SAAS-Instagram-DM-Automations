@@ -12,6 +12,10 @@ import { revalidatePath } from "next/cache";
 const MIN_REASON = 5;
 
 const V2_PATHS = [
+  "/admin/accounts",
+  "/admin/overview",
+  "/admin/users",
+  "/admin/campaigns",
   "/ap3k-admin-v2/accounts",
   "/ap3k-admin-v2/overview",
   "/ap3k-admin-v2/activity",
@@ -190,6 +194,7 @@ export async function adminRefreshProfileSnapshotAction(formData: FormData) {
     });
 
     for (const path of V2_PATHS) revalidatePath(path);
+    revalidatePath("/admin/users", "layout");
     const message = statsPreserved
       ? "Profile updated. Stats not refreshed — showing previous values."
       : "Profile snapshot refreshed.";
@@ -240,6 +245,7 @@ export async function adminMarkReconnectRequiredAction(formData: FormData) {
     });
     await createAdminAuditLog({ admin, action: "ADMIN_MARK_RECONNECT_REQUIRED", targetType: "INTEGRATION", targetId: integrationId, targetLabel: before.instagramUsername ?? undefined, reason, before: { reconnectRequired: false }, after: { reconnectRequired: true }, status: "SUCCESS" });
     for (const path of V2_PATHS) revalidatePath(path);
+    revalidatePath("/admin/users", "layout");
     return { status: 200 as const, data: "Account marked for reconnect." };
   } catch (error) {
     await createAdminAuditLog({ admin, action: "ADMIN_MARK_RECONNECT_REQUIRED", targetType: "INTEGRATION", targetId: integrationId, reason, status: "FAILED", error: safeError(error) });
@@ -299,6 +305,7 @@ export async function adminSoftDisconnectAction(formData: FormData) {
     });
     await createAdminAuditLog({ admin, action: "ADMIN_SOFT_DISCONNECT_ACCOUNT", targetType: "INTEGRATION", targetId: integrationId, targetLabel: before.instagramUsername ?? undefined, reason, confirmation, before: { status: before.status, reconnectRequired: before.reconnectRequired }, after: { status: "DISCONNECTED" }, status: "SUCCESS" });
     for (const path of V2_PATHS) revalidatePath(path);
+    revalidatePath("/admin/users", "layout");
     return { status: 200 as const, data: "Account soft disconnected." };
   } catch (error) {
     await createAdminAuditLog({ admin, action: "ADMIN_SOFT_DISCONNECT_ACCOUNT", targetType: "INTEGRATION", targetId: integrationId, reason, status: "FAILED", error: safeError(error) });
@@ -366,6 +373,7 @@ export async function adminPauseCampaignsForAccountAction(formData: FormData) {
 
     await createAdminAuditLog({ admin, action: "ADMIN_PAUSE_ACCOUNT_CAMPAIGNS", targetType: "INTEGRATION", targetId: integrationId, targetLabel: row.instagramUsername ?? undefined, reason, after: { pausedCount: result.count }, status: "SUCCESS" });
     for (const path of V2_PATHS) revalidatePath(path);
+    revalidatePath("/admin/users", "layout");
     return { status: 200 as const, data: `${result.count} campaign(s) paused.` };
   } catch (error) {
     await createAdminAuditLog({ admin, action: "ADMIN_PAUSE_ACCOUNT_CAMPAIGNS", targetType: "INTEGRATION", targetId: integrationId, reason, status: "FAILED", error: safeError(error) });
