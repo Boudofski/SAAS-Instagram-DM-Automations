@@ -62,6 +62,20 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState<Draft>(() => ({ ...INITIAL, message: tr(INITIAL.message), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
+  const previousTr = useRef(tr);
+  useEffect(() => {
+    const before = previousTr.current;
+    previousTr.current = tr;
+    if (automation || before === tr) return;
+    setDraft(current => {
+      const next = { ...current };
+      for (const field of ["message", "followRequestDmText", "followRequestButtonText"] as const) {
+        if (current[field] === before(INITIAL[field])) next[field] = tr(INITIAL[field]);
+      }
+      next.linkButtons = current.linkButtons.map(button => button.label === before(DEFAULT_LINK_BUTTON_LABEL) ? { ...button, label: tr(DEFAULT_LINK_BUTTON_LABEL) } : button);
+      return next;
+    });
+  }, [tr, automation]);
   const [keywordDraft, setKeywordDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
