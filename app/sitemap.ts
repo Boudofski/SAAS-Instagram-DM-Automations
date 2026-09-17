@@ -8,11 +8,14 @@ const baseUrl = "https://ap3k.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const updated = new Date("2026-09-12T00:00:00Z");
+  // Significant public-copy and navigation updates shipped on this date.
+  // Keep this fixed to the release date; never stamp every crawl with today.
+  const publicContentUpdated = new Date("2026-09-17T00:00:00Z");
   const companyUpdated = new Date(`${COMPANY.detailsUpdated}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: new Date("2026-09-16T00:00:00Z"), changeFrequency: "weekly", priority: 1 },
+    { url: baseUrl, lastModified: publicContentUpdated, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/pricing`, lastModified: updated, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${baseUrl}/blog`, lastModified: new Date("2026-09-16T00:00:00Z"), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/blog`, lastModified: publicContentUpdated, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/contact`, lastModified: companyUpdated, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/help`, lastModified: updated, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/privacy`, lastModified: companyUpdated, changeFrequency: "yearly", priority: 0.3 },
@@ -24,7 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const blogPages: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(`${post.updatedAt}T00:00:00Z`),
+    lastModified: new Date(Math.max(new Date(`${post.updatedAt}T00:00:00Z`).getTime(), publicContentUpdated.getTime())),
     changeFrequency: "monthly",
     priority: 0.8,
   }));
@@ -32,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const commercialPages: MetadataRoute.Sitemap = [
     ...COMMERCIAL_PAGES.map((page) => ({
       url: `${baseUrl}/${page.slug}`,
-      lastModified: updated,
+      lastModified: publicContentUpdated,
       changeFrequency: "monthly" as const,
       priority: page.slug === "manychat-alternative" ? 0.9 : 0.85,
     })),
