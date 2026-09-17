@@ -1,11 +1,9 @@
 "use client";
-import CompanyDetails from "@/components/website/company-details";
 import { UiText } from "@/components/i18n/localized-copy";
 
 
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
-import LanguageSwitcher from "@/components/global/language-switcher";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
 import Link from "next/link";
@@ -24,7 +22,6 @@ export default function WebsiteFooter() {
             <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
               {t("footerDescription")}
             </p>
-            <LanguageSwitcher />
           </div>
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">
             <div className="flex flex-col gap-2">
@@ -62,7 +59,6 @@ export default function WebsiteFooter() {
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
           <p className="text-xs text-slate-400">{t("footerCopyright")}</p>
-          <CompanyDetails compact />
         </div>
       </div>
     </footer>
