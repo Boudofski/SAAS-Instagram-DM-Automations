@@ -1,5 +1,7 @@
 "use server";
 
+import { requestedInstagramAccount, selectInstagramAccount } from "@/lib/instagram-account-scope";
+import { syncInstagramAccountEntitlements } from "@/lib/instagram-account-entitlements";
 import { client } from "@/lib/prisma";
 import { createReferralAttribution } from "@/lib/referral-program";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
@@ -7,9 +9,10 @@ import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 const userProfileInclude = {
   subscription: true,
   integrations: {
-    orderBy: { createdAt: "desc" as const },
+    orderBy: { createdAt: "asc" as const },
     select: {
       id: true,
+      planLocked: true,
       token: true,
       expiresAt: true,
       name: true,
@@ -29,12 +32,13 @@ const userProfileInclude = {
 } as const;
 
 export const findUser = async (clerkId: string) => {
-  return await client.user.findUnique({
-    where: {
-      clerkId,
-    },
+  const profile = await client.user.findUnique({
+    where: { clerkId },
     include: userProfileInclude,
   });
+  if (!profile) return null;
+  const selected = selectInstagramAccount(profile.integrations, requestedInstagramAccount());
+  return { ...profile, integrations: selected ? [selected] : [] };
 };
 
 export const findUserByEmail = async (email: string) => {
@@ -125,6 +129,7 @@ export const syncSubscriptionForUser = async (
   props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
 ) => {
   return client.$transaction(async (transaction) => {
+    await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${userId}::uuid FOR UPDATE`;
     const user = await transaction.user.findUnique({
       where: { id: userId },
       select: {
@@ -150,11 +155,13 @@ export const syncSubscriptionForUser = async (
       }
     }
 
-    return transaction.subscription.upsert({
+    const subscription = await transaction.subscription.upsert({
       where: { userId },
       create: { userId, ...props },
       update: { ...props },
     });
+    await syncInstagramAccountEntitlements(transaction, userId, subscription.plan);
+    return subscription;
   }, { isolationLevel: "Serializable" });
 };
 
@@ -162,21 +169,7 @@ export const updateSubscription = async (
   clerkId: string,
   props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
 ) => {
-  return await client.user.update({
-    where: {
-      clerkId,
-    },
-    data: {
-      subscription: {
-        upsert: {
-          create: {
-            ...props,
-          },
-          update: {
-            ...props,
-          },
-        },
-      },
-    },
-  });
+  const user = await client.user.findUnique({ where: { clerkId }, select: { id: true } });
+  if (!user) throw new Error("STRIPE_OWNER_MISSING");
+  return syncSubscriptionForUser(user.id, props);
 };

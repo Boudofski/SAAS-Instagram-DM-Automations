@@ -56,7 +56,7 @@ const INITIAL: Draft = {
   aiReplyEnabled: false,
 };
 
-export default function MessageAutomationWizard({ slug, source, automationId, automation }: { slug: string; source: Source; automationId?: string; automation?: any }) {
+export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation }: { integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any }) {
   const tr = useUi();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -132,7 +132,7 @@ export default function MessageAutomationWizard({ slug, source, automationId, au
       responseFormat: draft.aiReplyEnabled ? "TEXT" : "LINK",
       ctaLink: draft.aiReplyEnabled ? undefined : firstLink?.url,
       ctaButtonTitle: draft.aiReplyEnabled ? undefined : firstLink?.label,
-    }, automationId);
+    }, automationId, integrationId);
     if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
       router.push(`/dashboard/${slug}/automation/${result.data.id}`);
       router.refresh();

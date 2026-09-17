@@ -1,3 +1,7 @@
+vi.mock("@/lib/instagram-account-entitlements", () => ({ syncInstagramAccountEntitlements: vi.fn() }));
+vi.mock("@/lib/instagram-account-scope", () => ({ currentInstagramAccountId: vi.fn(async () => "current-integration"), INSTAGRAM_ACCOUNT_COOKIE: "ap3k_instagram_account" }));
+vi.mock("next/headers", () => ({ cookies: () => ({ set: vi.fn() }) }));
+vi.mock("@/lib/referral-program", () => ({ activateConnectionBenefits: vi.fn() }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   consumeMetaOAuthState,
@@ -114,9 +118,8 @@ describe("Meta OAuth state helpers", () => {
 describe("softDisconnectIntegrationForUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockClient.$transaction.mockImplementation(async (operations: any[]) => {
-      return Promise.all(operations);
-    });
+    mockClient.$transaction.mockImplementation(async (operation: any) => operation(mockClient));
+    mockClient.$queryRaw = vi.fn(async () => []);
     mockClient.integrations.update.mockResolvedValue({ id: "current-integration" });
     mockClient.integrations.findUnique.mockResolvedValue(null);
     mockClient.automation.updateMany.mockResolvedValue({ count: 2 });
@@ -175,7 +178,7 @@ describe("softDisconnectIntegrationForUser", () => {
       }),
     }));
     expect(mockClient.automation.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: { userId: "user-1", archivedAt: null, active: true },
+      where: { userId: "user-1", integrationId: "current-integration", archivedAt: null, active: true },
       data: expect.objectContaining({
         active: false,
         needsReview: true,
@@ -212,69 +215,6 @@ describe("softDisconnectIntegrationForUser", () => {
     await expect(softDisconnectIntegrationForUser("clerk-user-1")).resolves.toBeNull();
     expect(mockClient.integrations.update).not.toHaveBeenCalled();
     expect(mockClient.automation.updateMany).not.toHaveBeenCalled();
-  });
-
-  it("reclaims a soft-disconnected same-workspace Instagram row on reconnect", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [
-        {
-          id: "soft-disconnected",
-          name: "INSTAGRAM",
-          userId: "user-1",
-          instagramId: "ig-1",
-          status: "DISCONNECTED",
-          reconnectRequired: false,
-          token: "old-token",
-        },
-      ],
-    });
-    mockClient.integrations.update.mockResolvedValue({ id: "soft-disconnected" });
-
-    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).resolves.toMatchObject({
-      integrationId: "soft-disconnected",
-    });
-
-    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "soft-disconnected" },
-      data: expect.objectContaining({
-        status: "CONNECTED",
-        disconnectedAt: null,
-        reconnectRequired: false,
-      }),
-    }));
-    expect(mockClient.user.update).not.toHaveBeenCalled();
-  });
-
-  it("updates a same-workspace current Instagram row on reconnect", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [
-        {
-          id: "current",
-          name: "INSTAGRAM",
-          userId: "user-1",
-          instagramId: "ig-1",
-          status: "CONNECTED",
-          reconnectRequired: false,
-          token: "old-token",
-        },
-      ],
-    });
-    mockClient.integrations.update.mockResolvedValue({ id: "current" });
-
-    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).resolves.toMatchObject({
-      integrationId: "current",
-    });
-    expect(mockClient.user.update).not.toHaveBeenCalled();
   });
 
   it("preserves existing metaAppScopedUserId when reconnect lookup returns null", async () => {
@@ -353,169 +293,72 @@ describe("softDisconnectIntegrationForUser", () => {
     }));
   });
 
-  it("blocks duplicate active Instagram accounts in another workspace", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [],
-    });
-    mockClient.integrations.findUnique.mockResolvedValue({
-      id: "other",
-      userId: "user-2",
-      status: "CONNECTED",
-      reconnectRequired: false,
-      disconnectedAt: null,
-    });
+});
 
-    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).rejects.toMatchObject({
-      code: "DUPLICATE_INSTAGRAM_ACCOUNT",
-    });
-    expect(mockClient.user.update).not.toHaveBeenCalled();
+
+describe("multi-account OAuth persistence", () => {
+  let user: any;
+  let tx: any;
+  const token = "instagram-token-that-is-long-enough";
+  const expiry = new Date("2030-01-01");
+  beforeEach(() => {
+    vi.clearAllMocks();
+    user = { id: "user-1", clerkId: "clerk-1", subscription: { plan: "PRO" }, integrations: [{ id: "account-a", name: "INSTAGRAM", instagramId: "ig-a", status: "CONNECTED" }] };
+    tx = {
+      $queryRaw: vi.fn(async () => [{ id: user.id }]),
+      user: { findUniqueOrThrow: vi.fn(async () => user) },
+      integrations: {
+        findUnique: vi.fn(async () => null),
+        create: vi.fn(async ({ data }) => ({ id: "account-b", ...data })),
+        update: vi.fn(async ({ where, data }) => ({ id: where.id, ...data })),
+      },
+      automation: { updateMany: vi.fn() },
+    };
+    mockClient.$transaction.mockImplementation(async (callback: any) => callback(tx));
   });
 
-  it("replaces the current connection when a user connects a different Instagram account", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [
-        {
-          id: "current",
-          name: "INSTAGRAM",
-          userId: "user-1",
-          instagramId: "ig-current",
-          status: "CONNECTED",
-          reconnectRequired: false,
-          token: "old-token",
-        },
-      ],
-    });
-
-    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new")).resolves.toMatchObject({
-      integrationId: "current-integration",
-    });
-    expect(mockClient.user.update).not.toHaveBeenCalled();
+  it("adds a distinct account without replacing or pausing the first account", async () => {
+    const result = await createIntegration("clerk-1", token, expiry, "ig-b");
+    expect(result.integrationId).toBe("account-b");
+    expect(tx.integrations.create).toHaveBeenCalledWith({ data: expect.objectContaining({ instagramId: "ig-b", userId: "user-1" }) });
+    expect(tx.integrations.update).not.toHaveBeenCalled();
+    expect(tx.automation.updateMany).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
   });
 
-  it("reclaims same-workspace row by businessId when instagramId is null", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [
-        {
-          id: "existing-row",
-          name: "INSTAGRAM",
-          userId: "user-1",
-          instagramId: null,
-          businessId: "biz-1",
-          pageId: "page-1",
-          instagramUsername: "myaccount",
-          status: "CONNECTED",
-          reconnectRequired: false,
-          token: "old-token",
-        },
-      ],
-    });
-    mockClient.integrations.update.mockResolvedValue({ id: "existing-row" });
-
-    // instagramId "ig-new" does not match null, but businessId "biz-1" does
-    await expect(
-      createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new", undefined, undefined, undefined, undefined, "biz-1")
-    ).resolves.toMatchObject({ integrationId: "existing-row" });
-
-    expect(mockClient.integrations.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "existing-row" },
-      data: expect.objectContaining({ status: "CONNECTED" }),
-    }));
-    expect(mockClient.user.update).not.toHaveBeenCalled();
+  it("refreshes the same immutable Instagram ID without consuming another slot", async () => {
+    user.subscription.plan = "FREE";
+    await createIntegration("clerk-1", token, expiry, "ig-a", "new_username");
+    expect(tx.integrations.update).toHaveBeenCalledWith({ where: { id: "account-a" }, data: expect.objectContaining({ instagramUsername: "new_username" }) });
+    expect(tx.integrations.create).not.toHaveBeenCalled();
   });
 
-  it("reclaims same-workspace row by pageId when instagramId and businessId are null", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [
-        {
-          id: "existing-row",
-          name: "INSTAGRAM",
-          userId: "user-1",
-          instagramId: null,
-          businessId: null,
-          pageId: "page-1",
-          instagramUsername: "myaccount",
-          status: "CONNECTED",
-          reconnectRequired: false,
-          token: "old-token",
-        },
-      ],
-    });
-    mockClient.integrations.update.mockResolvedValue({ id: "existing-row" });
-
-    await expect(
-      createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new", undefined, undefined, "page-1")
-    ).resolves.toMatchObject({ integrationId: "existing-row" });
-
-    expect(mockClient.integrations.update).toHaveBeenCalled();
-    expect(mockClient.user.update).not.toHaveBeenCalled();
+  it.each([["FREE", 1], ["PRO", 3], ["BUSINESS", 10]])("enforces %s account capacity inside the serialized transaction", async (plan, limit) => {
+    user.subscription.plan = plan;
+    user.integrations = Array.from({ length: limit as number }, (_, i) => ({ id: `account-${i}`, instagramId: `ig-${i}`, name: "INSTAGRAM", status: "CONNECTED" }));
+    await expect(createIntegration("clerk-1", token, expiry, "ig-new")).rejects.toMatchObject({ code: "PLAN_LIMIT_REACHED" });
+    expect(tx.integrations.create).not.toHaveBeenCalled();
+    expect(tx.integrations.update).not.toHaveBeenCalled();
   });
 
-  it("reclaims same-workspace row by username (case-insensitive) as final fallback", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [
-        {
-          id: "existing-row",
-          name: "INSTAGRAM",
-          userId: "user-1",
-          instagramId: null,
-          businessId: null,
-          pageId: null,
-          instagramUsername: "MyAccount",
-          status: "CONNECTED",
-          reconnectRequired: false,
-          token: "old-token",
-        },
-      ],
-    });
-    mockClient.integrations.update.mockResolvedValue({ id: "existing-row" });
-
-    // Username "myaccount" (lowercase) should match "MyAccount" stored in DB
-    await expect(
-      createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-new", "myaccount")
-    ).resolves.toMatchObject({ integrationId: "existing-row" });
-
-    expect(mockClient.integrations.update).toHaveBeenCalled();
-    expect(mockClient.user.update).not.toHaveBeenCalled();
+  it("never claims another customer's Instagram connection", async () => {
+    tx.integrations.findUnique.mockResolvedValue({ userId: "other-user" });
+    await expect(createIntegration("clerk-1", token, expiry, "ig-b")).rejects.toMatchObject({ code: "DUPLICATE_INSTAGRAM_ACCOUNT" });
+    expect(tx.integrations.create).not.toHaveBeenCalled();
   });
 
-  it("classifies generic create failures as database save failures", async () => {
-    mockClient.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      firstname: "A",
-      lastname: "User",
-      clerkId: "clerk-user-1",
-      subscription: { plan: "FREE" },
-      integrations: [],
-    });
-    mockClient.user.update.mockRejectedValue(new Error("database down"));
+  it("allows reconnecting a disconnected account only when a slot is available", async () => {
+    user.subscription.plan = "FREE";
+    user.integrations.push({ id: "account-b", instagramId: "ig-b", name: "INSTAGRAM", status: "DISCONNECTED" });
+    await expect(createIntegration("clerk-1", token, expiry, "ig-b")).rejects.toMatchObject({ code: "PLAN_LIMIT_REACHED" });
+    user.integrations[0].status = "DISCONNECTED";
+    await expect(createIntegration("clerk-1", token, expiry, "ig-b")).resolves.toMatchObject({ integrationId: "account-b" });
+  });
 
-    await expect(createIntegration("clerk-user-1", "x".repeat(24), new Date("2026-01-01"), "ig-1")).rejects.toMatchObject({
-      code: "DATABASE_SAVE_FAILED",
-    });
+  it("does not use usernames to merge two Instagram identities", async () => {
+    user.integrations[0].instagramUsername = "reused_name";
+    await createIntegration("clerk-1", token, expiry, "ig-b", "reused_name");
+    expect(tx.integrations.create).toHaveBeenCalledOnce();
+    expect(tx.integrations.update).not.toHaveBeenCalled();
   });
 });

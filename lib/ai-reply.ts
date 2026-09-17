@@ -145,8 +145,8 @@ export async function getAiProviderPublicConfigs() {
   });
 }
 
-export async function getAiWorkspaceRuntimeConfig(userId: string) {
-  return normalizeAiWorkspace(await client.aiWorkspaceConfig.findUnique({ where: { userId } }));
+export async function getAiWorkspaceRuntimeConfig(userId: string, integrationId?: string | null) {
+  return normalizeAiWorkspace(integrationId ? await client.instagramAiConfig.findFirst({ where: { userId, integrationId } }) : null);
 }
 
 async function loadEnabledProvider(): Promise<ProviderInput> {

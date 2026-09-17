@@ -1,6 +1,8 @@
 "use server";
 
 import { getCurrentWorkspaceClerkId } from "@/actions/user";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
+import { syncInstagramAccountEntitlements } from "@/lib/instagram-account-entitlements";
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
@@ -14,12 +16,14 @@ export async function removeCurrentInstagramAccount() {
   const workspaceClerkId =
     (await getCurrentWorkspaceClerkId()) ?? authUser.id;
 
+  const integrationId = await currentInstagramAccountId(workspaceClerkId);
   const user = await client.user.findUnique({
     where: { clerkId: workspaceClerkId },
     select: {
       id: true,
+      subscription: true,
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", id: integrationId },
         select: {
           id: true,
           instagramId: true,
@@ -29,6 +33,7 @@ export async function removeCurrentInstagramAccount() {
         },
       },
       automations: {
+        where: { integrationId },
         select: { id: true },
       },
     },
@@ -73,7 +78,7 @@ export async function removeCurrentInstagramAccount() {
       // Automation children such as triggers, posts, keywords, leads,
       // automation events and message logs are removed through Prisma cascades.
       const deletedAutomations = await tx.automation.deleteMany({
-        where: { userId: user.id },
+        where: { userId: user.id, integrationId },
       });
 
       await tx.metaOAuthSelection.deleteMany({
@@ -82,9 +87,10 @@ export async function removeCurrentInstagramAccount() {
 
       // InstagramAccountSnapshot rows cascade when their integration is deleted.
       const deletedIntegrations = await tx.integrations.deleteMany({
-        where: { userId: user.id, name: "INSTAGRAM" },
+        where: { userId: user.id, name: "INSTAGRAM", id: integrationId },
       });
 
+      await syncInstagramAccountEntitlements(tx, user.id, user.subscription?.plan ?? "FREE");
       return {
         deletedIntegrations: deletedIntegrations.count,
         deletedAutomations: deletedAutomations.count,

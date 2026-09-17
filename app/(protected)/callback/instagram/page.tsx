@@ -62,6 +62,8 @@ async function Page({ searchParams }: Props) {
     const slug = user.data?.clerkId || "";
 
     if (user.status === 200) {
+      const integrationId = user.data && "integrationId" in user.data ? user.data.integrationId : null;
+      if (typeof integrationId === "string") return redirect(`/api/instagram/selected?integrationId=${encodeURIComponent(integrationId)}`);
       return integrationRedirect(slug);
     }
 

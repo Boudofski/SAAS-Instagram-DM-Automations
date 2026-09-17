@@ -42,7 +42,7 @@ export async function getInstagramAccountSettingsStats(
   period: DashboardPeriod = "month"
 ): Promise<InstagramAccountSettingsStats> {
   const [metrics, snapshotComparison] = await Promise.all([
-    getUserFacingMetrics(userId, range),
+    getUserFacingMetrics(userId, range, integrationId ?? "00000000-0000-0000-0000-000000000000"),
     getInstagramSnapshotComparisonForUser(userId, integrationId, period),
   ]);
   const snapshot = snapshotComparison?.current;

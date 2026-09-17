@@ -44,7 +44,7 @@ const BUSINESS_LIMITS: PlanLimits = {
   activeCampaigns: "unlimited",
   staticRepliesPerMonth: 20_000,
   aiRepliesPerMonth: 2_000,
-  connectedInstagramAccounts: 1,
+  connectedInstagramAccounts: 10,
   publicReplyFallback: true,
   exportLeads: true,
   teamAccess: false,
@@ -66,7 +66,7 @@ export const PLAN_LIMITS: Record<ProductPlan, PlanLimits> = {
     activeCampaigns: "unlimited",
     staticRepliesPerMonth: 5_000,
     aiRepliesPerMonth: 500,
-    connectedInstagramAccounts: 1,
+    connectedInstagramAccounts: 3,
     publicReplyFallback: true,
     exportLeads: true,
     teamAccess: false,
@@ -149,5 +149,5 @@ export function formatCampaignLimitFeature(limit: PlanLimit) {
 }
 
 export function formatConnectedAccountsHelper(_planLabel: string, _metric: Pick<UsageMetric, "limit">) {
-  return "AP3K supports 1 connected Instagram Business or Creator account per workspace.";
+  return "Monthly reply and AI allowances are shared across your subscription.";
 }

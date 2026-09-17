@@ -1,5 +1,9 @@
 "use server";
 
+import { syncInstagramAccountEntitlements } from "@/lib/instagram-account-entitlements";
+import { MULTI_ACCOUNT_CONNECTIONS_ENABLED } from "@/lib/instagram-account-rollout";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
+import { getPlanLimits, isUnlimited } from "@/lib/plan-limits";
 import { client } from "@/lib/prisma";
 import { getIntegrationHealth, REAL_COMMENT_WEBHOOK_TYPES } from "@/lib/dashboard-metrics";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
@@ -112,7 +116,7 @@ export const recordIntegrationOAuthError = async (
     select: {
       id: true,
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", id: await currentInstagramAccountId(clerkId) },
         take: 1,
         select: { id: true },
       },
@@ -138,8 +142,9 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
     where: { clerkId },
     select: {
       id: true,
+      subscription: { select: { plan: true } },
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", id: await currentInstagramAccountId(clerkId) },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -163,8 +168,9 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
   });
 
   const reason = "User disconnected Instagram from AP3K";
-  const [updated, paused] = await client.$transaction([
-    client.integrations.update({
+  const { updated, paused } = await client.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id}::uuid FOR UPDATE`;
+    const updated = await tx.integrations.update({
       where: { id: integration.id },
       data: {
         status: "DISCONNECTED",
@@ -173,16 +179,18 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
         reconnectRequired: false,
       },
       select: { id: true },
-    }),
-    client.automation.updateMany({
-      where: { userId: user.id, archivedAt: null, active: true },
+    });
+    const paused = await tx.automation.updateMany({
+      where: { userId: user.id, integrationId: integration.id, archivedAt: null, active: true },
       data: {
         active: false,
         needsReview: true,
         reviewReason: "Instagram account disconnected.",
       },
-    }),
-  ]);
+    });
+    await syncInstagramAccountEntitlements(tx, user.id, user.subscription?.plan ?? "FREE");
+    return { updated, paused };
+  });
 
   return { ...updated, pausedCampaigns: paused.count };
 };
@@ -351,198 +359,55 @@ export const createIntegration = async (
     throw new InstagramIntegrationSaveError("TOKEN_EXCHANGE_FAILED", "invalid_page_access_token");
   }
 
-  const user = await client.user.findUnique({
-    where: { clerkId },
-    select: {
-      id: true,
-      firstname: true,
-      lastname: true,
-      clerkId: true,
-      integrations: {
-        where: { name: "INSTAGRAM" },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          userId: true,
-          instagramId: true,
-          businessId: true,
-          metaAppScopedUserId: true,
-          pageId: true,
-          instagramUsername: true,
-          status: true,
-          reconnectRequired: true,
-          token: true,
-        },
-      },
-    },
-  });
-
-  if (!user) {
-    throw new InstagramIntegrationSaveError("MISSING_LOCAL_PROFILE", "user_not_found");
-  }
-
-  const sameWorkspaceRow = user.integrations.find((integration) =>
-    (instagramId && integration.instagramId === instagramId) ||
-    (businessId && integration.businessId === businessId) ||
-    (pageId && integration.pageId === pageId) ||
-    (instagramUsername &&
-      instagramUsername.toLowerCase() === (integration.instagramUsername ?? "").toLowerCase())
-  );
-  const canonicalWorkspaceRow = getCanonicalInstagramIntegration(user.integrations);
-  const activeWorkspaceRow = user.integrations.find(isCanonicalInstagramConnected);
-  const replacementRow = sameWorkspaceRow ?? canonicalWorkspaceRow ?? activeWorkspaceRow ?? user.integrations[0];
-
-  console.log("[integration-save] diagnosis", {
-    userId: user.id,
-    workspaceId: user.clerkId,
-    selectedInstagramId: instagramId,
-    selectedBusinessId: businessId,
-    selectedPageId: pageId,
-    canonicalIntegrationIdFound: replacementRow?.id ?? null,
-    sameWorkspaceFound: Boolean(sameWorkspaceRow),
-    oneAccountReplacement: Boolean(replacementRow && !sameWorkspaceRow),
-    existingInstagramIds: user.integrations.map((i) => i.instagramId),
-    existingBusinessIds: user.integrations.map((i) => i.businessId),
-    existingPageIds: user.integrations.map((i) => i.pageId),
-    existingStatuses: user.integrations.map((i) => i.status),
-  });
-
-  if (replacementRow) {
-    const update = await updateIntegration(
-      token,
-      expire,
-      replacementRow.id,
-      instagramId,
-      instagramUsername,
-      profilePictureUrl,
-      pageId,
-      pageName,
-      businessId,
-      metaAppScopedUserId,
-      igAccountSource,
-      resolutionDiagnostics,
-      subscription
-    );
-
-    const staleIds = user.integrations
-      .filter((integration) => integration.id !== replacementRow.id)
-      .map((integration) => integration.id);
-
-    if (staleIds.length) {
-      await client.integrations.updateMany({
-        where: { userId: user.id, id: { in: staleIds } },
-        data: {
-          status: "DISCONNECTED",
-          disconnectedAt: new Date(),
-          disconnectedReason: "AP3K supports one active Instagram account per workspace.",
-          reconnectRequired: false,
-        },
-      });
+  const saved = await client.$transaction(async (tx) => {
+    // Serialize account additions for this owner so concurrent OAuth callbacks
+    // cannot consume the same remaining slot.
+    const owners = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM "User" WHERE "clerkId" = ${clerkId} FOR UPDATE`;
+    const owner = owners[0];
+    if (!owner) throw new InstagramIntegrationSaveError("MISSING_LOCAL_PROFILE", "user_not_found");
+    const user = await tx.user.findUniqueOrThrow({ where: { id: owner.id }, include: { subscription: true, integrations: true } });
+    const existing = user.integrations.find((account) => account.instagramId === instagramId);
+    const duplicate = await tx.integrations.findUnique({ where: { instagramId }, select: { userId: true } });
+    if (duplicate && duplicate.userId !== user.id) throw new InstagramIntegrationSaveError("DUPLICATE_INSTAGRAM_ACCOUNT", "instagram_account_already_connected");
+    const limit = getPlanLimits(user.subscription?.plan).connectedInstagramAccounts;
+    const used = user.integrations.filter((account) => account.name === "INSTAGRAM" && account.status !== "DISCONNECTED").length;
+    if ((!existing || existing.status === "DISCONNECTED") && ((!isUnlimited(limit) && used >= limit) || (!MULTI_ACCOUNT_CONNECTIONS_ENABLED && used > 0))) {
+      throw new InstagramIntegrationSaveError("PLAN_LIMIT_REACHED", "instagram_account_limit_reached");
     }
-
-    console.log("[integration-save] saved single Instagram account", {
-      integrationId: update.id,
-      previousStatus: replacementRow.status,
-      replacedExistingAccount: !sameWorkspaceRow,
-      disabledOtherInstagramRows: staleIds.length,
-    });
-    try {
-      await activateConnectionBenefits(user.id);
-    } catch (error) {
-      console.error("[referral] connection benefits activation failed", {
-        userId: user.id,
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
-    return {
-      firstname: user.firstname,
-      lastname: user.lastname,
-      clerkId: user.clerkId,
-      integrationId: update.id,
+    if (existing?.planLocked && existing.status !== "DISCONNECTED") throw new InstagramIntegrationSaveError("PLAN_LIMIT_REACHED", "instagram_account_limit_reached");
+    const data = {
+      token, expiresAt: expire, instagramId, instagramUsername, profilePictureUrl,
+      pageId, pageName, businessId, webhookAccountId: pageId,
+      metaAppScopedUserId: metaAppScopedUserId || undefined, igAccountSource,
+      oauthResolutionDiagnostics: resolutionDiagnostics as any,
+      webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
+      webhookSubscriptionStatusCode: subscription?.statusCode,
+      webhookSubscriptionSubscribed: subscription?.subscribed,
+      webhookSubscriptionMode: subscription?.subscriptionMode,
+      webhookSubscriptionError: subscription?.error,
+      oauthLastError: null, oauthLastErrorAt: null, oauthLastErrorSource: null,
+      status: "CONNECTED", reconnectRequired: false, planLocked: false,
+      disconnectedAt: null, disconnectedReason: null,
     };
-  }
-
-  const duplicate = await client.integrations.findUnique({
-    where: { instagramId },
-    select: { id: true, userId: true, status: true, reconnectRequired: true, disconnectedAt: true },
-  });
-  const otherWorkspaceFound = Boolean(duplicate && duplicate.userId !== user.id);
-
-  console.log("[integration-save] new single account path", {
-    userId: user.id,
-    workspaceId: user.clerkId,
-    selectedInstagramId: instagramId,
-    otherWorkspaceFound,
-  });
-
-  if (otherWorkspaceFound) {
-    throw new InstagramIntegrationSaveError("DUPLICATE_INSTAGRAM_ACCOUNT", "instagram_account_already_connected");
-  }
-
-  try {
-    const created = await client.user.update({
-      where: {
-        clerkId,
-      },
-      data: {
-        integrations: {
-          create: {
-            token,
-            expiresAt: expire,
-            instagramId,
-            webhookAccountId: pageId,
-            pageId,
-            pageName,
-            businessId,
-            metaAppScopedUserId,
-            instagramUsername,
-            profilePictureUrl,
-            igAccountSource,
-            oauthResolutionDiagnostics: resolutionDiagnostics as any,
-            webhookSubscriptionLastAttemptedAt: subscription?.attemptedAt,
-            webhookSubscriptionStatusCode: subscription?.statusCode,
-            webhookSubscriptionSubscribed: subscription?.subscribed,
-            webhookSubscriptionMode: subscription?.subscriptionMode,
-            webhookSubscriptionError: subscription?.error,
-            oauthLastError: null,
-            oauthLastErrorAt: null,
-            oauthLastErrorSource: null,
-            status: "CONNECTED",
-            reconnectRequired: false,
-            disconnectedAt: null,
-            disconnectedReason: null,
-            lastAdminNote: "single_instagram_account_created",
-            lastAdminActionAt: new Date(),
-          },
-        },
-      },
-      select: {
-        firstname: true,
-        lastname: true,
-        clerkId: true,
-      },
-    });
-    try {
-      await activateConnectionBenefits(user.id);
-    } catch (error) {
-      console.error("[referral] connection benefits activation failed", {
-        userId: user.id,
-        message: error instanceof Error ? error.message : String(error),
-      });
+    const account = existing
+      ? await tx.integrations.update({ where: { id: existing.id }, data })
+      : await tx.integrations.create({ data: { ...data, userId: user.id } });
+    // Users who prepared drafts before their first connection keep those drafts.
+    // Never move existing account-owned data to a newly connected account.
+    if (!user.integrations.length) {
+      await tx.automation.updateMany({ where: { userId: user.id, integrationId: null }, data: { integrationId: account.id } });
+      await tx.conversation.updateMany({ where: { userId: user.id, integrationId: null }, data: { integrationId: account.id } });
+      await tx.aiChatMessage.updateMany({ where: { userId: user.id, integrationId: null, context: "PLAYGROUND" }, data: { integrationId: account.id } });
+      const legacy = await tx.aiWorkspaceConfig.findUnique({ where: { userId: user.id } });
+      if (legacy) {
+        const { id, createdAt, updatedAt, ...config } = legacy;
+        await tx.instagramAiConfig.upsert({ where: { integrationId: account.id }, create: { ...config, protectionRules: config.protectionRules ?? undefined, knowledge: config.knowledge ?? undefined, integrationId: account.id }, update: {} });
+      }
     }
-    return created;
-  } catch (error) {
-    const anyError = error as any;
-    console.error("[integration-save] create failed", {
-      userId: user.id,
-      workspaceId: user.clerkId,
-      prismaCode: anyError?.code,
-      prismaTarget: anyError?.meta?.target,
-      message: error instanceof Error ? error.message : String(error),
-    });
-    throw new InstagramIntegrationSaveError(classifyInstagramIntegrationSaveError(error), "integration_save_failed");
-  }
+    return { firstname: user.firstname, lastname: user.lastname, clerkId, integrationId: account.id, userId: user.id };
+  }, { timeout: 20000 });
+  try { await activateConnectionBenefits(saved.userId); } catch { console.warn("[referral] connection benefits deferred"); }
+  return saved;
 };
 
 
@@ -552,7 +417,7 @@ export const getWebhookHealthForUser = async (clerkId: string) => {
     select: {
       id: true,
       integrations: {
-        where: { name: "INSTAGRAM" },
+        where: { name: "INSTAGRAM", id: await currentInstagramAccountId(clerkId) },
         take: 1,
         select: {
           token: true,

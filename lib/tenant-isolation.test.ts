@@ -1,3 +1,4 @@
+vi.mock("@/lib/instagram-account-scope", () => ({ currentInstagramAccountId: vi.fn(async () => "integration-a") }));
 /**
  * Tenant isolation tests for automation queries.
  *
@@ -257,7 +258,7 @@ describe("getAutomationActivity — owner scoped logs", () => {
     const result = await getAutomationActivity(AUTOMATION_A_ID, USER_A_CLERK_ID);
 
     expect(mockAutomationFindFirst).toHaveBeenCalledWith({
-      where: { id: AUTOMATION_A_ID, archivedAt: null, User: { clerkId: USER_A_CLERK_ID } },
+      where: { id: AUTOMATION_A_ID, archivedAt: null, User: { clerkId: USER_A_CLERK_ID }, integrationId: "integration-a" },
       select: { id: true },
     });
     expect(result?.[0]).toMatchObject({

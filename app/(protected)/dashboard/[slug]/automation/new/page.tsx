@@ -58,7 +58,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const { data: user } = useQueryUser();
   const { data: webhookHealth } = useQueryWebhookHealth(needsCommentData);
   const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
-  const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId);
+  const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId, user?.data?.integrations?.[0]?.id ?? "");
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [aiCommentsReady, setAiCommentsReady] = useState(false);
@@ -200,6 +200,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   if (selectedType === "story" || selectedType === "dm") {
     return (
       <MessageAutomationWizard
+        integrationId={instagram?.id ?? ""}
         slug={slug}
         source={selectedType === "story" ? "STORY" : "DM"}
         automationId={editId}

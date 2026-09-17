@@ -38,7 +38,7 @@ describe("App Review-safe UX", () => {
     );
     expect(source).toContain("AccountConnectionActions");
     expect(source).toContain("RemoveInstagramAccountButton");
-    expect(source).toContain("One Instagram account per workspace");
+    expect(source).toContain("Removing this Instagram account");
   });
 
   it("uses browser-local timestamps for refreshed Instagram profiles", () => {

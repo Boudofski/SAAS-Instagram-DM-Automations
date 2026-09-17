@@ -91,7 +91,7 @@ describe("complete public localization and search metadata", () => {
       state.locale = locale;
       const help = renderToStaticMarkup(<HelpCenter />);
       const privacy = renderToStaticMarkup(<PrivacyPage />);
-      for (const title of ["Reconnect or replace an Instagram account", "AI safety and comment protection"]) {
+      for (const title of ["Reconnect or add an Instagram account", "AI safety and comment protection"]) {
         expect(help.includes(title)).toBe(locale === "en");
       }
       expect(privacy.includes("Instagram Data We Collect")).toBe(locale === "en");

@@ -1,7 +1,5 @@
 "use client";
 
-import { UiMessage } from "@/components/i18n/dashboard-values";
-import { UiText } from "@/components/i18n/localized-copy";
 
 import ThemeToggle from "@/components/global/theme-toggle";
 import { PAGE_BREAD_CRUMBS } from "@/constants/pages";
@@ -11,16 +9,12 @@ import AP3KLogo from "../ap3k-logo";
 import CreateAutomation from "../create-automation";
 import Sheet from "../sheet";
 import Items from "../sidebar/items";
-import InstagramAvatar from "@/components/dashboard/instagram-avatar";
+import InstagramAccountSwitcher from "@/components/dashboard/instagram-account-switcher";
 import HelpHub from "@/components/help/help-hub";
-import { useQueryUser } from "@/hooks/user-queries";
-import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
-import { planDisplayName } from "@/lib/billing-plans";
 import Notification from "./notification";
 import Search from "./search";
 import { useClerk } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import LanguageSwitcher from "@/components/global/language-switcher";
 import { useI18n } from "@/providers/i18n-provider";
 
@@ -33,9 +27,6 @@ function NavBar({ slug }: Props) {
   const { page, pathname } = usePath();
   const { signOut } = useClerk();
   const queryClient = useQueryClient();
-  const { data } = useQueryUser();
-  const instagram = getCanonicalInstagramIntegration(data?.data?.integrations);
-  const plan = planDisplayName(data?.data?.subscription?.plan);
   const currentPage = PAGE_BREAD_CRUMBS.includes(page) || page == slug;
   const isCampaignList = pathname === `/dashboard/${slug}/automation`;
 
@@ -63,10 +54,7 @@ function NavBar({ slug }: Props) {
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
-                <Link href={`/dashboard/${slug}/account`} className="mb-2 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.05]">
-                  <InstagramAvatar src={instagram?.profilePictureUrl} username={instagram?.instagramUsername} label={instagram?.pageName} size="sm" />
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{instagram?.instagramUsername ? <bdi dir="ltr">@{instagram.instagramUsername}</bdi> : t("connectInstagram")}</span><span className="mt-0.5 block text-xs font-bold text-violet-500"><UiMessage source="{plan} plan" values={{ plan: <bdi><UiText>{plan}</UiText></bdi> }} /></span></span>
-                </Link>
+        <InstagramAccountSwitcher slug={slug} />
                 <div className="flex flex-col py-3">
                   <Items page={page} slug={slug} />
                 </div>

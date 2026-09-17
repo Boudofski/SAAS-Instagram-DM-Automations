@@ -5,6 +5,7 @@ import {
   adminFormString,
   createAdminAuditLog,
 } from "@/actions/admin/safe-actions";
+import { syncSubscriptionForUser } from "@/actions/user/queries";
 import { client } from "@/lib/prisma";
 import { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -271,11 +272,7 @@ export async function adminChangeUserPlanAction(formData: FormData) {
   const currentPlan = user.subscription?.plan ?? "FREE";
 
   try {
-    const updated = await client.subscription.upsert({
-      where: { userId },
-      update: { plan },
-      create: { userId, plan },
-    });
+    const updated = await syncSubscriptionForUser(userId, { plan });
 
     await createAdminAuditLog({
       admin,

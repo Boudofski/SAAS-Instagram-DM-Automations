@@ -1,6 +1,7 @@
 "use server";
 
 import { onCurrentUser } from "../user";
+import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { findUser } from "../user/queries";
 import {
   normalizeCampaignPayload,
@@ -57,10 +58,11 @@ export const createAutomations = async (id?: string) => {
   }
 };
 
-export const saveCampaign = async (payload: RawCampaignPayload, automationId?: string) => {
+export const saveCampaign = async (payload: RawCampaignPayload, automationId?: string, expectedIntegrationId?: string) => {
   const user = await onCurrentUser();
 
   try {
+    if (expectedIntegrationId !== undefined && expectedIntegrationId !== await currentInstagramAccountId(user.id)) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." };
     const cleanPayload = normalizeCampaignPayload(payload);
     const validationError = validateNormalizedCampaignPayload(cleanPayload);
     const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
@@ -73,7 +75,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
         return { status: 403, data: "AI replies are available on Pro and Business plans." };
       }
       const aiWorkspace = aiProfile?.id
-        ? await client.aiWorkspaceConfig.findUnique({ where: { userId: aiProfile.id }, select: { aiCommentsEnabled: true } })
+        ? await client.instagramAiConfig.findUnique({ where: { integrationId: await currentInstagramAccountId(user.id) }, select: { aiCommentsEnabled: true } })
         : null;
       if (!aiWorkspace?.aiCommentsEnabled) {
         return { status: 400, data: "Enable AI Comments in AP3K AI before using it in an automation." };
@@ -123,7 +125,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       }
       if (automationId) {
         const existing = await client.automation.findFirst({
-          where: { id: automationId, User: { clerkId: user.id }, archivedAt: null },
+          where: { id: automationId, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
           select: { needsReview: true, reviewReason: true },
         });
         if (existing?.needsReview) {
@@ -184,11 +186,13 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
 
 export const saveMessageAutomation = async (
   payload: RawMessageAutomationPayload,
-  automationId?: string
+  automationId?: string,
+  expectedIntegrationId?: string
 ) => {
   const user = await onCurrentUser();
 
   try {
+    if (expectedIntegrationId !== undefined && expectedIntegrationId !== await currentInstagramAccountId(user.id)) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." };
     const cleanPayload = normalizeMessageAutomationPayload(payload);
     const validationError = validateMessageAutomationPayload(cleanPayload);
     if (validationError) return { status: 400, data: validationError };
@@ -204,7 +208,7 @@ export const saveMessageAutomation = async (
         return { status: 403, data: "AI DM replies are available on Pro and Business plans." };
       }
       const workspace = profile?.id
-        ? await client.aiWorkspaceConfig.findUnique({ where: { userId: profile.id }, select: { aiRepliesEnabled: true } })
+        ? await client.instagramAiConfig.findUnique({ where: { integrationId: await currentInstagramAccountId(user.id) }, select: { aiRepliesEnabled: true } })
         : null;
       if (!workspace?.aiRepliesEnabled) {
         return { status: 400, data: "Enable AI Replies in AP3K AI before using it in a DM automation." };
@@ -382,7 +386,7 @@ export const updateAutomationName = async (
         };
       }
       const existing = await client.automation.findFirst({
-        where: { id: automationId, User: { clerkId: user.id }, archivedAt: null },
+        where: { id: automationId, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
         select: { needsReview: true, reviewReason: true },
       });
       if (existing?.needsReview) {
@@ -544,7 +548,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
     if (status) {
       const profile = await findUser(user.id);
       const existing = await client.automation.findFirst({
-        where: { id, User: { clerkId: user.id }, archivedAt: null },
+        where: { id, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
         select: { needsReview: true, reviewReason: true },
       });
       if (existing?.needsReview) {
@@ -607,7 +611,7 @@ export const repairCampaign = async (automationId: string) => {
   try {
     const [automation, profile] = await Promise.all([
       client.automation.findFirst({
-        where: { id: automationId, User: { clerkId: user.id }, archivedAt: null },
+        where: { id: automationId, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
         include: { posts: true, keywords: true, listener: true },
       }),
       findUser(user.id),

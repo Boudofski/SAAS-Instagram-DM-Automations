@@ -69,7 +69,7 @@ export default function Billing({
                 </span>
               )}
             </div>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-300"><UiText>{" Usage refreshes monthly. Free includes up to 5 active automations; paid plans include unlimited automations. Each workspace supports one connected Instagram account. "}</UiText></p>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-300"><UiText>{" Free includes 1 Instagram account, Pro includes 3, and Business includes 10. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription. "}</UiText></p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[390px]">
             <BillingFact

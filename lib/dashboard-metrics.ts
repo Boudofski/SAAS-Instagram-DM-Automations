@@ -276,19 +276,19 @@ export async function getUserDashboardStats(
   };
 }
 
-export async function getCampaignTableMetrics(userId: string): Promise<Record<string, CampaignTableMetric>> {
+export async function getCampaignTableMetrics(userId: string, integrationId?: string): Promise<Record<string, CampaignTableMetric>> {
   const [runs, leads] = await Promise.all([
     client.automationEvent.groupBy({
       by: ["automationId"],
       where: {
-        automation: { userId },
+        automation: { userId, ...(integrationId ? { integrationId } : {}) },
         eventType: { in: [...MATCHED_EVENT_TYPES] },
       },
       _count: { _all: true },
     }),
     client.lead.groupBy({
       by: ["automationId"],
-      where: { automation: { userId } },
+      where: { automation: { userId, ...(integrationId ? { integrationId } : {}) } },
       _count: { _all: true },
     }),
   ]);
