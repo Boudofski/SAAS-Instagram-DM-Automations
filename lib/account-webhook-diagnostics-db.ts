@@ -30,7 +30,6 @@ export async function getAccountWebhookDiagnosticsForIntegration(integrationId?:
     integration.instagramId,
     integration.webhookAccountId,
     integration.pageId,
-    integration.businessId,
   ].filter((value): value is string => Boolean(value));
 
   const [events, campaigns] = await Promise.all([
@@ -142,7 +141,6 @@ async function eventsForIntegration(integration: IntegrationLike) {
     integration.instagramId,
     integration.webhookAccountId,
     integration.pageId,
-    integration.businessId,
   ].filter((value): value is string => Boolean(value));
   return client.webhookEvent.findMany({
     where: ids.length ? { igAccountId: { in: ids } } : { automation: { userId: integration.userId, integrationId: integration.id } },

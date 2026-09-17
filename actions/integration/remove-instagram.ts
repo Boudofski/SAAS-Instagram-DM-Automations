@@ -7,7 +7,7 @@ import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-export async function removeCurrentInstagramAccount() {
+export async function removeCurrentInstagramAccount(expectedIntegrationId = "") {
   const authUser = await currentUser();
   if (!authUser) {
     return { status: 401, data: "Sign in required" } as const;
@@ -17,6 +17,7 @@ export async function removeCurrentInstagramAccount() {
     (await getCurrentWorkspaceClerkId()) ?? authUser.id;
 
   const integrationId = await currentInstagramAccountId(workspaceClerkId);
+  if (expectedIntegrationId !== integrationId) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." } as const;
   const user = await client.user.findUnique({
     where: { clerkId: workspaceClerkId },
     select: {
@@ -51,7 +52,6 @@ export async function removeCurrentInstagramAccount() {
           integration.instagramId,
           integration.pageId,
           integration.webhookAccountId,
-          integration.businessId,
         ])
         .filter((value): value is string => Boolean(value))
     )
@@ -59,6 +59,7 @@ export async function removeCurrentInstagramAccount() {
 
   try {
     const result = await client.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id}::uuid FOR UPDATE`;
       const webhookFilters: Array<Record<string, unknown>> = [];
       if (automationIds.length > 0) {
         webhookFilters.push({ automationId: { in: automationIds } });

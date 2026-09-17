@@ -406,7 +406,6 @@ model Conversation {
   updatedAt         DateTime       @updatedAt
   messages          InboxMessage[]
 
-  @@unique([userId, recipientIgId]) // Legacy index retained until the new release is live.
   @@unique([integrationId, recipientIgId])
   @@index([userId, integrationId, lastMessageAt])
   @@index([userId, lastMessageAt])
