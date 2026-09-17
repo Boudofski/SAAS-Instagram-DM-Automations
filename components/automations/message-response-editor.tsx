@@ -16,7 +16,7 @@ export default function MessageResponseEditor({ message, linkButtons, onChange }
   const tr = useUi();
   const buttons = linkButtons.length > 0
     ? linkButtons.slice(0, MAX_LINK_BUTTONS)
-    : [{ label: DEFAULT_LINK_BUTTON_LABEL, url: "" }];
+    : [{ label: tr(DEFAULT_LINK_BUTTON_LABEL), url: "" }];
 
   const updateButton = (index: number, partial: Partial<LinkButton>) => {
     onChange({ linkButtons: buttons.map((button, buttonIndex) => buttonIndex === index ? { ...button, ...partial } : button) });
