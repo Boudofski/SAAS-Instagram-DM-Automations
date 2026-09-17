@@ -188,7 +188,8 @@ export const softDisconnectIntegrationForUser = async (clerkId: string) => {
         reviewReason: "Instagram account disconnected.",
       },
     });
-    await syncInstagramAccountEntitlements(tx, user.id, user.subscription?.plan ?? "FREE");
+    const currentSubscription = await tx.subscription.findUnique({ where: { userId: user.id }, select: { plan: true } });
+      await syncInstagramAccountEntitlements(tx, user.id, currentSubscription?.plan ?? "FREE");
     return { updated, paused };
   });
 

@@ -91,7 +91,8 @@ export async function removeCurrentInstagramAccount(expectedIntegrationId = "") 
         where: { userId: user.id, name: "INSTAGRAM", id: integrationId },
       });
 
-      await syncInstagramAccountEntitlements(tx, user.id, user.subscription?.plan ?? "FREE");
+      const currentSubscription = await tx.subscription.findUnique({ where: { userId: user.id }, select: { plan: true } });
+      await syncInstagramAccountEntitlements(tx, user.id, currentSubscription?.plan ?? "FREE");
       return {
         deletedIntegrations: deletedIntegrations.count,
         deletedAutomations: deletedAutomations.count,

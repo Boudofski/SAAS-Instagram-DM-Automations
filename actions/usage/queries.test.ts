@@ -75,6 +75,10 @@ beforeEach(() => {
 });
 
 describe("usage query helpers", () => {
+  it("excludes locked-account automations from the active-plan allowance", async () => {
+    await getUserMonthlyUsage("user-1");
+    expect(mockAutomationCount).toHaveBeenCalledWith({ where: { userId: "user-1", active: true, archivedAt: null, OR: [{ integration: { planLocked: false } }, { integrationId: null }] } });
+  });
   it("counts sent comment replies and DMs as static monthly replies", async () => {
     mockMessageLogCount.mockResolvedValueOnce(4).mockResolvedValueOnce(3);
 

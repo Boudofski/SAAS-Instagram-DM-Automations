@@ -162,7 +162,7 @@ export const syncSubscriptionForUser = async (
     });
     await syncInstagramAccountEntitlements(transaction, userId, subscription.plan);
     return subscription;
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "ReadCommitted" });
 };
 
 export const updateSubscription = async (

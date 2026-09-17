@@ -61,7 +61,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         createdAt: { gte: effectiveStart, lt: effectiveEnd },
       },
     }),
-    client.automation.count({ where: { userId, active: true, archivedAt: null } }),
+    client.automation.count({ where: { userId, active: true, archivedAt: null, OR: [{ integration: { planLocked: false } }, { integrationId: null }] } }),
     client.integrations.count({ where: { userId, status: { not: "DISCONNECTED" } } }),
   ]);
 
