@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_LOCALE,
+  browserLocale,
   LOCALE_DETAILS,
   SUPPORTED_LOCALES,
   isProtectedPath,
@@ -65,5 +66,15 @@ describe("AP3K message catalogs", () => {
         .map(([source]) => source);
       expect(untranslated, `${locale} contains untranslated product phrases`).toEqual([]);
     }
+  });
+});
+
+describe("browser language negotiation", () => {
+  it("uses regional tags and browser preference weights", () => {
+    expect(browserLocale("fr-CA,fr;q=0.9,en;q=0.8")).toBe("fr");
+    expect(browserLocale("it-IT,pt-BR;q=0.8,en;q=0.5")).toBe("pt");
+    expect(browserLocale("fr;q=0,en;q=0.9")).toBe("en");
+    expect(browserLocale("de;q=0.5,ar;q=0.9")).toBe("ar");
+    expect(browserLocale("ja-JP")).toBe("en");
   });
 });

@@ -2,6 +2,9 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { getAuthenticatedHomeRedirect } from "@/lib/authenticated-home-redirect";
 import {
   LOCALE_COOKIE,
+  browserLocale,
+  isLocale,
+  localizePublicPath,
   isProtectedPath,
   localeFromPath,
   stripLocaleFromPath,
@@ -21,6 +24,23 @@ export default clerkMiddleware(async (auth, req) => {
   const requestedPath = req.nextUrl.pathname;
   const pathLocale = localeFromPath(requestedPath);
   const pathname = stripLocaleFromPath(requestedPath);
+
+  const savedLocale = req.cookies.get(LOCALE_COOKIE)?.value;
+  const browserPreference = browserLocale(req.headers.get("accept-language"));
+  const firstVisit = !isLocale(savedLocale) && !pathLocale
+    && !/\.[^/]+$/.test(pathname)
+    && req.method === "GET" && !/^\/(api|callback|payment|r)(?:\/|$)/.test(pathname)
+    && !/bot|crawler|spider|slurp/i.test(req.headers.get("user-agent") || "")
+    && !req.headers.has("next-router-prefetch") && req.headers.get("purpose") !== "prefetch";
+  if (firstVisit && !isProtectedPath(pathname) && browserPreference !== "en") {
+    const destination = req.nextUrl.clone();
+    destination.pathname = localizePublicPath(pathname, browserPreference);
+    const response = NextResponse.redirect(destination);
+    response.headers.set("Vary", "Accept-Language, Cookie");
+    response.headers.set("Cache-Control", "private, no-store");
+    response.cookies.set(LOCALE_COOKIE, browserPreference, { path: "/", maxAge: 31536000, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+    return response;
+  }
 
   if (pathname === "/") {
     const { userId } = await auth();
@@ -46,7 +66,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (isProtectedRoute(req)) await auth.protect();
 
-  const locale = resolveRequestLocale(requestedPath, req.cookies.get(LOCALE_COOKIE)?.value);
+  const locale = resolveRequestLocale(requestedPath, firstVisit ? browserPreference : savedLocale);
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-ap3k-locale", locale);
 
@@ -57,7 +77,9 @@ export default clerkMiddleware(async (auth, req) => {
     return response;
   }
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  if (firstVisit) response.cookies.set(LOCALE_COOKIE, browserPreference, { path: "/", maxAge: 31536000, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+  return response;
 });
 
 export const config = {

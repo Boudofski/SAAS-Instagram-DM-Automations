@@ -67,3 +67,15 @@ export function localeAlternates(pathname = "/") {
     "x-default": localizePublicPath(pathname, DEFAULT_LOCALE),
   };
 }
+
+/** Negotiate browser preferences, including regional tags and quality weights. */
+export function browserLocale(header: string | null | undefined): Locale {
+  const choices = (header || "").split(",").map((part, index) => {
+    const [tag, ...params] = part.trim().split(";");
+    const quality = params.find(value => value.trim().startsWith("q="));
+    const q = quality ? Number(quality.trim().slice(2)) : 1;
+    return { language: tag.toLowerCase().split(/[-_]/)[0], q, index };
+  }).filter(item => Number.isFinite(item.q) && item.q > 0 && item.q <= 1)
+    .sort((a, b) => b.q - a.q || a.index - b.index);
+  return choices.find(item => isLocale(item.language))?.language as Locale || DEFAULT_LOCALE;
+}
