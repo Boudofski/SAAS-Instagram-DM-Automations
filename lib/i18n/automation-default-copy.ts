@@ -2,6 +2,7 @@ import type { Locale } from "./config";
 
 export const AUTOMATION_DEFAULT_COPY: Partial<Record<Locale, Record<string, string>>> = {
   "fr": {
+    "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "Activez le message d’ouverture pour demander un abonnement. Le clic sur son bouton lance la vérification.",
     "Thanks! Please see DMs.": "Merci ! Consultez vos messages privés.",
     "Sent you a message! Check it out!": "Je vous ai envoyé un message ! Allez le découvrir !",
     "Nice! Check your DMs!": "Super ! Consultez vos messages privés !",
@@ -14,6 +15,7 @@ export const AUTOMATION_DEFAULT_COPY: Partial<Record<Locale, Record<string, stri
     "Nearly there! The link is especially for my followers ✨ Right after you follow me, I’ll send you the link so you can dive straight in! 🎉": "Vous y êtes presque ! Ce lien est réservé à mes abonnés ✨\n\nAbonnez-vous à mon compte, puis confirmez ci-dessous pour recevoir le lien ! 🎉"
   },
   "ar": {
+    "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "فعّل الرسالة الافتتاحية لاستخدام طلب المتابعة. الضغط على زرها يبدأ خطوة التحقق من المتابعة.",
     "Thanks! Please see DMs.": "شكرًا! تفقّد رسائلك الخاصة.",
     "Sent you a message! Check it out!": "أرسلت لك رسالة! تفقّدها الآن!",
     "Nice! Check your DMs!": "رائع! تفقّد رسائلك الخاصة!",
@@ -26,6 +28,7 @@ export const AUTOMATION_DEFAULT_COPY: Partial<Record<Locale, Record<string, stri
     "Nearly there! The link is especially for my followers ✨ Right after you follow me, I’ll send you the link so you can dive straight in! 🎉": "بقيت خطوة واحدة! هذا الرابط مخصّص لمتابعيّ ✨\n\nتابع حسابي، ثم أكّد المتابعة أدناه للحصول على الرابط! 🎉"
   },
   "es": {
+    "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "Activa el mensaje inicial para solicitar que te sigan. Al pulsar su botón, comienza la comprobación.",
     "Thanks! Please see DMs.": "¡Gracias! Revisa tus mensajes privados.",
     "Sent you a message! Check it out!": "¡Te envié un mensaje! ¡Échale un vistazo!",
     "Nice! Check your DMs!": "¡Genial! ¡Revisa tus mensajes privados!",
@@ -38,6 +41,7 @@ export const AUTOMATION_DEFAULT_COPY: Partial<Record<Locale, Record<string, stri
     "Nearly there! The link is especially for my followers ✨ Right after you follow me, I’ll send you the link so you can dive straight in! 🎉": "¡Ya casi está! Este enlace es exclusivo para mis seguidores ✨\n\nSigue mi cuenta y confirma abajo para recibir el enlace. 🎉"
   },
   "de": {
+    "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "Aktiviere die Begrüßungsnachricht für eine Folgeanfrage. Ein Klick auf ihren Button startet die Prüfung.",
     "Thanks! Please see DMs.": "Danke! Schau in deine Direktnachrichten.",
     "Sent you a message! Check it out!": "Ich habe dir eine Nachricht geschickt! Schau gleich nach!",
     "Nice! Check your DMs!": "Super! Schau in deine Direktnachrichten!",
@@ -50,6 +54,7 @@ export const AUTOMATION_DEFAULT_COPY: Partial<Record<Locale, Record<string, stri
     "Nearly there! The link is especially for my followers ✨ Right after you follow me, I’ll send you the link so you can dive straight in! 🎉": "Fast geschafft! Dieser Link ist für meine Follower reserviert ✨\n\nFolge meinem Konto und bestätige es unten, um den Link zu erhalten! 🎉"
   },
   "pt": {
+    "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "Ative a mensagem inicial para pedir que sigam a conta. O clique no botão inicia a verificação.",
     "Thanks! Please see DMs.": "Obrigado! Veja as suas mensagens privadas.",
     "Sent you a message! Check it out!": "Enviei-lhe uma mensagem! Vá espreitar!",
     "Nice! Check your DMs!": "Ótimo! Veja as suas mensagens privadas!",
