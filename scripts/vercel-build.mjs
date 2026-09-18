@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { migrationUrl } from "./migration-url.mjs";
 
 function run(command, args, env = process.env) {
   const result = spawnSync(command, args, { env, shell: false, stdio: "inherit" });
@@ -31,7 +32,7 @@ if (process.env.VERCEL_ENV === "production") {
   }
   const migrationEnv = {
     ...process.env,
-    DATABASE_URL: process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL,
+    DATABASE_URL: migrationUrl(process.env),
   };
   runMigrationWithRetry(
     process.platform === "win32" ? "npx.cmd" : "npx",
