@@ -6,7 +6,7 @@ vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: "en" }) 
 import VisibleProductVideo from "@/components/website/visible-product-video";
 
 describe("visible product demos", () => {
-  let observe: (entries: { isIntersecting: boolean }[]) => void;
+  let observe: (entries: { isIntersecting: boolean; intersectionRatio: number }[]) => void;
   let visibility: () => void;
   let motion: { matches: boolean; addEventListener: ReturnType<typeof vi.fn>; removeEventListener: ReturnType<typeof vi.fn> };
   let cleanup: (() => void) | undefined;
@@ -23,15 +23,17 @@ describe("visible product demos", () => {
   it("does not load until visible and pauses when leaving the viewport", async () => {
     expect(state.video.src).toBe("");
     expect(state.video.play).not.toHaveBeenCalled();
-    observe([{ isIntersecting: true }]);
+    observe([{ isIntersecting: true, intersectionRatio: 0.01 }]);
+    expect(state.video.src).toBe("");
+    observe([{ isIntersecting: true, intersectionRatio: 1 }]);
     await Promise.resolve();
     expect(state.video.src).toBe("/media/demo.mp4");
     expect(state.video.play).toHaveBeenCalledOnce();
-    observe([{ isIntersecting: false }]);
+    observe([{ isIntersecting: false, intersectionRatio: 0 }]);
     expect(state.video.pause).toHaveBeenCalled();
   });
   it("pauses for hidden tabs and exposes controls for reduced motion", () => {
-    observe([{ isIntersecting: true }]);
+    observe([{ isIntersecting: true, intersectionRatio: 1 }]);
     Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
     visibility();
     expect(state.video.pause).toHaveBeenCalled();
@@ -43,7 +45,7 @@ describe("visible product demos", () => {
   });
   it("provides manual playback when autoplay is rejected", async () => {
     state.video.play.mockRejectedValueOnce(new Error("autoplay blocked"));
-    observe([{ isIntersecting: true }]);
+    observe([{ isIntersecting: true, intersectionRatio: 1 }]);
     await Promise.resolve();
     await Promise.resolve();
     expect(state.video.controls).toBe(true);
