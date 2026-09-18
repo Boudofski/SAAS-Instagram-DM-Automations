@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/providers/i18n-provider";
+import type { Locale } from "@/lib/i18n/config";
 import { UiText } from "@/components/i18n/localized-copy";
 
 
@@ -16,6 +18,15 @@ import Link from "next/link";
 import { useState } from "react";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 
+const BILLING_LABELS: Record<Locale, { annual: string; monthly: string; equivalent: string }> = {
+  en: { annual: "per year, billed annually", monthly: "per month, billed monthly", equivalent: "Monthly equivalent" },
+  fr: { annual: "par an, facturé annuellement", monthly: "par mois, facturé mensuellement", equivalent: "Équivalent mensuel" },
+  ar: { annual: "سنوياً، تُدفع مرة واحدة كل سنة", monthly: "شهرياً، تُدفع كل شهر", equivalent: "ما يعادل شهرياً" },
+  es: { annual: "al año, con facturación anual", monthly: "al mes, con facturación mensual", equivalent: "Equivalente mensual" },
+  de: { annual: "pro Jahr, jährlich abgerechnet", monthly: "pro Monat, monatlich abgerechnet", equivalent: "Monatlicher Gegenwert" },
+  pt: { annual: "por ano, com cobrança anual", monthly: "por mês, com cobrança mensal", equivalent: "Equivalente mensal" },
+};
+
 type Props = {
   compact?: boolean;
   dashboardCompact?: boolean;
@@ -31,6 +42,8 @@ export default function PricingExperience({
   existingPaid = false,
   internalPlanAccess = false,
 }: Props) {
+  const { locale } = useI18n();
+  const billingLabel = BILLING_LABELS[locale];
   const [interval, setInterval] = useState<BillingInterval>("year");
 
   return (
@@ -116,13 +129,13 @@ export default function PricingExperience({
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-end gap-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                       <span className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>${price}</span>
-                      <span className="mb-1 text-xs font-semibold text-slate-400">/{interval === "year" ? "year" : "month"}</span>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{interval === "year" ? billingLabel.annual : billingLabel.monthly}</span>
                     </div>
                     {interval === "year" && paidPlan && (
                       <p className="mt-1 text-[11px] font-black text-emerald-600 dark:text-emerald-300">
-                        {`Save ${plan.annualSavingsPercent}%`} · ${annualMonthlyEquivalent(paidPlan).toFixed(2)}<UiText>{"/mo "}</UiText></p>
+                        {billingLabel.equivalent}: ${annualMonthlyEquivalent(paidPlan).toFixed(2)}</p>
                     )}
                   </>
                 )}
