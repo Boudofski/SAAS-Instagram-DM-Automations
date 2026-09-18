@@ -2,7 +2,7 @@ import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "node:fs";
-import { localizeCopyTree } from "@/components/i18n/localized-copy";
+import { localizeCopyTree } from "./localize-copy-tree";
 import { resolveRequestLocale, SUPPORTED_LOCALES, localizePublicPath } from "./config";
 import { translateUi } from "./translate";
 import { PUBLIC_COPY_ROWS } from "./public-copy";
@@ -56,7 +56,7 @@ describe("language-switching regressions", () => {
   it("uses original pages, not alternative localized designs or a DOM observer", () => {
     for (const path of ["app/(website)/page.tsx", "app/(website)/pricing/page.tsx"]) {
       const source = fs.readFileSync(path, "utf8");
-      expect(source).toContain("<LocalizedCopy>");
+      expect(source).toMatch(/<LocalizedCopy>|return localizeCopyTree\(/);
       expect(source).not.toMatch(/LocalizedLandingPage|LocalizedPricingPage/);
     }
     expect(fs.readFileSync("app/layout.tsx", "utf8")).not.toContain("PhraseTranslationBridge");
