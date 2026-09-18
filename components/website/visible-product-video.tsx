@@ -37,9 +37,9 @@ export default function VisibleProductVideo({ src, poster, label, className }: {
       }
     };
     const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
+      visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
       sync();
-    }, { threshold: 0 });
+    }, { threshold: [0, 0.25] });
     if (observer) observer.observe(video);
     else { visible = true; sync(); }
     document.addEventListener("visibilitychange", sync);
