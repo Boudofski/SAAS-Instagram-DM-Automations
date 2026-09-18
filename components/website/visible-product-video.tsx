@@ -37,6 +37,7 @@ export default function VisibleProductVideo({ src, poster, label, className }: {
       }
     };
     const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(([entry]) => {
+      // A sliver at the viewport edge should not start a large media download.
       visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
       sync();
     }, { threshold: [0, 0.25] });
