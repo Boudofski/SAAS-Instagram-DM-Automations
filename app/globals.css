@@ -290,6 +290,16 @@
 .ap3k-ring-one { animation: ap3k-ring-breathe 7s ease-in-out infinite; }
 .ap3k-ring-two { animation: ap3k-ring-breathe 7s ease-in-out 1.1s infinite reverse; }
 
+/* Small screens keep the purple gradient without continuously rasterizing
+   oversized blurred decorations behind the headline. */
+@media (max-width: 767px) {
+  .ap3k-orb-one,
+  .ap3k-orb-two { display: none; }
+  .ap3k-product-float,
+  .ap3k-ring-one,
+  .ap3k-ring-two { animation: none; }
+}
+
 .ap3k-video-frame {
   transition: transform 350ms ease, box-shadow 350ms ease;
 }
