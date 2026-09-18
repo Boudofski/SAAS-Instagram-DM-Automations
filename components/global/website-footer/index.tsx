@@ -25,7 +25,7 @@ export default function WebsiteFooter() {
           </div>
           <div className="flex flex-wrap gap-x-10 gap-y-4 text-xs">
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("product")}</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("product")}</p>
               <Link href={`${href("/")}#features`} className={linkClass}>{t("features")}</Link>
               <Link href={`${href("/")}#how-it-works`} className={linkClass}>{t("howItWorks")}</Link>
               <Link href={href("/pricing")} className={linkClass}>{t("pricing")}</Link>
@@ -35,13 +35,13 @@ export default function WebsiteFooter() {
               <Link href={href("/manychat-alternative")} className={linkClass}>{t("manychatAlternative")}</Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("popularGuides")}</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("popularGuides")}</p>
               <Link href={href("/blog/automate-instagram-dms-from-comments")} className={linkClass}>{t("automateDmsGuide")}</Link>
               <Link href={href("/blog/instagram-comment-reply-vs-dm")} className={linkClass}>{t("commentReplyVsDm")}</Link>
               <Link href={href("/blog/turn-instagram-comments-into-leads")} className={linkClass}>{t("commentsToLeads")}</Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("legal")}</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("legal")}</p>
               <Link href={href("/privacy")} className={linkClass}>{t("privacy")}</Link>
               <Link href={href("/terms")} className={linkClass}>{t("terms")}</Link>
               <Link href={href("/cookies")} className={linkClass}>{t("cookies")}</Link>
@@ -50,7 +50,7 @@ export default function WebsiteFooter() {
               <CookiePreferencesButton className={linkClass} />
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-400">{t("support")}</p>
+              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("support")}</p>
               <Link href={href("/help")} className={linkClass}>{t("knowledgeBase")}</Link>
               <Link href={href("/contact")} className={linkClass}>{t("contactSupport")}</Link>
               <a href="mailto:support@ap3k.com" className={linkClass}><UiText>{"support@ap3k.com"}</UiText></a>
@@ -58,7 +58,7 @@ export default function WebsiteFooter() {
           </div>
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
-          <p className="text-xs text-slate-400">{t("footerCopyright")}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">{t("footerCopyright")}</p>
         </div>
       </div>
     </footer>
