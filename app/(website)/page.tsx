@@ -1,3 +1,4 @@
+import VisibleProductVideo from "@/components/website/visible-product-video";
 import { translateUi } from "@/lib/i18n/translate";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
@@ -142,18 +143,12 @@ function ProductVideo({
       <div className="pointer-events-none absolute -inset-10 rounded-[4rem] bg-[radial-gradient(circle,rgba(244,114,182,0.28),rgba(124,58,237,0.16)_42%,transparent_70%)] blur-2xl" />
       <div className="ap3k-video-frame relative rounded-[2.7rem] border border-white/25 bg-[#090a10] p-[7px] shadow-[0_34px_90px_rgba(25,7,66,0.36)] ring-1 ring-black/25 dark:ring-white/10">
         <div className="overflow-hidden rounded-[2.32rem] bg-black">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
+          <VisibleProductVideo
+            src={src}
             poster={priority ? "/media/ap3k-product-01.jpg" : undefined}
-            preload={priority ? "auto" : "metadata"}
-            aria-label={label}
+            label={label}
             className="aspect-[240/426] w-full bg-black object-cover"
-          >
-            <source src={src} type="video/mp4" />
-          </video>
+          />
         </div>
       </div>
     </div>
