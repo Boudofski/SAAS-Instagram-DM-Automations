@@ -38,7 +38,7 @@ export default function ConsentAwareAnalytics() {
       ) : null}
 
       {ready && consent === null ? (
-        <LocalizedCopy><aside
+        <LocalizedCopy><div
           role="dialog"
           aria-label="Cookie preferences"
           className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-2xl rounded-2xl border border-white/15 bg-[#111320]/95 p-4 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:p-5"
@@ -50,7 +50,7 @@ export default function ConsentAwareAnalytics() {
             <button type="button" onClick={() => choose("necessary")} className="min-h-11 rounded-xl border border-white/15 px-4 text-xs font-black transition hover:bg-white/10"><UiText>{" Necessary only "}</UiText></button>
             <button type="button" onClick={() => choose("accepted")} className="ap3k-gradient-button min-h-11 px-5 text-xs"><UiText>{"Accept analytics"}</UiText></button>
           </div>
-        </aside></LocalizedCopy>
+        </div></LocalizedCopy>
       ) : null}
     </>
   );
