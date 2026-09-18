@@ -10,7 +10,6 @@ import WebsiteNav from "@/components/global/website-nav";
 import { BLOG_POSTS } from "@/lib/blog";
 import {
   ArrowRight,
-  CheckCircle2,
   BadgeCheck,
   Infinity,
   MessageCircle,
@@ -20,7 +19,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import LocalizedCopy from "@/components/i18n/localized-copy";
+import { localizeCopyTree } from "@/lib/i18n/localize-copy-tree";
+import FeatureDemos from "@/components/website/feature-demos";
 import { getServerLocale } from "@/lib/i18n/server";
 
 const VALUE_CARDS = [
@@ -170,8 +170,8 @@ export default function LandingPage() {
     alternateName: "AP3K DM Automation", publisher: COMPANY_SCHEMA };
 
 
-  return (
-    <LocalizedCopy><div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
+  return localizeCopyTree(
+    <div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedSoftware).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedFaq).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c") }} />
@@ -268,45 +268,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="relative bg-[#5521c8] text-white">
-          <div className="relative">
-            {BENEFITS.map((benefit, index) => (
-              <article
-                key={benefit.title}
-                className={`sticky top-16 flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-t border-white/10 px-4 py-8 sm:px-8 sm:py-10 lg:px-16 ${
-                  index === 0
-                    ? "bg-[radial-gradient(circle_at_12%_18%,rgba(244,114,182,0.25),transparent_28rem),linear-gradient(135deg,#5521c8,#7832e3)]"
-                    : index === 1
-                      ? "bg-[radial-gradient(circle_at_86%_22%,rgba(244,114,182,0.22),transparent_28rem),linear-gradient(135deg,#6725d4,#8b35df)]"
-                      : "bg-[radial-gradient(circle_at_18%_78%,rgba(30,41,59,0.26),transparent_30rem),linear-gradient(135deg,#5c22cc,#7431df)]"
-                }`}
-                style={{ zIndex: index + 1 }}
-              >
-                <FadeIn replay amount={0.42} className="mx-auto w-full max-w-6xl">
-                  <div className={`grid items-center gap-7 lg:grid-cols-2 lg:gap-24 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                    <div className="text-center lg:text-left">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-fuchsia-200 sm:text-xs">{benefit.kicker}</p>
-                      <h2 className="mx-auto mt-3 max-w-xl text-3xl font-black leading-[0.96] tracking-[-0.05em] sm:text-5xl lg:mx-0 lg:mt-4">{benefit.title}</h2>
-                      <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-white/75 sm:text-base sm:leading-7 lg:mx-0 lg:mt-6 lg:text-lg lg:leading-8">{benefit.body}</p>
-                      <div className="mt-7 hidden space-y-3 lg:block">
-                        {benefit.bullets.map((bullet) => (
-                          <div key={bullet} className="flex items-center gap-3 text-sm font-bold text-white/90">
-                            <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /></span>
-                            {bullet}
-                          </div>
-                        ))}
-                      </div>
-                      <Link href="/sign-up" className="mt-8 hidden items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#6128c8] shadow-lg transition hover:-translate-y-0.5 lg:inline-flex">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
-                    </div>
-                    <div className="mx-auto flex w-full items-center justify-center">
-                      <ProductVideo src={benefit.src} label={benefit.label} className="w-[min(60vw,250px)] sm:w-[260px] lg:w-full lg:max-w-[300px]" />
-                    </div>
-                  </div>
-                </FadeIn>
-              </article>
-            ))}
-          </div>
-        </section>
+        <FeatureDemos demos={BENEFITS} />
 
         <section id="how-it-works" className="bg-[#f1edfb] px-4 py-20 dark:bg-[#0e1020] sm:px-8 lg:px-16 lg:py-24">
           <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[0.98fr_1.02fr] lg:gap-24">
@@ -421,6 +383,6 @@ export default function LandingPage() {
       </main>
 
       <WebsiteFooter />
-    </div></LocalizedCopy>
+    </div>, locale
   );
 }
