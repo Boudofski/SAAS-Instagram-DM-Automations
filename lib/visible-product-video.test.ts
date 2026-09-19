@@ -13,13 +13,13 @@ describe("visible product demos", () => {
   beforeEach(() => {
     state.video = { src: "", controls: false, load: vi.fn(), play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), getAttribute: () => state.video.src || null, removeAttribute: () => { state.video.src = ""; } };
     motion = { matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
-    vi.stubGlobal("window", { matchMedia: () => motion });
+    vi.stubGlobal("window", { matchMedia: () => motion, addEventListener: vi.fn(), removeEventListener: vi.fn() });
     vi.stubGlobal("document", { visibilityState: "visible", addEventListener: (_: string, cb: () => void) => { visibility = cb; }, removeEventListener: vi.fn() });
     vi.stubGlobal("IntersectionObserver", class { constructor(cb: typeof observe) { observe = cb; } observe() {} disconnect() {} });
     VisibleProductVideo({ src: "/media/demo.mp4", label: "Demo" });
     cleanup = state.effect!();
   });
-  afterEach(() => { cleanup?.(); vi.unstubAllGlobals(); });
+  afterEach(() => { cleanup?.(); vi.useRealTimers(); vi.unstubAllGlobals(); });
   it("does not load until visible and pauses when leaving the viewport", async () => {
     expect(state.video.src).toBe("");
     expect(state.video.play).not.toHaveBeenCalled();
@@ -50,4 +50,24 @@ describe("visible product demos", () => {
     await Promise.resolve();
     expect(state.video.controls).toBe(true);
   });
+  it("defers hero video bytes until after load and cancels pending work on unmount", () => {
+    cleanup?.();
+    vi.useFakeTimers();
+    Object.defineProperty(document, "readyState", { value: "complete", configurable: true });
+    VisibleProductVideo({ src: "/media/demo.mp4", label: "Demo", deferUntilLoaded: true });
+    cleanup = state.effect!();
+    observe([{ isIntersecting: true, intersectionRatio: 1 }]);
+    expect(state.video.src).toBe("");
+    vi.advanceTimersByTime(1200);
+    expect(state.video.src).toBe("/media/demo.mp4");
+    cleanup?.();
+    VisibleProductVideo({ src: "/media/demo.mp4", label: "Demo", deferUntilLoaded: true });
+    cleanup = state.effect!();
+    observe([{ isIntersecting: true, intersectionRatio: 1 }]);
+    cleanup?.();
+    cleanup = undefined;
+    vi.runAllTimers();
+    expect(state.video.src).toBe("");
+  });
+
 });

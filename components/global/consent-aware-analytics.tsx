@@ -1,4 +1,5 @@
 "use client";
+import ConversionTracking from "./conversion-tracking";
 import { UiText } from "@/components/i18n/localized-copy";
 
 
@@ -33,6 +34,7 @@ export default function ConsentAwareAnalytics() {
         <>
           <TrackingScripts />
           <Analytics />
+          <ConversionTracking />
           <SpeedInsights />
         </>
       ) : null}

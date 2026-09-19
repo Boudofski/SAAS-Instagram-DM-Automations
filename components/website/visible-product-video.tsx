@@ -5,8 +5,9 @@ import { useI18n } from "@/providers/i18n-provider";
 import { translateUi } from "@/lib/i18n/translate";
 
 /** Keep off-screen demos out of the initial download and decoding workload. */
-export default function VisibleProductVideo({ src, poster, label, className }: {
+export default function VisibleProductVideo({ src, poster, label, className, deferUntilLoaded = false }: {
   src: string;
+  deferUntilLoaded?: boolean;
   poster?: string;
   label: string;
   className?: string;
@@ -18,10 +19,12 @@ export default function VisibleProductVideo({ src, poster, label, className }: {
     const video = ref.current;
     if (!video) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let ready = !deferUntilLoaded;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let visible = false;
     let disposed = false;
     const sync = () => {
-      const active = visible && document.visibilityState === "visible";
+      const active = ready && visible && document.visibilityState === "visible";
       if (active && !video.getAttribute("src")) {
         video.src = src;
         video.load();
@@ -36,6 +39,12 @@ export default function VisibleProductVideo({ src, poster, label, className }: {
         video.pause();
       }
     };
+    // Let critical CSS, fonts and the initial paint finish before hero video bytes compete.
+    const afterLoad = () => { timer = setTimeout(() => { ready = true; sync(); }, 1200); };
+    if (deferUntilLoaded) {
+      if (document.readyState === "complete") afterLoad();
+      else window.addEventListener("load", afterLoad, { once: true });
+    }
     const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(([entry]) => {
       // A sliver at the viewport edge should not start a large media download.
       visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
@@ -47,6 +56,8 @@ export default function VisibleProductVideo({ src, poster, label, className }: {
     motion.addEventListener("change", sync);
     return () => {
       disposed = true;
+      clearTimeout(timer);
+      window.removeEventListener("load", afterLoad);
       observer?.disconnect();
       document.removeEventListener("visibilitychange", sync);
       motion.removeEventListener("change", sync);
@@ -54,7 +65,7 @@ export default function VisibleProductVideo({ src, poster, label, className }: {
       video.removeAttribute("src");
       video.load();
     };
-  }, [src]);
+  }, [src, deferUntilLoaded]);
 
   return <video ref={ref} muted loop playsInline preload="none" poster={poster} aria-label={translateUi(label, locale)} className={className} />;
 }

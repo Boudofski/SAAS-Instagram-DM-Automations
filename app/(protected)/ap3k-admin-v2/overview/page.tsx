@@ -1,3 +1,4 @@
+import { getLaunchMetrics } from "@/lib/admin-v2/launch-metrics";
 import { AdminRefreshButton } from "@/components/admin-v2/refresh-button";
 import Link from "next/link";
 import {
@@ -23,10 +24,11 @@ import { humanEvent } from "@/lib/admin-v2/labels";
 import LocalTime from "@/components/global/local-time";
 
 export default async function AdminV2OverviewPage() {
-  const [stats, health, activity] = await Promise.all([
+  const [stats, health, activity, launch] = await Promise.all([
     getAdminV2Stats(),
     getAdminV2SystemHealth(),
     getAdminV2RecentActivity(),
+    getLaunchMetrics(),
   ]);
 
   const needsAttention = health.attentionAccounts > 0 || health.campaignsNeedingReview > 0 || stats.failedToday > 0;
@@ -74,6 +76,18 @@ export default async function AdminV2OverviewPage() {
           tone={stats.failedToday > 0 ? "red" : "slate"}
         />
       </div>
+
+      <section>
+        <AdminSectionHeader title="Activation · accounts created in the last 30 days"
+          description="Current operational records, counted once per AP3K user across their Instagram accounts. Includes owner/test accounts; deleted records cannot be reconstructed." />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="New AP3K accounts" value={launch.signups} />
+          <StatCard label="Have a connected Instagram" value={launch.connected} />
+          <StatCard label="Have a successful send" value={launch.firstSend} sub="Comment or DM accepted by the API" />
+          <StatCard label="Sent in the last 7 days" value={launch.usedThisWeek} sub="Activity indicator, not a retention rate" />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-slate-400">Connection counts reflect current status. Successful sends do not prove a message was read or a sale occurred. Revenue and paid conversion must be reconciled with Stripe invoices, not plan labels.</p>
+      </section>
 
       <section>
           <AdminSectionHeader

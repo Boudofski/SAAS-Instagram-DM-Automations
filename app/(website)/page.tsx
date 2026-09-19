@@ -145,6 +145,7 @@ function ProductVideo({
         <div className="overflow-hidden rounded-[2.32rem] bg-black">
           <VisibleProductVideo
             src={src}
+            deferUntilLoaded={priority}
             poster={priority ? "/media/ap3k-product-01.jpg" : undefined}
             label={label}
             className="aspect-[240/426] w-full bg-black object-cover"
@@ -224,6 +225,7 @@ export default function LandingPage() {
                 className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
                 priority
               />
+              <span className="absolute bottom-0 text-xs text-white/85">Illustrative automation example</span>
             </div>
           </div>
         </section>
