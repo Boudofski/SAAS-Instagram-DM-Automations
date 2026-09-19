@@ -18,7 +18,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     slug: "reconnect-instagram",
     category: "Instagram",
     title: "Reconnect or add an Instagram account",
-    summary: "Reconnect when permissions expire or when you intentionally want to replace the workspace account.",
+    summary: "Reconnect to restore an existing connection. Use Add Instagram account to connect a different profile.",
     steps: ["Open Instagram Account and select Reconnect Instagram.", "Sign in to the intended Meta account and approve every required permission.", "Free includes 1 Instagram account, Pro includes 3, and Business includes 10. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.", "Reconnecting restores the same account. Use the account menu to add another account; existing accounts and automations stay unchanged."],
   },
   {
@@ -32,7 +32,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     slug: "opening-final-dm",
     category: "Automations",
     title: "Opening DM, follow request, and final DM",
-    summary: "Each private-message step is optional and remains off until you enable it.",
+    summary: "When Send a DM is enabled, write the delivery message. Opening DM and follow request are optional.",
     steps: ["Opening DM starts the private conversation with a button; leave it off to send the final DM directly.", "Follow request can ask a person to follow before AP3K sends the final link.", "Final DM contains the message and up to three button labels and destination URLs.", "Use the phone preview to check the complete flow before publishing."],
   },
   {
@@ -75,7 +75,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Inbox",
     title: "Contacts and leads",
     summary: "Contacts records the Instagram people who interact with your connected automations.",
-    steps: ["Open Contacts to search people captured by AP3K.", "A lead is counted when an eligible automation captures the interaction defined by the flow.", "Open an Inbox conversation to review message context and reply manually.", "Use automation analytics to compare comments, public replies, DMs, and leads."],
+    steps: ["Open Contacts to search people captured by AP3K.", "A lead is counted when an eligible automation captures the interaction defined by the flow.", "A captured contact is not a confirmed sale. Use your store or booking system to verify purchases and bookings.", "Open an Inbox conversation to review message context and reply manually.", "Use automation analytics to compare comments, public replies, DMs, and leads."],
   },
   {
     slug: "plans-usage",
