@@ -12,43 +12,13 @@ import {
   ArrowRight,
   BadgeCheck,
   Infinity,
-  MessageCircle,
-  Reply,
-  Send,
   Sparkles,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { localizeCopyTree } from "@/lib/i18n/localize-copy-tree";
 import FeatureDemos from "@/components/website/feature-demos";
+import { AnimatedSetupSteps, AnimatedWorkflowCards } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
-
-const VALUE_CARDS = [
-  {
-    step: "01",
-    icon: MessageCircle,
-    title: "Choose the trigger",
-    copy: "Use a specific keyword like GUIDE, or respond to any eligible comment on the post.",
-  },
-  {
-    step: "02",
-    icon: Reply,
-    title: "Reply publicly",
-    copy: "AP3K posts one of your saved replies so the commenter knows to check their DMs.",
-  },
-  {
-    step: "03",
-    icon: Send,
-    title: "Send the DM",
-    copy: "Deliver your message and optional link button automatically while interest is fresh.",
-  },
-  {
-    step: "04",
-    icon: Users,
-    title: "See what happened",
-    copy: "Keep replies, DMs, automation activity, and captured leads together in AP3K.",
-  },
-] as const;
 
 const BENEFITS = [
   {
@@ -56,7 +26,8 @@ const BENEFITS = [
     title: "Turn comments into conversations that keep moving.",
     body: "Choose a keyword or any eligible comment, then let AP3K react immediately while intent is still fresh.",
     bullets: ["Match keywords or any comment", "Keep every automation organized", "See activity as it happens"],
-    src: "/media/instagram-features_02.mp4",
+    src: "/media/instagram-features_02-phone.mp4",
+    poster: "/media/instagram-features_02-poster.webp",
     label: "Comment triggers",
   },
   {
@@ -64,7 +35,8 @@ const BENEFITS = [
     title: "Catch interested people before the moment disappears.",
     body: "Move the right commenters into a DM and keep the automation activity and lead context in one place.",
     bullets: ["Send the requested follow-up by DM", "Track automation leads", "Reduce manual inbox follow-up"],
-    src: "/media/instagram-features_03.mp4",
+    src: "/media/instagram-features_03-phone.mp4",
+    poster: "/media/instagram-features_03-poster.webp",
     label: "Lead flow",
   },
   {
@@ -72,7 +44,8 @@ const BENEFITS = [
     title: "Reply while your audience is still paying attention.",
     body: "AP3K can reply under the post, send a DM, or do both—using the exact actions you configured for the automation.",
     bullets: ["Reply to comments automatically", "Send DMs after eligible comments", "Use one action or both"],
-    src: "/media/instagram-features_04.mp4",
+    src: "/media/instagram-features_04-phone.mp4",
+    poster: "/media/instagram-features_04-poster.webp",
     label: "Reply and DM",
   },
 ] as const;
@@ -129,11 +102,13 @@ const softwareSchema = {
 
 function ProductVideo({
   src,
+  poster,
   label,
   className = "",
   priority = false,
 }: {
   src: string;
+  poster: string;
   label: string;
   className?: string;
   priority?: boolean;
@@ -146,8 +121,9 @@ function ProductVideo({
           <VisibleProductVideo
             src={src}
             deferUntilLoaded={priority}
-            poster={priority ? "/media/ap3k-product-01.jpg" : undefined}
+            poster={poster}
             label={label}
+            showPlaybackControl
             className="aspect-[240/426] w-full bg-black object-cover"
           />
         </div>
@@ -220,7 +196,8 @@ export default function LandingPage() {
               <div className="ap3k-ring-one pointer-events-none absolute h-[78%] w-[78%] rounded-full border border-white/10 bg-white/[0.05] blur-[1px]" />
               <div className="ap3k-ring-two pointer-events-none absolute h-[62%] w-[62%] rounded-full border border-white/10" />
               <ProductVideo
-                src="/media/instagram-features_01.mp4"
+                src="/media/instagram-features_01-phone.mp4"
+                poster="/media/instagram-features_01-poster.webp"
                 label="AP3K Instagram automation demo"
                 className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
                 priority
@@ -245,28 +222,7 @@ export default function LandingPage() {
               </p>
             </FadeIn>
 
-            <StaggerContainer className="relative mt-12 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div aria-hidden="true" className="pointer-events-none absolute left-[8%] right-[8%] top-6 hidden h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent dark:via-violet-400/25 lg:block" />
-              {VALUE_CARDS.map(({ step, icon: Icon, title, copy }) => (
-                <StaggerItem key={title} className="h-full">
-                  <HoverLift className="h-full">
-                    <div className="group relative h-full overflow-hidden rounded-[1.7rem] border border-slate-200/90 bg-white/90 p-6 text-left shadow-[0_16px_45px_rgba(42,27,78,0.07)] backdrop-blur-sm transition-colors hover:border-violet-300 dark:border-violet-300/[0.14] dark:bg-[#111320] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] dark:shadow-[0_24px_70px_rgba(0,0,0,0.28)] dark:hover:border-violet-300/30">
-                      <div aria-hidden="true" className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/75 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:via-violet-300/70 dark:opacity-60" />
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <span className="rounded-full border border-violet-200/80 bg-violet-50 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-violet-700 dark:border-violet-300/15 dark:bg-violet-300/[0.07] dark:text-violet-200">
-                          {step}
-                        </span>
-                      </div>
-                      <h3 className="mt-5 text-lg font-black text-slate-950 dark:text-white">{title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300/80">{copy}</p>
-                    </div>
-                  </HoverLift>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
+            <AnimatedWorkflowCards />
           </div>
         </section>
 
@@ -278,23 +234,11 @@ export default function LandingPage() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Start in minutes</p>
               <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">New to automation? Do not overthink it.</h2>
               <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
-              <div className="mt-8 space-y-3">
-                {[
-                  ["01", "Connect Instagram", "Authorize your professional Instagram account."],
-                  ["02", "Choose a post + trigger", "Use a keyword or any eligible comment."],
-                  ["03", "Choose Actions", "Reply to comment, Send a DM, or enable both."],
-                  ["04", "Activate", "AP3K starts listening and records the activity."],
-                ].map(([num, title, copy]) => (
-                  <div key={num} className="flex gap-4 rounded-2xl border border-violet-200/80 bg-white/90 p-4 shadow-sm dark:border-white/8 dark:bg-white/[0.04]">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-xs font-black text-white">{num}</span>
-                    <div><p className="font-black">{title}</p><p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{copy}</p></div>
-                  </div>
-                ))}
-              </div>
+              <AnimatedSetupSteps />
             </FadeIn>
             <FadeIn delay={0.06}>
               <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-8 shadow-[0_25px_80px_rgba(91,33,200,0.12)] dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-12">
-                <ProductVideo src="/media/templates_05.mp4" label="AP3K automation setup demo" className="max-w-[280px]" />
+                <ProductVideo src="/media/templates_05-phone.mp4" poster="/media/templates_05-poster.webp" label="AP3K automation setup demo" className="max-w-[280px]" />
               </div>
             </FadeIn>
           </div>
