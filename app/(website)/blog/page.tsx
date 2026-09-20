@@ -1,6 +1,6 @@
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import LocalizedCopy from "@/components/i18n/localized-copy";
-import { FadeIn, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
+import { ReadableReveal } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual from "@/components/website/blog-visual";
@@ -31,19 +31,19 @@ export default function BlogPage() {
       <WebsiteNav current="blog" />
       <main className="relative z-10">
         <section className="mx-auto max-w-5xl px-4 pb-12 pt-20 text-center sm:px-8">
-          <FadeIn>
+          <ReadableReveal>
             <p className="ap3k-kicker">AP3K resources</p>
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">Instagram automation, explained clearly.</h1>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
               Practical guides for Comment replies, DMs, triggers, campaigns and turning Instagram engagement into measurable follow-up.
             </p>
-          </FadeIn>
+          </ReadableReveal>
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-8">
-          <StaggerContainer className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {BLOG_POSTS.map((post, index) => (
-              <StaggerItem key={post.slug}>
+              <ReadableReveal key={post.slug} delay={Math.min(index * 0.025, 0.1)}>
                 <article className={`group h-full overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm transition-all duration-500 motion-safe:hover:-translate-y-1 motion-safe:hover:border-orange-500/30 motion-safe:hover:shadow-xl dark:border-white/10 dark:bg-[#101112] ${index === 0 ? "md:col-span-2" : ""}`}>
                   {post.cover ? <div className="px-4"><TutorialScreenshot id={post.cover} compact /></div> : <BlogVisual variant={post.visual} alt={post.visualAlt} compact />}
                   <div className={index === 0 ? "p-6 md:p-8" : "p-6"}>
@@ -58,13 +58,13 @@ export default function BlogPage() {
                   </Link>
                   </div>
                 </article>
-              </StaggerItem>
+              </ReadableReveal>
             ))}
-          </StaggerContainer>
+          </div>
         </section>
 
         <section className="mx-auto max-w-4xl px-4 pb-24 sm:px-8">
-          <FadeIn>
+          <ReadableReveal>
             <div className="rounded-[32px] border border-orange-500/20 bg-gradient-to-br from-orange-50 via-pink-50 to-white p-8 text-center shadow-sm dark:from-orange-500/10 dark:via-pink-500/10 dark:to-white/[0.03] sm:p-10">
               <p className="ap3k-kicker">Put it into practice</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight">Build your first comment-to-DM campaign.</h2>
@@ -74,7 +74,7 @@ export default function BlogPage() {
                 <Link href="/pricing" className="ap3k-outline-button px-6 py-3 text-sm">See pricing</Link>
               </div>
             </div>
-          </FadeIn>
+          </ReadableReveal>
         </section>
       </main>
       <WebsiteFooter />

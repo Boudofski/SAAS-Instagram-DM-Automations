@@ -6,7 +6,7 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
 import { localizePublicPath } from "@/lib/i18n/config";
 import LocalizedCopy from "@/components/i18n/localized-copy";
-import { FadeIn } from "@/components/global/motion/fade-in";
+import { ReadableReveal } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual, { getBlogVisualSrc } from "@/components/website/blog-visual";
@@ -46,7 +46,7 @@ export function generateMetadata({ params }: Props): Metadata {
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       siteName: "AP3K",
-      images: [{ url: socialImage, width: post.cover ? 2048 : 1440, height: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810, alt: translateUi(post.cover ? TUTORIAL_SCREENSHOTS[post.cover].caption : post.visualAlt, getServerLocale()) }],
+      images: [{ url: socialImage, width: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440, height: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810, alt: translateUi(post.cover ? TUTORIAL_SCREENSHOTS[post.cover].caption : post.visualAlt, getServerLocale()) }],
     },
     twitter: {
       card: "summary_large_image",
@@ -98,7 +98,7 @@ export default function BlogPostPage({ params }: Props) {
       <main className="relative z-10">
         <article className="mx-auto max-w-4xl px-4 pb-20 pt-14 sm:px-8 sm:pt-20">
           <Breadcrumbs items={[{ name: "Blog", path: "/blog" }, { name: post.title, path: `/blog/${post.slug}` }]} />
-          <FadeIn>
+          <ReadableReveal>
             <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-300">
               <ArrowLeft className="h-4 w-4" /> All guides
             </Link>
@@ -109,15 +109,15 @@ export default function BlogPostPage({ params }: Props) {
             </div>
             <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-6xl">{post.title}</h1>
             <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">{post.intro}</p>
-          </FadeIn>
+          </ReadableReveal>
 
-          <FadeIn delay={0.06}>
+          <ReadableReveal delay={0.06}>
             <div className="mt-10">
               {post.cover ? <p className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-7 text-slate-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-300">{TUTORIAL_LABELS.hint}</p> : <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />}
             </div>
-          </FadeIn>
+          </ReadableReveal>
 
-          <FadeIn delay={0.09}>
+          <ReadableReveal delay={0.09}>
             <nav aria-label="Article contents" className="mt-10 rounded-2xl border border-slate-200 bg-white/80 p-5 dark:border-white/10 dark:bg-white/[0.04]">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">In this guide</p>
               <ol className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -130,11 +130,11 @@ export default function BlogPostPage({ params }: Props) {
                 ))}
               </ol>
             </nav>
-          </FadeIn>
+          </ReadableReveal>
 
           <div className="mt-12 space-y-12">
             {post.sections.map((section, index) => (
-              <FadeIn key={section.heading} delay={Math.min(index * 0.03, 0.15)}>
+              <ReadableReveal key={section.heading} delay={Math.min(index * 0.03, 0.15)}>
                 <section id={`section-${index + 1}`} className="scroll-mt-24">
                   <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{section.heading}</h2>
                   <div className="mt-4 space-y-4 text-base leading-8 text-slate-600 dark:text-slate-300">
@@ -166,14 +166,14 @@ export default function BlogPostPage({ params }: Props) {
                   <GrowthSectionSources slug={post.slug} index={index} />
                   {section.screenshot && <TutorialScreenshot id={section.screenshot} />}
                 </section>
-              </FadeIn>
+              </ReadableReveal>
             ))}
           </div>
 
           <GrowthGuideExtras slug={post.slug} />
           {post.cover && <TutorialGuides />}
 
-          <FadeIn>
+          <ReadableReveal>
             <div className="mt-12 border-t border-slate-200 pt-6 dark:border-white/10">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Topics</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -182,9 +182,9 @@ export default function BlogPostPage({ params }: Props) {
                 ))}
               </div>
             </div>
-          </FadeIn>
+          </ReadableReveal>
 
-          <FadeIn>
+          <ReadableReveal>
             <aside className="mt-14 rounded-[30px] border border-orange-500/20 bg-gradient-to-br from-orange-50 via-pink-50 to-white p-7 dark:from-orange-500/10 dark:via-pink-500/10 dark:to-white/[0.03] sm:p-8">
               <p className="ap3k-kicker">Try the workflow</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Turn your next Instagram comment into an action.</h2>
@@ -197,7 +197,7 @@ export default function BlogPostPage({ params }: Props) {
                 <Link href="/pricing" className="ap3k-outline-button px-5 py-2.5 text-center text-sm">Compare plans</Link>
               </div>
             </aside>
-          </FadeIn>
+          </ReadableReveal>
         </article>
 
         <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-8">
