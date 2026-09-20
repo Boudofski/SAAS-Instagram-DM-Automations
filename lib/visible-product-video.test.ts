@@ -1,7 +1,12 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({ effect: null as null | (() => (() => void)), video: null as any }));
-vi.mock("react", async (original) => ({ ...await original<typeof import("react")>(), useRef: () => ({ current: state.video }), useEffect: (effect: any) => { state.effect = effect; } }));
+vi.mock("react", async (original) => ({
+  ...await original<typeof import("react")>(),
+  useRef: (initial: unknown) => ({ current: initial === null ? state.video : initial }),
+  useState: (initial: unknown) => [initial, vi.fn()],
+  useEffect: (effect: any) => { state.effect = effect; },
+}));
 vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: "en" }) }));
 import VisibleProductVideo from "@/components/website/visible-product-video";
 

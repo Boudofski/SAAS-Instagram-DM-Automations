@@ -23,6 +23,7 @@ import { getBlogVisualSrc } from "@/components/website/blog-visual";
 import styles from "@/components/website/home.module.css";
 import { localizeCopyTree } from "@/lib/i18n/localize-copy-tree";
 import FeatureDemos from "@/components/website/feature-demos";
+import { SetupTimeline, WorkflowStory } from "@/components/website/workflow-stories";
 import { getServerLocale } from "@/lib/i18n/server";
 
 const BENEFITS = [
@@ -31,7 +32,8 @@ const BENEFITS = [
     title: "Turn comments into conversations that keep moving.",
     body: "Choose a keyword or any eligible comment, then let AP3K react immediately while intent is still fresh.",
     bullets: ["Match keywords or any comment", "Keep every automation organized", "See activity as it happens"],
-    src: "/media/instagram-features_02.mp4",
+    src: "/media/instagram-features_02-phone.mp4",
+    poster: "/media/instagram-features_02-poster.webp",
     label: "Comment triggers",
   },
   {
@@ -39,7 +41,8 @@ const BENEFITS = [
     title: "Catch interested people before the moment disappears.",
     body: "Move the right commenters into a DM and keep the automation activity and lead context in one place.",
     bullets: ["Send the requested follow-up by DM", "Track automation leads", "Reduce manual inbox follow-up"],
-    src: "/media/instagram-features_03.mp4",
+    src: "/media/instagram-features_03-phone.mp4",
+    poster: "/media/instagram-features_03-poster.webp",
     label: "Lead flow",
   },
   {
@@ -47,7 +50,8 @@ const BENEFITS = [
     title: "Reply while your audience is still paying attention.",
     body: "AP3K can reply under the post, send a DM, or do both—using the exact actions you configured for the automation.",
     bullets: ["Reply to comments automatically", "Send DMs after eligible comments", "Use one action or both"],
-    src: "/media/instagram-features_04.mp4",
+    src: "/media/instagram-features_04-phone.mp4",
+    poster: "/media/instagram-features_04-poster.webp",
     label: "Reply and DM",
   },
 ] as const;
@@ -104,11 +108,13 @@ const softwareSchema = {
 
 function ProductVideo({
   src,
+  poster,
   label,
   className = "",
   priority = false,
 }: {
   src: string;
+  poster: string;
   label: string;
   className?: string;
   priority?: boolean;
@@ -118,7 +124,7 @@ function ProductVideo({
       <VisibleProductVideo
         src={src}
         deferUntilLoaded={priority}
-        poster={priority ? "/media/ap3k-product-01.jpg" : "/media/ap3k-templates.jpg"}
+        poster={poster}
         label={label}
         showPlaybackControl
         className={styles.phoneVideo}
@@ -165,7 +171,7 @@ export default function LandingPage() {
             <div className={styles.heroStage}>
               <div className={styles.stageMark} aria-hidden="true"><ArrowUpRight /></div>
               <div className={styles.commentNote}><MessageCircle aria-hidden="true" /><span>Comment received</span><Check aria-hidden="true" /></div>
-              <ProductVideo src="/media/instagram-features_01.mp4" label="AP3K Instagram automation demo" priority />
+              <ProductVideo src="/media/instagram-features_01-phone.mp4" poster="/media/instagram-features_01-poster.webp" label="AP3K Instagram automation demo" priority />
               <div className={styles.deliveryNote}><span className={styles.noteIcon}><Send aria-hidden="true" /></span><span>DM delivered<small>Automatically</small></span><Check aria-hidden="true" /></div>
             </div>
             <p className={styles.demoCaption}><span aria-hidden="true" />Illustrative automation example</p>
@@ -179,30 +185,27 @@ export default function LandingPage() {
           <p><Check aria-hidden="true" /><span>No credit card required</span></p>
         </div>
 
+        <section className={`${styles.section} ${styles.workflow}`} aria-labelledby="workflow-title">
+          <FadeIn className={styles.workflowIntro}>
+            <p className={styles.eyebrow}>The AP3K workflow</p>
+            <h2 id="workflow-title" className={styles.sectionTitle}>From Instagram comment to delivered link—automatically.</h2>
+            <p>Choose the post, trigger, and actions once. When the right comment arrives, AP3K can publish your reply, send the DM and link, and record the result.</p>
+          </FadeIn>
+          <WorkflowStory />
+        </section>
+
         <FeatureDemos demos={BENEFITS} />
 
         <section id="how-it-works" className={`${styles.section} ${styles.setup}`} aria-labelledby="setup-title">
           <div className={styles.setupVisual}>
             <div className={styles.setupFrame}>
               <span className={styles.setupDecoration} aria-hidden="true">↗</span>
-              <ProductVideo src="/media/templates_05.mp4" label="AP3K automation setup demo" />
+              <ProductVideo src="/media/templates_05-phone.mp4" poster="/media/templates_05-poster.webp" label="AP3K automation setup demo" />
             </div>
           </div>
           <div>
-            <FadeIn><p className={styles.eyebrow}>Start in minutes</p><h2 id="setup-title" className={styles.sectionTitle}>Set it up once.<br />Keep the conversation going.</h2></FadeIn>
-            <StaggerContainer className={styles.steps}>
-              {[
-                ["01", "Connect Instagram", "Authorize your professional Instagram account."],
-                ["02", "Choose a post + trigger", "Use a keyword or any eligible comment."],
-                ["03", "Choose Actions", "Reply to comment, Send a DM, or enable both."],
-                ["04", "Activate", "AP3K starts listening and records the activity."],
-              ].map(([num, title, copy]) => (
-                <StaggerItem key={num} className={styles.step}>
-                  <span className={styles.stepNumber} aria-hidden="true">{num}</span>
-                  <div><h3>{title}</h3><p>{copy}</p></div>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
+            <FadeIn><p className={styles.eyebrow}>Start in minutes</p><h2 id="setup-title" className={styles.sectionTitle}>New to automation? Do not overthink it.</h2><p className={styles.setupLead}>The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p></FadeIn>
+            <SetupTimeline />
             <Link href="/blog/how-ap3k-works-step-by-step" className={styles.textLink}>Read the setup guide <ArrowUpRight aria-hidden="true" /></Link>
           </div>
         </section>

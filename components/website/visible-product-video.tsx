@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, RotateCcw } from "lucide-react";
 import { useI18n } from "@/providers/i18n-provider";
 import { translateUi } from "@/lib/i18n/translate";
 
@@ -17,6 +17,8 @@ export default function VisibleProductVideo({ src, poster, label, className, def
   const ref = useRef<HTMLVideoElement>(null);
   const userPaused = useRef(false);
   const [playing, setPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
   const { locale } = useI18n();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function VisibleProductVideo({ src, poster, label, className, def
         void video.play().then(() => {
           // A pending play request may resolve after leaving the viewport.
           if (disposed || !visible || document.visibilityState !== "visible" || motion.matches || userPaused.current) video.pause();
-        }).catch(() => { if (!disposed) video.controls = true; });
+        }).catch(() => { if (!disposed) { video.controls = true; setPlaying(false); } });
       } else {
         video.pause();
       }
@@ -69,7 +71,7 @@ export default function VisibleProductVideo({ src, poster, label, className, def
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, deferUntilLoaded]);
+  }, [src, deferUntilLoaded, retryToken]);
 
   const togglePlayback = () => {
     const video = ref.current;
@@ -84,12 +86,18 @@ export default function VisibleProductVideo({ src, poster, label, className, def
     }
   };
 
-  const video = <video ref={ref} muted loop playsInline preload="none" poster={poster} aria-label={translateUi(label, locale)} className={className} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />;
+  const retry = () => {
+    userPaused.current = false;
+    setFailed(false);
+    setRetryToken((current) => current + 1);
+  };
+
+  const video = <video ref={ref} muted loop playsInline preload="none" poster={poster} aria-label={translateUi(label, locale)} className={className} onCanPlay={() => setFailed(false)} onError={() => { setFailed(true); setPlaying(false); }} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />;
   if (!showPlaybackControl) return video;
   return <div className="relative">
     {video}
-    <button type="button" onClick={togglePlayback} aria-label={translateUi(playing ? "Pause demo" : "Play demo", locale)} className="absolute end-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full border border-white/30 bg-black/80 text-white transition-colors hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-      {playing ? <Pause aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}
+    <button type="button" onClick={failed ? retry : togglePlayback} aria-label={translateUi(failed ? "Retry demo" : playing ? "Pause demo" : "Play demo", locale)} className="absolute end-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full border border-white/30 bg-black/80 text-white transition-colors hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+      {failed ? <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> : playing ? <Pause aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}
     </button>
   </div>;
 }

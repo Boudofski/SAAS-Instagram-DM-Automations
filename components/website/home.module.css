@@ -70,11 +70,43 @@
 .sectionTitle { font-size: clamp(2rem, 3.4vw, 3.2rem); letter-spacing: -.05em; line-height: 1.13; font-weight: 650; }
 .sectionHeading { display: flex; justify-content: space-between; align-items: flex-end; gap: 3rem; margin-bottom: 2.7rem; }
 .sectionHeading > p { max-width: 23rem; color: var(--home-muted); font-size: .9rem; line-height: 1.8; }
+.workflow { border-bottom: 1px solid var(--home-line); }
+.workflowIntro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, .72fr); column-gap: 4rem; align-items: end; margin-bottom: 3rem; }
+.workflowIntro .eyebrow { grid-column: 1 / -1; margin-bottom: 1rem; }
+.workflowIntro > p:last-child { max-width: 31rem; color: var(--home-muted); font-size: .9rem; line-height: 1.8; }
+.workflowStory { position: relative; }
+.workflowLine { position: absolute; inset-inline: 1.8rem; top: 1.8rem; height: 2px; overflow: hidden; background: var(--home-line); z-index: 0; }
+.workflowLine > span { display: block; block-size: 100%; border-radius: 999px; background: linear-gradient(90deg, #7c3aed, #a874ff); transition: inline-size .65s cubic-bezier(.2,.75,.2,1); }
+.workflowGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.workflowCard { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: stretch; min-width: 0; min-height: 15.5rem; padding: 1rem 1rem 1.25rem; border: 1px solid var(--home-line); border-radius: 18px; background: color-mix(in srgb, var(--home-surface) 92%, transparent); color: var(--home-ink); text-align: start; box-shadow: 0 10px 30px transparent; transition: transform .45s cubic-bezier(.2,.75,.2,1), border-color .35s, background .35s, box-shadow .35s; }
+.workflowCard:hover { transform: translateY(-4px); }
+.workflowCard[aria-current="step"] { transform: translateY(-8px); border-color: color-mix(in srgb, var(--home-accent) 48%, var(--home-line)); background: var(--home-surface); box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--home-accent) 42%, transparent); }
+.workflowCardTop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2.2rem; }
+.workflowIcon { display: grid; place-items: center; width: 3.6rem; height: 3.6rem; border: 6px solid var(--home-paper); border-radius: 50%; background: var(--home-lavender); color: var(--home-accent); transition: transform .4s, background .35s, color .35s; }
+.workflowIcon svg { width: 1.15rem; height: 1.15rem; }
+.workflowCard[aria-current="step"] .workflowIcon { transform: scale(1.08) rotate(-4deg); background: #6332c6; color: #fff; }
+.workflowNumber { font-size: .66rem; color: var(--home-muted); font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.workflowTitle { font-size: 1rem; line-height: 1.4; font-weight: 750; }
+.workflowCopy { margin-top: .75rem; color: var(--home-muted); font-size: .78rem; line-height: 1.75; }
 .featureSection { padding-block: 6rem; }
 .featureIntro { max-width: 36rem; margin-bottom: 2.3rem; }
 .featureIntro p { margin-top: 1rem; max-width: 28rem; color: var(--home-muted); font-size: .95rem; line-height: 1.8; }
+.demoTabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; margin-bottom: .8rem; }
+.demoTab { position: relative; display: flex; align-items: center; gap: .8rem; min-width: 0; min-height: 3.35rem; padding: .75rem 1rem; border: 1px solid var(--home-line); border-radius: 14px; background: var(--home-surface); color: var(--home-muted); text-align: start; font-size: .79rem; line-height: 1.4; font-weight: 700; overflow: hidden; transition: color .25s, border-color .25s, background .25s, transform .25s; }
+.demoTab::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 3px; background: var(--home-accent); transform: scaleX(0); transform-origin: left; transition: transform .45s cubic-bezier(.2,.75,.2,1); }
+.demoTab:hover { transform: translateY(-2px); color: var(--home-ink); }
+.demoTab[aria-selected="true"] { border-color: color-mix(in srgb, var(--home-accent) 45%, var(--home-line)); background: var(--home-lavender); color: var(--home-accent); }
+.demoTab[aria-selected="true"]::after { transform: scaleX(1); }
+.demoTab > span:first-child { flex: 0 0 auto; font-size: .62rem; font-variant-numeric: tabular-nums; }
 .demoShell { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: var(--home-surface); border: 1px solid var(--home-line); border-radius: 24px; overflow: hidden; }
-.demoControls { padding: 2rem 2.5rem; min-width: 0; }
+.demoControls { display: flex; flex-direction: column; padding: 2rem 2.5rem; min-width: 0; overflow: hidden; }
+.demoNav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.demoNav > p { color: var(--home-muted); font-size: .68rem; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.demoNav > p span { color: var(--home-accent); font-weight: 800; }
+.demoNav > div { display: flex; gap: .5rem; }
+.demoNav button { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 1px solid var(--home-line); border-radius: 50%; color: var(--home-ink); transition: transform .2s, border-color .2s, background .2s; }
+.demoNav button:hover { transform: translateY(-2px); border-color: var(--home-accent); background: var(--home-lavender); }
+.demoNav svg { width: 1rem; height: 1rem; }
 .demoButtons { display: flex; flex-direction: column; }
 .demoButton { display: grid; grid-template-columns: 1.9rem 1fr auto; gap: .7rem; align-items: center; width: 100%; padding: 1.1rem 0; text-align: start; border-bottom: 1px solid var(--home-line); color: var(--home-muted); font-size: .87rem; font-weight: 700; transition: color .2s; }
 .demoButton svg { height: 1rem; width: 1rem; }
@@ -82,7 +114,8 @@
 .demoButton[aria-pressed="true"] { color: var(--home-accent); }
 .demoButton[aria-pressed="true"] > span:first-child { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--home-lavender); color: var(--home-accent); }
 .demoButton:hover { color: var(--home-ink); }
-.demoCopy { padding-top: 2rem; min-height: 20rem; }
+.demoCopy { display: grid; align-items: center; padding-block: 2rem; min-height: 20rem; }
+.demoKicker { color: var(--home-accent) !important; font-size: .67rem !important; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .demoCopy h3 { font-size: clamp(1.4rem, 2.1vw, 1.8rem); font-weight: 650; letter-spacing: -.035em; line-height: 1.3; }
 .demoCopy p { margin-top: 1rem; font-size: .85rem; line-height: 1.8; color: var(--home-muted); }
 .demoCopy ul { margin-block: 1.3rem; display: grid; gap: .6rem; }
@@ -91,18 +124,31 @@
 .demoScreen { display: grid; align-content: center; gap: .5rem; padding: 2.5rem; background: var(--home-lavender); position: relative; isolation: isolate; }
 .demoScreen::before { content: ""; position: absolute; inset: 12% 8%; border: 1px solid #9479ba38; border-radius: 50% 50% 24px 24px; z-index: -1; }
 .demoScreen .phone { width: min(100%, 240px); }
-.demoTransition { animation: demo-enter .35s ease-out both; }
+.demoTransition, .demoPhoneTransition { will-change: transform, opacity; }
+.slideNext { animation: slide-next .55s cubic-bezier(.2,.75,.2,1) both; }
+.slidePrevious { animation: slide-previous .55s cubic-bezier(.2,.75,.2,1) both; }
 .setup { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 6rem; border-top: 1px solid var(--home-line); }
 .setup .eyebrow { margin-bottom: 1.2rem; }
+.setupLead { max-width: 32rem; margin-top: 1.1rem; color: var(--home-muted); font-size: .9rem; line-height: 1.8; }
 .setupVisual { min-width: 0; }
 .setupFrame { position: relative; padding: 2.5rem; border-radius: 24px; background: var(--home-lavender); overflow: hidden; isolation: isolate; }
 .setupDecoration { position: absolute; inset-inline-start: -1.5rem; top: -6rem; font-size: 28rem; line-height: 1; color: #b79ed536; z-index: -1; }
 .setupFrame .phone { transform: rotate(3deg); }
-.steps { margin-block: 1.5rem; }
-.step { display: flex; align-items: flex-start; gap: 1rem; padding-block: 1.2rem; border-bottom: 1px solid var(--home-line); }
-.stepNumber { font-size: .68rem; margin-top: .3rem; color: var(--home-accent); font-variant-numeric: tabular-nums; }
-.step h3 { font-size: .92rem; font-weight: 700; }
-.step p { font-size: .875rem; line-height: 1.7; color: var(--home-muted); margin-top: .4rem; }
+.setupTimeline { position: relative; display: grid; gap: .65rem; margin-block: 1.7rem 1.2rem; }
+.setupTimelineTrack { position: absolute; inset-block: 1.5rem; inset-inline-start: 1.45rem; width: 2px; overflow: hidden; background: var(--home-line); }
+.setupTimelineTrack > span { display: block; inline-size: 100%; border-radius: 999px; background: linear-gradient(#7c3aed, #a874ff); transition: block-size .65s cubic-bezier(.2,.75,.2,1); }
+.setupStep { position: relative; display: grid; grid-template-columns: 2.9rem minmax(0, 1fr) 1.6rem; align-items: center; gap: .85rem; width: 100%; min-height: 4.7rem; padding: .7rem .8rem .7rem 0; border: 1px solid transparent; border-radius: 15px; color: var(--home-ink); text-align: start; transition: transform .35s cubic-bezier(.2,.75,.2,1), background .3s, border-color .3s; }
+.setupStep:hover { transform: translateX(3px); }
+.setupStep[aria-current="step"] { transform: translateX(6px); border-color: var(--home-line); background: var(--home-surface); }
+.setupStepMarker { position: relative; z-index: 1; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border: 5px solid var(--home-paper); border-radius: 50%; background: var(--home-lavender); color: var(--home-accent); transition: background .3s, color .3s, transform .3s; }
+.setupStepMarker svg { width: 1rem; height: 1rem; }
+.setupStepMarker > span { position: absolute; inset-inline-start: -1.45rem; color: var(--home-muted); font-size: .55rem; font-variant-numeric: tabular-nums; }
+.setupStep[aria-current="step"] .setupStepMarker { transform: scale(1.07); background: #6332c6; color: white; }
+.setupStep strong { display: block; font-size: .84rem; line-height: 1.5; }
+.setupStep small { display: block; margin-top: .2rem; color: var(--home-muted); font-size: .75rem; line-height: 1.55; }
+.setupStepCheck { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border: 1px solid var(--home-line); border-radius: 50%; color: transparent; transition: color .3s, border-color .3s, background .3s; }
+.setupStepCheck svg { width: .75rem; height: .75rem; }
+.setupStep[aria-current="step"] .setupStepCheck { border-color: #6332c6; background: #6332c6; color: white; }
 .solutions { border-top: 1px solid var(--home-line); }
 .solutionList { border-top: 1px solid var(--home-line); }
 .solutionRow { display: grid; grid-template-columns: 2rem 1.1fr 1fr 1.5rem; align-items: center; gap: 1.5rem; padding: 1.6rem .5rem; border-bottom: 1px solid var(--home-line); transition: background .2s; }
@@ -163,6 +209,8 @@
 @keyframes phone-arrive { from { transform: translateY(18px) rotate(0); } to { transform: translateY(0) rotate(-3deg); } }
 @keyframes note-arrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes demo-enter { from { opacity: .5; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slide-next { from { opacity: 0; transform: translateX(24px) scale(.985); } to { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes slide-previous { from { opacity: 0; transform: translateX(-24px) scale(.985); } to { opacity: 1; transform: translateX(0) scale(1); } }
 :global([dir="rtl"]) .heroTitle { letter-spacing: 0; line-height: 1.45; font-size: clamp(2.5rem, 4vw, 3.7rem); }
 :global([dir="rtl"]) .eyebrow { letter-spacing: 0; }
 :global([dir="rtl"]) .sectionTitle, :global([dir="rtl"]) .closing h2 { letter-spacing: 0; line-height: 1.5; }
@@ -177,6 +225,9 @@
   .deliveryNote { inset-inline-end: -.75rem; }
   .setup { gap: 3rem; }
   .demoControls { padding: 1.5rem; }
+  .workflowIntro { column-gap: 2.5rem; }
+  .workflowGrid { gap: .65rem; }
+  .workflowCard { min-height: 16.5rem; padding-inline: .85rem; }
   .closingArtwork { inset-inline-end: 3%; opacity: .25; }
 }
 @media (max-width: 767px) {
@@ -200,18 +251,31 @@
   .sectionHeading { display: block; margin-bottom: 1.8rem; }
   .sectionHeading > p, .sectionHeading > a { margin-top: 1rem; }
   .sectionTitle { font-size: clamp(1.9rem, 6.4vw, 2.6rem); }
+  .workflowIntro { display: block; margin-bottom: 2rem; }
+  .workflowIntro > p:last-child { margin-top: 1rem; }
+  .workflowStory { margin-inline-end: calc((100vw - 100%) / -2); }
+  .workflowLine { display: none; }
+  .workflowGrid { display: flex; gap: .8rem; padding: .5rem calc((100vw - 100%) / 2) 1.4rem 0; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-inline: contain; }
+  .workflowGrid::-webkit-scrollbar { display: none; }
+  .workflowCard { flex: 0 0 min(78vw, 18.5rem); min-height: 14.5rem; scroll-snap-align: start; }
+  .workflowCard[aria-current="step"] { transform: translateY(-4px); }
+  .demoTabs { display: flex; gap: .55rem; margin-inline-end: calc((100vw - 100%) / -2); padding: 0 calc((100vw - 100%) / 2) .25rem 0; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .demoTabs::-webkit-scrollbar { display: none; }
+  .demoTab { flex: 0 0 auto; min-width: 11.5rem; scroll-snap-align: start; }
   .demoShell { grid-template-columns: 1fr; }
   .demoControls { padding: 1.25rem; }
   .demoCopy p, .questions summary { font-size: .875rem; }
   .demoCopy li { font-size: .82rem; }
-  .demoCopy { min-height: 18.5rem; padding-top: 1.5rem; }
+  .demoCopy { min-height: 18.5rem; padding-block: 1.25rem; }
   .demoScreen { padding: 2rem; }
   .demoScreen .phone { width: 220px; }
   .setup { grid-template-columns: 1fr; gap: 2rem; }
   .setupVisual { order: 2; }
   .setupFrame { padding: 2rem; }
   .setupFrame .phone { width: 220px; }
-  .step { padding-block: 1rem; }
+  .setupStep { grid-template-columns: 2.75rem minmax(0, 1fr) 1.4rem; }
+  .setupStepMarker { width: 2.75rem; height: 2.75rem; }
+  .setupStepMarker > span { display: none; }
   .solutionRow { grid-template-columns: 1.3rem 1fr 1rem; gap: .7rem; padding-block: 1.2rem; }
   .solutionRow h3 { font-size: .9rem; }
   .solutionRow p { grid-column: 2; grid-row: 2; font-size: .875rem; }
