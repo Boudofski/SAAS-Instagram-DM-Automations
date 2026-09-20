@@ -437,3 +437,42 @@ html[lang="ar"] .ap3k-home-title { max-width: 16ch; }
 @media (min-width: 1024px) {
   html[lang="ar"] .ap3k-home-title { max-width: 20ch; line-height: 1.16; }
 }
+
+/* A compact phone + benefits composition, mirrored naturally by CSS direction. */
+.ap3k-feature-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-areas: "intro intro" "phone benefits" "cta cta";
+  grid-template-rows: auto 1fr auto;
+  gap: 20px 16px;
+  min-width: 0;
+}
+.ap3k-feature-intro { grid-area: intro; }
+.ap3k-feature-benefits { grid-area: benefits; }
+.ap3k-feature-cta { grid-area: cta; align-self: start; }
+.ap3k-feature-cta a { width: 100%; }
+.ap3k-feature-phone { grid-area: phone; width: min(100%, 185px); }
+html[lang="ar"] .ap3k-feature-intro h2 { font-weight: 800; line-height: 1.3; }
+html[lang="ar"] .ap3k-feature-section [role="tab"] { letter-spacing: 0; font-size: 12px; }
+html[lang="ar"] .ap3k-feature-benefits li { font-size: 13px; line-height: 1.65; }
+
+@media (min-width: 640px) {
+  .ap3k-feature-panel {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    grid-template-areas: "intro phone" "benefits phone" "cta phone";
+    grid-template-rows: 1fr auto 1fr;
+    gap: 24px 32px;
+    min-height: 420px;
+  }
+  .ap3k-feature-intro { align-self: end; }
+  .ap3k-feature-cta a { width: auto; }
+  .ap3k-feature-phone { width: min(100%, 245px); }
+  html[lang="ar"] .ap3k-feature-section [role="tab"] { font-size: 15px; }
+}
+@media (min-width: 1024px) {
+  .ap3k-feature-panel { column-gap: 72px; min-height: 470px; }
+  .ap3k-feature-phone { width: 265px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.ap3k-home) { scroll-behavior: smooth; scroll-padding-top: 88px; }
+}
