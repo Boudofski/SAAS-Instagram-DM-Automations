@@ -8,6 +8,16 @@ export type HelpArticle = {
 
 export const AP3K_HELP_ARTICLES: HelpArticle[] = [
   {
+    slug: "workspace-tour", category: "Getting started", title: "Home dashboard",
+    summary: "Home shows the connected account, date filters, performance totals, and active automations.",
+    steps: ["Use the account selector in the sidebar when you manage more than one Instagram profile.", "Manage account opens the connection controls. View all opens the full automation list."],
+  },
+  {
+    slug: "automation-types", category: "Automations", title: "Choose an automation type",
+    summary: "Choose Comment automation, Story automation, or DM automation according to where the interaction starts.",
+    steps: ["Comment automation: a comment on a post or Reel can trigger a public reply, a DM, or both.", "Story automation: choose the supported story interaction, such as a mention, emoji reaction, or text reply.", "DM automation: respond to a new incoming message containing a keyword, or to any eligible message."],
+  },
+  {
     slug: "connect-instagram",
     category: "Getting started",
     title: "Connect Instagram",

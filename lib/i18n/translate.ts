@@ -1,4 +1,5 @@
 import EDITORIAL_COPY from "./editorial-copy.json";
+import { TUTORIAL_ARABIC_COPY } from "../tutorial-content";
 import { ARABIC_HOME_COPY } from "./arabic-home-copy";
 import { AUTOMATION_DEFAULT_COPY } from "./automation-default-copy";
 import { ACCOUNT_PLAN_COPY } from "./account-plan-copy";
@@ -28,6 +29,7 @@ const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messa
   // Reviewed wording overrides legacy machine translations and older phrase catalogs.
   ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[locale as Locale],
   ...(locale === "ar" ? ARABIC_HOME_COPY : {}),
+  ...(locale === "ar" ? TUTORIAL_ARABIC_COPY : {}),
 }])) as Record<Locale, Record<string, string>>;
 
 export function translateUi(source: string, locale: Locale): string {

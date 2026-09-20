@@ -1,7 +1,9 @@
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
 import growthPosts from "./content/growth/en.json";
+import { ILLUSTRATED_POSTS, type TutorialScreenshotId } from "./tutorial-content";
 
 export type BlogSection = {
+  screenshot?: TutorialScreenshotId;
   heading: string;
   paragraphs: string[];
   bullets?: string[];
@@ -9,6 +11,7 @@ export type BlogSection = {
 };
 
 export type BlogPost = {
+  cover?: TutorialScreenshotId;
   slug: string;
   title: string;
   description: string;
@@ -25,6 +28,7 @@ export type BlogPost = {
 };
 
 export const BLOG_POSTS: BlogPost[] = [
+  ...ILLUSTRATED_POSTS,
   ...growthPosts as BlogPost[],
   {
     slug: "automate-instagram-dms-from-comments",
@@ -75,6 +79,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Measure outcomes, not only messages",
+        screenshot: "dashboard",
         paragraphs: [
           "A useful automation dashboard should show whether comments arrived, triggers matched, actions were sent, and leads were captured. That makes it possible to distinguish a weak call-to-action from a technical delivery problem.",
           "Start with a simple campaign you can understand end to end. Once it performs consistently, duplicate the pattern for other posts, keywords, and offers.",
@@ -175,6 +180,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Track campaign-level results",
+        screenshot: "contacts",
         paragraphs: ["Look at comments received, trigger matches, sent actions, campaign runs, and captured leads together. That context helps you improve the content and call-to-action instead of treating every performance problem as an automation problem."],
       },
       {
@@ -239,6 +245,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Create the campaign in four steps",
+        screenshot: "automation-types",
         paragraphs: ["The AP3K campaign builder keeps setup in four stages so you can review the complete customer experience before it goes live."],
         steps: [
           { title: "Name the campaign and choose content", body: "Give the campaign a recognizable name, then select Any post or one specific Instagram post or Reel." },
@@ -456,6 +463,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "2. Check the campaign status and post scope",
+        screenshot: "automations",
         paragraphs: ["Confirm the campaign is active. Then check whether it listens to Any post or one specific post or Reel. A perfectly written keyword will not run if the comment is left on content outside the campaign scope."],
       },
       {

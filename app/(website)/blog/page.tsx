@@ -4,6 +4,7 @@ import { FadeIn, StaggerContainer, StaggerItem } from "@/components/global/motio
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual from "@/components/website/blog-visual";
+import TutorialScreenshot from "@/components/website/tutorial-screenshot";
 import { BLOG_POSTS } from "@/lib/blog";
 import { ArrowRight, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
@@ -44,7 +45,7 @@ export default function BlogPage() {
             {BLOG_POSTS.map((post, index) => (
               <StaggerItem key={post.slug}>
                 <article className={`group h-full overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm transition-all duration-500 motion-safe:hover:-translate-y-1 motion-safe:hover:border-orange-500/30 motion-safe:hover:shadow-xl dark:border-white/10 dark:bg-[#101112] ${index === 0 ? "md:col-span-2" : ""}`}>
-                  <BlogVisual variant={post.visual} alt={post.visualAlt} compact />
+                  {post.cover ? <div className="px-4"><TutorialScreenshot id={post.cover} compact /></div> : <BlogVisual variant={post.visual} alt={post.visualAlt} compact />}
                   <div className={index === 0 ? "p-6 md:p-8" : "p-6"}>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">
                     <span className="rounded-full bg-orange-500/10 px-2.5 py-1 text-orange-600 dark:text-orange-300">{post.category}</span>
