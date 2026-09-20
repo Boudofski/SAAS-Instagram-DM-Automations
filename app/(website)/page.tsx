@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import FeatureDemos from "@/components/website/feature-demos";
+import HomeScrollProgress from "@/components/website/home-scroll-progress";
 import { AnimatedSetupSteps, AnimatedWorkflowCards } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
 
@@ -26,8 +27,8 @@ const BENEFITS = [
     title: "Turn comments into conversations that keep moving.",
     body: "Choose a keyword or any eligible comment, then let AP3K react immediately while intent is still fresh.",
     bullets: ["Match keywords or any comment", "Keep every automation organized", "See activity as it happens"],
-    src: "/media/instagram-features_02-phone.mp4",
-    poster: "/media/instagram-features_02-poster.webp",
+    src: "/media/instagram-features_01-phone.mp4",
+    poster: "/media/instagram-features_01-poster.webp",
     label: "Comment triggers",
   },
   {
@@ -35,8 +36,8 @@ const BENEFITS = [
     title: "Catch interested people before the moment disappears.",
     body: "Move the right commenters into a DM and keep the automation activity and lead context in one place.",
     bullets: ["Send the requested follow-up by DM", "Track automation leads", "Reduce manual inbox follow-up"],
-    src: "/media/instagram-features_03-phone.mp4",
-    poster: "/media/instagram-features_03-poster.webp",
+    src: "/media/instagram-features_02-phone.mp4",
+    poster: "/media/instagram-features_02-poster.webp",
     label: "Lead flow",
   },
   {
@@ -147,7 +148,8 @@ export default function LandingPage() {
 
 
   return (
-    <LocalizedCopy><div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
+    <LocalizedCopy><div className="ap3k-home min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
+      <HomeScrollProgress />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedSoftware).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedFaq).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c") }} />
@@ -160,7 +162,7 @@ export default function LandingPage() {
           <div className="pointer-events-none absolute left-1/2 top-0 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
           <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16 xl:gap-20">
-            <div className="max-w-[760px] lg:py-8">
+            <FadeIn className="max-w-[760px] lg:py-8">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
                 <Sparkles className="h-4 w-4" /> Instagram Comment &amp; DM Automation
               </div>
@@ -189,9 +191,9 @@ export default function LandingPage() {
                   Official Instagram API
                 </div>
               </div>
-            </div>
+            </FadeIn>
 
-            <div className="relative flex min-h-[430px] items-center justify-center sm:min-h-[500px] lg:min-h-[620px]">
+            <FadeIn delay={0.1} className="relative flex min-h-[430px] items-center justify-center sm:min-h-[500px] lg:min-h-[620px]">
               <div className="ap3k-ring-one pointer-events-none absolute h-[78%] w-[78%] rounded-full border border-white/10 bg-white/[0.05] blur-[1px]" />
               <div className="ap3k-ring-two pointer-events-none absolute h-[62%] w-[62%] rounded-full border border-white/10" />
               <ProductVideo
@@ -201,7 +203,7 @@ export default function LandingPage() {
                 className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
                 priority
               />
-            </div>
+            </FadeIn>
           </div>
         </section>
 
