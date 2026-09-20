@@ -458,3 +458,60 @@ describe("processStripeEvent", () => {
     expect(deps.syncSubscription).not.toHaveBeenCalled();
   });
 });
+
+describe("owner business alerts", () => {
+  function liveEvent(type: string, object: unknown, id = "evt_live") {
+    return { id, type, created: 1790000000, livemode: true, data: { object } } as Stripe.Event;
+  }
+  it("uses a paid invoice, not checkout completion, as the payment signal", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(liveEvent("checkout.session.completed", checkout({ customer: "cus_alpha" })), deps.value);
+    expect(notifyOwnerEmail).not.toHaveBeenCalled();
+    await processStripeEvent(liveEvent("invoice.paid", { id: "in_paid", subscription: "sub_test", amount_paid: 900, currency: "usd", billing_reason: "subscription_create" }), deps.value);
+    expect(notifyOwnerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "payment", key: "in_paid", userId: USER_A.id, amount: 900, currency: "usd" }));
+  });
+  it("ignores free invoices and test payments", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(liveEvent("invoice.paid", { id: "in_free", subscription: "sub_test", amount_paid: 0, currency: "usd" }), deps.value);
+    await processStripeEvent({ ...liveEvent("invoice.paid", { id: "in_test", subscription: "sub_test", amount_paid: 900, currency: "usd" }), livemode: false }, deps.value);
+    expect(notifyOwnerEmail).not.toHaveBeenCalled();
+  });
+  it("uses the invoice identity across repeated failure attempts", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    for (const id of ["evt_attempt1", "evt_attempt2"]) await processStripeEvent(liveEvent("invoice.payment_failed", { id: "in_failed", subscription: "sub_test", amount_due: 900, currency: "usd" }, id), deps.value);
+    expect(notifyOwnerEmail.mock.calls.map(([input]) => input.key)).toEqual(["in_failed", "in_failed"]);
+  });
+  it("retries the webhook when the durable queue is unavailable", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    deps.value.notifyOwnerEmail = vi.fn().mockRejectedValue(new Error("queue unavailable"));
+    await expect(processStripeEvent(liveEvent("invoice.paid", { id: "in_paid", subscription: "sub_test", amount_paid: 900, currency: "usd" }), deps.value)).rejects.toThrow("queue unavailable");
+  });
+});
+
+describe("owner alerts for revenue risks", () => {
+  function live(type: string, object: unknown) { return { id: "evt_risk", created: 1790000000, livemode: true, type, data: { object } } as Stripe.Event; }
+  it("reports an ended subscription once by subscription identity", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(live("customer.subscription.deleted", subscription({ customer: "cus_alpha", status: "canceled" })), deps.value);
+    expect(notifyOwnerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "cancellation", key: "sub_test", userId: USER_A.id }));
+  });
+  it("reports refunds as cumulative amounts and keeps new refund increments distinct", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    for (const amount of [300, 900]) await processStripeEvent(live("charge.refunded", { id: "ch_paid", customer: "cus_alpha", invoice: "in_paid", amount_refunded: amount, currency: "usd" }), deps.value);
+    expect(notifyOwnerEmail.mock.calls.map(([input]) => input.key)).toEqual(["ch_paid:300", "ch_paid:900"]);
+  });
+  it("includes the dispute deadline and ignores charges outside AP3K", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(live("charge.dispute.created", { id: "dp_1", charge: { id: "ch_1", customer: "cus_alpha", invoice: "in_paid" }, amount: 900, currency: "usd", evidence_details: { due_by: 1790000000 } }), deps.value);
+    expect(notifyOwnerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "dispute", key: "dp_1", detail: expect.stringContaining("Evidence is due") }));
+    notifyOwnerEmail.mockClear();
+    await processStripeEvent(live("charge.refunded", { id: "ch_other", customer: "cus_other", invoice: "in_other", amount_refunded: 900, currency: "usd" }), deps.value);
+    expect(notifyOwnerEmail).not.toHaveBeenCalled();
+  });
+});

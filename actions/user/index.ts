@@ -3,6 +3,7 @@
 import { dashboardPath } from "@/lib/dashboard";
 import { applyPendingReferralRewards, REFERRAL_COOKIE } from "@/lib/referral-program";
 import { stripe } from "@/lib/stripe";
+import { deliverOwnerAlertSafely } from "@/lib/email/owner-alerts";
 import { notifyWelcomeEmail } from "@/lib/email/events";
 import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
@@ -246,6 +247,8 @@ export const ensureCurrentUserProfile = async () => {
         email: created.email,
         firstname: created.firstname,
       });
+
+      await deliverOwnerAlertSafely(created.ownerAlertId);
 
       console.log("[user-provision] AP3K profile created", {
         authenticatedUserPresent: true,
