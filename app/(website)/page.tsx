@@ -1,4 +1,5 @@
 import VisibleProductVideo from "@/components/website/visible-product-video";
+import LocalizedCopy from "@/components/i18n/localized-copy";
 import { translateUi } from "@/lib/i18n/translate";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
@@ -15,7 +16,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { localizeCopyTree } from "@/lib/i18n/localize-copy-tree";
 import FeatureDemos from "@/components/website/feature-demos";
 import { AnimatedSetupSteps, AnimatedWorkflowCards } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -123,7 +123,6 @@ function ProductVideo({
             deferUntilLoaded={priority}
             poster={poster}
             label={label}
-            showPlaybackControl
             className="aspect-[240/426] w-full bg-black object-cover"
           />
         </div>
@@ -147,8 +146,8 @@ export default function LandingPage() {
     alternateName: "AP3K DM Automation", publisher: COMPANY_SCHEMA };
 
 
-  return localizeCopyTree(
-    <div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
+  return (
+    <LocalizedCopy><div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedSoftware).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedFaq).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c") }} />
@@ -202,7 +201,6 @@ export default function LandingPage() {
                 className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
                 priority
               />
-              <span className="absolute bottom-0 text-xs text-white/85">Illustrative automation example</span>
             </div>
           </div>
         </section>
@@ -329,6 +327,6 @@ export default function LandingPage() {
       </main>
 
       <WebsiteFooter />
-    </div>, locale
+    </div></LocalizedCopy>
   );
 }

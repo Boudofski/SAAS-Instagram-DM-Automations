@@ -407,11 +407,13 @@
 }
 html[dir="rtl"] body {
   font-family: var(--font-arabic), Tahoma, Arial, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
 }
 
 html[dir="rtl"] main :is(h1, h2, h3, .ap3k-kicker) {
-  letter-spacing: normal;
-  line-height: 1.4;
+  letter-spacing: 0;
+  line-height: 1.22;
 }
 
 html[dir="rtl"] .text-left {
@@ -424,14 +426,14 @@ html[dir="rtl"] .text-right {
 
 /* Arabic needs connected glyphs, natural tracking and room for diacritics. */
 html[lang="ar"] .ap3k-home-title {
-  font-size: clamp(2.15rem, 4.5vw, 4rem);
-  font-weight: 800;
-  line-height: 1.5;
+  font-size: clamp(2.4rem, 4.8vw, 4.8rem);
+  font-weight: 900;
+  line-height: 1.18;
   letter-spacing: 0;
   text-wrap: balance;
 }
 html[lang="ar"] .ap3k-home-title > span { display: inline; }
-html[lang="ar"] .ap3k-home-title { max-width: 14ch; }
+html[lang="ar"] .ap3k-home-title { max-width: 16ch; }
 @media (min-width: 1024px) {
-  html[lang="ar"] .ap3k-home-title { max-width: 18ch; line-height: 1.45; }
+  html[lang="ar"] .ap3k-home-title { max-width: 20ch; line-height: 1.16; }
 }

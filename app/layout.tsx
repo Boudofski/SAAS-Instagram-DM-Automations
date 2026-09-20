@@ -7,12 +7,18 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { LOCALE_DETAILS, localeAlternates } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import type { Metadata } from "next";
-import { Noto_Sans_Arabic, Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Tajawal } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "optional" });
-const arabic = Noto_Sans_Arabic({ subsets: ["arabic"], variable: "--font-arabic", display: "swap", preload: false });
+const arabic = Tajawal({
+  subsets: ["arabic"],
+  weight: ["400", "500", "700", "800", "900"],
+  variable: "--font-arabic",
+  display: "swap",
+  preload: false,
+});
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 export function generateMetadata(): Metadata {

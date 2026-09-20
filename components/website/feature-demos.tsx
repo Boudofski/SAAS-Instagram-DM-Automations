@@ -90,7 +90,7 @@ export default function FeatureDemos({ demos }: { demos: readonly Demo[] }) {
 
             <AnimatePresence mode="wait" initial={false} custom={direction}>
               <motion.div key={`phone-${demo.src}`} {...slide} transition={transition} className="mx-auto w-[min(64vw,260px)] rounded-[2.5rem] border border-white/25 bg-black p-1.5 shadow-xl">
-                <VisibleProductVideo src={demo.src} poster={demo.poster} label={demo.label} showPlaybackControl className="aspect-[240/426] w-full rounded-[2.1rem] bg-black object-cover" />
+                <VisibleProductVideo src={demo.src} poster={demo.poster} label={demo.label} className="aspect-[240/426] w-full rounded-[2.1rem] bg-black object-cover" />
               </motion.div>
             </AnimatePresence>
           </div>

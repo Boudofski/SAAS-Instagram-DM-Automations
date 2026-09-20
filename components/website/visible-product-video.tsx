@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useI18n } from "@/providers/i18n-provider";
 import { translateUi } from "@/lib/i18n/translate";
 
 /** Keep off-screen demos out of the initial download and decoding workload. */
-export default function VisibleProductVideo({ src, poster, label, className, deferUntilLoaded = false, showPlaybackControl = false }: {
+export default function VisibleProductVideo({ src, poster, label, className, deferUntilLoaded = false }: {
   src: string;
-  showPlaybackControl?: boolean;
   deferUntilLoaded?: boolean;
   poster?: string;
   label: string;
   className?: string;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const userPaused = useRef(false);
-  const [playing, setPlaying] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [retryToken, setRetryToken] = useState(0);
   const { locale } = useI18n();
 
   useEffect(() => {
@@ -35,12 +29,15 @@ export default function VisibleProductVideo({ src, poster, label, className, def
         video.src = src;
         video.load();
       }
-      video.controls = motion.matches;
-      if (active && !motion.matches && !userPaused.current) {
+      // Product demos are decorative previews. Reduced-motion visitors see the
+      // poster, and autoplay failures remain a clean poster instead of exposing
+      // browser or custom playback chrome inside the phone mockup.
+      video.controls = false;
+      if (active && !motion.matches) {
         void video.play().then(() => {
           // A pending play request may resolve after leaving the viewport.
-          if (disposed || !visible || document.visibilityState !== "visible" || motion.matches || userPaused.current) video.pause();
-        }).catch(() => { if (!disposed) { video.controls = true; setPlaying(false); } });
+          if (disposed || !visible || document.visibilityState !== "visible" || motion.matches) video.pause();
+        }).catch(() => { video.pause(); });
       } else {
         video.pause();
       }
@@ -71,31 +68,9 @@ export default function VisibleProductVideo({ src, poster, label, className, def
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, deferUntilLoaded, retryToken]);
+  }, [src, deferUntilLoaded]);
 
-  const togglePlayback = () => {
-    const video = ref.current;
-    if (!video) return;
-    if (!video.paused) {
-      userPaused.current = true;
-      video.pause();
-      return;
-    }
-    userPaused.current = false;
-    if (!video.getAttribute("src")) {
-      video.src = src;
-      video.load();
-    }
-    void video.play().catch(() => { video.controls = true; });
-  };
-
-  const retry = () => {
-    userPaused.current = false;
-    setFailed(false);
-    setRetryToken((current) => current + 1);
-  };
-
-  const video = (
+  return (
     <video
       ref={ref}
       muted
@@ -105,22 +80,6 @@ export default function VisibleProductVideo({ src, poster, label, className, def
       poster={poster}
       aria-label={translateUi(label, locale)}
       className={className}
-      onCanPlay={() => setFailed(false)}
-      onError={() => { setFailed(true); setPlaying(false); }}
-      onPlay={() => setPlaying(true)}
-      onPause={() => setPlaying(false)}
     />
-  );
-
-  if (!showPlaybackControl) return video;
-  const controlLabel = failed ? "Retry demo" : playing ? "Pause demo" : "Play demo";
-
-  return (
-    <div className="relative w-full">
-      {video}
-      <button type="button" onClick={failed ? retry : togglePlayback} aria-label={translateUi(controlLabel, locale)} className="absolute end-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full border border-white/30 bg-black/75 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-        {failed ? <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> : playing ? <Pause aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}
-      </button>
-    </div>
   );
 }

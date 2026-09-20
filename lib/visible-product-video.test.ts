@@ -37,7 +37,7 @@ describe("visible product demos", () => {
     observe([{ isIntersecting: false, intersectionRatio: 0 }]);
     expect(state.video.pause).toHaveBeenCalled();
   });
-  it("pauses for hidden tabs and exposes controls for reduced motion", () => {
+  it("pauses for hidden tabs and shows a clean poster for reduced motion", () => {
     observe([{ isIntersecting: true, intersectionRatio: 1 }]);
     Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
     visibility();
@@ -45,15 +45,15 @@ describe("visible product demos", () => {
     motion.matches = true;
     Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
     visibility();
-    expect(state.video.controls).toBe(true);
+    expect(state.video.controls).toBe(false);
     expect(state.video.play).toHaveBeenCalledOnce();
   });
-  it("provides manual playback when autoplay is rejected", async () => {
+  it("does not expose playback chrome when autoplay is rejected", async () => {
     state.video.play.mockRejectedValueOnce(new Error("autoplay blocked"));
     observe([{ isIntersecting: true, intersectionRatio: 1 }]);
     await Promise.resolve();
     await Promise.resolve();
-    expect(state.video.controls).toBe(true);
+    expect(state.video.controls).toBe(false);
   });
   it("defers hero video bytes until after load and cancels pending work on unmount", () => {
     cleanup?.();

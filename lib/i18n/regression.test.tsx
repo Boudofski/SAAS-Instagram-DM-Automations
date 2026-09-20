@@ -63,4 +63,9 @@ describe("language-switching regressions", () => {
     expect(fs.readFileSync("components/global/language-switcher.tsx", "utf8")).toContain("LanguageFlag");
     expect(fs.readFileSync("middleware.ts", "utf8")).not.toContain("locale !== DEFAULT_LOCALE");
   });
+  it("keeps the homepage copy reactive during client-side locale changes", () => {
+    const homepage = fs.readFileSync("app/(website)/page.tsx", "utf8");
+    expect(homepage).toContain("<LocalizedCopy>");
+    expect(homepage).not.toContain("return localizeCopyTree(");
+  });
 });
