@@ -64,13 +64,13 @@ export default function FeatureDemos({ demos }: { demos: readonly Demo[] }) {
   const transition = { duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] as const };
 
   return (
-    <section id="features" aria-label={tr("Automation demos")} className="ap3k-feature-section relative overflow-hidden bg-[#f7f7fb] px-3 py-10 dark:bg-[#080911] sm:px-8 sm:py-16 lg:px-12">
+    <section id="features" aria-label={tr("Automation demos")} className="ap3k-feature-section relative overflow-hidden bg-[#f7f7fb] px-3 py-10 dark:bg-[#080911] sm:px-8 sm:py-12 lg:px-12">
       <motion.div
         initial={reduceMotion ? false : { y: 24 }}
         whileInView={{ y: 0 }}
         viewport={{ once: true, amount: 0.15 }}
         transition={{ ...transition, duration: reduceMotion ? 0 : 0.65 }}
-        className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-violet-400/20 bg-[linear-gradient(125deg,#40149c_0%,#6324d5_55%,#8040e6_100%)] p-4 text-white shadow-[0_24px_70px_-28px_rgba(89,33,180,0.45)] sm:rounded-[2.5rem] sm:p-7 lg:p-12"
+        className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-violet-400/20 bg-[linear-gradient(125deg,#40149c_0%,#6324d5_55%,#8040e6_100%)] p-4 text-white shadow-[0_24px_70px_-28px_rgba(89,33,180,0.45)] sm:rounded-[2.5rem] sm:p-7 lg:p-9"
       >
         <div aria-hidden="true" className="pointer-events-none absolute -end-24 top-32 h-[420px] w-[420px] rounded-full border border-white/[0.08] bg-white/[0.025]" />
         <div aria-hidden="true" className="pointer-events-none absolute -end-10 top-48 h-72 w-72 rounded-full border border-white/[0.08]" />

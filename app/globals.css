@@ -441,8 +441,8 @@ html[lang="ar"] .ap3k-home-title { max-width: 16ch; }
 /* A compact phone + benefits composition, mirrored naturally by CSS direction. */
 .ap3k-feature-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  grid-template-areas: "intro intro" "phone benefits" "phone cta";
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-areas: "intro intro" "phone benefits" "cta cta";
   grid-template-rows: auto 1fr auto;
   gap: 20px 16px;
   min-width: 0;
@@ -450,6 +450,7 @@ html[lang="ar"] .ap3k-home-title { max-width: 16ch; }
 .ap3k-feature-intro { grid-area: intro; }
 .ap3k-feature-benefits { grid-area: benefits; }
 .ap3k-feature-cta { grid-area: cta; align-self: start; }
+.ap3k-feature-cta a { width: 100%; }
 .ap3k-feature-phone { grid-area: phone; width: min(100%, 185px); }
 html[lang="ar"] .ap3k-feature-intro h2 { font-weight: 800; line-height: 1.3; }
 html[lang="ar"] .ap3k-feature-section [role="tab"] { letter-spacing: 0; font-size: 12px; }
@@ -464,6 +465,7 @@ html[lang="ar"] .ap3k-feature-benefits li { font-size: 13px; line-height: 1.65; 
     min-height: 420px;
   }
   .ap3k-feature-intro { align-self: end; }
+  .ap3k-feature-cta a { width: auto; }
   .ap3k-feature-phone { width: min(100%, 245px); }
   html[lang="ar"] .ap3k-feature-section [role="tab"] { font-size: 15px; }
 }
