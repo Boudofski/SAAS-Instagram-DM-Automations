@@ -10,6 +10,9 @@ import { FadeIn } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual, { getBlogVisualSrc } from "@/components/website/blog-visual";
+import TutorialScreenshot from "@/components/website/tutorial-screenshot";
+import TutorialGuides from "@/components/website/tutorial-guides";
+import { TUTORIAL_LABELS, TUTORIAL_SCREENSHOTS, tutorialImageSrc } from "@/lib/tutorial-content";
 import GrowthGuideExtras, { GrowthSectionSources } from "@/components/website/growth-guide-extras";
 import { BLOG_POSTS, getBlogPost } from "@/lib/blog";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
@@ -28,7 +31,7 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: Props): Metadata {
   const post = getBlogPost(params.slug);
   if (!post) return {};
-  const socialImage = `${SITE_URL}${getBlogVisualSrc(post.visual)}`;
+  const socialImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
 
   return localizedMetadata({
     title: `${post.title} | AP3K`,
@@ -43,7 +46,7 @@ export function generateMetadata({ params }: Props): Metadata {
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       siteName: "AP3K",
-      images: [{ url: socialImage, width: 1440, height: 810, alt: translateUi(post.visualAlt, getServerLocale()) }],
+      images: [{ url: socialImage, width: post.cover ? 2048 : 1440, height: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810, alt: translateUi(post.cover ? TUTORIAL_SCREENSHOTS[post.cover].caption : post.visualAlt, getServerLocale()) }],
     },
     twitter: {
       card: "summary_large_image",
@@ -80,7 +83,7 @@ export default function BlogPostPage({ params }: Props) {
     mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
     author: { "@type": "Organization", name: "AP3K", url: SITE_URL },
     publisher: COMPANY_SCHEMA,
-    image: `${SITE_URL}${getBlogVisualSrc(post.visual)}`,
+    image: `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`,
     keywords: post.keywords.map(key => translateUi(key, locale)).join(", "),
   };
 
@@ -110,7 +113,7 @@ export default function BlogPostPage({ params }: Props) {
 
           <FadeIn delay={0.06}>
             <div className="mt-10">
-              <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />
+              {post.cover ? <p className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-7 text-slate-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-300">{TUTORIAL_LABELS.hint}</p> : <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />}
             </div>
           </FadeIn>
 
@@ -161,12 +164,14 @@ export default function BlogPostPage({ params }: Props) {
                     )}
                   </div>
                   <GrowthSectionSources slug={post.slug} index={index} />
+                  {section.screenshot && <TutorialScreenshot id={section.screenshot} />}
                 </section>
               </FadeIn>
             ))}
           </div>
 
           <GrowthGuideExtras slug={post.slug} />
+          {post.cover && <TutorialGuides />}
 
           <FadeIn>
             <div className="mt-12 border-t border-slate-200 pt-6 dark:border-white/10">
