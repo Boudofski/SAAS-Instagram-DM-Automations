@@ -1,3 +1,4 @@
+import { HELP_COPY } from "./help-copy";
 import EDITORIAL_COPY from "./editorial-copy.json";
 import { TUTORIAL_ARABIC_COPY } from "../tutorial-content";
 import { ARABIC_HOME_COPY } from "./arabic-home-copy";
@@ -26,6 +27,7 @@ const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messa
   ...COMPANY_TRANSLATIONS[locale as Locale],
   ...ACCOUNT_PLAN_COPY[locale as Locale],
   ...AUTOMATION_DEFAULT_COPY[locale as Locale],
+  ...HELP_COPY[locale as Locale],
   // Reviewed wording overrides legacy machine translations and older phrase catalogs.
   ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[locale as Locale],
   ...(locale === "ar" ? ARABIC_HOME_COPY : {}),
