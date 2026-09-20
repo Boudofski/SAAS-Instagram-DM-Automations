@@ -22,7 +22,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Getting started",
     title: "Connect Instagram",
     summary: "Connect one Instagram Business or Creator account through Meta's official authorization flow.",
-    steps: ["Open Instagram Account from the workspace menu.", "Choose Connect Instagram and approve the requested Meta permissions.", "Return to AP3K and confirm that Comments and Actions both show Ready.", "Personal Instagram accounts must first be changed to a professional Business or Creator account."],
+    steps: ["Open Instagram Account from the workspace menu.", "Choose Connect Instagram and approve the requested Meta permissions.", "Return to AP3K and confirm that Profile & media, Comments, and DMs all show Granted.", "Personal Instagram accounts must first be changed to a professional Business or Creator account."],
   },
   {
     slug: "reconnect-instagram",
@@ -50,7 +50,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Automations",
     title: "Why an automation did not reply",
     summary: "Check the trigger, activation state, Instagram connection, and usage before changing a live flow.",
-    steps: ["Confirm the automation is Live and attached to the post or Reel you tested.", "For a keyword trigger, use a comment containing the saved keyword; Any Comment accepts every eligible comment.", "Open Instagram Account and verify that Comments and Actions show Ready.", "Check Billing for remaining automated-reply and AI-reply usage.", "Avoid repeatedly testing with an old comment; create a new eligible comment after publishing changes."],
+    steps: ["Confirm the automation is Live and attached to the post or Reel you tested.", "For a keyword trigger, use a comment containing the saved keyword; Any Comment accepts every eligible comment.", "Open Instagram Account and verify that comment and DM permissions are ready.", "Check Billing for remaining automated-reply and AI-reply usage.", "Avoid repeatedly testing with an old comment; create a new eligible comment after publishing changes."],
   },
   {
     slug: "ai-setup",
