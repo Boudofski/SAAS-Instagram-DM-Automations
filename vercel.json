@@ -11,7 +11,7 @@
     },
     {
       "path": "/api/cron/owner-alerts",
-      "schedule": "*/10 * * * *"
+      "schedule": "47 4 * * *"
     }
   ]
 }

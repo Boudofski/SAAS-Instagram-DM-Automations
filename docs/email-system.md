@@ -82,7 +82,7 @@ invoices marked paid outside Stripe are explicitly identified.
 The `EmailDelivery` table is the owner outbox; no new migration is needed. Unique
 business keys deduplicate repeats permanently. A conditional row claim prevents
 concurrent sends; Resend retries reuse an identical saved payload and key. The
-protected `/api/cron/owner-alerts` worker runs every ten minutes and requires
+protected `/api/cron/owner-alerts` worker runs daily at 04:47 UTC (within the hosting plan’s scheduling window) and requires
 `CRON_SECRET`. Transient errors back off and stop after six attempts or 23 hours
 from the first send attempt, before Resend's idempotency window expires. Ambiguous
 expired attempts require checking Resend before resending. Bounced/complained/
