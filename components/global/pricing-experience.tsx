@@ -29,7 +29,6 @@ const BILLING_LABELS: Record<Locale, { annual: string; monthly: string; equivale
 
 type Props = {
   compact?: boolean;
-  homepage?: boolean;
   dashboardCompact?: boolean;
   currentPlan?: CustomerPlan;
   existingPaid?: boolean;
@@ -38,7 +37,6 @@ type Props = {
 
 export default function PricingExperience({
   compact = false,
-  homepage = false,
   dashboardCompact = false,
   currentPlan,
   existingPaid = false,
@@ -49,8 +47,8 @@ export default function PricingExperience({
   const [interval, setInterval] = useState<BillingInterval>("year");
 
   return (
-    <LocalizedCopy><div className={homepage ? "ap3k-home-pricing w-full" : "w-full"}>
-      <div data-slot="billing-toggle" className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
+    <LocalizedCopy><div className="w-full">
+      <div className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
         <button
           type="button"
           aria-pressed={interval === "month"}
@@ -70,7 +68,7 @@ export default function PricingExperience({
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           }`}
-        ><UiText>{" Annual "}</UiText><span data-slot="annual-discount" className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-300"><UiText>{" Save up to 27% "}</UiText></span>
+        ><UiText>{" Annual "}</UiText><span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-300"><UiText>{" Save up to 27% "}</UiText></span>
         </button>
       </div>
 
@@ -101,7 +99,6 @@ export default function PricingExperience({
           return (
             <article
               key={plan.id}
-              data-featured={plan.featured || undefined}
               className={`group relative flex min-h-full flex-col overflow-visible border shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-xl ${dashboardCompact || compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"} ${
                 isCurrent ? "ring-2 ring-emerald-500/50" : ""
               } ${
@@ -112,7 +109,7 @@ export default function PricingExperience({
               style={{ animationDelay: `${index * 60}ms` }}
             >
               {plan.featured && (
-                <div data-slot="plan-badge" className={`absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-rf-pink font-black text-white shadow-lg ${dashboardCompact ? "px-3 py-1 text-[10px]" : "px-4 py-1.5 text-xs"}`}>
+                <div className={`absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-rf-pink font-black text-white shadow-lg ${dashboardCompact ? "px-3 py-1 text-[10px]" : "px-4 py-1.5 text-xs"}`}>
                   <Sparkles className="h-3.5 w-3.5" /><UiText>{" Most popular "}</UiText></div>
               )}
               {isCurrent && (
@@ -121,10 +118,10 @@ export default function PricingExperience({
 
               <div className={dashboardCompact ? "pt-0.5" : compact ? "pt-1" : "pt-2"}>
                 <h2 className={`${dashboardCompact || compact ? "text-xl" : "text-2xl"} font-black tracking-tight text-slate-950 dark:text-white`}>{plan.name}</h2>
-                <p data-slot="plan-description" className={`${dashboardCompact || compact ? "mt-1 min-h-[2rem] line-clamp-2 text-[11px] leading-4" : "mt-2 min-h-[3rem] text-sm leading-relaxed"} text-slate-500 dark:text-slate-400`}>{plan.description}</p>
+                <p className={`${dashboardCompact || compact ? "mt-1 min-h-[2rem] line-clamp-2 text-[11px] leading-4" : "mt-2 min-h-[3rem] text-sm leading-relaxed"} text-slate-500 dark:text-slate-400`}>{plan.description}</p>
               </div>
 
-              <div data-slot="plan-price" className={dashboardCompact || compact ? "mt-2 min-h-[3.4rem]" : "mt-6 min-h-[5rem]"}>
+              <div className={dashboardCompact || compact ? "mt-2 min-h-[3.4rem]" : "mt-6 min-h-[5rem]"}>
                 {plan.id === "FREE" ? (
                   <div>
                     <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>

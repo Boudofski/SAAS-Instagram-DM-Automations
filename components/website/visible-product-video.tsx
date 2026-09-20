@@ -79,11 +79,14 @@ export default function VisibleProductVideo({ src, poster, label, className, def
     if (!video.paused) {
       userPaused.current = true;
       video.pause();
-    } else {
-      userPaused.current = false;
-      if (!video.getAttribute("src")) { video.src = src; video.load(); }
-      void video.play().catch(() => { video.controls = true; });
+      return;
     }
+    userPaused.current = false;
+    if (!video.getAttribute("src")) {
+      video.src = src;
+      video.load();
+    }
+    void video.play().catch(() => { video.controls = true; });
   };
 
   const retry = () => {
@@ -92,12 +95,32 @@ export default function VisibleProductVideo({ src, poster, label, className, def
     setRetryToken((current) => current + 1);
   };
 
-  const video = <video ref={ref} muted loop playsInline preload="none" poster={poster} aria-label={translateUi(label, locale)} className={className} onCanPlay={() => setFailed(false)} onError={() => { setFailed(true); setPlaying(false); }} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />;
+  const video = (
+    <video
+      ref={ref}
+      muted
+      loop
+      playsInline
+      preload="none"
+      poster={poster}
+      aria-label={translateUi(label, locale)}
+      className={className}
+      onCanPlay={() => setFailed(false)}
+      onError={() => { setFailed(true); setPlaying(false); }}
+      onPlay={() => setPlaying(true)}
+      onPause={() => setPlaying(false)}
+    />
+  );
+
   if (!showPlaybackControl) return video;
-  return <div className="relative">
-    {video}
-    <button type="button" onClick={failed ? retry : togglePlayback} aria-label={translateUi(failed ? "Retry demo" : playing ? "Pause demo" : "Play demo", locale)} className="absolute end-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full border border-white/30 bg-black/80 text-white transition-colors hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-      {failed ? <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> : playing ? <Pause aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}
-    </button>
-  </div>;
+  const controlLabel = failed ? "Retry demo" : playing ? "Pause demo" : "Play demo";
+
+  return (
+    <div className="relative w-full">
+      {video}
+      <button type="button" onClick={failed ? retry : togglePlayback} aria-label={translateUi(controlLabel, locale)} className="absolute end-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full border border-white/30 bg-black/75 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+        {failed ? <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> : playing ? <Pause aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
 }

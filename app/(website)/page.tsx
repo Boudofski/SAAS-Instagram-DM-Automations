@@ -3,7 +3,7 @@ import { translateUi } from "@/lib/i18n/translate";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import { COMPANY_SCHEMA } from "@/lib/company";
-import { FadeIn, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
+import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/global/motion/fade-in";
 import PricingExperience from "@/components/global/pricing-experience";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
@@ -12,18 +12,12 @@ import {
   ArrowRight,
   BadgeCheck,
   Infinity,
-  MessageCircle,
-  Send,
-  Check,
-  ArrowUpRight,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
-import { getBlogVisualSrc } from "@/components/website/blog-visual";
-import styles from "@/components/website/home.module.css";
 import { localizeCopyTree } from "@/lib/i18n/localize-copy-tree";
 import FeatureDemos from "@/components/website/feature-demos";
-import { SetupTimeline, WorkflowStory } from "@/components/website/workflow-stories";
+import { AnimatedSetupSteps, AnimatedWorkflowCards } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
 
 const BENEFITS = [
@@ -120,15 +114,20 @@ function ProductVideo({
   priority?: boolean;
 }) {
   return (
-    <div className={`${styles.phone} ${className}`}>
-      <VisibleProductVideo
-        src={src}
-        deferUntilLoaded={priority}
-        poster={poster}
-        label={label}
-        showPlaybackControl
-        className={styles.phoneVideo}
-      />
+    <div className={`ap3k-product-float relative mx-auto w-full max-w-[320px] ${className}`}>
+      <div className="pointer-events-none absolute -inset-10 rounded-[4rem] bg-[radial-gradient(circle,rgba(244,114,182,0.28),rgba(124,58,237,0.16)_42%,transparent_70%)] blur-2xl" />
+      <div className="ap3k-video-frame relative rounded-[2.7rem] border border-white/25 bg-[#090a10] p-[7px] shadow-[0_34px_90px_rgba(25,7,66,0.36)] ring-1 ring-black/25 dark:ring-white/10">
+        <div className="overflow-hidden rounded-[2.32rem] bg-black">
+          <VisibleProductVideo
+            src={src}
+            deferUntilLoaded={priority}
+            poster={poster}
+            label={label}
+            showPlaybackControl
+            className="aspect-[240/426] w-full bg-black object-cover"
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -149,120 +148,182 @@ export default function LandingPage() {
 
 
   return localizeCopyTree(
-    <div className={styles.home}>
+    <div className="min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedSoftware).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localizedFaq).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c") }} />
-      <a className={styles.skipLink} href="#home-content">Skip to content</a>
       <WebsiteNav current="home" />
 
-      <main id="home-content">
-        <section className={styles.hero} aria-labelledby="home-title">
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}><span aria-hidden="true" />Instagram Comment &amp; DM Automation</p>
-            <h1 id="home-title" className={styles.heroTitle}>Turn comments<br /><span>into customers.</span></h1>
-            <p className={styles.heroDescription}>Reply to comments, send the right link by DM, and keep every conversation moving. Automatically.</p>
-            <div className={styles.actions}>
-              <Link href="/sign-up" className={styles.primary}>GET STARTED <ArrowUpRight aria-hidden="true" /></Link>
-              <a href="#features" className={styles.textLink}>See how it works <span className={styles.playIcon} aria-hidden="true">↗</span></a>
+      <main>
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5121c7_0%,#7435e8_44%,#9c3eea_100%)] px-4 pb-20 pt-12 text-white sm:px-8 sm:pb-24 sm:pt-20 lg:px-16 lg:pb-28 lg:pt-20">
+          <div className="ap3k-orb-one pointer-events-none absolute -left-28 top-12 h-80 w-80 rounded-full bg-fuchsia-300/30 blur-[100px]" />
+          <div className="ap3k-orb-two pointer-events-none absolute -right-24 bottom-0 h-[34rem] w-[34rem] rounded-full bg-indigo-950/35 blur-[130px]" />
+          <div className="pointer-events-none absolute left-1/2 top-0 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+
+          <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16 xl:gap-20">
+            <div className="max-w-[760px] lg:py-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
+                <Sparkles className="h-4 w-4" /> Instagram Comment &amp; DM Automation
+              </div>
+              <h1 className="ap3k-home-title mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
+                Turn Instagram Comments <span className="sm:block">Into Customers.</span>
+              </h1>
+              <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">
+                Automatically reply to comments, send the promised link by DM, and track every lead—without complicated flows or code.
+              </p>
+              <p className="mt-4 text-sm font-bold text-white/85">500 automated actions every month. No credit card required.</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
+                  GET STARTED <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a href="#how-it-works" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur-xl transition duration-200 hover:bg-white/16">
+                  See how it works
+                </a>
+              </div>
+              <div aria-label="AP3K platform credentials" className="mt-5 flex flex-wrap items-center gap-2">
+                <div className="inline-flex h-8 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-2.5 text-[11px] font-semibold text-white/90 shadow-sm backdrop-blur-xl sm:h-9 sm:px-3.5 sm:text-xs">
+                  <Infinity aria-hidden="true" className="h-4 w-4 shrink-0 stroke-[2.5] text-[#66b4ff] sm:h-5 sm:w-5" />
+                  Meta Business Partner
+                </div>
+                <div className="inline-flex h-8 items-center gap-2 rounded-full border border-white/20 bg-[#21133d]/35 px-2.5 text-[11px] font-semibold text-white/90 shadow-sm backdrop-blur-xl sm:h-9 sm:px-3.5 sm:text-xs">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-white/75" />
+                  Official Instagram API
+                </div>
+              </div>
             </div>
-          </div>
-          <div className={styles.heroVisual}>
-            <div className={styles.heroStage}>
-              <div className={styles.stageMark} aria-hidden="true"><ArrowUpRight /></div>
-              <div className={styles.commentNote}><MessageCircle aria-hidden="true" /><span>Comment received</span><Check aria-hidden="true" /></div>
-              <ProductVideo src="/media/instagram-features_01-phone.mp4" poster="/media/instagram-features_01-poster.webp" label="AP3K Instagram automation demo" priority />
-              <div className={styles.deliveryNote}><span className={styles.noteIcon}><Send aria-hidden="true" /></span><span>DM delivered<small>Automatically</small></span><Check aria-hidden="true" /></div>
+
+            <div className="relative flex min-h-[430px] items-center justify-center sm:min-h-[500px] lg:min-h-[620px]">
+              <div className="ap3k-ring-one pointer-events-none absolute h-[78%] w-[78%] rounded-full border border-white/10 bg-white/[0.05] blur-[1px]" />
+              <div className="ap3k-ring-two pointer-events-none absolute h-[62%] w-[62%] rounded-full border border-white/10" />
+              <ProductVideo
+                src="/media/instagram-features_01-phone.mp4"
+                poster="/media/instagram-features_01-poster.webp"
+                label="AP3K Instagram automation demo"
+                className="max-w-[270px] sm:max-w-[315px] lg:max-w-[350px]"
+                priority
+              />
+              <span className="absolute bottom-0 text-xs text-white/85">Illustrative automation example</span>
             </div>
-            <p className={styles.demoCaption}><span aria-hidden="true" />Illustrative automation example</p>
           </div>
         </section>
 
-        <div className={styles.trustStrip}>
-          <p><strong>500</strong><span>automated actions every month on Free</span></p>
-          <p><BadgeCheck aria-hidden="true" /><span>Official Instagram API</span></p>
-          <p><Infinity aria-hidden="true" /><span>Meta Business Partner</span></p>
-          <p><Check aria-hidden="true" /><span>No credit card required</span></p>
-        </div>
+        <section className="relative overflow-hidden border-b border-slate-200/80 bg-[linear-gradient(180deg,#f8f7fc_0%,#f2effa_100%)] px-4 py-20 dark:border-white/[0.08] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#080911_0%,#0c0d19_100%)] sm:px-8 lg:py-24">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-28 top-20 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-600/10" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-28 bottom-0 h-72 w-72 rounded-full bg-fuchsia-200/25 blur-3xl dark:bg-fuchsia-500/[0.08]" />
 
-        <section className={`${styles.section} ${styles.workflow}`} aria-labelledby="workflow-title">
-          <FadeIn className={styles.workflowIntro}>
-            <p className={styles.eyebrow}>The AP3K workflow</p>
-            <h2 id="workflow-title" className={styles.sectionTitle}>From Instagram comment to delivered link—automatically.</h2>
-            <p>Choose the post, trigger, and actions once. When the right comment arrives, AP3K can publish your reply, send the DM and link, and record the result.</p>
-          </FadeIn>
-          <WorkflowStory />
+          <div className="relative mx-auto max-w-6xl">
+            <FadeIn className="mx-auto max-w-4xl text-center">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">The AP3K workflow</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] text-slate-950 dark:text-white sm:text-6xl">
+                From Instagram comment to delivered link—automatically.
+              </h2>
+              <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
+                Choose the post, trigger, and actions once. When the right comment arrives, AP3K can publish your reply, send the DM and link, and record the result.
+              </p>
+            </FadeIn>
+
+            <AnimatedWorkflowCards />
+          </div>
         </section>
 
         <FeatureDemos demos={BENEFITS} />
 
-        <section id="how-it-works" className={`${styles.section} ${styles.setup}`} aria-labelledby="setup-title">
-          <div className={styles.setupVisual}>
-            <div className={styles.setupFrame}>
-              <span className={styles.setupDecoration} aria-hidden="true">↗</span>
-              <ProductVideo src="/media/templates_05-phone.mp4" poster="/media/templates_05-poster.webp" label="AP3K automation setup demo" />
+        <section id="how-it-works" className="bg-[#f1edfb] px-4 py-20 dark:bg-[#0e1020] sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[0.98fr_1.02fr] lg:gap-24">
+            <FadeIn>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Start in minutes</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">New to automation? Do not overthink it.</h2>
+              <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
+              <AnimatedSetupSteps />
+            </FadeIn>
+            <FadeIn delay={0.06}>
+              <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-8 shadow-[0_25px_80px_rgba(91,33,200,0.12)] dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-12">
+                <ProductVideo src="/media/templates_05-phone.mp4" poster="/media/templates_05-poster.webp" label="AP3K automation setup demo" className="max-w-[280px]" />
+              </div>
+            </FadeIn>
+          </div>
+        </section>
+
+        <section id="pricing" className="bg-[#f7f7fb] px-4 py-16 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-20">
+          <div className="mx-auto max-w-7xl">
+            <FadeIn className="mb-8 text-center">
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Simple pricing</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">Start free. Save more annually.</h2>
+              <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">Start Free with 500 automated actions each month and up to 5 active automations, choose Pro at $9/month, or Business at $29/month.</p>
+            </FadeIn>
+            <FadeIn delay={0.04}><PricingExperience compact /></FadeIn>
+            <div className="mt-8 text-center"><Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">See the full plan comparison <ArrowRight className="h-4 w-4" /></Link></div>
+          </div>
+        </section>
+
+        <section className="border-y border-slate-200 bg-white px-4 py-20 dark:border-white/10 dark:bg-[#0b0c15] sm:px-8 lg:px-16">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Explore by goal</p>
+              <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Start with the Instagram outcome you need.</h2>
+              <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-400">See practical workflows, interactive examples, honest limitations, and setup tutorials for each use case.</p>
+            </FadeIn>
+            <StaggerContainer className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {SOLUTION_PAGES.map(([title, href, description]) => (
+                <StaggerItem key={href}>
+                  <Link href={href} className="group block h-full rounded-3xl border border-slate-200 bg-[#fafafe] p-6 transition hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-violet-400/30">
+                    <h3 className="text-lg font-black">{title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{description}</p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+                  </Link>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </div>
+        </section>
+
+        <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto max-w-6xl">
+            <FadeIn className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div><p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Instagram automation guides</p><h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Learn the strategy behind the automation.</h2></div>
+              <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore the blog <ArrowRight className="h-4 w-4" /></Link>
+            </FadeIn>
+            <StaggerContainer className="mt-10 grid gap-5 md:grid-cols-3">
+              {BLOG_POSTS.slice(0, 3).map((post) => (
+                <StaggerItem key={post.slug}>
+                  <HoverLift>
+                    <Link href={`/blog/${post.slug}`} className="block h-full rounded-[1.8rem] border border-slate-200 bg-[#fafafe] p-6 shadow-sm transition hover:border-violet-200 dark:border-white/8 dark:bg-[#10121d] dark:hover:border-violet-400/20">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">Guide</p>
+                      <h3 className="mt-4 text-xl font-black leading-tight">{post.title}</h3>
+                      <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{post.description}</p>
+                      <span className="mt-6 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Read guide <ArrowRight className="h-4 w-4" /></span>
+                    </Link>
+                  </HoverLift>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </div>
+        </section>
+
+        <section className="bg-[#11131d] px-4 py-20 text-white sm:px-8 lg:px-16 lg:py-24">
+          <div className="mx-auto max-w-4xl">
+            <FadeIn className="text-center"><p className="text-xs font-black uppercase tracking-[0.22em] text-violet-300">FAQs</p><h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">The important questions, answered.</h2></FadeIn>
+            <div className="mt-10 divide-y divide-white/10 border-y border-white/10">
+              {FAQS.map(([question, answer]) => (
+                <details key={question} className="group py-5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-left font-black"><span>{question}</span><span className="text-2xl font-light text-violet-300 transition group-open:rotate-45">+</span></summary>
+                  <p className="max-w-3xl pb-2 pt-4 text-sm leading-7 text-white/62">{answer}</p>
+                </details>
+              ))}
             </div>
           </div>
-          <div>
-            <FadeIn><p className={styles.eyebrow}>Start in minutes</p><h2 id="setup-title" className={styles.sectionTitle}>New to automation? Do not overthink it.</h2><p className={styles.setupLead}>The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p></FadeIn>
-            <SetupTimeline />
-            <Link href="/blog/how-ap3k-works-step-by-step" className={styles.textLink}>Read the setup guide <ArrowUpRight aria-hidden="true" /></Link>
-          </div>
         </section>
 
-        <section className={`${styles.section} ${styles.solutions}`} aria-labelledby="solutions-title">
-          <FadeIn className={styles.sectionHeading}><h2 id="solutions-title" className={styles.sectionTitle}>Your audience.<br />Your next move.</h2><p>See practical workflows, interactive examples, honest limitations, and setup tutorials for each use case.</p></FadeIn>
-          <StaggerContainer className={styles.solutionList}>
-            {SOLUTION_PAGES.map(([title, href, description], index) => (
-              <StaggerItem key={href}>
-                <Link href={href} className={styles.solutionRow}>
-                  <span className={styles.solutionNumber} aria-hidden="true">0{index + 1}</span>
-                  <h3>{title}</h3><p>{description}</p><ArrowUpRight aria-hidden="true" />
-                </Link>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </section>
-
-        <section id="pricing" className={`${styles.section} ${styles.pricing}`} aria-labelledby="pricing-title">
-          <FadeIn className={styles.centerHeading}><h2 id="pricing-title" className={styles.sectionTitle}>Start free. Grow at your pace.</h2><p>Start Free with 500 automated actions each month and up to 5 active automations, choose Pro at $9/month, or Business at $29/month.</p></FadeIn>
-          <PricingExperience compact homepage />
-          <div className={styles.centerLink}><Link href="/pricing" className={styles.textLink}>See the full plan comparison <ArrowRight aria-hidden="true" /></Link></div>
-        </section>
-
-        <section className={`${styles.section} ${styles.guides}`} aria-labelledby="guides-title">
-          <FadeIn className={styles.sectionHeading}><h2 id="guides-title" className={styles.sectionTitle}>Good ideas.<br />Put into action.</h2><Link href="/blog" className={styles.textLink}>Explore the blog <ArrowUpRight aria-hidden="true" /></Link></FadeIn>
-          <StaggerContainer className={styles.guideGrid}>
-            {BLOG_POSTS.slice(0, 3).map((post, index) => (
-              <StaggerItem key={post.slug} className={index === 0 ? styles.featuredGuide : styles.smallGuide}>
-                <Link href={`/blog/${post.slug}`} className={styles.guideLink}>
-                  {index === 0 && <div className={styles.guideImage}><Image src={getBlogVisualSrc(post.visual)} alt={post.visualAlt} fill sizes="(max-width: 767px) 100vw, 50vw" /></div>}
-                  <div className={styles.guideCopy}><span className={styles.guideIndex}>0{index + 1} <span>Guide</span></span><h3>{post.title}</h3><p>{post.description}</p><span className={styles.textLink}>Read guide <ArrowUpRight aria-hidden="true" /></span></div>
-                </Link>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </section>
-
-        <section className={`${styles.section} ${styles.faq}`} aria-labelledby="faq-title">
-          <FadeIn className={styles.faqIntro}><h2 id="faq-title" className={styles.sectionTitle}>The important questions, answered.</h2><Link href="/help" className={styles.textLink}>Visit the help center <ArrowUpRight aria-hidden="true" /></Link></FadeIn>
-          <div className={styles.questions}>
-            {FAQS.map(([question, answer]) => (
-              <details key={question}>
-                <summary><span>{question}</span><span className={styles.faqPlus} aria-hidden="true">+</span></summary>
-                <p>{answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.closing} aria-labelledby="closing-title">
-          <div className={styles.closingArtwork} aria-hidden="true"><MessageCircle /><ArrowUpRight /><Send /></div>
-          <FadeIn className={styles.closingCopy}>
-            <p className={styles.eyebrow}>Your next comment can become a customer</p>
-            <h2 id="closing-title">Less typing.<br />More possibility.</h2>
-            <p>Create your first automation, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
-            <Link href="/sign-up" className={styles.primary}>GET STARTED <ArrowUpRight aria-hidden="true" /></Link>
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5420ca,#7331e5_50%,#963be5)] px-4 py-20 text-center text-white sm:px-8 lg:py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(244,114,182,0.32),transparent_32rem)]" />
+          <FadeIn className="relative mx-auto max-w-4xl">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Your next comment can become a customer</p>
+            <h2 className="mt-5 text-4xl font-black tracking-[-0.055em] sm:text-6xl">Start automating Instagram today.</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">Create your first automation, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition hover:-translate-y-0.5">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">View pricing</Link>
+            </div>
           </FadeIn>
         </section>
       </main>
