@@ -11,7 +11,7 @@ import { Noto_Sans_Arabic, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "optional" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "optional", fallback: ["Arial", "Helvetica", "sans-serif"] });
 const arabic = Noto_Sans_Arabic({ subsets: ["arabic"], variable: "--font-arabic", display: "swap", preload: false });
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
