@@ -41,6 +41,19 @@ export function HoverLift({ children, className }: Omit<Props, "delay">) {
   );
 }
 
+// Reading content must remain visible before hydration and on short viewports.
+// Translate only: an observer or animation failure can never hide the article.
+export function ReadableReveal({ children, className, delay = 0 }: Omit<Props, "replay" | "amount">) {
+  const reduceMotion = useReducedMotion();
+  return <motion.div
+    initial={reduceMotion ? false : { y: 10 }}
+    whileInView={reduceMotion ? undefined : { y: 0 }}
+    viewport={{ once: true, amount: "some" }}
+    transition={{ duration: reduceMotion ? 0 : 0.4, delay: reduceMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+    className={className}
+  >{children}</motion.div>;
+}
+
 const containerVariants: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.055, delayChildren: 0.03 } },

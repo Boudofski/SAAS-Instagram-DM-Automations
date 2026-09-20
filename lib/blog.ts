@@ -1,6 +1,6 @@
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
 import growthPosts from "./content/growth/en.json";
-import { ILLUSTRATED_POSTS, type TutorialScreenshotId } from "./tutorial-content";
+import { ILLUSTRATED_POSTS, INSTAGRAM_CONNECTION_SECTIONS, type TutorialScreenshotId } from "./tutorial-content";
 
 export type BlogSection = {
   screenshot?: TutorialScreenshotId;
@@ -274,10 +274,11 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "connect-instagram-to-ap3k",
+    cover: "instagram-connect",
     title: "How to Connect Instagram to AP3K",
     description: "A step-by-step guide to connecting an Instagram Business or Creator account to AP3K and preparing it for comment and DM automation.",
     publishedAt: "2026-08-30",
-    updatedAt: "2026-08-30",
+    updatedAt: "2026-09-20",
     readingTime: "7 min read",
     category: "Getting Started",
     keywords: ["connect Instagram to AP3K", "connect Instagram Business account", "Instagram Creator account automation", "Instagram automation setup"],
@@ -285,35 +286,7 @@ export const BLOG_POSTS: BlogPost[] = [
     visualAlt: "Instagram professional account authorization flow connecting to AP3K",
     visualCaption: "The connection uses Instagram authorization so AP3K can access the account information required for campaigns.",
     intro: "Connecting Instagram is the foundation of every AP3K campaign. The connection tells AP3K which professional account owns the posts, comments, and campaign activity. Follow this checklist before creating your first automation.",
-    sections: [
-      {
-        heading: "Confirm that the account is professional",
-        paragraphs: ["AP3K is designed for Instagram Business and Creator accounts. If the account is still personal, switch it to a professional account in Instagram before starting the connection."],
-        bullets: ["Open the Instagram account settings", "Confirm the account type is Business or Creator", "Make sure you are authorized to manage the account", "Keep access to the account available during authorization"],
-      },
-      {
-        heading: "Connect the account",
-        paragraphs: ["Start from the AP3K integration or onboarding page. Continue to Instagram authorization, choose the correct professional account, and approve the permissions required for the features you intend to use."],
-        steps: [
-          { title: "Open Instagram connection", body: "Choose Connect Instagram from onboarding or the account integration area." },
-          { title: "Authorize access", body: "Sign in through the official authorization screen and review the requested access." },
-          { title: "Select the correct account", body: "If several professional accounts are available, choose the one whose posts and comments you want AP3K to manage." },
-          { title: "Return to AP3K", body: "Wait for the connection confirmation, then verify that the Instagram username appears in the dashboard." },
-        ],
-      },
-      {
-        heading: "Refresh posts and Reels",
-        paragraphs: ["Open the campaign builder and refresh the media list. You can create a campaign for a specific post or use Any post when the same trigger should apply across the connected account."],
-      },
-      {
-        heading: "If the account does not appear",
-        paragraphs: ["Do not repeatedly create campaigns against a missing connection. Recheck the professional account type, confirm you selected the intended account during authorization, and reconnect once. Then refresh the media list again."],
-      },
-      {
-        heading: "Protect the connection",
-        paragraphs: ["Review connected apps and account access regularly. If access is revoked or expires, reconnect before testing automations. AP3K does not need your Instagram password stored inside a campaign."],
-      },
-    ],
+    sections: INSTAGRAM_CONNECTION_SECTIONS,
   },
   {
     slug: "create-instagram-keyword-campaign",
