@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { MailCheck, Send, ShieldCheck, TriangleAlert } from "lucide-react";
-import { adminSendEmailTestAction } from "@/actions/admin/email";
+import { adminSendEmailTestAction, adminSendOwnerAlertTestAction, adminRetryOwnerAlertsAction } from "@/actions/admin/email";
 import { AdminPageHeader, AdminSectionHeader, AdminSurface } from "@/components/admin-v2/page-header";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import { EMAIL_TEMPLATE_LIST, EMAIL_TEMPLATES, isEmailTemplateId } from "@/lib/email/catalog";
 import { getEmailAdminOverview } from "@/lib/email/admin";
 import LocalTime from "@/components/global/local-time";
 
-export default async function EmailCenterPage({ searchParams }: { searchParams?: { template?: string; test?: string } }) {
+export default async function EmailCenterPage({ searchParams }: { searchParams?: { template?: string; test?: string; ownerTest?: string } }) {
   const selectedId = isEmailTemplateId(searchParams?.template) ? searchParams.template : "welcome";
   const selected = EMAIL_TEMPLATES[selectedId];
   const overview = await getEmailAdminOverview();
@@ -35,6 +35,22 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
         <StatusCard label="Delivery issues" value={failureCount} detail="Failed, bounced, or suppressed" icon={<TriangleAlert className="h-4 w-4" />} />
         <StatusCard label="Webhook" value={overview.configuration.webhookConfigured ? "Ready" : "Missing"} detail="Signed delivery events" icon={<ShieldCheck className="h-4 w-4" />} />
       </div>
+
+      <AdminSurface className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">Owner alerts</h2>
+          <V2Badge tone={overview.ownerAlerts.enabled && overview.configuration.configured ? "green" : "amber"}>{overview.ownerAlerts.enabled && overview.configuration.configured ? "Enabled" : "Not sending"}</V2Badge>
+        </div>
+        <p className="mt-3 break-all text-sm text-slate-300">Destination: <strong>{overview.ownerAlerts.recipient}</strong></p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">New registrations, successful payments and renewals, payment failures, ended subscriptions, refunds, and disputes. Routine logins, comments, DMs, and automation activity stay out of your inbox.</p>
+        <p className="mt-2 text-xs leading-6 text-slate-500">Repeated webhook deliveries are deduplicated. Payment failures are reported once per invoice. Preview deployments and Stripe test payments never send owner alerts.</p>
+        {!overview.ownerAlerts.retryConfigured && <p className="mt-3 text-xs text-amber-300">Automatic retries require CRON_SECRET in production. Immediate alerts still send when delivery is connected.</p>}
+        {searchParams?.ownerTest && <p role="status" className="mt-3 text-sm text-violet-200">{searchParams.ownerTest === "sent" ? "Owner test accepted by the email provider. Check the delivery status below." : searchParams.ownerTest === "disabled" ? "Owner alerts are disabled in this environment." : searchParams.ownerTest === "checked" ? "Eligible queued alerts checked. See the delivery activity below." : "Test queued or already processed. Check the delivery activity below."}</p>}
+        <div className="mt-4 flex flex-wrap gap-3">
+          <form action={adminSendOwnerAlertTestAction}><button disabled={!overview.ownerAlerts.enabled || !overview.configuration.configured} className="min-h-11 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-40">Send owner alert test</button></form>
+          <form action={adminRetryOwnerAlertsAction}><button disabled={!overview.ownerAlerts.enabled || !overview.configuration.configured} className="min-h-11 rounded-xl border border-white/15 px-4 text-sm font-semibold disabled:opacity-40">Retry queued owner alerts</button></form>
+        </div>
+      </AdminSurface>
 
       <section className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div>

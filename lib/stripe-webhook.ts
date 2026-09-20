@@ -13,6 +13,8 @@ import {
 } from "@/lib/referral-program";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
 import { createHash } from "node:crypto";
+import { notifyOwnerBillingAlert } from "@/lib/email/owner-alerts";
+import type { OwnerAlert } from "@/lib/email/owner-alert-content";
 import { notifyBillingEmail } from "@/lib/email/events";
 
 export type StripeOwner = {
@@ -45,6 +47,7 @@ export type StripeWebhookDependencies = {
     clerkIdFingerprint: string;
     customerIdFingerprint: string;
   }): void;
+  notifyOwnerEmail?(input: OwnerAlert & { live: boolean }): Promise<unknown>;
   notifyCustomerEmail?(input: {
     userId: string;
     templateId: "plan_activated" | "payment_failed" | "subscription_canceled";
@@ -91,6 +94,7 @@ const defaultDependencies: StripeWebhookDependencies = {
     console.warn("[stripe-webhook] stale Clerk metadata", details);
   },
   notifyCustomerEmail: notifyBillingEmail,
+  notifyOwnerEmail: notifyOwnerBillingAlert,
 };
 
 async function notifyCustomerSafely(
@@ -321,6 +325,21 @@ export async function processStripeEvent(
         false,
         dependencies
       );
+      if (event.livemode === true && ((event.type === "invoice.paid" && (invoice.amount_paid ?? 0) > 0) || (event.type === "invoice.payment_failed" && (invoice.amount_due ?? 0) > 0))) {
+        await dependencies.notifyOwnerEmail?.({
+          live: true, kind: event.type === "invoice.paid" ? "payment" : "payment_failed",
+          key: invoice.id, userId: resolution.owner.id, plan: resolution.plan,
+          amount: event.type === "invoice.paid" ? invoice.amount_paid : invoice.amount_due,
+          currency: invoice.currency, reference: invoice.number || invoice.id,
+          occurredAt: new Date(event.created * 1000).toISOString(),
+          detail: event.type === "invoice.paid"
+            ? invoice.paid_out_of_band ? "This subscription invoice was marked paid outside Stripe. Check the payment record before counting it as a Stripe collection."
+              : invoice.billing_reason === "subscription_create" ? "A customer made their first subscription payment."
+              : invoice.billing_reason === "subscription_cycle" ? "A subscription renewal payment was received."
+              : "A subscription invoice was paid, including any plan-change adjustment."
+            : "A subscription payment failed. Stripe may retry it. You will receive only one failure alert for this invoice.",
+        });
+      }
       if (event.type === "invoice.paid") {
         await dependencies.qualifyPaidReferral({
           referredUserId: resolution.owner.id,
@@ -377,6 +396,10 @@ export async function processStripeEvent(
         customerId,
         plan: "FREE",
       });
+      if (event.livemode === true && subscription.status === "canceled") {
+        await dependencies.notifyOwnerEmail?.({ live: true, kind: "cancellation", key: subscription.id,
+          userId: resolution.owner.id, reference: subscription.id, occurredAt: new Date(event.created * 1000).toISOString() });
+      }
       await notifyCustomerSafely(dependencies, {
         userId: resolution.owner.id,
         templateId: "subscription_canceled",
@@ -391,6 +414,13 @@ export async function processStripeEvent(
       const invoiceId = stripeId(charge.invoice);
       if (!invoiceId) {
         return { outcome: "ignored" as const, source: "non-invoice-charge" as const };
+      }
+      if (event.livemode === true) {
+        const customerId = stripeId(charge.customer);
+        const owner = customerId ? await dependencies.findOwnerByCustomerId(customerId) : null;
+        if (owner && charge.amount_refunded > 0) await dependencies.notifyOwnerEmail?.({ live: true, kind: "refund",
+          key: `${charge.id}:${charge.amount_refunded}`, userId: owner.id, amount: charge.amount_refunded,
+          currency: charge.currency, reference: charge.id, occurredAt: new Date(event.created * 1000).toISOString() });
       }
       await dependencies.reversePaidReferral(invoiceId, "refund");
       return { outcome: "processed" as const, source: "referral-reversal" as const };
@@ -408,6 +438,16 @@ export async function processStripeEvent(
       const invoiceId = stripeId(charge.invoice);
       if (!invoiceId) {
         return { outcome: "ignored" as const, source: "non-invoice-dispute" as const };
+      }
+      if (event.livemode === true) {
+        const customerId = stripeId(charge.customer);
+        const owner = customerId ? await dependencies.findOwnerByCustomerId(customerId) : null;
+        if (owner) await dependencies.notifyOwnerEmail?.({ live: true, kind: "dispute", key: dispute.id,
+          userId: owner.id, amount: dispute.amount, currency: dispute.currency, reference: dispute.id,
+          occurredAt: new Date(event.created * 1000).toISOString(),
+          detail: dispute.evidence_details?.due_by
+            ? `A customer disputed a payment. Evidence is due by ${new Date(dispute.evidence_details.due_by * 1000).toISOString().slice(0, 10)}. Review it in Stripe.`
+            : undefined });
       }
       await dependencies.reversePaidReferral(invoiceId, "dispute");
       return { outcome: "processed" as const, source: "referral-reversal" as const };

@@ -2,6 +2,7 @@
 
 import { requestedInstagramAccount, selectInstagramAccount } from "@/lib/instagram-account-scope";
 import { syncInstagramAccountEntitlements } from "@/lib/instagram-account-entitlements";
+import { enqueueOwnerAlert } from "@/lib/email/owner-alerts";
 import { client } from "@/lib/prisma";
 import { createReferralAttribution } from "@/lib/referral-program";
 import type { SUBSCRIPTION_PLAN } from "@prisma/client";
@@ -78,9 +79,15 @@ export const createUser = async (
     });
 
     await createReferralAttribution(transaction, created.id, referralCode);
+    const ownerAlert = await enqueueOwnerAlert({
+      kind: "signup", key: created.id, userId: created.id, email: created.email,
+      name: [created.firstname, created.lastname].filter(Boolean).join(" "),
+      occurredAt: new Date().toISOString(),
+    }, transaction);
 
     return {
       id: created.id,
+      ownerAlertId: ownerAlert?.id,
       email: created.email,
       firstname: created.firstname,
       lastname: created.lastname,

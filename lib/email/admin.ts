@@ -1,3 +1,4 @@
+import { ownerAlertConfiguration } from "@/lib/email/owner-alert-content";
 import { client } from "@/lib/prisma";
 import { getEmailConfiguration } from "@/lib/email/delivery";
 
@@ -22,6 +23,7 @@ export async function getEmailAdminOverview() {
 
   const configuration = getEmailConfiguration();
   return {
+    ownerAlerts: ownerAlertConfiguration(),
     configuration: {
       configured: configuration.configured,
       webhookConfigured: configuration.webhookConfigured,

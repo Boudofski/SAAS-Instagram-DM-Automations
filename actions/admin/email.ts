@@ -42,3 +42,20 @@ export async function adminSendEmailTestAction(templateId: string) {
 
   redirect(`/admin/emails?template=${selected}&test=${result.ok ? "sent" : result.status}`);
 }
+
+export async function adminSendOwnerAlertTestAction() {
+  await requireOwnerAdmin();
+  const { enqueueOwnerAlert, deliverOwnerAlertSafely } = await import("@/lib/email/owner-alerts");
+  // At most one test per minute even if the button is double-clicked.
+  const delivery = await enqueueOwnerAlert({ kind: "test", key: `admin-test:${Math.floor(Date.now() / 60_000)}`, occurredAt: new Date().toISOString() });
+  if (!delivery) redirect("/admin/emails?ownerTest=disabled");
+  const result = await deliverOwnerAlertSafely(delivery.id);
+  redirect(`/admin/emails?ownerTest=${result === "sent" ? "sent" : "queued"}`);
+}
+
+export async function adminRetryOwnerAlertsAction() {
+  await requireOwnerAdmin();
+  const { processOwnerAlertQueue } = await import("@/lib/email/owner-alerts");
+  await processOwnerAlertQueue();
+  redirect("/admin/emails?ownerTest=checked");
+}
