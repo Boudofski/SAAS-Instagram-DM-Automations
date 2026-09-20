@@ -23,13 +23,13 @@ export default function WebsiteNav({ current }: Props) {
         <Link href={href("/")} aria-label={`AP3K ${t("home")}`}>
           <AP3KLogo className="text-base text-slate-950 dark:text-white" />
         </Link>
-        <ul className="hidden items-center gap-7 text-sm font-semibold text-slate-600 dark:text-rf-muted md:flex">
+        <ul className="hidden items-center gap-7 text-sm font-semibold text-slate-600 dark:text-rf-muted lg:flex">
           <li><Link href={`${href("/")}#features`} className={navClass}>{t("features")}</Link></li>
           <li><Link href={`${href("/")}#how-it-works`} className={navClass}>{t("howItWorks")}</Link></li>
           <li><Link href={href("/pricing")} className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : navClass}>{t("pricing")}</Link></li>
           <li><Link href={href("/blog")} className={current === "blog" ? "text-slate-950 dark:text-rf-text" : navClass}>{t("blog")}</Link></li>
         </ul>
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <ThemeToggle compact />
           <LanguageSwitcher compact />
           <Link href={href("/sign-in")} className="rounded-full px-5 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white">
@@ -37,8 +37,8 @@ export default function WebsiteNav({ current }: Props) {
           </Link>
           <Link href={href("/sign-up")} className="ap3k-gradient-button px-5 py-2 text-sm uppercase">{t("getStarted")}</Link>
         </div>
-        <div className="ms-auto me-2 md:hidden"><LanguageSwitcher compact /></div>
-        <details className="group relative md:hidden">
+        <div className="ms-auto me-2 lg:hidden"><LanguageSwitcher compact /></div>
+        <details className="group relative lg:hidden">
           <summary aria-label={t("openNavigation")} className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full border border-slate-200 bg-white/85 text-slate-800 shadow-sm marker:hidden dark:border-white/10 dark:bg-white/[0.06] dark:text-white">
             <Menu className="h-4 w-4" />
           </summary>

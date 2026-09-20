@@ -29,6 +29,7 @@ const BILLING_LABELS: Record<Locale, { annual: string; monthly: string; equivale
 
 type Props = {
   compact?: boolean;
+  homepage?: boolean;
   dashboardCompact?: boolean;
   currentPlan?: CustomerPlan;
   existingPaid?: boolean;
@@ -37,6 +38,7 @@ type Props = {
 
 export default function PricingExperience({
   compact = false,
+  homepage = false,
   dashboardCompact = false,
   currentPlan,
   existingPaid = false,
@@ -47,7 +49,7 @@ export default function PricingExperience({
   const [interval, setInterval] = useState<BillingInterval>("year");
 
   return (
-    <LocalizedCopy><div className="w-full">
+    <LocalizedCopy><div className={homepage ? "ap3k-home-pricing w-full" : "w-full"}>
       <div className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
         <button
           type="button"
@@ -99,6 +101,7 @@ export default function PricingExperience({
           return (
             <article
               key={plan.id}
+              data-featured={plan.featured || undefined}
               className={`group relative flex min-h-full flex-col overflow-visible border shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-xl ${dashboardCompact || compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"} ${
                 isCurrent ? "ring-2 ring-emerald-500/50" : ""
               } ${
