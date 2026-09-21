@@ -24,13 +24,13 @@ export default function WebsiteNav({ current }: Props) {
         <Link href={href("/")} aria-label={`AP3K ${t("home")}`}>
           <AP3KLogo className="text-base text-slate-950 dark:text-white" />
         </Link>
-        <ul className="hidden items-center gap-5 text-sm font-semibold text-slate-600 dark:text-rf-muted lg:flex">
+        <ul className="hidden items-center gap-5 text-sm font-semibold text-slate-600 dark:text-rf-muted xl:flex">
           <li><Link href={`${href("/")}#features`} className={navClass}>{t("features")}</Link></li>
           <li><Link href={`${href("/")}#how-it-works`} className={navClass}>{t("howItWorks")}</Link></li>
           <li><Link href={href("/pricing")} aria-current={current === "pricing" ? "page" : undefined} className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : navClass}>{t("pricing")}</Link></li>
           <li><Link href={href("/blog")} aria-current={current === "blog" ? "page" : undefined} className={current === "blog" ? "text-slate-950 dark:text-rf-text" : navClass}>{t("blog")}</Link></li>
         </ul>
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-2 xl:flex">
           <ThemeToggle compact />
           <LanguageSwitcher compact />
           <Link href={href("/sign-in")} className="rounded-full px-5 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white">
@@ -38,8 +38,8 @@ export default function WebsiteNav({ current }: Props) {
           </Link>
           <Link href={href("/sign-up")} className="ap3k-gradient-button px-5 py-2 text-sm uppercase">{t("getStarted")}</Link>
         </div>
-        <div className="ms-auto me-2 lg:hidden"><LanguageSwitcher compact /></div>
-        <Sheet trigger={<Menu aria-hidden="true" className="h-5 w-5" />} triggerLabel={t("openNavigation")} className="lg:hidden" side={locale === "ar" ? "left" : "right"} closeOnNavigation contentClassName="w-[min(22rem,calc(100vw-1rem))] overflow-y-auto">
+        <div className="ms-auto me-2 xl:hidden"><LanguageSwitcher compact /></div>
+        <Sheet trigger={<Menu aria-hidden="true" className="h-5 w-5" />} triggerLabel={t("openNavigation")} className="xl:hidden" side={locale === "ar" ? "left" : "right"} closeOnNavigation contentClassName="w-[min(22rem,calc(100vw-1rem))] overflow-y-auto">
           <div className="pt-16 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
               <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={`${href("/")}#features`}>{t("features")}</Link>

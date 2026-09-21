@@ -89,7 +89,7 @@ export function AnimatedWorkflowCards() {
             >
               <span aria-hidden="true" className={`absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent transition-opacity duration-base dark:via-violet-300 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
               <span className="flex items-center justify-between gap-4">
-                <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 transition-transform duration-base dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20 ${isActive ? "" : ""}`}>
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20">
                   <Icon aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black tracking-[0.18em] transition-colors duration-base ${isActive ? "border-violet-600 bg-violet-600 text-white" : "border-violet-200/80 bg-violet-50 text-violet-700 dark:border-violet-300/15 dark:bg-violet-300/[0.07] dark:text-violet-200"}`}>

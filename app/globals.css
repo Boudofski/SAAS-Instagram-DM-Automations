@@ -453,7 +453,7 @@ html[lang="ar"] .ap3k-feature-benefits li { font-size: 13px; line-height: 1.65; 
   .ap3k-control {
     @apply transition-[color,background-color,border-color,opacity,transform] duration-fast ease-ui-out;
   }
-  .ap3k-content-enter { animation: ap3k-content-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .ap3k-content-enter { animation: ap3k-content-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
   .ap3k-app-shell { padding-inline: var(--page-gutter); scroll-padding-block: 7rem 6rem; }
   .ap3k-app-shell :is(input, textarea, select, button, a) { scroll-margin-block: 7rem 6rem; }
   .ap3k-app-shell :is(h1, h2, h3) { overflow-wrap: anywhere; }
