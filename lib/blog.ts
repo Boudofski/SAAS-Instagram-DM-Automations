@@ -1,8 +1,10 @@
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
+import { COMMENT_DM_POSTS } from "./content/comment-dm";
 import growthPosts from "./content/growth/en.json";
 import { ILLUSTRATED_POSTS, INSTAGRAM_CONNECTION_SECTIONS, type TutorialScreenshotId } from "./tutorial-content";
 
 export type BlogSection = {
+  links?: { label: string; href: string }[];
   screenshot?: TutorialScreenshotId;
   heading: string;
   paragraphs: string[];
@@ -11,6 +13,9 @@ export type BlogSection = {
 };
 
 export type BlogPost = {
+  contentLocale?: "en";
+  related?: string[];
+  wordCount?: number;
   cover?: TutorialScreenshotId;
   slug: string;
   title: string;
@@ -28,6 +33,7 @@ export type BlogPost = {
 };
 
 export const BLOG_POSTS: BlogPost[] = [
+  ...COMMENT_DM_POSTS,
   ...ILLUSTRATED_POSTS,
   ...growthPosts as BlogPost[],
   {
@@ -466,4 +472,10 @@ export const BLOG_POSTS: BlogPost[] = [
 
 export function getBlogPost(slug: string) {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;
+}
+
+/** Keep fully translated guides first in localized libraries. */
+export function getBlogPostsForLocale(locale: string): BlogPost[] {
+  if (locale === "en") return BLOG_POSTS;
+  return [...BLOG_POSTS.filter(post => !post.contentLocale), ...BLOG_POSTS.filter(post => post.contentLocale)];
 }

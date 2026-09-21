@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { getAuthenticatedHomeRedirect } from "@/lib/authenticated-home-redirect";
 import {
   LOCALE_COOKIE,
+  isEnglishOnlyArticle,
   browserLocale,
   isLocale,
   localizePublicPath,
@@ -25,9 +26,16 @@ export default clerkMiddleware(async (auth, req) => {
   const pathLocale = localeFromPath(requestedPath);
   const pathname = stripLocaleFromPath(requestedPath);
 
+  // No translated document exists for these articles. Keep one public URL.
+  if (pathLocale && isEnglishOnlyArticle(pathname)) {
+    const destination = req.nextUrl.clone();
+    destination.pathname = pathname;
+    return NextResponse.redirect(destination, 308);
+  }
+
   const savedLocale = req.cookies.get(LOCALE_COOKIE)?.value;
   const browserPreference = browserLocale(req.headers.get("accept-language"));
-  const firstVisit = !isLocale(savedLocale) && !pathLocale
+  const firstVisit = !isEnglishOnlyArticle(pathname) && !isLocale(savedLocale) && !pathLocale
     && !/\.[^/]+$/.test(pathname)
     && req.method === "GET" && !/^\/(api|callback|payment|r)(?:\/|$)/.test(pathname)
     && !/bot|crawler|spider|slurp/i.test(req.headers.get("user-agent") || "")

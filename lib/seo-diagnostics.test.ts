@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
-import { SUPPORTED_LOCALES, localizePublicPath, stripLocaleFromPath } from "@/lib/i18n/config";
+import { SUPPORTED_LOCALES, isEnglishOnlyArticle, localizePublicPath, stripLocaleFromPath } from "@/lib/i18n/config";
 
 describe("public indexing contracts", () => {
   it("lists unique public URLs with complete reciprocal language alternates", () => {
@@ -12,7 +12,7 @@ describe("public indexing contracts", () => {
     for (const page of pages) {
       const path = stripLocaleFromPath(new URL(page.url).pathname);
       expect(path).not.toMatch(/^\/(api|dashboard|admin|sign-in|sign-up|payment)(\/|$)/);
-      for (const locale of SUPPORTED_LOCALES) {
+      for (const locale of isEnglishOnlyArticle(path) ? ["en"] as const : SUPPORTED_LOCALES) {
         const expected = `https://ap3k.com${localizePublicPath(path, locale)}`;
         expect(page.alternates?.languages?.[locale]).toBe(expected);
         expect(urls.has(expected)).toBe(true);

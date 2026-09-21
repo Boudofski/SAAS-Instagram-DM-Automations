@@ -1,3 +1,5 @@
+import CommentDmLibrary from "@/components/website/comment-dm-library";
+import { COMMENT_DM_HUB } from "@/lib/content/comment-dm";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import { COMPANY_SCHEMA } from "@/lib/company";
@@ -61,7 +63,7 @@ export default function BlogPostPage({ params }: Props) {
   const post = getBlogPost(params.slug);
   if (!post) notFound();
 
-  const related = BLOG_POSTS
+  const related = post.related ? BLOG_POSTS.filter(item => post.related?.includes(item.slug)) : BLOG_POSTS
     .filter((item) => item.slug !== post.slug)
     .map((item) => ({
       item,
@@ -77,7 +79,10 @@ export default function BlogPostPage({ params }: Props) {
     "@type": "BlogPosting",
     headline: translateUi(post.title, locale),
     description: translateUi(post.description, locale),
-    inLanguage: locale,
+    inLanguage: post.contentLocale ?? locale,
+    articleSection: post.category,
+    ...(post.wordCount ? { wordCount: post.wordCount } : {}),
+    isPartOf: { "@type": "Blog", "@id": `${SITE_URL}/blog`, name: "AP3K Blog" },
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
     mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
@@ -96,7 +101,7 @@ export default function BlogPostPage({ params }: Props) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.10),transparent_30rem),radial-gradient(circle_at_82%_10%,rgba(236,72,153,0.08),transparent_30rem)]" />
       <WebsiteNav current="blog" />
       <main className="relative z-10">
-        <article className="mx-auto max-w-4xl px-4 pb-20 pt-14 sm:px-8 sm:pt-20">
+        <article lang={post.contentLocale} dir={post.contentLocale ? "ltr" : undefined} translate={post.contentLocale ? "no" : undefined} className="mx-auto max-w-4xl px-4 pb-20 pt-14 sm:px-8 sm:pt-20">
           <Breadcrumbs items={[{ name: "Blog", path: "/blog" }, { name: post.title, path: `/blog/${post.slug}` }]} />
           <ReadableReveal>
             <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-300">
@@ -107,6 +112,7 @@ export default function BlogPostPage({ params }: Props) {
               <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" /> {formatDate(post.publishedAt)}</span>
               <span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4" /> {post.readingTime}</span>
             </div>
+            {post.contentLocale && <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">By <Link href="/contact" className="underline underline-offset-4">AP3K</Link> · English guide</p>}
             <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-6xl">{post.title}</h1>
             <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">{post.intro}</p>
           </ReadableReveal>
@@ -163,6 +169,9 @@ export default function BlogPostPage({ params }: Props) {
                       </ul>
                     )}
                   </div>
+                  {section.links && <ul className="mt-5 space-y-2">
+                    {section.links.map(link => <li key={link.href}><Link href={link.href} prefetch={false} className="inline-block py-1 text-sm font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">{link.label}</Link></li>)}
+                  </ul>}
                   <GrowthSectionSources slug={post.slug} index={index} />
                   {section.screenshot && <TutorialScreenshot id={section.screenshot} />}
                 </section>
@@ -170,6 +179,7 @@ export default function BlogPostPage({ params }: Props) {
             ))}
           </div>
 
+          {post.contentLocale && <CommentDmLibrary expanded={`/blog/${post.slug}` === COMMENT_DM_HUB} />}
           <GrowthGuideExtras slug={post.slug} />
           {post.cover && <TutorialGuides />}
 
@@ -210,7 +220,7 @@ export default function BlogPostPage({ params }: Props) {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {related.map((item) => (
-              <Link key={item.slug} href={`/blog/${item.slug}`} className="group rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:border-orange-500/30 motion-safe:hover:shadow-lg dark:border-white/10 dark:bg-[#101112]">
+              <Link key={item.slug} href={`/blog/${item.slug}`} prefetch={false} lang={item.contentLocale} dir={item.contentLocale ? "ltr" : undefined} translate={item.contentLocale ? "no" : undefined} className="group rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:border-orange-500/30 motion-safe:hover:shadow-lg dark:border-white/10 dark:bg-[#101112]">
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-orange-500">{item.category}</p>
                 <h3 className="mt-2 text-lg font-black leading-snug group-hover:text-orange-600 dark:group-hover:text-orange-300">{item.title}</h3>
                 <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{item.description}</p>

@@ -3,7 +3,7 @@ import { AP3K_HELP_ARTICLES } from "@/lib/ap3k-help";
 import { BLOG_POSTS } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import type { MetadataRoute } from "next";
-import { SUPPORTED_LOCALES, localizePublicPath, localeAlternates } from "@/lib/i18n/config";
+import { SUPPORTED_LOCALES, isEnglishOnlyArticle, localizePublicPath, localeAlternates } from "@/lib/i18n/config";
 
 const baseUrl = "https://ap3k.com";
 
@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: publicContentUpdated, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/pricing`, lastModified: updated, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${baseUrl}/blog`, lastModified: publicContentUpdated, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/blog`, lastModified: new Date("2026-09-21T00:00:00Z"), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/contact`, lastModified: companyUpdated, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/help`, lastModified: new Date("2026-09-20T00:00:00Z"), changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/privacy`, lastModified: companyUpdated, changeFrequency: "yearly", priority: 0.3 },
@@ -52,7 +52,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [...staticPages, ...commercialPages, ...blogPages, ...helpPages].flatMap((page) => {
     const path = new URL(page.url).pathname;
     const languages = Object.fromEntries(Object.entries(localeAlternates(path)).map(([language, value]) => [language, `${baseUrl}${value}`]));
-    return SUPPORTED_LOCALES.map((locale) => ({
+    return (isEnglishOnlyArticle(path) ? ["en"] as const : SUPPORTED_LOCALES).map((locale) => ({
       ...page,
       url: `${baseUrl}${localizePublicPath(path, locale)}`,
       alternates: { languages },

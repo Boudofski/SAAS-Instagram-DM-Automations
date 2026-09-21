@@ -1,3 +1,10 @@
+import englishArticleSlugs from "../content/comment-dm/slugs.json";
+
+const englishArticles = new Set(englishArticleSlugs.map(slug => `/blog/${slug}`));
+export function isEnglishOnlyArticle(pathname: string): boolean {
+  return englishArticles.has(stripLocaleFromPath(pathname.split(/[?#]/)[0]).replace(/\/$/, ""));
+}
+
 export const SUPPORTED_LOCALES = ["en", "ar", "fr", "es", "de", "pt"] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -44,7 +51,7 @@ export function localizePublicPath(pathname: string, locale: Locale): string {
   const path = suffixIndex === -1 ? pathname : pathname.slice(0, suffixIndex);
   const suffix = suffixIndex === -1 ? "" : pathname.slice(suffixIndex);
   const cleanPath = stripLocaleFromPath(path);
-  if (locale === DEFAULT_LOCALE || isProtectedPath(cleanPath)) return cleanPath + suffix;
+  if (locale === DEFAULT_LOCALE || isProtectedPath(cleanPath) || isEnglishOnlyArticle(cleanPath)) return cleanPath + suffix;
   return (cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`) + suffix;
 }
 
@@ -56,10 +63,15 @@ export function isProtectedPath(pathname: string): boolean {
 // Public URLs are authoritative. A stale cookie must never trap '/' in Arabic.
 // Callbacks, payments and APIs must never acquire a language prefix.
 export function resolveRequestLocale(pathname: string, cookie?: string): Locale {
+  if (isEnglishOnlyArticle(pathname)) return DEFAULT_LOCALE;
   return localeFromPath(pathname) ?? (isProtectedPath(pathname) ? normalizeLocale(cookie) : DEFAULT_LOCALE);
 }
 
 export function localeAlternates(pathname = "/") {
+  if (isEnglishOnlyArticle(pathname)) {
+    const path = localizePublicPath(pathname, "en");
+    return { en: path, "x-default": path };
+  }
   return {
     ...Object.fromEntries(
     SUPPORTED_LOCALES.map((locale) => [LOCALE_DETAILS[locale].htmlLang, localizePublicPath(pathname, locale)]),

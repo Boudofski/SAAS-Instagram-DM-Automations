@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { LOCALE_DETAILS, localeAlternates, localizePublicPath } from "./config";
+import { LOCALE_DETAILS, isEnglishOnlyArticle, localeAlternates, localizePublicPath } from "./config";
 import { getServerLocale } from "./server";
 import { translateUi } from "./translate";
 
 /** Every translated document canonicals to itself and links its language peers. */
 export function localizedMetadata(source: Metadata, path: string): Metadata {
-  const locale = getServerLocale();
+  const locale = isEnglishOnlyArticle(path) ? "en" : getServerLocale();
   const tr = (text: unknown): unknown => {
     if (typeof text !== "string") return text;
     const translated = translateUi(text, locale);

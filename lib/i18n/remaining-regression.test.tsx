@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "node:fs";
 import ts from "typescript";
-import { SUPPORTED_LOCALES, localizePublicPath, type Locale } from "./config";
+import { SUPPORTED_LOCALES, isEnglishOnlyArticle, localizePublicPath, type Locale } from "./config";
 import { translateUi, hasUiTranslation } from "./translate";
 import { COMMERCIAL_PAGES } from "../commercial-pages";
 import { BLOG_POSTS } from "../blog";
@@ -65,7 +65,7 @@ describe("complete public localization and search metadata", () => {
   });
   it("covers every commercial page, help article and blog content field", () => {
     for (const locale of SUPPORTED_LOCALES.filter(l => l !== "en")) {
-      for (const source of prose([COMMERCIAL_PAGES, BLOG_POSTS, AP3K_HELP_ARTICLES])) {
+      for (const source of prose([COMMERCIAL_PAGES, BLOG_POSTS.filter(post => !post.contentLocale), AP3K_HELP_ARTICLES])) {
         expect(hasUiTranslation(source, locale), `${locale}: ${source}`).toBe(true);
       }
     }
@@ -116,7 +116,7 @@ describe("complete public localization and search metadata", () => {
     expect(new Set(entries.map(p => p.url)).size).toBe(entries.length);
     for (const page of entries) {
       const alternatives = page.alternates?.languages;
-      expect(Object.keys(alternatives ?? {})).toHaveLength(7);
+      expect(Object.keys(alternatives ?? {})).toHaveLength(isEnglishOnlyArticle(new URL(page.url).pathname) ? 2 : 7);
       for (const url of Object.values(alternatives ?? {})) expect(entries.some(p => p.url === url)).toBe(true);
       expect(page.url).not.toMatch(/dashboard|sign-in|sign-up|data-deletion-status/);
     }
