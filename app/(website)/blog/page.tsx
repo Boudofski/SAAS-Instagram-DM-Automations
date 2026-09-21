@@ -10,7 +10,7 @@ import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual from "@/components/website/blog-visual";
 import TutorialScreenshot from "@/components/website/tutorial-screenshot";
-import { BLOG_POSTS } from "@/lib/blog";
+import { BLOG_POSTS, getBlogPostsForLocale } from "@/lib/blog";
 import { ArrowRight, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -38,8 +38,8 @@ export default function BlogPage({ searchParams }: Props) {
   const pagination = getBlogPage(searchParams.page, BLOG_POSTS.length);
   if (!pagination) notFound();
   if (searchParams.page === "1") redirect(localizePublicPath("/blog", getServerLocale()));
-  const posts = BLOG_POSTS.slice(pagination.start, pagination.end);
   const locale = getServerLocale();
+  const posts = getBlogPostsForLocale(locale).slice(pagination.start, pagination.end);
   const collection = {
     "@context": "https://schema.org", "@type": "CollectionPage",
     name: "AP3K Blog", url: `https://ap3k.com${localizePublicPath(blogPagePath(pagination.page), locale)}`,

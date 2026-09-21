@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { BLOG_POSTS } from "./blog";
+import { BLOG_POSTS, getBlogPostsForLocale } from "./blog";
 import { COMMENT_DM_POSTS, COMMENT_DM_HUB } from "./content/comment-dm";
 import slugs from "./content/comment-dm/slugs.json";
 import { AP3K_HELP_ARTICLES } from "./ap3k-help";
@@ -32,6 +32,14 @@ describe("comment-to-DM editorial library", () => {
         for (const link of section.links ?? []) expect(destinations.has(link.href), link.href).toBe(true);
         if (section.screenshot) expect(TUTORIAL_SCREENSHOTS[section.screenshot]).toBeDefined();
       }
+    }
+  });
+  it("keeps translated guides first for readers using another language", () => {
+    expect(getBlogPostsForLocale("en")[0].slug).toBe("instagram-comment-to-dm-automation");
+    for (const locale of SUPPORTED_LOCALES.filter(locale => locale !== "en")) {
+      const posts = getBlogPostsForLocale(locale);
+      expect(posts.slice(0, 12).every(post => !post.contentLocale)).toBe(true);
+      expect(new Set(posts.map(post => post.slug)).size).toBe(BLOG_POSTS.length);
     }
   });
   it("keeps untranslated articles canonical in English across language switches", () => {

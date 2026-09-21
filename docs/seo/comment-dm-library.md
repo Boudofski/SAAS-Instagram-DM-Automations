@@ -17,7 +17,8 @@ API quotas, guaranteed results or fabricated personal expertise is used.
 These 50 articles are English-only. Unavailable locale-prefixed URLs permanently
 redirect to the English canonical. Hreflang and sitemap entries advertise only the
 actual English version; the language menu takes readers to the chosen language's
-blog library. Existing localized articles keep their six language versions.
+blog library. Existing localized articles keep their six language versions and appear first in
+localized blog listings, so the new English collection does not displace them.
 
 ## Technical changes
 
@@ -36,7 +37,7 @@ blog library. Existing localized articles keep their six language versions.
 
 ## Validation
 
-Focused SEO/content/locale contracts pass (20 tests), TypeScript and lint pass,
+Focused SEO/content/locale contracts pass (21 tests), TypeScript and lint pass,
 and a production build succeeds. One existing broader localization test still
 fails on the unchanged Arabic translation of “AP3K workflow connecting Instagram
 interactions with replies and direct messages”; it predates this release.

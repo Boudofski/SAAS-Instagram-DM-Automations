@@ -473,3 +473,9 @@ export const BLOG_POSTS: BlogPost[] = [
 export function getBlogPost(slug: string) {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;
 }
+
+/** Keep fully translated guides first in localized libraries. */
+export function getBlogPostsForLocale(locale: string): BlogPost[] {
+  if (locale === "en") return BLOG_POSTS;
+  return [...BLOG_POSTS.filter(post => !post.contentLocale), ...BLOG_POSTS.filter(post => post.contentLocale)];
+}
