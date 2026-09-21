@@ -34,7 +34,7 @@ export default function ReviewInstagramAccountProfile({
         />
         <div className="min-w-0">
           <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-            {liveConnected && displayUsername ? `@${displayUsername}` : "No Instagram account connected"}
+            {liveConnected && displayUsername ? <bdi dir="ltr">@{displayUsername}</bdi> : "No Instagram account connected"}
           </p>
           <p className="mt-0.5 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
             {liveConnected ? pageName ?? "Instagram Business or Creator profile" : "Connect Instagram to start."}
