@@ -68,7 +68,7 @@ export default function PricingExperience({
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           }`}
-        ><UiText>{" Annual "}</UiText><span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-700 dark:text-emerald-300"><UiText>{" Save up to 27% "}</UiText></span>
+        ><UiText>{" Annual "}</UiText><span className={`rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black ${interval === "year" ? "text-emerald-300 dark:text-emerald-800" : "text-emerald-800 dark:text-emerald-300"}`}><UiText>{" Save up to 27% "}</UiText></span>
         </button>
       </div>
 
