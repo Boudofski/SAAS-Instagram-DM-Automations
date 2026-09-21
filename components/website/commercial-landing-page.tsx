@@ -211,6 +211,7 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
             <aside className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300"><UiText>{"Related tutorials"}</UiText></p>
               <div className="mt-5 grid gap-3">
+                <Link href="/blog/instagram-comment-to-dm-automation" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Instagram comment to DM automation: practical guide and campaign library →</Link>
                 {page.tutorials.map((tutorial) => <Link key={tutorial.slug} href={`/blog/${tutorial.slug}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 px-4 py-4 text-sm font-black transition hover:border-violet-300 hover:text-violet-600 dark:border-white/10 dark:hover:border-violet-400/30 dark:hover:text-violet-300">{tutorial.title}<ArrowRight className="h-4 w-4 shrink-0" /></Link>)}
               </div>
               <Link href="/pricing" className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-violet-600 px-5 py-3 text-sm font-black text-white transition hover:bg-violet-500"><UiText>{"Compare pricing"}</UiText></Link>

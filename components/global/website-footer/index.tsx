@@ -36,6 +36,7 @@ export default function WebsiteFooter() {
             </div>
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("popularGuides")}</p>
+              <Link href="/blog/instagram-comment-to-dm-automation" prefetch={false} lang="en" dir="ltr" translate="no" className={`${linkClass} max-w-64`}>Instagram comment to DM automation</Link>
               <Link href={href("/blog/automate-instagram-dms-from-comments")} className={linkClass}>{t("automateDmsGuide")}</Link>
               <Link href={href("/blog/instagram-comment-reply-vs-dm")} className={linkClass}>{t("commentReplyVsDm")}</Link>
               <Link href={href("/blog/turn-instagram-comments-into-leads")} className={linkClass}>{t("commentsToLeads")}</Link>

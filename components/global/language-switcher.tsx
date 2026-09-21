@@ -2,7 +2,7 @@
 import { LocalizedButton } from "@/components/i18n/localized-controls";
 
 
-import { LOCALE_COOKIE, LOCALE_DETAILS, SUPPORTED_LOCALES, isProtectedPath, localizePublicPath, type Locale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, LOCALE_DETAILS, SUPPORTED_LOCALES, isEnglishOnlyArticle, isProtectedPath, localizePublicPath, type Locale } from "@/lib/i18n/config";
 import LanguageFlag from "@/components/i18n/language-flag";
 import { useI18n } from "@/providers/i18n-provider";
 import { Check, ChevronDown, Loader2 } from "lucide-react";
@@ -24,8 +24,10 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
     // Protected screens subscribe to the locale context. Re-fetching account,
     // Instagram and billing data here adds latency without changing the data.
     if (isProtectedPath(pathname)) return;
-    const suffix = window.location.search + window.location.hash;
-    const destination = localizePublicPath(pathname, nextLocale);
+    // An English-only guide has no translated counterpart; offer the localized library.
+    const englishGuide = isEnglishOnlyArticle(pathname);
+    const suffix = englishGuide ? "" : window.location.search + window.location.hash;
+    const destination = localizePublicPath(englishGuide ? "/blog" : pathname, nextLocale);
     startTransition(() => {
       // A new navigation supersedes an in-flight one, including a return
       // to the current URL. Keep the menu usable on slow connections.
