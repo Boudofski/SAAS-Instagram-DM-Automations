@@ -56,7 +56,7 @@ export default function Sidebar({ slug }: Props) {
           const href = primaryNavigationHref(slug, item.segment);
           const isActive = item.segment === "" ? page === slug || page === "" : page === item.segment;
           return (
-            <Tooltip key={item.segment} open={expanded ? false : undefined}><TooltipTrigger asChild><Link
+            <Tooltip key={item.segment}><TooltipTrigger asChild><Link
               aria-current={isActive ? "page" : undefined}
               href={href}
               title={!expanded ? t(item.messageKey) : undefined}
@@ -71,7 +71,7 @@ export default function Sidebar({ slug }: Props) {
             >
               <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
               <span className={expanded ? "min-w-0 break-words" : "sr-only"}>{t(item.messageKey)}</span>
-            </Link></TooltipTrigger><TooltipContent side={locale === "ar" ? "left" : "right"} sideOffset={12}>{t(item.messageKey)}</TooltipContent></Tooltip>
+            </Link></TooltipTrigger>{!expanded && <TooltipContent side={locale === "ar" ? "left" : "right"} sideOffset={12}>{t(item.messageKey)}</TooltipContent>}</Tooltip>
           );
         })}
       </nav></TooltipProvider>
