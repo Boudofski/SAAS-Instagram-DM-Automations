@@ -91,7 +91,7 @@ export default async function InstagramAccountPage({
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="truncate text-lg font-black tracking-tight text-white sm:text-2xl">
                     {connected && displayUsername
-                      ? `@${displayUsername}`
+                      ? <bdi dir="ltr">@{displayUsername}</bdi>
                       : "No Instagram account connected"}
                   </h2>
                   <span

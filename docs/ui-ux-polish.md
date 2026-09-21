@@ -58,7 +58,7 @@ exception; no animation of message-history scrolling or data values.
   viewport containment guidance. Rejected replacing the existing sidebar with a
   new framework scaffold; that would be an unnecessary production refactor.
 
-### Browser review
+### Initial preview browser review
 
 A separate preview-only QA branch renders real shared components with empty state
 fixtures and local editor state. It contains no customer records, cannot activate
@@ -103,10 +103,28 @@ also present. Neither is represented as a clean authenticated console check.
 
 ### Release boundary and performance
 
-This branch is ready for review, not a claim that the full production definition
-of done has been met. An authenticated browser session is still required to verify
-save/edit/activate, account switching, Inbox, billing navigation and populated
-product layouts before merging. No production deployment was made for this pass.
+PR #112 was merged and deployed to production on September 21, 2026, at commit
+`87969d71dba670d75cb32a8bcc2b606d6a2272b6`. Vercel reports READY with the
+`ap3k.com` alias. The user supplied an authenticated production browser session,
+resolving the initial preview review's access boundary above.
+
+Authenticated checks confirmed populated dashboard/analytics, date-range navigation,
+232px/76px expanded/collapsed sidebar, account switching and account-scoped data,
+automation list/detail, and all four edit-builder steps through review with existing
+messages intact. Inbox conversation switching/composer, Contacts, AI Overview,
+Knowledge, Behavior and Playground, billing, referrals, settings, account connection
+and the empty notification panel were inspected. Dark/light themes and Arabic RTL
+were reviewed; switching the account screen back to English left zero Arabic
+characters in its DOM text. A follow-up isolates account handles with `bdi dir="ltr"`
+so the @ prefix stays in its correct position in Arabic, matching the dashboard
+and account switcher. No localization strings were changed.
+
+These are UI/navigation checks, not a claim of executing payments, sending customer
+messages, saving AI configuration, or activating/deleting live automations. Those
+operations were not performed. The responsive matrix above uses isolated preview
+viewports, while authenticated production checks use the desktop browser viewport.
+Some existing account-screen labels remain English in Arabic; translation catalogs
+are deliberately preserved under this task's approved-content constraint.
 
 No new animation dependency, image or video payload was added. Existing video
 lazy loading and poster behavior remain. Control feedback is CSS; existing Framer
