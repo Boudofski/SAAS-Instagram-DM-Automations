@@ -27,9 +27,10 @@ changes to auth, Stripe, webhooks, data models, API contracts, automation execut
 account isolation, approved text or translated strings. Existing working layouts
 are retained. No dependencies added.
 
-Production public pages were inspected directly. Authenticated production review
-is blocked by the Cloudflare challenge on accounts.ap3k.com; code review and
-isolated presentation verification must not be described as live workflow tests.
+Production public pages were inspected directly. Initial authenticated review was
+blocked by the Cloudflare challenge on accounts.ap3k.com. The user subsequently
+signed in at ap3k.com; the production review below records the resolved checks
+separately from isolated presentation verification.
 
 ## Motion
 
