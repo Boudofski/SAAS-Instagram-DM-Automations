@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { revealTransition } from "@/lib/motion";
 import { motion, useReducedMotion } from "framer-motion";
 import { MessageCircle, Reply, Send, Users } from "lucide-react";
 import { translateUi } from "@/lib/i18n/translate";
@@ -42,10 +43,10 @@ function useActiveStep(length: number) {
   }, []);
 
   useEffect(() => {
-    if (!visible || paused || reduceMotion) return;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % length), 2400);
-    return () => window.clearInterval(timer);
-  }, [length, paused, reduceMotion, visible]);
+    if (!visible || paused || reduceMotion || active >= length - 1) return;
+    const timer = window.setTimeout(() => setActive((current) => Math.min(current + 1, length - 1)), 1800);
+    return () => window.clearTimeout(timer);
+  }, [active, length, paused, reduceMotion, visible]);
 
   return { root, active, setActive, setPaused, reduceMotion };
 }
@@ -66,8 +67,8 @@ export function AnimatedWorkflowCards() {
     >
       <div aria-hidden="true" className="pointer-events-none absolute left-[8%] right-[8%] top-6 hidden h-px overflow-hidden bg-violet-200 dark:bg-violet-400/15 lg:block">
         <span
-          className="block h-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-500 transition-[width] duration-700 ease-out"
-          style={{ width: `${((active + 1) / WORKFLOW_STEPS.length) * 100}%` }}
+          className="block h-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-500 origin-left transition-transform duration-content ease-ui-out rtl:origin-right"
+          style={{ transform: `scaleX(${(active + 1) / WORKFLOW_STEPS.length})` }}
         />
       </div>
       <div className="grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -80,18 +81,18 @@ export function AnimatedWorkflowCards() {
               aria-current={isActive ? "step" : undefined}
               onClick={() => setActive(index)}
               onPointerEnter={() => setActive(index)}
-              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+              initial={reduceMotion ? false : { y: 12 }}
               whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.25 }}
-              transition={{ duration: 0.48, delay: reduceMotion ? 0 : index * 0.07, ease: [0.22, 1, 0.36, 1] }}
-              className={`group relative h-full overflow-hidden rounded-[1.7rem] border bg-white/90 p-6 text-left shadow-[0_16px_45px_rgba(42,27,78,0.07)] backdrop-blur-sm transition-[border-color,box-shadow,transform] duration-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500 dark:bg-[#111320] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] ${isActive ? "-translate-y-1 border-violet-400 shadow-[0_22px_55px_rgba(109,40,217,0.16)] dark:border-violet-300/45 dark:shadow-[0_22px_55px_rgba(124,58,237,0.18)]" : "border-slate-200/90 hover:-translate-y-1 hover:border-violet-300 dark:border-violet-300/[0.14] dark:hover:border-violet-300/30"}`}
+              transition={revealTransition(reduceMotion, index * 0.055)}
+              className={`group relative h-full overflow-hidden rounded-2xl border bg-white/90 p-6 text-start shadow-surface transition-[border-color,box-shadow] duration-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500 dark:bg-[#111320] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] ${isActive ? "border-violet-400 ring-1 ring-violet-400/20 dark:border-violet-300/45" : "border-slate-200/90 hover:border-violet-300 dark:border-violet-300/[0.14] dark:hover:border-violet-300/30"}`}
             >
-              <span aria-hidden="true" className={`absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent transition-opacity duration-500 dark:via-violet-300 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+              <span aria-hidden="true" className={`absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent transition-opacity duration-base dark:via-violet-300 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
               <span className="flex items-center justify-between gap-4">
-                <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 transition-transform duration-500 dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20 ${isActive ? "scale-105 rotate-[-3deg]" : ""}`}>
+                <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 ring-1 ring-violet-200/80 transition-transform duration-base dark:bg-violet-400/[0.12] dark:text-violet-200 dark:ring-violet-300/20 ${isActive ? "" : ""}`}>
                   <Icon aria-hidden="true" className="h-5 w-5" />
                 </span>
-                <span className={`rounded-full border px-3 py-1 text-[10px] font-black tracking-[0.18em] transition-colors duration-500 ${isActive ? "border-violet-600 bg-violet-600 text-white" : "border-violet-200/80 bg-violet-50 text-violet-700 dark:border-violet-300/15 dark:bg-violet-300/[0.07] dark:text-violet-200"}`}>
+                <span className={`rounded-full border px-3 py-1 text-[10px] font-black tracking-[0.18em] transition-colors duration-base ${isActive ? "border-violet-600 bg-violet-600 text-white" : "border-violet-200/80 bg-violet-50 text-violet-700 dark:border-violet-300/15 dark:bg-violet-300/[0.07] dark:text-violet-200"}`}>
                   {step}
                 </span>
               </span>
@@ -102,7 +103,7 @@ export function AnimatedWorkflowCards() {
         })}
       </div>
       <div aria-hidden="true" className="mt-5 flex justify-center gap-2 lg:hidden">
-        {WORKFLOW_STEPS.map(({ step }, index) => <span key={step} className={`h-1.5 rounded-full transition-all duration-500 ${active === index ? "w-7 bg-violet-600" : "w-1.5 bg-violet-200 dark:bg-violet-400/25"}`} />)}
+        {WORKFLOW_STEPS.map(({ step }, index) => <span key={step} className={`h-1.5 rounded-full transition-colors duration-base ${active === index ? "w-7 bg-violet-600" : "w-1.5 bg-violet-200 dark:bg-violet-400/25"}`} />)}
       </div>
     </div>
   );
@@ -130,13 +131,13 @@ export function AnimatedSetupSteps() {
             type="button"
             aria-current={isActive ? "step" : undefined}
             onClick={() => setActive(index)}
-            initial={reduceMotion ? false : { opacity: 0, x: -14 }}
-            whileInView={reduceMotion ? undefined : { opacity: 1, x: 0 }}
+            initial={reduceMotion ? false : { y: 10 }}
+            whileInView={reduceMotion ? undefined : { y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.45, delay: reduceMotion ? 0 : index * 0.075, ease: [0.22, 1, 0.36, 1] }}
-            className={`flex w-full gap-4 rounded-2xl border bg-white/90 p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] duration-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-violet-500 dark:bg-white/[0.04] ${isActive ? "translate-x-1 border-violet-400 shadow-[0_14px_35px_rgba(109,40,217,0.13)] dark:border-violet-300/40" : "border-violet-200/80 hover:translate-x-1 hover:border-violet-300 dark:border-white/8"}`}
+            transition={revealTransition(reduceMotion, index * 0.055)}
+            className={`flex w-full gap-4 rounded-2xl border bg-white/90 p-4 text-start shadow-sm transition-[border-color,box-shadow] duration-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-violet-500 dark:bg-card ${isActive ? "border-violet-400 ring-1 ring-violet-400/15 dark:border-violet-300/40" : "border-violet-200/80 hover:border-violet-300 dark:border-white/8"}`}
           >
-            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black text-white transition-[transform,background-color] duration-500 ${isActive ? "scale-110 bg-fuchsia-500" : "bg-violet-600"}`}>{num}</span>
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black text-white transition-[transform,background-color] duration-base ${isActive ? "bg-violet-700" : "bg-violet-600"}`}>{num}</span>
             <span>
               <span className="block font-black">{tr(title)}</span>
               <span className="mt-1 block text-sm text-slate-600 dark:text-slate-400">{tr(copy)}</span>

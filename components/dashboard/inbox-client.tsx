@@ -143,7 +143,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
   };
 
   return (
-    <div className="mt-3 flex h-[calc(100dvh-9.5rem)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f5f6fa] text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#050816] dark:text-white sm:h-[calc(100dvh-7.5rem)] sm:min-h-[520px]">
+    <div className="mt-3 flex h-[calc(100dvh-9.5rem)] min-h-[320px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f5f6fa] text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#050816] dark:text-white sm:h-[calc(100dvh-7.5rem)] sm:min-h-[360px]">
       <header className={["shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-[#080c18]/95 sm:px-4 sm:py-3 lg:flex-nowrap lg:gap-3", selectedId ? "hidden md:flex" : "flex"].join(" ")}>
         <div className="min-w-0 flex-1 lg:min-w-32 lg:flex-none"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-rf-purple sm:text-[10px]"><UiText>{"Instagram"}</UiText></p><h1 className="text-lg font-black tracking-tight sm:text-xl"><UiText>{"Inbox"}</UiText></h1></div>
         <label className="relative order-3 w-full lg:order-none lg:mx-auto lg:max-w-xl">
@@ -156,7 +156,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
         </div>
       </header>
 
-      <div className={["grid min-h-0 flex-1 overflow-hidden bg-white dark:bg-[#0d1220] md:grid-cols-[300px_minmax(0,1fr)]", foldersExpanded ? "xl:grid-cols-[176px_320px_minmax(0,1fr)]" : "xl:grid-cols-[64px_320px_minmax(0,1fr)]"].join(" ")}>
+      <div className={["grid min-h-0 flex-1 overflow-hidden bg-white dark:bg-[#0d1220] md:grid-cols-[260px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)]", foldersExpanded ? "xl:grid-cols-[176px_320px_minmax(0,1fr)]" : "xl:grid-cols-[64px_320px_minmax(0,1fr)]"].join(" ")}>
         <nav aria-label="Inbox folders" className="hidden min-h-0 border-e border-slate-200 bg-slate-50/70 p-2 dark:border-white/10 dark:bg-white/[0.02] xl:flex xl:flex-col">
           <LocalizedButton type="button" onClick={() => setFoldersExpanded((value) => !value)} aria-label={foldersExpanded ? "Collapse inbox folders" : "Expand inbox folders"} title={foldersExpanded ? "Collapse folders" : "Expand folders"} className="mb-3 grid h-10 w-full place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-white hover:text-slate-950 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">{foldersExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}</LocalizedButton>
           <LocalizedButton type="button" title="All chats" aria-label="All chats" onClick={() => setFilter("all")} className={folderClass(filter === "all", foldersExpanded)}><Inbox className="h-4 w-4 shrink-0" />{foldersExpanded ? <><span className="flex-1 text-start"><UiText>{"All chats"}</UiText></span><span>{conversations.length}</span></> : null}</LocalizedButton>
@@ -182,7 +182,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
           {!selected ? <EmptyInbox /> : (
             <>
               <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-3 dark:border-white/10 sm:h-[72px] sm:px-4">
-                <button type="button" onClick={() => setSelectedId(null)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 md:hidden dark:border-white/10"><ArrowLeft className="h-4 w-4" /></button>
+                <button type="button" onClick={() => setSelectedId(null)} className="ap3k-control grid h-11 w-11 place-items-center rounded-lg border border-slate-200 md:hidden dark:border-white/10"><ArrowLeft className="h-4 w-4" /></button>
                 <Avatar src={selected.profilePictureUrl} name={selected.recipientUsername || selected.recipientIgId} size="lg" />
                 <div className="min-w-0"><p className="truncate text-sm font-black">{displayName(selected)}</p><p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><Instagram className="h-3.5 w-3.5 text-pink-500" /><UiText>{" Instagram · "}</UiText><UiText>{isReplyWindowOpen(selected.lastInboundAt) ? "Active now" : "Reply window closed"}</UiText></p></div>
                 <span className="ms-auto hidden rounded-full bg-rf-purple/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-rf-purple sm:inline-flex">{selected.automation?.source ?? "manual"}</span>
@@ -228,7 +228,7 @@ function MessageTimeline({ messages, avatarUrl, name }: { messages: any[]; avata
     const showDay = day !== previousDay;
     previousDay = day;
     const outbound = message.direction === "OUTBOUND";
-    return <div key={message.id}>{showDay ? <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{day}</span><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /></div> : null}<div className={outbound ? "flex justify-end" : "flex items-end gap-2"}>{!outbound ? <Avatar src={avatarUrl} name={name} size="sm" /> : null}<div className={["max-w-[82%] overflow-hidden text-sm leading-6 shadow-sm", outbound ? "rounded-[1.25rem] rounded-br-sm bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white" : "rounded-[1.25rem] rounded-bl-sm bg-slate-100 text-slate-900 dark:bg-[#222836] dark:text-slate-100"].join(" ")}><MessageMedia message={message} /><div className="px-4 py-2.5"><p className="whitespace-pre-wrap break-words" dir="auto">{message.content}</p><p className={outbound ? "mt-1 text-end text-[9px] text-white/60" : "mt-1 text-[9px] text-slate-400"}>{formatClock(message.createdAt, locale)}<UiText>{outbound ? " · Sent" : ""}</UiText></p></div></div></div></div>;
+    return <div key={message.id}>{showDay ? <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{day}</span><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /></div> : null}<div className={outbound ? "flex justify-end" : "flex items-end gap-2"}>{!outbound ? <Avatar src={avatarUrl} name={name} size="sm" /> : null}<div className={["max-w-[82%] overflow-hidden text-sm leading-6 shadow-sm", outbound ? "rounded-[1.25rem] rounded-ee-sm bg-violet-700 text-white" : "rounded-[1.25rem] rounded-es-sm bg-slate-100 text-slate-900 dark:bg-[#222836] dark:text-slate-100"].join(" ")}><MessageMedia message={message} /><div className="px-4 py-2.5"><p className="whitespace-pre-wrap break-words" dir="auto">{message.content}</p><p className={outbound ? "mt-1 text-end text-[9px] text-white/80" : "mt-1 text-[9px] text-slate-400"}>{formatClock(message.createdAt, locale)}<UiText>{outbound ? " · Sent" : ""}</UiText></p></div></div></div></div>;
   })}</div>;
 }
 

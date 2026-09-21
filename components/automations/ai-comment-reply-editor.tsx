@@ -23,7 +23,7 @@ export default function AiCommentReplyEditor({ enabled, available, workspaceRead
   const locked = !available && !enabled;
   return (
     <section className={`overflow-hidden rounded-2xl border transition-colors ${enabled ? "border-violet-400/35 bg-violet-500/[0.06]" : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.03]"}`}>
-      <button type="button" disabled={locked} onClick={() => onChange({ enabled: !enabled })} className="flex w-full items-center justify-between gap-4 p-5 text-start disabled:cursor-not-allowed">
+      <button type="button" role="switch" aria-checked={enabled} disabled={locked} onClick={() => onChange({ enabled: !enabled })} className="flex w-full items-center justify-between gap-4 p-5 text-start disabled:cursor-not-allowed">
         <span className="flex min-w-0 items-start gap-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-500/12 text-violet-500 dark:text-violet-300">{locked ? <LockKeyhole className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}</span>
           <span><span className="flex flex-wrap items-center gap-2 text-sm font-black text-slate-950 dark:text-white"><UiText>{"AI comment"}</UiText><span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-violet-600 dark:text-violet-300"><UiText>{"Pro"}</UiText></span></span><span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400"><UiText>{"AI replies to safe comments in your voice. This replaces saved variations for this automation."}</UiText></span></span>
@@ -36,4 +36,4 @@ export default function AiCommentReplyEditor({ enabled, available, workspaceRead
   );
 }
 
-function Toggle({ enabled, locked }: { enabled: boolean; locked: boolean }) { return <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full transition ${enabled ? "bg-violet-500" : "bg-slate-300 dark:bg-slate-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${enabled ? "start-6" : "start-1"}`} />{locked ? <LockKeyhole className="absolute -right-1 -top-1 h-3 w-3 text-slate-500" /> : null}</span>; }
+function Toggle({ enabled, locked }: { enabled: boolean; locked: boolean }) { return <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full transition ${enabled ? "bg-violet-500" : "bg-slate-300 dark:bg-slate-700"}`}><span className={`absolute start-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-base ${enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0"}`} />{locked ? <LockKeyhole className="absolute -end-1 -top-1 h-3 w-3 text-slate-500" /> : null}</span>; }

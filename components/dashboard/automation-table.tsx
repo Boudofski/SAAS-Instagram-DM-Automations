@@ -113,7 +113,7 @@ export default function AutomationTable({
   }
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-3xl">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors duration-fast dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-2xl">
       {showControls && (
         <div className="flex flex-col gap-2 border-b border-slate-200 p-3 dark:border-white/10 sm:gap-3 sm:p-4 xl:flex-row xl:items-center">
           <div className="relative min-w-0 flex-1">
@@ -246,7 +246,7 @@ function CampaignMobileCard({
   const replySummary = getReplySummary(automation);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-all duration-300 hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
+    <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
       <div className="flex items-start gap-2.5 sm:gap-3">
         <Link
           href={`/dashboard/${slug}/automation/${automation.id}`}

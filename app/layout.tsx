@@ -8,7 +8,7 @@ import { LOCALE_DETAILS, localeAlternates } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Tajawal } from "next/font/google";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "optional" });

@@ -84,7 +84,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
-      <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
+      <div className="ap3k-content-enter">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink"><UiText>{"AP3K"}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText><bdi dir="auto">{displayName}</bdi></h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
@@ -96,7 +96,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         created={!isEmpty} active={automations.some(automation => automation.active && !automation.archivedAt)} sent={Boolean(firstSend)} />
 
       {isEmpty && (
-        <div className="animate-[ap3kDashboardRise_0.48s_ease-out_both] overflow-hidden rounded-3xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
+        <div className="ap3k-content-enter overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="ap3k-kicker"><UiText>{"Ready to launch"}</UiText></p>
@@ -112,7 +112,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       {instagramConnected && instagram && (
         <div className={[
-          "group animate-[ap3kDashboardRise_0.52s_ease-out_both] overflow-hidden rounded-3xl border p-5 shadow-[0_18px_80px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_90px_rgba(236,72,153,0.14)] dark:bg-white/[0.04]",
+          "group ap3k-content-enter overflow-hidden rounded-2xl border p-5 shadow-surface  dark:bg-white/[0.04]",
           tokenExpired
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
             : "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-pink-50 dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
@@ -148,12 +148,12 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <section className="animate-[ap3kDashboardRise_0.7s_ease-out_both]">
+      <section className="ap3k-content-enter">
         <div className="mb-3">
           <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
           <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
         </div>
-        <div className="mb-3 flex animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-3 flex ap3k-content-enter flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
           {[
             ["24h", "Last 24h"],
@@ -177,7 +177,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           </div>
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>
-        <div className="grid grid-cols-2 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)] dark:border-white/[0.12] dark:bg-[#111827] sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111827] sm:grid-cols-3 xl:grid-cols-5">
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}
@@ -195,7 +195,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      <section className="animate-[ap3kDashboardRise_0.82s_ease-out_both]">
+      <section className="ap3k-content-enter">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="ap3k-kicker"><UiText>{"Automations"}</UiText></p>

@@ -48,12 +48,12 @@ export default function PricingExperience({
 
   return (
     <LocalizedCopy><div className="w-full">
-      <div className={`mx-auto flex w-fit items-center rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
+      <div className={`mx-auto flex w-fit max-w-full items-stretch rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] ${dashboardCompact ? "mb-3" : "mb-8"}`}>
         <button
           type="button"
           aria-pressed={interval === "month"}
           onClick={() => setInterval("month")}
-          className={`rounded-xl px-4 py-2 text-sm font-black transition-all duration-300 ${
+          className={`min-h-11 rounded-xl px-3 py-2 text-sm font-bold transition-colors duration-fast sm:px-4 ${
             interval === "month"
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
@@ -63,12 +63,12 @@ export default function PricingExperience({
           type="button"
           aria-pressed={interval === "year"}
           onClick={() => setInterval("year")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-all duration-300 ${
+          className={`flex flex-wrap items-center justify-center gap-2 min-h-11 rounded-xl px-3 py-2 text-sm font-bold transition-colors duration-fast sm:px-4 ${
             interval === "year"
               ? "bg-slate-950 text-white shadow dark:bg-white dark:text-slate-950"
               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           }`}
-        ><UiText>{" Annual "}</UiText><span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-300"><UiText>{" Save up to 27% "}</UiText></span>
+        ><UiText>{" Annual "}</UiText><span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-700 dark:text-emerald-300"><UiText>{" Save up to 27% "}</UiText></span>
         </button>
       </div>
 
@@ -76,8 +76,8 @@ export default function PricingExperience({
         <p className={`mx-auto max-w-3xl rounded-2xl border border-blue-200 bg-blue-50 px-4 text-center font-bold text-blue-800 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200 ${dashboardCompact ? "mb-5 py-2.5 text-xs sm:text-sm" : "mb-6 py-3 text-sm"}`}><UiText>{" You already have a paid subscription. Use "}</UiText><strong><UiText>{"Manage billing"}</UiText></strong><UiText>{" to change plan, billing interval, payment method, or cancellation settings. "}</UiText></p>
       ) : null}
 
-      <div className={`mx-auto grid w-full max-w-[1180px] ${dashboardCompact ? "gap-3 md:grid-cols-3" : "gap-5 md:grid-cols-3"}`}>
-        {PLAN_CARDS.map((plan, index) => {
+      <div className={`mx-auto grid w-full max-w-[1180px] gap-5 ${dashboardCompact ? "xl:grid-cols-3" : "lg:grid-cols-3"}`}>
+        {PLAN_CARDS.map((plan) => {
           const isPaid = plan.id === "PRO" || plan.id === "BUSINESS";
           const paidPlan = isPaid ? (plan.id as PaidPlan) : null;
           const isCurrent = Boolean(currentPlan && plan.id === currentPlan);
@@ -99,26 +99,25 @@ export default function PricingExperience({
           return (
             <article
               key={plan.id}
-              className={`group relative flex min-h-full flex-col overflow-visible border shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-xl ${dashboardCompact || compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"} ${
+              className={`relative flex min-h-full flex-col overflow-visible border shadow-surface ${dashboardCompact || compact ? "rounded-2xl p-4" : "rounded-2xl p-6"} ${
                 isCurrent ? "ring-2 ring-emerald-500/50" : ""
               } ${
                 plan.featured
-                  ? "border-rf-pink/45 bg-gradient-to-b from-orange-50 via-pink-50/70 to-white shadow-[0_20px_60px_rgba(236,72,153,0.10)] dark:border-orange-500/40 dark:from-[#241611] dark:via-[#171218] dark:to-[#101114]"
+                  ? "border-violet-400 bg-violet-50/60 ring-1 ring-violet-400/20 dark:border-violet-400/50 dark:bg-violet-400/[0.06]"
                   : "border-slate-200 bg-white/90 dark:border-white/10 dark:bg-[#101217]"
               }`}
-              style={{ animationDelay: `${index * 60}ms` }}
             >
               {plan.featured && (
-                <div className={`absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-rf-pink font-black text-white shadow-lg ${dashboardCompact ? "px-3 py-1 text-[10px]" : "px-4 py-1.5 text-xs"}`}>
+                <div className={`absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-violet-700 font-black text-white shadow-lg ${dashboardCompact ? "px-3 py-1 text-[10px]" : "px-4 py-1.5 text-xs"}`}>
                   <Sparkles className="h-3.5 w-3.5" /><UiText>{" Most popular "}</UiText></div>
               )}
               {isCurrent && (
-                <span className="absolute right-3 top-3 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300"><UiText>{" Current "}</UiText></span>
+                <span className="absolute end-3 top-3 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300"><UiText>{" Current "}</UiText></span>
               )}
 
               <div className={dashboardCompact ? "pt-0.5" : compact ? "pt-1" : "pt-2"}>
                 <h2 className={`${dashboardCompact || compact ? "text-xl" : "text-2xl"} font-black tracking-tight text-slate-950 dark:text-white`}>{plan.name}</h2>
-                <p className={`${dashboardCompact || compact ? "mt-1 min-h-[2rem] line-clamp-2 text-[11px] leading-4" : "mt-2 min-h-[3rem] text-sm leading-relaxed"} text-slate-500 dark:text-slate-400`}>{plan.description}</p>
+                <p className={`${dashboardCompact || compact ? "mt-1 min-h-[2rem] text-xs leading-5" : "mt-2 min-h-[3rem] text-sm leading-relaxed"} text-slate-500 dark:text-slate-400`}>{plan.description}</p>
               </div>
 
               <div className={dashboardCompact || compact ? "mt-2 min-h-[3.4rem]" : "mt-6 min-h-[5rem]"}>
@@ -127,7 +126,7 @@ export default function PricingExperience({
                     <p className={`${dashboardCompact || compact ? "text-3xl" : "text-4xl"} font-black tracking-tight text-slate-950 dark:text-white`}>
                       $0
                     </p>
-                    <p className="mt-1 text-[11px] font-bold text-slate-400"><UiText>{"No credit card required"}</UiText></p>
+                    <p className="mt-1 text-xs font-medium text-muted-foreground"><UiText>{"No credit card required"}</UiText></p>
                   </div>
                 ) : (
                   <>
@@ -136,7 +135,7 @@ export default function PricingExperience({
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{interval === "year" ? billingLabel.annual : billingLabel.monthly}</span>
                     </div>
                     {interval === "year" && paidPlan && (
-                      <p className="mt-1 text-[11px] font-black text-emerald-600 dark:text-emerald-300">
+                      <p className="mt-1 text-[11px] font-black text-emerald-700 dark:text-emerald-300">
                         {billingLabel.equivalent}: ${annualMonthlyEquivalent(paidPlan).toFixed(2)}</p>
                     )}
                   </>
@@ -153,7 +152,7 @@ export default function PricingExperience({
                         : "text-slate-600 dark:text-slate-300"
                     }`}
                   >
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-500" />
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600 dark:text-violet-300" />
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -164,11 +163,11 @@ export default function PricingExperience({
                 aria-disabled={isCurrent}
                 tabIndex={isCurrent ? -1 : undefined}
                 onClick={isCurrent ? (event) => event.preventDefault() : undefined}
-                className={`${dashboardCompact || compact ? "mt-3 min-h-10 rounded-xl px-3 text-xs" : "mt-7 min-h-12 rounded-2xl px-5 text-sm"} inline-flex items-center justify-center font-black transition-all duration-200 ${
+                className={`${dashboardCompact || compact ? "mt-3 min-h-11 rounded-xl px-3 text-xs" : "mt-7 min-h-12 rounded-2xl px-5 text-sm"} inline-flex items-center justify-center font-black transition-colors duration-fast ${
                   isCurrent
                     ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                     : plan.featured
-                      ? "bg-gradient-to-r from-orange-500 to-rf-pink text-white shadow-[0_12px_30px_rgba(236,72,153,0.20)]"
+                      ? "bg-violet-700 text-white shadow-sm hover:bg-violet-800"
                       : "border border-slate-200 bg-slate-50 text-slate-900 hover:border-violet-300 dark:border-white/10 dark:bg-white/[0.05] dark:text-white"
                 }`}
               >
@@ -194,7 +193,7 @@ export default function PricingExperience({
                 <tr className="border-b border-slate-200 dark:border-white/10">
                   <th className="px-6 py-5 font-black text-slate-500"><UiText>{"Feature"}</UiText></th>
                   <th scope="col" className="px-6 py-5 font-black text-slate-950 dark:text-white"><UiText>{"Free"}</UiText></th>
-                  <th className="bg-orange-500/[0.06] px-6 py-5 font-black text-orange-500"><UiText>{"Pro"}</UiText></th>
+                  <th className="bg-orange-500/[0.06] px-6 py-5 font-black text-violet-600 dark:text-violet-300"><UiText>{"Pro"}</UiText></th>
                   <th className="px-6 py-5 font-black text-slate-950 dark:text-white"><UiText>{"Business"}</UiText></th>
                 </tr>
               </thead>

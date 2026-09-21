@@ -32,6 +32,8 @@ import {
   DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY,
   isMessagingReviewMode,
 } from "@/lib/messaging-review-mode";
+import MobilePreviewDialog from "@/components/automations/mobile-preview-dialog";
+import { contentTransition } from "@/lib/motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, MessageCircle, RefreshCw, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -212,7 +214,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   return (
     <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-slate-50 xl:mt-3 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
       <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
+        <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
           <AutomationWizardToolbar
             backHref={`/dashboard/${slug}/automation`}
             currentStep={step}
@@ -225,10 +227,10 @@ function AutomationSetup({ params, searchParams }: Props) {
         <motion.main
           id="current-automation-step"
           key={step}
-          initial={reduceMotion ? false : { opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={reduceMotion ? undefined : { opacity: 0, x: 10 }}
-          transition={{ duration: 0.22, ease: "easeOut" }}
+          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, y: 0 }}
+          transition={contentTransition(reduceMotion)}
           className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full"
         >
           {step === 1 && (
@@ -251,7 +253,7 @@ function AutomationSetup({ params, searchParams }: Props) {
                     type="button"
                     onClick={() => update({ post: { postid: "ANY", caption: "Any post - triggers on all Instagram posts", media: "", mediaType: "IMAGE" } })}
                     className={[
-                      "flex w-full items-center gap-3 rounded-2xl border-2 p-3.5 text-start transition-all",
+                      "flex w-full items-center gap-3 rounded-2xl border-2 p-3.5 text-start transition-[background-color,border-color,color] duration-fast",
                       data.post?.postid === "ANY" ? "border-rf-blue bg-rf-blue/10" : "border-slate-200 bg-white hover:border-rf-blue/40 dark:border-white/10 dark:bg-white/[0.04]",
                     ].join(" ")}
                   >
@@ -524,7 +526,7 @@ function AutomationSetup({ params, searchParams }: Props) {
           </div>
         </section>
 
-        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
+        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
           <InstagramPhonePreview
             data={data}
             step={step}
@@ -534,16 +536,9 @@ function AutomationSetup({ params, searchParams }: Props) {
         </aside>
       </div>
 
-      {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label={tr("Instagram preview")} className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
-          <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black"><UiText>{"Instagram preview"}</UiText></p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label={tr("Close preview")} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
-            <div className="min-h-0 flex-1"><InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></div>
-          </div>
-        </div>
-      )}
+      {mobilePreviewOpen && <MobilePreviewDialog onClose={() => setMobilePreviewOpen(false)}><InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></MobilePreviewDialog>}
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
+      <div className="ap3k-mobile-actions fixed inset-x-0 bottom-0 z-30 ps-[calc(var(--app-sidebar-offset,0px)+1rem)] border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
         <WizardActions step={step} editId={editId} isSubmitting={isSubmitting} canAdvance={canAdvance()} onBack={back} onNext={next} onSaveDraft={() => { update({ active: false }); void activate(false); }} onActivate={() => { update({ active: true }); void activate(true); }} />
       </div>
     </div>
@@ -603,7 +598,7 @@ function StepPanel({ title, description, children }: { title: string; descriptio
 function Toggle({ enabled, green = false }: { enabled: boolean; green?: boolean }) {
   return (
     <span className={["relative h-6 w-11 shrink-0 rounded-full transition-colors", enabled ? (green ? "bg-rf-green" : "bg-rf-blue") : "bg-slate-300"].join(" ")}>
-      <span className={["absolute top-1 h-4 w-4 rounded-full bg-white transition-all", enabled ? "start-6" : "start-1"].join(" ")} />
+      <span className={["absolute top-1 h-4 w-4 rounded-full bg-white transition-[background-color,border-color,color] duration-fast", enabled ? "start-6" : "start-1"].join(" ")} />
     </span>
   );
 }

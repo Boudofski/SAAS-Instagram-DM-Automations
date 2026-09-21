@@ -4,6 +4,7 @@ import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import { DEFAULT_LINK_BUTTON_LABEL, MAX_LINK_BUTTONS, type LinkButton } from "@/lib/link-buttons";
+import { useId } from "react";
 import { Link2, Plus, Trash2 } from "lucide-react";
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 
 export default function MessageResponseEditor({ message, linkButtons, onChange }: Props) {
   const tr = useUi();
+  const messageId = useId();
   const buttons = linkButtons.length > 0
     ? linkButtons.slice(0, MAX_LINK_BUTTONS)
     : [{ label: tr(DEFAULT_LINK_BUTTON_LABEL), url: "" }];
@@ -26,10 +28,10 @@ export default function MessageResponseEditor({ message, linkButtons, onChange }
     <div className="space-y-5">
       <div>
         <div className="mb-2 flex items-center justify-between gap-4">
-          <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"DM message text"}</UiText></label>
+          <label htmlFor={messageId} className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"DM message text"}</UiText></label>
           <span className={message.length > 1000 ? "text-xs font-bold text-red-500" : "text-xs font-bold text-slate-400"}>{message.length}/1000</span>
         </div>
-        <textarea dir="auto" value={message} maxLength={1000} onChange={(event) => onChange({ message: event.target.value })} rows={5} placeholder={tr("Write the message shown above your links…")} className="ap3k-textarea w-full resize-none rounded-2xl px-4 py-3 text-sm" />
+        <textarea id={messageId} dir="auto" value={message} maxLength={1000} onChange={(event) => onChange({ message: event.target.value })} rows={5} placeholder={tr("Write the message shown above your links…")} className="ap3k-textarea w-full resize-none rounded-2xl px-4 py-3 text-sm" />
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
@@ -41,7 +43,7 @@ export default function MessageResponseEditor({ message, linkButtons, onChange }
         </div>
         <div className="space-y-3">
           {buttons.map((button, index) => (
-            <div key={index} className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-slate-950/35 sm:grid-cols-[minmax(150px,0.7fr)_minmax(220px,1.3fr)_auto] sm:items-end">
+            <div key={index} className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-slate-950/35 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto] sm:items-end">
               <label className="min-w-0 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{"Button label"}</UiText><input value={button.label} maxLength={20} onChange={(event) => updateButton(index, { label: event.target.value })} placeholder={tr("Link {number}").replace("{number}", String(index + 1))} className="ap3k-input mt-2 w-full rounded-xl px-4 py-3 text-sm normal-case tracking-normal" />
               </label>
               <label className="min-w-0 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{"Destination URL"}</UiText><input dir="ltr" type="url" inputMode="url" value={button.url} onChange={(event) => updateButton(index, { url: event.target.value })} placeholder={tr("https://your-site.com/offer")} className="ap3k-input mt-2 w-full rounded-xl px-4 py-3 text-sm normal-case tracking-normal" />

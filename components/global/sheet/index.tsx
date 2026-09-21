@@ -43,7 +43,7 @@ function Sheet({
       <SheetTrigger
         aria-label={triggerLabel}
         className={cn(
-          "inline-flex h-11 w-11 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-pink",
+          "inline-flex h-11 w-11 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           className
         )}
       >
@@ -51,6 +51,7 @@ function Sheet({
       </SheetTrigger>
       <SheetContent
         side={side}
+        aria-describedby={undefined}
         className={cn("overflow-x-hidden p-0", contentClassName)}
         onClickCapture={(event) => {
           if (

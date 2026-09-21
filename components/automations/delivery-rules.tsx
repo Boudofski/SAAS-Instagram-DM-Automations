@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { UiText } from "@/components/i18n/localized-copy";
 import { UserCheck } from "lucide-react";
 
@@ -19,6 +20,7 @@ export default function DeliveryRules({
   followRequestButtonText,
   onChange,
 }: Props) {
+  const messageId = useId();
   const toggleFollowGate = (button: HTMLButtonElement) => {
     const pageScrollLeft = window.scrollX;
     const pageScrollTop = window.scrollY;
@@ -56,7 +58,7 @@ export default function DeliveryRules({
             <UiText>{"Optional. Instagram shows Follow and verification as two full-width buttons in the same message. AP3K sends the final DM only after verification confirms the follow."}</UiText></span>
         </span>
         <span aria-hidden="true" className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition ${followGateRequired ? "bg-rf-purple" : "bg-slate-300 dark:bg-slate-700"}`}>
-          <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${followGateRequired ? "start-6" : "start-1"}`} />
+          <span className={`absolute start-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-base ${followGateRequired ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0"}`} />
         </span>
       </button>
 
@@ -69,8 +71,9 @@ export default function DeliveryRules({
             </div>
             <span className="rounded-full bg-rf-purple/10 px-2.5 py-1 text-[11px] font-black text-rf-purple"><UiText>{"Optional step"}</UiText></span>
           </div>
-          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Message"}</UiText></label>
+          <label htmlFor={messageId} className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Message"}</UiText></label>
           <textarea
+            id={messageId}
             value={followRequestDmText}
             onChange={(event) => onChange({ followRequestDmText: event.target.value })}
             maxLength={640}

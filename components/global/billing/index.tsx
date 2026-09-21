@@ -55,7 +55,7 @@ export default function Billing({
         <p role="status" className="rounded-2xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100"><UiText>{" Stripe billing status is temporarily unavailable. Refresh this page before starting another checkout. "}</UiText></p>
       ) : null}
 
-      <section className="overflow-hidden rounded-3xl border border-rf-pink/20 bg-gradient-to-br from-white via-orange-50/40 to-pink-50/50 p-4 shadow-sm dark:border-rf-pink/20 dark:from-[#151312] dark:via-[#101217] dark:to-[#171018] sm:p-5">
+      <section className="overflow-hidden rounded-2xl border border-rf-pink/20 bg-gradient-to-br from-white via-orange-50/40 to-pink-50/50 p-4 shadow-sm dark:border-rf-pink/20 dark:from-[#151312] dark:via-[#101217] dark:to-[#171018] sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p className="ap3k-kicker"><UiText>{"Current plan"}</UiText></p>
