@@ -16,7 +16,9 @@ import {
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
 import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, readLinkButtons, type LinkButton } from "@/lib/link-buttons";
-import { AtSign, Bot, Loader2, MessageCircleReply, SmilePlus, Sparkles, X } from "lucide-react";
+import { AtSign, Bot, Loader2, MessageCircleReply, SmilePlus, Sparkles } from "lucide-react";
+import MobilePreviewDialog from "@/components/automations/mobile-preview-dialog";
+import { contentTransition } from "@/lib/motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -160,11 +162,11 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
   return (
     <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
       <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
+        <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
           <AutomationWizardToolbar backHref={`/dashboard/${slug}/automation`} currentStep={step} totalSteps={3} accountLabel={source === "STORY" ? "Instagram Stories" : "Instagram DMs"} onOpenPreview={() => setMobilePreviewOpen(true)} />
           <div ref={stepsScrollRef} data-automation-scroll-region className="min-w-0 [overflow-anchor:none] xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
         <AnimatePresence mode="wait">
-          <motion.main id="current-message-step" key={step} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduceMotion ? undefined : { opacity: 0, x: 10 }} transition={{ duration: 0.22 }} className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full">
+          <motion.main id="current-message-step" key={step} initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? undefined : { opacity: 0, y: 0 }} transition={contentTransition(reduceMotion)} className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full">
             {step === 1 && (
               <section>
                 <PhaseHeader title={source === "STORY" ? "When someone interacts with your story" : "When someone sends you a DM"} description="Set the conditions that launch this automation." />
@@ -182,7 +184,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
                       <Choice selected={draft.triggerMode === "SPECIFIC_KEYWORD"} title="Specific keyword" description="Launch when the DM contains one of your keywords." onClick={() => setDraft({ ...draft, triggerMode: "SPECIFIC_KEYWORD" })} />
                       <Choice selected={draft.triggerMode === "ANY_MESSAGE"} title="Any incoming DM" description="Launch for every new conversation message." onClick={() => setDraft({ ...draft, triggerMode: "ANY_MESSAGE", keywords: [] })} />
                     </div>
-                    {draft.triggerMode === "SPECIFIC_KEYWORD" && <div><div className="flex gap-2"><input value={keywordDraft} onChange={(event) => setKeywordDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addKeyword(); } }} placeholder={tr("Type a keyword, e.g. \"guide\"")} className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm" /><button type="button" onClick={addKeyword} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 text-sm font-black text-white"><UiText>{"+ Add"}</UiText></button></div><div className="mt-3 flex flex-wrap gap-2">{draft.keywords.map((word) => <button key={word} type="button" onClick={() => setDraft({ ...draft, keywords: draft.keywords.filter((item) => item !== word) })} className="rounded-full bg-rf-purple/10 px-3 py-2 text-xs font-bold text-rf-purple">{word} ×</button>)}</div></div>}
+                    {draft.triggerMode === "SPECIFIC_KEYWORD" && <div><div className="flex gap-2"><input value={keywordDraft} onChange={(event) => setKeywordDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addKeyword(); } }} placeholder={tr("Type a keyword, e.g. \"guide\"")} className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm" /><button type="button" onClick={addKeyword} className="rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-active px-5 text-sm font-black text-white"><UiText>{"+ Add"}</UiText></button></div><div className="mt-3 flex flex-wrap gap-2">{draft.keywords.map((word) => <button key={word} type="button" onClick={() => setDraft({ ...draft, keywords: draft.keywords.filter((item) => item !== word) })} className="rounded-full bg-rf-purple/10 px-3 py-2 text-xs font-bold text-rf-purple">{word} ×</button>)}</div></div>}
                   </div>
                 )}
               </section>
@@ -221,7 +223,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
             <MessageWizardActions step={step} canContinue={canContinue} saving={saving} onBack={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} onContinue={() => setStep(step + 1)} onSave={() => void save()} />
           </div>
         </section>
-        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-3xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
+        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
           <MessageAutomationPreview
             source={source}
             step={step}
@@ -237,16 +239,9 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
         </aside>
       </div>
 
-      {mobilePreviewOpen && (
-        <div role="dialog" aria-modal="true" aria-label={tr("Instagram preview")} className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm xl:hidden">
-          <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-[460px] flex-col rounded-3xl bg-white p-3 shadow-2xl dark:bg-[#080c18]">
-            <div className="z-10 mb-2 flex shrink-0 items-center justify-between rounded-2xl bg-white/95 px-3 py-2 backdrop-blur dark:bg-[#080c18]/95"><p className="text-sm font-black"><UiText>{"Instagram preview"}</UiText></p><button type="button" onClick={() => setMobilePreviewOpen(false)} aria-label={tr("Close preview")} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10"><X className="h-4 w-4" /></button></div>
-            <div className="min-h-0 flex-1"><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} linkButtons={draft.linkButtons} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></div>
-          </div>
-        </div>
-      )}
+      {mobilePreviewOpen && <MobilePreviewDialog onClose={() => setMobilePreviewOpen(false)}><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} linkButtons={draft.linkButtons} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></MobilePreviewDialog>}
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
+      <div className="ap3k-mobile-actions fixed inset-x-0 bottom-0 z-30 ps-[calc(var(--app-sidebar-offset,0px)+1rem)] border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
         <MessageWizardActions step={step} canContinue={canContinue} saving={saving} onBack={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} onContinue={() => setStep(step + 1)} onSave={() => void save()} />
       </div>
     </div>
@@ -260,7 +255,7 @@ function MessageWizardActions({ step, canContinue, saving, onBack, onContinue, o
       {step < 3 ? (
         <button type="button" disabled={!canContinue} onClick={onContinue} className="rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white disabled:opacity-35 dark:bg-white dark:text-slate-950"><UiText>{"Continue"}</UiText></button>
       ) : (
-        <button type="button" disabled={!canContinue || saving} onClick={onSave} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-7 py-2.5 text-sm font-black text-white shadow-lg disabled:opacity-40">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}<UiText>{" Go live"}</UiText></button>
+        <button type="button" disabled={!canContinue || saving} onClick={onSave} className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-active px-7 py-2.5 text-sm font-black text-white shadow-lg disabled:opacity-40">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}<UiText>{" Go live"}</UiText></button>
       )}
     </div>
   );

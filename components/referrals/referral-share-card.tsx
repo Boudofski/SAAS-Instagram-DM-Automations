@@ -42,7 +42,7 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
         <span className="block min-w-0 flex-1 truncate text-xs font-bold text-slate-700 dark:text-slate-200">{inviteUrl}</span>
       </div>
       <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-        <button type="button" onClick={copyLink} className="ap3k-gradient-button inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2">
+        <button type="button" onClick={copyLink} aria-live="polite" className="ap3k-gradient-button inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2">
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? t("copied") : t("copyInviteLink")}
         </button>

@@ -12,8 +12,8 @@ type Props = {
 
 export default function EmptyState({ icon, title, description, ctaLabel, ctaHref }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center gap-5 py-16 text-center">
-      <div className="grid h-16 w-16 place-items-center rounded-2xl border border-slate-200 bg-ap3k-gradient-soft text-4xl shadow-[0_4px_16px_rgba(221,42,123,0.10)] dark:border-white/[0.12] dark:shadow-[0_4px_24px_rgba(221,42,123,0.18)]">
+    <div className="flex flex-col items-center justify-center gap-4 px-4 py-12 text-center">
+      <div className="grid h-16 w-16 place-items-center rounded-2xl border border-slate-200 bg-muted text-3xl dark:border-white/[0.12]">
         {icon}
       </div>
       <div>

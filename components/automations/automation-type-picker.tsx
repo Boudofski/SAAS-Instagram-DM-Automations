@@ -2,6 +2,7 @@
 
 import { UiText } from "@/components/i18n/localized-copy";
 import { MessageCircle, MessagesSquare, Sparkles } from "lucide-react";
+import { revealTransition } from "@/lib/motion";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
@@ -52,13 +53,13 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
             return (
               <motion.div
                 key={item.type}
-                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                initial={reduceMotion ? false : { y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: reduceMotion ? 0 : index * 0.07 }}
+                transition={revealTransition(reduceMotion, index * 0.055)}
               >
                 <Link
                   href={`/dashboard/${slug}/automation/new?type=${item.type}`}
-                  className="group flex h-full min-h-[260px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-rf-purple/35 hover:shadow-xl dark:border-white/10 dark:bg-[#111827] dark:hover:border-rf-purple/45"
+                  className="group flex h-full min-h-[260px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-[border-color,transform,box-shadow] duration-base motion-safe:hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-surface dark:border-white/10 dark:bg-[#111827] dark:hover:border-rf-purple/45"
                 >
                   <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-lg`}>
                     <Icon className="h-6 w-6" />

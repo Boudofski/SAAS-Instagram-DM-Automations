@@ -110,7 +110,7 @@ async function Page({ searchParams }: PageProps) {
           )}
           {(!appReviewMode || error === "profile_fetch_failed") &&
             ERROR_STEPS[error] && (
-              <ul className="mt-3 list-disc space-y-1 pl-5">
+              <ul className="mt-3 list-disc space-y-1 ps-5">
                 {ERROR_STEPS[error].map((step) => (
                   <li key={step}><UiText>{step}</UiText></li>
                 ))}

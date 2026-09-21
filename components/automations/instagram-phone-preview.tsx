@@ -20,6 +20,8 @@ import {
   Video,
 } from "lucide-react";
 import Image from "next/image";
+import { motion, useReducedMotion } from "framer-motion";
+import { contentTransition } from "@/lib/motion";
 import { useEffect, useState } from "react";
 
 type PreviewMode = "post" | "comments" | "dm";
@@ -39,6 +41,7 @@ const MODES: Array<{ value: PreviewMode; label: string }> = [
 
 export default function InstagramPhonePreview({ data, step, username, profilePictureUrl }: Props) {
   const tr = useUi();
+  const reduceMotion = useReducedMotion();
   const [mode, setMode] = useState<PreviewMode>(step === 1 ? "post" : step === 2 ? "comments" : "dm");
   const handle = username?.replace(/^@/, "") || tr("youraccount");
 
@@ -50,6 +53,7 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
     <section aria-label={tr("Instagram live preview")} className="mx-auto flex h-full min-h-0 w-full max-w-[480px] flex-col">
       <div className="min-h-0 flex-1">
         <InstagramPhoneFrame>
+          <motion.div key={mode} className="h-full" initial={reduceMotion ? false : { opacity: 0.7, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={contentTransition(reduceMotion)}>
           {mode === "dm" ? (
               <DmPreview data={data} handle={handle} profilePictureUrl={profilePictureUrl} />
             ) : (
@@ -60,6 +64,7 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
                 showComments={mode === "comments"}
               />
             )}
+          </motion.div>
         </InstagramPhoneFrame>
       </div>
 
@@ -71,7 +76,7 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
             onClick={() => setMode(item.value)}
             aria-pressed={mode === item.value}
             className={[
-              "min-w-20 rounded-full px-3 py-2 text-xs font-black transition-all sm:min-w-24 sm:px-4",
+              "min-h-11 min-w-20 rounded-full px-3 py-2 text-xs font-black transition-colors duration-fast sm:min-w-24 sm:px-4",
               mode === item.value
                 ? "bg-white text-slate-950 shadow-sm dark:bg-white dark:text-slate-950"
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",

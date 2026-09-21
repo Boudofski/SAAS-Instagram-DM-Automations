@@ -156,7 +156,7 @@ export default function LandingPage() {
       <WebsiteNav current="home" />
 
       <main>
-        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5121c7_0%,#7435e8_44%,#9c3eea_100%)] px-4 pb-20 pt-12 text-white sm:px-8 sm:pb-24 sm:pt-20 lg:px-16 lg:pb-28 lg:pt-20">
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5121c7_0%,#7435e8_44%,#9c3eea_100%)] px-4 pb-14 pt-10 text-white sm:px-8 sm:pb-20 sm:pt-16 lg:px-16 lg:pb-20 lg:pt-16">
           <div className="ap3k-orb-one pointer-events-none absolute -left-28 top-12 h-80 w-80 rounded-full bg-fuchsia-300/30 blur-[100px]" />
           <div className="ap3k-orb-two pointer-events-none absolute -right-24 bottom-0 h-[34rem] w-[34rem] rounded-full bg-indigo-950/35 blur-[130px]" />
           <div className="pointer-events-none absolute left-1/2 top-0 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
@@ -166,7 +166,7 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] shadow-sm backdrop-blur-xl sm:text-xs">
                 <Sparkles className="h-4 w-4" /> Instagram Comment &amp; DM Automation
               </div>
-              <h1 className="ap3k-home-title mt-7 max-w-[760px] text-[3rem] font-black leading-[0.94] tracking-[-0.055em] sm:text-[4.5rem] lg:text-[5rem] xl:text-[5.35rem]">
+              <h1 className="ap3k-home-title mt-7 max-w-[760px] text-[2.65rem] font-extrabold leading-[1.04] tracking-[-0.055em] sm:text-[4rem] lg:text-[4.5rem] xl:text-[5rem]">
                 Turn Instagram Comments <span className="sm:block">Into Customers.</span>
               </h1>
               <p className="mt-6 max-w-[620px] text-base leading-7 text-white/82 sm:text-[1.18rem] sm:leading-8">
@@ -174,7 +174,7 @@ export default function LandingPage() {
               </p>
               <p className="mt-4 text-sm font-bold text-white/85">500 automated actions every month. No credit card required.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
+                <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black text-[#5f25cb] shadow-[0_16px_45px_rgba(38,10,80,0.28)] transition duration-200 motion-safe:hover:-translate-y-px hover:shadow-[0_20px_55px_rgba(38,10,80,0.36)]">
                   GET STARTED <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a href="#how-it-works" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur-xl transition duration-200 hover:bg-white/16">
@@ -237,7 +237,7 @@ export default function LandingPage() {
               <AnimatedSetupSteps />
             </FadeIn>
             <FadeIn delay={0.06}>
-              <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-8 shadow-[0_25px_80px_rgba(91,33,200,0.12)] dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-12">
+              <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-5 shadow-surface dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-8">
                 <ProductVideo src="/media/templates_05-phone.mp4" poster="/media/templates_05-poster.webp" label="AP3K automation setup demo" className="max-w-[280px]" />
               </div>
             </FadeIn>
@@ -266,7 +266,7 @@ export default function LandingPage() {
             <StaggerContainer className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {SOLUTION_PAGES.map(([title, href, description]) => (
                 <StaggerItem key={href}>
-                  <Link href={href} className="group block h-full rounded-3xl border border-slate-200 bg-[#fafafe] p-6 transition hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-violet-400/30">
+                  <Link href={href} className="group block h-full rounded-2xl border border-slate-200 bg-[#fafafe] p-6 transition motion-safe:hover:-translate-y-px hover:border-violet-300 hover:shadow-surface dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-violet-400/30">
                     <h3 className="text-lg font-black">{title}</h3>
                     <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{description}</p>
                     <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
@@ -287,7 +287,7 @@ export default function LandingPage() {
               {BLOG_POSTS.slice(0, 3).map((post) => (
                 <StaggerItem key={post.slug}>
                   <HoverLift>
-                    <Link href={`/blog/${post.slug}`} className="block h-full rounded-[1.8rem] border border-slate-200 bg-[#fafafe] p-6 shadow-sm transition hover:border-violet-200 dark:border-white/8 dark:bg-[#10121d] dark:hover:border-violet-400/20">
+                    <Link href={`/blog/${post.slug}`} className="block h-full rounded-2xl border border-slate-200 bg-[#fafafe] p-6 shadow-sm transition hover:border-violet-200 dark:border-white/8 dark:bg-[#10121d] dark:hover:border-violet-400/20">
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">Guide</p>
                       <h3 className="mt-4 text-xl font-black leading-tight">{post.title}</h3>
                       <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{post.description}</p>
@@ -321,7 +321,7 @@ export default function LandingPage() {
             <h2 className="mt-5 text-4xl font-black tracking-[-0.055em] sm:text-6xl">Start automating Instagram today.</h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">Create your first automation, test it from another Instagram account, and let AP3K handle the repetitive follow-up.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition hover:-translate-y-0.5">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/sign-up" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-black text-[#6128c8] shadow-xl transition motion-safe:hover:-translate-y-px">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
               <Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">View pricing</Link>
             </div>
           </FadeIn>

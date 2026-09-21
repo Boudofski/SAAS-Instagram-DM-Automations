@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { motionDuration } from "./lib/motion";
 
 const config = {
   darkMode: ["class"],
@@ -29,6 +30,11 @@ const config = {
         "background-90": "#1D1D1D",
         "background-80": "#252525",
         "text-secondary": "#9B9CA0",
+        elevated: "hsl(var(--surface-elevated))",
+        "border-subtle": "hsl(var(--border-subtle))",
+        "secondary-text": "hsl(var(--text-secondary))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -37,6 +43,9 @@ const config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          active: "hsl(var(--primary-active))",
+          subtle: "hsl(var(--primary-subtle))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -96,6 +105,8 @@ const config = {
         "rf-muted":   "#9CA3AF",
         "rf-subtle":  "#374151",
       },
+      transitionDuration: Object.fromEntries(Object.entries(motionDuration).map(([key, value]) => [key, `${value * 1000}ms`])),
+      transitionTimingFunction: { "ui-out": "cubic-bezier(0.22, 1, 0.36, 1)", "ui-state": "cubic-bezier(0.4, 0, 0.2, 1)" },
       backgroundImage: {
         "ap3k-gradient":
           "linear-gradient(135deg, #6D28D9 0%, #8B5CF6 46%, #EC4899 74%, #FF6B35 100%)",
@@ -105,8 +116,10 @@ const config = {
           "radial-gradient(circle at 20% 0%, rgba(245,133,41,0.14), transparent 32%), radial-gradient(circle at 80% 12%, rgba(221,42,123,0.16), transparent 34%), radial-gradient(circle at 50% 55%, rgba(81,91,212,0.12), transparent 42%)",
       },
       boxShadow: {
-        "ap3k-card": "0 18px 60px rgba(0, 0, 0, 0.34)",
-        "ap3k-glow": "0 18px 48px rgba(109, 40, 217, 0.26)",
+        "surface": "var(--shadow-surface)",
+        "overlay": "var(--shadow-overlay)",
+        "ap3k-card": "var(--shadow-surface)",
+        "ap3k-glow": "0 4px 14px rgba(109, 40, 217, 0.14)",
         "ap3k-blue": "0 18px 48px rgba(96, 165, 250, 0.22)",
       },
       borderRadius: {

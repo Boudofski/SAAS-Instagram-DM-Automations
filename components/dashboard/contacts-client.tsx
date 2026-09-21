@@ -44,7 +44,7 @@ export default function ContactsClient({ slug, contacts }: { slug: string; conta
         <LocalizedInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by Instagram username" className="ap3k-input w-full rounded-2xl py-3 ps-11 pe-4 text-sm" />
       </label>
 
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220]">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220]">
         <div className="hidden grid-cols-[minmax(220px,1fr)_140px_140px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:border-white/10 dark:bg-white/[0.04] md:grid">
           <span><UiText>{"Contact"}</UiText></span><span><UiText>{"Source"}</UiText></span><span className="text-end"><UiText>{"Conversation"}</UiText></span>
         </div>
@@ -56,16 +56,16 @@ export default function ContactsClient({ slug, contacts }: { slug: string; conta
           <article key={contact.id} className="grid gap-3 border-b border-slate-100 p-4 last:border-b-0 dark:border-white/[0.07] md:grid-cols-[minmax(220px,1fr)_140px_140px] md:items-center md:gap-4 md:px-5">
             <div className="flex min-w-0 items-center gap-3"><ContactAvatar src={contact.profilePictureUrl} name={contact.recipientUsername || contact.recipientIgId} /><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{contact.recipientUsername ? `@${contact.recipientUsername.replace(/^@/, "")}` : "Instagram user"}</p><p className="text-xs text-slate-400"><UiText>{"Instagram contact"}</UiText></p></div></div>
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-pink-600 dark:text-pink-300"><Instagram className="h-3 w-3" /> {contact.automation?.source ?? "Manual"}</span>
-            {contact.conversationId ? <Link href={`/dashboard/${slug}/inbox?conversation=${contact.conversationId}`} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 transition hover:border-ef-purple/30 hover:bg-rf-purple/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]"><MessageCircle className="h-3.5 w-3.5" /><UiText>{" Open chat"}</UiText></Link> : <span className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-400 dark:bg-white/[0.05]"><UiText>{"Lead captured"}</UiText></span>}
+            {contact.conversationId ? <Link href={`/dashboard/${slug}/inbox?conversation=${contact.conversationId}`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 transition hover:border-violet-300 hover:bg-rf-purple/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]"><MessageCircle className="h-3.5 w-3.5" /><UiText>{" Open chat"}</UiText></Link> : <span className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-400 dark:bg-white/[0.05]"><UiText>{"Lead captured"}</UiText></span>}
           </article>
         ))}
       </div>
 
       {filtered.length > CONTACTS_PER_PAGE && (
         <nav aria-label="Contacts pagination" className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-white/10 dark:bg-[#0d1220]">
-          <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1} className="inline-flex min-h-10 items-center gap-1 rounded-xl px-3 text-xs font-black text-slate-600 transition hover:bg-slate-100 disabled:opacity-35 dark:text-slate-300 dark:hover:bg-white/10"><ChevronLeft className="h-4 w-4" /><UiText>{" Previous"}</UiText></button>
+          <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1} className="inline-flex min-h-11 items-center gap-1 rounded-xl px-3 text-xs font-black text-slate-600 transition hover:bg-slate-100 disabled:opacity-35 dark:text-slate-300 dark:hover:bg-white/10"><ChevronLeft className="h-4 w-4 rtl:rotate-180" /><UiText>{" Previous"}</UiText></button>
           <span className="text-center text-xs font-bold text-slate-500 dark:text-slate-400"><UiMessage source="Page {current} of {total}" values={{ current: currentPage, total: totalPages }} /></span>
-          <button type="button" onClick={() => setPage((value) => Math.min(totalPages, value + 1))} disabled={currentPage === totalPages} className="inline-flex min-h-10 items-center gap-1 rounded-xl px-3 text-xs font-black text-slate-600 transition hover:bg-slate-100 disabled:opacity-35 dark:text-slate-300 dark:hover:bg-white/10"><UiText>{"Next "}</UiText><ChevronRight className="h-4 w-4" /></button>
+          <button type="button" onClick={() => setPage((value) => Math.min(totalPages, value + 1))} disabled={currentPage === totalPages} className="inline-flex min-h-11 items-center gap-1 rounded-xl px-3 text-xs font-black text-slate-600 transition hover:bg-slate-100 disabled:opacity-35 dark:text-slate-300 dark:hover:bg-white/10"><UiText>{"Next "}</UiText><ChevronRight className="h-4 w-4 rtl:rotate-180" /></button>
         </nav>
       )}
     </div>

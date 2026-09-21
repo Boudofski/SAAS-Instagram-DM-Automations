@@ -98,7 +98,7 @@ export default async function CampaignDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-3 p-3 text-slate-950 dark:text-white sm:p-4 xl:mt-2 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden">
-      <header className="flex shrink-0 animate-[ap3kDashboardRise_0.38s_ease-out_both] items-center justify-between gap-3">
+      <header className="flex shrink-0 ap3k-content-enter flex-wrap items-center justify-between gap-3">
         <div>
           <Link href={`/dashboard/${params.slug}/automation`} className="mb-1 inline-block text-xs font-bold text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"><UiText>{" ← Automations "}</UiText></Link>
           <div className="flex flex-wrap items-center gap-2">
@@ -111,7 +111,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         <ActiveAutomationButton id={params.id} disabled={false} disabledReason={null} showRepair={Boolean(automation.needsReview)} />
       </header>
 
-      <section className="grid shrink-0 animate-[ap3kDashboardRise_0.48s_ease-out_both] grid-cols-2 gap-2 lg:grid-cols-4">
+      <section className="grid shrink-0 ap3k-content-enter grid-cols-2 gap-2 lg:grid-cols-4">
         <MetricCard label="DMs sent" value={stats?.dmsSent ?? automation.listener?.dmCount ?? 0} />
         <MetricCard label="Comments" value={stats?.commentsReceived ?? automation.listener?.commentCount ?? 0} />
         <MetricCard label="Replies" value={stats?.repliesSent ?? 0} />
@@ -119,7 +119,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       </section>
 
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)_300px] xl:overflow-hidden">
-        <section className="ap3k-card order-2 flex min-h-[480px] animate-[ap3kDashboardRise_0.54s_ease-out_both] flex-col overflow-hidden rounded-3xl p-4 xl:order-1 xl:min-h-0">
+        <section className="ap3k-card order-2 flex min-h-[480px] ap3k-content-enter flex-col overflow-hidden rounded-2xl p-4 xl:order-1 xl:min-h-0">
           <div className="shrink-0 border-b border-slate-200 pb-3 dark:border-white/10">
             <p className="ap3k-kicker"><UiText>{"Customer journey"}</UiText></p>
             <h2 className="mt-1 text-lg font-black tracking-tight"><UiText>{"Interaction → response"}</UiText></h2>
@@ -150,7 +150,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           </div>
         </section>
 
-        <section className="ap3k-card order-1 flex min-h-[680px] animate-[ap3kDashboardRise_0.58s_ease-out_both] flex-col overflow-hidden rounded-3xl p-3 xl:order-2 xl:min-h-0">
+        <section className="ap3k-card order-1 flex h-[min(680px,85dvh)] xl:h-auto ap3k-content-enter flex-col overflow-hidden rounded-2xl p-3 xl:order-2 xl:min-h-0">
           <div className="shrink-0 px-1 pb-2">
             <p className="ap3k-kicker"><UiText>{"Instagram preview"}</UiText></p>
             <h2 className="mt-0.5 text-sm font-black"><UiText>{isMessageAutomation ? "DM preview" : "Post · Comments · DM"}</UiText></h2>
@@ -178,7 +178,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         </section>
 
         <aside className="order-3 flex min-h-0 flex-col gap-3">
-          <section className="ap3k-card shrink-0 animate-[ap3kDashboardRise_0.62s_ease-out_both] rounded-3xl p-4">
+          <section className="ap3k-card shrink-0 ap3k-content-enter rounded-2xl p-4">
             <div className="flex items-center justify-between gap-3">
               <p className="ap3k-kicker"><UiText>{"Settings"}</UiText></p>
               <Badge className={isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"} variant="outline">{isLive ? "Listening now" : statusLabel}</Badge>
@@ -194,7 +194,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <Link href={editHref} className="ap3k-gradient-button mt-3 block px-4 py-2.5 text-center text-sm"><UiText>{"Edit automation"}</UiText></Link>
           </section>
 
-          <section className="ap3k-card flex min-h-[260px] flex-1 animate-[ap3kDashboardRise_0.68s_ease-out_both] flex-col overflow-hidden rounded-3xl p-4">
+          <section className="ap3k-card flex min-h-[260px] flex-1 ap3k-content-enter flex-col overflow-hidden rounded-2xl p-4">
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-white/10">
               <div><h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Recent activity"}</UiText></h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400"><UiText>{"Latest 20 events"}</UiText></p></div>
               <span className="ap3k-badge ap3k-badge-slate">{groupedActivity.length}</span>
@@ -256,7 +256,7 @@ function FlowNode({ label, title, body, tone, disabled = false }: { label: strin
     blue: "from-blue-50 border-blue-200 text-blue-600 dark:from-blue-500/10 dark:to-white/[0.03] dark:border-blue-500/25 dark:text-blue-300",
   };
   return (
-    <div className={`rounded-2xl border bg-gradient-to-br to-white p-3.5 transition-all duration-300 hover:-translate-y-0.5 dark:bg-[#101827] ${disabled ? "opacity-60 grayscale" : ""} ${tones[tone]}`}>
+    <div className={`rounded-2xl border bg-gradient-to-br to-white p-3.5 dark:bg-[#101827] ${disabled ? "opacity-60 grayscale" : ""} ${tones[tone]}`}>
       <p className="text-[10px] font-black uppercase tracking-[0.16em]"><UiText>{label}</UiText></p>
       <h3 className="mt-1 text-base font-black text-slate-950 dark:text-white"><UiText>{title}</UiText></h3>
       <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300"><UiText>{body}</UiText></p>
@@ -279,7 +279,7 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="ap3k-card flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="ap3k-card flex items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:shadow-lg">
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"><UiText>{label}</UiText></p>
       <p className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
     </div>

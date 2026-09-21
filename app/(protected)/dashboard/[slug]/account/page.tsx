@@ -70,12 +70,12 @@ export default async function InstagramAccountPage({
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-1 py-3 text-slate-950 dark:text-slate-50 sm:gap-4 sm:px-2 sm:py-4 lg:py-6">
-      <div className="animate-[ap3kDashboardRise_0.45s_ease-out_both]">
+      <div className="ap3k-content-enter">
         <p className="ap3k-kicker"><UiText>{"Instagram connection"}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Your Instagram"}</UiText></h1>
       </div>
 
-      <section className="ap3k-card animate-[ap3kDashboardRise_0.55s_ease-out_both] overflow-hidden rounded-3xl p-0">
+      <section className="ap3k-card ap3k-content-enter overflow-hidden rounded-2xl p-0">
         <div className="bg-[radial-gradient(circle_at_8%_12%,rgba(16,185,129,0.16),transparent_32%),radial-gradient(circle_at_92%_8%,rgba(236,72,153,0.18),transparent_36%),linear-gradient(135deg,#0f172a_0%,#111827_58%,#21152a_100%)] p-3.5 text-white sm:p-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -157,7 +157,7 @@ export default async function InstagramAccountPage({
         </div>
       </section>
 
-      <section className="ap3k-card animate-[ap3kDashboardRise_0.64s_ease-out_both] rounded-3xl p-3.5 sm:p-5">
+      <section className="ap3k-card ap3k-content-enter rounded-2xl p-3.5 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
@@ -184,7 +184,7 @@ export default async function InstagramAccountPage({
         </div>
       </section>
 
-      <details className="group ap3k-card animate-[ap3kDashboardRise_0.74s_ease-out_both] rounded-2xl">
+      <details className="group ap3k-card ap3k-content-enter rounded-2xl">
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
@@ -250,7 +250,7 @@ function SettingsStatCard({
   stat: AccountStatValue;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-rf-pink/30 hover:bg-white dark:border-white/10 dark:bg-white/[0.025] dark:hover:bg-white/[0.04] sm:p-3.5">
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-rf-pink/30 hover:bg-white dark:border-white/10 dark:bg-white/[0.025] dark:hover:bg-white/[0.04] sm:p-3.5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
           <UiText>{label}</UiText>

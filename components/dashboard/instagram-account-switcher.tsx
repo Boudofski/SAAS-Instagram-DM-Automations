@@ -62,15 +62,15 @@ export default function InstagramAccountSwitcher({ slug, expanded = true }: { sl
 
   return <div className="relative mt-4" dir={locale === "ar" ? "rtl" : "ltr"}>
     <DropdownMenu dir={locale === "ar" ? "rtl" : "ltr"}>
-      <DropdownMenuTrigger disabled={busy} aria-label={copy.accounts} className={`flex w-full items-center rounded-2xl border border-slate-200 bg-slate-50 text-start outline-none transition hover:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.06] ${expanded ? "gap-2 p-2.5" : "justify-center p-0.5"}`}>
+      <DropdownMenuTrigger disabled={busy} aria-busy={busy} aria-label={copy.accounts} className={`flex w-full items-center rounded-2xl border border-slate-200 bg-slate-50 text-start outline-none transition hover:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.06] ${expanded ? "gap-2 p-2.5" : "justify-center p-0.5"}`}>
         <InstagramAvatar src={selected?.profilePictureUrl} username={selected?.instagramUsername} size="sm" />
-        {expanded && <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{selected?.instagramUsername ? <bdi dir="ltr">@{selected.instagramUsername}</bdi> : copy.empty}</span><span className="mt-0.5 block text-[11px] font-bold text-violet-500"><UiText>{data?.plan === "BUSINESS" ? "Business" : data?.plan === "PRO" ? "Pro" : "Free"}</UiText> · {data?.used ?? 0}/{data?.limit ?? 1}</span></span>}
+        {expanded && <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{selected?.instagramUsername ? <bdi dir="ltr">@{selected.instagramUsername}</bdi> : copy.empty}</span><span className="mt-0.5 block text-[11px] font-bold text-violet-700 dark:text-violet-300"><UiText>{data?.plan === "BUSINESS" ? "Business" : data?.plan === "PRO" ? "Pro" : "Free"}</UiText> · {data?.used ?? 0}/{data?.limit ?? 1}</span></span>}
         {busy ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : expanded && <ChevronDown className="h-4 w-4 shrink-0" />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="z-[100] w-72 max-w-[calc(100vw-2rem)]">
         <DropdownMenuLabel>{copy.accounts}</DropdownMenuLabel>
         <div className="max-h-64 overflow-y-auto">
-          {data?.accounts.map((account) => <DropdownMenuItem key={account.id} disabled={busy} onSelect={() => account.planLocked ? window.location.assign(`/dashboard/${slug}/billing`) : void switchTo(account.id)} className="gap-2 py-2">
+          {data?.accounts.map((account) => <DropdownMenuItem key={account.id} disabled={busy} onSelect={() => account.planLocked ? window.location.assign(`/dashboard/${slug}/billing`) : void switchTo(account.id)} className={`gap-2 py-2 ${account.id === data.selectedId ? "bg-accent" : ""}`}>
             <InstagramAvatar src={account.profilePictureUrl} username={account.instagramUsername} size="sm" />
             <span className="min-w-0 flex-1"><bdi dir="ltr" className="block truncate">@{account.instagramUsername ?? "Instagram"}</bdi>{(account.planLocked || account.status === "DISCONNECTED") && <span className="text-xs text-slate-500">{account.planLocked ? copy.locked : copy.disconnected}</span>}</span>
             {account.planLocked ? <Lock className="h-4 w-4" /> : account.id === data.selectedId && <Check className="h-4 w-4 text-violet-500" />}

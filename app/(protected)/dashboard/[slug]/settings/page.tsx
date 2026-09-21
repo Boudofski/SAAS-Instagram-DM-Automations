@@ -19,7 +19,7 @@ async function SettingsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-6">
-      <div className="animate-[ap3kDashboardRise_0.4s_ease-out_both]">
+      <div className="ap3k-content-enter">
         <p className="ap3k-kicker"><UiText>{"Preferences"}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Settings"}</UiText></h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400"><UiText>{"Appearance, sign-in, and account controls."}</UiText></p>
@@ -56,7 +56,7 @@ async function SettingsPage() {
         <EmailPreferences preferences={emailPreferences} />
       </SettingsSection>
 
-      <section className="animate-[ap3kDashboardRise_0.6s_ease-out_both] rounded-2xl border border-red-200 bg-red-50/70 p-4 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-5">
+      <section className="ap3k-content-enter rounded-2xl border border-red-200 bg-red-50/70 p-4 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200 bg-white text-red-600 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-300">
@@ -78,7 +78,7 @@ export default SettingsPage;
 
 function SettingsSection({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
-    <section className="ap3k-card animate-[ap3kDashboardRise_0.5s_ease-out_both] rounded-2xl p-4 transition-all duration-300 hover:-translate-y-0.5 sm:p-5">
+    <section className="ap3k-card ap3k-content-enter rounded-2xl p-4 sm:p-5">
       <div className="mb-4 flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-white/[0.06]">
         <span className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-rf-pink dark:border-white/10 dark:bg-white/[0.04]">{icon}</span>
         <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300"><UiText>{label}</UiText></p>
