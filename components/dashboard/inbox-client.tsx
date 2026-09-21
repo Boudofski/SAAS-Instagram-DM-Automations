@@ -182,7 +182,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
           {!selected ? <EmptyInbox /> : (
             <>
               <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-3 dark:border-white/10 sm:h-[72px] sm:px-4">
-                <button type="button" onClick={() => setSelectedId(null)} className="ap3k-control grid h-11 w-11 place-items-center rounded-lg border border-slate-200 md:hidden dark:border-white/10"><ArrowLeft className="h-4 w-4" /></button>
+                <button type="button" aria-label={translateUi("Back", locale)} onClick={() => setSelectedId(null)} className="ap3k-control grid h-11 w-11 place-items-center rounded-lg border border-slate-200 md:hidden dark:border-white/10"><ArrowLeft aria-hidden="true" className="h-4 w-4 rtl:rotate-180" /></button>
                 <Avatar src={selected.profilePictureUrl} name={selected.recipientUsername || selected.recipientIgId} size="lg" />
                 <div className="min-w-0"><p className="truncate text-sm font-black">{displayName(selected)}</p><p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><Instagram className="h-3.5 w-3.5 text-pink-500" /><UiText>{" Instagram · "}</UiText><UiText>{isReplyWindowOpen(selected.lastInboundAt) ? "Active now" : "Reply window closed"}</UiText></p></div>
                 <span className="ms-auto hidden rounded-full bg-rf-purple/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-rf-purple sm:inline-flex">{selected.automation?.source ?? "manual"}</span>
