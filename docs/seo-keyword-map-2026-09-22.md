@@ -47,7 +47,7 @@ Ubersuggest's main-query SERP snapshot was last updated August 17, 2026, not the
 
 ## Next evidence needed
 
-Local validation: 130 test files and 990 tests passed; the production build passed. A live check reproduced the resources page's missing language alternates before release. A full sitemap crawl is being checked separately; this document does not claim every URL is indexed or ranks.
+Local validation: 130 test files and 990 tests passed; the production build passed. A live check reproduced the resources page's missing language alternates before release. The 330-URL crawl passed status, canonical, heading, metadata and indexability checks; its five language-link flags were equivalent bare-origin/root-slash URLs, now normalized by the audit. The four resource/tool pages and updated guide also passed post-deployment checks. The crawl overlapped deployment and is not a frozen single-release snapshot. These checks do not establish Google indexing or rankings.
 
 Export Search Console Performance with query and page dimensions, country, device and date range. Separately export URL examples for the 57 discovered/not-indexed and one crawled/not-indexed URLs in the September 18 snapshot. Counts alone do not identify their causes.
 

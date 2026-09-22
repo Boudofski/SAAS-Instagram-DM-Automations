@@ -40,6 +40,12 @@ def fetch(url):
     request = urllib.request.Request(url, headers={'User-Agent': 'AP3K-SEO-Audit/1.0', 'Accept-Language': 'en'})
     return urllib.request.urlopen(request, timeout=45)
 
+def normalize_alternates(alternates):
+    # An empty origin path and '/' identify the same resource. Preserve all
+    # other path/query differences so real alternate mismatches still fail.
+    return {language: urlsplit(url)._replace(path=urlsplit(url).path or '/').geturl()
+            for language, url in alternates.items()}
+
 def check(entry):
     url, expected_alternates = entry
     errors = []
@@ -56,7 +62,7 @@ def check(entry):
         path = urlsplit(url).path.split('/')
         locale = path[1] if len(path) > 1 and path[1] in ('fr','es','de','pt') else 'en'
         if page.lang != locale: errors.append('HTML language mismatch')
-        if page.alternates != expected_alternates: errors.append('HTML/sitemap language alternates disagree')
+        if normalize_alternates(page.alternates) != normalize_alternates(expected_alternates): errors.append('HTML/sitemap language alternates disagree')
         if page.alternates.get(locale, '').rstrip('/') != url.rstrip('/'): errors.append('Missing self language alternate')
         return {'url': url, 'title': page.title, 'errors': errors}
     except Exception as exc:
