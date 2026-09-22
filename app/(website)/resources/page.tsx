@@ -7,7 +7,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Free Instagram Comment Automation Resources | AP3K",
   description: "Use free Instagram comment-to-DM templates, launch checklists and a funnel calculator to plan clearer automation campaigns with AP3K.",
-  alternates: { canonical: "/resources" },
+  alternates: { canonical: "/resources", languages: { en: "https://ap3k.com/resources", "x-default": "https://ap3k.com/resources" } },
   openGraph: { title: "Free Instagram Comment Automation Resources", description: "Templates, checklists and planning tools for Instagram comment-to-DM campaigns.", url: "https://ap3k.com/resources", type: "website", images: ["https://ap3k.com/opengraph-image"] },
   twitter: { card: "summary_large_image", title: "Free Instagram Comment Automation Resources", description: "Templates, checklists and planning tools for Instagram comment-to-DM campaigns.", images: ["https://ap3k.com/opengraph-image"] },
 };

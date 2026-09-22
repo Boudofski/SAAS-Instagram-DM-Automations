@@ -6,6 +6,7 @@ import json
 import sys
 import urllib.request
 import xml.etree.ElementTree as ET
+from urllib.parse import urlsplit
 from html.parser import HTMLParser
 
 ORIGIN = (sys.argv[1] if len(sys.argv) > 1 else 'https://ap3k.com').rstrip('/')
@@ -39,7 +40,8 @@ def fetch(url):
     request = urllib.request.Request(url, headers={'User-Agent': 'AP3K-SEO-Audit/1.0', 'Accept-Language': 'en'})
     return urllib.request.urlopen(request, timeout=45)
 
-def check(url):
+def check(entry):
+    url, expected_alternates = entry
     errors = []
     try:
         with fetch(url) as response:
@@ -51,10 +53,10 @@ def check(url):
         if page.h1 != 1: errors.append(f'Expected one H1, got {page.h1}')
         if not page.title or not page.description: errors.append('Missing title or description')
         if page.noindex: errors.append('Meta noindex')
-        path = url.removeprefix(ORIGIN).split('/')
-        locale = path[1] if len(path) > 1 and path[1] in ('ar','fr','es','de','pt') else 'en'
+        path = urlsplit(url).path.split('/')
+        locale = path[1] if len(path) > 1 and path[1] in ('fr','es','de','pt') else 'en'
         if page.lang != locale: errors.append('HTML language mismatch')
-        if set(page.alternates) != {'en','ar','fr','es','de','pt','x-default'}: errors.append('Incomplete language alternates')
+        if page.alternates != expected_alternates: errors.append('HTML/sitemap language alternates disagree')
         if page.alternates.get(locale, '').rstrip('/') != url.rstrip('/'): errors.append('Missing self language alternate')
         return {'url': url, 'title': page.title, 'errors': errors}
     except Exception as exc:
@@ -62,8 +64,17 @@ def check(url):
 
 if __name__ == '__main__':
     with fetch(ORIGIN + '/sitemap.xml') as response: root = ET.fromstring(response.read())
-    urls = [node.text for node in root.findall('{*}url/{*}loc')]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool: results = list(pool.map(check, urls))
+    entries = [(node.findtext('{*}loc'), {
+        link.get('hreflang'): link.get('href') for link in node.findall('{http://www.w3.org/1999/xhtml}link')
+    }) for node in root.findall('{*}url')]
+    urls = [url for url, _ in entries]
+    if not urls or len(set(urls)) != len(urls): raise ValueError('Empty sitemap or duplicate URLs')
+    for url, alternates in entries:
+        if set(alternates) not in ({'en', 'x-default'}, {'en', 'fr', 'es', 'de', 'pt', 'x-default'}):
+            raise ValueError(f'Unsupported sitemap language set: {url}')
+        if any(target not in urls for target in alternates.values()):
+            raise ValueError(f'Sitemap alternate target missing: {url}')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool: results = list(pool.map(check, entries))
     failures = [row for row in results if row['errors']]
     print(json.dumps({'checked': len(results), 'failures': failures}, ensure_ascii=False, indent=2))
     sys.exit(bool(failures))

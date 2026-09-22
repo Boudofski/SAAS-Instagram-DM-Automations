@@ -11,7 +11,7 @@ export const SEO_RESOURCES: SeoResource[] = [
     slug: "instagram-comment-to-dm-templates",
     eyebrow: "Free template library",
     title: "Instagram Comment-to-DM Templates",
-    description: "Copy clear Instagram captions, public replies, DMs, and link-button labels for comment-to-DM campaigns.",
+    description: "Copy free Instagram comment-to-DM templates: caption calls to action, public replies, private messages and link-button labels for your next campaign.",
     sections: [
       {
         title: "Caption calls to action",
@@ -57,7 +57,7 @@ export const SEO_RESOURCES: SeoResource[] = [
     slug: "instagram-comment-automation-checklist",
     eyebrow: "Launch checklist",
     title: "Instagram Comment Automation Checklist",
-    description: "A practical pre-launch and weekly review checklist for Instagram comment-to-DM automations.",
+    description: "Launch Instagram comment-to-DM automation with a free checklist covering account setup, keyword tests, message delivery, mobile links and weekly reviews.",
     sections: [
       {
         title: "Before you build",

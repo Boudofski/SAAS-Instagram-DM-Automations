@@ -30,7 +30,9 @@ describe("public indexing contracts", () => {
       }
     }
     const hub = pages.find(item => item.url === "https://ap3k.com/blog/instagram-comment-to-dm-automation");
-    expect(hub?.lastModified).toEqual(new Date("2026-09-21T00:00:00Z"));
+    expect(hub?.lastModified).toEqual(new Date("2026-09-22T00:00:00Z"));
+    const unchanged = pages.find(item => item.url === "https://ap3k.com/blog/comment-to-dm-one-post-vs-all-posts");
+    expect(unchanged?.lastModified).toEqual(new Date("2026-09-21T00:00:00Z"));
   });
   it("lets crawlers see noindex on authentication pages", () => {
     const rules = robots().rules;

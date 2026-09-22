@@ -8,7 +8,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Instagram Comment-to-DM Funnel Calculator | AP3K",
   description: "Estimate delivered Instagram DMs, destination visits, conversions and campaign value with a free comment-to-DM funnel calculator.",
-  alternates: { canonical: "/tools/instagram-comment-to-dm-calculator" },
+  alternates: { canonical: "/tools/instagram-comment-to-dm-calculator", languages: { en: "https://ap3k.com/tools/instagram-comment-to-dm-calculator", "x-default": "https://ap3k.com/tools/instagram-comment-to-dm-calculator" } },
   openGraph: { title: "Instagram Comment-to-DM Funnel Calculator", description: "Estimate each stage of an Instagram comment-to-DM campaign with transparent assumptions.", url: "https://ap3k.com/tools/instagram-comment-to-dm-calculator", type: "website", images: ["https://ap3k.com/opengraph-image"] },
   twitter: { card: "summary_large_image", title: "Instagram Comment-to-DM Funnel Calculator", description: "Estimate each stage of an Instagram comment-to-DM campaign with transparent assumptions.", images: ["https://ap3k.com/opengraph-image"] },
 };

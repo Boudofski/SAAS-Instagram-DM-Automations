@@ -17,8 +17,8 @@ export function generateMetadata({ params }: Props): Metadata {
   if (!resource) return {};
   return {
     title: `${resource.title} | Free AP3K Resource`,
-    description: `${resource.description} Use this free AP3K resource to plan, test and improve a practical Instagram automation campaign.`,
-    alternates: { canonical: `/resources/${resource.slug}` },
+    description: resource.description,
+    alternates: { canonical: `/resources/${resource.slug}`, languages: { en: `https://ap3k.com/resources/${resource.slug}`, "x-default": `https://ap3k.com/resources/${resource.slug}` } },
     openGraph: { title: resource.title, description: resource.description, url: `https://ap3k.com/resources/${resource.slug}`, type: "article", images: ["https://ap3k.com/opengraph-image"] },
     twitter: { card: "summary_large_image", title: resource.title, description: resource.description, images: ["https://ap3k.com/opengraph-image"] },
   };

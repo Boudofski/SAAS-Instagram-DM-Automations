@@ -17,7 +17,7 @@ export const COMMENT_DM_POSTS: BlogPost[] = [
   const wordCount = articleWordCount(raw.intro, sections);
   return {
     ...raw, sections, contentLocale: "en", wordCount,
-    publishedAt: COMMENT_DM_PUBLISHED, updatedAt: COMMENT_DM_PUBLISHED,
+    publishedAt: COMMENT_DM_PUBLISHED, updatedAt: "updatedAt" in raw ? String(raw.updatedAt) : COMMENT_DM_PUBLISHED,
     readingTime: `${Math.max(1, Math.ceil(wordCount / 200))} min read`,
     visual: "workflow",
     visualAlt: "AP3K workflow illustration connecting an Instagram comment to a configured reply and direct message",
