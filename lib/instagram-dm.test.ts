@@ -52,6 +52,24 @@ function metaGenericError(code = 100) {
   return err;
 }
 
+function metaMessagingAccessDisabledError() {
+  const err = new Error("Meta API error") as any;
+  err.isAxiosError = true;
+  err.response = {
+    status: 403,
+    data: {
+      error: {
+        message: "The account owner has disabled access to Instagram Direct Messaging.",
+        type: "IGApiException",
+        code: 200,
+        error_subcode: 2534041,
+        fbtrace_id: "trace-disabled",
+      },
+    },
+  };
+  return err;
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   // axios.isAxiosError must return true for our fake errors
@@ -118,6 +136,52 @@ describe("sendInstagramCommentPrivateReply", () => {
     }
     // Fallback must NOT be attempted — same capability blocks both
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports account-level message access and does not retry a direct DM", async () => {
+    mockedAxios.post.mockRejectedValueOnce(metaMessagingAccessDisabledError());
+
+    const result = await sendInstagramCommentPrivateReply({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      commentId: COMMENT_ID,
+      commenterId: COMMENTER_ID,
+      message: "Hi",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("dm_access_disabled");
+      expect(result.endpoint).toBe("ig_messages_private_reply");
+      expect(result.metaError).toMatchObject({ status: 403, code: 200, subcode: 2534041 });
+    }
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves the access-disabled diagnosis after an interactive payload fallback", async () => {
+    mockedAxios.post
+      .mockRejectedValueOnce(metaGenericError(100))
+      .mockRejectedValueOnce(metaMessagingAccessDisabledError());
+
+    const result = await sendInstagramCommentPrivateReply({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      commentId: COMMENT_ID,
+      commenterId: COMMENTER_ID,
+      automationId: "automation-opening",
+      message: "Tap to continue",
+      postbackButton: {
+        title: "Continue",
+        payload: "AP3K_OPENING_CONTINUE:automation-opening",
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("dm_access_disabled");
+      expect(result.endpoint).toBe("ig_messages_private_reply");
+    }
+    expect(mockedAxios.post).toHaveBeenCalledTimes(2);
   });
 
   it("falls back to recipient.id (direct DM) when primary fails with non-capability error", async () => {
@@ -666,6 +730,17 @@ describe("formatPrivateReplyError", () => {
       ctaMode: "none" as const,
     };
     expect(formatPrivateReplyError(result)).toBe("dm_capability_missing");
+  });
+
+  it("returns dm_access_disabled for the Instagram connected-tools switch", () => {
+    const result = {
+      ok: false as const,
+      reason: "dm_access_disabled" as const,
+      endpoint: "ig_messages_private_reply",
+      metaError: { status: 403, code: 200, subcode: 2534041 },
+      ctaMode: "none" as const,
+    };
+    expect(formatPrivateReplyError(result)).toBe("dm_access_disabled");
   });
 
   it("formats meta_api_error with status and code", () => {

@@ -55,7 +55,7 @@ export type PrivateReplyResult =
     }
   | {
       ok: false;
-      reason: "dm_capability_missing" | "meta_api_error";
+      reason: "dm_capability_missing" | "dm_access_disabled" | "meta_api_error";
       endpoint: string;
       metaError: SafeMetaApiError;
       ctaMode: CtaMode;
@@ -81,6 +81,15 @@ function buildMetaError(error: unknown): SafeMetaApiError {
 
 function isCapabilityError(error: unknown): boolean {
   return getSafeMetaError(error).code === 3;
+}
+
+function isMessagingAccessDisabledError(error: unknown): boolean {
+  const safe = getSafeMetaError(error);
+  const message = (safe.message ?? "").toLowerCase();
+  return Boolean(
+    safe.subcode === 2534041 ||
+    (safe.code === 200 && message.includes("disabled access to instagram direct"))
+  );
 }
 
 function shouldTryTextFallback(error: unknown): boolean {
@@ -659,6 +668,13 @@ export async function sendInstagramCommentPrivateReply(params: {
   } catch (primaryErr) {
     const primaryMeta = buildMetaError(primaryErr);
 
+    // This account-level Instagram privacy switch blocks both private replies
+    // and direct DMs. Retrying another recipient shape cannot succeed and
+    // hides the actual fix behind a generic Meta API error.
+    if (isMessagingAccessDisabledError(primaryErr)) {
+      return messagingAccessDisabled("ig_messages_private_reply", primaryMeta, preferred.ctaMode);
+    }
+
     if (usesTemplate && shouldTryTextFallback(primaryErr)) {
       console.warn("[meta-api] Instagram Graph private reply button template failed — trying text fallback", {
         endpointName: "ig_messages_private_reply",
@@ -679,6 +695,13 @@ export async function sendInstagramCommentPrivateReply(params: {
         }
         return capabilityMissing("ig_messages_private_reply", textFallback.ctaMode);
       } catch (textFallbackErr) {
+        if (isMessagingAccessDisabledError(textFallbackErr)) {
+          return messagingAccessDisabled(
+            "ig_messages_private_reply",
+            buildMetaError(textFallbackErr),
+            textFallback.ctaMode
+          );
+        }
         console.warn("[meta-api] Instagram Graph private reply text fallback failed — trying direct DM fallback", {
           endpointName: "ig_messages_private_reply",
           error: getSafeMetaError(textFallbackErr),
@@ -699,6 +722,14 @@ export async function sendInstagramCommentPrivateReply(params: {
       }
       return capabilityMissing("ig_messages_direct_dm", preferred.ctaMode);
     } catch (fallbackErr) {
+      if (isMessagingAccessDisabledError(fallbackErr)) {
+        return messagingAccessDisabled(
+          "ig_messages_direct_dm",
+          buildMetaError(fallbackErr),
+          preferred.ctaMode
+        );
+      }
+
       if (usesTemplate && shouldTryTextFallback(fallbackErr)) {
         console.warn("[meta-api] Instagram Graph direct DM button template failed — trying text fallback", {
           endpointName: "ig_messages_direct_dm",
@@ -716,6 +747,13 @@ export async function sendInstagramCommentPrivateReply(params: {
           }
           return capabilityMissing("ig_messages_direct_dm", textFallback.ctaMode);
         } catch (fallbackTextErr) {
+          if (isMessagingAccessDisabledError(fallbackTextErr)) {
+            return messagingAccessDisabled(
+              "ig_messages_direct_dm",
+              buildMetaError(fallbackTextErr),
+              textFallback.ctaMode
+            );
+          }
           return {
             ok: false,
             reason: "meta_api_error",
@@ -752,8 +790,29 @@ function capabilityMissing(endpoint: string, ctaMode: CtaMode): PrivateReplyResu
   };
 }
 
+function messagingAccessDisabled(
+  endpoint: string,
+  metaError: SafeMetaApiError,
+  ctaMode: CtaMode
+): PrivateReplyResult {
+  console.warn("[meta-api] Instagram connected-tool message access is disabled", {
+    endpointName: endpoint,
+    status: metaError.status,
+    code: metaError.code,
+    subcode: metaError.subcode,
+  });
+  return {
+    ok: false,
+    reason: "dm_access_disabled",
+    endpoint,
+    metaError,
+    ctaMode,
+  };
+}
+
 export function formatPrivateReplyError(result: PrivateReplyResult & { ok: false }): string {
   if (result.reason === "dm_capability_missing") return "dm_capability_missing";
+  if (result.reason === "dm_access_disabled") return "dm_access_disabled";
   const { status, code, subcode, message } = result.metaError;
   return [
     status ? `status=${status}` : null,

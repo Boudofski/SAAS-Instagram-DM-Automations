@@ -93,6 +93,17 @@ export function classifyDeliveryError(error?: string | null) {
       tone: "amber" as const,
     };
   }
+  if (
+    text.includes("dm_access_disabled") ||
+    text.toLowerCase().includes("disabled access to instagram direct") ||
+    text.includes("2534041")
+  ) {
+    return {
+      label: "Instagram message access disabled",
+      detail: "Enable message access for connected tools in the Instagram account's Message controls, then test with a new comment.",
+      tone: "red" as const,
+    };
+  }
   if (text.includes("dm_capability_missing") || text.includes("code=3")) {
     return {
       label: "Meta capability missing",
@@ -132,6 +143,11 @@ export function summarizeAdminError(error?: string | null) {
   const classified = classifyDeliveryError(error);
   if (error.includes("subscribed_fields")) return "Webhook field mismatch";
   if (error.includes("code=190") || error.toLowerCase().includes("token")) return "Token expired or invalid";
+  if (
+    error.includes("dm_access_disabled") ||
+    error.toLowerCase().includes("disabled access to instagram direct") ||
+    error.includes("2534041")
+  ) return "Instagram message access disabled";
   if (error.includes("dm_capability_missing") || error.includes("code=3")) return "DM capability pending";
   if (error.length > 160) return classified.label;
   return classified.label === "Meta/API error" ? error : classified.label;

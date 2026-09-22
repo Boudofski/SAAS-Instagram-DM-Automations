@@ -19,6 +19,18 @@ export function formatUserFacingMetaError(errorMessage?: string | null, eventTyp
     };
   }
 
+  if (
+    text.includes("dm_access_disabled") ||
+    text.includes("disabled access to instagram direct") ||
+    text.includes("subcode=2534041")
+  ) {
+    return {
+      title: "Instagram message access is off",
+      detail: "In Instagram, open Messages and story replies → Message controls, then enable message access for connected tools. Use a new comment to test after enabling it.",
+      severity: "error",
+    };
+  }
+
   if (text.includes("dm_capability_missing") || text.includes("code=3") || text.includes("instagram_manage_messages")) {
     return {
       title: "Private DM capability pending",

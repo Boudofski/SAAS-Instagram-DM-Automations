@@ -38,6 +38,10 @@ describe("admin control center helpers", () => {
       label: "Meta capability missing",
       tone: "red",
     });
+    expect(classifyDeliveryError("dm_access_disabled")).toMatchObject({
+      label: "Instagram message access disabled",
+      tone: "red",
+    });
     expect(classifyDeliveryError("token_missing")).toMatchObject({
       label: "Reconnect account",
       tone: "amber",
@@ -70,6 +74,7 @@ describe("admin control center helpers", () => {
       )
     ).toBe("Webhook field mismatch");
     expect(summarizeAdminError("dm_capability_missing")).toBe("DM capability pending");
+    expect(summarizeAdminError("dm_access_disabled")).toBe("Instagram message access disabled");
   });
 
   it("shortens long IDs but keeps short IDs readable", () => {
