@@ -27,8 +27,8 @@ export function DashboardPeriodLabel({ period, start, end }: { period: string; s
 export function FollowerSubtitle({ fallback, count, percent }: { fallback: string; count?: number | null; percent?: number | null }) {
   const { locale } = useI18n();
   if (typeof count !== "number") return <>{translateUi(fallback, locale)}</>;
-  const number = new Intl.NumberFormat(locale, { signDisplay: "always", numberingSystem: locale === "ar" ? "latn" : undefined });
-  const percentage = new Intl.NumberFormat(locale, { style: "percent", numberingSystem: locale === "ar" ? "latn" : undefined, signDisplay: "always", maximumFractionDigits: 2 });
+  const number = new Intl.NumberFormat(locale, { signDisplay: "always" });
+  const percentage = new Intl.NumberFormat(locale, { style: "percent", signDisplay: "always", maximumFractionDigits: 2 });
   return <UiMessage source="{count} followers{percent} since last snapshot" values={{
     count: <bdi dir="ltr">{number.format(count)}</bdi>,
     percent: typeof percent === "number" ? <> · <bdi dir="ltr">{percentage.format(percent / 100)}</bdi></> : "",

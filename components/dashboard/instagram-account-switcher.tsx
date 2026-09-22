@@ -60,8 +60,8 @@ export default function InstagramAccountSwitcher({ slug, expanded = true }: { sl
     } catch { setError(copy.failed); setBusy(false); }
   }
 
-  return <div className="relative mt-4" dir={locale === "ar" ? "rtl" : "ltr"}>
-    <DropdownMenu dir={locale === "ar" ? "rtl" : "ltr"}>
+  return <div className="relative mt-4" dir="ltr">
+    <DropdownMenu dir="ltr">
       <DropdownMenuTrigger disabled={busy} aria-busy={busy} aria-label={copy.accounts} className={`flex w-full items-center rounded-2xl border border-slate-200 bg-slate-50 text-start outline-none transition hover:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.06] ${expanded ? "gap-2 p-2.5" : "justify-center p-0.5"}`}>
         <InstagramAvatar src={selected?.profilePictureUrl} username={selected?.instagramUsername} size="sm" />
         {expanded && <span className="min-w-0 flex-1"><span className="block truncate text-sm font-black">{selected?.instagramUsername ? <bdi dir="ltr">@{selected.instagramUsername}</bdi> : copy.empty}</span><span className="mt-0.5 block text-[11px] font-bold text-violet-700 dark:text-violet-300"><UiText>{data?.plan === "BUSINESS" ? "Business" : data?.plan === "PRO" ? "Pro" : "Free"}</UiText> · {data?.used ?? 0}/{data?.limit ?? 1}</span></span>}

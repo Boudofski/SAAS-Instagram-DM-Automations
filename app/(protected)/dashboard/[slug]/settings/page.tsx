@@ -4,9 +4,10 @@ import ThemeToggle from "@/components/global/theme-toggle";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 import { ManageSignInSettings } from "@/components/settings/manage-sign-in-settings";
 import { EmailPreferences } from "@/components/settings/email-preferences";
+import { TimeZoneSettings } from "@/components/settings/time-zone-settings";
 import { getEmailPreferences } from "@/lib/email/delivery";
 import { getEmailSettingsState } from "@/lib/settings-safety";
-import { LockKeyhole, Mail, Palette, ShieldAlert } from "lucide-react";
+import { Clock3, LockKeyhole, Mail, Palette, ShieldAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 async function SettingsPage() {
@@ -47,6 +48,10 @@ async function SettingsPage() {
           </div>
         </SettingsSection>
       </div>
+
+      <SettingsSection icon={<Clock3 className="h-4.5 w-4.5" />} label="Date & time">
+        <TimeZoneSettings />
+      </SettingsSection>
 
       <SettingsSection icon={<Mail className="h-4.5 w-4.5" />} label="Email notifications">
         <div className="mb-4">

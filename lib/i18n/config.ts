@@ -1,11 +1,23 @@
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
-const englishArticles = new Set(englishArticleSlugs.map(slug => `/blog/${slug}`));
+const englishArticles = new Set([
+  ...englishArticleSlugs.map(slug => `/blog/${slug}`),
+  "/resources",
+  "/resources/instagram-comment-to-dm-templates",
+  "/resources/instagram-comment-automation-checklist",
+  "/tools/instagram-comment-to-dm-calculator",
+  "/blog/ap3k-workspace-visual-guide",
+  "/blog/create-ap3k-automation-visual-guide",
+  "/blog/set-up-ap3k-ai-visual-guide",
+  "/blog/connect-instagram-to-ap3k",
+  "/help/workspace-tour",
+  "/help/automation-types",
+]);
 export function isEnglishOnlyArticle(pathname: string): boolean {
   return englishArticles.has(stripLocaleFromPath(pathname.split(/[?#]/)[0]).replace(/\/$/, ""));
 }
 
-export const SUPPORTED_LOCALES = ["en", "ar", "fr", "es", "de", "pt"] as const;
+export const SUPPORTED_LOCALES = ["en", "fr", "es", "de", "pt"] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
@@ -17,11 +29,19 @@ export const LOCALE_DETAILS: Record<
   { nativeName: string; htmlLang: string; direction: "ltr" | "rtl"; openGraph: string }
 > = {
   en: { nativeName: "English", htmlLang: "en", direction: "ltr", openGraph: "en_US" },
-  ar: { nativeName: "العربية", htmlLang: "ar", direction: "rtl", openGraph: "ar_AR" },
   fr: { nativeName: "Français", htmlLang: "fr", direction: "ltr", openGraph: "fr_FR" },
   es: { nativeName: "Español", htmlLang: "es", direction: "ltr", openGraph: "es_ES" },
   de: { nativeName: "Deutsch", htmlLang: "de", direction: "ltr", openGraph: "de_DE" },
   pt: { nativeName: "Português", htmlLang: "pt", direction: "ltr", openGraph: "pt_PT" },
+};
+
+// Keep translation source columns explicit so locale changes cannot shift copy.
+export const LOCALE_SOURCE_COLUMN: Record<Locale, number> = {
+  en: 0,
+  fr: 1,
+  es: 2,
+  de: 3,
+  pt: 4,
 };
 
 export function isLocale(value: string | null | undefined): value is Locale {
@@ -32,6 +52,22 @@ export function normalizeLocale(value: string | null | undefined): Locale {
   if (!value) return DEFAULT_LOCALE;
   const language = value.toLowerCase().split(/[-_]/)[0];
   return isLocale(language) ? language : DEFAULT_LOCALE;
+}
+
+/** Locale prefixes that were previously public and now permanently resolve to English. */
+export const RETIRED_LOCALES = ["ar"] as const;
+
+export function retiredLocaleFromPath(pathname: string): (typeof RETIRED_LOCALES)[number] | null {
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  return RETIRED_LOCALES.includes(firstSegment as (typeof RETIRED_LOCALES)[number])
+    ? firstSegment as (typeof RETIRED_LOCALES)[number]
+    : null;
+}
+
+export function stripRetiredLocaleFromPath(pathname: string): string {
+  const locale = retiredLocaleFromPath(pathname);
+  if (!locale) return pathname || "/";
+  return pathname.replace(new RegExp(`^/${locale}(?=/|$)`), "") || "/";
 }
 
 export function localeFromPath(pathname: string): Locale | null {
@@ -50,17 +86,17 @@ export function localizePublicPath(pathname: string, locale: Locale): string {
   const suffixIndex = pathname.search(/[?#]/);
   const path = suffixIndex === -1 ? pathname : pathname.slice(0, suffixIndex);
   const suffix = suffixIndex === -1 ? "" : pathname.slice(suffixIndex);
-  const cleanPath = stripLocaleFromPath(path);
+  const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(path));
   if (locale === DEFAULT_LOCALE || isProtectedPath(cleanPath) || isEnglishOnlyArticle(cleanPath)) return cleanPath + suffix;
   return (cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`) + suffix;
 }
 
 export function isProtectedPath(pathname: string): boolean {
-  const cleanPath = stripLocaleFromPath(pathname);
+  const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(pathname));
   return /^(?:\/dashboard|\/onboarding|\/admin|\/ap3k-admin(?:-v2)?|\/api|\/callback|\/payment|\/account-deletion-preview|\/r)(?:\/|$)/.test(cleanPath);
 }
 
-// Public URLs are authoritative. A stale cookie must never trap '/' in Arabic.
+// Public URLs are authoritative. A stale locale cookie must never override them.
 // Callbacks, payments and APIs must never acquire a language prefix.
 export function resolveRequestLocale(pathname: string, cookie?: string): Locale {
   if (isEnglishOnlyArticle(pathname)) return DEFAULT_LOCALE;

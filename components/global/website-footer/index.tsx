@@ -37,6 +37,9 @@ export default function WebsiteFooter() {
             <div className="flex flex-col gap-2">
               <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("popularGuides")}</p>
               <Link href="/blog/instagram-comment-to-dm-automation" prefetch={false} lang="en" dir="ltr" translate="no" className={`${linkClass} max-w-64`}>Instagram comment to DM automation</Link>
+              <Link href="/resources/instagram-comment-to-dm-templates" prefetch={false} lang="en" dir="ltr" translate="no" className={linkClass}>Comment-to-DM templates</Link>
+              <Link href="/resources/instagram-comment-automation-checklist" prefetch={false} lang="en" dir="ltr" translate="no" className={linkClass}>Launch checklist</Link>
+              <Link href="/tools/instagram-comment-to-dm-calculator" prefetch={false} lang="en" dir="ltr" translate="no" className={linkClass}>Funnel calculator</Link>
               <Link href={href("/blog/automate-instagram-dms-from-comments")} className={linkClass}>{t("automateDmsGuide")}</Link>
               <Link href={href("/blog/instagram-comment-reply-vs-dm")} className={linkClass}>{t("commentReplyVsDm")}</Link>
               <Link href={href("/blog/turn-instagram-comments-into-leads")} className={linkClass}>{t("commentsToLeads")}</Link>

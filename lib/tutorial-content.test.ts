@@ -25,18 +25,15 @@ describe("illustrated tutorials", () => {
     }
   });
 
-  it("translates new tutorial prose from its English source without retaining Arabic on return", () => {
+  it("keeps tutorial English authoritative after locale removal", () => {
     for (const section of INSTAGRAM_CONNECTION_SECTIONS) {
       for (const source of [section.heading, ...section.paragraphs]) {
-        expect(translateUi(source, "ar")).toMatch(/[\u0600-\u06ff]/);
-        expect(translateUi(source.replace(/^\d+\.\s*/, ""), "ar")).toMatch(/[\u0600-\u06ff]/);
+        expect(translateUi(source, "en")).toBe(source);
       }
     }
     for (const post of ILLUSTRATED_POSTS) {
       const strings = [post.title, post.description, post.intro, ...post.sections.flatMap(section => [section.heading, ...section.paragraphs, ...(section.bullets ?? [])])];
       for (const source of strings) {
-        expect(translateUi(source, "ar")).toMatch(/[\u0600-\u06ff]/);
-        expect(translateUi(source.replace(/^\d+\.\s*/, ""), "ar")).toMatch(/[\u0600-\u06ff]/);
         expect(translateUi(source, "en")).toBe(source);
       }
     }

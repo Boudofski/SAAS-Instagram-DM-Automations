@@ -4,6 +4,7 @@ import Sidebar from "@/components/global/sidebar";
 import { onUserInfo } from "@/actions/user";
 import { dashboardPath } from "@/lib/dashboard";
 import { ClerkCacheSyncer } from "@/providers/clerk-cache-syncer";
+import { TimeZoneProvider } from "@/providers/time-zone-provider";
 import {
   dehydrate,
   HydrationBoundary,
@@ -35,6 +36,7 @@ async function Layout({ children, params }: Props) {
   }
 
   const currentClerkId = userResult.status === 200 ? userResult.data?.clerkId : null;
+  const profile = userResult.status === 200 ? userResult.data : null;
 
   if (!currentClerkId) {
     redirect("/sign-in");
@@ -60,14 +62,16 @@ async function Layout({ children, params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(query)}>
+      <TimeZoneProvider initialTimeZone={profile?.timeZone} initialAutomatic={profile?.timeZoneAuto}>
       <ClerkCacheSyncer />
       <div className="ap3k-page overflow-x-hidden">
         <Sidebar slug={params.slug} />
-        <div className="ap3k-app-shell [--app-sidebar-offset:0px] lg:[--app-sidebar-offset:76px] lg:peer-data-[expanded=true]:[--app-sidebar-offset:232px] relative z-10 flex min-w-0 flex-col px-3 py-3 transition-[margin] duration-base ease-ui-out lg:ml-[76px] lg:px-6 lg:py-5 lg:peer-data-[expanded=true]:ml-[232px] rtl:lg:ml-0 rtl:lg:mr-[76px] rtl:lg:peer-data-[expanded=true]:ml-0 rtl:lg:peer-data-[expanded=true]:mr-[232px]">
+        <div className="ap3k-app-shell [--app-sidebar-offset:0px] lg:[--app-sidebar-offset:76px] lg:peer-data-[expanded=true]:[--app-sidebar-offset:232px] relative z-10 flex min-w-0 flex-col px-3 py-3 transition-[margin] duration-base ease-ui-out lg:ml-[76px] lg:px-6 lg:py-5 lg:peer-data-[expanded=true]:ml-[232px]">
           <NavBar slug={params.slug} />
           {children}
         </div>
       </div>
+      </TimeZoneProvider>
     </HydrationBoundary>
   );
 }

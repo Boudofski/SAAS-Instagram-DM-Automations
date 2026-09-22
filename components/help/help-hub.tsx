@@ -37,7 +37,7 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
           {expanded ? <span><UiText>{"Help"}</UiText></span> : null}
         </button>
         </PopoverTrigger>
-          <PopoverContent onCloseAutoFocus={(event) => { if (assistantOpen) event.preventDefault(); }} side={mobile ? "top" : locale === "ar" ? "left" : "right"} align="end" sideOffset={12} collisionPadding={12} dir={locale === "ar" ? "rtl" : "ltr"} className="z-[70] w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-white/10 dark:bg-[#121827] dark:text-white">
+          <PopoverContent onCloseAutoFocus={(event) => { if (assistantOpen) event.preventDefault(); }} side={mobile ? "top" : "right"} align="end" sideOffset={12} collisionPadding={12} dir="ltr" className="z-[70] w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-white/10 dark:bg-[#121827] dark:text-white">
             <p className="px-3 pb-2 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><UiText>{"Support"}</UiText></p>
             <button type="button" onClick={() => { setAssistantOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-start transition hover:bg-violet-50 dark:hover:bg-violet-500/10">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-violet-500"><Sparkles className="h-4 w-4" /></span>

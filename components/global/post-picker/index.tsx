@@ -2,6 +2,7 @@
 
 import { useUi } from "@/components/i18n/use-ui";
 import { useI18n } from "@/providers/i18n-provider";
+import { useTimeZone } from "@/providers/time-zone-provider";
 import { UiText } from "@/components/i18n/localized-copy";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
@@ -29,6 +30,7 @@ const POSTS_PER_PAGE = 14;
 export default function PostPicker({ posts, selected, onSelect }: Props) {
   const tr = useUi();
   const { locale } = useI18n();
+  const { timeZone } = useTimeZone();
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -81,7 +83,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
             const thumb = post.media_type === "VIDEO" ? (post.thumbnail_url ?? post.media_url) : post.media_url;
             const isSelected = selected === post.id;
             return (
-              <button key={post.id} type="button" onClick={() => onSelect(post)} aria-label={tr("Select post from {date}").replace("{date}", formatPostDate(post.timestamp, locale, tr))} className={cn("group relative aspect-[4/5] overflow-hidden rounded-xl border-2 bg-slate-100 transition", isSelected ? "border-rf-blue ring-2 ring-rf-blue/20" : "border-transparent hover:border-rf-blue/50 dark:bg-white/[0.06]")}>
+              <button key={post.id} type="button" onClick={() => onSelect(post)} aria-label={tr("Select post from {date}").replace("{date}", formatPostDate(post.timestamp, locale, tr, timeZone))} className={cn("group relative aspect-[4/5] overflow-hidden rounded-xl border-2 bg-slate-100 transition", isSelected ? "border-rf-blue ring-2 ring-rf-blue/20" : "border-transparent hover:border-rf-blue/50 dark:bg-white/[0.06]")}>
                 {thumb ? <Image src={thumb} alt={post.caption?.trim() || tr("Instagram post")} fill sizes="(max-width: 640px) 22vw, 140px" className="object-cover" unoptimized /> : <span className="absolute inset-0 grid place-items-center text-xs font-black text-slate-400"><UiText>{"POST"}</UiText></span>}
                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-2 pb-2 pt-6 text-start text-[9px] font-black text-white"><UiText>{post.media_type === "VIDEO" ? "REEL" : post.media_type === "CAROUSEL_ALBUM" ? "CAROUSEL" : "POST"}</UiText></span>
                 {isSelected && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rf-blue text-[10px] font-black text-white">✓</span>}
@@ -124,7 +126,7 @@ export default function PostPicker({ posts, selected, onSelect }: Props) {
                       <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-1 text-[9px] font-black text-white"><UiText>{post.media_type === "VIDEO" ? "REEL" : post.media_type === "CAROUSEL_ALBUM" ? "CAROUSEL" : "POST"}</UiText></span>
                       {isSelected ? <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">✓</span> : null}
                     </div>
-                    <div className="p-3"><p className="line-clamp-2 text-xs font-bold leading-5 text-slate-950 dark:text-white">{post.caption?.trim() || tr("Instagram post or Reel")}</p><p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{formatPostDate(post.timestamp, locale, tr)}</p></div>
+                    <div className="p-3"><p className="line-clamp-2 text-xs font-bold leading-5 text-slate-950 dark:text-white">{post.caption?.trim() || tr("Instagram post or Reel")}</p><p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{formatPostDate(post.timestamp, locale, tr, timeZone)}</p></div>
                   </button>
                 );
               })}
@@ -186,9 +188,9 @@ function getVisiblePageNumbers(currentPage: number, totalPages: number) {
   return pages;
 }
 
-function formatPostDate(value: string | undefined, locale: string, tr: (source: string) => string) {
+function formatPostDate(value: string | undefined, locale: string, tr: (source: string) => string, timeZone: string) {
   if (!value) return tr("Date unavailable");
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return tr("Date unavailable");
-  return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric", timeZone });
 }

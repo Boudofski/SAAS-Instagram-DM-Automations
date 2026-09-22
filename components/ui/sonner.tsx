@@ -13,7 +13,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={resolvedTheme as ToasterProps["theme"]}
-      dir={locale === "ar" ? "rtl" : "ltr"}
+      dir="ltr"
       className="toaster group"
       toastOptions={{
         classNames: {

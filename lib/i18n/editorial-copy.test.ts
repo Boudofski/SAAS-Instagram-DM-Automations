@@ -3,7 +3,7 @@ import EDITORIAL_COPY from "./editorial-copy.json";
 import { EXTENDED_COPY } from "./extended-copy";
 import { translateUi } from "./translate";
 
-const locales = ["ar", "fr", "es", "de", "pt"] as const;
+const locales = ["fr", "es", "de", "pt"] as const;
 
 describe("reviewed product language", () => {
   it("uses reviewed wording instead of older competing catalogs", () => {
@@ -34,11 +34,7 @@ describe("reviewed product language", () => {
     }
   });
 
-  it("removes corrupted Arabic and incorrect literal product terms", () => {
-    for (const translation of Object.values(EDITORIAL_COPY.ar)) {
-      expect(translation).not.toMatch(/Z[XQS]{2,}|منظمة العفو الدولية|سو سو|رصاص|حساب الخالق/);
-    }
-    expect(translateUi("Skip reply", "ar")).toBe("تخطي الرد");
+  it("uses accurate product terms in the remaining translations", () => {
     expect(translateUi("Write universally relevant copy", "fr")).not.toContain("copie");
     expect(translateUi("Write universally relevant copy", "de")).not.toContain("Kopie");
     expect(translateUi("Leads", "es")).toBe("Clientes potenciales");
@@ -57,16 +53,16 @@ describe("reviewed product language", () => {
       expect(translateUi("Yes, when the configured DM supports a valid HTTPS link button.", locale)).toContain("HTTPS");
       expect(translateUi("Yes, when the configured DM supports a valid HTTPS link button.", locale)).not.toContain("%s");
     }
-    expect(translateUi("Creators", "ar")).toBe("صانعو المحتوى");
-    expect(translateUi("Coaches", "ar")).toBe("المدرّبون");
-    expect(translateUi("Billing and plans", "ar")).toBe("الفوترة والخطط");
-    expect(translateUi("Cookie Policy — AP3K", "ar")).toContain("ملفات تعريف الارتباط");
+    expect(translateUi("Creators", "fr")).not.toBe("Creators");
+    expect(translateUi("Coaches", "fr")).not.toBe("Coaches");
+    expect(translateUi("Billing and plans", "es")).not.toBe("Billing and plans");
+    expect(translateUi("Cookie Policy — AP3K", "pt")).not.toBe("Cookie Policy — AP3K");
   });
 
   it("keeps English and unmatched customer text unchanged", () => {
-    const customerText = "My campaign — مرحبًا — Bonjour @my_account https://example.com";
+    const customerText = "My campaign — こんにちは — Bonjour @my_account https://example.com";
     for (const locale of locales) expect(translateUi(customerText, locale)).toBe(customerText);
     expect(translateUi("Skip reply", "en")).toBe("Skip reply");
-    expect(translateUi("  Leads\n", "ar")).toBe("  العملاء المحتملون\n");
+    expect(translateUi("  Leads\n", "fr")).toBe("  Prospects\n");
   });
 });

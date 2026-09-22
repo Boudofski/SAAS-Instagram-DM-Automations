@@ -15,15 +15,13 @@ export function generateMetadata({ params }: Props): Metadata {
   const page = getCommercialPage(params.slug);
   if (!page) return {};
   const pathname = `/${page.slug}`;
-  const languages = page.slug === "instagram-dm-automation"
-    ? { "en-US": pathname, ar: "/ar/instagram-dm-automation", "x-default": pathname }
-    : undefined;
-
   return localizedMetadata({
     title: `${page.title} | AP3K`,
     description: page.description,
-    keywords: [page.eyebrow, "Instagram automation", "AP3K"],
-    alternates: { canonical: pathname, languages },
+    keywords: page.slug === "instagram-comment-to-dm"
+      ? ["Instagram comment to DM automation", "comment to DM Instagram", "Instagram auto DM from comments", "Instagram comment automation", "AP3K"]
+      : [page.eyebrow, "Instagram automation", "AP3K"],
+    alternates: { canonical: pathname },
     openGraph: {
       title: page.title,
       description: page.description,

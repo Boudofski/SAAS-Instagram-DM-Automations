@@ -2,6 +2,7 @@ import { COMPANY } from "@/lib/company";
 import { AP3K_HELP_ARTICLES } from "@/lib/ap3k-help";
 import { BLOG_POSTS } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
+import { SEO_RESOURCES } from "@/lib/seo-resources";
 import type { MetadataRoute } from "next";
 import { SUPPORTED_LOCALES, isEnglishOnlyArticle, localizePublicPath, localeAlternates } from "@/lib/i18n/config";
 
@@ -11,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const updated = new Date("2026-09-12T00:00:00Z");
   // Significant public-copy and navigation updates shipped on this date.
   // Keep this fixed to the release date; never stamp every crawl with today.
-  const publicContentUpdated = new Date("2026-09-17T00:00:00Z");
+  const publicContentUpdated = new Date("2026-09-22T00:00:00Z");
   const companyUpdated = new Date(`${COMPANY.detailsUpdated}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: publicContentUpdated, changeFrequency: "weekly", priority: 1 },
@@ -49,7 +50,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...commercialPages, ...blogPages, ...helpPages].flatMap((page) => {
+  const resourcePages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/resources`, lastModified: new Date("2026-09-22T00:00:00Z"), changeFrequency: "monthly", priority: 0.8 },
+    ...SEO_RESOURCES.map(resource => ({ url: `${baseUrl}/resources/${resource.slug}`, lastModified: new Date("2026-09-22T00:00:00Z"), changeFrequency: "monthly" as const, priority: 0.8 })),
+    { url: `${baseUrl}/tools/instagram-comment-to-dm-calculator`, lastModified: new Date("2026-09-22T00:00:00Z"), changeFrequency: "monthly", priority: 0.8 },
+  ];
+
+  return [...staticPages, ...commercialPages, ...blogPages, ...helpPages, ...resourcePages].flatMap((page) => {
     const path = new URL(page.url).pathname;
     const languages = Object.fromEntries(Object.entries(localeAlternates(path)).map(([language, value]) => [language, `${baseUrl}${value}`]));
     return (isEnglishOnlyArticle(path) ? ["en"] as const : SUPPORTED_LOCALES).map((locale) => ({

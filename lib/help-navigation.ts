@@ -37,9 +37,8 @@ export function relatedHelpArticles(slug: string) {
   return (related[slug] ?? []).map(id => AP3K_HELP_ARTICLES.find(article => article.slug === id)!);
 }
 
-// Ignore Arabic marks and letter variants when looking for a short help phrase.
 export function normalizeHelpSearch(value: string) {
-  return value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
+  return value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
 }
 export function searchHelpArticles(query: string, translate: (source: string) => string) {
   const words = normalizeHelpSearch(query).split(" ").filter(Boolean);

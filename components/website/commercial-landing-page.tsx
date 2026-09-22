@@ -7,6 +7,7 @@ import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import AutomationDemo from "@/components/website/automation-demo";
 import type { CommercialPage } from "@/lib/commercial-pages";
+import { localizePublicPath } from "@/lib/i18n/config";
 import { ArrowRight, CheckCircle2, CircleAlert, PlayCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -107,10 +108,22 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
       acceptedAnswer: { "@type": "Answer", text: translateUi(faq.answer, locale) },
     })),
   };
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "AP3K",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    inLanguage: locale,
+    url: `https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`,
+    description: translateUi(page.description, locale),
+    featureList: page.workflow.map(item => translateUi(item.title, locale)),
+  };
 
   return (
     <LocalizedCopy><div className="min-h-screen bg-[#f8f7fc] text-slate-950 dark:bg-[#080911] dark:text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       <WebsiteNav />
       <main>
         <section className={`relative overflow-hidden px-4 py-16 text-white sm:px-8 lg:px-16 lg:py-24 ${theme.hero}`}>
@@ -212,6 +225,10 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
               <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300"><UiText>{"Related tutorials"}</UiText></p>
               <div className="mt-5 grid gap-3">
                 <Link href="/blog/instagram-comment-to-dm-automation" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Instagram comment to DM automation: practical guide and campaign library →</Link>
+                {page.slug === "instagram-comment-to-dm" ? <>
+                  <Link href="/resources/instagram-comment-to-dm-templates" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Free comment-to-DM message templates →</Link>
+                  <Link href="/tools/instagram-comment-to-dm-calculator" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Comment-to-DM funnel calculator →</Link>
+                </> : null}
                 {page.tutorials.map((tutorial) => <Link key={tutorial.slug} href={`/blog/${tutorial.slug}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 px-4 py-4 text-sm font-black transition hover:border-violet-300 hover:text-violet-600 dark:border-white/10 dark:hover:border-violet-400/30 dark:hover:text-violet-300">{tutorial.title}<ArrowRight className="h-4 w-4 shrink-0" /></Link>)}
               </div>
               <Link href="/pricing" className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-violet-600 px-5 py-3 text-sm font-black text-white transition hover:bg-violet-500"><UiText>{"Compare pricing"}</UiText></Link>

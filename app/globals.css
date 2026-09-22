@@ -376,40 +376,7 @@
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }
-html[dir="rtl"] body {
-  font-family: var(--font-arabic), Tahoma, Arial, sans-serif;
-  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-  text-rendering: optimizeLegibility;
-}
-
-html[dir="rtl"] main :is(h1, h2, h3, .ap3k-kicker) {
-  letter-spacing: 0;
-  line-height: 1.22;
-}
-
-html[dir="rtl"] .text-left {
-  text-align: right;
-}
-
-html[dir="rtl"] .text-right {
-  text-align: left;
-}
-
-/* Arabic needs connected glyphs, natural tracking and room for diacritics. */
-html[lang="ar"] .ap3k-home-title {
-  font-size: clamp(2.4rem, 4.8vw, 4.8rem);
-  font-weight: 900;
-  line-height: 1.18;
-  letter-spacing: 0;
-  text-wrap: balance;
-}
-html[lang="ar"] .ap3k-home-title > span { display: inline; }
-html[lang="ar"] .ap3k-home-title { max-width: 16ch; }
-@media (min-width: 1024px) {
-  html[lang="ar"] .ap3k-home-title { max-width: 20ch; line-height: 1.16; }
-}
-
-/* A compact phone + benefits composition, mirrored naturally by CSS direction. */
+/* A compact phone + benefits composition. */
 .ap3k-feature-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
@@ -423,9 +390,6 @@ html[lang="ar"] .ap3k-home-title { max-width: 16ch; }
 .ap3k-feature-cta { grid-area: cta; align-self: start; }
 .ap3k-feature-cta a { width: 100%; }
 .ap3k-feature-phone { grid-area: phone; width: min(100%, 185px); }
-html[lang="ar"] .ap3k-feature-intro h2 { font-weight: 800; line-height: 1.3; }
-html[lang="ar"] .ap3k-feature-section [role="tab"] { letter-spacing: 0; font-size: 12px; }
-html[lang="ar"] .ap3k-feature-benefits li { font-size: 13px; line-height: 1.65; }
 
 @media (min-width: 640px) {
   .ap3k-feature-panel {
@@ -438,7 +402,6 @@ html[lang="ar"] .ap3k-feature-benefits li { font-size: 13px; line-height: 1.65; 
   .ap3k-feature-intro { align-self: end; }
   .ap3k-feature-cta a { width: auto; }
   .ap3k-feature-phone { width: min(100%, 245px); }
-  html[lang="ar"] .ap3k-feature-section [role="tab"] { font-size: 15px; }
 }
 @media (min-width: 1024px) {
   .ap3k-feature-panel { column-gap: 72px; min-height: 470px; }
@@ -465,4 +428,3 @@ html[lang="ar"] .ap3k-feature-benefits li { font-size: 13px; line-height: 1.65; 
   .ap3k-app-shell button:not([role="switch"]):not([role="checkbox"]):not([role="radio"]), .ap3k-table-action, .ap3k-table-action-danger { min-height: 44px; }
   .ap3k-input, .ap3k-textarea, .ap3k-select { font-size: 16px; }
 }
-html[dir="rtl"] :is(.ap3k-kicker, .ap3k-badge) { letter-spacing: 0; }

@@ -8,6 +8,7 @@ import {
 import { onUserInfo } from "@/actions/user";
 import { Button } from "@/components/ui/button";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
+import LocalTime from "@/components/global/local-time";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { useAuth } from "@clerk/nextjs";
@@ -309,10 +310,8 @@ function IntegrationCard({
               label="Subscription attempted"
               value={
                 health?.data?.subscription?.lastAttemptedAt
-                  ? new Date(
-                      health.data.subscription.lastAttemptedAt,
-                    ).toLocaleString()
-                  : "Never"
+                  ? <LocalTime value={health.data.subscription.lastAttemptedAt} />
+                  : <UiText>{"Never"}</UiText>
               }
             />
             <HealthItem
@@ -346,9 +345,7 @@ function IntegrationCard({
           )}
           {health?.data?.lastCommentWebhook && (
             <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"><UiText>{" Comment delivery active. Last comment:"}</UiText>{" "}
-              {new Date(
-                health.data.lastCommentWebhook.createdAt,
-              ).toLocaleString()}<UiText>{" . Outbound DM capability may still depend on Meta messaging approval. "}</UiText></p>
+              <LocalTime value={health.data.lastCommentWebhook.createdAt} /><UiText>{" . Outbound DM capability may still depend on Meta messaging approval. "}</UiText></p>
           )}
         </div>
       )}
@@ -373,7 +370,7 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
   );
 }
 
-function HealthItem({ label, value }: { label: string; value: string }) {
+function HealthItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
@@ -393,7 +390,6 @@ function formatHealth(
     createdAt: Date | string;
   } | null,
 ) {
-  if (!event) return "None yet";
-  const date = new Date(event.createdAt);
-  return `${event.eventType} · ${event.status} · ${date.toLocaleString()}`;
+  if (!event) return <UiText>{"None yet"}</UiText>;
+  return <>{event.eventType} · {event.status} · <LocalTime value={event.createdAt} /></>;
 }

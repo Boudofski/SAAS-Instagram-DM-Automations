@@ -14,10 +14,10 @@ import { MESSAGES } from "./messages";
 import { PRODUCT_PHRASE_TRANSLATIONS } from "./product-phrase-translations";
 
 describe("AP3K locale routing", () => {
-  it("supports the six intended locales and Arabic RTL", () => {
-    expect(SUPPORTED_LOCALES).toEqual(["en", "ar", "fr", "es", "de", "pt"]);
+  it("supports the five intended locales in LTR", () => {
+    expect(SUPPORTED_LOCALES).toEqual(["en", "fr", "es", "de", "pt"]);
     expect(DEFAULT_LOCALE).toBe("en");
-    expect(LOCALE_DETAILS.ar.direction).toBe("rtl");
+    expect(Object.values(LOCALE_DETAILS).every(locale => locale.direction === "ltr")).toBe(true);
   });
 
   it("normalizes regional browser language values", () => {
@@ -74,7 +74,7 @@ describe("browser language negotiation", () => {
     expect(browserLocale("fr-CA,fr;q=0.9,en;q=0.8")).toBe("fr");
     expect(browserLocale("it-IT,pt-BR;q=0.8,en;q=0.5")).toBe("pt");
     expect(browserLocale("fr;q=0,en;q=0.9")).toBe("en");
-    expect(browserLocale("de;q=0.5,ar;q=0.9")).toBe("ar");
+    expect(browserLocale("de;q=0.5,ar;q=0.9")).toBe("de");
     expect(browserLocale("ja-JP")).toBe("en");
   });
 });

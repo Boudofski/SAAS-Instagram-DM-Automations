@@ -3,6 +3,7 @@ import { LocalizedInput, LocalizedButton, LocalizedTextarea } from "@/components
 
 
 import { useI18n } from "@/providers/i18n-provider";
+import { useTimeZone } from "@/providers/time-zone-provider";
 import { translateUi } from "@/lib/i18n/translate";
 import type { Locale } from "@/lib/i18n/config";
 import { UiText } from "@/components/i18n/localized-copy";
@@ -221,14 +222,15 @@ function ConversationRow({ conversation, selected, onClick }: { conversation: an
 
 function MessageTimeline({ messages, avatarUrl, name }: { messages: any[]; avatarUrl?: string | null; name: string }) {
   const { locale } = useI18n();
+  const { timeZone } = useTimeZone();
   if (!messages.length) return <p className="m-auto text-sm text-slate-400"><UiText>{"No messages in this conversation yet."}</UiText></p>;
   let previousDay = "";
   return <div className="space-y-3">{messages.map((message) => {
-    const day = formatDay(message.createdAt, locale);
+    const day = formatDay(message.createdAt, locale, timeZone);
     const showDay = day !== previousDay;
     previousDay = day;
     const outbound = message.direction === "OUTBOUND";
-    return <div key={message.id}>{showDay ? <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{day}</span><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /></div> : null}<div className={outbound ? "flex justify-end" : "flex items-end gap-2"}>{!outbound ? <Avatar src={avatarUrl} name={name} size="sm" /> : null}<div className={["max-w-[82%] overflow-hidden text-sm leading-6 shadow-sm", outbound ? "rounded-[1.25rem] rounded-ee-sm bg-violet-700 text-white" : "rounded-[1.25rem] rounded-es-sm bg-slate-100 text-slate-900 dark:bg-[#222836] dark:text-slate-100"].join(" ")}><MessageMedia message={message} /><div className="px-4 py-2.5"><p className="whitespace-pre-wrap break-words" dir="auto">{message.content}</p><p className={outbound ? "mt-1 text-end text-[9px] text-white/80" : "mt-1 text-[9px] text-slate-400"}>{formatClock(message.createdAt, locale)}<UiText>{outbound ? " · Sent" : ""}</UiText></p></div></div></div></div>;
+    return <div key={message.id}>{showDay ? <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{day}</span><span className="h-px flex-1 bg-slate-200 dark:bg-white/10" /></div> : null}<div className={outbound ? "flex justify-end" : "flex items-end gap-2"}>{!outbound ? <Avatar src={avatarUrl} name={name} size="sm" /> : null}<div className={["max-w-[82%] overflow-hidden text-sm leading-6 shadow-sm", outbound ? "rounded-[1.25rem] rounded-ee-sm bg-violet-700 text-white" : "rounded-[1.25rem] rounded-es-sm bg-slate-100 text-slate-900 dark:bg-[#222836] dark:text-slate-100"].join(" ")}><MessageMedia message={message} /><div className="px-4 py-2.5"><p className="whitespace-pre-wrap break-words" dir="auto">{message.content}</p><p className={outbound ? "mt-1 text-end text-[9px] text-white/80" : "mt-1 text-[9px] text-slate-400"}>{formatClock(message.createdAt, locale, timeZone)}<UiText>{outbound ? " · Sent" : ""}</UiText></p></div></div></div></div>;
   })}</div>;
 }
 
@@ -269,5 +271,18 @@ function relativeTime(value: string | Date, locale: Locale) {
   const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "short" });
   return minutes < 1 ? format.format(0, "second") : minutes < 60 ? format.format(-minutes, "minute") : minutes < 1440 ? format.format(-Math.floor(minutes / 60), "hour") : format.format(-Math.floor(minutes / 1440), "day");
 }
-function formatDay(value: string | Date, locale: Locale) { const date = new Date(value); if (Number.isNaN(date.getTime())) return ""; const today = new Date(); if (date.toDateString() === today.toDateString()) return translateUi("Today", locale); return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: date.getFullYear() === today.getFullYear() ? undefined : "numeric" }); }
-function formatClock(value: string | Date, locale: Locale) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }); }
+function formatDay(value: string | Date, locale: Locale, timeZone: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const today = new Date();
+  const dateKey = date.toLocaleDateString("en-CA", { timeZone });
+  const todayKey = today.toLocaleDateString("en-CA", { timeZone });
+  if (dateKey === todayKey) return translateUi("Today", locale);
+  const year = date.toLocaleDateString("en", { year: "numeric", timeZone });
+  const currentYear = today.toLocaleDateString("en", { year: "numeric", timeZone });
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: year === currentYear ? undefined : "numeric", timeZone });
+}
+function formatClock(value: string | Date, locale: Locale, timeZone: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", timeZone });
+}
