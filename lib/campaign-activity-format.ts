@@ -26,6 +26,9 @@ export const META_CAPABILITY_PENDING_LABEL = "Comment handled";
 export const META_CAPABILITY_PENDING_HELPER =
   "AP3K received the comment, matched the keyword, and recorded the private reply workflow.";
 
+export const DM_ACCESS_DISABLED_HELPER =
+  "Instagram blocked the private reply because message access for connected tools is off. Enable it in Instagram Message controls, then test with a new comment.";
+
 export type SafeMetaCapabilityDetails = {
   code: 3;
   type: "OAuthException";
@@ -125,8 +128,19 @@ export function formatActivityDisplay(item: ActivityInput): ActivityDisplay {
   const text = activityText(item);
   const type = item.type;
   const status = item.status ?? undefined;
+  const dmAccessDisabled = isDmAccessDisabled(text);
   const capabilityEvent = isMetaCapabilityMissing(text);
   const usageLimit = text.includes("static_reply_limit_reached");
+
+  if (dmAccessDisabled) {
+    return {
+      label: "Instagram message access is off",
+      badge: "ACTION NEEDED",
+      tone: "red",
+      detail: DM_ACCESS_DISABLED_HELPER,
+      technical: type === "REAL_COMMENT_EVENT" || item.source === "webhook",
+    };
+  }
 
   if (capabilityEvent) {
     return {
@@ -264,6 +278,16 @@ export function formatRecentActivity(item: ActivityInput): RecentActivityItem {
     };
   }
 
+  if ((item.type === "DM_FAILED" || item.type === "DM_FAILED_FAILED") && isDmAccessDisabled(activityText(item))) {
+    return {
+      ...base,
+      title: "Instagram message access is off",
+      subtitle: `${DM_ACCESS_DISABLED_HELPER}${commentSuffix}`,
+      tone: "red",
+      kind: "failed",
+    };
+  }
+
   if ((item.type === "DM_FAILED" || item.type === "DM_FAILED_FAILED") && isMetaCapabilityMissing(activityText(item))) {
     return {
       ...base,
@@ -397,7 +421,10 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   const commenterUsername = firstString(metas.map((meta) => meta.commenterUsername));
   const replyTextPreview = firstString(metas.map((meta) => meta.replyTextPreview ?? meta.normalizedPublicReplyText));
   const capabilityWorkflow = isMetaCapabilityMissing(text);
-  const error = capabilityWorkflow
+  const dmAccessDisabled = isDmAccessDisabled(text);
+  const error = dmAccessDisabled
+    ? DM_ACCESS_DISABLED_HELPER
+    : capabilityWorkflow
     ? META_CAPABILITY_PENDING_HELPER
     : firstString([
         ...items.map((item) => item.errorMessage),
@@ -472,6 +499,9 @@ function buildGroupedActivity(id: string, items: ActivityInput[], privateDmEnabl
   if (steps.usageLimitReached) {
     return completeGroup(base, "Monthly reply limit reached", "No public reply or private reply was sent.", "amber", "LIMIT");
   }
+  if (dmAccessDisabled) {
+    return completeGroup(base, "Instagram message access is off", DM_ACCESS_DISABLED_HELPER, "red", "ACTION NEEDED");
+  }
   if (privateDmEnabled === false && capabilityWorkflow) {
     return completeGroup(base, "Older private reply workflow record", "Private reply is currently off; this is an older event.", "slate", "OLD");
   }
@@ -509,10 +539,22 @@ export function formatLogError(message: string) {
   if (message.includes("static_reply_limit_reached")) {
     return "Skipped — monthly public reply limit reached.";
   }
+  if (isDmAccessDisabled(message)) {
+    return DM_ACCESS_DISABLED_HELPER;
+  }
   if (isMetaCapabilityMissing(message)) {
     return META_CAPABILITY_PENDING_HELPER;
   }
   return message;
+}
+
+export function isDmAccessDisabled(message: string) {
+  const text = message.toLowerCase();
+  return (
+    text.includes("dm_access_disabled") ||
+    text.includes("disabled access to instagram direct") ||
+    text.includes("2534041")
+  );
 }
 
 export function isMetaCapabilityMissing(message: string) {

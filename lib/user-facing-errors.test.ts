@@ -23,6 +23,18 @@ describe("user-facing Meta errors", () => {
     });
   });
 
+  it("explains how to restore Instagram connected-tool message access", () => {
+    expect(
+      formatUserFacingMetaError(
+        "status=403 code=200 subcode=2534041 message=The account owner has disabled access to Instagram Direct Messaging."
+      )
+    ).toEqual({
+      title: "Instagram message access is off",
+      detail: "In Instagram, open Messages and story replies → Message controls, then enable message access for connected tools. Use a new comment to test after enabling it.",
+      severity: "error",
+    });
+  });
+
   it("summarizes expired token errors", () => {
     expect(formatUserFacingMetaError("OAuth token expired")).toEqual({
       title: "Instagram token expired",

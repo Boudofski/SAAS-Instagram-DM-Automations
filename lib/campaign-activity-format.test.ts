@@ -8,6 +8,7 @@ import {
   getReviewerTestCopy,
   groupCampaignActivity,
   isWeakPublicReply,
+  DM_ACCESS_DISABLED_HELPER,
   META_CAPABILITY_PENDING_HELPER,
   META_CAPABILITY_PENDING_LABEL,
 } from "@/lib/campaign-activity-format";
@@ -74,6 +75,33 @@ describe("campaign activity display formatting", () => {
       subtitle: META_CAPABILITY_PENDING_HELPER,
       tone: "green",
       kind: "activity",
+    });
+  });
+
+  it("shows disabled Instagram connected-tool access as an actionable failure", () => {
+    const error = "status=403 code=200 subcode=2534041 message=The account owner has disabled access to Instagram Direct Messaging.";
+
+    expect(formatActivityDisplay({ type: "DM_FAILED", status: "FAILED", errorMessage: error })).toMatchObject({
+      label: "Instagram message access is off",
+      badge: "ACTION NEEDED",
+      tone: "red",
+      detail: DM_ACCESS_DISABLED_HELPER,
+    });
+    expect(formatRecentActivity({ type: "DM_FAILED", errorMessage: error })).toMatchObject({
+      title: "Instagram message access is off",
+      tone: "red",
+      kind: "failed",
+    });
+    expect(groupCampaignActivity([
+      event("COMMENT_RECEIVED"),
+      event("KEYWORD_MATCHED", { keyword: "ai" }),
+      event("PUBLIC_REPLY_SENT"),
+      event("DM_FAILED", { errorMessage: error }),
+    ])[0]).toMatchObject({
+      title: "Instagram message access is off",
+      badge: "ACTION NEEDED",
+      tone: "red",
+      details: expect.objectContaining({ error: DM_ACCESS_DISABLED_HELPER }),
     });
   });
 
