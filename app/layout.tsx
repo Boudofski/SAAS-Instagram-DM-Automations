@@ -7,18 +7,11 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { LOCALE_DETAILS, localeAlternates } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Tajawal } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "optional" });
-const arabic = Tajawal({
-  subsets: ["arabic"],
-  weight: ["400", "500", "700", "800", "900"],
-  variable: "--font-arabic",
-  display: "swap",
-  preload: false,
-});
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 export function generateMetadata(): Metadata {
@@ -61,7 +54,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
   return (
     <html lang={localeDetails.htmlLang} dir={localeDetails.direction} suppressHydrationWarning>
-      <body className={`${jakarta.className} ${arabic.variable}`}>
+      <body className={jakarta.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <I18nProvider locale={locale}>
             <ReduxProvider>

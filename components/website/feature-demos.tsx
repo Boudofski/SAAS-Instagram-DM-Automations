@@ -29,7 +29,7 @@ export default function FeatureDemos({ demos }: { demos: readonly Demo[] }) {
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const reduceMotion = useReducedMotion();
   const { locale } = useI18n();
-  const rtl = locale === "ar";
+  const rtl = false;
   const tr = (text: string) => translateUi(text, locale);
   const demo = demos[selected];
 

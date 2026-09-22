@@ -50,8 +50,8 @@ describe("matchKeywordWithMode — CONTAINS", () => {
     expect(matchKeywordWithMode("send ai!", ai, "CONTAINS")).toBe("ai");
   });
 
-  it("handles Arabic text without changing matching semantics", () => {
-    expect(matchKeywordWithMode("أرسل الدليل الآن", [{ word: "الدليل" }], "CONTAINS")).toBe("الدليل");
+  it("handles non-Latin text without changing matching semantics", () => {
+    expect(matchKeywordWithMode("ガイドを送る", [{ word: "ガイド" }], "CONTAINS")).toBe("ガイド");
   });
 });
 

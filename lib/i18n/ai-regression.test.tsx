@@ -18,7 +18,7 @@ import { LocalizedInput, LocalizedTextarea } from "@/components/i18n/localized-c
 const profile = { aiRepliesEnabled: false, aiCommentsEnabled: false, role: "", brandVoice: "", guardrails: "", defaultTone: "FRIENDLY" as const, protectionRules: { INSULTS_HATE: "SKIP", CRITIQUE_NEGATIVE: "SKIP", UNANSWERABLE: "SKIP", BEGGING_SOLICITATION: "SKIP" } as const, knowledge: [] };
 
 describe("AI localization without changing business knowledge", () => {
-  it("renders every AI panel in all six languages", () => {
+  it("renders every AI panel in all supported languages", () => {
     const labels = { Overview: "Your AI readiness", Knowledge: "No knowledge yet", Behavior: "Default tone", Playground: "Your conversation is saved. Tests count toward the monthly AI limit." };
     for (const [tab, label] of Object.entries(labels)) {
       state.tab = tab;
@@ -31,8 +31,8 @@ describe("AI localization without changing business knowledge", () => {
     }
   });
   it("preserves saved customer text and restores English placeholders", () => {
-    const value = "Knowledge مرحبًا — Save changes";
-    for (const locale of ["ar", "fr", "en", "pt", "en"] as Locale[]) {
+    const value = "Knowledge こんにちは — Save changes";
+    for (const locale of ["de", "fr", "en", "pt", "en"] as Locale[]) {
       state.locale = locale;
       const html = renderToStaticMarkup(<><LocalizedInput value={value} readOnly placeholder="Pricing, delivery, course details…" /><LocalizedTextarea value={value} readOnly placeholder="Ask a customer question…" /></>);
       expect(html).toContain(value);

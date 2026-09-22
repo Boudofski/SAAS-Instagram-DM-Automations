@@ -16,6 +16,8 @@ model User {
   email               String               @unique
   firstname           String?
   lastname            String?
+  timeZone            String?              @db.VarChar(64)
+  timeZoneAuto        Boolean              @default(true)
   status              String               @default("ACTIVE")
   suspendedAt         DateTime?
   suspendedReason     String?

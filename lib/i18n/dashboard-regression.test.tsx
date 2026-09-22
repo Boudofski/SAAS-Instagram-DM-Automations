@@ -18,7 +18,7 @@ vi.mock("@/lib/messaging-review-mode", () => ({ isMessagingReviewMode: () => tru
 
 const automation = {
   id: "test-only", name: "Save", active: true, currentAccountLabel: "@boudofi",
-  source: "COMMENT", triggerMode: "KEYWORD", keywords: [{ word: "Hello مرحبًا" }],
+  source: "COMMENT", triggerMode: "KEYWORD", keywords: [{ word: "Hello こんにちは" }],
   posts: [{ postid: "ANY" }], listener: { commentReply: "Customer-written reply", prompt: "Private user DM" },
   metrics: { runs: 14764, leads: 12623 },
 };
@@ -26,7 +26,7 @@ const automation = {
 describe("dashboard screenshot regressions", () => {
   it("renders real vector flags without relying on operating-system emoji fonts", () => {
     const flags = SUPPORTED_LOCALES.map(locale => renderToStaticMarkup(<LanguageFlag locale={locale} />));
-    expect(new Set(flags).size).toBe(6);
+    expect(new Set(flags).size).toBe(5);
     for (const flag of flags) {
       expect(flag).toContain('<svg');
       expect(flag).toContain('<path');
@@ -35,11 +35,11 @@ describe("dashboard screenshot regressions", () => {
   });
   it("localizes actual automation rows and preserves user names and keywords in every language", () => {
     let english = "";
-    for (const locale of [...SUPPORTED_LOCALES, "ar", "en"] as Locale[]) {
+    for (const locale of [...SUPPORTED_LOCALES, "en"] as Locale[]) {
       activeLocale = locale;
       const markup = renderToStaticMarkup(<AutomationTable slug="fixture" automations={[automation]} showControls={false} />);
       expect(markup).toContain('<bdi dir="auto">Save</bdi>');
-      expect(markup).toContain('<bdi dir="auto">Hello مرحبًا</bdi>');
+      expect(markup).toContain('<bdi dir="auto">Hello こんにちは</bdi>');
       expect(markup).toContain('<bdi dir="ltr">@boudofi</bdi>');
       expect(markup).not.toContain("Private user DM");
       expect(markup).toContain(translateUi("Comment reply + DM active", locale));
@@ -52,12 +52,12 @@ describe("dashboard screenshot regressions", () => {
       }
     }
   });
-  it("keeps usage counts and signed percentages isolated in Arabic", () => {
-    activeLocale = "ar";
+  it("keeps usage counts and signed percentages isolated", () => {
+    activeLocale = "fr";
     const usage = renderToStaticMarkup(<MetricValue value="4,123 / 20,000" />);
     expect(usage).toContain('dir="ltr"');
-    expect(usage).toContain('4,123 / 20,000');
-    expect(formatMetricValue("+4808%", "ar").numeric).toBe(true);
+    expect(usage).toContain('4 123 / 20 000');
+    expect(formatMetricValue("+4808%", "fr").numeric).toBe(true);
     expect(formatMetricValue("20,000 / ∞", "fr").text).toBe("20 000 / ∞");
     expect(formatMetricValue("312,642", "de").text).toBe("312.642");
   });

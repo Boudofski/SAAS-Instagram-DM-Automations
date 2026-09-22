@@ -86,7 +86,7 @@ export default function AutomationDetailPhonePreview(props: Props) {
         <span
           aria-hidden="true"
           className="absolute bottom-1 top-1 rounded-full bg-white shadow-sm transition-transform duration-300 ease-out"
-          style={{ [locale === "ar" ? "right" : "left"]: 4, width: `calc((100% - 8px) / ${modes.length})`, transform: `translateX(${activeIndex * (locale === "ar" ? -100 : 100)}%)` }}
+          style={{ left: 4, width: `calc((100% - 8px) / ${modes.length})`, transform: `translateX(${activeIndex * 100}%)` }}
         />
         {modes.map((item) => (
           <button

@@ -39,7 +39,7 @@ export default function WebsiteNav({ current }: Props) {
           <Link href={href("/sign-up")} className="ap3k-gradient-button px-5 py-2 text-sm uppercase">{t("getStarted")}</Link>
         </div>
         <div className="ms-auto me-2 xl:hidden"><LanguageSwitcher compact /></div>
-        <Sheet trigger={<Menu aria-hidden="true" className="h-5 w-5" />} triggerLabel={t("openNavigation")} className="xl:hidden" side={locale === "ar" ? "left" : "right"} closeOnNavigation contentClassName="w-[min(22rem,calc(100vw-1rem))] overflow-y-auto">
+        <Sheet trigger={<Menu aria-hidden="true" className="h-5 w-5" />} triggerLabel={t("openNavigation")} className="xl:hidden" side="right" closeOnNavigation contentClassName="w-[min(22rem,calc(100vw-1rem))] overflow-y-auto">
           <div className="pt-16 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
               <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={`${href("/")}#features`}>{t("features")}</Link>

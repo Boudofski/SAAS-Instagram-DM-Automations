@@ -14,19 +14,6 @@ export const AUTOMATION_DEFAULT_COPY: Partial<Record<Locale, Record<string, stri
     "Hey there! I’m so happy you’re here, thanks so much for your interest 😊 Click below and I’ll send you the link in just a sec ✨": "Bonjour ! Merci beaucoup pour votre intérêt, je suis ravi de vous accueillir 😊\n\nCliquez ci-dessous et je vous envoie le lien tout de suite ✨",
     "Nearly there! The link is especially for my followers ✨ Right after you follow me, I’ll send you the link so you can dive straight in! 🎉": "Vous y êtes presque ! Ce lien est réservé à mes abonnés ✨\n\nAbonnez-vous à mon compte, puis confirmez ci-dessous pour recevoir le lien ! 🎉"
   },
-  "ar": {
-    "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "فعّل الرسالة الافتتاحية لاستخدام طلب المتابعة. الضغط على زرها يبدأ خطوة التحقق من المتابعة.",
-    "Thanks! Please see DMs.": "شكرًا! تفقّد رسائلك الخاصة.",
-    "Sent you a message! Check it out!": "أرسلت لك رسالة! تفقّدها الآن!",
-    "Nice! Check your DMs!": "رائع! تفقّد رسائلك الخاصة!",
-    "Here's the link I promised! 🎁": "إليك الرابط الذي وعدتك به! 🎁",
-    "Get the Link": "احصل على الرابط",
-    "Send me the link": "أرسل لي الرابط",
-    "Following": "تمت المتابعة",
-    "Thanks for reaching out! Here's what you asked for ✨": "شكرًا لتواصلك! إليك ما طلبته ✨",
-    "Hey there! I’m so happy you’re here, thanks so much for your interest 😊 Click below and I’ll send you the link in just a sec ✨": "أهلًا بك! يسعدني وجودك هنا، وشكرًا جزيلًا على اهتمامك 😊\n\nاضغط أدناه وسأرسل لك الرابط فورًا ✨",
-    "Nearly there! The link is especially for my followers ✨ Right after you follow me, I’ll send you the link so you can dive straight in! 🎉": "بقيت خطوة واحدة! هذا الرابط مخصّص لمتابعيّ ✨\n\nتابع حسابي، ثم أكّد المتابعة أدناه للحصول على الرابط! 🎉"
-  },
   "es": {
     "Enable Opening DM to use a follow request. Its button tap starts the follow-check step.": "Activa el mensaje inicial para solicitar que te sigan. Al pulsar su botón, comienza la comprobación.",
     "Thanks! Please see DMs.": "¡Gracias! Revisa tus mensajes privados.",

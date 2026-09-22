@@ -25,7 +25,7 @@ import { COMPANY_COPY } from "./company-copy";
 import { generateMetadata as commercialMetadata } from "@/app/(website)/[slug]/page";
 
 function prose(value: unknown, field = ""): string[] {
-  if (["slug", "theme", "media", "video", "keyword", "visual", "publishedAt", "updatedAt"].includes(field)) return [];
+  if (["slug", "theme", "media", "video", "keyword", "visual", "screenshot", "cover", "contentLocale", "publishedAt", "updatedAt"].includes(field)) return [];
   if (typeof value === "string") return ["Instagram", "AP3K", "Business", "Pro"].includes(value) ? [] : [value];
   if (Array.isArray(value)) return value.flatMap(item => prose(item, field));
   if (value && typeof value === "object") return Object.entries(value).flatMap(([key, item]) => prose(item, key));
@@ -65,7 +65,7 @@ describe("complete public localization and search metadata", () => {
   });
   it("covers every commercial page, help article and blog content field", () => {
     for (const locale of SUPPORTED_LOCALES.filter(l => l !== "en")) {
-      for (const source of prose([COMMERCIAL_PAGES, BLOG_POSTS.filter(post => !post.contentLocale), AP3K_HELP_ARTICLES])) {
+      for (const source of prose([COMMERCIAL_PAGES, BLOG_POSTS.filter(post => !post.contentLocale), AP3K_HELP_ARTICLES.filter(article => !article.contentLocale)])) {
         expect(hasUiTranslation(source, locale), `${locale}: ${source}`).toBe(true);
       }
     }
@@ -86,8 +86,8 @@ describe("complete public localization and search metadata", () => {
       }
     }
   });
-  it("renders the reported Arabic and French gaps translated, then restores English", () => {
-    for (const locale of ["ar", "fr", "en", "ar", "en"] as Locale[]) {
+  it("renders translated gaps and restores English", () => {
+    for (const locale of ["de", "fr", "en", "pt", "en"] as Locale[]) {
       state.locale = locale;
       const help = renderToStaticMarkup(<HelpCenter />);
       const privacy = renderToStaticMarkup(<PrivacyPage />);
@@ -104,7 +104,7 @@ describe("complete public localization and search metadata", () => {
       for (const page of COMMERCIAL_PAGES) {
         const metadata = commercialMetadata({ params: { slug: page.slug } });
         expect(metadata.alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`);
-        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(7);
+        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(6);
         expect(metadata.title).toBe(`${translateUi(page.title, locale)} | AP3K`);
         if (locale !== "en") expect(metadata.description).not.toBe(page.description);
       }
@@ -116,13 +116,13 @@ describe("complete public localization and search metadata", () => {
     expect(new Set(entries.map(p => p.url)).size).toBe(entries.length);
     for (const page of entries) {
       const alternatives = page.alternates?.languages;
-      expect(Object.keys(alternatives ?? {})).toHaveLength(isEnglishOnlyArticle(new URL(page.url).pathname) ? 2 : 7);
+      expect(Object.keys(alternatives ?? {})).toHaveLength(isEnglishOnlyArticle(new URL(page.url).pathname) ? 2 : 6);
       for (const url of Object.values(alternatives ?? {})) expect(entries.some(p => p.url === url)).toBe(true);
       expect(page.url).not.toMatch(/dashboard|sign-in|sign-up|data-deletion-status/);
     }
   });
   it("has complete editorial rows without duplicate keys", () => {
     expect(new Set(REMAINING_ROWS.map(r => r[0])).size).toBe(REMAINING_ROWS.length);
-    for (const row of REMAINING_ROWS) expect(row.length === 6 && row.every(v => v.trim())).toBe(true);
+    for (const row of REMAINING_ROWS) expect(row.length === 5 && row.every(v => v.trim())).toBe(true);
   });
 });

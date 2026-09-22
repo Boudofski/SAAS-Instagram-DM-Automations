@@ -91,9 +91,9 @@ export const COMMERCIAL_PAGES: CommercialPage[] = [
   },
   {
     slug: "instagram-comment-to-dm",
-    eyebrow: "Comment-to-DM automation",
-    title: "Turn an Instagram Comment Into a Delivered DM",
-    description: "Connect a clear post call-to-action to a private follow-up: detect the comment, acknowledge it if useful, and send the promised message or link.",
+    eyebrow: "Instagram comment to DM automation",
+    title: "Instagram Comment to DM Automation That Delivers the Link",
+    description: "Automatically turn an eligible Instagram comment into a public acknowledgement, a private DM, or both—then deliver the exact link or resource promised in the post.",
     keyword: "LINK",
     media: "/media/ap3k-product-04.jpg",
     video: "/media/smm-templates_03.mp4",

@@ -10,6 +10,8 @@ import {
   localeFromPath,
   stripLocaleFromPath,
   resolveRequestLocale,
+  retiredLocaleFromPath,
+  stripRetiredLocaleFromPath,
 } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 
@@ -23,6 +25,19 @@ const isProtectedRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, req) => {
   const requestedPath = req.nextUrl.pathname;
+  const retiredLocale = retiredLocaleFromPath(requestedPath);
+  if (retiredLocale) {
+    const destination = req.nextUrl.clone();
+    destination.pathname = stripRetiredLocaleFromPath(requestedPath);
+    const response = NextResponse.redirect(destination, 308);
+    response.cookies.set(LOCALE_COOKIE, "en", {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    return response;
+  }
   const pathLocale = localeFromPath(requestedPath);
   const pathname = stripLocaleFromPath(requestedPath);
 

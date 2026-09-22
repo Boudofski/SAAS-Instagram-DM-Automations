@@ -5,10 +5,6 @@ export const SITE_METADATA: Record<Locale, { title: string; description: string 
     title: "AP3K — Instagram Comment & DM Automation",
     description: "Automatically reply to Instagram comments, send the promised link by DM, and track every lead—without complicated flows or code.",
   },
-  ar: {
-    title: "AP3K — أتمتة تعليقات ورسائل إنستغرام",
-    description: "رد تلقائيًا على تعليقات إنستغرام، وأرسل الرابط المطلوب عبر الرسائل الخاصة، وتابع كل عميل محتمل دون تدفقات معقدة أو برمجة.",
-  },
   fr: {
     title: "AP3K — Automatisation des commentaires et DM Instagram",
     description: "Répondez automatiquement aux commentaires Instagram, envoyez le lien promis par DM et suivez chaque prospect, sans flux complexes ni code.",

@@ -11,8 +11,8 @@ import type { WizardData, WizardStep } from "@/hooks/use-wizard";
 let locale: Locale = "en";
 let step: WizardStep = 1;
 const data: WizardData = {
-  campaignName: "Save مرحبا", post: { postid: "ANY", media: "", mediaType: "IMAGE", caption: "Any post - triggers on all Instagram posts" },
-  triggerMode: "SPECIFIC_KEYWORD", keywords: ["hello مرحبا"], matchingMode: "CONTAINS",
+  campaignName: "Save こんにちは", post: { postid: "ANY", media: "", mediaType: "IMAGE", caption: "Any post - triggers on all Instagram posts" },
+  triggerMode: "SPECIFIC_KEYWORD", keywords: ["hello こんにちは"], matchingMode: "CONTAINS",
   publicReplyEnabled: true, publicReply: "Keep my reply unchanged", publicReply2: "", publicReply3: "",
   sendPrivateDm: true, dmMessage: "Keep my DM unchanged", linkButtons: [{ label: "Save", url: "https://example.com" }],
   openingDmEnabled: true, openingDmText: "Keep my opener", openingDmButtonText: "Continue",
@@ -33,10 +33,10 @@ vi.mock("@/lib/messaging-review-mode", () => ({ isMessagingReviewMode: () => fal
 const plain = (html: string) => html.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#x27;/g, "'").replace(/&quot;/g, '"');
 
 describe("automation setup localization", () => {
-  it("keeps complete catalogs and substitution tokens in all six languages", () => {
+  it("keeps complete catalogs and substitution tokens in all supported languages", () => {
     expect(new Set(SETUP_ROWS.map(r => r[0])).size).toBe(SETUP_ROWS.length);
     for (const row of SETUP_ROWS) {
-      expect(row).toHaveLength(6);
+      expect(row).toHaveLength(5);
       const tokens = row[0].match(/\{\w+\}/g)?.sort() ?? [];
       for (const text of row) { expect(text.trim()).not.toBe(""); expect(text.match(/\{\w+\}/g)?.sort() ?? []).toEqual(tokens); }
     }
@@ -45,14 +45,14 @@ describe("automation setup localization", () => {
     const headings = ["Choose a post or Reel", "What comment starts this automation?", "What should AP3K do?", "Review & Activate"];
     for (step of [1, 2, 3, 4] as WizardStep[]) {
       let english = "";
-      for (locale of [...SUPPORTED_LOCALES, "ar", "en"] as Locale[]) {
+      for (locale of [...SUPPORTED_LOCALES, "en"] as Locale[]) {
         const html = renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} searchParams={{ type: "comment" }} />);
         const text = plain(html);
         expect(text).toContain(translateUi(headings[step - 1], locale));
         if (locale !== "en") expect(text).not.toContain(headings[step - 1]);
         if (step === 3) { expect(text).toContain("Keep my DM unchanged"); expect(text).toContain("Keep my reply unchanged"); }
         if (step === 4 && locale !== "en") expect(text).not.toContain("Keyword:");
-        if (step === 4) { expect(text).toContain("Save مرحبا"); expect(text).toContain("hello مرحبا"); }
+        if (step === 4) { expect(text).toContain("Save こんにちは"); expect(text).toContain("hello こんにちは"); }
         expect(html).not.toContain("Step</span>1");
         if (locale === "en") { if (english) expect(html).toBe(english); english = html; }
       }
@@ -72,8 +72,8 @@ describe("automation setup localization", () => {
   });
   it("translates generated preview events while preserving customer messages, keywords and button labels", () => {
     for (locale of SUPPORTED_LOCALES) {
-      const html = renderToStaticMarkup(<MessageAutomationPreview source="DM" step={2} trigger="MENTION" triggerMode="SPECIFIC_KEYWORD" keywords={["hello مرحبا"]} message="Keep my DM unchanged" linkButtons={[{ label: "Save", url: "https://example.com" }]} followGateRequired followRequestDmText="Keep my follow request" followRequestButtonText="Following" />);
-      expect(html).toContain("hello مرحبا"); expect(html).toContain("Keep my DM unchanged"); expect(html).toContain("Keep my follow request"); expect(html).toContain('dir="auto"');
+      const html = renderToStaticMarkup(<MessageAutomationPreview source="DM" step={2} trigger="MENTION" triggerMode="SPECIFIC_KEYWORD" keywords={["hello こんにちは"]} message="Keep my DM unchanged" linkButtons={[{ label: "Save", url: "https://example.com" }]} followGateRequired followRequestDmText="Keep my follow request" followRequestButtonText="Following" />);
+      expect(html).toContain("hello こんにちは"); expect(html).toContain("Keep my DM unchanged"); expect(html).toContain("Keep my follow request"); expect(html).toContain('dir="auto"');
       expect(plain(html)).toContain(translateUi("Follow", locale));
     }
   });

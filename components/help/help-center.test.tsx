@@ -14,7 +14,7 @@ import HelpArticleView from "./help-article";
 
 describe("help center navigation", () => {
   it("renders every question as a localized article link without screenshots or hidden content", () => {
-    for (const locale of ["en", "ar", "fr", "en"] as Locale[]) {
+    for (const locale of ["en", "fr", "de", "en"] as Locale[]) {
       state.locale = locale;
       const html = renderToStaticMarkup(<HelpCenter />);
       expect(html).not.toContain("<img");
@@ -37,16 +37,16 @@ describe("help center navigation", () => {
       expect(related.every(item => item && item.slug !== article.slug)).toBe(true);
     }
   });
-  it("finds translated and source-language words without Arabic diacritic sensitivity", () => {
-    const ar = (source: string) => translateUi(source, "ar");
-    expect(searchHelpArticles("رَبْط إنستغرام", ar).some(item => item.slug === "connect-instagram")).toBe(true);
-    expect(searchHelpArticles("Instagram connect", ar).some(item => item.slug === "connect-instagram")).toBe(true);
-    expect(searchHelpArticles("no_matching_question_xyz", ar)).toEqual([]);
-    expect(searchHelpArticles("  ", ar)).toHaveLength(AP3K_HELP_ARTICLES.length);
+  it("finds translated and source-language words", () => {
+    const fr = (source: string) => translateUi(source, "fr");
+    expect(searchHelpArticles("Connectez Instagram", fr).some(item => item.slug === "connect-instagram")).toBe(true);
+    expect(searchHelpArticles("Instagram connect", fr).some(item => item.slug === "connect-instagram")).toBe(true);
+    expect(searchHelpArticles("no_matching_question_xyz", fr)).toEqual([]);
+    expect(searchHelpArticles("  ", fr)).toHaveLength(AP3K_HELP_ARTICLES.length);
   });
-  it("renders complete Arabic article content and restores English from the source", () => {
+  it("renders localized article content and restores English from the source", () => {
     const article = AP3K_HELP_ARTICLES.find(item => item.slug === "connect-instagram")!;
-    for (const locale of ["ar", "en", "ar", "en"] as Locale[]) {
+    for (const locale of ["fr", "en", "de", "en"] as Locale[]) {
       state.locale = locale;
       const html = renderToStaticMarkup(<HelpArticleView article={article} sections={helpArticleSections(article.slug)} />);
       expect(html).toContain(renderToStaticMarkup(<>{translateUi(article.summary, locale)}</>));

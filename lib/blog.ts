@@ -280,6 +280,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "connect-instagram-to-ap3k",
+    contentLocale: "en",
     cover: "instagram-connect",
     title: "How to Connect Instagram to AP3K",
     description: "A step-by-step guide to connecting an Instagram Business or Creator account to AP3K and preparing it for comment and DM automation.",

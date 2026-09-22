@@ -1,5 +1,4 @@
 import en from "../content/growth/en.json";
-import ar from "../content/growth/ar.json";
 import fr from "../content/growth/fr.json";
 import es from "../content/growth/es.json";
 import de from "../content/growth/de.json";
@@ -21,7 +20,7 @@ function catalog(source: unknown, target: unknown, output: Record<string, string
 }
 
 export const GROWTH_COPY = Object.fromEntries(
-  Object.entries({ en, ar, fr, es, de, pt }).map(([locale, posts]) => {
+  Object.entries({ en, fr, es, de, pt }).map(([locale, posts]) => {
     const output: Record<string, string> = {};
     catalog(en, posts, output);
     return [locale, output];

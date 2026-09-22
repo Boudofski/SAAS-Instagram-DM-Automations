@@ -9,23 +9,23 @@ import { PUBLIC_COPY_ROWS } from "./public-copy";
 import { PLAN_CARDS, PLAN_COMPARISON } from "../billing-plans";
 
 describe("language-switching regressions", () => {
-  it("makes public English URLs authoritative over stale Arabic cookies", () => {
+  it("makes public English URLs authoritative over retired locale cookies", () => {
     expect(resolveRequestLocale("/", "ar")).toBe("en");
     expect(resolveRequestLocale("/pricing", "ar")).toBe("en");
     expect(resolveRequestLocale("/fr/pricing", "ar")).toBe("fr");
-    expect(resolveRequestLocale("/dashboard/user", "ar")).toBe("ar");
+    expect(resolveRequestLocale("/dashboard/user", "ar")).toBe("en");
   });
   it("keeps checkout and callback routes unprefixed", () => {
     for (const path of ["/payment", "/callback/instagram", "/api/payment", "/dashboard", "/onboarding"]) {
-      expect(localizePublicPath(path, "ar")).toBe(path);
+      expect(localizePublicPath(path, "fr")).toBe(path);
     }
   });
   it("restores original English text, markup and props after every locale", () => {
-    const source = <main><h1>Turn Instagram Comments <span>Into Customers.</span></h1><a href="/pricing">Compare plans</a><input placeholder="Search automations, keywords, or content…" /><div translate="no">Customer Arabic: مرحبًا</div></main>;
+    const source = <main><h1>Turn Instagram Comments <span>Into Customers.</span></h1><a href="/pricing">Compare plans</a><input placeholder="Search automations, keywords, or content…" /><div translate="no">Customer text: こんにちは</div></main>;
     const original = renderToStaticMarkup(source);
-    for (const locale of [...SUPPORTED_LOCALES, "ar", "en", "fr", "en"] as const) {
+    for (const locale of [...SUPPORTED_LOCALES, "en", "fr", "en"] as const) {
       const markup = renderToStaticMarkup(<>{localizeCopyTree(source, locale)}</>);
-      expect(markup).toContain("Customer Arabic: مرحبًا");
+      expect(markup).toContain("Customer text: こんにちは");
       if (locale === "en") expect(markup).toBe(original);
       else expect(markup).not.toContain("Turn Instagram Comments");
     }
@@ -33,7 +33,7 @@ describe("language-switching regressions", () => {
   it("preserves handlers, media, amounts and protected content", () => {
     const handler = () => {};
     const source = <button onClick={handler}><video src="/media/demo.mp4" /><span>$79</span><code>Save</code></button>;
-    const result = localizeCopyTree(source, "ar") as React.ReactElement[];
+    const result = localizeCopyTree(source, "fr") as React.ReactElement[];
     expect(result[0].props.onClick).toBe(handler);
     expect(renderToStaticMarkup(<>{result}</>)).toContain('src="/media/demo.mp4"');
     expect(renderToStaticMarkup(<>{result}</>)).toContain("<code>Save</code>");
@@ -49,7 +49,7 @@ describe("language-switching regressions", () => {
     const keys = PUBLIC_COPY_ROWS.map(row => row[0]);
     expect(new Set(keys).size).toBe(keys.length);
     for (const row of PUBLIC_COPY_ROWS) {
-      expect(row).toHaveLength(6);
+      expect(row).toHaveLength(5);
       expect(row.every(value => value.trim().length > 0)).toBe(true);
     }
   });

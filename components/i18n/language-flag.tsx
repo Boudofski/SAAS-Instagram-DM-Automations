@@ -10,10 +10,6 @@ export default function LanguageFlag({ locale }: { locale: Locale }) {
       <path stroke="#fff" strokeWidth="7" d="M15 0v20M0 10h30" />
       <path stroke="#c8102e" strokeWidth="4" d="M15 0v20M0 10h30" />
     </>}
-    {locale === "ar" && <>
-      <path fill="#c1272d" d="M0 0h30v20H0z" />
-      <path fill="none" stroke="#006233" strokeWidth="1.2" strokeLinejoin="round" d="m15 4-3.5 11 9.2-6.8H9.3l9.2 6.8Z" />
-    </>}
     {locale === "fr" && <><path fill="#fff" d="M0 0h30v20H0z" /><path fill="#002654" d="M0 0h10v20H0z" /><path fill="#ed2939" d="M20 0h10v20H20z" /></>}
     {locale === "es" && <><path fill="#aa151b" d="M0 0h30v20H0z" /><path fill="#f1bf00" d="M0 5h30v10H0z" /><path fill="#aa151b" stroke="#fff" strokeWidth=".5" d="M8 8h4v4a2 2 0 0 1-4 0z" /><path fill="#aa151b" d="M8 6h4v1H8z" /></>}
     {locale === "de" && <><path fill="#000" d="M0 0h30v20H0z" /><path fill="#d00" d="M0 6.667h30v6.667H0z" /><path fill="#ffce00" d="M0 13.333h30V20H0z" /></>}

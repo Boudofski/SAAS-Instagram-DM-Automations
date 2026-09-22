@@ -79,8 +79,8 @@ describe("campaign activity display formatting", () => {
 
   it("classifies weak public replies", () => {
     expect(isWeakPublicReply("🔥🔥")).toBe(true);
-    expect(isWeakPublicReply("تم إرسال الرابط الآن")).toBe(false);
-    expect(isWeakPublicReply("تم الإرسال 🔥")).toBe(false);
+    expect(isWeakPublicReply("El enlace fue enviado ahora")).toBe(false);
+    expect(isWeakPublicReply("Enviado 🔥")).toBe(false);
   });
 
   it("groups comment received, trigger matched, public reply sent, and DM skipped into one activity", () => {

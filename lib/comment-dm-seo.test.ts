@@ -8,14 +8,14 @@ import { TUTORIAL_SCREENSHOTS } from "./tutorial-content";
 import { getBlogPage, blogPagePath } from "./blog-pagination";
 import { localeAlternates, localizePublicPath, resolveRequestLocale, SUPPORTED_LOCALES } from "./i18n/config";
 import sitemap from "@/app/sitemap";
-vi.mock("./i18n/server", () => ({ getServerLocale: () => "ar" }));
+vi.mock("./i18n/server", () => ({ getServerLocale: () => "en" }));
 import { localizedMetadata } from "./i18n/page-metadata";
 
 describe("comment-to-DM editorial library", () => {
   it("publishes 50 distinct, complete articles with valid media and internal destinations", () => {
     expect(COMMENT_DM_POSTS).toHaveLength(50);
     expect(slugs).toEqual(COMMENT_DM_POSTS.map(post => post.slug));
-    const destinations = new Set(["/pricing", ...BLOG_POSTS.map(post => `/blog/${post.slug}`), ...AP3K_HELP_ARTICLES.map(article => `/help/${article.slug}`), ...COMMERCIAL_PAGES.map(page => `/${page.slug}`)]);
+    const destinations = new Set(["/pricing", "/resources/instagram-comment-to-dm-templates", "/resources/instagram-comment-automation-checklist", "/tools/instagram-comment-to-dm-calculator", ...BLOG_POSTS.map(post => `/blog/${post.slug}`), ...AP3K_HELP_ARTICLES.map(article => `/help/${article.slug}`), ...COMMERCIAL_PAGES.map(page => `/${page.slug}`)]);
     expect(new Set(COMMENT_DM_POSTS.map(post => post.title)).size).toBe(50);
     expect(new Set(COMMENT_DM_POSTS.map(post => post.description)).size).toBe(50);
     const paragraphs = COMMENT_DM_POSTS.flatMap(post => post.sections.flatMap(section => section.paragraphs));
@@ -71,6 +71,6 @@ describe("comment-to-DM editorial library", () => {
     }
     expect(seen).toEqual(BLOG_POSTS.map(post => post.slug));
     for (const value of ["0", "-1", "1.5", "abc", "02", "99999", ["1", "2"]]) expect(getBlogPage(value, total)).toBeNull();
-    expect(localizePublicPath(blogPagePath(2), "ar")).toBe("/ar/blog?page=2");
+    expect(localizePublicPath(blogPagePath(2), "fr")).toBe("/fr/blog?page=2");
   });
 });

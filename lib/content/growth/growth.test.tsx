@@ -2,7 +2,6 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import en from "./en.json";
-import ar from "./ar.json";
 import fr from "./fr.json";
 import es from "./es.json";
 import de from "./de.json";
@@ -26,7 +25,7 @@ describe("localized growth guides", () => {
     for (const post of en) expect(post.sections).toHaveLength(4);
   });
   it("renders authored language copies, source links, screenshots and correct search metadata", () => {
-    for (const [locale, posts] of Object.entries({ en, ar, fr, es, de, pt })) {
+    for (const [locale, posts] of Object.entries({ en, fr, es, de, pt })) {
       state.locale = locale as Locale;
       for (const [index, post] of Array.from(posts.entries())) {
         expect(post.slug).toBe(en[index].slug);
@@ -39,7 +38,7 @@ describe("localized growth guides", () => {
         const metadata = generateMetadata({ params: { slug: post.slug } });
         const url = `https://ap3k.com${localizePublicPath(`/blog/${post.slug}`, state.locale)}`;
         expect(metadata.alternates?.canonical).toBe(url);
-        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(7);
+        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(6);
         expect(metadata.description).toBe(post.description);
         expect(sitemap().find(item => item.url === url)).toBeTruthy();
         expect(html).toContain(`"inLanguage":"${locale}"`);

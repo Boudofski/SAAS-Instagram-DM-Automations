@@ -14,15 +14,6 @@ const en = {
 };
 export const COMPANY_COPY: Record<Locale, typeof en> = {
   en,
-  ar: {
-    heading: "بيانات الشركة",
-    operator: "تُشغّل AP3K شركة AP3K LLC، وهي شركة ذات مسؤولية محدودة تأسست في ولاية وايومنغ بالولايات المتحدة الأمريكية.",
-    registration: "رقم تسجيل الشركة في وايومنغ", mailing: "العنوان البريدي للشركة", formation: "تاريخ التأسيس", support: "الدعم والاستفسارات القانونية", updated: "آخر تحديث: 16 سبتمبر 2026.",
-    termsBody: "تنظم هذه الشروط الاتفاق بين الشخص أو المؤسسة التي تستخدم AP3K وشركة AP3K LLC، وهي شركة ذات مسؤولية محدودة تأسست في ولاية وايومنغ بالولايات المتحدة الأمريكية.",
-    privacyBody: "تُشغّل شركة AP3K LLC خدمة AP3K وتتحمل المسؤولية عن المعلومات الشخصية التي تُعالَج وفقًا لهذه السياسة. للاستفسارات المتعلقة بالخصوصية وطلبات البيانات، تواصل عبر support@ap3k.com.",
-    privacyIntro: "آخر تحديث: 16 سبتمبر 2026. توضح هذه السياسة كيفية تعامل AP3K مع البيانات المستخدمة لأتمتة إنستغرام والفوترة والتحليلات وإدارة الحساب.",
-    termsIntro: "آخر تحديث: 16 سبتمبر 2026. تنظم هذه الشروط استخدامك لخدمة AP3K. بإنشاء حساب أو ربط إنستغرام أو شراء خطة، فإنك توافق على هذه الشروط.",
-  },
   fr: {
     heading: "Informations sur la société", operator: "AP3K est exploité par AP3K LLC, une société à responsabilité limitée constituée dans le Wyoming, aux États-Unis.",
     registration: "Numéro d’immatriculation au Wyoming", mailing: "Adresse postale de la société", formation: "Date de constitution", support: "Assistance et questions juridiques", updated: "Dernière mise à jour : 16 septembre 2026.",

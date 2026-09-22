@@ -14,18 +14,6 @@ const en = {
 
 type Phrase = keyof typeof en;
 type Catalog = Record<Phrase, string>;
-
-const ar: Catalog = {
-  "Automation": "الأتمتة", "Channel": "القناة", "Trigger": "المحفّز", "Actions": "الإجراءات", "Runs": "مرات التشغيل", "Leads": "العملاء المحتملون", "Status": "الحالة", "Manage": "إدارة",
-  "Search automations, keywords, or content…": "ابحث في الأتمتة أو الكلمات المفتاحية أو المحتوى…", "Sort automations": "ترتيب الأتمتة", "Newest first": "الأحدث أولًا", "Active first": "النشطة أولًا", "Name A–Z": "الاسم أبجديًا",
-  "Untitled automation": "أتمتة بلا عنوان", "Any message": "أي رسالة", "Keyword": "كلمة مفتاحية", "Any post": "أي منشور", "Specific post": "منشور محدد", "Any comment": "أي تعليق", "Keyword trigger": "محفّز بكلمة مفتاحية",
-  "Manage automation": "إدارة الأتمتة", "Open automation": "فتح الأتمتة", "More automation actions": "إجراءات أتمتة إضافية", "Review setup": "مراجعة الإعداد", "Edit automation": "تعديل الأتمتة", "Pause automation": "إيقاف الأتمتة مؤقتًا", "Start automation": "بدء الأتمتة", "Duplicate automation": "تكرار الأتمتة", "Delete automation": "حذف الأتمتة",
-  "AI DM replies active": "ردود الرسائل بالذكاء الاصطناعي نشطة", "Saved DM replies active": "ردود الرسائل المحفوظة نشطة", "Story": "قصة", "Post": "منشور", "Any DM": "أي رسالة خاصة", "Any": "الكل", "No trigger": "لا يوجد محفّز", "Edit": "تعديل", "Pause": "إيقاف مؤقت", "Start": "بدء", "More actions": "إجراءات إضافية", "View detail": "عرض التفاصيل", "Duplicate": "تكرار", "Delete": "حذف",
-  "Previous": "السابق", "Next": "التالي", "Automation post": "منشور الأتمتة", "No automations match your search.": "لا توجد عمليات أتمتة تطابق بحثك.", "Archived": "مؤرشفة", "Needs review": "تحتاج إلى مراجعة", "Draft": "مسودة", "Live": "نشطة", "Paused": "متوقفة مؤقتًا", "Reaction": "تفاعل", "Reply": "رد", "Mention": "إشارة",
-  "Comment + DM": "تعليق ورسالة خاصة", "Both": "كلاهما", "Comment reply": "رد على التعليق", "Comment": "تعليق", "Not set": "غير محدد", "Off": "متوقف",
-  "Preferences": "التفضيلات", "Appearance": "المظهر", "Theme": "السمة", "Switch AP3K between light and dark mode.": "بدّل AP3K بين الوضع الفاتح والداكن.", "Account & authentication": "الحساب والمصادقة", "Signed-in email": "البريد المستخدم للدخول", "Email notifications": "إشعارات البريد الإلكتروني", "Danger zone": "منطقة الخطر",
-};
-
 const fr: Catalog = {
   "Automation": "Automatisation", "Channel": "Canal", "Trigger": "Déclencheur", "Actions": "Actions", "Runs": "Exécutions", "Leads": "Prospects", "Status": "Statut", "Manage": "Gérer",
   "Search automations, keywords, or content…": "Rechercher des automatisations, mots-clés ou contenus…", "Sort automations": "Trier les automatisations", "Newest first": "Plus récentes", "Active first": "Actives d’abord", "Name A–Z": "Nom A–Z",
@@ -72,7 +60,6 @@ const pt: Catalog = {
 
 export const PHRASE_TRANSLATIONS: Record<Locale, Record<string, string>> = {
   en: { ...en, ...PRODUCT_PHRASE_TRANSLATIONS.en },
-  ar: { ...ar, ...PRODUCT_PHRASE_TRANSLATIONS.ar },
   fr: { ...fr, ...PRODUCT_PHRASE_TRANSLATIONS.fr },
   es: { ...es, ...PRODUCT_PHRASE_TRANSLATIONS.es },
   de: { ...de, ...PRODUCT_PHRASE_TRANSLATIONS.de },

@@ -43,7 +43,7 @@ function NavBar({ slug }: Props) {
             triggerLabel={t("openNavigation")}
             className="lg:hidden"
             contentClassName="h-[100dvh] max-h-[100dvh]"
-            side={locale === "ar" ? "right" : "left"}
+            side="left"
             closeOnNavigation
           >
             <div className="flex h-full min-h-0 w-full flex-col bg-white text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
