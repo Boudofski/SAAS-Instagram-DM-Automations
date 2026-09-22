@@ -17,15 +17,34 @@ export function generateMetadata({ params }: Props): Metadata {
   if (!resource) return {};
   return {
     title: `${resource.title} | Free AP3K Resource`,
-    description: resource.description,
+    description: `${resource.description} Use this free AP3K resource to plan, test and improve a practical Instagram automation campaign.`,
     alternates: { canonical: `/resources/${resource.slug}` },
+    openGraph: { title: resource.title, description: resource.description, url: `https://ap3k.com/resources/${resource.slug}`, type: "article", images: ["https://ap3k.com/opengraph-image"] },
+    twitter: { card: "summary_large_image", title: resource.title, description: resource.description, images: ["https://ap3k.com/opengraph-image"] },
   };
 }
 
 export default function ResourcePage({ params }: Props) {
   const resource = getSeoResource(params.slug);
   if (!resource) notFound();
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: resource.title,
+    description: resource.description,
+    url: `https://ap3k.com/resources/${resource.slug}`,
+    publisher: { "@type": "Organization", "@id": "https://ap3k.com/#organization", name: "AP3K", url: "https://ap3k.com" },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: resource.sections.flatMap(section => section.items).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item,
+      })),
+    },
+  };
   return <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
     <WebsiteNav />
     <main className="mx-auto max-w-4xl px-4 pb-24 pt-16 sm:px-8">
       <Breadcrumbs items={[{ name: "Resources", path: "/resources" }, { name: resource.title, path: `/resources/${resource.slug}` }]} />

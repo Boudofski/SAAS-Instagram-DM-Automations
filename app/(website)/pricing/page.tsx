@@ -8,7 +8,7 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { localeAlternates, localizePublicPath } from "@/lib/i18n/config";
 
 const PRICING_METADATA = {
-  en: ["AP3K Pricing — Free, Pro & Business Instagram Automation Plans", "Compare AP3K Free, Pro and Business plans for Instagram comment replies, DMs, AI, lead tracking and automation analytics."],
+  en: ["AP3K Pricing — Free, Pro & Business Plans", "Compare AP3K Free, Pro and Business plans for Instagram comment replies, DMs, AI, lead tracking and automation analytics."],
   fr: ["Tarifs AP3K — Offres Instagram Gratuit, Pro et Business", "Comparez les offres AP3K Gratuit, Pro et Business pour les réponses, DM, fonctions d’IA et le suivi des prospects Instagram."],
   es: ["Precios de AP3K — Planes Gratis, Pro y Business", "Compara los planes Gratis, Pro y Business de AP3K para respuestas, DM, IA y seguimiento de contactos de Instagram."],
   de: ["AP3K Preise — Instagram-Tarife Kostenlos, Pro und Business", "Vergleiche die AP3K-Tarife Kostenlos, Pro und Business für Antworten, DMs, KI und Instagram-Lead-Erfassung."],
@@ -22,6 +22,8 @@ export function generateMetadata(): Metadata {
     title,
     description,
     alternates: { canonical: localizePublicPath("/pricing", locale), languages: localeAlternates("/pricing") },
+    openGraph: { title, description, url: `https://ap3k.com${localizePublicPath("/pricing", locale)}`, type: "website", images: ["https://ap3k.com/opengraph-image"] },
+    twitter: { card: "summary_large_image", title, description, images: ["https://ap3k.com/opengraph-image"] },
   };
 }
 

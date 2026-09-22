@@ -3,6 +3,7 @@ import { AP3K_HELP_ARTICLES } from "@/lib/ap3k-help";
 import { BLOG_POSTS } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import { SEO_RESOURCES } from "@/lib/seo-resources";
+import { BLOG_PAGE_SIZE, blogPagePath } from "@/lib/blog-pagination";
 import type { MetadataRoute } from "next";
 import { SUPPORTED_LOCALES, isEnglishOnlyArticle, localizePublicPath, localeAlternates } from "@/lib/i18n/config";
 
@@ -29,10 +30,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const blogPages: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(Math.max(new Date(`${post.updatedAt}T00:00:00Z`).getTime(), publicContentUpdated.getTime())),
+    // Only report the article's real editorial update. Site-wide releases are
+    // not meaningful article changes and must not refresh every lastmod value.
+    lastModified: new Date(`${post.updatedAt}T00:00:00Z`),
     changeFrequency: "monthly",
     priority: 0.8,
   }));
+
+  // Paginated archives are canonical discovery pages in their own right.
+  // Listing pages 2+ closes the crawl gap reported by Ahrefs and gives every
+  // article a sitemap-backed route without pretending query variants are duplicates.
+  const blogArchivePages: MetadataRoute.Sitemap = Array.from(
+    { length: Math.max(0, Math.ceil(BLOG_POSTS.length / BLOG_PAGE_SIZE) - 1) },
+    (_, index) => ({
+      url: `${baseUrl}${blogPagePath(index + 2)}`,
+      lastModified: new Date("2026-09-22T00:00:00Z"),
+      changeFrequency: "weekly" as const,
+      priority: 0.65,
+    }),
+  );
 
   const commercialPages: MetadataRoute.Sitemap = [
     ...COMMERCIAL_PAGES.map((page) => ({
@@ -56,8 +72,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/tools/instagram-comment-to-dm-calculator`, lastModified: new Date("2026-09-22T00:00:00Z"), changeFrequency: "monthly", priority: 0.8 },
   ];
 
-  return [...staticPages, ...commercialPages, ...blogPages, ...helpPages, ...resourcePages].flatMap((page) => {
-    const path = new URL(page.url).pathname;
+  return [...staticPages, ...commercialPages, ...blogArchivePages, ...blogPages, ...helpPages, ...resourcePages].flatMap((page) => {
+    const parsed = new URL(page.url);
+    const path = `${parsed.pathname}${parsed.search}`;
     const languages = Object.fromEntries(Object.entries(localeAlternates(path)).map(([language, value]) => [language, `${baseUrl}${value}`]));
     return (isEnglishOnlyArticle(path) ? ["en"] as const : SUPPORTED_LOCALES).map((locale) => ({
       ...page,

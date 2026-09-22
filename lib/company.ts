@@ -23,6 +23,12 @@ export const COMPANY_SCHEMA = {
   url: "https://ap3k.com",
   foundingDate: COMPANY.formationDate,
   email: COMPANY.supportEmail,
+  logo: {
+    "@type": "ImageObject",
+    url: "https://ap3k.com/icon.png",
+    width: 512,
+    height: 512,
+  },
   identifier: { "@type": "PropertyValue", propertyID: "Wyoming Secretary of State filing number", value: COMPANY.registrationNumber },
   address: {
     "@type": "PostalAddress",

@@ -2,7 +2,6 @@ import CommentDmLibrary from "@/components/website/comment-dm-library";
 import { COMMENT_DM_HUB } from "@/lib/content/comment-dm";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
-import { COMPANY_SCHEMA } from "@/lib/company";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
@@ -24,6 +23,12 @@ import { notFound } from "next/navigation";
 
 const SITE_URL = "https://ap3k.com";
 
+const ENGLISH_SEO_TITLES: Record<string, string> = {
+  "instagram-comment-to-dm-automation": "Instagram Comment-to-DM Automation Guide | AP3K",
+  "compare-instagram-dm-automation-tools": "Instagram DM Automation Tools Compared | AP3K",
+  "troubleshoot-instagram-comment-dm-automation": "Fix Instagram Comment-to-DM Automation | AP3K",
+};
+
 type Props = { params: { slug: string } };
 
 export function generateStaticParams() {
@@ -34,25 +39,29 @@ export function generateMetadata({ params }: Props): Metadata {
   const post = getBlogPost(params.slug);
   if (!post) return {};
   const socialImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
+  const locale = getServerLocale();
+  const seoTitle = locale === "en" && ENGLISH_SEO_TITLES[post.slug]
+    ? ENGLISH_SEO_TITLES[post.slug]
+    : `${post.title} | AP3K`;
 
   return localizedMetadata({
-    title: `${post.title} | AP3K`,
+    title: seoTitle,
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       type: "article",
-      title: post.title,
+      title: seoTitle,
       description: post.description,
       url: `${SITE_URL}/blog/${post.slug}`,
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       siteName: "AP3K",
-      images: [{ url: socialImage, width: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440, height: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810, alt: translateUi(post.cover ? TUTORIAL_SCREENSHOTS[post.cover].caption : post.visualAlt, getServerLocale()) }],
+      images: [{ url: socialImage, width: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440, height: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810, alt: translateUi(post.cover ? TUTORIAL_SCREENSHOTS[post.cover].caption : post.visualAlt, locale) }],
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
+      title: seoTitle,
       description: post.description,
       images: [socialImage],
     },
@@ -74,6 +83,9 @@ export default function BlogPostPage({ params }: Props) {
     .map(({ item }) => item);
   const products = COMMERCIAL_PAGES.filter(page => page.tutorials.some(guide => guide.slug === post.slug));
   const locale = getServerLocale();
+  const articleImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
+  const articleImageWidth = post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440;
+  const articleImageHeight = post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -86,9 +98,15 @@ export default function BlogPostPage({ params }: Props) {
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
     mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
-    author: { "@type": "Organization", name: "AP3K", url: SITE_URL },
-    publisher: COMPANY_SCHEMA,
-    image: `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`,
+    author: { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: "AP3K", url: SITE_URL },
+    publisher: {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "AP3K",
+      url: SITE_URL,
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon.png`, width: 512, height: 512 },
+    },
+    image: { "@type": "ImageObject", url: articleImage, width: articleImageWidth, height: articleImageHeight },
     keywords: post.keywords.map(key => translateUi(key, locale)).join(", "),
   };
 

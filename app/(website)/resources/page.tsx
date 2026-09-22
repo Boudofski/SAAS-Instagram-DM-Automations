@@ -6,9 +6,18 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Free Instagram Comment Automation Resources | AP3K",
-  description: "Use free Instagram comment-to-DM templates, launch checklists, and planning tools from AP3K.",
+  description: "Use free Instagram comment-to-DM templates, launch checklists and a funnel calculator to plan clearer automation campaigns with AP3K.",
   alternates: { canonical: "/resources" },
+  openGraph: { title: "Free Instagram Comment Automation Resources", description: "Templates, checklists and planning tools for Instagram comment-to-DM campaigns.", url: "https://ap3k.com/resources", type: "website", images: ["https://ap3k.com/opengraph-image"] },
+  twitter: { card: "summary_large_image", title: "Free Instagram Comment Automation Resources", description: "Templates, checklists and planning tools for Instagram comment-to-DM campaigns.", images: ["https://ap3k.com/opengraph-image"] },
 };
+
+const ESSENTIAL_GUIDES = [
+  ["Compare Instagram DM automation tools", "/blog/compare-instagram-dm-automation-tools"],
+  ["Is Instagram DM automation safe?", "/blog/is-instagram-dm-automation-safe"],
+  ["Instagram automation for professional accounts", "/blog/instagram-automation-business-creator-accounts"],
+  ["Troubleshoot comment automation", "/blog/instagram-comment-automation-not-working"],
+] as const;
 
 export default function ResourcesPage() {
   return <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
@@ -32,6 +41,13 @@ export default function ResourcesPage() {
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Model comments, delivered DMs, destination visits, conversions, and estimated value without pretending projections are real results.</p>
           <span className="mt-6 inline-flex text-sm font-black text-orange-700 dark:text-orange-300">Open calculator →</span>
         </Link>
+      </section>
+      <section className="mx-auto max-w-5xl px-4 pb-24 sm:px-8">
+        <h2 className="text-3xl font-black tracking-tight">Essential Instagram automation guides</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">Use these decision and safety guides before choosing a tool or launching a campaign.</p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {ESSENTIAL_GUIDES.map(([label, href]) => <Link key={href} href={href} className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-bold transition hover:border-violet-300 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.04] dark:hover:text-violet-300">{label} →</Link>)}
+        </div>
       </section>
     </main>
     <WebsiteFooter />

@@ -10,7 +10,8 @@ describe("public indexing contracts", () => {
     const urls = new Set(pages.map(page => page.url));
     expect(urls.size).toBe(pages.length);
     for (const page of pages) {
-      const path = stripLocaleFromPath(new URL(page.url).pathname);
+      const parsed = new URL(page.url);
+      const path = stripLocaleFromPath(`${parsed.pathname}${parsed.search}`);
       expect(path).not.toMatch(/^\/(api|dashboard|admin|sign-in|sign-up|payment)(\/|$)/);
       for (const locale of isEnglishOnlyArticle(path) ? ["en"] as const : SUPPORTED_LOCALES) {
         const expected = `https://ap3k.com${localizePublicPath(path, locale)}`;
@@ -19,6 +20,17 @@ describe("public indexing contracts", () => {
       }
       expect(page.alternates?.languages?.['x-default']).toBe(`https://ap3k.com${path}`);
     }
+  });
+  it("lists every canonical blog archive page and keeps article dates truthful", () => {
+    const pages = sitemap();
+    for (const locale of SUPPORTED_LOCALES) {
+      for (let page = 2; page <= 6; page++) {
+        const prefix = locale === "en" ? "" : `/${locale}`;
+        expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog?page=${page}`)).toBe(true);
+      }
+    }
+    const hub = pages.find(item => item.url === "https://ap3k.com/blog/instagram-comment-to-dm-automation");
+    expect(hub?.lastModified).toEqual(new Date("2026-09-21T00:00:00Z"));
   });
   it("lets crawlers see noindex on authentication pages", () => {
     const rules = robots().rules;

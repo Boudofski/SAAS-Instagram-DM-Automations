@@ -105,7 +105,10 @@ describe("complete public localization and search metadata", () => {
         const metadata = commercialMetadata({ params: { slug: page.slug } });
         expect(metadata.alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`);
         expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(6);
-        expect(metadata.title).toBe(`${translateUi(page.title, locale)} | AP3K`);
+        const expectedTitle = locale === "en" && page.slug === "instagram-comment-to-dm"
+          ? "Instagram Comment-to-DM Automation | AP3K"
+          : `${translateUi(page.title, locale)} | AP3K`;
+        expect(metadata.title).toBe(expectedTitle);
         if (locale !== "en") expect(metadata.description).not.toBe(page.description);
       }
       expect(privacyMetadata().alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath("/privacy", locale)}`);
