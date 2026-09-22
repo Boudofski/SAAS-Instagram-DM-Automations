@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { track } from "@vercel/analytics";
 import { useI18n } from "@/providers/i18n-provider";
 import { stripLocaleFromPath } from "@/lib/i18n/config";
+import { gaMeasurementId, analyticsPage, googleTag } from "@/lib/google-analytics";
 
 /** Mounted only after analytics consent. Never collect message text, account IDs or URLs. */
 export default function ConversionTracking() {
@@ -24,15 +25,19 @@ export default function ConversionTracking() {
       const interval = target.searchParams.get("interval");
       const properties = {
         locale,
+        content_group: analyticsPage(window.location.pathname).group,
         ...(plan === "pro" || plan === "business" ? { plan } : {}),
         ...(interval === "month" || interval === "year" ? { interval } : {}),
       };
       // Instrumentation must never prevent navigation or checkout.
       try {
         track(name, properties);
-        const analytics = window as Window & { gtag?: (...args: unknown[]) => void };
-        analytics.gtag?.("event", name, properties);
       } catch { /* Optional analytics cannot block the product. */ }
+      try {
+        if (window.location.hostname === "ap3k.com") {
+          googleTag(window)("event", name, { ...properties, send_to: gaMeasurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) });
+        }
+      } catch { /* A failure in either vendor must not disable the other. */ }
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);

@@ -41,7 +41,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "How to Automate Instagram DMs From Comments",
     description: "A practical guide to turning Instagram comments into automated DMs using comment triggers, reply actions, and a professional account workflow.",
     publishedAt: "2026-08-27",
-    updatedAt: "2026-08-27",
+    updatedAt: "2026-09-22",
     readingTime: "7 min read",
     category: "Instagram Automation",
     keywords: ["automate Instagram DMs", "Instagram comment automation", "Instagram DM automation"],
@@ -52,6 +52,7 @@ export const BLOG_POSTS: BlogPost[] = [
     sections: [
       {
         heading: "What comment-to-DM automation does",
+        screenshot: "instagram-ready",
         paragraphs: [
           "A comment-triggered campaign starts with an Instagram Business or Creator account and a post or Reel. When a new comment matches the campaign trigger, the automation can reply under the post, send a DM to the commenter, or do both.",
           "The useful part is not simply sending a message. It is connecting a visible signal of interest—such as GUIDE, PRICE, BOOK, or any new comment—to a consistent follow-up action.",
@@ -59,6 +60,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Choose the right trigger",
+        links: [{ label: "Instagram Comment Automation: Keyword vs Any Comment", href: "/blog/instagram-comment-automation-keyword-vs-any-comment" }],
         paragraphs: ["There are two simple trigger patterns that cover most creator workflows:"],
         bullets: [
           "Keyword trigger: run the campaign only when the comment contains or matches a word you configured.",
@@ -74,6 +76,8 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Build a clean first campaign",
+        screenshot: "automations",
+        links: [{ label: "Read the illustrated guide", href: "/help/create-automation" }],
         paragraphs: ["A reliable first campaign is intentionally small. Pick one post, use one clear keyword, write one useful DM, test from another Instagram account, then confirm the activity before expanding the campaign."],
         bullets: [
           "Choose the Instagram post or Reel.",
@@ -98,7 +102,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Instagram Comment Automation: Keyword vs Any Comment",
     description: "Learn when to use keyword triggers and when to automate every eligible Instagram comment, with practical campaign examples.",
     publishedAt: "2026-08-27",
-    updatedAt: "2026-08-27",
+    updatedAt: "2026-09-22",
     readingTime: "6 min read",
     category: "Campaign Strategy",
     keywords: ["Instagram keyword automation", "Any Comment Instagram", "Instagram comment trigger"],
@@ -118,10 +122,12 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         heading: "Avoid overlapping campaigns",
+        screenshot: "automations",
         paragraphs: ["If several campaigns listen to the same content, keep their triggers intentional. Overlapping rules make analytics harder to read and can create an experience where users receive more actions than expected."],
       },
       {
         heading: "A simple decision rule",
+        links: [{ label: "How to Automate Instagram DMs From Comments", href: "/blog/automate-instagram-dms-from-comments" }, { label: "Read the illustrated guide", href: "/help/create-automation" }],
         paragraphs: ["If your caption tells people exactly what to comment, use that keyword. If the promise applies to everyone who joins the conversation, use Any Comment. Then keep the Comment reply and DM directly related to that promise."],
       },
     ],

@@ -1,4 +1,9 @@
+"use client";
+
 import Script from "next/script";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { gaMeasurementId, analyticsPage, analyticsReferrer, googleTag } from "@/lib/google-analytics";
 
 function validGoogleId(value?: string) {
   return value && /^(G|AW)-[A-Z0-9-]+$/.test(value) ? value : null;
@@ -9,20 +14,46 @@ function validMetaPixelId(value?: string) {
 }
 
 export default function TrackingScripts() {
-  const gaId = validGoogleId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+  const gaId = gaMeasurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
   const adsId = validGoogleId(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID);
   const metaPixelId = validMetaPixelId(process.env.NEXT_PUBLIC_META_PIXEL_ID);
   const googleIds = Array.from(new Set([gaId, adsId].filter((id): id is string => Boolean(id))));
   const primaryGoogleId = googleIds[0];
+  const pathname = usePathname();
+  const initialized = useRef(false);
+  const previousPath = useRef<string | null>(null);
+  const [production, setProduction] = useState(false);
+
+  useEffect(() => {
+    if (window.location.hostname !== "ap3k.com") return;
+    const tag = googleTag(window);
+    const page = analyticsPage(pathname);
+    if (previousPath.current === page.path) return;
+    const properties = {
+      page_location: `https://ap3k.com${page.path}`,
+      page_referrer: previousPath.current ? `https://ap3k.com${previousPath.current}` : analyticsReferrer(document.referrer),
+      page_title: page.privateArea ? `AP3K ${page.privateArea}` : document.title,
+      content_group: page.group,
+    };
+    if (!initialized.current) {
+      tag("js", new Date());
+      tag("config", gaId, { ...properties, send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false });
+      if (adsId && adsId !== gaId) tag("config", adsId);
+      initialized.current = true;
+      setProduction(true);
+    }
+    // Enhanced Measurement is off on this stream: exactly one manual view per
+    // path transition, with no customer IDs, query strings or fragment data.
+    tag("set", properties);
+    tag("event", "page_view", { ...properties, send_to: gaId });
+    previousPath.current = page.path;
+  }, [pathname, gaId, adsId]);
 
   return (
     <>
-      {primaryGoogleId ? (
+      {production && primaryGoogleId ? (
         <>
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${primaryGoogleId}`} strategy="afterInteractive" />
-          <Script id="ap3k-google-tags" strategy="afterInteractive">
-            {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());${googleIds.map((id) => `gtag('config',${JSON.stringify(id)});`).join("")}`}
-          </Script>
         </>
       ) : null}
       {metaPixelId ? (
