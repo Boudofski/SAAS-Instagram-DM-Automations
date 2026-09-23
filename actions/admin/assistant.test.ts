@@ -93,4 +93,11 @@ describe("admin AI safeguards", () => {
     expect(JSON.stringify(result)).not.toContain("secret-private");
     expect(mocks.update.mock.calls[0][0].data.status).toBe("FAILED");
   });
+  it("identifies provider quota failures without returning raw error details", async () => {
+    mocks.generate.mockRejectedValue(Object.assign(new Error("private-key-and-response"), { status: 429 }));
+    const result = await adminAssistantAction("operations");
+    expect(result.message).toContain("quota or rate limit");
+    expect(result.message).not.toContain("private-key");
+    expect(mocks.update.mock.calls[0][0].data.error).toBe("provider: RATE_LIMIT");
+  });
 });
