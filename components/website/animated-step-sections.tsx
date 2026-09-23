@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { revealTransition } from "@/lib/motion";
 import { motion, useReducedMotion } from "framer-motion";
-import { MessageCircle, Reply, Send, Users } from "lucide-react";
+import { CircleCheckBig, Instagram, MessageCircle, MessagesSquare, Reply, Send, Target, Users } from "lucide-react";
 import { translateUi } from "@/lib/i18n/translate";
 import { useI18n } from "@/providers/i18n-provider";
 
@@ -15,10 +15,10 @@ const WORKFLOW_STEPS = [
 ] as const;
 
 const SETUP_STEPS = [
-  ["01", "Connect Instagram", "Authorize your professional Instagram account."],
-  ["02", "Choose a post + trigger", "Use a keyword or any eligible comment."],
-  ["03", "Choose Actions", "Reply to comment, Send a DM, or enable both."],
-  ["04", "Activate", "AP3K starts listening and records the activity."],
+  { number: "01", icon: Instagram, title: "Connect Instagram", copy: "Authorize your professional Instagram account." },
+  { number: "02", icon: Target, title: "Choose a post + trigger", copy: "Use a keyword or any eligible comment." },
+  { number: "03", icon: MessagesSquare, title: "Choose Actions", copy: "Reply to comment, Send a DM, or enable both." },
+  { number: "04", icon: CircleCheckBig, title: "Activate", copy: "AP3K starts listening and records the activity." },
 ] as const;
 
 function useActiveStep(length: number) {
@@ -112,39 +112,35 @@ export function AnimatedWorkflowCards() {
 export function AnimatedSetupSteps() {
   const { locale } = useI18n();
   const tr = (text: string) => translateUi(text, locale);
-  const { root, active, setActive, setPaused, reduceMotion } = useActiveStep(SETUP_STEPS.length);
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div
-      ref={root}
-      className="mt-8 space-y-3"
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
-    >
-      {SETUP_STEPS.map(([num, title, copy], index) => {
-        const isActive = active === index;
-        return (
-          <motion.button
-            key={num}
-            type="button"
-            aria-current={isActive ? "step" : undefined}
-            onClick={() => setActive(index)}
-            initial={reduceMotion ? false : { y: 10 }}
-            whileInView={reduceMotion ? undefined : { y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={revealTransition(reduceMotion, index * 0.055)}
-            className={`flex w-full gap-4 rounded-2xl border bg-white/90 p-4 text-start shadow-sm transition-[border-color,box-shadow] duration-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-violet-500 dark:bg-card ${isActive ? "border-violet-400 ring-1 ring-violet-400/15 dark:border-violet-300/40" : "border-violet-200/80 hover:border-violet-300 dark:border-white/8"}`}
+    <div className="relative mt-10 sm:mt-12 lg:mt-14">
+      <div aria-hidden="true" className="absolute left-[12.5%] right-[12.5%] top-[3.25rem] hidden h-px bg-gradient-to-r from-transparent via-violet-400/70 to-transparent dark:via-violet-300/35 lg:block" />
+      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+        {SETUP_STEPS.map(({ number, icon: Icon, title, copy }, index) => (
+          <motion.li
+            key={number}
+            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+            whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={revealTransition(reduceMotion, index * 0.065)}
+            className="group relative flex min-h-[218px] flex-col overflow-hidden rounded-[1.75rem] border border-violet-200/80 bg-white/80 p-5 shadow-surface backdrop-blur-sm transition-[border-color,transform,box-shadow] duration-base hover:border-violet-400/70 hover:shadow-[0_18px_50px_rgba(76,29,149,0.12)] motion-safe:hover:-translate-y-1 dark:border-white/10 dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] dark:hover:border-violet-300/35 sm:min-h-[238px] sm:p-6"
           >
-            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black text-white transition-[transform,background-color] duration-base ${isActive ? "bg-violet-700" : "bg-violet-600"}`}>{num}</span>
-            <span>
-              <span className="block font-black">{tr(title)}</span>
-              <span className="mt-1 block text-sm text-slate-600 dark:text-slate-400">{tr(copy)}</span>
+            <span aria-hidden="true" className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/70 to-transparent opacity-60 transition-opacity duration-base group-hover:opacity-100 dark:via-violet-300/70" />
+            <span className="flex items-center justify-between gap-4">
+              <span className="relative z-10 grid h-14 w-14 place-items-center rounded-2xl bg-[linear-gradient(145deg,#7c3aed,#9333ea)] text-sm font-black text-white shadow-[0_10px_28px_rgba(124,58,237,0.28)] ring-4 ring-white dark:ring-[#10111e]">
+                {number}
+              </span>
+              <span className="grid h-11 w-11 place-items-center rounded-2xl border border-violet-200/80 bg-violet-50 text-violet-700 transition-colors duration-base group-hover:border-violet-300 group-hover:bg-violet-100 dark:border-violet-300/15 dark:bg-violet-300/[0.08] dark:text-violet-200 dark:group-hover:bg-violet-300/[0.12]">
+                <Icon aria-hidden="true" className="h-5 w-5" />
+              </span>
             </span>
-          </motion.button>
-        );
-      })}
+            <h3 className="mt-7 text-xl font-black tracking-[-0.025em] text-slate-950 dark:text-white">{tr(title)}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300/80 sm:text-[0.95rem]">{tr(copy)}</p>
+          </motion.li>
+        ))}
+      </ol>
     </div>
   );
 }
