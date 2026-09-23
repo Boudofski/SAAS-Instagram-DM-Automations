@@ -8,6 +8,18 @@ import { notFound } from "next/navigation";
 const SITE_URL = "https://ap3k.com";
 type Props = { params: { slug: string } };
 
+const SEO_KEYWORDS: Record<string, string[]> = {
+  "instagram-dm-automation": ["Instagram DM automation", "automated Instagram messaging", "auto DM Instagram", "automated DM Instagram", "Instagram automation tool"],
+  "instagram-comment-automation": ["Instagram comment automation", "Instagram auto reply", "auto responder for IG", "Instagram autoresponder", "automation tools for Instagram"],
+  "instagram-comment-to-dm": ["Instagram comment to DM automation", "comment to DM Instagram", "Instagram auto DM from comments", "Instagram comment automation"],
+  "instagram-auto-reply": ["Instagram auto responder", "Instagram auto reply", "quick reply message for Instagram", "automated Instagram messaging"],
+  "instagram-story-automation": ["Instagram Story automation", "Instagram automated messaging", "Instagram DM autoresponder"],
+  "manychat-alternative": ["ManyChat alternative", "ManyChat alternatives", "Many Chat alternatives", "Instagram automation tools", "Instagram DM automation tool"],
+  "instagram-automation-for-creators": ["Instagram automation for creators", "Instagram lead generation", "insta automations", "automation Instagram"],
+  "instagram-automation-for-coaches": ["Instagram automation for coaches", "Instagram leads", "Instagram lead generation", "automated Instagram messaging"],
+  "instagram-automation-for-ecommerce": ["Instagram automation for ecommerce", "Instagram auto reply", "automate Instagram messages", "Instagram lead generation"],
+};
+
 export function generateStaticParams() {
   return COMMERCIAL_PAGES.map((page) => ({ slug: page.slug }));
 }
@@ -26,9 +38,7 @@ export function generateMetadata({ params }: Props): Metadata {
   return localizedMetadata({
     title: seoTitle,
     description: seoDescription,
-    keywords: page.slug === "instagram-comment-to-dm"
-      ? ["Instagram comment to DM automation", "comment to DM Instagram", "Instagram auto DM from comments", "Instagram comment automation", "AP3K"]
-      : [page.eyebrow, "Instagram automation", "AP3K"],
+    keywords: [...(SEO_KEYWORDS[page.slug] ?? [page.eyebrow]), "Instagram automation", "AP3K"],
     alternates: { canonical: pathname },
     openGraph: {
       title: seoTitle,

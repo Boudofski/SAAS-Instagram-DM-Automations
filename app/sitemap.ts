@@ -13,12 +13,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const updated = new Date("2026-09-12T00:00:00Z");
   // Significant public-copy and navigation updates shipped on this date.
   // Keep this fixed to the release date; never stamp every crawl with today.
-  const publicContentUpdated = new Date("2026-09-22T00:00:00Z");
+  const publicContentUpdated = new Date("2026-09-23T00:00:00Z");
   const companyUpdated = new Date(`${COMPANY.detailsUpdated}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: publicContentUpdated, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/pricing`, lastModified: updated, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${baseUrl}/blog`, lastModified: new Date("2026-09-21T00:00:00Z"), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/blog`, lastModified: new Date("2026-09-23T00:00:00Z"), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/contact`, lastModified: companyUpdated, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/help`, lastModified: new Date("2026-09-20T00:00:00Z"), changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/privacy`, lastModified: companyUpdated, changeFrequency: "yearly", priority: 0.3 },
@@ -44,7 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { length: Math.max(0, Math.ceil(BLOG_POSTS.length / BLOG_PAGE_SIZE) - 1) },
     (_, index) => ({
       url: `${baseUrl}${blogPagePath(index + 2)}`,
-      lastModified: new Date("2026-09-22T00:00:00Z"),
+      lastModified: new Date("2026-09-23T00:00:00Z"),
       changeFrequency: "weekly" as const,
       priority: 0.65,
     }),

@@ -499,18 +499,6 @@ export const REMAINING_ROWS = [
     "Vou explorar primeiro"
   ],
   [
-    "Please send me the {keyword}.", "Envoyez-moi {keyword}, s’il vous plaît.",
-    "Envíame {keyword}, por favor.",
-    "Bitte sende mir {keyword}.",
-    "Envie-me {keyword}, por favor."
-  ],
-  [
-    "Keyword {keyword} matched", "Mot-clé {keyword} détecté",
-    "Palabra clave {keyword} detectada",
-    "Schlüsselwort {keyword} erkannt",
-    "Palavra-chave {keyword} detetada"
-  ],
-  [
     "{count} contacts", "{count} contacts",
     "{count} contactos",
     "{count} Kontakte",
