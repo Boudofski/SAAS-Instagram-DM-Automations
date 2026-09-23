@@ -21,6 +21,13 @@ const SETUP_STEPS = [
   { number: "04", icon: CircleCheckBig, title: "Activate", copy: "AP3K starts listening and records the activity." },
 ] as const;
 
+const SETUP_STEP_DIVIDERS = [
+  "border-b border-violet-200/70 dark:border-white/[0.08] sm:border-r lg:border-b-0",
+  "border-b border-violet-200/70 dark:border-white/[0.08] lg:border-b-0 lg:border-r",
+  "border-b border-violet-200/70 dark:border-white/[0.08] sm:border-b-0 sm:border-r lg:border-r",
+  "",
+] as const;
+
 function useActiveStep(length: number) {
   const root = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -115,29 +122,29 @@ export function AnimatedSetupSteps() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="relative mt-10 sm:mt-12 lg:mt-14">
-      <div aria-hidden="true" className="absolute left-[12.5%] right-[12.5%] top-[3.25rem] hidden h-px bg-gradient-to-r from-transparent via-violet-400/70 to-transparent dark:via-violet-300/35 lg:block" />
-      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+    <div className="relative mt-10 sm:mt-12">
+      <div aria-hidden="true" className="absolute -inset-5 rounded-[2.5rem] bg-violet-400/[0.08] blur-2xl dark:bg-violet-500/[0.06]" />
+      <ol className="relative grid overflow-hidden rounded-[2rem] border border-violet-200/80 bg-white shadow-[0_22px_70px_rgba(76,29,149,0.1)] dark:border-white/[0.1] dark:bg-[#111320] dark:shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:grid-cols-2 lg:grid-cols-4">
         {SETUP_STEPS.map(({ number, icon: Icon, title, copy }, index) => (
           <motion.li
             key={number}
-            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-            whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            initial={reduceMotion ? false : { y: 14 }}
+            whileInView={reduceMotion ? undefined : { y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={revealTransition(reduceMotion, index * 0.065)}
-            className="group relative flex min-h-[218px] flex-col overflow-hidden rounded-[1.75rem] border border-violet-200/80 bg-white/80 p-5 shadow-surface backdrop-blur-sm transition-[border-color,transform,box-shadow] duration-base hover:border-violet-400/70 hover:shadow-[0_18px_50px_rgba(76,29,149,0.12)] motion-safe:hover:-translate-y-1 dark:border-white/10 dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] dark:hover:border-violet-300/35 sm:min-h-[238px] sm:p-6"
+            className={`group relative min-h-[190px] overflow-hidden p-5 transition-colors duration-base hover:bg-violet-50/55 dark:hover:bg-white/[0.025] sm:min-h-[228px] sm:p-6 lg:min-h-[252px] lg:p-7 ${SETUP_STEP_DIVIDERS[index]}`}
           >
-            <span aria-hidden="true" className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/70 to-transparent opacity-60 transition-opacity duration-base group-hover:opacity-100 dark:via-violet-300/70" />
+            <span aria-hidden="true" className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-violet-400/[0.09] blur-2xl transition-opacity duration-base group-hover:opacity-100 dark:bg-violet-400/[0.07]" />
             <span className="flex items-center justify-between gap-4">
-              <span className="relative z-10 grid h-14 w-14 place-items-center rounded-2xl bg-[linear-gradient(145deg,#7c3aed,#9333ea)] text-sm font-black text-white shadow-[0_10px_28px_rgba(124,58,237,0.28)] ring-4 ring-white dark:ring-[#10111e]">
+              <span className="relative z-10 inline-flex h-10 items-center rounded-full bg-violet-600 px-3.5 text-xs font-black tracking-[0.12em] text-white shadow-[0_8px_24px_rgba(124,58,237,0.24)] dark:bg-violet-500">
                 {number}
               </span>
-              <span className="grid h-11 w-11 place-items-center rounded-2xl border border-violet-200/80 bg-violet-50 text-violet-700 transition-colors duration-base group-hover:border-violet-300 group-hover:bg-violet-100 dark:border-violet-300/15 dark:bg-violet-300/[0.08] dark:text-violet-200 dark:group-hover:bg-violet-300/[0.12]">
+              <span className="grid h-10 w-10 place-items-center rounded-xl border border-violet-200/80 bg-violet-50 text-violet-700 transition-colors duration-base group-hover:border-violet-300 group-hover:bg-violet-100 dark:border-white/10 dark:bg-white/[0.055] dark:text-violet-200 dark:group-hover:bg-white/[0.08]">
                 <Icon aria-hidden="true" className="h-5 w-5" />
               </span>
             </span>
-            <h3 className="mt-7 text-xl font-black tracking-[-0.025em] text-slate-950 dark:text-white">{tr(title)}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300/80 sm:text-[0.95rem]">{tr(copy)}</p>
+            <h3 className="relative mt-7 text-xl font-black tracking-[-0.025em] text-slate-950 dark:text-white">{tr(title)}</h3>
+            <p className="relative mt-2 max-w-[17rem] text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-[0.95rem]">{tr(copy)}</p>
           </motion.li>
         ))}
       </ol>
