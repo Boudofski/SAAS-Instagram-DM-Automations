@@ -4,7 +4,7 @@ import { metadata as resources } from "@/app/(website)/resources/page";
 import { metadata as calculator } from "@/app/(website)/tools/instagram-comment-to-dm-calculator/page";
 import { generateMetadata } from "@/app/(website)/resources/[slug]/page";
 import { SEO_RESOURCES } from "@/lib/seo-resources";
-import sitemap from "@/app/sitemap";
+import { buildSitemap as sitemap } from "@/lib/sitemap";
 
 describe("English resource search metadata", () => {
   it("matches sitemap language alternates instead of inheriting homepage peers", () => {

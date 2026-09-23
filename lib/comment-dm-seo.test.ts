@@ -7,7 +7,7 @@ import { COMMERCIAL_PAGES } from "./commercial-pages";
 import { TUTORIAL_SCREENSHOTS } from "./tutorial-content";
 import { getBlogPage, blogPagePath } from "./blog-pagination";
 import { localeAlternates, localizePublicPath, resolveRequestLocale, SUPPORTED_LOCALES } from "./i18n/config";
-import sitemap from "@/app/sitemap";
+import { buildSitemap as sitemap } from "@/lib/sitemap";
 vi.mock("./i18n/server", () => ({ getServerLocale: () => "en" }));
 import { localizedMetadata } from "./i18n/page-metadata";
 

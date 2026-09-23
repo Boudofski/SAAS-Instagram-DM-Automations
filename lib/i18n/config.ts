@@ -10,6 +10,9 @@ const englishArticles = new Set([
   "/blog/create-ap3k-automation-visual-guide",
   "/blog/set-up-ap3k-ai-visual-guide",
   "/blog/connect-instagram-to-ap3k",
+  "/blog/instagram-post-scheduler-vs-instagram-automation",
+  "/blog/instagram-auto-responder-quick-reply-guide",
+  "/blog/instagram-lead-generation-comments-dms-vs-lead-ads",
   "/help/workspace-tour",
   "/help/automation-types",
 ]);

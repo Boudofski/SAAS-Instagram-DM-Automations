@@ -8,7 +8,7 @@ import { FadeIn, HoverLift, StaggerContainer, StaggerItem } from "@/components/g
 import PricingExperience from "@/components/global/pricing-experience";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import { BLOG_POSTS } from "@/lib/blog";
+import { getPublishedPosts } from "@/lib/editorial-server";
 import {
   ArrowRight,
   BadgeCheck,
@@ -20,6 +20,8 @@ import FeatureDemos from "@/components/website/feature-demos";
 import HomeScrollProgress from "@/components/website/home-scroll-progress";
 import { AnimatedSetupSteps, AnimatedWorkflowCards } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
+
+export const dynamic = "force-dynamic";
 
 const BENEFITS = [
   {
@@ -132,7 +134,8 @@ function ProductVideo({
   );
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const posts = await getPublishedPosts();
   const locale = getServerLocale();
   const localizedSoftware = { ...softwareSchema, inLanguage: locale,
     url: `https://ap3k.com${localizePublicPath("/", locale)}`,
@@ -283,7 +286,7 @@ export default function LandingPage() {
               <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">Explore the blog <ArrowRight className="h-4 w-4" /></Link>
             </FadeIn>
             <StaggerContainer className="mt-10 grid gap-5 md:grid-cols-3">
-              {BLOG_POSTS.slice(0, 3).map((post) => (
+              {posts.slice(0, 3).map((post) => (
                 <StaggerItem key={post.slug}>
                   <HoverLift>
                     <Link href={`/blog/${post.slug}`} className="block h-full rounded-2xl border border-slate-200 bg-[#fafafe] p-6 shadow-sm transition hover:border-violet-200 dark:border-white/8 dark:bg-[#10121d] dark:hover:border-violet-400/20">

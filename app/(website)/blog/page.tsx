@@ -10,7 +10,9 @@ import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import BlogVisual from "@/components/website/blog-visual";
 import TutorialScreenshot from "@/components/website/tutorial-screenshot";
-import { BLOG_POSTS, getBlogPostsForLocale } from "@/lib/blog";
+import { getPublishedPosts } from "@/lib/editorial-server";
+
+export const dynamic = "force-dynamic";
 import { ArrowRight, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -28,18 +30,19 @@ const pageMetadata: Metadata = {
   },
 };
 type Props = { searchParams: { page?: string | string[] } };
-export function generateMetadata({ searchParams }: Props): Metadata {
-  const pagination = getBlogPage(searchParams.page, BLOG_POSTS.length);
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const pagination = getBlogPage(searchParams.page, (await getPublishedPosts()).length);
   if (!pagination) return { robots: { index: false, follow: true } };
   return localizedMetadata({ ...pageMetadata, title: pagination.page === 1 ? pageMetadata.title : `AP3K Blog — Page ${pagination.page} | Instagram Automation Guides` }, blogPagePath(pagination.page));
 }
 
-export default function BlogPage({ searchParams }: Props) {
-  const pagination = getBlogPage(searchParams.page, BLOG_POSTS.length);
+export default async function BlogPage({ searchParams }: Props) {
+  const allPosts = await getPublishedPosts();
+  const pagination = getBlogPage(searchParams.page, allPosts.length);
   if (!pagination) notFound();
   if (searchParams.page === "1") redirect(localizePublicPath("/blog", getServerLocale()));
   const locale = getServerLocale();
-  const posts = getBlogPostsForLocale(locale).slice(pagination.start, pagination.end);
+  const posts = (locale === "en" ? allPosts : [...allPosts.filter(p=>!p.contentLocale),...allPosts.filter(p=>p.contentLocale)]).slice(pagination.start, pagination.end);
   const collection = {
     "@context": "https://schema.org", "@type": "CollectionPage",
     name: "AP3K Blog", url: `https://ap3k.com${localizePublicPath(blogPagePath(pagination.page), locale)}`,

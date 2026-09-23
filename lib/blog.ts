@@ -13,6 +13,8 @@ export type BlogSection = {
 };
 
 export type BlogPost = {
+  seoTitle?: string;
+  noIndex?: boolean;
   contentLocale?: "en";
   related?: string[];
   wordCount?: number;

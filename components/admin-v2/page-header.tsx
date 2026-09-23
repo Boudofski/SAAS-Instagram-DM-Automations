@@ -24,7 +24,7 @@ export function AdminPageHeader({
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-pink-400">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">
             {eyebrow}
           </p>
           {typeof count === "number" && (
@@ -33,7 +33,7 @@ export function AdminPageHeader({
             </span>
           )}
         </div>
-        <h1 className="mt-2 break-words [overflow-wrap:anywhere] text-[1.65rem] font-black leading-tight tracking-[-0.035em] text-white sm:text-3xl">
+        <h1 className="mt-2 break-words [overflow-wrap:anywhere] text-[1.65rem] font-semibold leading-tight tracking-[-0.035em] text-white sm:text-3xl">
           {title}
         </h1>
         {description && (
@@ -81,7 +81,7 @@ export function AdminSurface({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/[0.075] bg-[#0c111d]/88 shadow-[0_16px_50px_rgba(0,0,0,0.16)]",
+        "rounded-xl border border-white/[0.08] bg-[#10141e]",
         className
       )}
     >

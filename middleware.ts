@@ -92,6 +92,7 @@ export default clerkMiddleware(async (auth, req) => {
   const locale = resolveRequestLocale(requestedPath, firstVisit ? browserPreference : savedLocale);
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-ap3k-locale", locale);
+  requestHeaders.set("x-ap3k-request-path", requestedPath);
 
   if (pathLocale) {
     const destination = req.nextUrl.clone();

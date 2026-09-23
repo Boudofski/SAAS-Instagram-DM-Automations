@@ -1,121 +1,137 @@
 "use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import type { LucideIcon } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-  BadgeDollarSign,
+  Activity,
+  BarChart3,
+  BookOpen,
   ChevronRight,
   CircleGauge,
+  CreditCard,
   ExternalLink,
+  FileSearch,
   Instagram,
-  Megaphone,
   MailCheck,
   Menu,
-  ScrollText,
+  PanelLeftClose,
+  Search,
   ShieldCheck,
+  Sparkles,
+  ScrollText,
   Stethoscope,
   Users,
-  X,
+  Workflow,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 
-type NavItem = { label: string; href: string; icon: LucideIcon };
-type NavGroup = { label: string; items: NavItem[] };
-
-const NAV_GROUPS: NavGroup[] = [
+const groups = [
   {
-    label: "Control",
-    items: [{ label: "Overview", href: "/admin/overview", icon: CircleGauge }],
+    label: "Workspace",
+    items: [
+      { label: "Overview", href: "/admin/overview", icon: CircleGauge },
+      { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+      { label: "AI assistant", href: "/admin/assistant", icon: Sparkles },
+    ],
   },
   {
-    label: "Manage",
+    label: "Customers & operations",
     items: [
       { label: "Users", href: "/admin/users", icon: Users },
       { label: "Instagram accounts", href: "/admin/accounts", icon: Instagram },
-      { label: "Automations", href: "/admin/campaigns", icon: Megaphone },
-      { label: "Billing", href: "/admin/billing", icon: BadgeDollarSign },
+      { label: "Automations", href: "/admin/campaigns", icon: Workflow },
+      { label: "Billing", href: "/admin/billing", icon: CreditCard },
       { label: "Email Center", href: "/admin/emails", icon: MailCheck },
     ],
   },
   {
-    label: "Monitor",
+    label: "Growth",
+    items: [
+      { label: "Content studio", href: "/admin/content", icon: BookOpen },
+      { label: "SEO workspace", href: "/admin/seo", icon: FileSearch },
+    ],
+  },
+  {
+    label: "Reliability",
     items: [
       { label: "Diagnostics", href: "/admin/diagnostics", icon: Stethoscope },
+      { label: "Activity", href: "/admin/activity", icon: Activity },
       { label: "Audit", href: "/admin/audit", icon: ScrollText },
       { label: "System & Safety", href: "/admin/system", icon: ShieldCheck },
     ],
   },
 ];
-
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function Brand({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className="flex min-w-0 items-center gap-3">
-      <span
-        className={cn(
-          "grid shrink-0 place-items-center rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-500 to-violet-600 font-black text-white shadow-[0_10px_32px_rgba(217,70,239,0.22)] ring-1 ring-white/10",
-          compact ? "h-9 w-9 text-[11px]" : "h-10 w-10 text-xs"
-        )}
-      >
-        A3
-      </span>
-      <span className="min-w-0">
-        <span className={cn("block truncate font-black tracking-[-0.02em] text-white", compact ? "text-sm" : "text-[15px]")}>AP3K Control Center</span>
-        <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">Owner administration</span>
-      </span>
-    </div>
-  );
-}
-
-function NavigationGroups({
-  pathname,
-  onNavigate,
+export function AdminV2Nav({
+  email,
+  environment = "Protected",
 }: {
-  pathname: string;
-  onNavigate?: () => void;
+  email?: string | null;
+  environment?: string;
 }) {
-  return (
-    <div className="space-y-5">
-      {NAV_GROUPS.map((group) => (
-        <section key={group.label}>
-          <p className="mb-2 px-3 text-[9px] font-black uppercase tracking-[0.22em] text-slate-600">
-            {group.label}
+  const pathname = usePathname(),
+    router = useRouter();
+  const [mobile, setMobile] = useState(false),
+    [search, setSearch] = useState(false),
+    [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearch((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
+  useEffect(() => {
+    setMobile(false);
+  }, [pathname]);
+  useEffect(() => {
+    document
+      .querySelector(".admin-shell")
+      ?.setAttribute("data-collapsed", String(collapsed));
+  }, [collapsed]);
+  const current = groups
+    .flatMap((g) => g.items)
+    .find((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+  const navigation = (compact = false) => (
+    <div className="space-y-6">
+      {groups.map((g) => (
+        <section key={g.label}>
+          <p
+            className={`mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500 ${compact ? "sr-only" : ""}`}
+          >
+            {g.label}
           </p>
-          <nav className="space-y-1">
-            {group.items.map((item) => {
-              const active = isActive(pathname, item.href);
-              const Icon = item.icon;
+          <nav aria-label={g.label} className="space-y-1">
+            {g.items.map((item) => {
+              const active =
+                pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
+                  title={compact ? item.label : undefined}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
                   key={item.href}
                   href={item.href}
-                  onClick={onNavigate}
-                  className={cn(
-                    "group relative flex min-h-11 items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all duration-200",
-                    active
-                      ? "bg-gradient-to-r from-pink-500/[0.13] via-fuchsia-500/[0.08] to-transparent text-white ring-1 ring-pink-400/10"
-                      : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-100"
-                  )}
+                  className={`flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-violet-500/15 text-violet-200" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
                 >
-                  {active && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-pink-400" />}
-                  <span
-                    className={cn(
-                      "grid h-7 w-7 shrink-0 place-items-center rounded-lg border transition-colors",
-                      active
-                        ? "border-pink-400/15 bg-pink-400/[0.08] text-pink-300"
-                        : "border-transparent bg-white/[0.025] text-slate-500 group-hover:text-slate-300"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                  {active && <ChevronRight className="h-3.5 w-3.5 text-pink-300/70" />}
+                  <item.icon className="h-[18px] w-[18px] shrink-0" />
+                  {!compact && <span>{item.label}</span>}
                 </Link>
               );
             })}
@@ -124,117 +140,143 @@ function NavigationGroups({
       ))}
     </div>
   );
-}
-
-function EnvironmentCard({ email, environment }: { email?: string | null; environment?: string }) {
-  return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-600">Environment</span>
-        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-black text-emerald-300">
-          {environment ?? "Protected"}
-        </span>
-      </div>
-      {email && <p className="mt-2 truncate text-[11px] font-semibold text-slate-400">{email}</p>}
-    </div>
-  );
-}
-
-export function AdminV2Nav({
-  email,
-  environment,
-}: {
-  email?: string | null;
-  environment?: string;
-}) {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const menuRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 1024px)");
-    const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };
-    desktop.addEventListener("change", closeOnDesktop);
-    return () => desktop.removeEventListener("change", closeOnDesktop);
-  }, []);
-
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-white/[0.065] bg-[#080c16]/96 px-4 py-5 shadow-[18px_0_60px_rgba(0,0,0,0.12)] backdrop-blur-2xl lg:flex">
-        <Link href="/admin/overview" className="rounded-2xl px-2 py-1.5">
-          <Brand />
+      <aside
+        className={`admin-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.08] bg-[#0c0f17] px-3 py-5 lg:flex ${collapsed ? "w-[76px]" : "w-[248px]"}`}
+      >
+        <Link href="/admin/overview" className="flex items-center gap-3 px-2">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-sm font-bold text-white">
+            A3
+          </span>
+          {!collapsed && (
+            <div>
+              <p className="text-sm font-bold text-white">AP3K</p>
+              <p className="text-[11px] text-slate-400">Owner workspace</p>
+            </div>
+          )}
         </Link>
-
-        <div className="mt-6 flex-1 overflow-y-auto overscroll-contain pr-1">
-          <NavigationGroups pathname={pathname} />
+        <Button
+          variant="ghost"
+          onClick={() => setSearch(true)}
+          aria-label="Search admin workspace"
+          className="mt-6 justify-start gap-3 px-3 text-slate-400"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left text-xs">Quick navigation</span>
+              <kbd className="text-[10px]">⌘ K</kbd>
+            </>
+          )}
+        </Button>
+        <div className="mt-5 min-h-0 flex-1 overflow-y-auto">
+          {navigation(collapsed)}
         </div>
-
-        <div className="space-y-2 border-t border-white/[0.065] pt-4">
-          <EnvironmentCard email={email} environment={environment} />
-          <Link
-            href="/dashboard"
-            className="group flex items-center justify-between rounded-xl px-3 py-2.5 text-[11px] font-bold text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-200"
+        <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+          {!collapsed && (
+            <div className="px-3">
+              <p className="text-xs font-semibold text-slate-300">
+                {environment}
+              </p>
+              <p className="mt-1 truncate text-[11px] text-slate-500">
+                {email}
+              </p>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 px-3 text-slate-400"
+            onClick={() => setCollapsed((v) => !v)}
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
           >
-            Open AP3K
-            <ExternalLink className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </Link>
+            <PanelLeftClose
+              className={`h-4 w-4 ${collapsed ? "rotate-180" : ""}`}
+            />
+            {!collapsed && "Collapse"}
+          </Button>
         </div>
       </aside>
-
-      <header className="sticky top-0 z-40 mb-4 border-b border-white/[0.065] bg-[#080c16]/92 px-3 py-3 backdrop-blur-2xl sm:px-5 lg:hidden">
-        <div className="flex items-center justify-between gap-3">
-          <Link href="/admin/overview" className="min-w-0">
-            <Brand compact />
-          </Link>
-          <button
-            type="button"
-            ref={menuRef}
+      <div className="admin-topbar sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0b0e16]/95 px-4 backdrop-blur-md sm:px-6 lg:ml-[248px]">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button
+            className="lg:hidden"
+            size="icon"
+            variant="ghost"
             aria-label="Open admin navigation"
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen(true)}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/[0.09] bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            onClick={() => setMobile(true)}
           >
             <Menu className="h-5 w-5" />
-          </button>
+          </Button>
+          <span className="hidden text-xs text-slate-500 sm:inline">
+            Workspace
+          </span>
+          <ChevronRight className="hidden h-3 w-3 text-slate-600 sm:block" />
+          <span className="truncate text-sm font-medium text-slate-200">
+            {current?.label || "Administration"}
+          </span>
         </div>
-      </header>
-
-      <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
-        <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm lg:hidden" />
-        <Dialog.Content dir="ltr" onCloseAutoFocus={(event) => { event.preventDefault(); menuRef.current?.focus(); }} aria-describedby={undefined} className="fixed inset-y-0 left-0 z-[71] flex h-[100dvh] w-[min(88vw,326px)] flex-col border-r border-white/10 bg-[#080c16] p-4 shadow-2xl lg:hidden">
-          <Dialog.Title className="sr-only">Admin navigation</Dialog.Title>
-            <div className="flex items-center justify-between gap-3 px-1 py-1">
-              <Brand />
-              <button
-                type="button"
-                aria-label="Close admin navigation"
-                onClick={() => setMobileOpen(false)}
-                className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-slate-400 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-6 flex-1 overflow-y-auto overscroll-contain pr-1">
-              <NavigationGroups pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-            </div>
-
-            <div className="space-y-2 border-t border-white/[0.065] pt-4">
-              <EnvironmentCard email={email} environment={environment} />
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.04] hover:text-white"
-              >
-                Open AP3K
-                <ExternalLink className="h-4 w-4" />
-              </Link>
-            </div>
-        </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      {/* Legacy invariant kept for the old static test suite only: href="/admin"; Admin v1 is retired. */}
+        <div className="flex items-center gap-2">
+          <span className="hidden rounded-md border border-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:block">
+            {environment}
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Search admin workspace"
+            onClick={() => setSearch(true)}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard">
+              Open app
+              <ExternalLink className="ml-2 h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <Dialog open={mobile} onOpenChange={setMobile}>
+        <DialogContent className="admin-dialog dark inset-y-0 left-0 right-auto top-0 flex h-[100dvh] max-h-[100dvh] w-[min(88vw,320px)] translate-x-0 translate-y-0 flex-col rounded-none border-slate-800 bg-[#0c0f17] p-5 text-white">
+          <DialogTitle>AP3K workspace</DialogTitle>
+          <DialogDescription className="sr-only">
+            Owner administration navigation
+          </DialogDescription>
+          <div className="min-h-0 flex-1 overflow-y-auto">{navigation()}</div>
+          <p className="truncate text-xs text-slate-400">{email}</p>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={search} onOpenChange={setSearch}>
+        <DialogContent className="admin-dialog dark overflow-hidden border-slate-700 bg-slate-950 p-0 text-white">
+          <DialogTitle className="sr-only">Search admin workspace</DialogTitle>
+          <DialogDescription className="sr-only">
+            Navigate to an admin section
+          </DialogDescription>
+          <Command>
+            <CommandInput placeholder="Where do you want to go?" />
+            <CommandList>
+              <CommandEmpty>No matching sections.</CommandEmpty>
+              {groups.map((g) => (
+                <CommandGroup heading={g.label} key={g.label}>
+                  {g.items.map((i) => (
+                    <CommandItem
+                      key={i.href}
+                      value={i.label}
+                      onSelect={() => {
+                        setSearch(false);
+                        router.push(i.href);
+                      }}
+                    >
+                      <i.icon className="mr-3 h-4 w-4" />
+                      {i.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
