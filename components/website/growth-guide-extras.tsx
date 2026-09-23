@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getServerLocale } from "@/lib/i18n/server";
 import { localizePublicPath } from "@/lib/i18n/config";
@@ -6,11 +5,11 @@ import intents from "@/lib/content/growth/search-intents.json";
 import { GROWTH_SOURCES } from "@/lib/content/growth/sources";
 
 const copy = {
-  en: ["Official sources", "See the comment-to-DM example", "Screenshot of AP3K’s public interactive example in English, using sample data. It illustrates the sequence, not an actual customer conversation or delivery result.", "Run the interactive example", "Setup and troubleshooting", "Compare plans"],
-  fr: ["Sources officielles", "Voir le parcours du commentaire au DM", "Capture de l’exemple interactif public d’AP3K en anglais, avec des données de démonstration. Elle illustre les étapes, pas une conversation client ou une livraison réelle.", "Lancer l’exemple interactif", "Configuration et dépannage", "Comparer les offres"],
-  es: ["Fuentes oficiales", "Mira el ejemplo de comentario a DM", "Captura del ejemplo interactivo público de AP3K en inglés con datos de muestra. Ilustra la secuencia, no una conversación real ni un resultado de entrega.", "Abrir el ejemplo interactivo", "Configuración y solución de problemas", "Comparar planes"],
-  de: ["Offizielle Quellen", "Beispiel vom Kommentar zur DM ansehen", "Screenshot des öffentlichen interaktiven AP3K-Beispiels auf Englisch mit Beispieldaten. Er zeigt den Ablauf, kein echtes Kundengespräch oder Zustellergebnis.", "Interaktives Beispiel starten", "Einrichtung und Fehlerbehebung", "Tarife vergleichen"],
-  pt: ["Fontes oficiais", "Veja o exemplo de comentário para DM", "Captura do exemplo interativo público do AP3K em inglês com dados de demonstração. Ilustra a sequência, não uma conversa real nem um resultado de entrega.", "Abrir o exemplo interativo", "Configuração e resolução de problemas", "Comparar planos"],
+  en: ["Official sources", "Ready to automate Instagram?", "Start free, compare the plans, or review the setup guide before connecting your professional Instagram account.", "Explore Instagram DM automation", "Setup and troubleshooting", "Compare plans"],
+  fr: ["Sources officielles", "Prêt à automatiser Instagram ?", "Commencez gratuitement, comparez les offres ou consultez le guide de configuration avant de connecter votre compte Instagram professionnel.", "Découvrir l’automatisation des DM Instagram", "Configuration et dépannage", "Comparer les offres"],
+  es: ["Fuentes oficiales", "¿Listo para automatizar Instagram?", "Empieza gratis, compara los planes o revisa la guía de configuración antes de conectar tu cuenta profesional de Instagram.", "Explorar la automatización de mensajes de Instagram", "Configuración y solución de problemas", "Comparar planes"],
+  de: ["Offizielle Quellen", "Bereit für Instagram-Automatisierung?", "Starte kostenlos, vergleiche die Tarife oder lies die Einrichtungsanleitung, bevor du dein professionelles Instagram-Konto verbindest.", "Instagram-DM-Automatisierung entdecken", "Einrichtung und Fehlerbehebung", "Tarife vergleichen"],
+  pt: ["Fontes oficiais", "Pronto para automatizar o Instagram?", "Comece gratuitamente, compare os planos ou consulte o guia de configuração antes de ligar a sua conta profissional do Instagram.", "Explorar a automação de DM do Instagram", "Configuração e resolução de problemas", "Comparar planos"],
 };
 
 export function GrowthSectionSources({ slug, index }: { slug: string; index: number }) {
@@ -27,16 +26,13 @@ export default function GrowthGuideExtras({ slug }: { slug: string }) {
   if (!Object.prototype.hasOwnProperty.call(intents, slug)) return null;
   const locale = getServerLocale();
   const labels = copy[locale];
-  return <section className="mt-12 rounded-3xl border border-violet-500/20 bg-violet-50/60 p-5 dark:bg-violet-500/5 sm:p-8">
+  return <section className="mt-12 rounded-3xl border border-violet-500/20 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-5 dark:from-violet-500/10 dark:via-white/[0.03] dark:to-fuchsia-500/10 sm:p-8">
     <h2 className="text-2xl font-black">{labels[1]}</h2>
-    <figure className="mx-auto mt-6 max-w-xl">
-      <Image src="/images/guides/comment-to-dm-example.jpg" alt={labels[1]} width={556} height={405} sizes="(max-width: 640px) 85vw, 556px" className="h-auto w-full rounded-2xl" />
-      <figcaption className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{labels[2]}</figcaption>
-    </figure>
-    <nav className="mt-6 flex flex-wrap gap-4 text-sm font-bold text-violet-600 dark:text-violet-300">
-      <Link href={`${localizePublicPath("/instagram-dm-automation", locale)}#example`} className="underline underline-offset-4">{labels[3]}</Link>
-      <Link href={localizePublicPath("/help", locale)} className="underline underline-offset-4">{labels[4]}</Link>
-      <Link href={localizePublicPath("/pricing", locale)} className="underline underline-offset-4">{labels[5]}</Link>
+    <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">{labels[2]}</p>
+    <nav className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <Link href={localizePublicPath("/pricing", locale)} className="inline-flex min-h-11 items-center justify-center rounded-full bg-violet-700 px-5 text-sm font-black text-white transition hover:bg-violet-800">{labels[5]}</Link>
+      <Link href={localizePublicPath("/instagram-dm-automation", locale)} className="inline-flex min-h-11 items-center justify-center rounded-full border border-violet-300 px-5 text-sm font-black text-violet-700 transition hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-400/10">{labels[3]}</Link>
+      <Link href={localizePublicPath("/help", locale)} className="inline-flex min-h-11 items-center justify-center px-3 text-sm font-bold text-slate-600 underline underline-offset-4 dark:text-slate-300">{labels[4]}</Link>
     </nav>
   </section>;
 }

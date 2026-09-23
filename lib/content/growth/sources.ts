@@ -6,9 +6,10 @@ export const GROWTH_SOURCES: Record<string, Record<number, Source[]>> = {
   },
   "compare-instagram-dm-automation-tools": {
     0: [
-      { name: "Manychat", url: "https://manychat.com/" },
+      { name: "ManyChat", url: "https://manychat.com/product/instagram" },
       { name: "Chatfuel", url: "https://chatfuel.com/instagram" },
-      { name: "InstaChamp", url: "https://app.mobilemonkey.com/instachamp" },
+      { name: "LinkDM", url: "https://www.linkdm.com/" },
+      { name: "respond.io", url: "https://respond.io/help/instagram/instagram" },
     ],
     2: [{ name: "Manychat", url: "https://manychat.com/pricing" }],
   },

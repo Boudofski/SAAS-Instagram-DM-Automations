@@ -5,10 +5,10 @@ import { translateUi } from "@/lib/i18n/translate";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import AutomationDemo from "@/components/website/automation-demo";
+import PricingExperience from "@/components/global/pricing-experience";
 import type { CommercialPage } from "@/lib/commercial-pages";
 import { localizePublicPath } from "@/lib/i18n/config";
-import { ArrowRight, CheckCircle2, CircleAlert, PlayCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleAlert } from "lucide-react";
 import Link from "next/link";
 
 const THEME_STYLES = {
@@ -138,7 +138,7 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
               <p className="mt-5 max-w-2xl text-sm font-bold leading-6 text-white/75">{page.proof}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/sign-up" className={`inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black shadow-xl transition hover:-translate-y-0.5 ${theme.button}`}><UiText>{"GET STARTED "}</UiText><ArrowRight className="h-4 w-4" /></Link>
-                <a href="#example" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15"><PlayCircle className="h-4 w-4" /><UiText>{" Try the example"}</UiText></a>
+                <a href="#pricing" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15"><UiText>{"Compare plans"}</UiText><ArrowRight className="h-4 w-4" /></a>
               </div>
               <p className="mt-4 text-xs font-bold text-white/65"><UiText>{"500 automated actions/month · 1 Instagram account · 5 active automations"}</UiText></p>
             </div>
@@ -170,14 +170,14 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
           </div>
         </section>
 
-        <section id="example" className="bg-[#11131d] px-4 py-20 text-white sm:px-8 lg:px-16">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-fuchsia-300"><UiText>{"See the logic"}</UiText></p>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-5xl"><UiText>{"Try a real campaign pattern."}</UiText></h2>
-              <p className="mt-5 max-w-xl text-base leading-8 text-white/65"><UiText>{"This example mirrors AP3K’s core event order. In production you choose the post, trigger, public reply, DM, and link independently."}</UiText></p>
+        <section id="pricing" className="scroll-mt-20 bg-[#f7f6fb] px-4 py-20 dark:bg-[#0b0c14] sm:px-8 lg:px-16">
+          <div className="mx-auto max-w-[1240px]">
+            <div className="mx-auto mb-12 max-w-3xl text-center">
+              <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme.accent}`}><UiText>{"Simple pricing"}</UiText></p>
+              <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-5xl"><UiText>{"Start free. Save more annually."}</UiText></h2>
+              <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300"><UiText>{"One Instagram account, 500 automated actions and up to five active automations on Free. Upgrade when your audience or AI usage grows."}</UiText></p>
             </div>
-            <AutomationDemo keyword={page.keyword} />
+            <PricingExperience compact />
           </div>
         </section>
 

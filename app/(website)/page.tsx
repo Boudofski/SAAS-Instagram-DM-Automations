@@ -260,7 +260,7 @@ export default function LandingPage() {
             <FadeIn className="max-w-3xl">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Explore by goal</p>
               <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">Start with the Instagram outcome you need.</h2>
-              <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-400">See practical workflows, interactive examples, honest limitations, and setup tutorials for each use case.</p>
+              <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-400">See practical workflows, real product previews, honest limitations, and setup tutorials for each use case.</p>
             </FadeIn>
             <StaggerContainer className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {SOLUTION_PAGES.map(([title, href, description]) => (

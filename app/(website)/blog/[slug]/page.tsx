@@ -137,7 +137,7 @@ export default function BlogPostPage({ params }: Props) {
 
           <ReadableReveal delay={0.06}>
             <div className="mt-10">
-              {post.cover ? <p className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-7 text-slate-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-300">{TUTORIAL_LABELS.hint}</p> : <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />}
+              {post.cover ? <><TutorialScreenshot id={post.cover} /><p className="mt-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-7 text-slate-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-300">{TUTORIAL_LABELS.hint}</p></> : <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />}
             </div>
           </ReadableReveal>
 

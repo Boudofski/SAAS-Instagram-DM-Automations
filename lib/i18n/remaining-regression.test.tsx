@@ -25,7 +25,7 @@ import { COMPANY_COPY } from "./company-copy";
 import { generateMetadata as commercialMetadata } from "@/app/(website)/[slug]/page";
 
 function prose(value: unknown, field = ""): string[] {
-  if (["slug", "theme", "media", "video", "keyword", "visual", "screenshot", "cover", "contentLocale", "publishedAt", "updatedAt"].includes(field)) return [];
+  if (["slug", "href", "theme", "media", "video", "keyword", "visual", "screenshot", "cover", "contentLocale", "publishedAt", "updatedAt"].includes(field)) return [];
   if (typeof value === "string") return ["Instagram", "AP3K", "Business", "Pro"].includes(value) ? [] : [value];
   if (Array.isArray(value)) return value.flatMap(item => prose(item, field));
   if (value && typeof value === "object") return Object.entries(value).flatMap(([key, item]) => prose(item, key));
@@ -60,6 +60,9 @@ describe("complete public localization and search metadata", () => {
       for (const page of COMMERCIAL_PAGES) {
         const html = renderToStaticMarkup(<CommercialLandingPage page={page} />);
         expect(html).toContain("AP3K");
+        expect(html).toContain('id="pricing"');
+        expect(html).not.toContain('id="example"');
+        expect(html).not.toContain("Interactive example");
       }
     }
   });
