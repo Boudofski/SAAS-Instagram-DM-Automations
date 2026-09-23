@@ -177,7 +177,7 @@ export async function generateAdminAssistance(mode:"operations"|"editorial",cont
       mode==="operations"?"Produce a concise owner briefing: observed signals, up to three priorities, and concrete checks to perform. Counters are operational records, not confirmed message reads or purchases. Plans are entitlements, not paid revenue.":"Review this article: suggest three search titles, one meta description under 160 characters, content gaps, and unsupported claims to verify. Do not claim keyword volume or promise rankings. Do not rewrite or publish the article automatically.",
       "Return plain text with short paragraphs. No HTML. Stay under 600 words.",
     ].join("\n")},{role:"user",content:context.slice(0,24000)}],
-  });
+  }, { timeout: 25_000, maxRetries: 0 });
   const output=completion.choices[0]?.message?.content?.trim();
   if(!output)throw new Error("Empty response.");
   return output.slice(0,8000);
