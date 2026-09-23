@@ -228,19 +228,17 @@ export default function LandingPage() {
 
         <FeatureDemos demos={BENEFITS} />
 
-        <section id="how-it-works" className="bg-[#f1edfb] px-4 py-20 dark:bg-[#0e1020] sm:px-8 lg:px-16 lg:py-24">
-          <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[0.98fr_1.02fr] lg:gap-24">
-            <FadeIn>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">Start in minutes</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">New to automation? Do not overthink it.</h2>
-              <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
-              <AnimatedSetupSteps />
+        <section id="how-it-works" className="relative overflow-hidden border-y border-violet-200/60 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),transparent_32rem),linear-gradient(180deg,#f6f3fd_0%,#eee9fa_100%)] px-4 py-20 dark:border-white/[0.08] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.2),transparent_34rem),linear-gradient(180deg,#0e1020_0%,#0a0b16_100%)] sm:px-8 sm:py-24 lg:px-16 lg:py-28">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-fuchsia-300/20 blur-3xl dark:bg-fuchsia-500/[0.08]" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-32 bottom-0 h-80 w-80 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/[0.08]" />
+
+          <div className="relative mx-auto max-w-7xl">
+            <FadeIn className="mx-auto max-w-4xl text-center">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">Start in minutes</p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.055em] text-slate-950 dark:text-white sm:text-5xl lg:text-6xl">New to automation? Do not overthink it.</h2>
+              <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
             </FadeIn>
-            <FadeIn delay={0.06}>
-              <div className="rounded-[2.2rem] border border-violet-200/70 bg-[linear-gradient(145deg,#f9f7ff,#ece5ff)] p-5 shadow-surface dark:border-white/8 dark:bg-[linear-gradient(145deg,#15172a,#111221)] sm:p-8">
-                <ProductVideo src="/media/templates_05-phone.mp4" poster="/media/templates_05-poster.webp" label="AP3K automation setup demo" className="max-w-[280px]" />
-              </div>
-            </FadeIn>
+            <AnimatedSetupSteps />
           </div>
         </section>
 
