@@ -94,7 +94,7 @@ const config = {
         "rf-border":  "#26324A",
         "rf-blue":    "#60A5FA",
         "rf-purple":  "#A78BFA",
-        "rf-pink":    "#F472B6",
+        "rf-pink":    "hsl(var(--brand-pink))",
         "rf-orange":  "#F58529",
         "rf-magenta": "#DD2A7B",
         "rf-violet":  "#8134AF",

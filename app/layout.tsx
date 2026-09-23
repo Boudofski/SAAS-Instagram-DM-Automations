@@ -11,7 +11,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "optional" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", fallback: ["Arial", "Helvetica", "sans-serif"] });
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 export function generateMetadata(): Metadata {
@@ -55,7 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang={localeDetails.htmlLang} dir={localeDetails.direction} suppressHydrationWarning>
       <body className={jakarta.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <I18nProvider locale={locale}>
             <ReduxProvider>
               <ReactQueryProvider>{children}</ReactQueryProvider>

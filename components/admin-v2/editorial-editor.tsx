@@ -131,12 +131,12 @@ export function EditorialEditor({
   const checks = editorialChecks(post);
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#10141e] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#10141e] p-4">
         <div>
-          <p className="text-sm font-semibold text-white">
+          <p className="text-sm font-semibold text-slate-950 dark:text-white">
             {dirty ? "Unsaved changes" : "Draft workspace"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             English content · Revision {version} · Saving does not publish
           </p>
         </div>
@@ -165,7 +165,7 @@ export function EditorialEditor({
       {message && (
         <p
           role={error ? "alert" : "status"}
-          className={`rounded-xl border p-4 text-sm ${error ? "border-red-400/30 bg-red-500/10 text-red-200" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"}`}
+          className={`rounded-xl border p-4 text-sm ${error ? "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-200" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"}`}
         >
           {message}
         </p>
@@ -202,7 +202,7 @@ export function EditorialEditor({
                     value={post.slug}
                     onChange={(e) => change({ slug: e.target.value })}
                   />
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     Locked after first save to protect links.
                   </p>
                 </Field>
@@ -359,7 +359,7 @@ export function EditorialEditor({
                   />
                 </Field>
                 <details>
-                  <summary className="cursor-pointer text-sm text-violet-300">
+                  <summary className="cursor-pointer text-sm text-violet-700 dark:text-violet-300">
                     Steps, links and screenshot
                   </summary>
                   <div className="mt-4 space-y-4">
@@ -504,11 +504,11 @@ export function EditorialEditor({
           </TabsContent>
           <TabsContent value="preview">
             <article className="admin-panel space-y-6">
-              <p className="text-xs uppercase tracking-wider text-violet-300">
+              <p className="text-xs uppercase tracking-wider text-violet-700 dark:text-violet-300">
                 Private draft preview · not indexed
               </p>
               <h1 className="text-3xl font-bold">{post.title}</h1>
-              <p className="leading-7 text-slate-300">{post.intro}</p>
+              <p className="leading-7 text-slate-800 dark:text-slate-300">{post.intro}</p>
               {post.cover ? (
                 <TutorialScreenshot id={post.cover} />
               ) : (
@@ -520,13 +520,13 @@ export function EditorialEditor({
                   {s.paragraphs.map((p, n) => (
                     <p
                       key={n}
-                      className="whitespace-pre-wrap leading-7 text-slate-300"
+                      className="whitespace-pre-wrap leading-7 text-slate-800 dark:text-slate-300"
                     >
                       {p}
                     </p>
                   ))}
                   {s.bullets?.length ? (
-                    <ul className="list-disc space-y-2 pl-5 text-slate-300">
+                    <ul className="list-disc space-y-2 pl-5 text-slate-800 dark:text-slate-300">
                       {s.bullets.map((b, n) => (
                         <li key={n}>{b}</li>
                       ))}
@@ -537,12 +537,12 @@ export function EditorialEditor({
                       <h3 className="font-semibold">
                         {n + 1}. {step.title}
                       </h3>
-                      <p className="text-slate-300">{step.body}</p>
+                      <p className="text-slate-800 dark:text-slate-300">{step.body}</p>
                     </div>
                   ))}
                   {s.screenshot && <TutorialScreenshot id={s.screenshot} />}{" "}
                   {s.links?.map((l, n) => (
-                    <p key={n} className="text-sm text-violet-300">
+                    <p key={n} className="text-sm text-violet-700 dark:text-violet-300">
                       {l.label} · {l.href}
                     </p>
                   ))}
@@ -553,7 +553,7 @@ export function EditorialEditor({
           <TabsContent value="history">
             <div className="admin-panel space-y-4">
               <h2 className="font-semibold">Recent saved revisions</h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Load a snapshot into the editor, review it, then save or
                 publish. This does not change the live page.
               </p>
@@ -563,11 +563,11 @@ export function EditorialEditor({
                 history.map((h) => (
                   <div
                     key={h.id}
-                    className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4"
+                    className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 dark:border-white/10 pt-4"
                   >
                     <div className="text-sm">
                       <p>{h.action.replace("EDITORIAL_", "")}</p>
-                      <p className="text-xs text-slate-400"><LocalTime value={h.date}/></p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400"><LocalTime value={h.date}/></p>
                     </div>
                     <Button
                       variant="outline"
@@ -608,7 +608,7 @@ export function EditorialEditor({
                 value={post.description}
                 onChange={(e) => change({ description: e.target.value })}
               />
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {post.description.length}/170 characters
               </p>
             </Field>
@@ -640,14 +640,14 @@ export function EditorialEditor({
               />
               Keep this article out of search results (noindex)
             </label>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="truncate text-xs text-slate-400">
+            <div className="rounded-lg border border-slate-200 dark:border-white/10 p-3">
+              <p className="truncate text-xs text-slate-600 dark:text-slate-400">
                 ap3k.com/blog/{post.slug}
               </p>
-              <p className="mt-2 text-lg text-violet-300">
+              <p className="mt-2 text-lg text-violet-700 dark:text-violet-300">
                 {post.seoTitle || post.title}
               </p>
-              <p className="mt-1 text-sm text-slate-400">{post.description}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{post.description}</p>
             </div>
           </div>
           <div className="admin-panel space-y-3">
@@ -655,12 +655,12 @@ export function EditorialEditor({
             {checks.map((c) => (
               <p
                 key={c.label}
-                className="flex gap-2 text-xs leading-5 text-slate-300"
+                className="flex gap-2 text-xs leading-5 text-slate-800 dark:text-slate-300"
               >
                 {c.ok ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
                 ) : (
-                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300" />
                 )}
                 {c.label}
               </p>
@@ -671,7 +671,7 @@ export function EditorialEditor({
           </div>
           <div className="admin-panel space-y-3">
             <h2 className="font-semibold">AI editorial review</h2>
-            <p className="text-xs leading-5 text-slate-400">
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
               Send this draft to your active AI provider for titles, gaps and
               factual-risk checks. Suggestions only.
             </p>
@@ -680,7 +680,7 @@ export function EditorialEditor({
               {aiBusy ? "Reviewing…" : "Review draft"}
             </Button>
             {ai && (
-              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-300">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-800 dark:text-slate-300">
                 {ai}
               </p>
             )}
@@ -690,7 +690,7 @@ export function EditorialEditor({
               <Link
                 href={`/blog/${post.slug}`}
                 target="_blank"
-                className="block text-sm text-violet-300"
+                className="block text-sm text-violet-700 dark:text-violet-300"
               >
                 Open public URL ↗
               </Link>
@@ -705,7 +705,7 @@ export function EditorialEditor({
               >
                 Unpublish article
               </Button>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Removes the page from the public blog and sitemap; keeps all
                 content.
               </p>
@@ -719,7 +719,7 @@ export function EditorialEditor({
           if (!open) setRemoveSection(null);
         }}
       >
-        <AlertDialogContent className="admin-dialog dark border-slate-700 bg-slate-950 text-white">
+        <AlertDialogContent className="admin-dialog border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-950 dark:text-white">
           <AlertDialogTitle>Remove this section?</AlertDialogTitle>
           <AlertDialogDescription>
             This only changes the draft. Reloading before saving can recover the
@@ -746,7 +746,7 @@ export function EditorialEditor({
           if (!pending && !open) setConfirm(null);
         }}
       >
-        <AlertDialogContent className="admin-dialog dark border-slate-700 bg-slate-950 text-white">
+        <AlertDialogContent className="admin-dialog border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-950 dark:text-white">
           <AlertDialogTitle>
             {confirm === "publish"
               ? "Publish this article?"
@@ -759,7 +759,7 @@ export function EditorialEditor({
             Type {confirm?.toUpperCase()} to confirm.
           </AlertDialogDescription>
           {error && message && (
-            <p role="alert" className="text-sm text-red-300">
+            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
               {message}
             </p>
           )}

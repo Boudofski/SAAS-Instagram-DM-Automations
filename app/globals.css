@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 220 30% 97%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -21,7 +21,7 @@
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 98%;
     --border: 214 32% 91%;
-    --input: 215 16% 56%;
+    --input: 215 20% 76%;
     --ring: 263 70% 50%;
     --radius: 0.75rem;
     --primary-hover: 263 70% 43%;
@@ -48,11 +48,12 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-    --page-background: #f8fafc;
+    --page-background: #f5f6fa;
+    --brand-pink: 333 71% 41%;
 
     --scrollbar-track: transparent;
-    --scrollbar-thumb: #545454;
-    --scrollbar-thumb-hover: #5c5c5f;
+    --scrollbar-thumb: #c1c8d5;
+    --scrollbar-thumb-hover: #94a3b8;
 
     --scrollbar-width: 12px;
   }
@@ -91,6 +92,9 @@
     --sidebar-border: 220 32% 19%;
     --sidebar-ring: 217 91% 60%;
     --page-background: #050816;
+    --brand-pink: 329 86% 70%;
+    --scrollbar-thumb: #545454;
+    --scrollbar-thumb-hover: #5c5c5f;
     --primary-subtle: 260 30% 16%;
     --surface-elevated: 222 30% 14%;
     --border-subtle: 222 26% 15%;
@@ -126,6 +130,14 @@
 
   body * {
     min-width: 0;
+  }
+
+  html:not(.dark) body {
+    background: hsl(var(--background));
+  }
+
+  html:not(.dark) body::before {
+    display: none;
   }
 
   body::before {
@@ -169,7 +181,7 @@
   }
 
   .ap3k-page {
-    @apply min-h-screen min-w-0 overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-[#050816] dark:text-slate-50;
+    @apply min-h-screen min-w-0 overflow-x-hidden bg-background text-slate-950 dark:bg-[#050816] dark:text-slate-50;
   }
 
   .ap3k-panel {

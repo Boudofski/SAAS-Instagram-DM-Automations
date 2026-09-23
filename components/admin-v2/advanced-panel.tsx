@@ -18,7 +18,7 @@ export function AdvancedPanel({
   return (
     <div
       className={cn(
-        "rounded-xl border border-white/[0.065] bg-white/[0.02]",
+        "rounded-xl border border-slate-200 dark:border-white/[0.065] bg-slate-50 dark:bg-white/[0.02]",
         compact ? "mt-0" : "mt-3"
       )}
     >
@@ -27,7 +27,7 @@ export function AdvancedPanel({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={cn(
-          "flex w-full items-center justify-between gap-2 font-black text-slate-500 transition hover:text-slate-200",
+          "flex w-full items-center justify-between gap-2 font-black text-slate-500 transition hover:text-slate-800 dark:hover:text-slate-200",
           compact
             ? "px-2.5 py-1.5 text-[10px] normal-case tracking-normal"
             : "px-4 py-2.5 text-xs uppercase tracking-wide"
@@ -37,7 +37,7 @@ export function AdvancedPanel({
         <ChevronDown className={cn("shrink-0 transition-transform", compact ? "h-3 w-3" : "h-3.5 w-3.5", open && "rotate-180")} />
       </button>
       {open && (
-        <div className={cn("border-t border-white/[0.06]", compact ? "px-3 py-2.5" : "px-4 py-3")}>{children}</div>
+        <div className={cn("border-t border-slate-200 dark:border-white/[0.06]", compact ? "px-3 py-2.5" : "px-4 py-3")}>{children}</div>
       )}
     </div>
   );

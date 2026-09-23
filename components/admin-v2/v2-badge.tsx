@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils";
 type Tone = "green" | "amber" | "red" | "blue" | "slate" | "pink";
 
 const TONE_CLASSES: Record<Tone, string> = {
-  green: "border-emerald-500/25 bg-emerald-500/[0.09] text-emerald-300",
-  amber: "border-amber-500/25 bg-amber-500/[0.09] text-amber-200",
-  red: "border-red-500/25 bg-red-500/[0.09] text-red-300",
-  blue: "border-sky-500/25 bg-sky-500/[0.09] text-sky-300",
-  slate: "border-white/[0.09] bg-white/[0.045] text-slate-300",
-  pink: "border-pink-500/25 bg-pink-500/[0.09] text-pink-300",
+  green: "border-emerald-500/25 bg-emerald-500/[0.09] text-emerald-700 dark:text-emerald-300",
+  amber: "border-amber-500/25 bg-amber-500/[0.09] text-amber-800 dark:text-amber-200",
+  red: "border-red-500/25 bg-red-500/[0.09] text-red-700 dark:text-red-300",
+  blue: "border-sky-500/25 bg-sky-500/[0.09] text-sky-700 dark:text-sky-300",
+  slate: "border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.045] text-slate-800 dark:text-slate-300",
+  pink: "border-pink-500/25 bg-pink-500/[0.09] text-pink-700 dark:text-pink-300",
 };
 
 export function V2Badge({ children, tone = "slate" }: { children: React.ReactNode; tone?: Tone }) {

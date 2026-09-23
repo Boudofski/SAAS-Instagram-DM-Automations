@@ -18,26 +18,26 @@ export function AdminPageHeader({
   return (
     <header
       className={cn(
-        "flex min-w-0 flex-col gap-4 border-b border-white/[0.06] pb-5 sm:pb-6 lg:flex-row lg:items-end lg:justify-between",
+        "flex min-w-0 flex-col gap-4 border-b border-slate-200 dark:border-white/[0.06] pb-5 sm:pb-6 lg:flex-row lg:items-end lg:justify-between",
         className
       )}
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
             {eyebrow}
           </p>
           {typeof count === "number" && (
-            <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-400">
+            <span className="rounded-full border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-600 dark:text-slate-400">
               {count.toLocaleString()}
             </span>
           )}
         </div>
-        <h1 className="mt-2 break-words [overflow-wrap:anywhere] text-[1.65rem] font-semibold leading-tight tracking-[-0.035em] text-white sm:text-3xl">
+        <h1 className="mt-2 break-words [overflow-wrap:anywhere] text-[1.65rem] font-semibold leading-tight tracking-[-0.035em] text-slate-950 dark:text-white sm:text-3xl">
           {title}
         </h1>
         {description && (
-          <div className="mt-2 max-w-3xl text-[13px] leading-6 text-slate-400 sm:text-sm">
+          <div className="mt-2 max-w-3xl text-[13px] leading-6 text-slate-600 dark:text-slate-400 sm:text-sm">
             {description}
           </div>
         )}
@@ -59,7 +59,7 @@ export function AdminSectionHeader({
   return (
     <div className="mb-3 flex min-w-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300 sm:text-[13px]">
+        <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-800 dark:text-slate-300 sm:text-[13px]">
           {title}
         </h2>
         {description && (
@@ -81,7 +81,7 @@ export function AdminSurface({
   return (
     <div
       className={cn(
-        "rounded-xl border border-white/[0.08] bg-[#10141e]",
+        "rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#10141e]",
         className
       )}
     >

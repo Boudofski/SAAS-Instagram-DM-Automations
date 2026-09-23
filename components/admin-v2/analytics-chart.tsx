@@ -20,7 +20,7 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Activity over time</h2>
-          <p className="mt-1 text-xs text-slate-400">Daily totals · UTC</p>
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Daily totals · UTC</p>
         </div>
         <div className="flex flex-wrap gap-1">
           {(["sent", "signups", "leads", "failed"] as const).map((m) => (
@@ -48,35 +48,35 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
           >
             <CartesianGrid
               vertical={false}
-              stroke="#263040"
+              stroke="hsl(var(--border))"
               strokeDasharray="3 3"
             />
             <XAxis
               dataKey="date"
               tickFormatter={(v) => v.slice(5)}
               minTickGap={32}
-              stroke="#94a3b8"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={11}
             />
             <YAxis
               allowDecimals={false}
               width={38}
-              stroke="#94a3b8"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={11}
             />
             <Tooltip
               contentStyle={{
-                background: "#10141e",
-                border: "1px solid #334155",
+                background: "hsl(var(--popover))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
-                color: "#f8fafc",
+                color: "hsl(var(--popover-foreground))",
               }}
             />
             <Area
               type="monotone"
               dataKey={metric}
-              stroke={metric === "failed" ? "#fb7185" : "#a78bfa"}
-              fill={metric === "failed" ? "#fb7185" : "#8b5cf6"}
+              stroke={metric === "failed" ? "hsl(var(--destructive))" : "hsl(var(--primary))"}
+              fill={metric === "failed" ? "hsl(var(--destructive))" : "hsl(var(--primary))"}
               fillOpacity={0.12}
               strokeWidth={2}
               isAnimationActive={false}
@@ -85,7 +85,7 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
         </ResponsiveContainer>
       </div>
       <details className="mt-4">
-        <summary className="cursor-pointer text-xs text-slate-400">
+        <summary className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">
           View accessible data table
         </summary>
         <div className="mt-3 overflow-x-auto">
@@ -94,7 +94,7 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
               <tr>
                 {["Date (UTC)", "Sends", "Signups", "Leads", "Failures"].map(
                   (h) => (
-                    <th key={h} className="p-2 text-slate-400">
+                    <th key={h} className="p-2 text-slate-600 dark:text-slate-400">
                       {h}
                     </th>
                   ),
@@ -103,7 +103,7 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
             </thead>
             <tbody>
               {data.map((d) => (
-                <tr key={d.date} className="border-t border-white/5">
+                <tr key={d.date} className="border-t border-slate-200 dark:border-white/5">
                   <th className="p-2 font-normal">{d.date}</th>
                   <td className="p-2">{d.sent}</td>
                   <td className="p-2">{d.signups}</td>

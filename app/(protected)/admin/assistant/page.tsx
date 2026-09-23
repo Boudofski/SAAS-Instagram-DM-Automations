@@ -16,20 +16,20 @@ export default async function AssistantPage() {
         <div className="space-y-5">
           <div className="admin-panel">
             <h2 className="font-semibold">Editorial copilot</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400">
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
               Open any draft to get search-title ideas, a meta description,
               content gaps and claims to verify.
             </p>
             <Link
               href="/admin/content"
-              className="mt-4 inline-block text-sm text-violet-300"
+              className="mt-4 inline-block text-sm text-violet-700 dark:text-violet-300"
             >
               Review an article →
             </Link>
           </div>
           <div className="admin-panel">
             <h2 className="font-semibold">Safe by design</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-6 text-slate-400">
+            <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-6 text-slate-600 dark:text-slate-400">
               <li>No customer DMs, emails, API keys or tokens are sent.</li>
               <li>
                 No automatic publishing, billing changes or campaign actions.
@@ -39,7 +39,7 @@ export default async function AssistantPage() {
             </ul>
             <Link
               href="/admin/system"
-              className="mt-4 inline-block text-sm text-violet-300"
+              className="mt-4 inline-block text-sm text-violet-700 dark:text-violet-300"
             >
               Manage AI provider →
             </Link>
