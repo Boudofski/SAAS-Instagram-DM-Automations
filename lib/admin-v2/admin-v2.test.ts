@@ -65,10 +65,10 @@ describe("Admin v2 — Phase 1 safety invariants", () => {
     expect(takeCount, "every findMany must have a take: to prevent unbounded queries").toBeGreaterThanOrEqual(findManyCount);
   });
 
-  it("nav component links back to admin v1", () => {
+  it("nav uses canonical admin routes and includes publishing, analytics and safety", () => {
     const nav = read("components/admin-v2/nav.tsx");
-    expect(nav).toContain("href=\"/admin\"");
-    expect(nav).toContain("Admin v1");
+    for (const route of ["/admin/overview", "/admin/content", "/admin/analytics", "/admin/seo", "/admin/system", "/admin/audit"]) expect(nav).toContain(route);
+    expect(nav).not.toContain("Admin v1");
   });
 
   it("advanced panel is collapsed by default (useState false)", () => {

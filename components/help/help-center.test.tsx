@@ -5,7 +5,7 @@ import { HELP_CATEGORIES, relatedHelpArticles, searchHelpArticles } from "@/lib/
 import { helpArticleSections } from "@/lib/help-article-content";
 import { translateUi } from "@/lib/i18n/translate";
 import { type Locale, localizePublicPath, SUPPORTED_LOCALES } from "@/lib/i18n/config";
-import sitemap from "@/app/sitemap";
+import { buildSitemap as sitemap } from "@/lib/sitemap";
 
 const state = vi.hoisted(() => ({ locale: "en" as Locale }));
 vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: state.locale }) }));

@@ -519,6 +519,18 @@ model MessageLog {
   createdAt     DateTime     @default(now())
 }
 
+// Draft and published snapshots are separate: saving never changes the public site.
+model EditorialPost {
+  slug        String   @id
+  draft       Json
+  published   Json?
+  hidden      Boolean  @default(false)
+  version     Int      @default(1)
+  updatedBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model AdminAuditLog {
   id String @id @default(cuid())
 

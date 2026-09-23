@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
-import sitemap from "@/app/sitemap";
+import { buildSitemap as sitemap } from "@/lib/sitemap";
 import robots from "@/app/robots";
 import { SUPPORTED_LOCALES, isEnglishOnlyArticle, localizePublicPath, stripLocaleFromPath } from "@/lib/i18n/config";
 

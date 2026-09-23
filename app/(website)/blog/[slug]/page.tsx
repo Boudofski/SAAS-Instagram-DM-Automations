@@ -15,11 +15,15 @@ import TutorialScreenshot from "@/components/website/tutorial-screenshot";
 import TutorialGuides from "@/components/website/tutorial-guides";
 import { TUTORIAL_LABELS, TUTORIAL_SCREENSHOTS, tutorialImageSrc } from "@/lib/tutorial-content";
 import GrowthGuideExtras, { GrowthSectionSources } from "@/components/website/growth-guide-extras";
-import { BLOG_POSTS, getBlogPost } from "@/lib/blog";
+import { BLOG_POSTS } from "@/lib/blog";
+import { getPublishedPost, getPublishedPosts } from "@/lib/editorial-server";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { headers } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://ap3k.com";
 
@@ -35,16 +39,16 @@ export function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({ slug: post.slug }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const post = getBlogPost(params.slug);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const post = await getPublishedPost(params.slug);
   if (!post) return {};
   const socialImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
-  const locale = getServerLocale();
-  const seoTitle = locale === "en" && ENGLISH_SEO_TITLES[post.slug]
+  const locale = post.contentLocale ?? getServerLocale();
+  const seoTitle = post.seoTitle || (locale === "en" && ENGLISH_SEO_TITLES[post.slug]
     ? ENGLISH_SEO_TITLES[post.slug]
-    : `${post.title} | AP3K`;
+    : `${post.title} | AP3K`);
 
-  return localizedMetadata({
+  const metadata = localizedMetadata({
     title: seoTitle,
     description: post.description,
     keywords: post.keywords,
@@ -65,14 +69,21 @@ export function generateMetadata({ params }: Props): Metadata {
       description: post.description,
       images: [socialImage],
     },
-  }, `/blog/${post.slug}`);
+  }, `/blog/${post.slug}`, post.contentLocale);
+  if(post.noIndex) metadata.robots={index:false,follow:true};
+  if(post.contentLocale==="en") metadata.alternates={canonical:`${SITE_URL}/blog/${post.slug}`,languages:{en:`${SITE_URL}/blog/${post.slug}`,"x-default":`${SITE_URL}/blog/${post.slug}`}};
+  return metadata;
 }
 
-export default function BlogPostPage({ params }: Props) {
-  const post = getBlogPost(params.slug);
+export default async function BlogPostPage({ params }: Props) {
+  const post = await getPublishedPost(params.slug);
   if (!post) notFound();
+  // A saved language preference does not make the canonical English URL a
+  // localized route. Redirect only actual prefixes to avoid a redirect loop.
+  if (post.contentLocale === "en" && /^\/(fr|es|de|pt)\//.test(headers().get("x-ap3k-request-path") || "")) permanentRedirect(`/blog/${post.slug}`);
+  const publicPosts = await getPublishedPosts();
 
-  const related = post.related ? BLOG_POSTS.filter(item => post.related?.includes(item.slug)) : BLOG_POSTS
+  const related = post.related ? publicPosts.filter(item => post.related?.includes(item.slug)) : publicPosts
     .filter((item) => item.slug !== post.slug)
     .map((item) => ({
       item,
@@ -82,7 +93,7 @@ export default function BlogPostPage({ params }: Props) {
     .slice(0, 3)
     .map(({ item }) => item);
   const products = COMMERCIAL_PAGES.filter(page => page.tutorials.some(guide => guide.slug === post.slug));
-  const locale = getServerLocale();
+  const locale = post.contentLocale ?? getServerLocale();
   const articleImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
   const articleImageWidth = post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440;
   const articleImageHeight = post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810;

@@ -9,7 +9,7 @@ import { COMMERCIAL_PAGES } from "../commercial-pages";
 import { BLOG_POSTS } from "../blog";
 import { AP3K_HELP_ARTICLES } from "../ap3k-help";
 import { REMAINING_ROWS } from "./remaining-copy";
-import sitemap from "@/app/sitemap";
+import { buildSitemap as sitemap } from "@/lib/sitemap";
 
 const state = vi.hoisted(() => ({ locale: "en" as Locale }));
 vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: state.locale }) }));
