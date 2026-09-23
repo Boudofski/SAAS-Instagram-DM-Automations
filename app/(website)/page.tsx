@@ -228,15 +228,16 @@ export default function LandingPage() {
 
         <FeatureDemos demos={BENEFITS} />
 
-        <section id="how-it-works" className="relative overflow-hidden border-y border-violet-200/60 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),transparent_32rem),linear-gradient(180deg,#f6f3fd_0%,#eee9fa_100%)] px-4 py-20 dark:border-white/[0.08] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.2),transparent_34rem),linear-gradient(180deg,#0e1020_0%,#0a0b16_100%)] sm:px-8 sm:py-24 lg:px-16 lg:py-28">
-          <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-fuchsia-300/20 blur-3xl dark:bg-fuchsia-500/[0.08]" />
-          <div aria-hidden="true" className="pointer-events-none absolute -right-32 bottom-0 h-80 w-80 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/[0.08]" />
+        <section id="how-it-works" className="relative overflow-hidden border-y border-violet-200/60 bg-[linear-gradient(180deg,#f8f6fe_0%,#f0ecfb_100%)] px-4 py-16 dark:border-white/[0.08] dark:bg-[linear-gradient(180deg,#0e1020_0%,#090a13_100%)] sm:px-8 sm:py-20 lg:px-16 lg:py-24">
+          <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-0 h-72 w-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-300/25 blur-3xl dark:bg-violet-600/10" />
 
           <div className="relative mx-auto max-w-7xl">
-            <FadeIn className="mx-auto max-w-4xl text-center">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">Start in minutes</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.055em] text-slate-950 dark:text-white sm:text-5xl lg:text-6xl">New to automation? Do not overthink it.</h2>
-              <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
+            <FadeIn className="grid items-end gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">Start in minutes</p>
+                <h2 className="mt-4 max-w-3xl text-4xl font-black leading-[1.04] tracking-[-0.055em] text-slate-950 dark:text-white sm:text-5xl lg:text-[3.5rem]">New to automation? Do not overthink it.</h2>
+              </div>
+              <p className="max-w-xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg lg:justify-self-end">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
             </FadeIn>
             <AnimatedSetupSteps />
           </div>
