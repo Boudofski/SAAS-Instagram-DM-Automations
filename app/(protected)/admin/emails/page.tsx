@@ -24,7 +24,7 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
       />
 
       {searchParams?.test ? (
-        <div className={`rounded-xl border px-4 py-3 text-xs font-bold ${searchParams.test === "sent" ? "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-200" : "border-amber-500/20 bg-amber-500/[0.08] text-amber-200"}`}>
+        <div className={`rounded-xl border px-4 py-3 text-xs font-bold ${searchParams.test === "sent" ? "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-200" : "border-amber-500/20 bg-amber-500/[0.08] text-amber-800 dark:text-amber-200"}`}>
           {searchParams.test === "sent" ? "Test email sent to the AP3K owner inbox." : searchParams.test === "not-configured" ? "Connect Resend and verify the AP3K sending domain before sending tests." : `Test email was not sent (${searchParams.test}).`}
         </div>
       ) : null}
@@ -41,14 +41,14 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
           <h2 className="text-lg font-bold">Owner alerts</h2>
           <V2Badge tone={overview.ownerAlerts.enabled && overview.configuration.configured ? "green" : "amber"}>{overview.ownerAlerts.enabled && overview.configuration.configured ? "Enabled" : "Not sending"}</V2Badge>
         </div>
-        <p className="mt-3 break-all text-sm text-slate-300">Destination: <strong>{overview.ownerAlerts.recipient}</strong></p>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">New registrations, successful payments and renewals, payment failures, ended subscriptions, refunds, and disputes. Routine logins, comments, DMs, and automation activity stay out of your inbox.</p>
+        <p className="mt-3 break-all text-sm text-slate-800 dark:text-slate-300">Destination: <strong>{overview.ownerAlerts.recipient}</strong></p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400">New registrations, successful payments and renewals, payment failures, ended subscriptions, refunds, and disputes. Routine logins, comments, DMs, and automation activity stay out of your inbox.</p>
         <p className="mt-2 text-xs leading-6 text-slate-500">Repeated webhook deliveries are deduplicated. Payment failures are reported once per invoice. Preview deployments and Stripe test payments never send owner alerts.</p>
-        {!overview.ownerAlerts.retryConfigured && <p className="mt-3 text-xs text-amber-300">Automatic retries require CRON_SECRET in production. Immediate alerts still send when delivery is connected.</p>}
-        {searchParams?.ownerTest && <p role="status" className="mt-3 text-sm text-violet-200">{searchParams.ownerTest === "sent" ? "Owner test accepted by the email provider. Check the delivery status below." : searchParams.ownerTest === "disabled" ? "Owner alerts are disabled in this environment." : searchParams.ownerTest === "checked" ? "Eligible queued alerts checked. See the delivery activity below." : "Test queued or already processed. Check the delivery activity below."}</p>}
+        {!overview.ownerAlerts.retryConfigured && <p className="mt-3 text-xs text-amber-800 dark:text-amber-300">Automatic retries require CRON_SECRET in production. Immediate alerts still send when delivery is connected.</p>}
+        {searchParams?.ownerTest && <p role="status" className="mt-3 text-sm text-violet-700 dark:text-violet-200">{searchParams.ownerTest === "sent" ? "Owner test accepted by the email provider. Check the delivery status below." : searchParams.ownerTest === "disabled" ? "Owner alerts are disabled in this environment." : searchParams.ownerTest === "checked" ? "Eligible queued alerts checked. See the delivery activity below." : "Test queued or already processed. Check the delivery activity below."}</p>}
         <div className="mt-4 flex flex-wrap gap-3">
           <form action={adminSendOwnerAlertTestAction}><button disabled={!overview.ownerAlerts.enabled || !overview.configuration.configured} className="min-h-11 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-40">Send owner alert test</button></form>
-          <form action={adminRetryOwnerAlertsAction}><button disabled={!overview.ownerAlerts.enabled || !overview.configuration.configured} className="min-h-11 rounded-xl border border-white/15 px-4 text-sm font-semibold disabled:opacity-40">Retry queued owner alerts</button></form>
+          <form action={adminRetryOwnerAlertsAction}><button disabled={!overview.ownerAlerts.enabled || !overview.configuration.configured} className="min-h-11 rounded-xl border border-slate-200 dark:border-white/15 px-4 text-sm font-semibold disabled:opacity-40">Retry queued owner alerts</button></form>
         </div>
       </AdminSurface>
 
@@ -58,10 +58,10 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
           <AdminSurface className="max-h-[760px] overflow-y-auto p-2">
             <div className="space-y-1">
               {EMAIL_TEMPLATE_LIST.map((template) => (
-                <Link key={template.id} href={`/admin/emails?template=${template.id}`} className={`block rounded-xl border px-3 py-3 transition ${template.id === selectedId ? "border-pink-400/20 bg-pink-400/[0.08]" : "border-transparent hover:border-white/[0.06] hover:bg-white/[0.03]"}`}>
+                <Link key={template.id} href={`/admin/emails?template=${template.id}`} className={`block rounded-xl border px-3 py-3 transition ${template.id === selectedId ? "border-pink-400/20 bg-pink-400/[0.08]" : "border-transparent hover:border-slate-200 dark:hover:border-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.03]"}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-black text-slate-100">{template.label}</p>
-                    <span className="rounded-full border border-white/[0.07] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-500">{template.category}</span>
+                    <p className="text-xs font-black text-slate-800 dark:text-slate-100">{template.label}</p>
+                    <span className="rounded-full border border-slate-200 dark:border-white/[0.07] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-500">{template.category}</span>
                   </div>
                   <p className="mt-1 text-[10px] leading-4 text-slate-500">{template.description}</p>
                 </Link>
@@ -76,7 +76,7 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
             description={`${selected.description} ${selected.aiPersonalization ? "Safe AI personalization is available for this lifecycle message." : "Account facts and wording remain deterministic."}`}
             action={
               <form action={adminSendEmailTestAction.bind(null, selected.id)}>
-                <button disabled={!overview.configuration.configured} className="rounded-lg border border-pink-400/20 bg-pink-400/[0.08] px-3 py-2 text-[11px] font-black text-pink-200 transition hover:bg-pink-400/[0.14] disabled:cursor-not-allowed disabled:opacity-40">Send owner test</button>
+                <button disabled={!overview.configuration.configured} className="rounded-lg border border-pink-400/20 bg-pink-400/[0.08] px-3 py-2 text-[11px] font-black text-pink-700 dark:text-pink-200 transition hover:bg-pink-400/[0.14] disabled:cursor-not-allowed disabled:opacity-40">Send owner test</button>
               </form>
             }
           />
@@ -90,11 +90,11 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
         <AdminSectionHeader title="Recent delivery activity" description="Provider IDs and failure states are stored for support and deliverability diagnostics." />
         <AdminSurface className="overflow-hidden">
           {overview.recent.length ? (
-            <div className="divide-y divide-white/[0.05]">
+            <div className="divide-y divide-slate-200 dark:divide-white/[0.05]">
               {overview.recent.map((delivery) => (
                 <div key={delivery.id} className="grid gap-2 px-4 py-3 text-[11px] sm:grid-cols-[150px_minmax(0,1fr)_130px_110px] sm:items-center">
                   <V2Badge tone={["FAILED", "BOUNCED", "COMPLAINED", "SUPPRESSED"].includes(delivery.status) ? "red" : delivery.status === "SKIPPED" ? "amber" : "green"}>{delivery.status}</V2Badge>
-                  <div className="min-w-0"><p className="truncate font-bold text-slate-200">{delivery.subject}</p><p className="truncate text-slate-600">{delivery.templateId} · {delivery.recipient}</p>{delivery.errorMessage ? <p className="mt-1 text-rose-300">{delivery.errorMessage}</p> : null}</div>
+                  <div className="min-w-0"><p className="truncate font-bold text-slate-800 dark:text-slate-200">{delivery.subject}</p><p className="truncate text-slate-600">{delivery.templateId} · {delivery.recipient}</p>{delivery.errorMessage ? <p className="mt-1 text-rose-700 dark:text-rose-300">{delivery.errorMessage}</p> : null}</div>
                   <p className="truncate font-mono text-[9px] text-slate-600">{delivery.providerMessageId || "No provider ID"}</p>
                   <p className="text-slate-500"><LocalTime value={delivery.createdAt} /></p>
                 </div>
@@ -108,5 +108,5 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
 }
 
 function StatusCard({ label, value, detail, icon }: { label: string; value: string | number; detail: string; icon: React.ReactNode }) {
-  return <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"><div className="flex items-center justify-between"><p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600">{label}</p><span className="text-pink-300">{icon}</span></div><p className="mt-3 text-2xl font-black tracking-tight text-white">{value}</p><p className="mt-1 text-[10px] text-slate-500">{detail}</p></div>;
+  return <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-white/[0.025] p-4"><div className="flex items-center justify-between"><p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600">{label}</p><span className="text-pink-700 dark:text-pink-300">{icon}</span></div><p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p><p className="mt-1 text-[10px] text-slate-500">{detail}</p></div>;
 }

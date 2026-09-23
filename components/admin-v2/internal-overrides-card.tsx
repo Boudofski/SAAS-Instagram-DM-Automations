@@ -103,17 +103,17 @@ export function InternalOverridesCard({ user, usage }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-white/[0.075] bg-[#0c111d]/88 p-5 shadow-[0_16px_50px_rgba(0,0,0,0.15)] sm:p-6">
+    <section className="rounded-2xl border border-slate-200 dark:border-white/[0.075] bg-white dark:bg-[#0c111d]/88 p-5 shadow-surface sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Internal access overrides</p>
-          <h2 className="mt-1 text-base font-black text-white">Custom usage limits</h2>
+          <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Custom usage limits</h2>
           <p className="mt-1 text-[11px] leading-5 text-slate-500">Owner-only AP3K limits. Stripe billing is never modified by this control.</p>
         </div>
         <button
           type="button"
           onClick={openModal}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-pink-500/15 bg-pink-500/[0.055] px-3.5 py-2 text-[11px] font-bold text-pink-300 transition hover:bg-pink-500/[0.1]"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-pink-500/15 bg-pink-500/[0.055] px-3.5 py-2 text-[11px] font-bold text-pink-700 dark:text-pink-300 transition hover:bg-pink-500/[0.1]"
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
           Edit overrides
@@ -148,17 +148,17 @@ export function InternalOverridesCard({ user, usage }: Props) {
       </div>
 
       {(user.overrideExpiresAt || user.overrideReason) && (
-        <div className="mt-4 grid gap-3 rounded-xl border border-white/[0.055] bg-black/10 p-3.5 sm:grid-cols-[auto_1fr] sm:items-start">
+        <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 dark:border-white/[0.055] bg-slate-100/80 dark:bg-black/10 p-3.5 sm:grid-cols-[auto_1fr] sm:items-start">
           {user.overrideExpiresAt && (
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-600">Expires</p>
-              <p className="mt-1 text-xs font-semibold text-slate-300"><LocalTime value={user.overrideExpiresAt} /></p>
+              <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-300"><LocalTime value={user.overrideExpiresAt} /></p>
             </div>
           )}
           {user.overrideReason && (
             <div className="min-w-0">
               <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-600">Last reason</p>
-              <p className="mt-1 break-words text-xs leading-5 text-slate-400">{user.overrideReason}</p>
+              <p className="mt-1 break-words text-xs leading-5 text-slate-600 dark:text-slate-400">{user.overrideReason}</p>
             </div>
           )}
         </div>
@@ -173,21 +173,21 @@ export function InternalOverridesCard({ user, usage }: Props) {
             if (event.target === event.currentTarget) closeModal();
           }}
         >
-          <div className="flex max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-white/[0.09] bg-[#0b101a] shadow-2xl sm:max-h-[90vh] sm:rounded-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
+          <div className="flex max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 dark:border-white/[0.09] bg-white dark:bg-[#0b101a] shadow-2xl sm:max-h-[90vh] sm:rounded-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-400">Internal access</p>
-                <h2 className="mt-1 text-lg font-black text-white">Edit custom limits</h2>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-700 dark:text-pink-400">Internal access</p>
+                <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">Edit custom limits</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">These limits affect AP3K only. Billing in Stripe remains unchanged.</p>
               </div>
-              <button type="button" onClick={closeModal} disabled={isPending} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-slate-500 hover:text-white disabled:opacity-40">
+              <button type="button" onClick={closeModal} disabled={isPending} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-slate-500 hover:text-slate-950 dark:hover:text-white disabled:opacity-40">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
               {successMsg ? (
-                <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-sm text-emerald-200">{successMsg}</p>
+                <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200">{successMsg}</p>
               ) : (
                 <form onSubmit={handleSave} className="space-y-5">
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -199,21 +199,21 @@ export function InternalOverridesCard({ user, usage }: Props) {
 
                   <label className="block">
                     <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Expiration date · optional</span>
-                    <input type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-[#080d17] px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+                    <input type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-white/[0.09] bg-background dark:bg-[#080d17] px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
                   </label>
 
                   <label className="block">
                     <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Audit reason</span>
-                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Why is this override necessary?" className="mt-1.5 w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Why is this override necessary?" className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3.5 py-3 text-sm text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
                   </label>
 
-                  {!expiresAt && <p className="rounded-xl border border-amber-500/15 bg-amber-500/[0.055] px-3.5 py-3 text-[11px] leading-5 text-amber-200/85">No expiration is set. These overrides remain active indefinitely until they are explicitly changed or cleared.</p>}
-                  {error && <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-200">{error}</p>}
+                  {!expiresAt && <p className="rounded-xl border border-amber-500/15 bg-amber-500/[0.055] px-3.5 py-3 text-[11px] leading-5 text-amber-800 dark:text-amber-200/85">No expiration is set. These overrides remain active indefinitely until they are explicitly changed or cleared.</p>}
+                  {error && <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-700 dark:text-red-200">{error}</p>}
 
-                  <div className="flex flex-col-reverse gap-2 border-t border-white/[0.06] pt-4 sm:flex-row sm:justify-between">
-                    <button type="button" onClick={handleClear} disabled={isPending} className="rounded-xl border border-amber-500/18 bg-amber-500/[0.04] px-4 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-500/[0.08] disabled:opacity-50">Clear overrides</button>
+                  <div className="flex flex-col-reverse gap-2 border-t border-slate-200 dark:border-white/[0.06] pt-4 sm:flex-row sm:justify-between">
+                    <button type="button" onClick={handleClear} disabled={isPending} className="rounded-xl border border-amber-500/18 bg-amber-500/[0.04] px-4 py-2.5 text-sm font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500/[0.08] disabled:opacity-50">Clear overrides</button>
                     <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                      <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-400 hover:bg-white/[0.04] hover:text-white disabled:opacity-50">Cancel</button>
+                      <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50">Cancel</button>
                       <button type="submit" disabled={isPending} className="rounded-xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-2.5 text-sm font-black text-white hover:brightness-110 disabled:opacity-50">{isPending ? "Saving…" : "Save overrides"}</button>
                     </div>
                   </div>
@@ -231,16 +231,16 @@ function LimitInput({ label, value, onChange }: { label: string; value: string; 
   return (
     <label className="block">
       <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</span>
-      <input type="number" min="0" value={value} onChange={(event) => onChange(event.target.value)} placeholder="Plan default" className="mt-1.5 w-full rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+      <input type="number" min="0" value={value} onChange={(event) => onChange(event.target.value)} placeholder="Plan default" className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
     </label>
   );
 }
 
 function OverrideField({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.055] bg-white/[0.02] p-3.5">
+    <div className="rounded-xl border border-slate-200 dark:border-white/[0.055] bg-slate-50 dark:bg-white/[0.02] p-3.5">
       <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-600">{label}</p>
-      <div className="mt-2 text-sm font-black text-slate-200">{value}</div>
+      <div className="mt-2 text-sm font-black text-slate-800 dark:text-slate-200">{value}</div>
       {sub && <p className="mt-1 text-[10px] text-slate-500">{sub}</p>}
     </div>
   );

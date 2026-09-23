@@ -91,7 +91,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/18 bg-sky-500/[0.06] px-2.5 py-1.5 text-[11px] font-bold text-sky-300 transition hover:bg-sky-500/[0.11] hover:text-sky-200"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/18 bg-sky-500/[0.06] px-2.5 py-1.5 text-[11px] font-bold text-sky-700 dark:text-sky-300 transition hover:bg-sky-500/[0.11] hover:text-sky-700 dark:hover:text-sky-200"
       >
         <MessageSquareText className="h-3.5 w-3.5" />
         Edit replies
@@ -107,11 +107,11 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
             if (event.target === event.currentTarget) closeModal();
           }}
         >
-          <div className="flex max-h-[96dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-white/[0.09] bg-[#0b101a] shadow-2xl sm:max-h-[90vh] sm:rounded-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
+          <div className="flex max-h-[96dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 dark:border-white/[0.09] bg-white dark:bg-[#0b101a] shadow-2xl sm:max-h-[90vh] sm:rounded-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
               <div className="min-w-0">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-400">Reply editor</p>
-                <h2 className="mt-1 truncate text-lg font-black tracking-tight text-white sm:text-xl">{campaignName}</h2>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-700 dark:text-pink-400">Reply editor</p>
+                <h2 className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 dark:text-white sm:text-xl">{campaignName}</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Update public comment reply variants. Every saved change is audited.</p>
               </div>
               <button
@@ -119,7 +119,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                 aria-label="Close reply editor"
                 onClick={closeModal}
                 disabled={isPending}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-slate-500 transition hover:text-white disabled:opacity-40"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-slate-500 transition hover:text-slate-950 dark:hover:text-white disabled:opacity-40"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -136,7 +136,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                           <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
                             {label}{optional ? " · optional" : ""}
                           </span>
-                          <span className={`text-[10px] tabular-nums ${value.length > 450 ? "text-amber-300" : "text-slate-600"}`}>
+                          <span className={`text-[10px] tabular-nums ${value.length > 450 ? "text-amber-800 dark:text-amber-300" : "text-slate-600"}`}>
                             {value.length}/500
                           </span>
                         </div>
@@ -150,7 +150,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                             if (error) setError(null);
                           }}
                           disabled={isPending}
-                          className="w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-3 text-sm leading-6 text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10 disabled:opacity-50"
+                          className="w-full resize-y rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3.5 py-3 text-sm leading-6 text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10 disabled:opacity-50"
                         />
                       </label>
                     );
@@ -163,10 +163,10 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                     {variants.map(({ label, key }) => {
                       const value = replies[key];
                       return (
-                        <div key={key} className="min-h-[92px] rounded-2xl border border-white/[0.065] bg-white/[0.025] p-4">
+                        <div key={key} className="min-h-[92px] rounded-2xl border border-slate-200 dark:border-white/[0.065] bg-slate-50 dark:bg-white/[0.025] p-4">
                           <p className="text-[9px] font-black uppercase tracking-[0.13em] text-slate-600">{label}</p>
                           {value ? (
-                            <p dir="auto" className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{value}</p>
+                            <p dir="auto" className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 dark:text-slate-300">{value}</p>
                           ) : (
                             <p className="mt-2 text-xs italic text-slate-600">No text provided.</p>
                           )}
@@ -177,7 +177,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                 </div>
               </div>
 
-              <div className="border-t border-white/[0.07] bg-[#090e17] p-4 sm:p-6">
+              <div className="border-t border-slate-200 dark:border-white/[0.07] bg-white dark:bg-[#090e17] p-4 sm:p-6">
                 <label className="block">
                   <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Audit reason</span>
                   <textarea
@@ -190,12 +190,12 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                       if (error) setError(null);
                     }}
                     disabled={isPending}
-                    className="mt-1.5 w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.035] px-3.5 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10 disabled:opacity-50"
+                    className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3.5 py-3 text-sm text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10 disabled:opacity-50"
                   />
                 </label>
 
                 {error && (
-                  <p role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-200">{error}</p>
+                  <p role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-700 dark:text-red-200">{error}</p>
                 )}
 
                 <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -203,7 +203,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                     type="button"
                     onClick={closeModal}
                     disabled={isPending}
-                    className="rounded-xl border border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-400 transition hover:bg-white/[0.04] hover:text-white disabled:opacity-50"
+                    className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50"
                   >
                     Cancel
                   </button>

@@ -115,7 +115,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           "group ap3k-content-enter overflow-hidden rounded-2xl border p-5 shadow-surface  dark:bg-white/[0.04]",
           tokenExpired
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
-            : "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-pink-50 dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
+            : "border-slate-200 bg-white dark:bg-gradient-to-br dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-4">
@@ -140,7 +140,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <span className="ap3k-badge ap3k-badge-slate"><UiText>{planLabel}</UiText></span>
               {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green"><UiText>{"Fresh"}</UiText></span>}
               {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate gap-1"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
-              <Link href={`/dashboard/${params.slug}/account`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15">
+              <Link href={`/dashboard/${params.slug}/account`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition hover:-translate-y-0.5 hover:bg-violet-100 dark:hover:bg-rf-pink/15">
                 <UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText>
               </Link>
             </div>
@@ -167,7 +167,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               className={[
                 "rounded-xl px-2 py-2 text-center text-[11px] font-black transition-all duration-200 sm:px-3 sm:py-1.5 sm:text-xs",
                 period === key
-                  ? "bg-rf-pink/10 text-rf-pink shadow-sm"
+                  ? "bg-violet-50 text-violet-800 ring-1 ring-violet-200 dark:bg-rf-pink/10 dark:text-rf-pink dark:ring-rf-pink/20"
                   : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.08]",
               ].join(" ")}
             >
@@ -201,7 +201,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             <p className="ap3k-kicker"><UiText>{"Automations"}</UiText></p>
             <h2 className="font-black text-slate-950 dark:text-white"><UiText>{"Active automations"}</UiText></h2>
           </div>
-          <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-rf-pink/20 bg-rf-pink/10 px-3 py-1.5 text-xs font-black text-rf-pink transition hover:-translate-y-0.5 hover:bg-rf-pink/15"><UiText>{"View all"}</UiText></Link>
+          <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition hover:-translate-y-0.5 hover:bg-violet-100 dark:hover:bg-rf-pink/15"><UiText>{"View all"}</UiText></Link>
         </div>
 
         {isEmpty ? (

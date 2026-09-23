@@ -82,7 +82,7 @@ export default async function AdminSystemPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Configuration</p>
-              <h2 className="mt-1 text-base font-black text-white">Runtime state</h2>
+              <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Runtime state</h2>
             </div>
             <V2Badge tone={environment === "Production" ? "green" : "amber"}>{environment}</V2Badge>
           </div>
@@ -103,14 +103,14 @@ export default async function AdminSystemPage() {
           </div>
 
           {!explicitAdminAllowlist && (
-            <div className="mt-4 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] px-4 py-3 text-xs leading-5 text-amber-200/85">
+            <div className="mt-4 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] px-4 py-3 text-xs leading-5 text-amber-800 dark:text-amber-200/85">
               Configure <span className="font-mono">ADMIN_EMAILS</span> and/or <span className="font-mono">ADMIN_CLERK_USER_IDS</span> before removing the legacy authorization fallback.
             </div>
           )}
 
-          <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/10 px-4 py-3 text-xs text-slate-400">
+          <div className="mt-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-100/80 dark:bg-black/10 px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
             Last real Meta webhook:{" "}
-            <span className="font-bold text-slate-200">
+            <span className="font-bold text-slate-800 dark:text-slate-200">
               {snapshot.lastRealWebhook ? <LocalTime value={snapshot.lastRealWebhook.createdAt} /> : "None recorded"}
             </span>
           </div>
@@ -118,11 +118,11 @@ export default async function AdminSystemPage() {
 
         <AdminSurface className="p-5 sm:p-6">
           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Guardrails</p>
-          <h2 className="mt-1 text-base font-black text-white">Sensitive admin operations</h2>
-          <div className="mt-5 divide-y divide-white/[0.06]">
+          <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Sensitive admin operations</h2>
+          <div className="mt-5 divide-y divide-slate-200 dark:divide-white/[0.06]">
             {Object.entries(guardrails).map(([key, value]) => (
               <div key={key} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                <span className="text-xs font-bold text-slate-400">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
                   {key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase())}
                 </span>
                 <V2Badge tone={value === "Disabled" ? "slate" : "green"}>{value}</V2Badge>
@@ -143,7 +143,7 @@ export default async function AdminSystemPage() {
 
 function ConfigItem({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
-    <div className="rounded-xl border border-white/[0.065] bg-white/[0.025] p-3.5">
+    <div className="rounded-xl border border-slate-200 dark:border-white/[0.065] bg-slate-50 dark:bg-white/[0.025] p-3.5">
       <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">{label}</p>
       <div className="mt-2"><V2Badge tone={configTone(ok)}>{value}</V2Badge></div>
     </div>
@@ -154,11 +154,11 @@ function QuickLink({ href, title, detail }: { href: string; title: string; detai
   return (
     <Link
       href={href}
-      className="group rounded-2xl border border-white/[0.075] bg-white/[0.025] p-4 transition hover:-translate-y-0.5 hover:border-pink-500/25 hover:bg-white/[0.045] sm:p-5"
+      className="group rounded-2xl border border-slate-200 dark:border-white/[0.075] bg-slate-50 dark:bg-white/[0.025] p-4 transition hover:-translate-y-0.5 hover:border-pink-500/25 hover:bg-slate-100 dark:hover:bg-white/[0.045] sm:p-5"
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-black text-white">{title}</span>
-        <span className="text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-pink-300">→</span>
+        <span className="text-sm font-black text-slate-950 dark:text-white">{title}</span>
+        <span className="text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-pink-700 dark:group-hover:text-pink-300">→</span>
       </div>
       <p className="mt-1.5 text-xs leading-5 text-slate-500">{detail}</p>
     </Link>

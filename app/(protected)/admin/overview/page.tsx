@@ -110,7 +110,7 @@ export default async function OverviewPage() {
         className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${needsAttention ? "border-amber-500/20 bg-amber-500/[0.045]" : "border-emerald-500/20 bg-emerald-500/[0.045]"}`}
       >
         <p
-          className={`flex items-center gap-2 text-sm ${needsAttention ? "text-amber-200" : "text-emerald-200"}`}
+          className={`flex items-center gap-2 text-sm ${needsAttention ? "text-amber-800 dark:text-amber-200" : "text-emerald-700 dark:text-emerald-200"}`}
         >
           {needsAttention ? (
             <AlertTriangle className="h-4 w-4" />
@@ -121,7 +121,7 @@ export default async function OverviewPage() {
             ? "Some operations need your attention"
             : "No alerts in the checks below"}
         </p>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-600 dark:text-slate-400">
           Snapshot <LocalTime value={analytics.updatedAt} />
         </span>
       </div>
@@ -133,8 +133,8 @@ export default async function OverviewPage() {
             className="admin-panel group transition-colors hover:border-violet-400/40"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-400">{c.label}</p>
-              <c.icon className="h-4 w-4 text-violet-300" />
+              <p className="text-sm text-slate-600 dark:text-slate-400">{c.label}</p>
+              <c.icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
             </div>
             <p className="mt-5 text-4xl font-semibold tracking-tight tabular-nums">
               {c.value.toLocaleString()}
@@ -150,12 +150,12 @@ export default async function OverviewPage() {
             <h2 className="font-semibold">Attention queue</h2>
             <span className="text-xs text-slate-500">Live checks</span>
           </div>
-          <div className="mt-4 divide-y divide-white/10">
+          <div className="mt-4 divide-y divide-slate-200 dark:divide-white/10">
             {issues.map((issue) => (
               <Link key={issue.href} href={issue.href} className="block py-4">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-sm font-semibold ${issue.count ? "bg-amber-500/10 text-amber-200" : "bg-emerald-500/10 text-emerald-300"}`}
+                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-sm font-semibold ${issue.count ? "bg-amber-500/10 text-amber-800 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"}`}
                   >
                     {issue.count}
                   </span>
@@ -164,7 +164,7 @@ export default async function OverviewPage() {
                   </span>
                   <ArrowUpRight className="h-4 w-4 text-slate-500" />
                 </div>
-                <p className="ml-12 mt-2 text-xs leading-5 text-slate-400">
+                <p className="ml-12 mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
                   {issue.hint}
                 </p>
               </Link>
@@ -179,12 +179,12 @@ export default async function OverviewPage() {
         <div className="flex flex-wrap justify-between gap-3">
           <div>
             <h2 className="font-semibold">From signup to real usage</h2>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               Accounts created in the last 30 days · current records, including
               owner/test accounts
             </p>
           </div>
-          <Link className="text-sm text-violet-300" href="/admin/analytics">
+          <Link className="text-sm text-violet-700 dark:text-violet-300" href="/admin/analytics">
             Explore analytics →
           </Link>
         </div>
@@ -202,8 +202,8 @@ export default async function OverviewPage() {
               <p className="mt-2 text-3xl font-semibold tabular-nums">
                 {s.value}
               </p>
-              <p className="mt-2 text-xs text-slate-400">{s.label}</p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{s.label}</p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-50 dark:bg-white/5">
                 <div
                   className="h-full rounded-full bg-violet-400"
                   style={{
@@ -223,11 +223,11 @@ export default async function OverviewPage() {
         <section className="admin-panel">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Latest automation activity</h2>
-            <Link className="text-xs text-violet-300" href="/admin/activity">
+            <Link className="text-xs text-violet-700 dark:text-violet-300" href="/admin/activity">
               View all →
             </Link>
           </div>
-          <div className="mt-4 divide-y divide-white/10">
+          <div className="mt-4 divide-y divide-slate-200 dark:divide-white/10">
             {recent.map((e) => (
               <div
                 key={e.id}
@@ -239,13 +239,13 @@ export default async function OverviewPage() {
                     {e.campaignName || "Automation"}
                   </p>
                 </div>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   <LocalTime value={e.createdAt} />
                 </span>
               </div>
             ))}
             {recent.length === 0 && (
-              <p className="py-6 text-sm text-slate-400">
+              <p className="py-6 text-sm text-slate-600 dark:text-slate-400">
                 Activity will appear after the first automation interaction.
               </p>
             )}
@@ -271,14 +271,14 @@ export default async function OverviewPage() {
               href={c.href}
               className="admin-panel block hover:border-violet-400/40"
             >
-              <c.icon className="h-5 w-5 text-violet-300" />
+              <c.icon className="h-5 w-5 text-violet-700 dark:text-violet-300" />
               <h2 className="mt-3 font-semibold">{c.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{c.body}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{c.body}</p>
             </Link>
           ))}
           <Link
             href="/admin/assistant"
-            className="block rounded-xl border border-violet-400/20 bg-violet-500/5 px-5 py-4 text-sm text-violet-200"
+            className="block rounded-xl border border-violet-400/20 bg-violet-500/5 px-5 py-4 text-sm text-violet-700 dark:text-violet-200"
           >
             Get an AI operations briefing →
           </Link>

@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireOwnerAdmin();
 
   return (
-    <div dir="ltr" lang="en" className="admin-shell dark relative isolate min-h-screen bg-[#0b0e16] text-slate-100">
+    <div dir="ltr" lang="en" className="admin-shell relative isolate min-h-screen bg-background dark:bg-[#0b0e16] text-slate-800 dark:text-slate-100">
 
       <AdminV2Nav email={admin.email} environment={adminEnvironmentLabel()} />
 

@@ -43,7 +43,7 @@ export function PrivateReplyPreflightForm({
       <div>
         <label
           htmlFor="private-reply-comment-id"
-          className="mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-300"
+          className="mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-800 dark:text-slate-300"
         >
           Fresh Instagram comment_id
         </label>
@@ -55,7 +55,7 @@ export function PrivateReplyPreflightForm({
           autoComplete="off"
           required
           placeholder="Example: 1785…"
-          className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 font-mono text-sm text-white placeholder:text-slate-700 focus:border-pink-500 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] px-3 py-2.5 font-mono text-sm text-slate-950 dark:text-white placeholder:text-slate-700 focus:border-pink-500 focus:outline-none"
         />
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
           Use a new comment from a different Instagram account. Meta permits one
@@ -66,7 +66,7 @@ export function PrivateReplyPreflightForm({
       <div>
         <label
           htmlFor="private-reply-message"
-          className="mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-300"
+          className="mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-800 dark:text-slate-300"
         >
           Message text
         </label>
@@ -76,11 +76,11 @@ export function PrivateReplyPreflightForm({
           rows={4}
           required
           defaultValue={DEFAULT_PRIVATE_REPLY_MESSAGE}
-          className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm leading-relaxed text-white focus:border-pink-500 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] px-3 py-2.5 text-sm leading-relaxed text-slate-950 dark:text-white focus:border-pink-500 focus:outline-none"
         />
       </div>
 
-      <label className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3 text-xs leading-relaxed text-amber-200">
+      <label className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
         <input
           type="checkbox"
           name="confirmed"
@@ -97,7 +97,7 @@ export function PrivateReplyPreflightForm({
       {!enabled && disabledReason && (
         <p
           role="alert"
-          className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-red-300"
+          className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-red-700 dark:text-red-300"
         >
           {disabledReason}
         </p>
@@ -108,8 +108,8 @@ export function PrivateReplyPreflightForm({
           role="status"
           className={`rounded-xl border px-4 py-3 ${
             succeeded
-              ? "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-200"
-              : "border-red-500/20 bg-red-500/[0.08] text-red-200"
+              ? "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-200"
+              : "border-red-500/20 bg-red-500/[0.08] text-red-700 dark:text-red-200"
           }`}
         >
           {result.event && (

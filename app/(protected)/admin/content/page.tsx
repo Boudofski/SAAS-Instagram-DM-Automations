@@ -77,7 +77,7 @@ export default async function ContentPage({
           ],
         ].map(([label, value]) => (
           <div key={label} className="admin-panel">
-            <p className="text-sm text-slate-400">{label}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
             <p className="mt-2 text-3xl font-semibold tabular-nums">{value}</p>
           </div>
         ))}
@@ -107,8 +107,8 @@ export default async function ContentPage({
         </select>
         <Button variant="outline">Filter</Button>
       </form>
-      <div className="overflow-hidden rounded-xl border border-white/10">
-        <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-white/10 bg-white/[0.025] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
+        <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.025] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
           <span>Article / search visibility</span>
           <span>State</span>
         </div>
@@ -117,20 +117,20 @@ export default async function ContentPage({
             <Link
               key={post.slug}
               href={`/admin/content/${post.slug}`}
-              className="group flex items-center gap-4 border-b border-white/[0.06] bg-[#10141e] p-5 last:border-0 hover:bg-white/[0.05]"
+              className="group flex items-center gap-4 border-b border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#10141e] p-5 last:border-0 hover:bg-slate-100 dark:hover:bg-white/[0.05]"
             >
-              <FileText className="hidden h-5 w-5 shrink-0 text-violet-300 sm:block" />
+              <FileText className="hidden h-5 w-5 shrink-0 text-violet-700 dark:text-violet-300 sm:block" />
               <div className="min-w-0 flex-1">
-                <h2 className="font-semibold text-slate-100 group-hover:text-violet-300">
+                <h2 className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">
                   {post.title}
                 </h2>
-                <p className="mt-1 break-all text-xs text-slate-400">
+                <p className="mt-1 break-all text-xs text-slate-600 dark:text-slate-400">
                   /blog/{post.slug} ·{" "}
                   {post.noIndex ? "Noindex" : "Indexing allowed"}
                 </p>
               </div>
               <span
-                className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${status === "Published" ? "bg-emerald-500/10 text-emerald-300" : "bg-amber-500/10 text-amber-200"}`}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${status === "Published" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/10 text-amber-800 dark:text-amber-200"}`}
               >
                 {status}
               </span>
@@ -138,7 +138,7 @@ export default async function ContentPage({
             </Link>
           ))
         ) : (
-          <p className="p-8 text-sm text-slate-400">
+          <p className="p-8 text-sm text-slate-600 dark:text-slate-400">
             No articles match these filters.
           </p>
         )}
