@@ -128,8 +128,8 @@ export function AnimatedSetupSteps() {
         {SETUP_STEPS.map(({ number, icon: Icon, title, copy }, index) => (
           <motion.li
             key={number}
-            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-            whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            initial={reduceMotion ? false : { y: 14 }}
+            whileInView={reduceMotion ? undefined : { y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={revealTransition(reduceMotion, index * 0.065)}
             className={`group relative min-h-[190px] overflow-hidden p-5 transition-colors duration-base hover:bg-violet-50/55 dark:hover:bg-white/[0.025] sm:min-h-[228px] sm:p-6 lg:min-h-[252px] lg:p-7 ${SETUP_STEP_DIVIDERS[index]}`}
