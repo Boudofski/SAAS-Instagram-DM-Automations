@@ -319,7 +319,8 @@ export async function getInstagramSnapshotComparisonWithRefresh(
   userId: string,
   integrationId: string | undefined,
   period: DashboardPeriod,
-  now = new Date()
+  now = new Date(),
+  deferRefresh?: (work: Promise<unknown>) => void
 ): Promise<{
   comparison: InstagramSnapshotComparison | null;
   refresh: RefreshInstagramSnapshotResult | null;
@@ -332,6 +333,12 @@ export async function getInstagramSnapshotComparisonWithRefresh(
   const current = initial?.current ?? null;
   const currentAgeMs = current ? now.getTime() - current.fetchedAt.getTime() : Number.POSITIVE_INFINITY;
   if (current && currentAgeMs < SNAPSHOT_FRESH_MS) {
+    return { comparison: initial, refresh: null };
+  }
+
+  if (deferRefresh) {
+    // Serve persisted metrics immediately; Meta latency must not block navigation.
+    deferRefresh(refreshInstagramProfileSnapshotForUser(clerkId, integrationId, { now }).catch(() => undefined));
     return { comparison: initial, refresh: null };
   }
 

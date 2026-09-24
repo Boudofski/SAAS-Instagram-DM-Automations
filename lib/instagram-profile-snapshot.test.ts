@@ -503,6 +503,22 @@ describe("instagram profile snapshots", () => {
     expect(result.comparison?.current?.profilePictureUrl).toBe("https://example.com/old.jpg");
   });
 
+  it("returns cached dashboard metrics while a refresh is still pending", async () => {
+    const old = snapshot({ fetchedAt: new Date("2026-05-23T00:00:00Z") });
+    let finish!: (value: null) => void;
+    mockFindIntegrationFirst
+      .mockResolvedValueOnce({ id: "integration-a" })
+      .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    mockFindSnapshotFirst.mockResolvedValueOnce(old).mockResolvedValueOnce(null);
+    const defer = vi.fn();
+    const result = await getInstagramSnapshotComparisonWithRefresh("clerk-a", "user-a", "integration-a", "month", now, defer);
+    expect(result.comparison?.current).toEqual(old);
+    expect(result.refresh).toBeNull();
+    expect(defer).toHaveBeenCalledTimes(1);
+    finish(null);
+    await defer.mock.calls[0][0];
+  });
+
   it("fresh snapshot does not trigger an automatic refresh", async () => {
     const freshSnapshot = snapshot({ fetchedAt: now });
     mockFindIntegrationFirst.mockResolvedValueOnce({ id: "integration-a" });
