@@ -64,6 +64,9 @@ export default async function CampaignDetailPage({ params }: Props) {
   const openingDmText = resolveOpeningDmText(automation.listener?.openingDmText);
   const openingDmButtonText = resolveOpeningDmButtonText(automation.listener?.openingDmButtonText);
   const openingDmEnabled = !isMessageAutomation && automation.listener?.openingDmEnabled !== false;
+  const emailCaptureEnabled = hasDm && openingDmEnabled && automation.listener?.emailCaptureEnabled === true;
+  const followUpEnabled = hasDm && openingDmEnabled && automation.listener?.followUpEnabled === true;
+  const finalDmStep = 5 + Number(openingDmEnabled && automation.followGateRequired) + Number(emailCaptureEnabled);
   const followRequestDmText = resolveFollowRequestDmText(automation.listener?.followRequestDmText);
   const followRequestButtonText = resolveFollowRequestButtonText(automation.listener?.followRequestButtonText);
   const isLive = Boolean(automation.active && !automation.needsReview && !automation.archivedAt);
@@ -145,7 +148,13 @@ export default async function CampaignDetailPage({ params }: Props) {
                 <FlowNode label="3. Public reply" title={hasCommentReply ? aiCommentReplyEnabled ? `AI reply · ${aiTone}` : "Saved comment reply" : "Not configured"} body={aiCommentReplyEnabled ? automation.listener?.aiReplyInstructions || "AI reply instructions" : commentReplies[0] || "No comment reply configured."} tone="purple" disabled={!hasCommentReply} />
                 <FlowNode label="4. Opening DM" title={hasDm && openingDmEnabled ? openingDmButtonText : "Skipped"} body={hasDm && openingDmEnabled ? openingDmText : "The final DM is delivered immediately."} tone="blue" disabled={!hasDm || !openingDmEnabled} />
               </div>
-              {hasDm ? <><FlowConnector />{openingDmEnabled && automation.followGateRequired ? <><FlowNode label="5. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}<FlowNode label={openingDmEnabled && automation.followGateRequired ? "6. Final DM" : "5. Final DM"} title={`${linkButtons.length} link button${linkButtons.length === 1 ? "" : "s"}`} body={automation.listener?.prompt || "No final DM configured."} tone="blue" /></> : null}
+              {hasDm ? <>
+                <FlowConnector />
+                {openingDmEnabled && automation.followGateRequired ? <><FlowNode label="5. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}
+                {emailCaptureEnabled ? <><FlowNode label={`${finalDmStep - 1}. Email request`} title="Collect an email or skip" body={automation.listener?.emailCapturePrompt || "Ask for an email before sharing the link."} tone="purple" /><FlowConnector /></> : null}
+                <FlowNode label={`${finalDmStep}. Final DM`} title={`${linkButtons.length} link button${linkButtons.length === 1 ? "" : "s"}`} body={automation.listener?.prompt || "No final DM configured."} tone="blue" />
+                {followUpEnabled ? <><FlowConnector /><FlowNode label={`${finalDmStep + 1}. Follow-up`} title={`${automation.listener?.followUpDelayMinutes ?? 30} minutes without a reply`} body={automation.listener?.followUpMessage || "Send one reminder with your link."} tone="orange" /></> : null}
+              </> : null}
             </>}
           </div>
         </section>
@@ -198,6 +207,7 @@ export default async function CampaignDetailPage({ params }: Props) {
               {!isMessageAutomation ? <SettingsRow label="Opening DM" value={openingDmEnabled ? "Enabled" : "Off"} /> : null}
               <SettingsRow label="AI reply" value={isMessageAutomation ? aiDmReplyEnabled ? "Enabled" : "Off" : aiCommentReplyEnabled ? aiTone : "Off"} />
               <SettingsRow label="Follow request" value={automation.followGateRequired ? "Enabled" : "Off"} />
+              {!isMessageAutomation ? <><SettingsRow label="Email collection" value={emailCaptureEnabled ? "Enabled · optional" : "Off"} /><SettingsRow label="Follow-up" value={followUpEnabled ? `${automation.listener?.followUpDelayMinutes ?? 30} min · no reply` : "Off"} /></> : null}
             </div>
             <Link href={editHref} className="ap3k-gradient-button mt-3 block px-4 py-2.5 text-center text-sm"><UiText>{"Edit automation"}</UiText></Link>
           </section>
