@@ -29,16 +29,16 @@ export function generateMetadata({ params }: Props): Metadata {
   if (!page) return {};
   const pathname = `/${page.slug}`;
   const isEnglish = getServerLocale() === "en";
-  const seoTitle = isEnglish && page.slug === "instagram-comment-to-dm"
+  const seoTitle = page.seoTitle ?? (isEnglish && page.slug === "instagram-comment-to-dm"
     ? "Instagram Comment-to-DM Automation | AP3K"
-    : `${page.title} | AP3K`;
+    : `${page.title} | AP3K`);
   const seoDescription = isEnglish && page.slug === "instagram-comment-to-dm"
     ? "Automate Instagram comment-to-DM campaigns with keyword triggers, public replies and instant link delivery. Start free with AP3K."
     : page.description;
   return localizedMetadata({
     title: seoTitle,
     description: seoDescription,
-    keywords: [...(SEO_KEYWORDS[page.slug] ?? [page.eyebrow]), "Instagram automation", "AP3K"],
+    keywords: [...(page.keywords ?? SEO_KEYWORDS[page.slug] ?? [page.eyebrow]), "Instagram automation", "AP3K"],
     alternates: { canonical: pathname },
     openGraph: {
       title: seoTitle,
