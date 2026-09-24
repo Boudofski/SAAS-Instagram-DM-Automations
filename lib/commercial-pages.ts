@@ -1,4 +1,9 @@
+import { EXPANSION_COMMERCIAL_PAGES } from "./content/expansion/commercial";
 export type CommercialPage = {
+  contentLocale?: "en";
+  updatedAt?: string;
+  seoTitle?: string;
+  keywords?: string[];
   slug: string;
   eyebrow: string;
   title: string;
@@ -23,6 +28,7 @@ const sharedLimits = [
 ];
 
 export const COMMERCIAL_PAGES: CommercialPage[] = [
+  ...EXPANSION_COMMERCIAL_PAGES,
   {
     slug: "instagram-dm-automation",
     eyebrow: "Instagram DM automation",
