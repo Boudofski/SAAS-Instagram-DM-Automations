@@ -12,13 +12,13 @@ import InstagramPhonePreview from "@/components/automations/instagram-phone-prev
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import ProductCardEditor from "@/components/automations/product-card-editor";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
-import AiCommentReplyEditor from "@/components/automations/ai-comment-reply-editor";
+import dynamic from "next/dynamic";
+const AiConversationBuilder = dynamic(() => import("@/components/automations/ai-conversation-builder"));
 import EmptyState from "@/components/global/empty-state";
 import KeywordInput from "@/components/global/keyword-input";
 import PostPicker from "@/components/global/post-picker";
 import { useQueryAutomationPosts, useQueryAutomations, useQueryUser, useQueryWebhookHealth } from "@/hooks/user-queries";
 import { useWizard } from "@/hooks/use-wizard";
-import { getAiWorkspace } from "@/actions/ai-workspace";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { formatKeywordDisplay } from "@/lib/keyword-display";
@@ -66,7 +66,6 @@ function AutomationSetup({ params, searchParams }: Props) {
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId, user?.data?.integrations?.[0]?.id ?? "");
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
-  const [aiCommentsReady, setAiCommentsReady] = useState(false);
   const [followUpsReady, setFollowUpsReady] = useState(false);
   const [previewMode, setPreviewMode] = useState<"post" | "comments" | "dm" | undefined>();
   useEffect(() => { let cancelled = false; void getEngagementAvailability().then(result => { if (!cancelled) setFollowUpsReady(result.followUpsReady); }).catch(() => { if (!cancelled) setFollowUpsReady(false); }); return () => { cancelled = true; }; }, []);
@@ -81,9 +80,6 @@ function AutomationSetup({ params, searchParams }: Props) {
   const reduceMotion = useReducedMotion();
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
-  const customerPlan = user?.data?.subscription?.plan ?? "FREE";
-  const aiPlanAvailable = customerPlan === "PRO" || customerPlan === "BUSINESS";
-  const aiReplyAvailable = aiPlanAvailable && aiCommentsReady;
   const postList: any[] = Array.isArray(posts?.data?.data) ? posts.data.data : [];
   const postsError = posts?.data?.error;
   const hasInstagramConnection = Boolean(instagram);
@@ -98,22 +94,6 @@ function AutomationSetup({ params, searchParams }: Props) {
     commentReplyOnlyReviewMode ? "DMs are disabled in this comment-reply review mode." : null,
     messagingCapabilityPending ? "Instagram DM access may still be pending for this account. Test with a real comment before recording." : null,
   ].filter(Boolean) as string[];
-
-  useEffect(() => {
-    if (!aiPlanAvailable || !needsCommentData) {
-      setAiCommentsReady(false);
-      return;
-    }
-    let cancelled = false;
-    void getAiWorkspace()
-      .then((result) => {
-        if (!cancelled) setAiCommentsReady(Boolean(result.profile.aiCommentsEnabled));
-      })
-      .catch(() => {
-        if (!cancelled) setAiCommentsReady(false);
-      });
-    return () => { cancelled = true; };
-  }, [aiPlanAvailable, needsCommentData]);
 
   useEffect(() => {
     if (commentReplyOnlyReviewMode && data.sendPrivateDm) {
@@ -167,7 +147,7 @@ function AutomationSetup({ params, searchParams }: Props) {
       publicReply: automation.listener?.commentReply ?? "",
       publicReply2: automation.listener?.commentReply2 ?? "",
       publicReply3: automation.listener?.commentReply3 ?? "",
-      aiReplyEnabled: Boolean(automation.listener?.aiReplyEnabled),
+      aiReplyEnabled: false,
       aiReplyTone: automation.listener?.aiReplyTone === "FUN" || automation.listener?.aiReplyTone === "PROFESSIONAL" ? automation.listener.aiReplyTone : "FRIENDLY",
       aiReplyInstructions: automation.listener?.aiReplyInstructions ?? "",
       aiProtectionRules: automation.listener?.aiProtectionRules ?? DEFAULT_AI_PROTECTION_RULES,
@@ -215,8 +195,12 @@ function AutomationSetup({ params, searchParams }: Props) {
     return <AutomationTypePicker slug={slug} />;
   }
 
-  if (editId && !requestedType && editingLoading) {
+  if (editId && editingLoading) {
     return <div className="grid min-h-screen place-items-center bg-slate-50 dark:bg-[#050816]"><Loader2 className="h-6 w-6 animate-spin text-rf-purple" /></div>;
+  }
+
+  if (selectedType === "ai" || (editing as any)?.data?.listener?.aiConversation) {
+    return <AiConversationBuilder key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} accountName={instagram?.instagramUsername ?? "Instagram account"} automation={(editing as any)?.data} automationId={editId} />;
   }
 
   if (selectedType === "story" || selectedType === "dm") {
@@ -408,22 +392,7 @@ function AutomationSetup({ params, searchParams }: Props) {
                 </section>
 
                 <EngagementOptions data={data} update={update} followUpsReady={followUpsReady} onPreview={setPreviewMode} />
-                <AiCommentReplyEditor
-                  enabled={data.aiReplyEnabled}
-                  available={aiReplyAvailable}
-                  workspaceReady={aiCommentsReady}
-                  planLabel={customerPlan === "BUSINESS" ? "Business" : customerPlan === "PRO" ? "Pro" : "Free"}
-                  tone={data.aiReplyTone}
-                  instructions={data.aiReplyInstructions}
-                  protections={data.aiProtectionRules}
-                  settingsHref={`/dashboard/${slug}/ai`}
-                  onChange={(next) => update({
-                    ...(typeof next.enabled === "boolean" ? { aiReplyEnabled: next.enabled, ...(next.enabled ? { publicReplyEnabled: false } : {}) } : {}),
-                    ...(next.tone ? { aiReplyTone: next.tone } : {}),
-                    ...(typeof next.instructions === "string" ? { aiReplyInstructions: next.instructions } : {}),
-                    ...(next.protections ? { aiProtectionRules: next.protections } : {}),
-                  })}
-                />
+
 
                 {!data.publicReplyEnabled && !data.aiReplyEnabled && !data.sendPrivateDm && (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
@@ -442,7 +411,6 @@ function AutomationSetup({ params, searchParams }: Props) {
                   { label: "Post", value: data.post?.postid === "ANY" ? tr("Any post") : data.post?.postid ? tr("Selected post {id}").replace("{id}", data.post.postid) : tr("Not selected"), step: 1 as const },
                   { label: "Trigger", value: data.triggerMode === "ANY_COMMENT" ? tr("Any comment") : data.keywords.map((keyword) => formatKeywordDisplay(keyword, appReviewMode, tr)).join(", "), step: 2 as const },
                   { label: "Comment reply", value: data.publicReplyEnabled && commentReplies.length ? tr("Saved replies: {count}").replace("{count}", String(commentReplies.length)) : tr("Off"), step: 3 as const },
-                  { label: "AI reply", value: data.aiReplyEnabled ? tr(data.aiReplyTone === "FUN" ? "Fun tone" : data.aiReplyTone === "PROFESSIONAL" ? "Professional tone" : "Friendly tone") : tr("Off"), step: 3 as const },
                   { label: "DM", value: data.sendPrivateDm ? tr("On") : tr("Off"), step: 3 as const },
                   ...(data.sendPrivateDm ? [{ label: "Opening DM", value: data.openingDmEnabled ? `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}` : tr("Off · final DM sends immediately"), step: 3 as const }] : []),
                   ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM with a link", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),

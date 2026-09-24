@@ -254,7 +254,7 @@ export async function generateAiDmReply(input: {
             `Role: ${input.workspace.role}`,
             `Brand voice: ${input.workspace.brandVoice}`,
             `Rules: ${input.workspace.guardrails}`,
-            input.automationInstructions ? `Automation guidance: ${input.automationInstructions.slice(0, 1600)}` : "",
+            input.automationInstructions ? `Automation guidance: ${input.automationInstructions.slice(0, 4000)}` : "",
             "Use only the knowledge below for factual claims. If it does not contain the answer, say you are not sure and offer human help.",
             knowledgeContext(input.workspace.knowledge) || "No business knowledge has been added yet.",
             "Reply in the same language as the customer. Stay concise, natural, and under 500 characters.",
@@ -408,4 +408,20 @@ export async function testAiProvider(input: ProviderInput) {
   });
   if (result.category !== "SAFE" || !result.reply) throw new Error("Provider responded, but did not return the expected JSON reply.");
   return result.reply;
+}
+
+/** Draft tasks only. The owner reviews these before saving or activation. */
+export async function generateAiConversationTasks(goal: string, context: string): Promise<string[] | null> {
+  try {
+    const provider = await loadEnabledProvider();
+    const result = await createProvider(provider).chat.completions.create({
+      model: provider.model, temperature: 0.2, max_tokens: 600,
+      messages: [{ role: "system", content: 'Create 3 to 6 short conversation tasks for a business Instagram assistant. Use only the supplied goal and facts. Ask one question at a time, understand needs, recommend a relevant offer, and answer questions. Do not invent products, prices, actions or promises. Do not request sensitive data. Match the language of the goal. Return JSON only: {"tasks":["..."]}. Each task must be under 240 characters.' },
+        { role: "user", content: JSON.stringify({ goal: goal.slice(0, 800), context: context.slice(0, 12000) }) }],
+    });
+    const raw = (result.choices[0]?.message?.content ?? "").replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.tasks) || parsed.tasks.length < 1 || parsed.tasks.length > 8 || parsed.tasks.some((task: unknown) => typeof task !== "string" || !task.trim() || task.length > 240)) return null;
+    return parsed.tasks as string[];
+  } catch { return null; }
 }

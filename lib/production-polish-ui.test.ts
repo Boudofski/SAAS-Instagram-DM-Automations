@@ -129,7 +129,7 @@ describe("production polish UI contracts", () => {
       "app/(protected)/dashboard/[slug]/automation/[id]/page.tsx",
     );
     expect(detail).toContain("automation.listener?.aiDmReplyEnabled === true");
-    expect(detail).toContain('title={aiDmReplyEnabled ? "AP3K AI reply"');
+    expect(detail).toContain('title={aiDmReplyEnabled ? (aiConversation ? "AI conversation" : "AP3K AI reply")');
     expect(detail).toContain(
       'isMessageAutomation ? aiDmReplyEnabled ? "Enabled"',
     );

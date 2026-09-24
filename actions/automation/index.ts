@@ -214,6 +214,7 @@ export const saveMessageAutomation = async (
   try {
     if (expectedIntegrationId !== undefined && expectedIntegrationId !== await currentInstagramAccountId(user.id)) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." };
     const cleanPayload = normalizeMessageAutomationPayload(payload);
+    if (payload.aiConversation && (!cleanPayload.aiConversation || !cleanPayload.aiReplyEnabled || cleanPayload.source !== "DM")) return { status: 400, data: "Complete the AI conversation goal, context and tasks." };
     const validationError = validateMessageAutomationPayload(cleanPayload);
     if (validationError) return { status: 400, data: validationError };
 
@@ -230,7 +231,7 @@ export const saveMessageAutomation = async (
       const workspace = profile?.id
         ? await client.instagramAiConfig.findUnique({ where: { integrationId: await currentInstagramAccountId(user.id) }, select: { aiRepliesEnabled: true } })
         : null;
-      if (!workspace?.aiRepliesEnabled) {
+      if (!cleanPayload.aiConversation && !workspace?.aiRepliesEnabled) {
         return { status: 400, data: "Enable AI Replies in AP3K AI before using it in a DM automation." };
       }
     }

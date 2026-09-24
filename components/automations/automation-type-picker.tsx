@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
 const TYPES = [
+  { type: "ai", icon: Sparkles, eyebrow: "Flow Builder", title: "Automate conversations with AI", description: "Collect information, answer questions, and recommend the right offer in a personal conversation.", accent: "from-violet-600 to-indigo-500" },
   { type: "affiliate", icon: ShoppingBag, eyebrow: "Quick Automation", title: "Send affiliate product links", description: "Send a product card with a photo and affiliate links when someone comments.", accent: "from-violet-600 to-pink-500" },
   {
     type: "comment",
