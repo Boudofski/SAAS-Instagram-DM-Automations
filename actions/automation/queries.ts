@@ -445,6 +445,11 @@ export const duplicateAutomationQuery = async (
         ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
         : readLegacyQuickReplies(automation.listener.quickReplies),
       cardSubtitle: automation.listener.cardSubtitle ?? undefined,
+      emailCaptureEnabled: automation.listener.emailCaptureEnabled,
+      emailCapturePrompt: automation.listener.emailCapturePrompt ?? undefined,
+      followUpEnabled: automation.listener.followUpEnabled,
+      followUpMessage: automation.listener.followUpMessage ?? undefined,
+      followUpDelayMinutes: automation.listener.followUpDelayMinutes,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
       openingDmText: automation.listener.openingDmText ?? undefined,

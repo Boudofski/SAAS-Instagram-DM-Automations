@@ -61,6 +61,8 @@ export async function getInstagramContacts() {
       id: `lead:${lead.id}`,
       conversationId: null,
       recipientIgId: lead.igUserId,
+      email: contacts.get(lead.igUserId)?.email || lead.email,
+      emailCollectedAt: contacts.get(lead.igUserId)?.emailCollectedAt || lead.emailCollectedAt,
       recipientUsername: lead.igUsername,
       profilePictureUrl: null,
       lastMessageAt: lead.createdAt,
@@ -70,6 +72,8 @@ export async function getInstagramContacts() {
   for (const conversation of conversations) {
     contacts.set(conversation.recipientIgId, {
       ...conversation,
+      email: contacts.get(conversation.recipientIgId)?.email,
+      emailCollectedAt: contacts.get(conversation.recipientIgId)?.emailCollectedAt,
       conversationId: conversation.id,
     });
   }

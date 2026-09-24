@@ -1,3 +1,5 @@
+import { beginEmailRequest, cancelPendingFollowUps, finishEngagementJob, scheduleFollowUp, takeEmailReply } from "@/lib/automation-engagement";
+import { emailRequestMessage, messagingWindowOpen, parseEmailReply } from "@/lib/automation-engagement-settings";
 import type { Integrations } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
@@ -1716,6 +1718,26 @@ async function processEntry(
         continue;
       }
 
+      const inboundAt = parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : null;
+      if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt)) {
+        await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
+        const emailReply = !actionPayload && !storyInteraction
+          ? await takeEmailReply(inboxIntegration.id, senderId, dmText, inboundAt, parsed.ok ? parsed.data.messageMid : undefined) : null;
+        if (emailReply?.kind === "waiting" || parseEmailReply(dmText).kind === "stop") {
+          await updateWebhookEvent(webhookEvent.id, { status: "PROCESSED", errorMessage: "engagement_reply_handled", processedAt: new Date() });
+          continue;
+        }
+        if (emailReply?.kind === "continue") {
+          const emailAutomation = await findAutomationById(emailReply.automationId, pageId);
+          if (emailAutomation?.active && emailAutomation.listener) {
+            await processConfiguredMessageAutomation({ automation: emailAutomation, pageId, senderId, senderProfile, webhookEventId: webhookEvent.id,
+              messageMid: parsed.ok ? parsed.data.messageMid : undefined, matchedKeyword: "email_reply", inboundText: dmText, inboundAt,
+              dmFlowAction: { type: "OPENING_CONTINUE", automationId: emailReply.automationId, flowId: emailReply.flowId }, emailCompletionId: emailReply.jobId });
+          } else await finishEngagementJob(emailReply.jobId, "FAILED");
+          continue;
+        }
+      }
+
       const payloadAction = parseCommentDmActionPayload(actionPayload);
       const fallbackAction = !payloadAction
         ? await findPendingCommentDmActionForText(
@@ -1786,6 +1808,7 @@ async function processEntry(
           messageMid: parsed.ok ? parsed.data.messageMid : undefined,
           matchedKeyword: storyInteraction ? `story_${storyInteraction.toLowerCase()}` : dmFlowAction?.type.toLowerCase() ?? "message",
           inboundText: dmText || inboundContent,
+          inboundAt,
           dmFlowAction: callbackRequested ? dmFlowAction : null,
         });
         continue;
@@ -1840,6 +1863,7 @@ async function processEntry(
           messageMid: parsed.ok ? parsed.data.messageMid : undefined,
           matchedKeyword,
           inboundText: dmText,
+          inboundAt,
         });
         continue;
       }
@@ -1867,6 +1891,8 @@ async function processConfiguredMessageAutomation(params: {
   messageMid?: string;
   matchedKeyword: string;
   inboundText: string;
+  inboundAt?: Date | null;
+  emailCompletionId?: string;
   dmFlowAction?: CommentDmAction | null;
 }) {
   const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword, inboundText, dmFlowAction = null } = params;
@@ -1901,6 +1927,22 @@ async function processConfiguredMessageAutomation(params: {
     ? await getInstagramRecipientProfile({ token, recipientId: senderId })
     : null);
   const needsFollowRequest = automation.followGateRequired && profile?.followsBusiness !== true;
+  const flowId = dmFlowAction?.flowId ?? messageMid ?? webhookEventId;
+  let emailRequestId: string | undefined;
+  if (!needsFollowRequest && automation.source === "COMMENT" && automation.listener.emailCaptureEnabled && !params.emailCompletionId) {
+    if (!params.inboundAt || !messagingWindowOpen(params.inboundAt)) {
+      await updateWebhookEvent(webhookEventId, { status: "IGNORED", errorMessage: "email_request_window_expired", processedAt: new Date() });
+      return;
+    }
+    const emailStep = await beginEmailRequest(automation.id, senderId, flowId, params.inboundAt);
+    if (emailStep.kind === "waiting") {
+      await updateWebhookEvent(webhookEventId, { status: "PROCESSED", errorMessage: "email_request_pending", processedAt: new Date() });
+      return;
+    }
+    if (emailStep.kind === "request") emailRequestId = emailStep.jobId;
+  }
+  const needsEmailRequest = Boolean(emailRequestId);
+  const intermediateStep = needsFollowRequest || needsEmailRequest;
   const quickReplies = Array.isArray(automation.listener.quickReplies)
     ? automation.listener.quickReplies.filter((item: unknown): item is string => typeof item === "string")
     : [];
@@ -1961,7 +2003,7 @@ async function processConfiguredMessageAutomation(params: {
         keyword: matchedKeyword,
         link: automation.listener.ctaLink ?? "",
       })
-    : payloadMessage;
+    : needsEmailRequest ? emailRequestMessage(automation.listener.emailCapturePrompt) : payloadMessage;
   const followPromptState = dmFlowAction?.type === "FOLLOW_CHECK"
     ? profile
       ? "NOT_FOLLOWING" as const
@@ -1979,14 +2021,14 @@ async function processConfiguredMessageAutomation(params: {
     recipientId: senderId,
     automationId: automation.id,
     message: resolvedMessage,
-    responseFormat: needsFollowRequest ? "TEXT" : aiGenerated ? (aiLinkButtons.length ? "LINK" : "TEXT") : automation.listener.responseFormat,
-    quickReplies: needsFollowRequest || aiGenerated ? [] : readLegacyQuickReplies(quickReplies),
-    linkButtons: needsFollowRequest ? [] : aiGenerated ? aiLinkButtons : linkButtons,
-    ctaTitle: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaButtonTitle,
-    ctaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaLink,
-    cardSubtitle: needsFollowRequest || aiGenerated ? undefined : automation.listener.cardSubtitle,
-    mediaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaUrl,
-    mediaType: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaType,
+    responseFormat: intermediateStep ? "TEXT" : aiGenerated ? (aiLinkButtons.length ? "LINK" : "TEXT") : automation.listener.responseFormat,
+    quickReplies: intermediateStep || aiGenerated ? [] : readLegacyQuickReplies(quickReplies),
+    linkButtons: intermediateStep ? [] : aiGenerated ? aiLinkButtons : linkButtons,
+    ctaTitle: intermediateStep || aiGenerated ? undefined : automation.listener.ctaButtonTitle,
+    ctaUrl: intermediateStep || aiGenerated ? undefined : automation.listener.ctaLink,
+    cardSubtitle: intermediateStep || aiGenerated ? undefined : automation.listener.cardSubtitle,
+    mediaUrl: intermediateStep || aiGenerated ? undefined : automation.listener.mediaUrl,
+    mediaType: intermediateStep || aiGenerated ? undefined : automation.listener.mediaType,
     followGatePrompt: needsFollowRequest
       ? {
           username: integration?.instagramUsername,
@@ -2000,14 +2042,16 @@ async function processConfiguredMessageAutomation(params: {
   });
 
   const sent = result.ok;
-  const sentMarker = needsFollowRequest ? "follow_request_dm_sent" : "final_dm_payload_sent";
+  const sentMarker = needsFollowRequest ? "follow_request_dm_sent" : needsEmailRequest ? "email_request_dm_sent" : "final_dm_payload_sent";
+  if (emailRequestId) await finishEngagementJob(emailRequestId, sent ? "WAITING" : "FAILED");
+  if (params.emailCompletionId) await finishEngagementJob(params.emailCompletionId, sent && !intermediateStep ? "COMPLETED" : "FAILED");
   const errorMessage = result.ok
     ? undefined
     : [result.metaError.status, result.metaError.code, result.metaError.message].filter(Boolean).join(": ") || "meta_api_error";
   console.log("[webhook] configured DM delivery completed", {
     automationId: automation.id,
     callbackAction: dmFlowAction?.type,
-    step: needsFollowRequest ? "FOLLOW_REQUEST" : "FINAL",
+    step: needsFollowRequest ? "FOLLOW_REQUEST" : needsEmailRequest ? "EMAIL_REQUEST" : "FINAL",
     sent,
     messageIdCount: result.ok ? result.messageIds.length : 0,
     error: errorMessage,
@@ -2026,7 +2070,7 @@ async function processConfiguredMessageAutomation(params: {
     igUserId: senderId,
     keyword: matchedKeyword,
     meta: {
-      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : aiGenerated ? (aiLinkButtons.length ? "AI_LINK" : "AI_TEXT") : automation.listener.responseFormat,
+      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : needsEmailRequest ? "EMAIL_REQUEST" : aiGenerated ? (aiLinkButtons.length ? "AI_LINK" : "AI_TEXT") : automation.listener.responseFormat,
       dmFlowAction: dmFlowAction?.type,
       followRequired: Boolean(automation.followGateRequired),
       followVerified: automation.followGateRequired ? profile?.followsBusiness === true : undefined,
@@ -2046,6 +2090,9 @@ async function processConfiguredMessageAutomation(params: {
         metaMessageId: result.messageIds[0] || undefined,
       }).catch((error) => console.warn("[inbox] outbound persistence failed", { message: error instanceof Error ? error.message : String(error) })),
     ]);
+  }
+  if (sent && !intermediateStep && automation.source === "COMMENT" && automation.listener.followUpEnabled && params.inboundAt) {
+    await scheduleFollowUp(automation.id, senderId, flowId, params.inboundAt, automation.listener.followUpDelayMinutes);
   }
   await updateWebhookEvent(webhookEventId, {
     automationId: automation.id,

@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_EMAIL_CAPTURE_PROMPT, DEFAULT_FOLLOW_UP_MESSAGE, validateEngagementSettings } from "@/lib/automation-engagement-settings";
 import { validateProductCard } from "@/lib/product-card";
 import { useUi } from "@/components/i18n/use-ui";
 import {
@@ -34,6 +35,11 @@ export type WizardData = {
   matchingMode: "EXACT" | "CONTAINS";
   sendPrivateDm: boolean;
   dmMessage: string;
+  emailCaptureEnabled?: boolean;
+  emailCapturePrompt?: string;
+  followUpEnabled?: boolean;
+  followUpMessage?: string;
+  followUpDelayMinutes?: number;
   productCard?: boolean;
   productImageUrl?: string;
   productSubtitle?: string;
@@ -67,6 +73,11 @@ export const DEFAULT_CTA_BUTTON_TITLE = "Get the Link";
 const INITIAL: WizardData = {
   post: null,
   campaignName: "",
+  emailCaptureEnabled: false,
+  emailCapturePrompt: DEFAULT_EMAIL_CAPTURE_PROMPT,
+  followUpEnabled: false,
+  followUpMessage: DEFAULT_FOLLOW_UP_MESSAGE,
+  followUpDelayMinutes: 30,
   triggerMode: "SPECIFIC_KEYWORD",
   keywords: [],
   matchingMode: "CONTAINS",
@@ -126,6 +137,7 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
     if (step === 1) return !!data.post;
     if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
     if (step === 3) {
+      if (validateEngagementSettings(data, data.sendPrivateDm, data.openingDmEnabled)) return false;
       if (data.sendPrivateDm && data.productCard && validateProductCard(data.dmMessage, data.productImageUrl, data.productSubtitle)) return false;
       if (!hasCommentReply && !data.sendPrivateDm) return false;
       if (data.sendPrivateDm && data.openingDmEnabled && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
@@ -164,6 +176,8 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
       if (cardError) { setError(cardError); return; }
     }
 
+    const engagementError = validateEngagementSettings(data, data.sendPrivateDm, data.openingDmEnabled);
+    if (engagementError) { setError(engagementError); return; }
     setIsSubmitting(true);
     setError(null);
 
@@ -183,6 +197,11 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
         publicReplyEnabled: data.publicReplyEnabled,
         listener: {
           listener: "MESSAGE",
+          emailCaptureEnabled: data.sendPrivateDm && data.emailCaptureEnabled,
+          emailCapturePrompt: data.emailCapturePrompt,
+          followUpEnabled: data.sendPrivateDm && data.followUpEnabled,
+          followUpMessage: data.followUpMessage,
+          followUpDelayMinutes: data.followUpDelayMinutes,
           prompt: data.dmMessage,
           commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
           commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,

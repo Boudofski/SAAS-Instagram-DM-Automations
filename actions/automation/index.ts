@@ -1,5 +1,6 @@
 "use server";
 
+import { followUpSchedulerReady } from "@/lib/automation-engagement";
 import { productImageId } from "@/lib/product-card";
 import { onCurrentUser } from "../user";
 import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
@@ -71,6 +72,9 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
     const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
     let activationProfile: Awaited<ReturnType<typeof findUser>> = null;
 
+    if (cleanPayload.active && cleanPayload.listener.followUpEnabled && !await followUpSchedulerReady()) {
+      return { status: 400, data: "Scheduled follow-ups are not connected yet. Save a draft or turn off the reminder before activating." };
+    }
     if (cleanPayload.listener.aiReplyEnabled) {
       const aiProfile = await findUser(user.id);
       const aiPlan = aiProfile?.subscription?.plan ?? "FREE";

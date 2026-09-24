@@ -5,7 +5,9 @@ import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTypePicker from "@/components/automations/automation-type-picker";
 import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
-import DeliveryRules from "@/components/automations/delivery-rules";
+import EngagementOptions from "@/components/automations/engagement-options";
+import { getEngagementAvailability } from "@/actions/automation/engagement";
+import { DEFAULT_EMAIL_CAPTURE_PROMPT, DEFAULT_FOLLOW_UP_MESSAGE } from "@/lib/automation-engagement-settings";
 import InstagramPhonePreview from "@/components/automations/instagram-phone-preview";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import ProductCardEditor from "@/components/automations/product-card-editor";
@@ -65,6 +67,9 @@ function AutomationSetup({ params, searchParams }: Props) {
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [aiCommentsReady, setAiCommentsReady] = useState(false);
+  const [followUpsReady, setFollowUpsReady] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"post" | "comments" | "dm" | undefined>();
+  useEffect(() => { let cancelled = false; void getEngagementAvailability().then(result => { if (!cancelled) setFollowUpsReady(result.followUpsReady); }).catch(() => { if (!cancelled) setFollowUpsReady(false); }); return () => { cancelled = true; }; }, []);
   const initializedAffiliate = useRef(false);
   useEffect(() => {
     if (editId || searchParams?.type !== "affiliate" || initializedAffiliate.current) return;
@@ -151,6 +156,11 @@ function AutomationSetup({ params, searchParams }: Props) {
         ? automation.keywords.map((keyword: any) => keyword.word).filter(Boolean)
         : [],
       dmMessage: preparedDm.prompt,
+      emailCaptureEnabled: Boolean(automation.listener?.emailCaptureEnabled),
+      emailCapturePrompt: automation.listener?.emailCapturePrompt ?? DEFAULT_EMAIL_CAPTURE_PROMPT,
+      followUpEnabled: Boolean(automation.listener?.followUpEnabled),
+      followUpMessage: automation.listener?.followUpMessage ?? DEFAULT_FOLLOW_UP_MESSAGE,
+      followUpDelayMinutes: automation.listener?.followUpDelayMinutes ?? 30,
       productCard: automation.listener?.responseFormat === "PRODUCT_CARD",
       productImageUrl: automation.listener?.mediaUrl ?? "",
       productSubtitle: automation.listener?.cardSubtitle ?? "",
@@ -328,66 +338,6 @@ function AutomationSetup({ params, searchParams }: Props) {
               <div className="space-y-5">
                 <section className={[
                   "overflow-hidden rounded-2xl border transition-colors",
-                  data.publicReplyEnabled ? "border-rf-purple/30 bg-rf-purple/[0.04]" : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.03]",
-                ].join(" ")}>
-                  <button
-                    type="button"
-                    onClick={() => update({ publicReplyEnabled: !data.publicReplyEnabled, ...(!data.publicReplyEnabled ? { aiReplyEnabled: false } : {}) })}
-                    className="flex w-full items-center justify-between gap-4 p-5 text-start"
-                  >
-                    <span className="flex min-w-0 items-start gap-3">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple"><MessageCircle className="h-5 w-5" /></span>
-                      <span>
-                        <span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Reply to comment"}</UiText></span>
-                        <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400"><UiText>{"Visible under the Instagram post. Add up to three variations to keep replies natural."}</UiText></span>
-                      </span>
-                    </span>
-                    <Toggle enabled={data.publicReplyEnabled} />
-                  </button>
-
-                  {data.publicReplyEnabled && (
-                    <div className="border-t border-rf-purple/15 p-5 pt-4">
-                      <div className="flex flex-col gap-3">
-                        {[
-                          { field: "publicReply", label: "Reply 1" },
-                          { field: "publicReply2", label: "Reply 2" },
-                          { field: "publicReply3", label: "Reply 3" },
-                        ].map((item) => (
-                          <div key={item.field}>
-                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{item.label}</UiText></label>
-                            <textarea
-                              value={(data as any)[item.field]}
-                              onChange={(event) => update({ [item.field]: event.target.value } as any)}
-                              rows={2}
-                              dir="auto"
-                              className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </section>
-
-                <AiCommentReplyEditor
-                  enabled={data.aiReplyEnabled}
-                  available={aiReplyAvailable}
-                  workspaceReady={aiCommentsReady}
-                  planLabel={customerPlan === "BUSINESS" ? "Business" : customerPlan === "PRO" ? "Pro" : "Free"}
-                  tone={data.aiReplyTone}
-                  instructions={data.aiReplyInstructions}
-                  protections={data.aiProtectionRules}
-                  settingsHref={`/dashboard/${slug}/ai`}
-                  onChange={(next) => update({
-                    ...(typeof next.enabled === "boolean" ? { aiReplyEnabled: next.enabled, ...(next.enabled ? { publicReplyEnabled: false } : {}) } : {}),
-                    ...(next.tone ? { aiReplyTone: next.tone } : {}),
-                    ...(typeof next.instructions === "string" ? { aiReplyInstructions: next.instructions } : {}),
-                    ...(next.protections ? { aiProtectionRules: next.protections } : {}),
-                  })}
-                />
-
-                <section className={[
-                  "overflow-hidden rounded-2xl border transition-colors",
                   data.sendPrivateDm ? "border-rf-blue/30 bg-rf-blue/[0.04]" : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.03]",
                 ].join(" ")}>
                   {commentReplyOnlyReviewMode ? (
@@ -404,7 +354,7 @@ function AutomationSetup({ params, searchParams }: Props) {
                     <>
                       <button
                         type="button"
-                        onClick={() => update({ sendPrivateDm: !data.sendPrivateDm })}
+                        onClick={() => update({ sendPrivateDm: !data.sendPrivateDm, ...(data.sendPrivateDm ? { followGateRequired: false, emailCaptureEnabled: false, followUpEnabled: false } : {}) })}
                         className="flex w-full items-center justify-between gap-4 p-5 text-start"
                       >
                         <span className="flex min-w-0 items-start gap-3">
@@ -420,35 +370,16 @@ function AutomationSetup({ params, searchParams }: Props) {
                       {data.sendPrivateDm && (
                         <div className="space-y-4 border-t border-rf-blue/15 p-4 sm:p-5">
                           <div className={`overflow-hidden rounded-2xl border transition ${data.openingDmEnabled ? "border-violet-400/30 bg-violet-500/[0.05]" : "border-slate-200 dark:border-white/10"}`}>
-                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-start sm:p-5">
+                            <button type="button" onClick={() => update({ openingDmEnabled: !data.openingDmEnabled, ...(!data.openingDmEnabled ? {} : { followGateRequired: false, emailCaptureEnabled: false, followUpEnabled: false }) })} className="flex w-full items-start justify-between gap-4 p-4 text-start sm:p-5">
                               <span className="flex items-start gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-purple text-xs font-black text-white">1</span><span><span className="block text-sm font-black text-slate-950 dark:text-white"><UiText>{"Opening DM "}</UiText><span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400"><UiText>{"Optional"}</UiText></span></span><span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Ask the commenter to tap before AP3K delivers the final DM. Leave off to deliver the final DM immediately."}</UiText></span></span></span>
                               <Toggle enabled={data.openingDmEnabled} />
                             </button>
-                            <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Continue quick reply"}</UiText><input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM."}</UiText></p></div>
-                          </div>
-
-                          <div className="rounded-2xl border border-slate-200 p-4 dark:border-white/10 sm:p-5">
-                            <div className="mb-3 flex items-start gap-3">
-                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pink-500 text-xs font-black text-white">2</span>
-                              <div>
-                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Optional follow request"}</UiText></p>
-                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Leave this off to send the final DM immediately after the opening button."}</UiText></p>
-                              </div>
-                            </div>
-                            {!data.openingDmEnabled ? <p className="mb-3 text-sm leading-6 text-slate-500 dark:text-slate-400"><UiText>{"Enable Opening DM to use a follow request. Its button tap starts the follow-check step."}</UiText></p> : null}
-                            <fieldset disabled={!data.openingDmEnabled} className={!data.openingDmEnabled ? "opacity-50" : ""}>
-                            <DeliveryRules
-                              followGateRequired={data.followGateRequired}
-                              followRequestDmText={data.followRequestDmText}
-                              followRequestButtonText={data.followRequestButtonText}
-                              onChange={(next) => { if (data.openingDmEnabled) update(next); }}
-                            />
-                            </fieldset>
+                            {data.openingDmEnabled && <div className="border-t border-violet-500/15 p-4 sm:p-5"><label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Opening message"}</UiText></label><textarea value={data.openingDmText} onChange={(event) => update({ openingDmText: event.target.value })} maxLength={640} rows={4} dir="auto" className="ap3k-textarea w-full rounded-xl px-4 py-3 text-sm" /><label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300"><UiText>{"Continue quick reply"}</UiText><input value={data.openingDmButtonText} onChange={(event) => update({ openingDmButtonText: event.target.value })} maxLength={20} className="ap3k-input mt-1.5 w-full rounded-xl px-4 py-3 text-sm" /></label><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Instagram uses this reply to open the conversation so AP3K can reliably deliver the next DM."}</UiText></p></div>}
                           </div>
 
                           <div className="rounded-2xl border border-rf-blue/20 bg-rf-blue/[0.05] p-4 dark:border-rf-blue/25 dark:bg-rf-blue/[0.08] sm:p-5">
                             <div className="mb-4 flex items-start gap-3">
-                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">3</span>
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">{data.openingDmEnabled ? "2" : "1"}</span>
                               <div>
                                 <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{data.productCard ? "DM with a link and an image" : "DM with links"}</UiText></p>
                                 <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"The required delivery message. Add one to three link buttons."}</UiText></p>
@@ -476,6 +407,24 @@ function AutomationSetup({ params, searchParams }: Props) {
                   )}
                 </section>
 
+                <EngagementOptions data={data} update={update} followUpsReady={followUpsReady} onPreview={setPreviewMode} />
+                <AiCommentReplyEditor
+                  enabled={data.aiReplyEnabled}
+                  available={aiReplyAvailable}
+                  workspaceReady={aiCommentsReady}
+                  planLabel={customerPlan === "BUSINESS" ? "Business" : customerPlan === "PRO" ? "Pro" : "Free"}
+                  tone={data.aiReplyTone}
+                  instructions={data.aiReplyInstructions}
+                  protections={data.aiProtectionRules}
+                  settingsHref={`/dashboard/${slug}/ai`}
+                  onChange={(next) => update({
+                    ...(typeof next.enabled === "boolean" ? { aiReplyEnabled: next.enabled, ...(next.enabled ? { publicReplyEnabled: false } : {}) } : {}),
+                    ...(next.tone ? { aiReplyTone: next.tone } : {}),
+                    ...(typeof next.instructions === "string" ? { aiReplyInstructions: next.instructions } : {}),
+                    ...(next.protections ? { aiProtectionRules: next.protections } : {}),
+                  })}
+                />
+
                 {!data.publicReplyEnabled && !data.aiReplyEnabled && !data.sendPrivateDm && (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
                     <UiText>{"Choose at least one action: Reply to comment or Send a DM."}</UiText></p>
@@ -497,6 +446,7 @@ function AutomationSetup({ params, searchParams }: Props) {
                   { label: "DM", value: data.sendPrivateDm ? tr("On") : tr("Off"), step: 3 as const },
                   ...(data.sendPrivateDm ? [{ label: "Opening DM", value: data.openingDmEnabled ? `${data.openingDmButtonText}: ${data.openingDmText.slice(0, 70)}${data.openingDmText.length > 70 ? "…" : ""}` : tr("Off · final DM sends immediately"), step: 3 as const }] : []),
                   ...(data.sendPrivateDm && data.dmMessage ? [{ label: "DM with a link", value: data.dmMessage.slice(0, 90) + (data.dmMessage.length > 90 ? "…" : ""), step: 3 as const }] : []),
+                  ...(data.sendPrivateDm ? [{ label: "Email collection", value: data.emailCaptureEnabled ? tr("On · optional email before your link") : tr("Off"), step: 3 as const }, { label: "Follow-up", value: data.followUpEnabled ? `${data.followUpDelayMinutes} ${tr("minutes without a reply")}` : tr("Off"), step: 3 as const }] : []),
                   ...(data.sendPrivateDm ? [{ label: "Follow request", value: data.followGateRequired ? `${tr("On")} · ${data.followRequestButtonText}` : tr("Off"), step: 3 as const }] : []),
                   ...(data.sendPrivateDm ? [{ label: "Link buttons", value: data.linkButtons.map((button) => button.label || tr("Untitled link")).join(", "), step: 3 as const }] : []),
                   { label: "Status", value: data.active ? tr("Live after save") : tr("Save as draft"), step: 4 as const },
@@ -543,6 +493,7 @@ function AutomationSetup({ params, searchParams }: Props) {
 
         <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
           <InstagramPhonePreview
+                  requestedMode={previewMode} onModeChange={setPreviewMode}
             data={data}
             step={step}
             username={instagram?.instagramUsername}
@@ -551,7 +502,7 @@ function AutomationSetup({ params, searchParams }: Props) {
         </aside>
       </div>
 
-      {mobilePreviewOpen && <MobilePreviewDialog onClose={() => setMobilePreviewOpen(false)}><InstagramPhonePreview data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></MobilePreviewDialog>}
+      {mobilePreviewOpen && <MobilePreviewDialog onClose={() => setMobilePreviewOpen(false)}><InstagramPhonePreview requestedMode={previewMode} onModeChange={setPreviewMode} data={data} step={step} username={instagram?.instagramUsername} profilePictureUrl={instagram?.profilePictureUrl} /></MobilePreviewDialog>}
 
       <div className="ap3k-mobile-actions fixed inset-x-0 bottom-0 z-30 ps-[calc(var(--app-sidebar-offset,0px)+1rem)] border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
         <WizardActions step={step} editId={editId} isSubmitting={isSubmitting} canAdvance={canAdvance()} onBack={back} onNext={next} onSaveDraft={() => { update({ active: false }); void activate(false); }} onActivate={() => { update({ active: true }); void activate(true); }} />

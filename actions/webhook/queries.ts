@@ -798,7 +798,7 @@ export const findPendingCommentDmActionForText = async (
       ? resolveFollowRequestButtonText(listener.followRequestButtonText)
       : resolveOpeningDmButtonText(listener.openingDmButtonText);
     if (normalizeMatchText(expectedButton) === normalizedInbound) {
-      return { automation: item.automation as AutomationWithRelations, action };
+      return { automation: item.automation as AutomationWithRelations, action: { ...action, ...(item.commentId ? { flowId: item.commentId } : {}) } };
     }
   }
 

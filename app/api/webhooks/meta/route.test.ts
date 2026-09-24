@@ -23,6 +23,18 @@ const mockReserveAiReplyQuota = vi.fn();
 const mockGetAiWorkspaceRuntimeConfig = vi.fn();
 const mockGenerateAiDmReply = vi.fn();
 
+const mockBeginEmailRequest = vi.fn();
+const mockTakeEmailReply = vi.fn();
+const mockFinishEngagementJob = vi.fn();
+const mockScheduleFollowUp = vi.fn();
+vi.mock("@/lib/automation-engagement", () => ({
+  cancelPendingFollowUps: vi.fn().mockResolvedValue(undefined),
+  beginEmailRequest: (...args: unknown[]) => mockBeginEmailRequest(...args),
+  takeEmailReply: (...args: unknown[]) => mockTakeEmailReply(...args),
+  finishEngagementJob: (...args: unknown[]) => mockFinishEngagementJob(...args),
+  scheduleFollowUp: (...args: unknown[]) => mockScheduleFollowUp(...args),
+}));
+
 vi.mock("@/actions/webhook/queries", () => ({
   findAutomationForCommentWithReason: vi.fn(),
   findAutomationForDM: (...args: unknown[]) => mockFindAutomationForDM(...args),
@@ -120,6 +132,8 @@ function signatureResult(verified: boolean) {
 describe("Meta webhook route security", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTakeEmailReply.mockResolvedValue(null);
+    mockBeginEmailRequest.mockResolvedValue({ kind: "complete" });
     process.env.META_VERIFY_TOKEN = "verify-token";
     mockCreateWebhookEvent.mockResolvedValue({ id: "webhook-event-1" });
     mockUpdateWebhookEvent.mockResolvedValue({});
@@ -789,4 +803,30 @@ describe("Meta webhook route security", () => {
       errorMessage: "duplicate_skipped",
     }));
   });
+  it.each(["request", "waiting", "email", "reminder"])("handles the %s engagement stage without leaking the product link", async stage => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    const integration = { id: "i1", userId: "user-1", token: "test", instagramId: "ig-business-1", status: "CONNECTED", reconnectRequired: false, planLocked: false };
+    const automation = { id: "automation-1", integrationId: "i1", userId: "user-1", source: "COMMENT", active: true, followGateRequired: false,
+      listener: { prompt: "Your product", responseFormat: "PRODUCT_CARD", ctaLink: "https://example.com/product", ctaButtonTitle: "Shop", mediaUrl: "https://ap3k.com/image.jpg", emailCaptureEnabled: stage !== "reminder", emailCapturePrompt: "Reply with your email", followUpEnabled: stage === "reminder", followUpDelayMinutes: 30 },
+      User: { integrations: [integration] } };
+    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    mockFindAutomationById.mockResolvedValue(automation);
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "test" });
+    mockBeginEmailRequest.mockResolvedValue(stage === "waiting" ? { kind: "waiting" } : { kind: "request", jobId: "email-job" });
+    if (stage === "email") mockTakeEmailReply.mockResolvedValue({ kind: "continue", automationId: "automation-1", flowId: "comment-1", jobId: "email-job" });
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", { method: "POST", headers: { "x-hub-signature-256": "sha256=good" }, body: JSON.stringify({ object: "instagram", entry: [{ id: "ig-business-1", messaging: [{ sender: { id: "recipient-1" }, recipient: { id: "ig-business-1" }, timestamp: Date.now(),
+      ...(stage === "email" ? { message: { mid: "email-reply", text: "person@example.com" } } : { postback: { payload: "AP3K_OPENING_CONTINUE:automation-1:comment-1", title: "Continue" } }) }] }] }) }));
+    expect(response.status).toBe(200);
+    if (stage === "waiting") { expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled(); return; }
+    if (stage === "request") {
+      expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({ responseFormat: "TEXT", ctaUrl: undefined, mediaUrl: undefined, linkButtons: [], message: expect.stringContaining("SKIP") }));
+      expect(mockFinishEngagementJob).toHaveBeenCalledWith("email-job", "WAITING");
+      expect(mockScheduleFollowUp).not.toHaveBeenCalled();
+    } else {
+      expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({ responseFormat: "PRODUCT_CARD", ctaUrl: "https://example.com/product" }));
+      if (stage === "email") expect(mockFinishEngagementJob).toHaveBeenCalledWith("email-job", "COMPLETED");
+      else expect(mockScheduleFollowUp).toHaveBeenCalledWith("automation-1", "recipient-1", "comment-1", expect.any(Date), 30);
+    }
+  });
+
 });

@@ -18,7 +18,7 @@ export default function ContactsClient({ slug, contacts }: { slug: string; conta
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return contacts;
-    return contacts.filter((contact) => `${contact.recipientUsername ?? ""}`.toLowerCase().includes(needle));
+    return contacts.filter((contact) => `${contact.recipientUsername ?? ""} ${contact.email ?? ""}`.toLowerCase().includes(needle));
   }, [contacts, query]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / CONTACTS_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
@@ -41,7 +41,7 @@ export default function ContactsClient({ slug, contacts }: { slug: string; conta
       <label className="relative mb-4 block max-w-xl">
         <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <span className="sr-only"><UiText>{"Search contacts"}</UiText></span>
-        <LocalizedInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by Instagram username" className="ap3k-input w-full rounded-2xl py-3 ps-11 pe-4 text-sm" />
+        <LocalizedInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by Instagram username or email" className="ap3k-input w-full rounded-2xl py-3 ps-11 pe-4 text-sm" />
       </label>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220]">
@@ -54,7 +54,7 @@ export default function ContactsClient({ slug, contacts }: { slug: string; conta
           </div>
         ) : pagedContacts.map((contact) => (
           <article key={contact.id} className="grid gap-3 border-b border-slate-100 p-4 last:border-b-0 dark:border-white/[0.07] md:grid-cols-[minmax(220px,1fr)_140px_140px] md:items-center md:gap-4 md:px-5">
-            <div className="flex min-w-0 items-center gap-3"><ContactAvatar src={contact.profilePictureUrl} name={contact.recipientUsername || contact.recipientIgId} /><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{contact.recipientUsername ? `@${contact.recipientUsername.replace(/^@/, "")}` : "Instagram user"}</p><p className="text-xs text-slate-400"><UiText>{"Instagram contact"}</UiText></p></div></div>
+            <div className="flex min-w-0 items-center gap-3"><ContactAvatar src={contact.profilePictureUrl} name={contact.recipientUsername || contact.recipientIgId} /><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{contact.recipientUsername ? `@${contact.recipientUsername.replace(/^@/, "")}` : "Instagram user"}</p>{contact.email ? <p className="break-all text-xs text-slate-600 dark:text-slate-300">{contact.email}</p> : <p className="text-xs text-slate-500 dark:text-slate-400"><UiText>{"Instagram contact"}</UiText></p>}</div></div>
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-pink-600 dark:text-pink-300"><Instagram className="h-3 w-3" /> {contact.automation?.source ?? "Manual"}</span>
             {contact.conversationId ? <Link href={`/dashboard/${slug}/inbox?conversation=${contact.conversationId}`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 transition hover:border-violet-300 hover:bg-rf-purple/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]"><MessageCircle className="h-3.5 w-3.5" /><UiText>{" Open chat"}</UiText></Link> : <span className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-400 dark:bg-white/[0.05]"><UiText>{"Lead captured"}</UiText></span>}
           </article>

@@ -50,7 +50,7 @@ describe("automation setup localization", () => {
         const text = plain(html);
         expect(text).toContain(translateUi(headings[step - 1], locale));
         if (locale !== "en") expect(text).not.toContain(headings[step - 1]);
-        if (step === 3) { expect(text).toContain("Keep my DM unchanged"); expect(text).toContain("Keep my reply unchanged"); }
+        if (step === 3) { expect(text).toContain("Keep my DM unchanged"); expect(html).toContain('value="Keep my reply unchanged"'); }
         if (step === 4 && locale !== "en") expect(text).not.toContain("Keyword:");
         if (step === 4) { expect(text).toContain("Save こんにちは"); expect(text).toContain("hello こんにちは"); }
         expect(html).not.toContain("Step</span>1");

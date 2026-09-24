@@ -1,5 +1,6 @@
 "use client";
 
+import { emailRequestMessage } from "@/lib/automation-engagement-settings";
 import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { useI18n } from "@/providers/i18n-provider";
@@ -41,6 +42,11 @@ type Props = {
   followGateRequired: boolean;
   followRequestDmText: string;
   followRequestButtonText: string;
+  emailCaptureEnabled?: boolean;
+  emailCapturePrompt?: string | null;
+  followUpEnabled?: boolean;
+  followUpMessage?: string | null;
+  followUpDelayMinutes?: number;
   productCard?: boolean;
   productImageUrl?: string | null;
   productSubtitle?: string | null;
@@ -200,6 +206,11 @@ function DmPreview({
   handle,
   profilePictureUrl,
   sendPrivateDm,
+  emailCaptureEnabled,
+  emailCapturePrompt,
+  followUpEnabled,
+  followUpMessage,
+  followUpDelayMinutes,
   showOpeningSequence,
   openingDmText,
   openingDmButtonText,
@@ -230,7 +241,9 @@ function DmPreview({
           <>
             {showOpeningSequence ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={openingDmText} buttons={[{ label: openingDmButtonText, url: "#" }]} /><OutgoingBubble text={openingDmButtonText} /></> : null}
             {followGateRequired ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followRequestDmText} buttons={[{ label: tr("Follow"), url: `https://www.instagram.com/${handle}/` }, { label: followRequestButtonText, url: "#" }]} /><OutgoingBubble text={followRequestButtonText} /></> : null}
+            {emailCaptureEnabled ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={emailRequestMessage(emailCapturePrompt || tr("What’s your email address?"))} /><OutgoingBubble text="follower@example.com" /></> : null}
             {productCard ? <ProductCardPreview title={message} subtitle={productSubtitle ?? ""} imageUrl={productImageUrl ?? ""} buttons={linkButtons} /> : <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={message || tr("Your DM message")} buttons={linkButtons} />}
+            {followUpEnabled ? <><p className="py-3 text-center text-[11px] text-white/60">{followUpDelayMinutes ?? 30} {tr("minutes later · no reply")}</p><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followUpMessage || tr("Here’s your link again.")} buttons={linkButtons} /></> : null}
           </>
         )}
       </div>
