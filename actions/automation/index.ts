@@ -61,9 +61,11 @@ export const createAutomations = async (id?: string) => {
 
 export const saveCampaign = async (payload: RawCampaignPayload, automationId?: string, expectedIntegrationId?: string) => {
   const user = await onCurrentUser();
+  let saveStage = "account-scope";
 
   try {
     if (expectedIntegrationId !== undefined && expectedIntegrationId !== await currentInstagramAccountId(user.id)) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." };
+    saveStage = "validation";
     const cleanPayload = normalizeCampaignPayload(payload);
     const validationError = validateNormalizedCampaignPayload(cleanPayload);
     const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
@@ -104,12 +106,14 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
     }
 
     if (cleanPayload.sendPrivateDm && cleanPayload.listener.responseFormat === "PRODUCT_CARD") {
+      saveStage = "image-ownership";
       const imageId = productImageId(cleanPayload.listener.mediaUrl);
       const image = imageId ? await client.automationImage.findFirst({ where: { id: imageId, user: { clerkId: user.id } }, select: { id: true } }) : null;
       if (!image) return { status: 400, data: "Upload a product image from your own account before saving." };
     }
 
     if (cleanPayload.active) {
+      saveStage = "activation-checks";
       const profile = await findUser(user.id);
       activationProfile = profile;
       if ((profile as any)?.status === "SUSPENDED") {
@@ -157,6 +161,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       }
     }
 
+    saveStage = "database-write";
     const saved = automationId
       ? await updateCompleteAutomation(automationId, user.id, cleanPayload)
       : await createCompleteAutomation(user.id, cleanPayload);
@@ -185,6 +190,10 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       automationId,
       prismaCode: getPrismaErrorCode(error),
       prismaMeta: getSafePrismaMeta(error),
+      saveStage,
+      errorName: error instanceof Error ? error.name : typeof error,
+      // Keep diagnostics useful without logging messages, URLs, tokens, or payloads.
+      errorHint: error instanceof Error ? error.message.match(/Cannot read properties of (?:undefined|null) \(reading '[\w]+'\)|Unknown argument `[\w]+`|Argument `[\w]+` is missing|[\w.]+ is not a function/)?.[0] : undefined,
       message,
     });
     return { status: 500, data: message };
