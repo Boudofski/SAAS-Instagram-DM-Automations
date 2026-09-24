@@ -7,6 +7,14 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
 const TYPES = [
+  {
+    type: "dm",
+    icon: MessagesSquare,
+    eyebrow: "Inbox",
+    title: "DM automation",
+    description: "Send a saved response when a new DM contains a keyword—or any message arrives.",
+    accent: "from-blue-600 to-cyan-500",
+  },
   { type: "ai", icon: Sparkles, eyebrow: "Flow Builder", title: "Automate conversations with AI", description: "Collect information, answer questions, and recommend the right offer in a personal conversation.", accent: "from-violet-600 to-indigo-500" },
   { type: "affiliate", icon: ShoppingBag, eyebrow: "Quick Automation", title: "Send affiliate product links", description: "Send a product card with a photo and affiliate links when someone comments.", accent: "from-violet-600 to-pink-500" },
   {
@@ -25,14 +33,7 @@ const TYPES = [
     description: "Respond to mentions, emoji reactions, or text replies in DMs.",
     accent: "from-violet-600 to-fuchsia-500",
   },
-  {
-    type: "dm",
-    icon: MessagesSquare,
-    eyebrow: "Inbox",
-    title: "DM automation",
-    description: "Send a saved response when a new DM contains a keyword—or any message arrives.",
-    accent: "from-blue-600 to-cyan-500",
-  },
+
 ] as const;
 
 export default function AutomationTypePicker({ slug }: { slug: string }) {
