@@ -77,7 +77,7 @@ export default async function ContentPage({
           ],
         ].map(([label, value]) => (
           <div key={label} className="admin-panel">
-            <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
+            <p className="text-sm text-muted-foreground dark:text-slate-400">{label}</p>
             <p className="mt-2 text-3xl font-semibold tabular-nums">{value}</p>
           </div>
         ))}
@@ -108,7 +108,7 @@ export default async function ContentPage({
         <Button variant="outline">Filter</Button>
       </form>
       <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
-        <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.025] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+        <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.025] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-slate-400">
           <span>Article / search visibility</span>
           <span>State</span>
         </div>
@@ -124,7 +124,7 @@ export default async function ContentPage({
                 <h2 className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">
                   {post.title}
                 </h2>
-                <p className="mt-1 break-all text-xs text-slate-600 dark:text-slate-400">
+                <p className="mt-1 break-all text-xs text-muted-foreground dark:text-slate-400">
                   /blog/{post.slug} ·{" "}
                   {post.noIndex ? "Noindex" : "Indexing allowed"}
                 </p>
@@ -134,11 +134,11 @@ export default async function ContentPage({
               >
                 {status}
               </span>
-              <ArrowUpRight className="hidden h-4 w-4 text-slate-500 sm:block" />
+              <ArrowUpRight className="hidden h-4 w-4 text-muted-foreground sm:block" />
             </Link>
           ))
         ) : (
-          <p className="p-8 text-sm text-slate-600 dark:text-slate-400">
+          <p className="p-8 text-sm text-muted-foreground dark:text-slate-400">
             No articles match these filters.
           </p>
         )}
