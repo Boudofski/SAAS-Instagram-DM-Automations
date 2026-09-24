@@ -1,5 +1,6 @@
 "use server";
 
+import { productImageId } from "@/lib/product-card";
 import { onCurrentUser } from "../user";
 import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { findUser } from "../user/queries";
@@ -100,6 +101,12 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
         ...summary,
       });
       return { status: 400, data: validationError };
+    }
+
+    if (cleanPayload.sendPrivateDm && cleanPayload.listener.responseFormat === "PRODUCT_CARD") {
+      const imageId = productImageId(cleanPayload.listener.mediaUrl);
+      const image = imageId ? await client.automationImage.findFirst({ where: { id: imageId, user: { clerkId: user.id } }, select: { id: true } }) : null;
+      if (!image) return { status: 400, data: "Upload a product image from your own account before saving." };
     }
 
     if (cleanPayload.active) {

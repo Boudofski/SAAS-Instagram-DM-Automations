@@ -3,6 +3,7 @@
 import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
+import ProductCardPreview from "./product-card-preview";
 import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
 import type { WizardData, WizardStep } from "@/hooks/use-wizard";
 import type { LinkButton } from "@/lib/link-buttons";
@@ -192,11 +193,11 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
                 <OutgoingBubble text={data.followRequestButtonText || tr("Following")} />
               </>
             ) : null}
-            <IncomingBubble
+            {data.productCard ? <ProductCardPreview title={data.dmMessage} subtitle={data.productSubtitle} imageUrl={data.productImageUrl} buttons={data.linkButtons} /> : <IncomingBubble
               avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />}
               text={data.dmMessage || tr("Your final message")}
               buttons={data.linkButtons}
-            />
+            />}
           </>
         )}
       </div>

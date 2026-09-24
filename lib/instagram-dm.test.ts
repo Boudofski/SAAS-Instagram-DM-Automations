@@ -756,3 +756,28 @@ describe("formatPrivateReplyError", () => {
     expect(formatted).toContain("code=190");
   });
 });
+
+describe("affiliate product card delivery", () => {
+  const card = { token: VALID_TOKEN, igBusinessAccountId: IG_BIZ_ID, recipientId: COMMENTER_ID, automationId: "card", message: "Product", cardSubtitle: "Offer", responseFormat: "PRODUCT_CARD", mediaUrl: "https://ap3k.com/api/automation-images/11111111-1111-4111-8111-111111111111", linkButtons: [{ label: "Shop", url: "https://example.com/?ref=creator" }] };
+  it("sends the final card in one request after the opening-DM handoff", async () => {
+    mockedAxios.post.mockResolvedValue({ status: 200, data: { message_id: "card-mid" } });
+    expect((await sendInstagramDirectResponse(card)).ok).toBe(true);
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+    expect((mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0]).toMatchObject({ title: "Product", subtitle: "Offer", image_url: card.mediaUrl, buttons: [{ type: "web_url", title: "Shop", url: card.linkButtons[0].url }] });
+  });
+  it("preserves the card for direct comment delivery without an opening DM", async () => {
+    mockedAxios.post.mockResolvedValue({ status: 200, data: { message_id: "card-mid" } });
+    expect(await sendInstagramCommentPrivateReply({ ...card, commentId: COMMENT_ID, commenterId: COMMENTER_ID })).toMatchObject({ ok: true, ctaMode: "product_card" });
+    expect((mockedAxios.post.mock.calls[0][1] as any).recipient).toEqual({ comment_id: COMMENT_ID });
+    expect((mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0].image_url).toBe(card.mediaUrl);
+  });
+  it("reports rejected cards rather than recording a text-only send as success", async () => {
+    mockedAxios.post.mockRejectedValue(metaGenericError());
+    expect((await sendInstagramDirectResponse(card)).ok).toBe(false);
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+    mockedAxios.post.mockClear();
+    expect((await sendInstagramCommentPrivateReply({ ...card, commentId: COMMENT_ID, commenterId: COMMENTER_ID })).ok).toBe(false);
+    expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+    for (const call of mockedAxios.post.mock.calls) expect((call[1] as any).message.attachment.payload.template_type).toBe("generic");
+  });
+});

@@ -35,6 +35,7 @@ model User {
   emailPreference     EmailPreference?
   emailDeliveries     EmailDelivery[]
   deletedReplyUsage   DeletedReplyUsage[]
+  automationImages   AutomationImage[]
 }
 
 model EmailPreference {
@@ -301,6 +302,7 @@ model Listener {
   quickReplies            Json?
   mediaUrl                String?
   mediaType               String?
+  cardSubtitle            String?
   openingDmText           String?
   openingDmButtonText     String?
   openingDmEnabled        Boolean    @default(true)
@@ -654,5 +656,17 @@ model DeletedReplyUsage {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime
 
+  @@index([userId, createdAt])
+}
+
+// Optimized product images, isolated by owner. Never included in automation queries.
+model AutomationImage {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  digest String
+  data Bytes
+  createdAt DateTime @default(now())
+  @@unique([userId, digest])
   @@index([userId, createdAt])
 }

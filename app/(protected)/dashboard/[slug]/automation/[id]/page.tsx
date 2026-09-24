@@ -171,6 +171,9 @@ export default async function CampaignDetailPage({ params }: Props) {
               followGateRequired={Boolean(openingDmEnabled && automation.followGateRequired)}
               followRequestDmText={followRequestDmText}
               followRequestButtonText={followRequestButtonText}
+              productCard={automation.listener?.responseFormat === "PRODUCT_CARD"}
+              productImageUrl={automation.listener?.mediaUrl}
+              productSubtitle={automation.listener?.cardSubtitle}
               message={automation.listener?.prompt || "Your DM message"}
               linkButtons={linkButtons}
             />

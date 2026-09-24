@@ -1,12 +1,13 @@
 "use client";
 
 import { UiText } from "@/components/i18n/localized-copy";
-import { MessageCircle, MessagesSquare, Sparkles } from "lucide-react";
+import { MessageCircle, MessagesSquare, Sparkles, ShoppingBag } from "lucide-react";
 import { revealTransition } from "@/lib/motion";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
 const TYPES = [
+  { type: "affiliate", icon: ShoppingBag, eyebrow: "Quick Automation", title: "Send affiliate product links", description: "Send a product card with a photo and affiliate links when someone comments.", accent: "from-violet-600 to-pink-500" },
   {
     type: "comment",
     icon: MessageCircle,
@@ -47,7 +48,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
           <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300"><UiText>{"Choose one starting point. You can fine-tune the trigger, message, and delivery rules next."}</UiText></p>
         </div>
 
-        <div className="mt-10 grid gap-4 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
           {TYPES.map((item, index) => {
             const Icon = item.icon;
             return (
