@@ -57,7 +57,7 @@ export function PrivateReplyPreflightForm({
           placeholder="Example: 1785…"
           className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] px-3 py-2.5 font-mono text-sm text-slate-950 dark:text-white placeholder:text-slate-700 focus:border-pink-500 focus:outline-none"
         />
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
           Use a new comment from a different Instagram account. Meta permits one
           private reply and enforces the comment eligibility window.
         </p>
