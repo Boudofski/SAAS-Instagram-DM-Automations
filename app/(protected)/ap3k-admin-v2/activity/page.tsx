@@ -19,17 +19,17 @@ export default async function AdminV2ActivityPage({ searchParams }: Props) {
   ]);
 
   const rows = events.map((event) => [
-    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-slate-500">
+    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-muted-foreground">
       <LocalTime value={event.createdAt} />
     </span>,
     <V2Badge key="type" tone={eventTone(event.eventType)}>
       {humanEvent(event.eventType)}
     </V2Badge>,
-    <span key="campaign" title={event.campaignName ?? ""} className="block max-w-[220px] truncate text-[11px] font-medium text-slate-300">
+    <span key="campaign" title={event.campaignName ?? ""} className="block max-w-[220px] truncate text-[11px] font-medium text-slate-800 dark:text-slate-300">
       {event.campaignName ?? "—"}
     </span>,
-    <span key="owner" className="break-all text-[11px] text-slate-500 sm:break-normal">{event.ownerEmail ?? "—"}</span>,
-    <span key="keyword" className="max-w-[180px] truncate text-[11px] text-slate-400">{event.keyword ?? "—"}</span>,
+    <span key="owner" className="break-all text-[11px] text-muted-foreground sm:break-normal">{event.ownerEmail ?? "—"}</span>,
+    <span key="keyword" className="max-w-[180px] truncate text-[11px] text-muted-foreground dark:text-slate-400">{event.keyword ?? "—"}</span>,
   ]);
 
   return (
