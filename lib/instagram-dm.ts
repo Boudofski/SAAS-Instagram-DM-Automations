@@ -8,7 +8,7 @@ export const INSTAGRAM_GRAPH_VERSION =
   process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
 export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 
-type CtaMode = "button_template" | "postback_button" | "follow_gate_card" | "text_link_fallback" | "none";
+type CtaMode = "product_card" | "button_template" | "postback_button" | "follow_gate_card" | "text_link_fallback" | "none";
 
 export type InstagramPostbackButton = {
   title: string;
@@ -284,6 +284,17 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
   return { preferred, reliable, verification, fallback, copy };
 }
 
+export function buildProductCardPayload(params: { message: string; cardSubtitle?: string | null; mediaUrl?: string | null; linkButtons?: LinkButton[]; ctaTitle?: string | null; ctaUrl?: string | null }): InstagramMessagePayload {
+  const buttons = normalizeLinkButtons(params.linkButtons, params.ctaTitle, params.ctaUrl)
+    .filter(button => button.url && button.label).slice(0, 3)
+    .map(button => ({ type: "web_url", title: Array.from(button.label).slice(0, 20).join(""), url: button.url }));
+  return { attachment: { type: "template", payload: { template_type: "generic", image_aspect_ratio: "square", elements: [{
+    title: Array.from(params.message.trim()).slice(0, 80).join(""),
+    ...(params.cardSubtitle?.trim() ? { subtitle: Array.from(params.cardSubtitle.trim()).slice(0, 80).join("") } : {}),
+    image_url: normalizeCtaUrl(params.mediaUrl), buttons,
+  }] } } };
+}
+
 function buildConfiguredPrivateReplyPayload(params: {
   automationId: string;
   message: string;
@@ -292,9 +303,13 @@ function buildConfiguredPrivateReplyPayload(params: {
   linkButtons?: LinkButton[];
   ctaTitle?: string | null;
   ctaUrl?: string | null;
+  cardSubtitle?: string | null;
   mediaUrl?: string | null;
   mediaType?: string | null;
 }) {
+  if (params.responseFormat === "PRODUCT_CARD" && params.mediaUrl) return {
+    message: buildProductCardPayload(params), ctaMode: "product_card" as CtaMode,
+  };
   const quickReplies = params.quickReplies ?? [];
   if (params.responseFormat === "MEDIA" && params.mediaUrl) {
     const mediaUrl = normalizeCtaUrl(params.mediaUrl);
@@ -384,6 +399,7 @@ export async function sendInstagramDirectResponse(params: {
   quickReplyPayloads?: string[];
   ctaTitle?: string | null;
   ctaUrl?: string | null;
+  cardSubtitle?: string | null;
   mediaUrl?: string | null;
   mediaType?: string | null;
   typingIndicator?: boolean;
@@ -444,6 +460,8 @@ export async function sendInstagramDirectResponse(params: {
       } else {
         responseMessage = payload.preferred;
       }
+    } else if (params.responseFormat === "PRODUCT_CARD" && params.mediaUrl) {
+      responseMessage = buildProductCardPayload(params);
     } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
       const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
@@ -485,6 +503,7 @@ export async function sendInstagramDirectResponse(params: {
           : followPayload.fallback
         );
       } else {
+        if (params.responseFormat === "PRODUCT_CARD") throw error;
         if (params.responseFormat !== "LINK" && !params.ctaUrl && !params.linkButtons?.length) throw error;
         const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
         sent = await postDirectPayload(params, addQuickReplies(fallback, params.automationId, params.quickReplies ?? []));
@@ -620,6 +639,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   responseFormat?: string | null;
   quickReplies?: string[];
   linkButtons?: LinkButton[];
+  cardSubtitle?: string | null;
   mediaUrl?: string | null;
   mediaType?: string | null;
   followGatePrompt?: FollowGatePrompt;
@@ -649,6 +669,7 @@ export async function sendInstagramCommentPrivateReply(params: {
         linkButtons: params.linkButtons,
         ctaTitle: params.ctaTitle,
         ctaUrl: params.ctaUrl,
+        cardSubtitle: params.cardSubtitle,
         mediaUrl: params.mediaUrl,
         mediaType: params.mediaType,
       });
@@ -657,7 +678,7 @@ export async function sendInstagramCommentPrivateReply(params: {
     : followGatePayload
     ? { message: followGatePayload.fallback, ctaMode: "text_link_fallback" as CtaMode }
     : buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons);
-  const usesTemplate = preferred.ctaMode === "button_template" || preferred.ctaMode === "postback_button" || preferred.ctaMode === "follow_gate_card";
+  const usesTemplate = preferred.ctaMode === "product_card" || preferred.ctaMode === "button_template" || preferred.ctaMode === "postback_button" || preferred.ctaMode === "follow_gate_card";
 
   try {
     const primary = await tryPrivateReply(igBusinessAccountId, commentId, preferred.message, token);
@@ -675,7 +696,7 @@ export async function sendInstagramCommentPrivateReply(params: {
       return messagingAccessDisabled("ig_messages_private_reply", primaryMeta, preferred.ctaMode);
     }
 
-    if (usesTemplate && shouldTryTextFallback(primaryErr)) {
+    if (usesTemplate && params.responseFormat !== "PRODUCT_CARD" && shouldTryTextFallback(primaryErr)) {
       console.warn("[meta-api] Instagram Graph private reply button template failed — trying text fallback", {
         endpointName: "ig_messages_private_reply",
         status: primaryMeta.status,
@@ -730,7 +751,7 @@ export async function sendInstagramCommentPrivateReply(params: {
         );
       }
 
-      if (usesTemplate && shouldTryTextFallback(fallbackErr)) {
+      if (usesTemplate && params.responseFormat !== "PRODUCT_CARD" && shouldTryTextFallback(fallbackErr)) {
         console.warn("[meta-api] Instagram Graph direct DM button template failed — trying text fallback", {
           endpointName: "ig_messages_direct_dm",
           error: getSafeMetaError(fallbackErr),
