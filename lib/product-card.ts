@@ -19,3 +19,9 @@ export function validateProductCard(title: string, imageUrl?: string | null, sub
   if (!productImageId(imageUrl)) return "Upload a product image before saving.";
   return null;
 }
+
+// Keep stored upload URLs stable; give Meta a dedicated, crawlable image URL.
+export function productImageDeliveryUrl(url?: string | null): string | null {
+  const id = productImageId(url);
+  return id ? `https://ap3k.com/media/automation/${id}.jpg` : null;
+}

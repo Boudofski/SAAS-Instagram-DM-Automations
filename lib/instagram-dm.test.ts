@@ -763,13 +763,13 @@ describe("affiliate product card delivery", () => {
     mockedAxios.post.mockResolvedValue({ status: 200, data: { message_id: "card-mid" } });
     expect((await sendInstagramDirectResponse(card)).ok).toBe(true);
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-    expect((mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0]).toMatchObject({ title: "Product", subtitle: "Offer", image_url: card.mediaUrl, buttons: [{ type: "web_url", title: "Shop", url: card.linkButtons[0].url }] });
+    expect((mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0]).toMatchObject({ title: "Product", subtitle: "Offer", image_url: card.mediaUrl.replace("/api/automation-images/", "/media/automation/") + ".jpg", buttons: [{ type: "web_url", title: "Shop", url: card.linkButtons[0].url }] });
   });
   it("preserves the card for direct comment delivery without an opening DM", async () => {
     mockedAxios.post.mockResolvedValue({ status: 200, data: { message_id: "card-mid" } });
     expect(await sendInstagramCommentPrivateReply({ ...card, commentId: COMMENT_ID, commenterId: COMMENTER_ID })).toMatchObject({ ok: true, ctaMode: "product_card" });
     expect((mockedAxios.post.mock.calls[0][1] as any).recipient).toEqual({ comment_id: COMMENT_ID });
-    expect((mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0].image_url).toBe(card.mediaUrl);
+    expect((mockedAxios.post.mock.calls[0][1] as any).message.attachment.payload.elements[0].image_url).toBe(card.mediaUrl.replace("/api/automation-images/", "/media/automation/") + ".jpg");
   });
   it("reports rejected cards rather than recording a text-only send as success", async () => {
     mockedAxios.post.mockRejectedValue(metaGenericError());

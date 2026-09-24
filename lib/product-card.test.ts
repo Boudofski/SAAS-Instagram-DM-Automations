@@ -19,6 +19,6 @@ describe("affiliate cards", () => {
     expect(validateNormalizedCampaignPayload(normalizeCampaignPayload({ ...card, listener: { ...card.listener, linkButtons: [{ label: "Buy", url: "javascript:alert(1)" }] } }))).toBeTruthy();
   });
   it("builds one generic card with photo, title, subtitle and affiliate tracking intact", () => {
-    expect(buildProductCardPayload({ message: "My product", cardSubtitle: "The offer", mediaUrl: image, linkButtons: card.listener.linkButtons })).toEqual({ attachment: { type: "template", payload: { template_type: "generic", image_aspect_ratio: "square", elements: [{ title: "My product", subtitle: "The offer", image_url: image, buttons: [{ type: "web_url", title: "View product", url: "https://example.com/offer?ref=creator" }] }] } } });
+    expect(buildProductCardPayload({ message: "My product", cardSubtitle: "The offer", mediaUrl: image, linkButtons: card.listener.linkButtons })).toEqual({ attachment: { type: "template", payload: { template_type: "generic", image_aspect_ratio: "square", elements: [{ title: "My product", subtitle: "The offer", image_url: image.replace("/api/automation-images/", "/media/automation/") + ".jpg", buttons: [{ type: "web_url", title: "View product", url: "https://example.com/offer?ref=creator" }] }] } } });
   });
 });
