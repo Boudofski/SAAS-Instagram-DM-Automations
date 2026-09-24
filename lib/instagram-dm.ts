@@ -1,4 +1,5 @@
 import axios from "axios";
+import { productImageDeliveryUrl } from "@/lib/product-card";
 import { getSafeMetaError } from "@/lib/fetch";
 import { normalizeLinkButtons, type LinkButton } from "@/lib/link-buttons";
 
@@ -291,7 +292,7 @@ export function buildProductCardPayload(params: { message: string; cardSubtitle?
   return { attachment: { type: "template", payload: { template_type: "generic", image_aspect_ratio: "square", elements: [{
     title: Array.from(params.message.trim()).slice(0, 80).join(""),
     ...(params.cardSubtitle?.trim() ? { subtitle: Array.from(params.cardSubtitle.trim()).slice(0, 80).join("") } : {}),
-    image_url: normalizeCtaUrl(params.mediaUrl), buttons,
+    image_url: productImageDeliveryUrl(params.mediaUrl) ?? normalizeCtaUrl(params.mediaUrl), buttons,
   }] } } };
 }
 
