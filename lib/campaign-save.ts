@@ -1,3 +1,4 @@
+import { validateProductCard } from "@/lib/product-card";
 import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
@@ -54,6 +55,7 @@ export type RawCampaignPayload = {
     responseFormat?: string | null;
     quickReplies?: unknown;
     linkButtons?: unknown;
+    cardSubtitle?: string | null;
     mediaUrl?: string | null;
     mediaType?: string | null;
     openingDmText?: string | null;
@@ -92,8 +94,9 @@ export type NormalizedCampaignPayload = {
     aiProtectionRules?: AiProtectionRules;
     ctaLink?: string;
     ctaButtonTitle?: string;
-    responseFormat?: "TEXT" | "LINK" | "MEDIA";
+    responseFormat?: "TEXT" | "LINK" | "MEDIA" | "PRODUCT_CARD";
     quickReplies?: Array<string | LinkButton>;
+    cardSubtitle?: string;
     mediaUrl?: string;
     mediaType?: "IMAGE" | "VIDEO";
     openingDmText?: string;
@@ -136,7 +139,9 @@ export function normalizeCampaignPayload(
   const aiReplyEnabled = payload.listener?.aiReplyEnabled === true;
   const sendPrivateDm = payload.sendPrivateDm !== false;
   const openingDmEnabled = sendPrivateDm && payload.listener?.openingDmEnabled !== false;
-  const responseFormat = payload.listener?.responseFormat === "MEDIA"
+  const responseFormat = payload.listener?.responseFormat === "PRODUCT_CARD"
+    ? "PRODUCT_CARD"
+    : payload.listener?.responseFormat === "MEDIA"
     ? "MEDIA"
     : payload.listener?.responseFormat === "LINK" || payload.listener?.ctaLink
       ? "LINK"
@@ -181,15 +186,16 @@ export function normalizeCampaignPayload(
       aiReplyTone: normalizeAiReplyTone(payload.listener?.aiReplyTone),
       aiReplyInstructions: aiReplyEnabled ? cleanOptional(payload.listener?.aiReplyInstructions)?.slice(0, 1600) : undefined,
       aiProtectionRules: normalizeAiProtectionRules(payload.listener?.aiProtectionRules),
-      ctaLink: sendPrivateDm && responseFormat === "LINK" ? firstLink?.url : undefined,
-      ctaButtonTitle: sendPrivateDm && responseFormat === "LINK" ? firstLink?.label : undefined,
+      ctaLink: sendPrivateDm && (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD") ? firstLink?.url : undefined,
+      ctaButtonTitle: sendPrivateDm && (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD") ? firstLink?.label : undefined,
       responseFormat,
       quickReplies: sendPrivateDm
-        ? responseFormat === "LINK"
+        ? (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD")
           ? linkButtons
           : readLegacyQuickReplies(payload.listener?.quickReplies)
         : [],
-      mediaUrl: sendPrivateDm && responseFormat === "MEDIA" ? normalizeUrl(payload.listener?.mediaUrl) : undefined,
+      mediaUrl: sendPrivateDm && (responseFormat === "MEDIA" || responseFormat === "PRODUCT_CARD") ? normalizeUrl(payload.listener?.mediaUrl) : undefined,
+      cardSubtitle: responseFormat === "PRODUCT_CARD" ? cleanOptional(payload.listener?.cardSubtitle) : undefined,
       mediaType: sendPrivateDm && responseFormat === "MEDIA" && payload.listener?.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
       openingDmText: sendPrivateDm ? resolveOpeningDmText(payload.listener?.openingDmText) : undefined,
       openingDmButtonText: sendPrivateDm ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText) : undefined,
@@ -217,7 +223,7 @@ export function validateNormalizedCampaignPayload(
 
   if (
     payload.sendPrivateDm &&
-    payload.listener.responseFormat === "LINK" &&
+    (payload.listener.responseFormat === "LINK" || payload.listener.responseFormat === "PRODUCT_CARD") &&
     !linkButtonsAreComplete(normalizeLinkButtons(payload.listener.quickReplies, payload.listener.ctaButtonTitle, payload.listener.ctaLink))
   ) {
     return "Complete every link label and add a valid destination URL.";
@@ -225,6 +231,11 @@ export function validateNormalizedCampaignPayload(
 
   if (payload.sendPrivateDm && payload.listener.responseFormat === "MEDIA" && !payload.listener.mediaUrl) {
     return "Add a valid public image or video URL.";
+  }
+
+  if (payload.sendPrivateDm && payload.listener.responseFormat === "PRODUCT_CARD") {
+    const error = validateProductCard(payload.listener.prompt, payload.listener.mediaUrl, payload.listener.cardSubtitle);
+    if (error) return error;
   }
 
   const publicReplyCount = [
