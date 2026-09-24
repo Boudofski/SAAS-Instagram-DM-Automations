@@ -121,7 +121,7 @@ export default async function OverviewPage() {
             ? "Some operations need your attention"
             : "No alerts in the checks below"}
         </p>
-        <span className="text-xs text-slate-600 dark:text-slate-400">
+        <span className="text-xs text-muted-foreground dark:text-slate-400">
           Snapshot <LocalTime value={analytics.updatedAt} />
         </span>
       </div>
@@ -133,13 +133,13 @@ export default async function OverviewPage() {
             className="admin-panel group transition-colors hover:border-violet-400/40"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-600 dark:text-slate-400">{c.label}</p>
+              <p className="text-sm text-muted-foreground dark:text-slate-400">{c.label}</p>
               <c.icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
             </div>
             <p className="mt-5 text-4xl font-semibold tracking-tight tabular-nums">
               {c.value.toLocaleString()}
             </p>
-            <p className="mt-3 text-xs text-slate-500">{c.sub}</p>
+            <p className="mt-3 text-xs text-muted-foreground">{c.sub}</p>
           </Link>
         ))}
       </div>
@@ -148,7 +148,7 @@ export default async function OverviewPage() {
         <section className="admin-panel">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Attention queue</h2>
-            <span className="text-xs text-slate-500">Live checks</span>
+            <span className="text-xs text-muted-foreground">Live checks</span>
           </div>
           <div className="mt-4 divide-y divide-slate-200 dark:divide-white/10">
             {issues.map((issue) => (
@@ -162,15 +162,15 @@ export default async function OverviewPage() {
                   <span className="flex-1 text-sm font-medium">
                     {issue.label}
                   </span>
-                  <ArrowUpRight className="h-4 w-4 text-slate-500" />
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="ml-12 mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                <p className="ml-12 mt-2 text-xs leading-5 text-muted-foreground dark:text-slate-400">
                   {issue.hint}
                 </p>
               </Link>
             ))}
           </div>
-          <p className="mt-3 text-xs leading-5 text-slate-500">
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
             Today resets at 00:00 UTC. Counters are not an uptime guarantee.
           </p>
         </section>
@@ -179,7 +179,7 @@ export default async function OverviewPage() {
         <div className="flex flex-wrap justify-between gap-3">
           <div>
             <h2 className="font-semibold">From signup to real usage</h2>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+            <p className="mt-1 text-xs text-muted-foreground dark:text-slate-400">
               Accounts created in the last 30 days · current records, including
               owner/test accounts
             </p>
@@ -196,13 +196,13 @@ export default async function OverviewPage() {
             { label: "Sent in the last 7 days", value: launch.usedThisWeek },
           ].map((s, i) => (
             <div key={s.label}>
-              <p className="text-[10px] uppercase tracking-wider text-slate-500">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Stage 0{i + 1}
               </p>
               <p className="mt-2 text-3xl font-semibold tabular-nums">
                 {s.value}
               </p>
-              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{s.label}</p>
+              <p className="mt-2 text-xs text-muted-foreground dark:text-slate-400">{s.label}</p>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-50 dark:bg-white/5">
                 <div
                   className="h-full rounded-full bg-violet-400"
@@ -214,7 +214,7 @@ export default async function OverviewPage() {
             </div>
           ))}
         </div>
-        <p className="mt-5 text-xs text-slate-500">
+        <p className="mt-5 text-xs text-muted-foreground">
           Separate cohort milestones, not a strictly nested funnel. API
           acceptance is not a read receipt or sale.
         </p>
@@ -235,17 +235,17 @@ export default async function OverviewPage() {
               >
                 <div className="min-w-0">
                   <p className="text-sm">{humanEvent(e.eventType)}</p>
-                  <p className="mt-1 truncate text-xs text-slate-500">
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
                     {e.campaignName || "Automation"}
                   </p>
                 </div>
-                <span className="text-xs text-slate-600 dark:text-slate-400">
+                <span className="text-xs text-muted-foreground dark:text-slate-400">
                   <LocalTime value={e.createdAt} />
                 </span>
               </div>
             ))}
             {recent.length === 0 && (
-              <p className="py-6 text-sm text-slate-600 dark:text-slate-400">
+              <p className="py-6 text-sm text-muted-foreground dark:text-slate-400">
                 Activity will appear after the first automation interaction.
               </p>
             )}
@@ -273,7 +273,7 @@ export default async function OverviewPage() {
             >
               <c.icon className="h-5 w-5 text-violet-700 dark:text-violet-300" />
               <h2 className="mt-3 font-semibold">{c.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{c.body}</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground dark:text-slate-400">{c.body}</p>
             </Link>
           ))}
           <Link
