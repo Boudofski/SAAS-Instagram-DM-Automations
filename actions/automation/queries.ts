@@ -438,12 +438,13 @@ export const duplicateAutomationQuery = async (
       ctaLink: automation.listener.ctaLink ?? undefined,
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       responseFormat:
-        automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA"
+        automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA" || automation.listener.responseFormat === "PRODUCT_CARD"
           ? automation.listener.responseFormat
           : "TEXT",
-      quickReplies: automation.listener.responseFormat === "LINK"
+      quickReplies: (automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "PRODUCT_CARD")
         ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
         : readLegacyQuickReplies(automation.listener.quickReplies),
+      cardSubtitle: automation.listener.cardSubtitle ?? undefined,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
       openingDmText: automation.listener.openingDmText ?? undefined,
