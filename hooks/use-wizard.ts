@@ -1,5 +1,6 @@
 "use client";
 
+import { validateProductCard } from "@/lib/product-card";
 import { useUi } from "@/components/i18n/use-ui";
 import {
   saveCampaign,
@@ -33,6 +34,9 @@ export type WizardData = {
   matchingMode: "EXACT" | "CONTAINS";
   sendPrivateDm: boolean;
   dmMessage: string;
+  productCard?: boolean;
+  productImageUrl?: string;
+  productSubtitle?: string;
   linkButtons: LinkButton[];
   followGateRequired: boolean;
   openingDmText: string;
@@ -122,6 +126,7 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
     if (step === 1) return !!data.post;
     if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
     if (step === 3) {
+      if (data.sendPrivateDm && data.productCard && validateProductCard(data.dmMessage, data.productImageUrl, data.productSubtitle)) return false;
       if (!hasCommentReply && !data.sendPrivateDm) return false;
       if (data.sendPrivateDm && data.openingDmEnabled && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
       if (data.sendPrivateDm && data.openingDmEnabled && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) return false;
@@ -154,6 +159,11 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
       return;
     }
 
+    if (data.sendPrivateDm && data.productCard) {
+      const cardError = validateProductCard(data.dmMessage, data.productImageUrl, data.productSubtitle);
+      if (cardError) { setError(cardError); return; }
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -183,7 +193,9 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
           aiProtectionRules: data.aiProtectionRules,
           ctaLink: data.sendPrivateDm ? firstLink?.url || undefined : undefined,
           ctaButtonTitle: data.sendPrivateDm ? firstLink?.label || undefined : undefined,
-          responseFormat: data.sendPrivateDm ? "LINK" : "TEXT",
+          responseFormat: data.sendPrivateDm ? (data.productCard ? "PRODUCT_CARD" : "LINK") : "TEXT",
+          mediaUrl: data.sendPrivateDm && data.productCard ? data.productImageUrl : undefined,
+          cardSubtitle: data.sendPrivateDm && data.productCard ? data.productSubtitle : undefined,
           linkButtons: data.sendPrivateDm ? data.linkButtons : [],
           openingDmText: data.sendPrivateDm ? data.openingDmText : undefined,
           openingDmButtonText: data.sendPrivateDm ? data.openingDmButtonText : undefined,
