@@ -21,12 +21,12 @@ export default async function AdminBillingPage() {
     const overrideExpired = Boolean(subscription.overrideExpiresAt && subscription.overrideExpiresAt.getTime() <= Date.now());
 
     return [
-      <div key="user" className="min-w-0">{subscription.userId ? <Link href={`/admin/users/${subscription.userId}`} className="break-all font-bold text-slate-800 dark:text-slate-100 transition hover:text-pink-700 dark:hover:text-pink-300 sm:break-normal">{subscription.email ?? "Unknown user"}</Link> : <span className="font-bold text-slate-600 dark:text-slate-400">{subscription.email ?? "Unlinked subscription"}</span>}</div>,
+      <div key="user" className="min-w-0">{subscription.userId ? <Link href={`/admin/users/${subscription.userId}`} className="break-all font-bold text-slate-800 dark:text-slate-100 transition hover:text-pink-700 dark:hover:text-pink-300 sm:break-normal">{subscription.email ?? "Unknown user"}</Link> : <span className="font-bold text-muted-foreground dark:text-slate-400">{subscription.email ?? "Unlinked subscription"}</span>}</div>,
       <span key="plan">{planBadge(subscription.plan)}</span>,
-      stripeUrl ? <a key="stripe" href={stripeUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-sky-500/15 bg-sky-500/[0.05] px-2.5 py-1.5 text-[11px] font-bold text-sky-700 dark:text-sky-300 transition hover:bg-sky-500/[0.1]">Open Stripe ↗</a> : <span key="stripe" className="text-[11px] text-slate-600">Not linked</span>,
-      subscription.hasOverrides ? <div key="override" className="flex flex-col items-start gap-1"><V2Badge tone={overrideExpired ? "slate" : "amber"}>{overrideExpired ? "Expired override" : "Custom limits"}</V2Badge>{subscription.overrideReason && <span className="max-w-[220px] truncate text-[10px] text-slate-500" title={subscription.overrideReason}>{subscription.overrideReason}</span>}</div> : <span key="override" className="text-[11px] text-slate-600">Plan defaults</span>,
+      stripeUrl ? <a key="stripe" href={stripeUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-sky-500/15 bg-sky-500/[0.05] px-2.5 py-1.5 text-[11px] font-bold text-sky-700 dark:text-sky-300 transition hover:bg-sky-500/[0.1]">Open Stripe ↗</a> : <span key="stripe" className="text-[11px] text-muted-foreground">Not linked</span>,
+      subscription.hasOverrides ? <div key="override" className="flex flex-col items-start gap-1"><V2Badge tone={overrideExpired ? "slate" : "amber"}>{overrideExpired ? "Expired override" : "Custom limits"}</V2Badge>{subscription.overrideReason && <span className="max-w-[220px] truncate text-[10px] text-muted-foreground" title={subscription.overrideReason}>{subscription.overrideReason}</span>}</div> : <span key="override" className="text-[11px] text-muted-foreground">Plan defaults</span>,
       <V2Badge key="status" tone={statusTone(subscription.userStatus ?? "UNKNOWN")}>{subscription.userStatus ?? "Unknown"}</V2Badge>,
-      <span key="updated" className="whitespace-nowrap text-[11px] text-slate-500"><LocalTime value={subscription.updatedAt} /></span>,
+      <span key="updated" className="whitespace-nowrap text-[11px] text-muted-foreground"><LocalTime value={subscription.updatedAt} /></span>,
     ];
   });
 
