@@ -455,8 +455,10 @@ function AutomationSetup({ params, searchParams }: Props) {
                               </div>
                             </div>
                             {data.productCard ? <ProductCardEditor title={data.dmMessage} subtitle={data.productSubtitle ?? ""} imageUrl={data.productImageUrl ?? ""} linkButtons={data.linkButtons} onChange={next => update({
-                              dmMessage: next.title ?? data.dmMessage, productSubtitle: next.subtitle ?? data.productSubtitle,
-                              productImageUrl: next.imageUrl ?? data.productImageUrl, linkButtons: next.linkButtons ?? data.linkButtons,
+                              ...(next.title !== undefined ? { dmMessage: next.title } : {}),
+                              ...(next.subtitle !== undefined ? { productSubtitle: next.subtitle } : {}),
+                              ...(next.imageUrl !== undefined ? { productImageUrl: next.imageUrl } : {}),
+                              ...(next.linkButtons !== undefined ? { linkButtons: next.linkButtons } : {}),
                             })} /> : <MessageResponseEditor
                               message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
                               linkButtons={data.linkButtons}
