@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { aiCompletionBudget } from "@/lib/ai-completion-budget";
 import { client } from "@/lib/prisma";
 import { decryptAiProviderSecret } from "@/lib/ai-provider-crypto";
 import {
@@ -74,7 +75,7 @@ async function runCompletion(
   const request = {
     model: provider.model,
     temperature: 0.25,
-    max_tokens: 180,
+    ...aiCompletionBudget(provider),
     messages: [
       {
         role: "system",
@@ -244,7 +245,7 @@ export async function generateAiDmReply(input: {
     const request = {
       model: provider.model,
       temperature: 0.25,
-      max_tokens: 260,
+      ...aiCompletionBudget(provider),
       messages: [
         {
           role: "system",
@@ -415,7 +416,7 @@ export async function generateAiConversationTasks(goal: string, context: string)
   try {
     const provider = await loadEnabledProvider();
     const result = await createProvider(provider).chat.completions.create({
-      model: provider.model, temperature: 0.2, max_tokens: 600,
+      model: provider.model, temperature: 0.2, ...aiCompletionBudget(provider),
       messages: [{ role: "system", content: 'Create 3 to 6 short conversation tasks for a business Instagram assistant. Use only the supplied goal and facts. Ask one question at a time, understand needs, recommend a relevant offer, and answer questions. Do not invent products, prices, actions or promises. Do not request sensitive data. Match the language of the goal. Return JSON only: {"tasks":["..."]}. Each task must be under 240 characters.' },
         { role: "user", content: JSON.stringify({ goal: goal.slice(0, 800), context: context.slice(0, 12000) }) }],
     });
@@ -423,5 +424,8 @@ export async function generateAiConversationTasks(goal: string, context: string)
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed.tasks) || parsed.tasks.length < 1 || parsed.tasks.length > 8 || parsed.tasks.some((task: unknown) => typeof task !== "string" || !task.trim() || task.length > 240)) return null;
     return parsed.tasks as string[];
-  } catch { return null; }
+  } catch (error) {
+    console.error("[ai-conversation-plan] generation skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });
+    return null;
+  }
 }
