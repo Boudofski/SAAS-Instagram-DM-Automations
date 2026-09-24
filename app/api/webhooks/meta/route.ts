@@ -1,3 +1,5 @@
+import { readAiConversation } from "@/lib/ai-conversation";
+import { prepareAiConversationTurn, finishAiConversationTurn } from "@/lib/ai-conversation-runtime";
 import { beginEmailRequest, cancelPendingFollowUps, finishEngagementJob, scheduleFollowUp, takeEmailReply } from "@/lib/automation-engagement";
 import { emailRequestMessage, messagingWindowOpen, parseEmailReply } from "@/lib/automation-engagement-settings";
 import type { Integrations } from "@prisma/client";
@@ -1723,6 +1725,7 @@ async function processEntry(
         await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
         const emailReply = !actionPayload && !storyInteraction
           ? await takeEmailReply(inboxIntegration.id, senderId, dmText, inboundAt, parsed.ok ? parsed.data.messageMid : undefined) : null;
+        if (parseEmailReply(dmText).kind === "stop") await findAutomationForDM(dmText, pageId, senderId);
         if (emailReply?.kind === "waiting" || parseEmailReply(dmText).kind === "stop") {
           await updateWebhookEvent(webhookEvent.id, { status: "PROCESSED", errorMessage: "engagement_reply_handled", processedAt: new Date() });
           continue;
@@ -1815,7 +1818,7 @@ async function processEntry(
       }
 
       // 1. Try to match an automation by keyword
-      const result = await findAutomationForDM(dmText, pageId);
+      const result = await findAutomationForDM(dmText, pageId, senderId);
 
       if (!result) {
         console.log(`[webhook] inbound DM — no keyword automation matched senderId=${senderId}`, {
@@ -1959,7 +1962,19 @@ async function processConfiguredMessageAutomation(params: {
         keyword: matchedKeyword,
         link: automation.listener.ctaLink ?? "",
       });
-  if (automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
+  const conversationConfig = readAiConversation(automation.listener.aiConversation);
+  let conversationTurn: Awaited<ReturnType<typeof prepareAiConversationTurn>> = null;
+  if (conversationConfig && !dmFlowAction) {
+    conversationTurn = await prepareAiConversationTurn({ automationId: automation.id, userId: automation.userId, integrationId: integration.id, recipientIgId: senderId, message: inboundText, inboundAt: params.inboundAt, config: conversationConfig });
+    if (!conversationTurn) {
+      await updateWebhookEvent(webhookEventId, { status: "IGNORED", errorMessage: "ai_conversation_paused_busy_or_quota", processedAt: new Date() });
+      return;
+    }
+    payloadMessage = conversationTurn.reply;
+    aiGenerated = true;
+    aiLinkButtons = conversationTurn.linkButton ? [conversationTurn.linkButton] : [];
+  }
+  if (!conversationConfig && automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
     try {
       const workspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
       if (workspace.aiRepliesEnabled) {
@@ -2042,6 +2057,8 @@ async function processConfiguredMessageAutomation(params: {
   });
 
   const sent = result.ok;
+  if (conversationTurn) await finishAiConversationTurn(conversationTurn, { message: inboundText, sent, automationId: automation.id, recipientIgId: senderId })
+    .catch(() => console.error("[ai-conversation] session persistence failed", { automationId: automation.id }));
   const sentMarker = needsFollowRequest ? "follow_request_dm_sent" : needsEmailRequest ? "email_request_dm_sent" : "final_dm_payload_sent";
   if (emailRequestId) await finishEngagementJob(emailRequestId, sent ? "WAITING" : "FAILED");
   if (params.emailCompletionId) await finishEngagementJob(params.emailCompletionId, sent && !intermediateStep ? "COMPLETED" : "FAILED");

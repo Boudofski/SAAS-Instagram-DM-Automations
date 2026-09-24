@@ -1,3 +1,4 @@
+import { conversationStopIntent, readAiConversation } from "@/lib/ai-conversation";
 import { client } from "@/lib/prisma";
 import { matchKeywordWithMode, normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
 import {
@@ -465,7 +466,8 @@ function maskId(value?: string | null) {
  */
 export const findAutomationForDM = async (
   dmText: string,
-  pageId: string
+  pageId: string,
+  recipientIgId?: string
 ): Promise<{ automation: AutomationWithRelations; matchedKeyword: string } | null> => {
   const automations = await client.automation.findMany({
     where: {
@@ -504,7 +506,31 @@ export const findAutomationForDM = async (
     orderBy: { createdAt: "desc" },
   });
 
-  for (const automation of automations) {
+  const aiAutomations = automations.filter((item) => readAiConversation(item.listener?.aiConversation));
+  let stopped = false;
+  if (recipientIgId && aiAutomations.length) {
+    const integrations = aiAutomations.flatMap((item) => item.integrationId ? [item.integrationId] : []);
+    const session = await client.aiConversationSession.findFirst({ where: { recipientIgId, integrationId: { in: integrations }, expiresAt: { gt: new Date() } } });
+    if (conversationStopIntent(dmText)) {
+      // Remember opt-out even before the first AI message. No outbound message is needed.
+      const owner = session ? aiAutomations.find((item) => item.id === session.automationId) : aiAutomations[0];
+      if (owner?.integrationId) await client.aiConversationSession.upsert({
+        where: { integrationId_recipientIgId: { integrationId: owner.integrationId, recipientIgId } },
+        create: { integrationId: owner.integrationId, recipientIgId, automationId: owner.id, status: "STOPPED", expiresAt: new Date(Date.now() + 86400000) },
+        update: { status: "STOPPED", expiresAt: new Date(Date.now() + 86400000) },
+      });
+      return null;
+    }
+    stopped = session?.status === "STOPPED";
+    if (session && !stopped) {
+      const continued = aiAutomations.find((item) => item.id === session.automationId);
+      if (continued) return { automation: continued, matchedKeyword: "AI conversation" };
+    }
+  }
+  // Explicit keyword flows take precedence over catch-all flows.
+  const ordered = [...automations.filter((item) => item.triggerMode !== "ANY_MESSAGE"), ...automations.filter((item) => item.triggerMode === "ANY_MESSAGE")];
+  for (const automation of ordered) {
+    if (stopped && readAiConversation(automation.listener?.aiConversation)) continue;
     if (automation.triggerMode === "ANY_MESSAGE") {
       return { automation, matchedKeyword: "any message" };
     }

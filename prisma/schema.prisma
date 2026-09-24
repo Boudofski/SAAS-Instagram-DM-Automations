@@ -259,6 +259,7 @@ model Automation {
   conversations        Conversation[]
   aiUsageEvents        AiUsageEvent[]
   engagementJobs       AutomationEngagementJob[]
+  aiConversationSessions AiConversationSession[]
 
   @@index([userId, integrationId])
 }
@@ -297,6 +298,7 @@ model Listener {
   aiReplyInstructions     String?
   aiProtectionRules       Json?
   aiDmReplyEnabled        Boolean    @default(false)
+  aiConversation          Json?
   ctaLink                 String?
   ctaButtonTitle          String?
   responseFormat          String     @default("TEXT")
@@ -701,4 +703,18 @@ model AutomationEngagementJob {
 model AutomationSchedulerHeartbeat {
   id        String   @id
   lastRunAt DateTime
+}
+
+model AiConversationSession {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationId String @db.Uuid
+  recipientIgId String
+  automationId String @db.Uuid
+  automation Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  history Json @default("[]")
+  status String @default("ACTIVE")
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+  @@unique([integrationId, recipientIgId])
+  @@index([automationId])
 }

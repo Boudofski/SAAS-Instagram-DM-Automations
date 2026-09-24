@@ -1,3 +1,4 @@
+import { readAiConversation, type AiConversationConfig } from "@/lib/ai-conversation";
 import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
@@ -16,6 +17,7 @@ export type MessageTriggerMode = "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
 export type DeliveryDelaySeconds = 0 | 3 | 5 | 10 | 30;
 
 export type RawMessageAutomationPayload = {
+  aiConversation?: unknown;
   name?: string;
   active?: boolean;
   source?: string;
@@ -39,6 +41,7 @@ export type RawMessageAutomationPayload = {
 };
 
 export type NormalizedMessageAutomationPayload = {
+  aiConversation?: AiConversationConfig;
   name: string;
   active: boolean;
   source: MessageAutomationSource;
@@ -65,7 +68,7 @@ export function normalizeMessageAutomationPayload(
 ): NormalizedMessageAutomationPayload {
   const source: MessageAutomationSource = payload.source === "DM" ? "DM" : "STORY";
   const responseFormat: MessageResponseFormat =
-    !payload.aiReplyEnabled && (payload.linkButtons || payload.responseFormat === "LINK")
+    payload.aiReplyEnabled ? "TEXT" : (payload.linkButtons || payload.responseFormat === "LINK")
       ? "LINK"
       : payload.responseFormat === "MEDIA"
         ? "MEDIA"
@@ -82,6 +85,7 @@ export function normalizeMessageAutomationPayload(
   const firstLink = linkButtons[0];
 
   return {
+    aiConversation: readAiConversation(payload.aiConversation) ?? undefined,
     name: cleanOptional(payload.name)?.slice(0, 120) || `Untitled ${source === "STORY" ? "story" : "DM"} automation`,
     active: Boolean(payload.active),
     source,

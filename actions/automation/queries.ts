@@ -1,5 +1,7 @@
 "use server";
 
+import { readAiConversation } from "@/lib/ai-conversation";
+
 import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
@@ -165,6 +167,7 @@ export const createCompleteMessageAutomation = async (
           followRequestDmText: payload.followRequestDmText,
           followRequestButtonText: payload.followRequestButtonText,
           aiDmReplyEnabled: payload.aiReplyEnabled,
+          aiConversation: payload.aiConversation,
         },
       },
     },
@@ -225,6 +228,7 @@ export const updateCompleteMessageAutomation = async (
             followRequestDmText: payload.followRequestDmText,
             followRequestButtonText: payload.followRequestButtonText,
             aiDmReplyEnabled: payload.aiReplyEnabled,
+            aiConversation: payload.aiConversation,
           },
         },
       },
@@ -404,6 +408,7 @@ export const duplicateAutomationQuery = async (
       followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
       followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
       aiReplyEnabled: automation.listener.aiDmReplyEnabled,
+      aiConversation: readAiConversation(automation.listener.aiConversation) ?? undefined,
     });
   }
 

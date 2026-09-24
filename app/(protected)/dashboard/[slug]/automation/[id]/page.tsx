@@ -1,3 +1,4 @@
+import { readAiConversation } from "@/lib/ai-conversation";
 import { UiText } from "@/components/i18n/localized-copy";
 import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/actions/automation";
 import AutomationDetailPhonePreview from "@/components/automations/automation-detail-phone-preview";
@@ -51,6 +52,7 @@ export default async function CampaignDetailPage({ params }: Props) {
     automation.listener?.commentReply3,
   ].filter(Boolean) as string[];
   const aiCommentReplyEnabled = automation.listener?.aiReplyEnabled === true;
+  const aiConversation = readAiConversation(automation.listener?.aiConversation);
   const aiDmReplyEnabled = isMessageAutomation && automation.listener?.aiDmReplyEnabled === true;
   const aiTone = automation.listener?.aiReplyTone === "FUN" ? "Fun" : automation.listener?.aiReplyTone === "PROFESSIONAL" ? "Professional" : "Friendly";
   const aiReplyPreview = aiTone === "Fun" ? "Love this! Thanks for joining the conversation ✨" : aiTone === "Professional" ? "Thank you for your comment. We appreciate your interest." : "Thanks for your comment! Happy to help 😊";
@@ -88,7 +90,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       ? "Any incoming DM"
       : isAnyComment ? "Any comment" : keywords.length ? keywords.join(", ") : "No keyword configured";
   const sourceLabel = source === "STORY" ? "Instagram Stories" : source === "DM" ? "Instagram DMs" : "Posts & Reels";
-  const editHref = `/dashboard/${params.slug}/automation/new?edit=${params.id}&type=${source.toLowerCase()}`;
+  const editHref = `/dashboard/${params.slug}/automation/new?edit=${params.id}&type=${aiConversation ? "ai" : source.toLowerCase()}`;
   const statusLabel = automation.archivedAt
     ? "Archived"
     : automation.needsReview
@@ -134,8 +136,8 @@ export default async function CampaignDetailPage({ params }: Props) {
               {automation.followGateRequired ? <><FlowNode label="2. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}
               <FlowNode
                 label={automation.followGateRequired ? "3. Direct message" : "2. Direct message"}
-                title={aiDmReplyEnabled ? "AP3K AI reply" : `DM with ${linkButtons.length} link${linkButtons.length === 1 ? "" : "s"}`}
-                body={aiDmReplyEnabled ? `Answers from workspace knowledge. Fallback: ${automation.listener?.prompt || "No fallback configured."}` : automation.listener?.prompt || "No DM configured."}
+                title={aiDmReplyEnabled ? (aiConversation ? "AI conversation" : "AP3K AI reply") : `DM with ${linkButtons.length} link${linkButtons.length === 1 ? "" : "s"}`}
+                body={aiConversation ? `${aiConversation.goal} · ${aiConversation.tasks.join(" → ")}` : aiDmReplyEnabled ? `Answers from workspace knowledge. Fallback: ${automation.listener?.prompt || "No fallback configured."}` : automation.listener?.prompt || "No DM configured."}
                 tone="blue"
               />
             </> : <>
