@@ -175,7 +175,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">AP3K AI routing</p>
             <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Choose one provider. Keep two ready as backups.</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-400">Each API key is encrypted separately. Saving a changed key or model pauses that provider until it passes a fresh test.</p>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground dark:text-slate-400">Each API key is encrypted separately. Saving a changed key or model pauses that provider until it passes a fresh test.</p>
           </div>
         </div>
         {activeConfig ? <V2Badge tone="green">Active · {activeConfig.providerName}</V2Badge> : <V2Badge tone="amber">AI generation paused</V2Badge>}
@@ -193,14 +193,14 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
               onClick={() => { setSelectedId(provider.id); setNotice(null); }}
               className={`group flex min-h-[84px] items-center gap-3 rounded-xl border p-3 text-left transition ${selected ? "border-violet-400/45 bg-violet-400/10 shadow-[0_0_0_1px_rgba(167,139,250,0.08)]" : "border-slate-200 dark:border-white/[0.07] bg-slate-100/80 dark:bg-black/10 hover:border-slate-200 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/[0.03]"}`}
             >
-              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${selected ? "bg-violet-400/15 text-violet-700 dark:text-violet-200" : "bg-slate-50 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400"}`}><Icon className="h-[18px] w-[18px]" /></span>
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${selected ? "bg-violet-400/15 text-violet-700 dark:text-violet-200" : "bg-slate-50 dark:bg-white/[0.05] text-muted-foreground dark:text-slate-400"}`}><Icon className="h-[18px] w-[18px]" /></span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-black text-slate-950 dark:text-white">{provider.name}</span>
                   {item.enabled ? <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.65)]" /> : null}
                 </span>
-                <span className="mt-1 block text-[11px] text-slate-500">{item.apiKeyHint ? `Key ••••${item.apiKeyHint}` : "Not configured"}</span>
-                <span className={`mt-1 block text-[10px] font-bold ${item.lastTestStatus === "CONNECTED" ? "text-emerald-700 dark:text-emerald-300" : item.lastTestStatus === "FAILED" ? "text-red-700 dark:text-red-300" : "text-slate-600"}`}>{item.lastTestStatus === "CONNECTED" ? "Connection verified" : item.lastTestStatus === "FAILED" ? "Test failed" : "Test required"}</span>
+                <span className="mt-1 block text-[11px] text-muted-foreground">{item.apiKeyHint ? `Key ••••${item.apiKeyHint}` : "Not configured"}</span>
+                <span className={`mt-1 block text-[10px] font-bold ${item.lastTestStatus === "CONNECTED" ? "text-emerald-700 dark:text-emerald-300" : item.lastTestStatus === "FAILED" ? "text-red-700 dark:text-red-300" : "text-muted-foreground"}`}>{item.lastTestStatus === "CONNECTED" ? "Connection verified" : item.lastTestStatus === "FAILED" ? "Test failed" : "Test required"}</span>
               </span>
             </button>
           );
@@ -214,11 +214,11 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
               <h3 className="text-lg font-black text-slate-950 dark:text-white">{definition.name}</h3>
               {config.enabled ? <V2Badge tone="green">Active</V2Badge> : isVerified ? <V2Badge tone="blue">Ready</V2Badge> : hasSavedKey ? <V2Badge tone="amber">Needs test</V2Badge> : <V2Badge tone="slate">Setup needed</V2Badge>}
             </div>
-            <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">{definition.description}</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground dark:text-slate-400">{definition.description}</p>
           </div>
           <div className="flex gap-2 text-[11px] font-bold">
             <a href={definition.apiKeyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] px-2.5 py-2 text-violet-700 dark:text-violet-300 transition hover:bg-slate-100 dark:hover:bg-white/[0.04]">Get API key <ExternalLink className="h-3 w-3" /></a>
-            <a href={definition.docsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] px-2.5 py-2 text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04]">Official docs <ExternalLink className="h-3 w-3" /></a>
+            <a href={definition.docsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] px-2.5 py-2 text-muted-foreground dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04]">Official docs <ExternalLink className="h-3 w-3" /></a>
           </div>
         </div>
 
@@ -226,7 +226,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <label className="block">
-            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Model ID</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">Model ID</span>
             <input
               list={`models-${definition.id}`}
               value={models[selectedId]}
@@ -237,11 +237,11 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
               className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-100/80 dark:bg-black/15 px-3.5 py-2.5 text-sm text-slate-950 dark:text-white outline-none placeholder:text-slate-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/10"
             />
             <datalist id={`models-${definition.id}`}>{definition.models.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}</datalist>
-            <span className="mt-1.5 block text-[11px] leading-4 text-slate-500">Choose a preset or paste another model ID supported by this provider.</span>
+            <span className="mt-1.5 block text-[11px] leading-4 text-muted-foreground">Choose a preset or paste another model ID supported by this provider.</span>
           </label>
 
           <label className="block">
-            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500"><KeyRound className="h-3.5 w-3.5" /> API key</span>
+            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground"><KeyRound className="h-3.5 w-3.5" /> API key</span>
             <input
               type="password"
               autoComplete="new-password"
@@ -253,7 +253,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
               placeholder={config.apiKeyHint ? `Stored securely · ends in ${config.apiKeyHint}` : definition.keyPlaceholder}
               className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-100/80 dark:bg-black/15 px-3.5 py-2.5 text-sm text-slate-950 dark:text-white outline-none placeholder:text-slate-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/10"
             />
-            <span className="mt-1.5 block text-[11px] leading-4 text-slate-500">Leave blank to keep the stored key. A new key is encrypted before database storage.</span>
+            <span className="mt-1.5 block text-[11px] leading-4 text-muted-foreground">Leave blank to keep the stored key. A new key is encrypted before database storage.</span>
           </label>
         </div>
 
@@ -283,8 +283,8 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
 function Step({ number, title, detail, done }: { number: string; title: string; detail: string; done: boolean }) {
   return (
     <div className="flex items-center gap-3 bg-white dark:bg-[#0c111d] p-3.5">
-      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-black ${done ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-slate-50 dark:bg-white/[0.06] text-slate-500"}`}>{done ? <Check className="h-3.5 w-3.5" /> : number}</span>
-      <span><span className="block text-xs font-black text-slate-950 dark:text-white">{title}</span><span className="mt-0.5 block text-[10px] text-slate-500">{detail}</span></span>
+      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-black ${done ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-slate-50 dark:bg-white/[0.06] text-muted-foreground"}`}>{done ? <Check className="h-3.5 w-3.5" /> : number}</span>
+      <span><span className="block text-xs font-black text-slate-950 dark:text-white">{title}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{detail}</span></span>
     </div>
   );
 }
