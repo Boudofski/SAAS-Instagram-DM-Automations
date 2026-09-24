@@ -21,6 +21,7 @@ beforeEach(() => {
   vi.resetAllMocks(); vi.useFakeTimers(); vi.setSystemTime(now);
   db.automationEngagementJob.updateMany.mockResolvedValue({ count: 1 });
   db.automationEngagementJob.findMany.mockResolvedValue([job]);
+  db.automationEngagementJob.findUnique.mockResolvedValue({ status: "PROCESSING" });
   db.automation.findUnique.mockResolvedValue({ id: "a1", userId: "u1", active: true, sendPrivateDm: true, User: { status: "ACTIVE" }, integration: { id: "i1", instagramId: "ig1", status: "CONNECTED" }, listener: { followUpEnabled: true, followUpMessage: "Your link", ctaLink: "https://ap3k.com", ctaButtonTitle: "Open" } });
   db.conversation.findUnique.mockResolvedValue({ lastInboundAt: inboundAt });
   db.inboxMessage.findFirst.mockResolvedValue(null);
@@ -69,7 +70,8 @@ describe("durable engagement delivery", () => {
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ responseFormat: "LINK", message: "Your link", recipientId: "r1", linkButtons: [{ label: "Open", url: "https://ap3k.com" }] }));
     expect(db.automationEngagementJob.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "COMPLETED" } }));
   });
-  it.each(["replied", "human", "quota", "paused", "disconnected", "claimed"])("cancels delivery when %s", async reason => {
+  it.each(["replied", "human", "quota", "paused", "disconnected", "claimed", "cancelled-during-checks"])("cancels delivery when %s", async reason => {
+    if (reason === "cancelled-during-checks") db.automationEngagementJob.findUnique.mockResolvedValue({ status: "CANCELLED" });
     if (reason === "replied") db.conversation.findUnique.mockResolvedValue({ lastInboundAt: new Date(now.getTime() - 1000) });
     if (reason === "human") db.inboxMessage.findFirst.mockResolvedValue({ id: "manual" });
     if (reason === "quota") quota.mockResolvedValue({ ok: false });

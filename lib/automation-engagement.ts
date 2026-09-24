@@ -13,7 +13,7 @@ export async function followUpSchedulerReady(now = new Date()) {
 
 export async function cancelPendingFollowUps(integrationId: string, recipientIgId: string, inboundAt: Date) {
   await client.automationEngagementJob.updateMany({
-    where: { recipientIgId, kind: "FOLLOW_UP", status: "PENDING", inboundAt: { lt: inboundAt }, automation: { integrationId } },
+    where: { recipientIgId, kind: "FOLLOW_UP", status: { in: ["PENDING", "PROCESSING"] }, inboundAt: { lt: inboundAt }, automation: { integrationId } },
     data: { status: "CANCELLED" },
   });
 }
@@ -75,6 +75,7 @@ export async function scheduleFollowUp(automationId: string, recipientIgId: stri
 }
 
 export async function processAutomationFollowUps(now = new Date()) {
+  const startedAt = Date.now();
   await client.automationSchedulerHeartbeat.upsert({ where: { id: "follow-ups" }, create: { id: "follow-ups", lastRunAt: now }, update: { lastRunAt: now } });
   await client.automationEngagementJob.updateMany({ where: { status: { in: ["PENDING", "WAITING"] }, expiresAt: { lte: now } }, data: { status: "CANCELLED" } });
   // A crash after claiming may have happened after Meta accepted the send.
@@ -83,6 +84,7 @@ export async function processAutomationFollowUps(now = new Date()) {
   const jobs = await client.automationEngagementJob.findMany({ where: { kind: "FOLLOW_UP", status: "PENDING", dueAt: { lte: now }, expiresAt: { gt: now } }, orderBy: { dueAt: "asc" }, take: 20 });
   let sent = 0;
   for (const job of jobs) {
+    if (Date.now() - startedAt > 40_000) break;
     const claimed = await client.automationEngagementJob.updateMany({ where: { id: job.id, status: "PENDING" }, data: { status: "PROCESSING" } });
     if (!claimed.count) continue;
     try {
@@ -102,6 +104,9 @@ export async function processAutomationFollowUps(now = new Date()) {
       if (newerOutbound || !token.ok || !messagingWindowOpen(job.inboundAt) || !(await canSendStaticReply(automation.userId)).ok) {
         await client.automationEngagementJob.update({ where: { id: job.id }, data: { status: "CANCELLED" } }); continue;
       }
+      // An inbound event can cancel a job while quota/token checks are running.
+      const current = await client.automationEngagementJob.findUnique({ where: { id: job.id }, select: { status: true } });
+      if (current?.status !== "PROCESSING" || !messagingWindowOpen(job.inboundAt)) continue;
       const result = await sendInstagramDirectResponse({ token: token.token, igBusinessAccountId: integration.instagramId, recipientId: job.recipientIgId, automationId: automation.id, message: listener.followUpMessage!, responseFormat: "LINK", linkButtons: readLinkButtons(listener.quickReplies, listener.ctaButtonTitle, listener.ctaLink) });
       // Persist terminal state before secondary bookkeeping.
       await finishEngagementJob(job.id, result.ok ? "COMPLETED" : "FAILED");
