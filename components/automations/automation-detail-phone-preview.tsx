@@ -4,6 +4,7 @@ import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { useI18n } from "@/providers/i18n-provider";
 import { UiText } from "@/components/i18n/localized-copy";
+import ProductCardPreview from "./product-card-preview";
 import InstagramPhoneFrame from "@/components/automations/instagram-phone-frame";
 import type { LinkButton } from "@/lib/link-buttons";
 import {
@@ -40,6 +41,9 @@ type Props = {
   followGateRequired: boolean;
   followRequestDmText: string;
   followRequestButtonText: string;
+  productCard?: boolean;
+  productImageUrl?: string | null;
+  productSubtitle?: string | null;
   message: string;
   linkButtons: LinkButton[];
 };
@@ -203,6 +207,7 @@ function DmPreview({
   followRequestDmText,
   followRequestButtonText,
   message,
+  productCard, productImageUrl, productSubtitle,
   linkButtons,
 }: Props & { handle: string }) {
   const tr = useUi();
@@ -225,7 +230,7 @@ function DmPreview({
           <>
             {showOpeningSequence ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={openingDmText} buttons={[{ label: openingDmButtonText, url: "#" }]} /><OutgoingBubble text={openingDmButtonText} /></> : null}
             {followGateRequired ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={followRequestDmText} buttons={[{ label: tr("Follow"), url: `https://www.instagram.com/${handle}/` }, { label: followRequestButtonText, url: "#" }]} /><OutgoingBubble text={followRequestButtonText} /></> : null}
-            <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={message || tr("Your DM message")} buttons={linkButtons} />
+            {productCard ? <ProductCardPreview title={message} subtitle={productSubtitle ?? ""} imageUrl={productImageUrl ?? ""} buttons={linkButtons} /> : <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={message || tr("Your DM message")} buttons={linkButtons} />}
           </>
         )}
       </div>
