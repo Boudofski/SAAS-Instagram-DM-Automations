@@ -69,6 +69,7 @@ export default async function BlogPage({ searchParams }: Props) {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-8">
+          <Link href="/resources/instagram-growth-library" className="mb-6 flex flex-col gap-2 rounded-2xl border border-violet-200 bg-violet-50 p-6 text-violet-950 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-100"><strong className="text-lg">Explore the growth and automation library →</strong><span className="text-sm">Quick replies, lead generation, scheduling handoffs, tool comparisons and practical operations guides.</span></Link>
           <CommentDmLibrary />
           <div className="grid gap-5 md:grid-cols-2">
             {posts.map((post, index) => (
