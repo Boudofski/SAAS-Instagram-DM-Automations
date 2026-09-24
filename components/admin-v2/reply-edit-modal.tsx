@@ -112,14 +112,14 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
               <div className="min-w-0">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-pink-700 dark:text-pink-400">Reply editor</p>
                 <h2 className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 dark:text-white sm:text-xl">{campaignName}</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">Update public comment reply variants. Every saved change is audited.</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">Update public comment reply variants. Every saved change is audited.</p>
               </div>
               <button
                 type="button"
                 aria-label="Close reply editor"
                 onClick={closeModal}
                 disabled={isPending}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-slate-500 transition hover:text-slate-950 dark:hover:text-white disabled:opacity-40"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-muted-foreground transition hover:text-slate-950 dark:hover:text-white disabled:opacity-40"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -133,10 +133,10 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                     return (
                       <label key={key} className="block">
                         <div className="mb-1.5 flex items-center justify-between gap-3">
-                          <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                          <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                             {label}{optional ? " · optional" : ""}
                           </span>
-                          <span className={`text-[10px] tabular-nums ${value.length > 450 ? "text-amber-800 dark:text-amber-300" : "text-slate-600"}`}>
+                          <span className={`text-[10px] tabular-nums ${value.length > 450 ? "text-amber-800 dark:text-amber-300" : "text-muted-foreground"}`}>
                             {value.length}/500
                           </span>
                         </div>
@@ -158,17 +158,17 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                 </div>
 
                 <div className="min-w-0">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Live preview</p>
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">Live preview</p>
                   <div className="space-y-3 lg:sticky lg:top-0">
                     {variants.map(({ label, key }) => {
                       const value = replies[key];
                       return (
                         <div key={key} className="min-h-[92px] rounded-2xl border border-slate-200 dark:border-white/[0.065] bg-slate-50 dark:bg-white/[0.025] p-4">
-                          <p className="text-[9px] font-black uppercase tracking-[0.13em] text-slate-600">{label}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.13em] text-muted-foreground">{label}</p>
                           {value ? (
                             <p dir="auto" className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 dark:text-slate-300">{value}</p>
                           ) : (
-                            <p className="mt-2 text-xs italic text-slate-600">No text provided.</p>
+                            <p className="mt-2 text-xs italic text-muted-foreground">No text provided.</p>
                           )}
                         </div>
                       );
@@ -179,7 +179,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
 
               <div className="border-t border-slate-200 dark:border-white/[0.07] bg-white dark:bg-[#090e17] p-4 sm:p-6">
                 <label className="block">
-                  <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Audit reason</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">Audit reason</span>
                   <textarea
                     rows={2}
                     required
@@ -203,7 +203,7 @@ export function ReplyEditModal({ campaignId, campaignName, initialReplies, onSuc
                     type="button"
                     onClick={closeModal}
                     disabled={isPending}
-                    className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50"
+                    className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-muted-foreground dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50"
                   >
                     Cancel
                   </button>
