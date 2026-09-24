@@ -1,5 +1,6 @@
 "use client";
 
+import { emailRequestMessage } from "@/lib/automation-engagement-settings";
 import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
@@ -28,6 +29,8 @@ import { useEffect, useState } from "react";
 type PreviewMode = "post" | "comments" | "dm";
 
 type Props = {
+  requestedMode?: PreviewMode;
+  onModeChange?: (mode: PreviewMode) => void;
   data: WizardData;
   step: WizardStep;
   username?: string | null;
@@ -40,10 +43,11 @@ const MODES: Array<{ value: PreviewMode; label: string }> = [
   { value: "dm", label: "DM" },
 ];
 
-export default function InstagramPhonePreview({ data, step, username, profilePictureUrl }: Props) {
+export default function InstagramPhonePreview({ data, step, username, profilePictureUrl, requestedMode, onModeChange }: Props) {
   const tr = useUi();
   const reduceMotion = useReducedMotion();
   const [mode, setMode] = useState<PreviewMode>(step === 1 ? "post" : step === 2 ? "comments" : "dm");
+  useEffect(() => { if (requestedMode) setMode(requestedMode); }, [requestedMode]);
   const handle = username?.replace(/^@/, "") || tr("youraccount");
 
   useEffect(() => {
@@ -74,7 +78,7 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
           <button
             key={item.value}
             type="button"
-            onClick={() => setMode(item.value)}
+            onClick={() => { setMode(item.value); onModeChange?.(item.value); }}
             aria-pressed={mode === item.value}
             className={[
               "min-h-11 min-w-20 rounded-full px-3 py-2 text-xs font-black transition-colors duration-fast sm:min-w-24 sm:px-4",
@@ -193,11 +197,13 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
                 <OutgoingBubble text={data.followRequestButtonText || tr("Following")} />
               </>
             ) : null}
+            {data.emailCaptureEnabled ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={emailRequestMessage(data.emailCapturePrompt || tr("What’s your email address?"))} /><OutgoingBubble text="follower@example.com" /></> : null}
             {data.productCard ? <ProductCardPreview title={data.dmMessage} subtitle={data.productSubtitle} imageUrl={data.productImageUrl} buttons={data.linkButtons} /> : <IncomingBubble
               avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />}
               text={data.dmMessage || tr("Your final message")}
               buttons={data.linkButtons}
             />}
+            {data.followUpEnabled ? <><p className="py-3 text-center text-[11px] font-semibold text-white/60">{data.followUpDelayMinutes ?? 30} {tr("minutes later · no reply")}</p><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followUpMessage || tr("Here’s your link again.")} buttons={data.linkButtons} /></> : null}
           </>
         )}
       </div>

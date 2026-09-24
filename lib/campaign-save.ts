@@ -1,3 +1,4 @@
+import { validateEngagementSettings } from "@/lib/automation-engagement-settings";
 import { validateProductCard } from "@/lib/product-card";
 import {
   resolveFollowRequestButtonText,
@@ -63,6 +64,12 @@ export type RawCampaignPayload = {
     openingDmEnabled?: boolean;
     followRequestDmText?: string | null;
     followRequestButtonText?: string | null;
+    emailCaptureEnabled?: boolean;
+    emailCapturePrompt?: string;
+    followUpEnabled?: boolean;
+    followUpMessage?: string;
+    followUpDelayMinutes?: number;
+
   } | null;
 };
 
@@ -104,6 +111,12 @@ export type NormalizedCampaignPayload = {
     openingDmEnabled?: boolean;
     followRequestDmText?: string;
     followRequestButtonText?: string;
+    emailCaptureEnabled?: boolean;
+    emailCapturePrompt?: string;
+    followUpEnabled?: boolean;
+    followUpMessage?: string;
+    followUpDelayMinutes?: number;
+
   };
 };
 
@@ -200,6 +213,11 @@ export function normalizeCampaignPayload(
       openingDmText: sendPrivateDm ? resolveOpeningDmText(payload.listener?.openingDmText) : undefined,
       openingDmButtonText: sendPrivateDm ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText) : undefined,
       openingDmEnabled,
+      emailCaptureEnabled: sendPrivateDm && payload.listener?.emailCaptureEnabled === true,
+      emailCapturePrompt: cleanOptional(payload.listener?.emailCapturePrompt),
+      followUpEnabled: sendPrivateDm && payload.listener?.followUpEnabled === true,
+      followUpMessage: cleanOptional(payload.listener?.followUpMessage),
+      followUpDelayMinutes: payload.listener?.followUpDelayMinutes ?? 30,
       followRequestDmText: sendPrivateDm ? resolveFollowRequestDmText(payload.listener?.followRequestDmText) : undefined,
       followRequestButtonText: sendPrivateDm ? resolveFollowRequestButtonText(payload.listener?.followRequestButtonText) : undefined,
     },
@@ -209,6 +227,8 @@ export function normalizeCampaignPayload(
 export function validateNormalizedCampaignPayload(
   payload: NormalizedCampaignPayload
 ): string | null {
+  const engagementError = validateEngagementSettings(payload.listener, payload.sendPrivateDm, payload.listener.openingDmEnabled === true);
+  if (engagementError) return engagementError;
   if (!payload.post.postid) {
     return "This automation needs a post.";
   }

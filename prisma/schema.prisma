@@ -258,6 +258,7 @@ model Automation {
   webhookEvents        WebhookEvent[]
   conversations        Conversation[]
   aiUsageEvents        AiUsageEvent[]
+  engagementJobs       AutomationEngagementJob[]
 
   @@index([userId, integrationId])
 }
@@ -303,6 +304,11 @@ model Listener {
   mediaUrl                String?
   mediaType               String?
   cardSubtitle            String?
+  emailCaptureEnabled     Boolean    @default(false)
+  emailCapturePrompt      String?
+  followUpEnabled         Boolean    @default(false)
+  followUpMessage         String?
+  followUpDelayMinutes    Int        @default(30)
   openingDmText           String?
   openingDmButtonText     String?
   openingDmEnabled        Boolean    @default(true)
@@ -454,6 +460,8 @@ model Lead {
   igUserId     String
   igUsername   String?
   commentText  String?
+  email        String?
+  emailCollectedAt DateTime?
   mediaId      String?
   createdAt    DateTime   @default(now())
 
@@ -669,4 +677,28 @@ model AutomationImage {
   createdAt DateTime @default(now())
   @@unique([userId, digest])
   @@index([userId, createdAt])
+}
+
+model AutomationEngagementJob {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId   String     @db.Uuid
+  automation     Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  recipientIgId  String
+  flowId         String
+  replyMessageId String?    @unique
+  kind           String
+  status         String     @default("PENDING")
+  dueAt          DateTime
+  expiresAt      DateTime
+  inboundAt      DateTime
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  @@unique([automationId, recipientIgId, flowId, kind], map: "AutomationEngagementJob_journey_key")
+  @@index([kind, status, dueAt])
+  @@index([recipientIgId, kind, status])
+}
+
+model AutomationSchedulerHeartbeat {
+  id        String   @id
+  lastRunAt DateTime
 }

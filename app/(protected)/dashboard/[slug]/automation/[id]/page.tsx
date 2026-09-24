@@ -171,6 +171,11 @@ export default async function CampaignDetailPage({ params }: Props) {
               followGateRequired={Boolean(openingDmEnabled && automation.followGateRequired)}
               followRequestDmText={followRequestDmText}
               followRequestButtonText={followRequestButtonText}
+              emailCaptureEnabled={automation.listener?.emailCaptureEnabled}
+              emailCapturePrompt={automation.listener?.emailCapturePrompt}
+              followUpEnabled={automation.listener?.followUpEnabled}
+              followUpMessage={automation.listener?.followUpMessage}
+              followUpDelayMinutes={automation.listener?.followUpDelayMinutes}
               productCard={automation.listener?.responseFormat === "PRODUCT_CARD"}
               productImageUrl={automation.listener?.mediaUrl}
               productSubtitle={automation.listener?.cardSubtitle}
