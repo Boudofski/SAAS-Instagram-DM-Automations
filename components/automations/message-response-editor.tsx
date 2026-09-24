@@ -8,12 +8,13 @@ import { useId } from "react";
 import { Link2, Plus, Trash2 } from "lucide-react";
 
 type Props = {
+  hideMessage?: boolean;
   message: string;
   linkButtons: LinkButton[];
   onChange: (next: Partial<Omit<Props, "onChange">>) => void;
 };
 
-export default function MessageResponseEditor({ message, linkButtons, onChange }: Props) {
+export default function MessageResponseEditor({ message, linkButtons, onChange, hideMessage = false }: Props) {
   const tr = useUi();
   const messageId = useId();
   const buttons = linkButtons.length > 0
@@ -26,13 +27,13 @@ export default function MessageResponseEditor({ message, linkButtons, onChange }
 
   return (
     <div className="space-y-5">
-      <div>
+      {!hideMessage && <div>
         <div className="mb-2 flex items-center justify-between gap-4">
           <label htmlFor={messageId} className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"DM message text"}</UiText></label>
           <span className={message.length > 1000 ? "text-xs font-bold text-red-500" : "text-xs font-bold text-slate-400"}>{message.length}/1000</span>
         </div>
         <textarea id={messageId} dir="auto" value={message} maxLength={1000} onChange={(event) => onChange({ message: event.target.value })} rows={5} placeholder={tr("Write the message shown above your links…")} className="ap3k-textarea w-full resize-none rounded-2xl px-4 py-3 text-sm" />
-      </div>
+      </div>}
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
         <div className="mb-4 flex items-center justify-between gap-3">
