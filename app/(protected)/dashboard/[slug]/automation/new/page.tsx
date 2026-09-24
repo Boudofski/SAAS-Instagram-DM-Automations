@@ -8,6 +8,7 @@ import AutomationWizardToolbar from "@/components/automations/automation-wizard-
 import DeliveryRules from "@/components/automations/delivery-rules";
 import InstagramPhonePreview from "@/components/automations/instagram-phone-preview";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
+import ProductCardEditor from "@/components/automations/product-card-editor";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
 import AiCommentReplyEditor from "@/components/automations/ai-comment-reply-editor";
 import EmptyState from "@/components/global/empty-state";
@@ -52,7 +53,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const tr = useUi();
   const { slug } = params;
   const editId = searchParams?.edit;
-  const needsCommentData = searchParams?.type === "comment" || Boolean(editId);
+  const needsCommentData = (searchParams?.type === "comment" || searchParams?.type === "affiliate") || Boolean(editId);
   const appReviewMode = isAppReviewMode();
   const messagingReviewMode = isMessagingReviewMode();
   const commentReplyOnlyReviewMode = appReviewMode && !messagingReviewMode;
@@ -64,6 +65,12 @@ function AutomationSetup({ params, searchParams }: Props) {
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [aiCommentsReady, setAiCommentsReady] = useState(false);
+  const initializedAffiliate = useRef(false);
+  useEffect(() => {
+    if (editId || searchParams?.type !== "affiliate" || initializedAffiliate.current) return;
+    initializedAffiliate.current = true;
+    update({ productCard: true, sendPrivateDm: true, openingDmEnabled: true, campaignName: tr("Send affiliate product links"), dmMessage: "", productSubtitle: "", productImageUrl: "" });
+  }, [editId, searchParams?.type, tr, update]);
   const initializedMessagingReviewDraft = useRef(false);
   const stepsScrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -144,6 +151,9 @@ function AutomationSetup({ params, searchParams }: Props) {
         ? automation.keywords.map((keyword: any) => keyword.word).filter(Boolean)
         : [],
       dmMessage: preparedDm.prompt,
+      productCard: automation.listener?.responseFormat === "PRODUCT_CARD",
+      productImageUrl: automation.listener?.mediaUrl ?? "",
+      productSubtitle: automation.listener?.cardSubtitle ?? "",
       publicReply: automation.listener?.commentReply ?? "",
       publicReply2: automation.listener?.commentReply2 ?? "",
       publicReply3: automation.listener?.commentReply3 ?? "",
@@ -440,18 +450,21 @@ function AutomationSetup({ params, searchParams }: Props) {
                             <div className="mb-4 flex items-start gap-3">
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rf-blue text-xs font-black text-white">3</span>
                               <div>
-                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"DM with links"}</UiText></p>
+                                <p className="text-sm font-black text-slate-950 dark:text-white"><UiText>{data.productCard ? "DM with a link and an image" : "DM with links"}</UiText></p>
                                 <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"The required delivery message. Add one to three link buttons."}</UiText></p>
                               </div>
                             </div>
-                            <MessageResponseEditor
+                            {data.productCard ? <ProductCardEditor title={data.dmMessage} subtitle={data.productSubtitle ?? ""} imageUrl={data.productImageUrl ?? ""} linkButtons={data.linkButtons} onChange={next => update({
+                              dmMessage: next.title ?? data.dmMessage, productSubtitle: next.subtitle ?? data.productSubtitle,
+                              productImageUrl: next.imageUrl ?? data.productImageUrl, linkButtons: next.linkButtons ?? data.linkButtons,
+                            })} /> : <MessageResponseEditor
                               message={data.dmMessage || (messagingReviewMode ? DEFAULT_MESSAGING_REVIEW_PRIVATE_REPLY : "")}
                               linkButtons={data.linkButtons}
                               onChange={(next) => update({
                                 dmMessage: next.message ?? data.dmMessage,
                                 linkButtons: next.linkButtons ?? data.linkButtons,
                               })}
-                            />
+                            />}
                           </div>
 
 
