@@ -60,7 +60,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const messagingReviewMode = isMessagingReviewMode();
   const commentReplyOnlyReviewMode = appReviewMode && !messagingReviewMode;
   const { data: posts, isLoading: postsLoading, isFetching: postsFetching, refetch: refetchPosts } = useQueryAutomationPosts(needsCommentData);
-  const { data: user } = useQueryUser();
+  const { data: user, isPending: userPending, isFetching: userFetching, isError: userError, refetch: refetchUser } = useQueryUser();
   const { data: webhookHealth } = useQueryWebhookHealth(needsCommentData);
   const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
   const { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error } = useWizard(slug, editId, user?.data?.integrations?.[0]?.id ?? "");
@@ -247,8 +247,13 @@ function AutomationSetup({ params, searchParams }: Props) {
                 className="ap3k-input mb-5 w-full rounded-xl px-4 py-3 text-sm"
               />
 
-              {postsLoading ? (
+              {userPending || postsLoading ? (
                 <div className="flex justify-center py-16"><Loader2 className="animate-spin text-slate-500 dark:text-slate-400" /></div>
+              ) : !hasInstagramConnection && (userError || user?.status !== 200) ? (
+                <div role="alert" className="rounded-xl border border-slate-200 p-6 text-center dark:border-white/10">
+                  <p><UiText>{"Your account could not be loaded. Please try again."}</UiText></p>
+                  <button type="button" disabled={userFetching} onClick={() => { void refetchUser(); void refetchPosts(); }} className="ap3k-gradient-button mt-4 px-4 py-2 disabled:opacity-50"><UiText>{"Try again"}</UiText></button>
+                </div>
               ) : !hasInstagramConnection ? (
                 <EmptyState icon="🔗" title="Connect Instagram first" description="AP3K needs an official Instagram connection before it can listen for comments." ctaLabel="Connect Instagram" ctaHref={`/dashboard/${slug}/integrations`} />
               ) : (

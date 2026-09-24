@@ -287,7 +287,7 @@ function CampaignMobileCard({
         <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_40px] gap-2">
           <Link
             href={`/dashboard/${slug}/automation/${automation.id}`}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-black text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-900 transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
           ><UiText>{"Open automation"}</UiText></Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -30,7 +30,14 @@ export const useQueryUser = () => {
   const { userId } = useAuth();
   return useQuery({
     queryKey: ["user-profile", userId],
-    queryFn: onUserInfo,
+    queryFn: async () => {
+      const result = await onUserInfo();
+      // Failed profile reads are not proof that Instagram was disconnected.
+      // Throw so retries run and a previously loaded profile is preserved.
+      if (result.status !== 200 || !result.data) throw new Error("Unable to load your account. Please try again.");
+      return result;
+    },
+    staleTime: 30_000,
     enabled: Boolean(userId),
   });
 };

@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import ActivationChecklist from "@/components/dashboard/activation-checklist";
 import { client } from "@/lib/prisma";
 import { MetricValue, FollowerSubtitle, DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
@@ -44,8 +45,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       : [];
 
   // Scope progress to the selected account; never borrow another account's send history.
-  const firstSend = userResult.status === 200 && userResult.data?.id && instagram?.id
-    ? await client.messageLog.findFirst({
+  const firstSendPromise = userResult.status === 200 && userResult.data?.id && instagram?.id
+    ? client.messageLog.findFirst({
         where: { status: "SENT", automation: { userId: userResult.data.id, integrationId: instagram.id } },
         select: { id: true },
       })
@@ -56,14 +57,15 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const period = parseDashboardPeriod(searchParams?.period);
 
-  const [usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, snapshotState, firstSend] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period, new Date(), instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
         getCampaignTableMetrics(userResult.data.id, instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
-        getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period),
+        getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period, new Date(), waitUntil),
+        firstSendPromise,
       ])
-    : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }];
+    : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }, null];
 
   const snapshotComparison = snapshotState.comparison;
   const profileSnapshot = snapshotComparison?.current;
