@@ -48,3 +48,15 @@ describe("public indexing contracts", () => {
     expect(authLayout).toContain('canonical: null');
   });
 });
+
+it("allows product-card image retrieval while keeping other API routes blocked", () => {
+  const rules = [robots().rules].flat();
+  const rule = rules.find(rule => [rule.userAgent].flat().includes("*"))!;
+  const allowed = [rule.allow].flat().filter(Boolean) as string[];
+  const blocked = [rule.disallow].flat().filter(Boolean) as string[];
+  const canFetch = (path: string) => Math.max(...allowed.filter(p => path.startsWith(p)).map(p => p.length), -1) >= Math.max(...blocked.filter(p => path.startsWith(p)).map(p => p.length), -1);
+  expect(canFetch('/api/automation-images/11111111-1111-4111-8111-111111111111')).toBe(true);
+  expect(canFetch('/api/automation-images')).toBe(false);
+  expect(canFetch('/api/payment')).toBe(false);
+  expect(canFetch('/api/webhooks/meta')).toBe(false);
+});
