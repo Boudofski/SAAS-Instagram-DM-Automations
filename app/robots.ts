@@ -5,7 +5,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // Meta fetches product-card photos from this public endpoint.
+        // Keep other API routes blocked; image responses remain noindex.
+        allow: ["/", "/api/automation-images/"],
         disallow: [
           "/admin/",
           "/ap3k-admin/",
