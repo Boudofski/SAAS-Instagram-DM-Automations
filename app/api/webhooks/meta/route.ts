@@ -1469,6 +1469,7 @@ async function processEntry(
         linkButtons: directLinkButtons,
         ctaTitle: openingDmEnabled ? undefined : listener.ctaButtonTitle,
         ctaUrl: openingDmEnabled ? undefined : listener.ctaLink,
+        cardSubtitle: openingDmEnabled ? undefined : listener.cardSubtitle,
         mediaUrl: openingDmEnabled ? undefined : listener.mediaUrl,
         mediaType: openingDmEnabled ? undefined : listener.mediaType,
         postbackButton: openingDmEnabled ? {
@@ -1983,6 +1984,7 @@ async function processConfiguredMessageAutomation(params: {
     linkButtons: needsFollowRequest ? [] : aiGenerated ? aiLinkButtons : linkButtons,
     ctaTitle: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaButtonTitle,
     ctaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.ctaLink,
+    cardSubtitle: needsFollowRequest || aiGenerated ? undefined : automation.listener.cardSubtitle,
     mediaUrl: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaUrl,
     mediaType: needsFollowRequest || aiGenerated ? undefined : automation.listener.mediaType,
     followGatePrompt: needsFollowRequest
