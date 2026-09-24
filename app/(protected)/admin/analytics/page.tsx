@@ -31,13 +31,13 @@ export default async function AnalyticsPage({
               key={n}
               href={`/admin/analytics?days=${n}`}
               aria-current={days === n ? "page" : undefined}
-              className={`rounded-md px-4 py-2 text-sm ${days === n ? "bg-violet-500/15 text-violet-700 dark:text-violet-200" : "text-slate-600 dark:text-slate-400"}`}
+              className={`rounded-md px-4 py-2 text-sm ${days === n ? "bg-violet-500/15 text-violet-700 dark:text-violet-200" : "text-muted-foreground dark:text-slate-400"}`}
             >
               {n} days
             </Link>
           ))}
         </div>
-        <p className="text-xs text-slate-600 dark:text-slate-400">
+        <p className="text-xs text-muted-foreground dark:text-slate-400">
           Product snapshot: <LocalTime value={data.updatedAt} />
         </p>
       </div>
@@ -49,11 +49,11 @@ export default async function AnalyticsPage({
           ["Failed attempts", data.totals.failed],
         ].map(([name, value]) => (
           <div key={name} className="admin-panel">
-            <p className="text-sm text-slate-600 dark:text-slate-400">{name}</p>
+            <p className="text-sm text-muted-foreground dark:text-slate-400">{name}</p>
             <p className="mt-2 text-3xl font-semibold tabular-nums">
               {Number(value).toLocaleString()}
             </p>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-muted-foreground">
               Last {days} days · operational records
             </p>
           </div>
@@ -65,12 +65,12 @@ export default async function AnalyticsPage({
         <div className="mt-4 flex flex-wrap gap-6">
           {data.plans.map((p) => (
             <div key={p.plan}>
-              <p className="text-xs text-slate-600 dark:text-slate-400">{p.plan}</p>
+              <p className="text-xs text-muted-foreground dark:text-slate-400">{p.plan}</p>
               <p className="mt-1 text-2xl font-semibold">{p.count}</p>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs leading-5 text-slate-600 dark:text-slate-400">
+        <p className="mt-4 text-xs leading-5 text-muted-foreground dark:text-slate-400">
           Plan entitlements are not revenue or verified paying customers.
           Owner/test accounts are included. Deleted records are not
           reconstructed. Use Billing and Stripe for financial reconciliation.
@@ -90,14 +90,14 @@ export default async function AnalyticsPage({
         rows={google.gsc.rows}
         columns={["Query", "Clicks", "Impressions", "CTR", "Average position"]}
       />
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Google reports cache for up to 15 minutes. GA4 depends on cookie consent
         and configured key events; key events are not necessarily purchases.
         Search Console omits some queries and reports with a delay.
       </p>
       <div className="admin-panel space-y-4">
         <h2 className="font-semibold">Reporting connections</h2>
-        <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+        <p className="text-sm leading-6 text-muted-foreground dark:text-slate-400">
           GA4 tracking is already installed. Reading reports requires separate,
           read-only access; tracking alone does not grant it.
         </p>
@@ -122,7 +122,7 @@ export default async function AnalyticsPage({
           <summary className="cursor-pointer text-sm text-slate-800 dark:text-slate-300">
             Connect embedded Google reports
           </summary>
-          <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-6 text-slate-600 dark:text-slate-400">
+          <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-6 text-muted-foreground dark:text-slate-400">
             <li>
               Use a dedicated Google Cloud service account. Enable the Google
               Analytics Data API and Search Console API.
@@ -174,7 +174,7 @@ function Report({
           {connected ? "Connected" : "Setup required"}
         </span>
       </div>
-      <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">{message}</p>
+      <p className="mt-2 text-xs leading-5 text-muted-foreground dark:text-slate-400">{message}</p>
       {rows.length ? (
         <div className="mt-5 overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -183,7 +183,7 @@ function Report({
                 {columns.map((c) => (
                   <th
                     key={c}
-                    className="whitespace-nowrap border-b border-slate-200 dark:border-white/10 p-3 text-xs font-medium text-slate-600 dark:text-slate-400"
+                    className="whitespace-nowrap border-b border-slate-200 dark:border-white/10 p-3 text-xs font-medium text-muted-foreground dark:text-slate-400"
                   >
                     {c}
                   </th>
@@ -205,7 +205,7 @@ function Report({
           </table>
         </div>
       ) : connected ? (
-        <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+        <p className="mt-4 text-sm text-muted-foreground dark:text-slate-400">
           No report rows for this period.
         </p>
       ) : null}
