@@ -5,6 +5,13 @@ import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 describe("commercial landing pages", () => {
   it("publishes the complete English commercial route set without duplicates", () => {
     expect(COMMERCIAL_PAGES.map((page) => page.slug)).toEqual([
+      "instagram-automation-tool",
+      "instagram-lead-generation",
+      "instagram-automation-for-agencies",
+      "instagram-automation-for-local-business",
+      "instagram-automation-for-course-creators",
+      "instagram-customer-support-automation",
+      "instagram-automation-for-real-estate",
       "instagram-dm-automation",
       "instagram-comment-automation",
       "instagram-comment-to-dm",

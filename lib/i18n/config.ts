@@ -1,6 +1,11 @@
+import expansionSlugs from "../content/expansion/slugs.json";
+import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
+  ...expansionSlugs.map(slug => `/blog/${slug}`),
+  ...commercialSlugs.map(slug => `/${slug}`),
+  "/resources/instagram-growth-library",
   ...englishArticleSlugs.map(slug => `/blog/${slug}`),
   "/resources",
   "/resources/instagram-comment-to-dm-templates",

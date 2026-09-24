@@ -1,3 +1,4 @@
+import { EXPANSION_POSTS } from "./content/expansion";
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
 import { COMMENT_DM_POSTS } from "./content/comment-dm";
 import growthPosts from "./content/growth/en.json";
@@ -35,7 +36,9 @@ export type BlogPost = {
 };
 
 export const BLOG_POSTS: BlogPost[] = [
-  ...COMMENT_DM_POSTS,
+  COMMENT_DM_POSTS[0],
+  ...EXPANSION_POSTS,
+  ...COMMENT_DM_POSTS.slice(1),
   ...ILLUSTRATED_POSTS,
   ...growthPosts as BlogPost[],
   {

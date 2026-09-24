@@ -28,7 +28,7 @@ export function AdminPageHeader({
             {eyebrow}
           </p>
           {typeof count === "number" && (
-            <span className="rounded-full border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-600 dark:text-slate-400">
+            <span className="rounded-full border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold tabular-nums text-muted-foreground dark:text-slate-400">
               {count.toLocaleString()}
             </span>
           )}
@@ -37,7 +37,7 @@ export function AdminPageHeader({
           {title}
         </h1>
         {description && (
-          <div className="mt-2 max-w-3xl text-[13px] leading-6 text-slate-600 dark:text-slate-400 sm:text-sm">
+          <div className="mt-2 max-w-3xl text-[13px] leading-6 text-muted-foreground dark:text-slate-400 sm:text-sm">
             {description}
           </div>
         )}
@@ -63,7 +63,7 @@ export function AdminSectionHeader({
           {title}
         </h2>
         {description && (
-          <div className="mt-1 text-[11px] leading-5 text-slate-500 sm:text-xs">{description}</div>
+          <div className="mt-1 text-[11px] leading-5 text-muted-foreground sm:text-xs">{description}</div>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

@@ -12,9 +12,12 @@ const sample = `export const getAdminV2Stats=async()=>({totalUsers:128,connected
 const mocks = {
  'next/link': `import React from 'react';export default React.forwardRef(function Link({href,children,...p},ref){return <a ref={ref} href={href} {...p}>{children}</a>})`,
  'next/image': `import React from 'react';export default function Image({src,priority,unoptimized,fill,...p}){return <img src={'https://ap3k.com'+src} {...p}/>}`,
- 'next/navigation': `export const usePathname=()=>'/admin/overview';export const useRouter=()=>({refresh(){},replace(){},push(){}});`,
+ 'next/navigation': `export const usePathname=()=>'/admin/'+(new URLSearchParams(location.search).get('page')||'overview');export const useRouter=()=>({refresh(){},replace(){},push(){}});`,
  '@/lib/admin': `export const requireOwnerAdmin=async()=>({});`,
- '@/lib/admin-v2/queries': sample,
+  '@/lib/admin-v2/queries': sample + `
+ export const getAdminV2Users=async()=>[{id:'sample',email:'alex@example.com',firstname:'Alex',lastname:'Martin',createdAt:new Date('2026-09-24'),plan:'PRO',status:'ACTIVE',accounts:[{id:'ig',instagramUsername:'sample_creator',status:'CONNECTED',expiresAt:null}],automationCount:12,repliesToday:84,leadsToday:21,lastActivity:new Date('2026-09-24')}]; export const getAdminV2UserCount=async()=>1;
+ export const getAdminV2Campaigns=async()=>[{id:'sample',name:'Guide delivery',ownerEmail:'alex@example.com',instagramUsername:'sample_creator',active:true,needsReview:false,archivedAt:null,triggerMode:'KEYWORD',keywords:['GUIDE'],postScope:'Specific post',hasPublicReply:true,replyCount:84,leadCount:21,lastActivity:new Date('2026-09-24')}]; export const getAdminV2CampaignCount=async()=>1;`,
+ '@/actions/admin/campaign-actions': `export const adminPauseCampaignAction=async()=>({ok:true});export const adminResumeCampaignAction=async()=>({ok:true});`,
  '@/lib/admin-v2/launch-metrics': `export const getLaunchMetrics=async()=>({signups:42,connected:31,firstSend:25,usedThisWeek:18});`,
  '@/lib/admin-v2/analytics': `export const getAdminAnalytics=async()=>({days:7,series:Array.from({length:7},(_,i)=>({date:'2026-09-'+(17+i),signups:4+i,sent:100+i*25,failed:i%3,leads:12+i})),totals:{signups:49,sent:1225,failed:6,leads:105},plans:[],updatedAt:'2026-09-23T12:00:00Z'});`,
  '@/actions/admin/editorial': `export const saveEditorialPost=async()=>({ok:true,version:1,message:'Fixture only: draft was not saved.'});`,

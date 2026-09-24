@@ -19,8 +19,8 @@ export default async function AdminV2RepliesPage({ searchParams }: Props) {
 
   const rows = templates.map((template) => [
     <div key="campaign" className="min-w-0">
-      <p className="max-w-[220px] truncate font-bold text-slate-100" title={template.campaignName}>{template.campaignName}</p>
-      <p className="mt-0.5 break-all text-[11px] text-slate-500 sm:break-normal sm:truncate">{template.ownerEmail ?? "—"}</p>
+      <p className="max-w-[220px] truncate font-bold text-slate-800 dark:text-slate-100" title={template.campaignName}>{template.campaignName}</p>
+      <p className="mt-0.5 break-all text-[11px] text-muted-foreground sm:break-normal sm:truncate">{template.ownerEmail ?? "—"}</p>
     </div>,
     <V2Badge key="status" tone={template.active ? "green" : "slate"}>
       {template.active ? "Active" : "Paused"}
@@ -65,13 +65,13 @@ export default async function AdminV2RepliesPage({ searchParams }: Props) {
 }
 
 function ReplyPreview({ value, muted = false }: { value: string | null; muted?: boolean }) {
-  if (!value) return <span className="text-[11px] text-slate-600">—</span>;
+  if (!value) return <span className="text-[11px] text-muted-foreground">—</span>;
 
   return (
     <p
       title={value}
       dir="auto"
-      className={`max-w-[260px] truncate text-[11px] leading-5 ${muted ? "text-slate-400" : "text-slate-300"}`}
+      className={`max-w-[260px] truncate text-[11px] leading-5 ${muted ? "text-muted-foreground dark:text-slate-400" : "text-slate-800 dark:text-slate-300"}`}
     >
       {value}
     </p>

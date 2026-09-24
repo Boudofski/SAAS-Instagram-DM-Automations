@@ -27,7 +27,7 @@ export function AdvancedPanel({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={cn(
-          "flex w-full items-center justify-between gap-2 font-black text-slate-500 transition hover:text-slate-800 dark:hover:text-slate-200",
+          "flex w-full items-center justify-between gap-2 font-black text-muted-foreground transition hover:text-slate-800 dark:hover:text-slate-200",
           compact
             ? "px-2.5 py-1.5 text-[10px] normal-case tracking-normal"
             : "px-4 py-2.5 text-xs uppercase tracking-wide"

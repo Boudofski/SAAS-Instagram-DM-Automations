@@ -5,7 +5,7 @@ export default function AdminLoading() {
       aria-label="Loading admin workspace"
       className="space-y-6"
     >
-      <p className="text-sm text-slate-600 dark:text-slate-400">Loading your workspace…</p>
+      <p className="text-sm text-muted-foreground dark:text-slate-400">Loading your workspace…</p>
       <div className="h-20 rounded-xl bg-slate-50 dark:bg-white/5 motion-safe:animate-pulse" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((index) => (

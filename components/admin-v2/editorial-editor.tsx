@@ -136,7 +136,7 @@ export function EditorialEditor({
           <p className="text-sm font-semibold text-slate-950 dark:text-white">
             {dirty ? "Unsaved changes" : "Draft workspace"}
           </p>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-xs text-muted-foreground dark:text-slate-400">
             English content · Revision {version} · Saving does not publish
           </p>
         </div>
@@ -202,7 +202,7 @@ export function EditorialEditor({
                     value={post.slug}
                     onChange={(e) => change({ slug: e.target.value })}
                   />
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                  <p className="text-xs text-muted-foreground dark:text-slate-400">
                     Locked after first save to protect links.
                   </p>
                 </Field>
@@ -553,7 +553,7 @@ export function EditorialEditor({
           <TabsContent value="history">
             <div className="admin-panel space-y-4">
               <h2 className="font-semibold">Recent saved revisions</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-sm text-muted-foreground dark:text-slate-400">
                 Load a snapshot into the editor, review it, then save or
                 publish. This does not change the live page.
               </p>
@@ -567,7 +567,7 @@ export function EditorialEditor({
                   >
                     <div className="text-sm">
                       <p>{h.action.replace("EDITORIAL_", "")}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400"><LocalTime value={h.date}/></p>
+                      <p className="text-xs text-muted-foreground dark:text-slate-400"><LocalTime value={h.date}/></p>
                     </div>
                     <Button
                       variant="outline"
@@ -608,7 +608,7 @@ export function EditorialEditor({
                 value={post.description}
                 onChange={(e) => change({ description: e.target.value })}
               />
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-muted-foreground dark:text-slate-400">
                 {post.description.length}/170 characters
               </p>
             </Field>
@@ -641,13 +641,13 @@ export function EditorialEditor({
               Keep this article out of search results (noindex)
             </label>
             <div className="rounded-lg border border-slate-200 dark:border-white/10 p-3">
-              <p className="truncate text-xs text-slate-600 dark:text-slate-400">
+              <p className="truncate text-xs text-muted-foreground dark:text-slate-400">
                 ap3k.com/blog/{post.slug}
               </p>
               <p className="mt-2 text-lg text-violet-700 dark:text-violet-300">
                 {post.seoTitle || post.title}
               </p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{post.description}</p>
+              <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400">{post.description}</p>
             </div>
           </div>
           <div className="admin-panel space-y-3">
@@ -665,13 +665,13 @@ export function EditorialEditor({
                 {c.label}
               </p>
             ))}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Guidance, not a ranking score or guarantee.
             </p>
           </div>
           <div className="admin-panel space-y-3">
             <h2 className="font-semibold">AI editorial review</h2>
-            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+            <p className="text-xs leading-5 text-muted-foreground dark:text-slate-400">
               Send this draft to your active AI provider for titles, gaps and
               factual-risk checks. Suggestions only.
             </p>
@@ -705,7 +705,7 @@ export function EditorialEditor({
               >
                 Unpublish article
               </Button>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-muted-foreground dark:text-slate-400">
                 Removes the page from the public blog and sitemap; keeps all
                 content.
               </p>

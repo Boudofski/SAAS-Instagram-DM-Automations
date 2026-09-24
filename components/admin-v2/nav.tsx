@@ -114,7 +114,7 @@ export function AdminV2Nav({
       {groups.map((g) => (
         <section key={g.label}>
           <p
-            className={`mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500 ${compact ? "sr-only" : ""}`}
+            className={`mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground ${compact ? "sr-only" : ""}`}
           >
             {g.label}
           </p>
@@ -129,7 +129,7 @@ export function AdminV2Nav({
                   aria-current={active ? "page" : undefined}
                   key={item.href}
                   href={item.href}
-                  className={`flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-violet-500/15 text-violet-700 dark:text-violet-200" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-slate-100"}`}
+                  className={`flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-violet-500/15 text-violet-700 dark:text-violet-200" : "text-muted-foreground dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-slate-100"}`}
                 >
                   <item.icon className="h-[18px] w-[18px] shrink-0" />
                   {!compact && <span>{item.label}</span>}
@@ -153,7 +153,7 @@ export function AdminV2Nav({
           {!collapsed && (
             <div>
               <p className="text-sm font-bold text-slate-950 dark:text-white">AP3K</p>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400">Owner workspace</p>
+              <p className="text-[11px] text-muted-foreground dark:text-slate-400">Owner workspace</p>
             </div>
           )}
         </Link>
@@ -161,7 +161,7 @@ export function AdminV2Nav({
           variant="ghost"
           onClick={() => setSearch(true)}
           aria-label="Search admin workspace"
-          className="mt-6 justify-start gap-3 px-3 text-slate-600 dark:text-slate-400"
+          className="mt-6 justify-start gap-3 px-3 text-muted-foreground dark:text-slate-400"
         >
           <Search className="h-4 w-4 shrink-0" />
           {!collapsed && (
@@ -180,14 +180,14 @@ export function AdminV2Nav({
               <p className="text-xs font-semibold text-slate-800 dark:text-slate-300">
                 {environment}
               </p>
-              <p className="mt-1 truncate text-[11px] text-slate-500">
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">
                 {email}
               </p>
             </div>
           )}
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 px-3 text-slate-600 dark:text-slate-400"
+            className="w-full justify-start gap-3 px-3 text-muted-foreground dark:text-slate-400"
             onClick={() => setCollapsed((v) => !v)}
             aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
           >
@@ -209,17 +209,17 @@ export function AdminV2Nav({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="hidden text-xs text-slate-500 sm:inline">
+          <span className="hidden text-xs text-muted-foreground sm:inline">
             Workspace
           </span>
-          <ChevronRight className="hidden h-3 w-3 text-slate-600 sm:block" />
+          <ChevronRight className="hidden h-3 w-3 text-muted-foreground sm:block" />
           <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
             {current?.label || "Administration"}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle compact />
-          <span className="hidden rounded-md border border-slate-200 dark:border-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 sm:block">
+          <span className="hidden rounded-md border border-slate-200 dark:border-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground dark:text-slate-400 sm:block">
             {environment}
           </span>
           <Button
@@ -245,7 +245,7 @@ export function AdminV2Nav({
             Owner administration navigation
           </DialogDescription>
           <div className="min-h-0 flex-1 overflow-y-auto">{navigation()}</div>
-          <p className="truncate text-xs text-slate-600 dark:text-slate-400">{email}</p>
+          <p className="truncate text-xs text-muted-foreground dark:text-slate-400">{email}</p>
         </DialogContent>
       </Dialog>
       <Dialog open={search} onOpenChange={setSearch}>

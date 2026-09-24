@@ -60,7 +60,7 @@ export function CampaignActionsCell({
     });
   }
 
-  if (archivedAt !== null) return <span className="text-[11px] text-slate-600">Archived</span>;
+  if (archivedAt !== null) return <span className="text-[11px] text-muted-foreground">Archived</span>;
 
   if (needsReview) {
     return (
@@ -104,9 +104,9 @@ export function CampaignActionsCell({
                 <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950 dark:text-white">
                   {modal === "pause" ? "Pause automation" : "Resume automation"}
                 </h2>
-                <p className="mt-1 truncate text-xs text-slate-500">{campaignName}</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">{campaignName}</p>
               </div>
-              <button type="button" onClick={closeModal} disabled={isPending} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-slate-500 hover:text-slate-950 dark:hover:text-white disabled:opacity-40">
+              <button type="button" onClick={closeModal} disabled={isPending} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-muted-foreground hover:text-slate-950 dark:hover:text-white disabled:opacity-40">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -119,7 +119,7 @@ export function CampaignActionsCell({
               </p>
 
               <label className="mt-4 block">
-                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Audit reason</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">Audit reason</span>
                 <textarea
                   autoFocus
                   rows={3}
@@ -137,7 +137,7 @@ export function CampaignActionsCell({
               {error && <p role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-xs text-red-700 dark:text-red-200">{error}</p>}
 
               <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50">Cancel</button>
+                <button type="button" onClick={closeModal} disabled={isPending} className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-muted-foreground dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50">Cancel</button>
                 <button type="button" onClick={handleSubmit} disabled={isPending} className={`rounded-xl px-5 py-2.5 text-sm font-black text-white transition disabled:opacity-50 ${modal === "pause" ? "bg-amber-600 hover:bg-amber-500" : "bg-emerald-600 hover:bg-emerald-500"}`}>
                   {isPending ? "Working…" : modal === "pause" ? "Pause automation" : "Resume automation"}
                 </button>

@@ -42,8 +42,8 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
           <V2Badge tone={overview.ownerAlerts.enabled && overview.configuration.configured ? "green" : "amber"}>{overview.ownerAlerts.enabled && overview.configuration.configured ? "Enabled" : "Not sending"}</V2Badge>
         </div>
         <p className="mt-3 break-all text-sm text-slate-800 dark:text-slate-300">Destination: <strong>{overview.ownerAlerts.recipient}</strong></p>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400">New registrations, successful payments and renewals, payment failures, ended subscriptions, refunds, and disputes. Routine logins, comments, DMs, and automation activity stay out of your inbox.</p>
-        <p className="mt-2 text-xs leading-6 text-slate-500">Repeated webhook deliveries are deduplicated. Payment failures are reported once per invoice. Preview deployments and Stripe test payments never send owner alerts.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground dark:text-slate-400">New registrations, successful payments and renewals, payment failures, ended subscriptions, refunds, and disputes. Routine logins, comments, DMs, and automation activity stay out of your inbox.</p>
+        <p className="mt-2 text-xs leading-6 text-muted-foreground">Repeated webhook deliveries are deduplicated. Payment failures are reported once per invoice. Preview deployments and Stripe test payments never send owner alerts.</p>
         {!overview.ownerAlerts.retryConfigured && <p className="mt-3 text-xs text-amber-800 dark:text-amber-300">Automatic retries require CRON_SECRET in production. Immediate alerts still send when delivery is connected.</p>}
         {searchParams?.ownerTest && <p role="status" className="mt-3 text-sm text-violet-700 dark:text-violet-200">{searchParams.ownerTest === "sent" ? "Owner test accepted by the email provider. Check the delivery status below." : searchParams.ownerTest === "disabled" ? "Owner alerts are disabled in this environment." : searchParams.ownerTest === "checked" ? "Eligible queued alerts checked. See the delivery activity below." : "Test queued or already processed. Check the delivery activity below."}</p>}
         <div className="mt-4 flex flex-wrap gap-3">
@@ -61,9 +61,9 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
                 <Link key={template.id} href={`/admin/emails?template=${template.id}`} className={`block rounded-xl border px-3 py-3 transition ${template.id === selectedId ? "border-pink-400/20 bg-pink-400/[0.08]" : "border-transparent hover:border-slate-200 dark:hover:border-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.03]"}`}>
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-black text-slate-800 dark:text-slate-100">{template.label}</p>
-                    <span className="rounded-full border border-slate-200 dark:border-white/[0.07] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-500">{template.category}</span>
+                    <span className="rounded-full border border-slate-200 dark:border-white/[0.07] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-muted-foreground">{template.category}</span>
                   </div>
-                  <p className="mt-1 text-[10px] leading-4 text-slate-500">{template.description}</p>
+                  <p className="mt-1 text-[10px] leading-4 text-muted-foreground">{template.description}</p>
                 </Link>
               ))}
             </div>
@@ -94,13 +94,13 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
               {overview.recent.map((delivery) => (
                 <div key={delivery.id} className="grid gap-2 px-4 py-3 text-[11px] sm:grid-cols-[150px_minmax(0,1fr)_130px_110px] sm:items-center">
                   <V2Badge tone={["FAILED", "BOUNCED", "COMPLAINED", "SUPPRESSED"].includes(delivery.status) ? "red" : delivery.status === "SKIPPED" ? "amber" : "green"}>{delivery.status}</V2Badge>
-                  <div className="min-w-0"><p className="truncate font-bold text-slate-800 dark:text-slate-200">{delivery.subject}</p><p className="truncate text-slate-600">{delivery.templateId} · {delivery.recipient}</p>{delivery.errorMessage ? <p className="mt-1 text-rose-700 dark:text-rose-300">{delivery.errorMessage}</p> : null}</div>
-                  <p className="truncate font-mono text-[9px] text-slate-600">{delivery.providerMessageId || "No provider ID"}</p>
-                  <p className="text-slate-500"><LocalTime value={delivery.createdAt} /></p>
+                  <div className="min-w-0"><p className="truncate font-bold text-slate-800 dark:text-slate-200">{delivery.subject}</p><p className="truncate text-muted-foreground">{delivery.templateId} · {delivery.recipient}</p>{delivery.errorMessage ? <p className="mt-1 text-rose-700 dark:text-rose-300">{delivery.errorMessage}</p> : null}</div>
+                  <p className="truncate font-mono text-[9px] text-muted-foreground">{delivery.providerMessageId || "No provider ID"}</p>
+                  <p className="text-muted-foreground"><LocalTime value={delivery.createdAt} /></p>
                 </div>
               ))}
             </div>
-          ) : <div className="px-5 py-12 text-center text-sm text-slate-500">No AP3K application emails have been sent yet.</div>}
+          ) : <div className="px-5 py-12 text-center text-sm text-muted-foreground">No AP3K application emails have been sent yet.</div>}
         </AdminSurface>
       </section>
     </div>
@@ -108,5 +108,5 @@ export default async function EmailCenterPage({ searchParams }: { searchParams?:
 }
 
 function StatusCard({ label, value, detail, icon }: { label: string; value: string | number; detail: string; icon: React.ReactNode }) {
-  return <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-white/[0.025] p-4"><div className="flex items-center justify-between"><p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600">{label}</p><span className="text-pink-700 dark:text-pink-300">{icon}</span></div><p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p><p className="mt-1 text-[10px] text-slate-500">{detail}</p></div>;
+  return <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-white/[0.025] p-4"><div className="flex items-center justify-between"><p className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">{label}</p><span className="text-pink-700 dark:text-pink-300">{icon}</span></div><p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p><p className="mt-1 text-[10px] text-muted-foreground">{detail}</p></div>;
 }

@@ -15,12 +15,12 @@ export function AssistantPanel() {
         </span>
         <div>
           <h2 className="font-semibold">Your operations briefing</h2>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
+          <p className="text-xs text-muted-foreground dark:text-slate-400">
             Powered by your active AI provider
           </p>
         </div>
       </div>
-      <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+      <p className="text-sm leading-6 text-muted-foreground dark:text-slate-400">
         Summarize delivery health and recent growth into a short priority list.
         Only aggregate counters are shared—never private messages, emails, or
         credentials.
@@ -52,7 +52,7 @@ export function AssistantPanel() {
           {answer}
         </div>
       )}
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Advisory only. Nothing is changed or published. Up to 10 requests per
         hour; provider usage may be billed.
       </p>

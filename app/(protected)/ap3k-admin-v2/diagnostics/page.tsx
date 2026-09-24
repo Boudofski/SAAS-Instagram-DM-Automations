@@ -65,11 +65,11 @@ export default async function AdminV2DiagnosticsPage() {
             empty="No loop guard events."
           />
           {loopGuard.length > LOOP_PREVIEW && (
-            <details className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.018]">
-              <summary className="cursor-pointer px-4 py-3 text-xs font-bold text-slate-400 hover:text-white">
+            <details className="mt-3 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.018]">
+              <summary className="cursor-pointer px-4 py-3 text-xs font-bold text-muted-foreground dark:text-slate-400 hover:text-slate-950 dark:hover:text-white">
                 Show all {loopGuard.length} recent loop guard events
               </summary>
-              <div className="border-t border-white/[0.05] p-3 sm:p-4">
+              <div className="border-t border-slate-200 dark:border-white/[0.05] p-3 sm:p-4">
                 <V2Table
                   headers={["Time", "Event", "Automation", "Owner"]}
                   rows={loopGuardRows}
@@ -93,11 +93,11 @@ export default async function AdminV2DiagnosticsPage() {
         />
 
         {webhooks.length > WEBHOOK_PREVIEW && (
-          <details className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.018]">
-            <summary className="cursor-pointer px-4 py-3 text-xs font-bold text-slate-400 hover:text-white">
+          <details className="mt-3 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.018]">
+            <summary className="cursor-pointer px-4 py-3 text-xs font-bold text-muted-foreground dark:text-slate-400 hover:text-slate-950 dark:hover:text-white">
               Show all {webhooks.length} recent webhook events
             </summary>
-            <div className="border-t border-white/[0.05] p-3 sm:p-4">
+            <div className="border-t border-slate-200 dark:border-white/[0.05] p-3 sm:p-4">
               <V2Table
                 headers={["Time", "Source", "Type", "Status", "Automation", "Error"]}
                 rows={webhookRows}
@@ -108,7 +108,7 @@ export default async function AdminV2DiagnosticsPage() {
         )}
 
         <AdvancedPanel label="App Review notes">
-          <p className="text-xs leading-relaxed text-slate-400">
+          <p className="text-xs leading-relaxed text-muted-foreground dark:text-slate-400">
             This screen is an owner-only debugging surface. It is not part of the public AP3K workflow or the Meta reviewer journey, and raw diagnostic codes remain hidden until explicitly expanded.
           </p>
         </AdvancedPanel>
@@ -119,36 +119,36 @@ export default async function AdminV2DiagnosticsPage() {
 
 function makeLoopRows(loopGuard: Awaited<ReturnType<typeof getAdminV2LoopGuardEvents>>) {
   return loopGuard.map((event) => [
-    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-slate-500">
+    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-muted-foreground">
       <LocalTime value={event.createdAt} />
     </span>,
     <V2Badge key="type" tone={eventTone(event.eventType)}>{humanEvent(event.eventType)}</V2Badge>,
-    <span key="campaign" className="block max-w-[220px] truncate text-[11px] text-slate-300">{event.campaignName ?? "—"}</span>,
-    <span key="owner" className="break-all text-[11px] text-slate-500 sm:break-normal">{event.ownerEmail ?? "—"}</span>,
+    <span key="campaign" className="block max-w-[220px] truncate text-[11px] text-slate-800 dark:text-slate-300">{event.campaignName ?? "—"}</span>,
+    <span key="owner" className="break-all text-[11px] text-muted-foreground sm:break-normal">{event.ownerEmail ?? "—"}</span>,
   ]);
 }
 
 function makeWebhookRows(webhooks: Awaited<ReturnType<typeof getAdminV2WebhookEvents>>) {
   return webhooks.map((event) => [
-    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-slate-500">
+    <span key="time" className="whitespace-nowrap tabular-nums text-[11px] text-muted-foreground">
       <LocalTime value={event.createdAt} />
     </span>,
     <V2Badge key="source" tone={event.eventSource === "META_REAL" ? "green" : "blue"}>
       {event.eventSource === "META_REAL" ? "Meta" : event.eventSource}
     </V2Badge>,
-    <span key="type" className="text-[11px] text-slate-300">{humanEvent(event.eventType)}</span>,
+    <span key="type" className="text-[11px] text-slate-800 dark:text-slate-300">{humanEvent(event.eventType)}</span>,
     <V2Badge key="status" tone={statusTone(event.status)}>{event.status}</V2Badge>,
-    <span key="campaign" className="block max-w-[200px] truncate text-[11px] text-slate-400">{event.campaignName ?? "—"}</span>,
+    <span key="campaign" className="block max-w-[200px] truncate text-[11px] text-muted-foreground dark:text-slate-400">{event.campaignName ?? "—"}</span>,
     <div key="error" className="max-w-[260px]">
       {event.errorMessage ? (
         <>
-          <p className="truncate text-[11px] text-slate-300" title={humanError(event.errorMessage)}>{humanError(event.errorMessage)}</p>
+          <p className="truncate text-[11px] text-slate-800 dark:text-slate-300" title={humanError(event.errorMessage)}>{humanError(event.errorMessage)}</p>
           <AdvancedPanel label="Raw code">
-            <p className="break-all font-mono text-[10px] text-slate-500">{event.errorMessage}</p>
+            <p className="break-all font-mono text-[10px] text-muted-foreground">{event.errorMessage}</p>
           </AdvancedPanel>
         </>
       ) : (
-        <span className="text-[11px] text-slate-600">None</span>
+        <span className="text-[11px] text-muted-foreground">None</span>
       )}
     </div>,
   ]);

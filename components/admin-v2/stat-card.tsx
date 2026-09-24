@@ -60,7 +60,7 @@ export function StatCard({
     >
       <span className={cn("absolute inset-x-5 top-0 h-px opacity-70", styles.accent)} />
       <div className="flex items-start justify-between gap-3">
-        <p className="pt-0.5 text-[9px] font-black uppercase tracking-[0.17em] text-slate-500 sm:text-[10px]">
+        <p className="pt-0.5 text-[9px] font-black uppercase tracking-[0.17em] text-muted-foreground sm:text-[10px]">
           {label}
         </p>
         {icon && (
@@ -72,7 +72,7 @@ export function StatCard({
       <p className="mt-3 text-[1.75rem] font-black leading-none tracking-[-0.035em] text-slate-950 dark:text-white sm:text-[2rem]">
         {value}
       </p>
-      {sub && <p className="mt-2 text-[11px] font-medium leading-5 text-slate-500">{sub}</p>}
+      {sub && <p className="mt-2 text-[11px] font-medium leading-5 text-muted-foreground">{sub}</p>}
     </div>
   );
 }

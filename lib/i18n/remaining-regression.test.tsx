@@ -68,7 +68,7 @@ describe("complete public localization and search metadata", () => {
   });
   it("covers every commercial page, help article and blog content field", () => {
     for (const locale of SUPPORTED_LOCALES.filter(l => l !== "en")) {
-      for (const source of prose([COMMERCIAL_PAGES, BLOG_POSTS.filter(post => !post.contentLocale), AP3K_HELP_ARTICLES.filter(article => !article.contentLocale)])) {
+      for (const source of prose([COMMERCIAL_PAGES.filter(page => !page.contentLocale), BLOG_POSTS.filter(post => !post.contentLocale), AP3K_HELP_ARTICLES.filter(article => !article.contentLocale)])) {
         expect(hasUiTranslation(source, locale), `${locale}: ${source}`).toBe(true);
       }
     }
@@ -107,12 +107,12 @@ describe("complete public localization and search metadata", () => {
       for (const page of COMMERCIAL_PAGES) {
         const metadata = commercialMetadata({ params: { slug: page.slug } });
         expect(metadata.alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`);
-        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(6);
-        const expectedTitle = locale === "en" && page.slug === "instagram-comment-to-dm"
+        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(page.contentLocale ? 2 : 6);
+        const expectedTitle = page.seoTitle ?? (locale === "en" && page.slug === "instagram-comment-to-dm"
           ? "Instagram Comment-to-DM Automation | AP3K"
-          : `${translateUi(page.title, locale)} | AP3K`;
+          : `${translateUi(page.title, locale)} | AP3K`);
         expect(metadata.title).toBe(expectedTitle);
-        if (locale !== "en") expect(metadata.description).not.toBe(page.description);
+        if (locale !== "en" && !page.contentLocale) expect(metadata.description).not.toBe(page.description);
       }
       expect(privacyMetadata().alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath("/privacy", locale)}`);
     }
@@ -124,7 +124,7 @@ describe("complete public localization and search metadata", () => {
       const alternatives = page.alternates?.languages;
       expect(Object.keys(alternatives ?? {})).toHaveLength(isEnglishOnlyArticle(new URL(page.url).pathname) ? 2 : 6);
       for (const url of Object.values(alternatives ?? {})) expect(entries.some(p => p.url === url)).toBe(true);
-      expect(page.url).not.toMatch(/dashboard|sign-in|sign-up|data-deletion-status/);
+      expect(new URL(page.url).pathname).not.toMatch(/^\/(?:fr\/|es\/|de\/|pt\/)?(?:dashboard|admin|sign-in|sign-up|data-deletion-status)(?:\/|$)/);
     }
   });
   it("has complete editorial rows without duplicate keys", () => {

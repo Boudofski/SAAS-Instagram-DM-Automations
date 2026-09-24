@@ -96,7 +96,7 @@ const THEME_STYLES = {
 } as const;
 
 export default function CommercialLandingPage({ page }: { page: CommercialPage }) {
-  const locale = getServerLocale();
+  const locale = page.contentLocale ?? getServerLocale();
   const theme = THEME_STYLES[page.theme];
   const faqSchema = {
     "@context": "https://schema.org",
@@ -125,7 +125,7 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       <WebsiteNav />
-      <main>
+      <main lang={page.contentLocale} translate={page.contentLocale ? "no" : undefined}>
         <section className={`relative overflow-hidden px-4 py-16 text-white sm:px-8 lg:px-16 lg:py-24 ${theme.hero}`}>
           <div aria-hidden="true" className={`pointer-events-none absolute -right-24 top-20 h-80 w-80 rounded-full blur-[110px] ${theme.glow}`} />
           <div aria-hidden="true" className="pointer-events-none absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-white/10 blur-[130px]" />

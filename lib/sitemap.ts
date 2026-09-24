@@ -38,7 +38,7 @@ export function buildSitemap(
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: new Date("2026-09-23T00:00:00Z"),
+      lastModified: new Date("2026-09-24T00:00:00Z"),
       changeFrequency: "weekly",
       priority: 0.9,
     },
@@ -104,7 +104,7 @@ export function buildSitemap(
     { length: Math.max(0, Math.ceil(posts.length / BLOG_PAGE_SIZE) - 1) },
     (_, index) => ({
       url: `${baseUrl}${blogPagePath(index + 2)}`,
-      lastModified: new Date("2026-09-23T00:00:00Z"),
+      lastModified: new Date("2026-09-24T00:00:00Z"),
       changeFrequency: "weekly" as const,
       priority: 0.65,
     }),
@@ -113,7 +113,7 @@ export function buildSitemap(
   const commercialPages: MetadataRoute.Sitemap = [
     ...COMMERCIAL_PAGES.map((page) => ({
       url: `${baseUrl}/${page.slug}`,
-      lastModified: publicContentUpdated,
+      lastModified: page.updatedAt ? new Date(`${page.updatedAt}T00:00:00Z`) : publicContentUpdated,
       changeFrequency: "monthly" as const,
       priority: page.slug === "manychat-alternative" ? 0.9 : 0.85,
     })),
@@ -129,6 +129,7 @@ export function buildSitemap(
   );
 
   const resourcePages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/resources/instagram-growth-library`, lastModified: new Date("2026-09-24T00:00:00Z"), changeFrequency: "weekly", priority: 0.85 },
     {
       url: `${baseUrl}/resources`,
       lastModified: new Date("2026-09-22T00:00:00Z"),

@@ -26,7 +26,7 @@ export function DeleteUserButton({ userId, email, accountCount }: { userId: stri
   return <AlertDialog open={open} onOpenChange={(value) => { if (!busy) { setOpen(value); setConfirmation(""); setReason(""); setError(""); } }}>
     <AlertDialogTrigger asChild><button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-400/25 bg-red-500/10 px-4 text-sm font-bold text-red-700 dark:text-red-300 hover:bg-red-500/20"><Trash2 className="h-4 w-4" />Delete AP3K account</button></AlertDialogTrigger>
     <AlertDialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto border-red-400/20 bg-white dark:bg-[#0c111d] text-slate-950 dark:text-white">
-      <AlertDialogHeader><AlertDialogTitle>Permanently delete this AP3K account?</AlertDialogTitle><AlertDialogDescription className="space-y-3 text-slate-600 dark:text-slate-400">
+      <AlertDialogHeader><AlertDialogTitle>Permanently delete this AP3K account?</AlertDialogTitle><AlertDialogDescription className="space-y-3 text-muted-foreground dark:text-slate-400">
         <span className="block break-all font-semibold text-slate-950 dark:text-white">{email}</span>
         <span className="block">This removes all {accountCount} connected Instagram accounts from AP3K, automations, contacts, inbox history, AI data and sign-in access. It does not delete the Instagram profiles themselves.</span>
         <span className="block">Active Stripe subscriptions are canceled immediately. Previous payments are not automatically refunded. This cannot be undone. The admin audit record is retained.</span>

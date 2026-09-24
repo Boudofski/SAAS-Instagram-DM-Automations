@@ -134,7 +134,7 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
                 <h2 className="mt-1 truncate text-lg font-black tracking-tight text-slate-950 dark:text-white">
                   {activeModal ? ACTION_LABELS[activeModal] : `Manage ${label}`}
                 </h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {activeModal ? ACTION_DESCRIPTIONS[activeModal] : "Choose a contextual, audited action for this Instagram account."}
                 </p>
               </div>
@@ -143,7 +143,7 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
                 aria-label="Close account actions"
                 onClick={closeAll}
                 disabled={isPending}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-slate-500 transition hover:text-slate-950 dark:hover:text-white disabled:opacity-40"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.035] text-muted-foreground transition hover:text-slate-950 dark:hover:text-white disabled:opacity-40"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -202,7 +202,7 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
                 )}
 
                 <div>
-                  <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                  <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                     Reason <span className="text-pink-700 dark:text-pink-400">*</span>
                   </label>
                   <textarea
@@ -243,7 +243,7 @@ export function AccountActionsCell({ integrationId, instagramUsername, status, r
                       setActiveModal(null);
                     }}
                     disabled={isPending}
-                    className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50"
+                    className="rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 py-2.5 text-sm font-bold text-muted-foreground dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-950 dark:hover:text-white disabled:opacity-50"
                   >
                     Back
                   </button>
@@ -294,7 +294,7 @@ function ActionChoice({
         {icon}
       </span>
       <span className="mt-3 block text-sm font-black text-slate-950 dark:text-white">{title}</span>
-      <span className="mt-1 block text-[11px] leading-5 text-slate-500">{description}</span>
+      <span className="mt-1 block text-[11px] leading-5 text-muted-foreground">{description}</span>
     </button>
   );
 }

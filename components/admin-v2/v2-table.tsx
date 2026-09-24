@@ -12,7 +12,7 @@ export function V2Table({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-white/[0.075] bg-white dark:bg-[#0b101b]/78 px-5 py-12 text-center text-sm text-slate-500 shadow-surface">
+      <div className="rounded-2xl border border-border bg-card text-card-foreground px-5 py-12 text-center text-sm text-muted-foreground shadow-surface">
         {empty}
       </div>
     );
@@ -20,31 +20,31 @@ export function V2Table({
 
   return (
     <>
-      <div className="hidden overflow-hidden rounded-2xl border border-slate-200 dark:border-white/[0.075] bg-white dark:bg-[#0b101b]/82 shadow-surface md:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-surface md:block">
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[760px] text-[13px]">
-            <thead className="bg-slate-50 dark:bg-[#0e1421]">
-              <tr className="border-b border-slate-200 dark:border-white/[0.07]">
+            <thead className="bg-muted/60">
+              <tr className="border-b border-border">
                 {headers.map((header) => (
                   <th
                     key={header}
-                    className="whitespace-nowrap px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 first:pl-5 last:pr-5"
+                    className="whitespace-nowrap px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground first:pl-5 last:pr-5"
                   >
                     {header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-white/[0.045]">
+            <tbody className="divide-y divide-border">
               {rows.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="group transition-colors hover:bg-slate-100 dark:hover:bg-white/[0.025]"
+                  className="group transition-colors hover:bg-muted/60"
                 >
                   {row.map((cell, cellIndex) => (
                     <td
                       key={cellIndex}
-                      className="align-middle px-4 py-3 text-slate-800 dark:text-slate-300 first:pl-5 last:pr-5"
+                      className="align-middle px-4 py-3 text-foreground first:pl-5 last:pr-5"
                     >
                       {cell}
                     </td>
@@ -60,9 +60,9 @@ export function V2Table({
         {rows.map((row, rowIndex) => (
           <article
             key={rowIndex}
-            className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/[0.075] bg-white dark:bg-[#0b101b]/88 shadow-surface"
+            className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-surface"
           >
-            <dl className="divide-y divide-slate-200 dark:divide-white/[0.05]">
+            <dl className="divide-y divide-border">
               {row.map((cell, cellIndex) => {
                 const header = headers[cellIndex] ?? `Field ${cellIndex + 1}`;
                 const isAction = /actions?/i.test(header);
@@ -74,10 +74,10 @@ export function V2Table({
                       isAction && "grid-cols-1 bg-slate-50 dark:bg-white/[0.018]"
                     )}
                   >
-                    <dt className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">
+                    <dt className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
                       {header}
                     </dt>
-                    <dd className="min-w-0 break-words text-[13px] leading-5 text-slate-800 dark:text-slate-200">
+                    <dd className="min-w-0 break-words text-[13px] leading-5 text-foreground">
                       {cell}
                     </dd>
                   </div>
@@ -118,8 +118,8 @@ export function V2Pagination({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-white/[0.055] bg-slate-50 dark:bg-white/[0.018] px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-4">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-500">
-        <span className="font-bold tabular-nums text-slate-800 dark:text-slate-300">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+        <span className="font-bold tabular-nums text-foreground">
           {Math.min(page * limit + 1, total)}–{Math.min((page + 1) * limit, total)} of {total}
         </span>
         <span>Page {page + 1} of {totalPages}</span>
@@ -128,22 +128,22 @@ export function V2Pagination({
         {prev !== null ? (
           <Link
             href={pageUrl(prev)}
-            className="rounded-lg border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3 py-2 text-center font-bold text-slate-800 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-white/[0.07] hover:text-slate-950 dark:hover:text-white"
+            className="rounded-lg border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3 py-2 text-center font-bold text-foreground transition hover:bg-slate-100 dark:hover:bg-white/[0.07] hover:text-slate-950 dark:hover:text-white"
           >
             ← Previous
           </Link>
         ) : (
-          <span className="rounded-lg border border-slate-200 dark:border-white/[0.04] px-3 py-2 text-center font-bold text-slate-700">← Previous</span>
+          <span className="rounded-lg border border-slate-200 dark:border-white/[0.04] px-3 py-2 text-center font-bold text-muted-foreground">← Previous</span>
         )}
         {next !== null ? (
           <Link
             href={pageUrl(next)}
-            className="rounded-lg border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3 py-2 text-center font-bold text-slate-800 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-white/[0.07] hover:text-slate-950 dark:hover:text-white"
+            className="rounded-lg border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3 py-2 text-center font-bold text-foreground transition hover:bg-slate-100 dark:hover:bg-white/[0.07] hover:text-slate-950 dark:hover:text-white"
           >
             Next →
           </Link>
         ) : (
-          <span className="rounded-lg border border-slate-200 dark:border-white/[0.04] px-3 py-2 text-center font-bold text-slate-700">Next →</span>
+          <span className="rounded-lg border border-slate-200 dark:border-white/[0.04] px-3 py-2 text-center font-bold text-muted-foreground">Next →</span>
         )}
       </div>
     </div>
