@@ -693,7 +693,7 @@ model AutomationEngagementJob {
   inboundAt      DateTime
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
-  @@unique([automationId, recipientIgId, flowId, kind])
+  @@unique([automationId, recipientIgId, flowId, kind], map: "AutomationEngagementJob_journey_key")
   @@index([kind, status, dueAt])
   @@index([recipientIgId, kind, status])
 }

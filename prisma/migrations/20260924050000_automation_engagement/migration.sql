@@ -22,7 +22,7 @@ CREATE TABLE "AutomationEngagementJob" (
   CONSTRAINT "AutomationEngagementJob_pkey" PRIMARY KEY ("id"),
   CONSTRAINT "AutomationEngagementJob_automationId_fkey" FOREIGN KEY ("automationId") REFERENCES "Automation"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE UNIQUE INDEX "AutomationEngagementJob_automationId_recipientIgId_flowId_kind_key" ON "AutomationEngagementJob"("automationId", "recipientIgId", "flowId", "kind");
+CREATE UNIQUE INDEX "AutomationEngagementJob_journey_key" ON "AutomationEngagementJob"("automationId", "recipientIgId", "flowId", "kind");
 CREATE INDEX "AutomationEngagementJob_kind_status_dueAt_idx" ON "AutomationEngagementJob"("kind", "status", "dueAt");
 CREATE INDEX "AutomationEngagementJob_recipientIgId_kind_status_idx" ON "AutomationEngagementJob"("recipientIgId", "kind", "status");
 CREATE TABLE "AutomationSchedulerHeartbeat" (
