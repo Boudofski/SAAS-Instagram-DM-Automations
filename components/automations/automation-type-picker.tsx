@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,7 +8,6 @@ import {
   ArrowRight,
   GitBranch,
   Zap,
-  Plus,
   MessageCircle,
   Sparkles,
   Lock,
@@ -25,6 +24,7 @@ import { UiText } from "@/components/i18n/localized-copy";
 
 export default function AutomationTypePicker({ slug }: { slug: string }) {
   const router = useRouter();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState<Template | null>(null);
@@ -45,10 +45,10 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
         if (!open) router.push(`/dashboard/${slug}/automation`);
       }}
     >
-      <DialogContent className="flex h-[min(850px,92dvh)] max-w-6xl flex-col gap-0 overflow-hidden border-slate-200 bg-white p-0 text-slate-950 dark:border-white/10 dark:bg-[#10131e] dark:text-slate-100">
-        <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-5 pr-14 dark:border-white/10">
-          <div className="mr-auto">
-            <DialogTitle className="text-2xl font-bold tracking-tight">
+      <DialogContent ref={dialogRef} tabIndex={-1} onOpenAutoFocus={(event) => { event.preventDefault(); dialogRef.current?.focus(); }} className="flex h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-h-[calc(100dvh-1rem)] max-w-6xl sm:h-[min(850px,92dvh)] sm:w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden border-slate-200 bg-white p-0 text-slate-950 dark:border-white/10 dark:bg-[#10131e] dark:text-slate-100">
+        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-slate-200 p-4 pe-14 sm:p-5 sm:pe-14 dark:border-white/10">
+          <div className="min-w-0 me-auto">
+            <DialogTitle className="break-words text-xl font-bold tracking-tight sm:text-2xl">
               <UiText>
                 {selected ? selected.name : "Automation templates"}
               </UiText>
@@ -61,15 +61,6 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
               </UiText>
             </DialogDescription>
           </div>
-          {!selected && (
-            <Link
-              href={`/dashboard/${slug}/automation/new?type=flow`}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-white/20"
-            >
-              <Plus size={16} />
-              <UiText>Start from scratch</UiText>
-            </Link>
-          )}
         </header>
         {selected ? (
           <div className="min-h-0 flex-1 overflow-auto">
@@ -80,9 +71,9 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
               <ArrowLeft size={16} />
               <UiText>Back to templates</UiText>
             </button>
-            <div className="grid gap-8 px-5 pb-8 md:grid-cols-2 md:px-8">
-              <section>
-                <div className="mb-5 flex gap-2">
+            <div className="grid min-w-0 gap-6 px-4 pb-8 sm:px-5 md:grid-cols-2 md:px-8">
+              <section className="min-w-0">
+                <div className="mb-5 flex flex-wrap gap-2">
                   <Badge>
                     {selected.type === "flow" || selected.type === "ai"
                       ? "Flow Builder"
@@ -90,7 +81,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                   </Badge>
                   {selected.pro && <Badge>Pro / Business</Badge>}
                 </div>
-                <h2 className="text-3xl font-bold tracking-tight">
+                <h2 className="break-words text-2xl font-bold tracking-tight sm:text-3xl">
                   <UiText>{selected.name}</UiText>
                 </h2>
                 <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">
@@ -145,7 +136,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                   </p>
                 )}
               </section>
-              <section className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 to-orange-50 p-5 dark:border-white/10 dark:from-violet-950/40 dark:to-slate-900">
+              <section className="min-w-0 rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 to-orange-50 p-5 dark:border-white/10 dark:from-violet-950/40 dark:to-slate-900">
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                   <PlayCircle size={18} />
                   <UiText>How it works</UiText>
@@ -181,18 +172,17 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
           </div>
         ) : (
           <>
-            <label className="relative m-5 block">
-              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+            <label className="relative m-4 block shrink-0 sm:m-5">
+              <Search className="absolute start-4 top-3.5 h-5 w-5 text-slate-400" />
               <input
-                autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search Instagram templates…"
                 aria-label="Search Instagram templates"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none focus:border-violet-500 dark:border-white/10 dark:bg-white/5"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 ps-12 pe-4 text-base sm:text-sm outline-none focus:border-violet-500 dark:border-white/10 dark:bg-white/5"
               />
             </label>
-            <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
               <nav
                 aria-label="Template filters"
                 className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-200 px-5 pb-4 md:w-52 md:flex-col md:overflow-y-auto md:border-b-0 md:border-r dark:border-white/10"
@@ -237,7 +227,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                   />
                 ))}
               </nav>
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+              <div className="min-h-0 min-w-0 flex-1 overscroll-contain overflow-y-auto px-4 py-4 sm:px-5 md:pt-0">
                 <h2 className="mb-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   {search || filter !== "all"
                     ? `${matches.length} templates`
@@ -248,7 +238,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                     <button
                       key={t.id}
                       onClick={() => setSelected(t)}
-                      className="group flex min-h-56 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:border-violet-400 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-violet-400"
+                      className="group flex min-w-0 min-h-56 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-start transition hover:border-violet-400 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-violet-400"
                     >
                       <div className="mb-5 flex w-full items-center justify-between">
                         <span
@@ -328,7 +318,7 @@ function Filter({
     <button
       aria-pressed={value === filter}
       onClick={() => set(value)}
-      className={`shrink-0 rounded-lg px-3 py-2.5 text-left text-sm ${value === filter ? "bg-violet-100 font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5"}`}
+      className={`min-h-11 shrink-0 rounded-lg px-3 py-2.5 text-start text-sm ${value === filter ? "bg-violet-100 font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5"}`}
     >
       <UiText>{label}</UiText>
     </button>

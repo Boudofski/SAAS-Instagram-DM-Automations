@@ -62,7 +62,8 @@ describe("automation setup localization", () => {
   it("renders the actual type picker and both message entry screens without English headings", () => {
     for (locale of SUPPORTED_LOCALES) {
       const picker = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} />));
-      for (const label of ["Automation templates", "Auto-DM links from comments", "Send affiliate product links", "Start from scratch"]) expect(picker).toContain(translateUi(label, locale));
+      for (const label of ["Automation templates", "Auto-DM links from comments", "Send affiliate product links"]) expect(picker).toContain(translateUi(label, locale));
+      expect(picker).not.toContain("Start from scratch");
       for (const type of ["story", "dm"]) {
         const text = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} searchParams={{ type }} />));
         const heading = type === "story" ? "When someone interacts with your story" : "When someone sends you a DM";

@@ -13,6 +13,7 @@ import {
   Flag,
   Shuffle,
   HelpCircle,
+  List,
 } from "lucide-react";
 import {
   edges,
@@ -48,6 +49,8 @@ export default function FlowCanvas({
   onChange: (f: Flow) => void;
 }) {
   const [selected, setSelected] = useState(flow.entry);
+  const [view, setView] = useState<"auto" | "canvas" | "list">("auto");
+  const editorRef = useRef<HTMLElement>(null);
   const [zoom, setZoom] = useState(0.85);
   const [kind, setKind] = useState<FlowNode["kind"]>("message");
   const drag = useRef<{
@@ -167,7 +170,7 @@ export default function FlowCanvas({
       <select
         value={value ?? ""}
         onChange={(e) => set(e.target.value || null)}
-        className="ap3k-input mt-1.5 w-full rounded-lg p-2 text-sm"
+        className="ap3k-input min-h-11 min-w-0 mt-1.5 w-full rounded-lg p-2 text-sm"
       >
         <option value="">Finish this path</option>
         {flow.nodes
@@ -181,14 +184,14 @@ export default function FlowCanvas({
     </label>
   );
   return (
-    <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid min-w-0 max-w-full items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#141824]">
           <select
             aria-label="New step type"
             value={kind}
             onChange={(e) => setKind(e.target.value as FlowNode["kind"])}
-            className="ap3k-input max-w-44 rounded-lg p-2 text-sm"
+            className="ap3k-input min-h-11 min-w-0 flex-1 rounded-lg p-2 text-sm sm:max-w-44"
           >
             {Object.entries(names).map(([k, v]) => (
               <option value={k} key={k}>
@@ -199,16 +202,21 @@ export default function FlowCanvas({
           <button
             disabled={flow.nodes.length >= 30}
             onClick={add}
-            className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white"
           >
             <Plus size={16} />
             Add step
           </button>
-          <div className="ml-auto flex gap-1">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:ms-auto sm:w-auto">
+            <div className="flex rounded-lg bg-slate-100 p-1 dark:bg-white/5" aria-label="Editor view">
+              <button type="button" onClick={() => setView("list")} aria-label="List view" aria-pressed={view === "list" ? true : view === "canvas" ? false : undefined} className={`flex min-h-11 items-center gap-1 rounded-md px-3 text-xs font-semibold ${view === "list" ? "bg-violet-600 text-white" : view === "auto" ? "bg-violet-600 text-white xl:bg-transparent xl:text-inherit" : ""}`}><List size={15} />List</button>
+              <button type="button" onClick={() => setView("canvas")} aria-label="Canvas view" aria-pressed={view === "canvas" ? true : view === "list" ? false : undefined} className={`flex min-h-11 items-center gap-1 rounded-md px-3 text-xs font-semibold ${view === "canvas" ? "bg-violet-600 text-white" : view === "auto" ? "xl:bg-violet-600 xl:text-white" : ""}`}><GitBranch size={15} />Canvas</button>
+            </div>
+          <div className={`${view === "list" ? "hidden" : view === "auto" ? "hidden xl:flex" : "flex"} ms-auto items-center gap-1`}>
             <button
               aria-label="Zoom out"
               onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
-              className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
+              className="grid h-11 w-11 place-items-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
             >
               <Minus size={16} />
             </button>
@@ -218,14 +226,25 @@ export default function FlowCanvas({
             <button
               aria-label="Zoom in"
               onClick={() => setZoom((z) => Math.min(1.3, z + 0.1))}
-              className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
+              className="grid h-11 w-11 place-items-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
             >
               <Plus size={16} />
             </button>
           </div>
+          </div>
+        </div>
+        <div className={`${view === "canvas" ? "hidden" : view === "auto" ? "xl:hidden" : ""} max-h-80 space-y-2 overflow-y-auto overscroll-contain bg-slate-50 p-3 dark:bg-[#0b0f19]`} aria-label="Conversation steps">
+          {flow.nodes.map((n) => {
+            const Icon = icons[n.kind];
+            return <button type="button" key={n.id} aria-pressed={selected === n.id} onClick={() => { setSelected(n.id); editorRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" }); }} className={`flex min-h-14 w-full min-w-0 items-start gap-3 rounded-xl border p-3 text-start ${selected === n.id ? "border-violet-500 bg-violet-50 dark:bg-violet-500/10" : "border-slate-200 bg-white dark:border-white/10 dark:bg-[#141824]"}`}>
+              <Icon size={18} className="mt-1 shrink-0 text-violet-500" />
+              <span className="min-w-0 flex-1"><span className="block break-words text-sm font-bold">{n.label}{n.id === flow.entry && <span className="ms-2 text-[10px] text-violet-500">START</span>}</span><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{names[n.kind]}</span><span className="mt-2 block break-words text-xs text-slate-500 dark:text-slate-400">{edges(n).filter(e => e.target).map(e => `${e.label}: ${flow.nodes.find(target => target.id === e.target)?.label ?? "Missing step"}`).join(" · ") || "Finish this path"}</span></span>
+            </button>;
+          })}
         </div>
         <div
-          className="h-[600px] overflow-auto bg-[#f3f4f9] dark:bg-[#0b0f19]"
+          aria-label="Conversation canvas"
+          className={`${view === "list" ? "hidden" : view === "auto" ? "hidden xl:block" : ""} h-[clamp(280px,55dvh,600px)] overflow-auto overscroll-contain bg-[#f3f4f9] dark:bg-[#0b0f19]`}
           style={{
             backgroundImage: "radial-gradient(#85859b44 1px, transparent 1px)",
             backgroundSize: "20px 20px",
@@ -405,17 +424,17 @@ export default function FlowCanvas({
           </div>
         </div>
         <p className="border-t border-slate-200 bg-white p-3 text-xs text-slate-500 dark:border-white/10 dark:bg-[#141824] dark:text-slate-400">
-          Drag a step by its header. Select it to edit and connect its next
-          steps. Arrow keys also move focused headers.
+          Select a step to edit its message and connections. In canvas view,
+          drag headers or use arrow keys to reposition steps.
         </p>
       </div>
-      <aside className="max-h-[710px] space-y-4 overflow-auto rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141824]">
+      <aside ref={editorRef} aria-label="Step settings" className="min-w-0 max-w-full space-y-4 xl:max-h-[710px] xl:overflow-auto rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141824]">
         <label className="block text-xs font-semibold">
           Starting step
           <select
             value={flow.entry}
             onChange={(e) => onChange({ ...flow, entry: e.target.value })}
-            className="ap3k-input mt-2 w-full rounded-lg p-2 text-sm"
+            className="ap3k-input min-h-11 min-w-0 mt-2 w-full rounded-lg p-2 text-sm"
           >
             {flow.nodes.map((n) => (
               <option value={n.id} key={n.id}>
@@ -432,7 +451,7 @@ export default function FlowCanvas({
                 aria-label="Delete step"
                 onClick={remove}
                 disabled={flow.nodes.length === 1}
-                className="rounded-lg p-2 text-red-500 disabled:opacity-30"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-lg p-2 text-red-500 disabled:opacity-30"
               >
                 <Trash2 size={16} />
               </button>
@@ -595,7 +614,7 @@ export default function FlowCanvas({
                     onChange={(e) =>
                       update({ percent: Number(e.target.value) })
                     }
-                    className="ap3k-input mt-2 w-full rounded-lg p-2"
+                    className="ap3k-input min-h-11 min-w-0 mt-2 w-full rounded-lg p-2"
                   />
                 </label>
                 <p className="text-xs leading-5 text-slate-500">
@@ -690,7 +709,7 @@ function Field({
           value={value}
           maxLength={max}
           onChange={(e) => onChange(e.target.value)}
-          className="ap3k-input mt-2 w-full rounded-lg p-2 text-sm"
+          className="ap3k-input min-h-11 min-w-0 mt-2 w-full rounded-lg p-2 text-sm"
         />
       )}
     </label>
