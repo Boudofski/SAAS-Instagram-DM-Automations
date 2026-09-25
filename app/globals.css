@@ -440,11 +440,3 @@
   .ap3k-app-shell button:not([role="switch"]):not([role="checkbox"]):not([role="radio"]), .ap3k-table-action, .ap3k-table-action-danger { min-height: 44px; }
   .ap3k-input, .ap3k-textarea, .ap3k-select { font-size: 16px; }
 }
-
-.ap3k-hero::before {
-  content: ""; position: absolute; inset: -6rem 0 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(ellipse at 82% 40%, rgba(139,92,246,.12), transparent 55%), radial-gradient(ellipse at 10% 0%, rgba(244,114,182,.06), transparent 50%);
-}
-.ap3k-home section[id] { scroll-margin-top: 6rem; }
-.ap3k-home :is(a,button):focus-visible { outline: 2px solid #8b5cf6; outline-offset: 4px; }
-@media (prefers-reduced-motion: no-preference) { html:has(.ap3k-home) { scroll-behavior: smooth; } }

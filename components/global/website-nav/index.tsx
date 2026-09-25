@@ -19,7 +19,7 @@ export default function WebsiteNav({ current }: Props) {
   const navClass = "rounded-md px-1 py-2 transition-colors duration-fast hover:text-slate-950 dark:hover:text-rf-text";
 
   return (
-    <nav className="sticky top-3 z-50 mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-6xl rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_8px_32px_-16px_rgba(15,23,42,0.25)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111320]/95 sm:px-5">
+    <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-rf-bg/95 sm:px-8 lg:px-16">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <Link href={href("/")} aria-label={`AP3K ${t("home")}`}>
           <AP3KLogo className="text-base text-slate-950 dark:text-white" />
