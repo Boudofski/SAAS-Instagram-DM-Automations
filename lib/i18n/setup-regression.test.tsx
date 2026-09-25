@@ -20,6 +20,7 @@ const data: WizardData = {
   aiReplyEnabled: false, aiReplyTone: "FRIENDLY", aiReplyInstructions: "", aiProtectionRules: {} as WizardData["aiProtectionRules"], active: true,
 };
 vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale }) }));
+vi.mock("@/components/ui/dialog", () => ({ Dialog: ({children}: any) => <>{children}</>, DialogContent: ({children}: any) => <section>{children}</section>, DialogTitle: ({children}: any) => <h1>{children}</h1>, DialogDescription: ({children}: any) => <p>{children}</p> }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/actions/automation", () => ({ saveMessageAutomation: vi.fn() }));
 vi.mock("@/actions/ai-workspace", () => ({ getAiWorkspace: vi.fn() }));
@@ -61,7 +62,7 @@ describe("automation setup localization", () => {
   it("renders the actual type picker and both message entry screens without English headings", () => {
     for (locale of SUPPORTED_LOCALES) {
       const picker = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} />));
-      for (const label of ["What should start the conversation?", "Comment automation", "Story automation", "DM automation", "Build this flow"]) expect(picker).toContain(translateUi(label, locale));
+      for (const label of ["Automation templates", "Auto-DM links from comments", "Send affiliate product links", "Start from scratch"]) expect(picker).toContain(translateUi(label, locale));
       for (const type of ["story", "dm"]) {
         const text = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} searchParams={{ type }} />));
         const heading = type === "story" ? "When someone interacts with your story" : "When someone sends you a DM";

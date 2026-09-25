@@ -13,6 +13,8 @@ import MessageAutomationWizard from "@/components/automations/message-automation
 import ProductCardEditor from "@/components/automations/product-card-editor";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
 import dynamic from "next/dynamic";
+const FlowBuilder = dynamic(() => import("@/components/automations/flow-builder"));
+import { templateById } from "@/lib/automation-flow/templates";
 const AiConversationBuilder = dynamic(() => import("@/components/automations/ai-conversation-builder"));
 import EmptyState from "@/components/global/empty-state";
 import KeywordInput from "@/components/global/keyword-input";
@@ -43,7 +45,7 @@ import { useEffect, useRef, useState } from "react";
 
 type Props = {
   params: { slug: string };
-  searchParams?: { edit?: string; type?: string };
+  searchParams?: { edit?: string; type?: string; template?: string };
 };
 
 export default function WizardPage(props: Props) {
@@ -55,7 +57,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const tr = useUi();
   const { slug } = params;
   const editId = searchParams?.edit;
-  const needsCommentData = (searchParams?.type === "comment" || searchParams?.type === "affiliate") || Boolean(editId);
+  const needsCommentData = (searchParams?.type === "comment" || searchParams?.type === "affiliate" || searchParams?.type === "flow") || Boolean(editId);
   const appReviewMode = isAppReviewMode();
   const messagingReviewMode = isMessagingReviewMode();
   const commentReplyOnlyReviewMode = appReviewMode && !messagingReviewMode;
@@ -75,6 +77,16 @@ function AutomationSetup({ params, searchParams }: Props) {
     initializedAffiliate.current = true;
     update({ productCard: true, sendPrivateDm: true, openingDmEnabled: true, campaignName: tr("Send affiliate product links"), dmMessage: "", productSubtitle: "", productImageUrl: "" });
   }, [editId, searchParams?.type, tr, update]);
+  const initializedTemplate = useRef(false);
+  useEffect(() => {
+    const template = templateById(searchParams?.template);
+    if (editId || !template || initializedTemplate.current || !["comment", "affiliate"].includes(template.type)) return;
+    initializedTemplate.current = true;
+    update({ campaignName: template.name, keywords: template.keyword ? [template.keyword] : [], sendPrivateDm: true, openingDmEnabled: true,
+      followGateRequired: ["followers", "follow-freebie"].includes(template.id),
+      ...(template.id === "youtube" ? { dmMessage: "Here is the video you asked for!", linkButtons: [{ label: "Watch the video", url: "" }] } : {}),
+    });
+  }, [editId, searchParams?.template, update]);
   const initializedMessagingReviewDraft = useRef(false);
   const stepsScrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -199,6 +211,11 @@ function AutomationSetup({ params, searchParams }: Props) {
     return <div className="grid min-h-screen place-items-center bg-slate-50 dark:bg-[#050816]"><Loader2 className="h-6 w-6 animate-spin text-rf-purple" /></div>;
   }
 
+  if (selectedType === "flow" || (editing as any)?.data?.listener?.flowDefinition) {
+    if (userPending) return <div className="grid min-h-96 place-items-center"><Loader2 className="h-6 w-6 animate-spin" aria-label="Loading account" /></div>;
+    return <FlowBuilder key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} templateId={searchParams?.template} automation={(editing as any)?.data} posts={postList} postsLoading={postsLoading} postsError={postsError} refreshPosts={() => void refetchPosts()} plan={(user as any)?.data?.subscription?.plan ?? "FREE"} />;
+  }
+
   if (selectedType === "ai" || (editing as any)?.data?.listener?.aiConversation) {
     return <AiConversationBuilder key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} accountName={instagram?.instagramUsername ?? "Instagram account"} automation={(editing as any)?.data} automationId={editId} />;
   }
@@ -208,6 +225,7 @@ function AutomationSetup({ params, searchParams }: Props) {
       <MessageAutomationWizard
         integrationId={instagram?.id ?? ""}
         slug={slug}
+        templateId={searchParams?.template}
         source={selectedType === "story" ? "STORY" : "DM"}
         automationId={editId}
         automation={(editing as any)?.data}

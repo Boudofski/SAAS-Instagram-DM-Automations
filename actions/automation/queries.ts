@@ -377,6 +377,18 @@ export const duplicateAutomationQuery = async (
   const automation = await findAutomationForUser(automationId, clerkId);
   if (!automation?.listener) return null;
 
+  if (automation.listener.flowDefinition) {
+    const { id: listenerId, automationId: listenerAutomationId, dmCount, commentCount, ...listener } = automation.listener;
+    return client.automation.create({ data: {
+      userId: automation.userId, integrationId: await currentInstagramAccountId(clerkId), name: `${automation.name} copy`, active: false,
+      source: automation.source, storyTriggerType: automation.storyTriggerType, triggerMode: automation.triggerMode, matchingMode: automation.matchingMode, sendPrivateDm: true,
+      posts: { create: automation.posts.map(({ postid, caption, media, mediaType }) => ({ postid, caption, media, mediaType })) },
+      keywords: { create: automation.keywords.map(({ word }) => ({ word })) },
+      trigger: { create: { type: automation.source === "STORY" ? `STORY_${automation.storyTriggerType}` : automation.source } },
+      listener: { create: { ...listener, flowRevision: 0, aiProtectionRules: undefined, aiConversation: undefined, quickReplies: undefined, flowDefinition: automation.listener.flowDefinition } },
+    }, select: { id: true } });
+  }
+
   if (automation.source === "STORY" || automation.source === "DM") {
     return createCompleteMessageAutomation(clerkId, {
       name: `${automation.name || "Untitled automation"} copy`,

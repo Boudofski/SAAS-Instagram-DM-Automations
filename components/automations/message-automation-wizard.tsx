@@ -1,4 +1,5 @@
 "use client";
+import { templateById } from "@/lib/automation-flow/templates";
 
 import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
@@ -58,7 +59,7 @@ const INITIAL: Draft = {
   aiReplyEnabled: false,
 };
 
-export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation }: { integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any }) {
+export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation, templateId }: { integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any; templateId?: string }) {
   const tr = useUi();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -78,6 +79,14 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
       return next;
     });
   }, [tr, automation]);
+  const initializedTemplate = useRef(false);
+  useEffect(() => {
+    const template = templateById(templateId);
+    if (automationId || !template || initializedTemplate.current) return;
+    initializedTemplate.current = true;
+    setDraft(value => ({ ...value, name: template.name, storyTriggerType: "REPLY", triggerMode: template.keyword ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE", keywords: template.keyword ? [template.keyword] : [],
+      message: template.id === "coupons" ? "Here is your discount! Use the link below to shop." : template.id === "whatsapp" ? "Want to continue on WhatsApp? Tap below to start a conversation." : template.id === "sms" ? "You can sign up for text updates here. Check the signup page for details and consent." : value.message }));
+  }, [automationId, templateId]);
   const [keywordDraft, setKeywordDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
