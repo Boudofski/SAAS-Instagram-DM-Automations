@@ -1,3 +1,4 @@
+import QuickStart from "@/components/dashboard/quick-start";
 import { waitUntil } from "@vercel/functions";
 import ActivationChecklist from "@/components/dashboard/activation-checklist";
 import { client } from "@/lib/prisma";
@@ -150,6 +151,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       )}
 
+      <QuickStart slug={params.slug} />
+
       <section className="ap3k-content-enter">
         <div className="mb-3">
           <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
@@ -179,7 +182,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           </div>
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>
-        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111827] sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 xl:grid-cols-5">
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}

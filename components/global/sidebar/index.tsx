@@ -40,7 +40,7 @@ export default function Sidebar({ slug }: Props) {
 
   return (
     <aside className={cn(
-      "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-visible border-r border-slate-200 bg-white/95 py-0 text-slate-950 transition-[width] duration-base ease-ui-out rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 dark:border-white/10 dark:bg-[#0b1020]/95 dark:text-slate-50 lg:flex",
+      "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-visible border-r border-slate-200 bg-[#f6f6fa] py-0 text-slate-950 transition-[width] duration-base ease-ui-out rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 dark:border-white/10 dark:bg-[#0c0e18] dark:text-slate-50 lg:flex",
       expanded ? "w-[232px]" : "w-[76px]"
     )} data-expanded={expanded ? "true" : "false"}>
       <div className={cn("shrink-0 border-b border-slate-200 py-4 dark:border-white/10", expanded ? "px-4" : "px-3")}>
@@ -65,7 +65,7 @@ export default function Sidebar({ slug }: Props) {
                 "relative flex min-h-11 items-center rounded-xl border border-transparent text-sm font-semibold transition-colors duration-fast",
                 expanded ? "gap-2.5 px-3 py-2.5" : "justify-center px-0 py-2.5",
                 isActive
-                  ? "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-200"
+                  ? "border-violet-100 bg-white text-violet-800 shadow-sm dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-200"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
               )}
             >

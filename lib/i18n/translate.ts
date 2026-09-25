@@ -1,3 +1,4 @@
+import { DESIGN_COPY } from "./design-copy";
 import { HELP_COPY } from "./help-copy";
 import EDITORIAL_COPY from "./editorial-copy.json";
 import { AUTOMATION_DEFAULT_COPY } from "./automation-default-copy";
@@ -26,6 +27,7 @@ const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messa
   ...ACCOUNT_PLAN_COPY[locale as Locale],
   ...AUTOMATION_DEFAULT_COPY[locale as Locale],
   ...HELP_COPY[locale as Locale],
+  ...DESIGN_COPY[locale as Locale],
   // Reviewed wording overrides legacy machine translations and older phrase catalogs.
   ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[locale as Locale],
 }])) as Record<Locale, Record<string, string>>;
