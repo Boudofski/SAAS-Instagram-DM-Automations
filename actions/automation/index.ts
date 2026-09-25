@@ -570,8 +570,9 @@ export const activateAutomation = async (id: string, status: boolean) => {
       const profile = await findUser(user.id);
       const existing = await client.automation.findFirst({
         where: { id, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
-        select: { needsReview: true, reviewReason: true },
+        select: { needsReview: true, reviewReason: true, listener: { select: { flowDefinition: true } } },
       });
+      if (existing?.listener?.flowDefinition && !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")) return { status: 403, data: "Publishing custom flows requires Pro or Business." };
       if (existing?.needsReview) {
         return {
           status: 403,

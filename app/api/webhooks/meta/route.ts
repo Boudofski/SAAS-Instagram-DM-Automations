@@ -1,3 +1,4 @@
+import { processAutomationFlow } from "@/lib/automation-flow/runtime";
 import { readAiConversation } from "@/lib/ai-conversation";
 import { prepareAiConversationTurn, finishAiConversationTurn } from "@/lib/ai-conversation-runtime";
 import { beginEmailRequest, cancelPendingFollowUps, finishEngagementJob, scheduleFollowUp, takeEmailReply } from "@/lib/automation-engagement";
@@ -885,6 +886,10 @@ async function processEntry(
       }
 
       const listener = automation.listener;
+      if (listener.flowDefinition && !["PRO", "BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE")) {
+        await updateWebhookEvent(webhookEvent.id, { automationId: automation.id, status: "IGNORED", errorMessage: "flow_plan_upgrade_required", processedAt: new Date() });
+        continue;
+      }
       const replyVariants = [
         listener.commentReply,
         listener.commentReply2,
@@ -1721,8 +1726,12 @@ async function processEntry(
       }
 
       const inboundAt = parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : null;
+      if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt)) await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
+      if (inboxIntegration && !storyInteraction && !parseCommentDmActionPayload(actionPayload) && await processAutomationFlow({ integrationId: inboxIntegration.id, recipientIgId: senderId, text: dmText, inboundAt, eventId: parsed.ok ? parsed.data.messageMid ?? webhookEvent.id : webhookEvent.id })) {
+        await updateWebhookEvent(webhookEvent.id, { status: "PROCESSED", errorMessage: "custom_flow_reply_handled", processedAt: new Date() });
+        continue;
+      }
       if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt)) {
-        await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
         const emailReply = !actionPayload && !storyInteraction
           ? await takeEmailReply(inboxIntegration.id, senderId, dmText, inboundAt, parsed.ok ? parsed.data.messageMid : undefined) : null;
         if (parseEmailReply(dmText).kind === "stop") await findAutomationForDM(dmText, pageId, senderId);
@@ -1910,6 +1919,12 @@ async function processConfiguredMessageAutomation(params: {
       errorMessage: !instagramBusinessAccountId ? "instagram_business_account_missing" : !automation.listener ? "listener_missing" : "token_missing",
       processedAt: new Date(),
     });
+    return;
+  }
+
+  if (automation.listener.flowDefinition) {
+    await processAutomationFlow({ integrationId: integration.id, recipientIgId: senderId, text: inboundText, inboundAt: params.inboundAt, eventId: messageMid ?? webhookEventId, automationId: automation.id, startEventId: dmFlowAction?.flowId });
+    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "PROCESSED", errorMessage: "custom_flow_handled", processedAt: new Date() });
     return;
   }
 

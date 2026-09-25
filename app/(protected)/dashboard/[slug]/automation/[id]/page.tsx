@@ -1,3 +1,6 @@
+import { getAutomationFlowEntries } from "@/actions/automation/flow";
+import { readFlow } from "@/lib/automation-flow/definition";
+import FlowPreview from "@/components/automations/flow-preview";
 import { readAiConversation } from "@/lib/ai-conversation";
 import { UiText } from "@/components/i18n/localized-copy";
 import { getAutomationInfo, getAutomationLogs, getAutomationStats } from "@/actions/automation";
@@ -52,6 +55,8 @@ export default async function CampaignDetailPage({ params }: Props) {
     automation.listener?.commentReply3,
   ].filter(Boolean) as string[];
   const aiCommentReplyEnabled = automation.listener?.aiReplyEnabled === true;
+  const customFlow = readFlow(automation.listener?.flowDefinition);
+  const flowEntries = customFlow?.oncePerContact ? await getAutomationFlowEntries(params.id) : [];
   const aiConversation = readAiConversation(automation.listener?.aiConversation);
   const aiDmReplyEnabled = isMessageAutomation && automation.listener?.aiDmReplyEnabled === true;
   const aiTone = automation.listener?.aiReplyTone === "FUN" ? "Fun" : automation.listener?.aiReplyTone === "PROFESSIONAL" ? "Professional" : "Friendly";
@@ -90,7 +95,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       ? "Any incoming DM"
       : isAnyComment ? "Any comment" : keywords.length ? keywords.join(", ") : "No keyword configured";
   const sourceLabel = source === "STORY" ? "Instagram Stories" : source === "DM" ? "Instagram DMs" : "Posts & Reels";
-  const editHref = `/dashboard/${params.slug}/automation/new?edit=${params.id}&type=${aiConversation ? "ai" : source.toLowerCase()}`;
+  const editHref = `/dashboard/${params.slug}/automation/new?edit=${params.id}&type=${customFlow ? "flow" : aiConversation ? "ai" : source.toLowerCase()}`;
   const statusLabel = automation.archivedAt
     ? "Archived"
     : automation.needsReview
@@ -130,7 +135,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <h2 className="mt-1 text-lg font-black tracking-tight"><UiText>{"Interaction → response"}</UiText></h2>
           </div>
           <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain py-3 pr-1">
-            {isMessageAutomation ? <>
+            {customFlow ? <><FlowNode label="Trigger" title={triggerLabel} body="Starts the custom conversation below." tone="orange" />{customFlow.nodes.map(node => <div key={node.id}><FlowConnector /><FlowNode label={node.kind} title={node.label} body={"text" in node ? node.text : node.kind === "random" ? `${node.percent}% / ${100-node.percent}% random split` : node.kind === "condition" ? `${node.field} = ${node.equals}` : node.kind === "tag" ? node.tag : "Finish this path"} tone="purple" /></div>)}</> : isMessageAutomation ? <>
               <FlowNode label="1. Interaction" title={triggerLabel} body={`Listen on ${sourceLabel}.`} tone="orange" />
               <FlowConnector />
               {automation.followGateRequired ? <><FlowNode label="2. Follow request" title={followRequestButtonText} body={followRequestDmText} tone="pink" /><FlowConnector /></> : null}
@@ -167,7 +172,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <h2 className="mt-0.5 text-sm font-black"><UiText>{isMessageAutomation ? "DM preview" : "Post · Comments · DM"}</UiText></h2>
           </div>
           <div className="min-h-0 flex-1">
-            <AutomationDetailPhonePreview
+            {customFlow ? <div className="h-full overflow-auto"><FlowPreview flow={customFlow}/></div> : <AutomationDetailPhonePreview
               username={connectedIntegration?.instagramUsername}
               profilePictureUrl={connectedIntegration?.profilePictureUrl}
               isCommentAutomation={!isMessageAutomation}
@@ -192,11 +197,13 @@ export default async function CampaignDetailPage({ params }: Props) {
               productSubtitle={automation.listener?.cardSubtitle}
               message={automation.listener?.prompt || "Your DM message"}
               linkButtons={linkButtons}
-            />
+            />}
           </div>
         </section>
 
         <aside className="order-3 flex min-h-0 flex-col gap-3">
+          {customFlow?.oncePerContact && <section className="ap3k-card max-h-72 overflow-auto rounded-2xl p-4"><h2 className="text-sm font-bold">Latest entries</h2><p className="mt-1 text-xs text-slate-500">Up to 50 recent entries. Each person enters once.</p>{flowEntries.length ? <ul className="mt-3 space-y-3">{flowEntries.map(entry => <li key={entry.id} className="border-t border-slate-200 pt-2 text-xs dark:border-white/10"><span className="block font-semibold">{entry.outcome ?? "Entry recorded"}</span><span className="block text-slate-500">Instagram ID: {entry.recipientIgId}</span><LocalTime value={entry.createdAt.toISOString()} /></li>)}</ul> : <p className="mt-3 text-xs text-slate-500">No entries yet.</p>}</section>}
+
           <section className="ap3k-card shrink-0 ap3k-content-enter rounded-2xl p-4">
             <div className="flex items-center justify-between gap-3">
               <p className="ap3k-kicker"><UiText>{"Settings"}</UiText></p>

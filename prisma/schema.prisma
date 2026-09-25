@@ -260,6 +260,9 @@ model Automation {
   aiUsageEvents        AiUsageEvent[]
   engagementJobs       AutomationEngagementJob[]
   aiConversationSessions AiConversationSession[]
+  flowSessions           AutomationFlowSession[]
+  flowEntries            AutomationFlowEntry[]
+  flowReceipts           AutomationFlowReceipt[]
 
   @@index([userId, integrationId])
 }
@@ -299,6 +302,8 @@ model Listener {
   aiProtectionRules       Json?
   aiDmReplyEnabled        Boolean    @default(false)
   aiConversation          Json?
+  flowDefinition          Json?
+  flowRevision            Int        @default(0)
   ctaLink                 String?
   ctaButtonTitle          String?
   responseFormat          String     @default("TEXT")
@@ -717,4 +722,47 @@ model AiConversationSession {
   updatedAt DateTime @updatedAt
   @@unique([integrationId, recipientIgId])
   @@index([automationId])
+}
+
+// A single active custom conversation owns replies for an Instagram recipient.
+model AutomationFlowSession {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId  String @db.Uuid
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  integrationId String @db.Uuid
+  recipientIgId String
+  definition    Json
+  values        Json @default("{}")
+  nodeId        String?
+  status        String @default("READY")
+  lastEventId   String?
+  startEventId  String?
+  startedAt     DateTime @default(now())
+  expiresAt     DateTime
+  updatedAt     DateTime @updatedAt
+  @@unique([integrationId, recipientIgId])
+  @@index([status, expiresAt])
+}
+
+// Durable once-per-contact entry; edits never reset giveaway eligibility.
+model AutomationFlowEntry {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId  String @db.Uuid
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  recipientIgId String
+  outcome       String?
+  createdAt     DateTime @default(now())
+  @@unique([automationId, recipientIgId])
+}
+
+model AutomationFlowReceipt {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId  String @db.Uuid
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  integrationId String @db.Uuid
+  recipientIgId String
+  eventId       String
+  createdAt     DateTime @default(now())
+  @@unique([integrationId, recipientIgId, eventId])
+  @@index([createdAt])
 }

@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/automation-flow/runtime", () => ({ processAutomationFlow: vi.fn().mockResolvedValue(false) }));
+
 const mockCreateWebhookEvent = vi.fn();
 const mockUpdateWebhookEvent = vi.fn();
 const mockVerifyMetaSignature = vi.fn();
