@@ -22,10 +22,11 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
   const [values, setValues] = useState<FlowValues>({});
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
-  const [draw, setDraw] = useState(0.02);
+  const [draw, setDraw] = useState(0.001);
   const [ended, setEnded] = useState(false);
   useEffect(() => {
     setMessages([]);
+    setInput("");
     setWaiting(null);
     setValues({});
     setEnded(false);
@@ -95,22 +96,23 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
     advance(result.next, { ...values, ...result.values }, out);
   }
   return (
-    <section className="mx-auto w-full max-w-sm">
-      <div className="mb-3 flex items-center justify-between">
+    <section className="mx-auto min-w-0 w-full max-w-sm">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold">Interactive preview</h3>
         <button
           onClick={() => {
             setValues({});
+            setInput("");
             advance(flow.entry, {}, []);
           }}
-          className="inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-300"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-violet-600 dark:text-violet-300"
         >
           <RotateCcw size={15} />
           Restart
         </button>
       </div>
       <div className="overflow-hidden rounded-[2.5rem] border-[8px] border-[#272b3a] bg-[#101216] text-white shadow-xl">
-        <header className="border-b border-white/10 p-5">
+        <header className="border-b border-white/10 p-3 sm:p-5">
           <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-white/20" />
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-violet-600 font-bold">
@@ -125,7 +127,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
           </div>
         </header>
         <div
-          className="flex h-[380px] flex-col gap-3 overflow-auto p-4"
+          className="flex h-[clamp(200px,42dvh,380px)] flex-col gap-3 overflow-auto p-4"
           aria-live="polite"
         >
           {!messages.length ? (
@@ -144,7 +146,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
             messages.map((m, i) => (
               <div
                 key={i}
-                className={`max-w-[95%] overflow-hidden rounded-2xl ${m.incoming ? "self-end bg-violet-600" : "self-start bg-[#262a33]"}`}
+                className={`min-w-0 max-w-[95%] shrink-0 overflow-hidden rounded-2xl ${m.incoming ? "self-end bg-violet-600" : "self-start bg-[#262a33]"}`}
               >
                 {m.image && (
                   <img
@@ -153,13 +155,13 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
                     className="max-h-48 w-full object-contain"
                   />
                 )}
-                <p className="whitespace-pre-wrap p-3 text-sm leading-6">
+                <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] p-3 text-sm leading-6">
                   {m.text}
                 </p>
                 {m.links?.map((l) => (
                   <span
                     key={l.label}
-                    className="m-2 block rounded-lg bg-white/10 px-4 py-2 text-center text-sm"
+                    className="m-2 block break-words rounded-lg bg-white/10 px-4 py-2 text-center text-sm"
                   >
                     {l.label} ↗
                   </span>
@@ -169,7 +171,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
                     key={o}
                     disabled={i !== messages.length - 1 || !waiting}
                     onClick={() => reply(o)}
-                    className="m-2 block w-[calc(100%-1rem)] rounded-lg bg-white/10 px-3 py-2 text-sm disabled:opacity-50"
+                    className="m-2 block min-h-11 w-[calc(100%-1rem)] break-words rounded-lg bg-white/10 px-3 py-2 text-sm disabled:opacity-50"
                   >
                     {o}
                   </button>
@@ -201,7 +203,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
           <button
             aria-label="Send preview reply"
             disabled={!waiting}
-            className="rounded-full bg-violet-600 p-2.5 disabled:opacity-40"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-600 p-2.5 disabled:opacity-40"
           >
             <Send size={17} />
           </button>
@@ -221,6 +223,10 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
               setDraw(Number(e.target.value));
               setMessages([]);
               setWaiting(null);
+              setInput("");
+              setValues({});
+              setError("");
+              setEnded(false);
             }}
             className="ap3k-input mt-2 w-full rounded-xl p-2"
           >

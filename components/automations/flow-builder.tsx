@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -55,6 +55,14 @@ export default function FlowBuilder({
   const template = templateById(templateId);
   const queryClient = useQueryClient();
   const [step, setStep] = useState(automation ? 2 : 1);
+  const stepContent = useRef<HTMLElement>(null);
+  const previousStep = useRef(step);
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      stepContent.current?.scrollIntoView({ block: "start", behavior: "auto" });
+      previousStep.current = step;
+    }
+  }, [step]);
   const [preview, setPreview] = useState(false);
   const [flow, setFlow] = useState<Flow>(
     () =>
@@ -170,7 +178,7 @@ export default function FlowBuilder({
     }
   }
   return (
-    <div className="min-h-[80vh] rounded-2xl border border-slate-200 bg-[#f7f8fc] text-slate-950 dark:border-white/10 dark:bg-[#0b0f19] dark:text-slate-100">
+    <div className="min-w-0 max-w-full min-h-[80vh] overflow-hidden rounded-2xl border border-slate-200 bg-[#f7f8fc] text-slate-950 dark:border-white/10 dark:bg-[#0b0f19] dark:text-slate-100">
       <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141824]">
         <Link
           onClick={(e) => {
@@ -179,15 +187,15 @@ export default function FlowBuilder({
           }}
           href={`/dashboard/${slug}/automation`}
           aria-label="Back to automations"
-          className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
         >
           <ArrowLeft size={18} />
         </Link>
-        <div className="mr-auto">
+        <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-auto">
           <p className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">
             Flow Builder
           </p>
-          <h1 className="mt-1 font-bold">
+          <h1 className="mt-1 break-words font-bold">
             {draft.name || "Untitled flow"}{" "}
             <span className="ml-2 rounded-md bg-slate-100 px-2 py-1 text-[10px] uppercase text-slate-500 dark:bg-white/5 dark:text-slate-400">
               {dirty ? "Unsaved" : live ? "Live" : "Draft"}
@@ -196,7 +204,7 @@ export default function FlowBuilder({
         </div>
         <button
           onClick={() => setPreview(true)}
-          className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-white/15"
+          className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-white/15"
         >
           <Eye size={16} />
           Preview
@@ -204,7 +212,7 @@ export default function FlowBuilder({
         <button
           disabled={busy || !integrationId}
           onClick={() => void save(false)}
-          className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-white/15"
+          className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-white/15"
         >
           {busy ? (
             <Loader2 size={16} className="animate-spin" />
@@ -216,7 +224,7 @@ export default function FlowBuilder({
       </header>
       <nav
         aria-label="Flow setup steps"
-        className="flex gap-2 overflow-auto border-b border-slate-200 p-4 dark:border-white/10"
+        className="grid grid-cols-3 gap-1 border-b border-slate-200 p-2 sm:gap-2 sm:p-4 dark:border-white/10"
       >
         {["Choose trigger", "Build conversation", "Review & publish"].map(
           (label, i) => (
@@ -224,7 +232,7 @@ export default function FlowBuilder({
               key={label}
               onClick={() => setStep(i + 1)}
               aria-current={step === i + 1 ? "step" : undefined}
-              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ${step === i + 1 ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5"}`}
+              className={`flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-2.5 text-center text-xs sm:flex-row sm:px-4 sm:text-sm font-semibold ${step === i + 1 ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5"}`}
             >
               <span className="grid h-5 w-5 place-items-center rounded-full border border-current text-xs">
                 {i + 1}
@@ -256,10 +264,10 @@ export default function FlowBuilder({
           saving this flow.
         </p>
       )}
-      <main className="p-4 sm:p-6">
+      <main ref={stepContent} className="min-w-0 scroll-mt-4 p-3 sm:p-6">
         {step === 1 ? (
-          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_340px]">
-            <section className="space-y-6">
+          <div className="mx-auto grid max-w-5xl gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <section className="min-w-0 space-y-6">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">
                   When should this flow start?
@@ -278,7 +286,7 @@ export default function FlowBuilder({
                   className="ap3k-input mt-2 w-full rounded-xl p-3"
                 />
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {(["COMMENT", "DM", "STORY"] as const).map((source) => (
                   <button
                     aria-pressed={draft.source === source}
@@ -478,8 +486,8 @@ export default function FlowBuilder({
             <FlowCanvas flow={flow} onChange={changeFlow} />
           </>
         ) : (
-          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_340px]">
-            <section className="space-y-5">
+          <div className="mx-auto grid max-w-5xl gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <section className="min-w-0 space-y-5">
               <h2 className="text-2xl font-bold tracking-tight">
                 Ready for a real conversation?
               </h2>
@@ -592,8 +600,8 @@ export default function FlowBuilder({
         )}
       </main>
       <Dialog open={preview} onOpenChange={setPreview}>
-        <DialogContent className="max-w-md bg-white dark:bg-[#141824]">
-          <DialogTitle>Test your flow</DialogTitle>
+        <DialogContent className="max-w-md bg-white p-4 pt-6 dark:bg-[#141824] sm:p-6">
+          <DialogTitle className="pe-10">Test your flow</DialogTitle>
           <DialogDescription>
             No Instagram messages are sent from this preview.
           </DialogDescription>

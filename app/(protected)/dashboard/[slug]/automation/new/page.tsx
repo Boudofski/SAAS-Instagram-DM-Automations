@@ -49,7 +49,9 @@ type Props = {
 };
 
 export default function WizardPage(props: Props) {
-  if (!props.searchParams?.edit && !props.searchParams?.type) return <AutomationTypePicker slug={props.params.slug} />;
+  const params = props.searchParams;
+  const requiresTemplate = params?.type === "flow" && templateById(params.template)?.type !== "flow";
+  if (!params?.edit && (!params?.type || requiresTemplate)) return <AutomationTypePicker slug={props.params.slug} />;
   return <AutomationSetup {...props} />;
 }
 
