@@ -54,8 +54,9 @@ export default function HomeHero() {
   const [scene, setScene] = useState(0);
   const [paused, setPaused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
-  const [interacting, setInteracting] = useState(false);
-  const playing = !reducedMotion && !paused && inView && pageVisible && !interacting;
+  const [hovered, setHovered] = useState(false);
+  const [linkFocused, setLinkFocused] = useState(false);
+  const playing = !reducedMotion && !paused && inView && pageVisible && !hovered && !linkFocused;
 
   useEffect(() => {
     const update = () => setPageVisible(document.visibilityState === "visible");
@@ -73,8 +74,8 @@ export default function HomeHero() {
   const visibleScene = reducedMotion ? 0 : scene;
   return (
     <section ref={section} className={styles.hero} data-playing={playing} aria-labelledby="home-hero-title"
-      onFocusCapture={() => setInteracting(true)}
-      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}>
+      onFocusCapture={(event) => setLinkFocused(event.target instanceof Element && Boolean(event.target.closest("a")))}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setLinkFocused(false); }}>
       <div className={styles.glow} aria-hidden="true" />
       <div className={styles.content}>
         <p className={styles.eyebrow}><Instagram size={14} />{copy.eyebrow}</p>
@@ -96,7 +97,7 @@ export default function HomeHero() {
       </div>
 
       <div className={styles.scene} role="img" aria-label={copy.demoDescription}
-        onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)}>
+        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <ConversationCards copy={copy} scene={visibleScene} side="left" />
         <ConversationCards copy={copy} scene={visibleScene} side="right" />
       </div>

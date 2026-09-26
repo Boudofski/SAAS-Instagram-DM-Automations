@@ -56,3 +56,13 @@
 - Preview browser: desktop light/dark, mobile/tablet where browser supports resizing,
   CTA destinations, pause state and animation progression, no missing media.
 - Keep verification limitations explicit; do not claim unobserved mobile screenshots.
+
+## Completed preview checks
+- Vercel preview: 827441555e56c95bb46edd70e20d3f8be4db64da.
+- Desktop composition inspected at 1280px in dark and light themes.
+- Actual homepage iframe viewed at 390px English, 320px German, 768px French.
+- At 320px and 768px, document scrollWidth equals clientWidth (310 / 758 with scrollbar).
+- Keyword scenes advanced from GUIDE to LINK and OFFER with matching messages.
+- Corrected focus pause so clicking Play does not retain an implicit focus pause.
+- Removed temporary noindex responsive-review harness before production.
+- Local production build passed; 24 selected existing regression checks passed.
