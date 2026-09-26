@@ -45,8 +45,8 @@ export default function HomeFeatures() {
   const { locale } = useI18n();
   const copy = HOME_FEATURES_COPY[locale];
 
-  return <section id="how-it-works" className={`${styles.section} ${inter.className}`} lang={locale} aria-labelledby="powerful-features-title">
-    <div className={styles.container}>
+  return <section id="features" className={`${styles.section} ${inter.className}`} lang={locale} aria-labelledby="powerful-features-title">
+    <div id="how-it-works" className={styles.container}>
       <header className={styles.heading}>
         <p>{copy.kicker}</p>
         <h2 id="powerful-features-title">{copy.title}</h2>

@@ -26,12 +26,12 @@
 .wideCard h3 { font-size: 22px; line-height: 33px; }
 .copy p { font-size: 16px; line-height: 26px; color: var(--feature-muted); overflow-wrap: break-word; }
 .videoPanel { width: 100%; min-width: 0; overflow: hidden; }
-.video { display: block; width: 100%; height: auto; mix-blend-mode: multiply; }
+.video { display: block; width: 100%; height: auto; mix-blend-mode: darken; }
 :global(.dark) .video { mix-blend-mode: normal; border-radius: 16px; }
 :global(.dark) .videoPanel { padding: 16px 16px 16px 0; }
 .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 40px; padding-top: 40px; }
 .card { display: flex; flex-direction: column; justify-content: space-between; min-width: 0; overflow: hidden; border-radius: 20px; background: var(--feature-card); }
-.illustration { display: block; width: 100%; height: auto; mix-blend-mode: multiply; }
+.illustration { display: block; width: 100%; height: auto; mix-blend-mode: darken; }
 :global(.dark) .illustration { mix-blend-mode: normal; }
 .preview { display: inline-block; margin-top: 12px; padding: 3px 9px; border: 1px solid #d9c7f2; border-radius: 999px; font-size: 11px; line-height: 18px; font-weight: 600; color: #7435a9; background: #ede4fa; }
 :global(.dark) .preview { color: #dfc9ff; background: #30223f; border-color: #59416f; }
