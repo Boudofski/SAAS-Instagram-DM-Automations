@@ -1,61 +1,67 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Inter } from "next/font/google";
+import Link from "next/link";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import LanguageSwitcher from "@/components/global/language-switcher";
-import ThemeToggle from "@/components/global/theme-toggle";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
-import Sheet from "@/components/global/sheet";
-import { Menu } from "lucide-react";
-import Link from "next/link";
+import { HOME_SHOWCASE_COPY } from "@/lib/i18n/home-showcase";
+import styles from "./website-nav.module.css";
 
-type Props = {
-  current?: "home" | "pricing" | "blog" | "contact" | "privacy" | "terms" | "data-deletion";
-};
+const inter = Inter({ subsets: ["latin"], display: "swap" });
+type Props = { current?: "home" | "pricing" | "blog" | "contact" | "privacy" | "terms" | "data-deletion" };
 
 export default function WebsiteNav({ current }: Props) {
   const { locale, t } = useI18n();
+  const copy = HOME_SHOWCASE_COPY[locale];
   const href = (path: string) => localizePublicPath(path, locale);
-  const navClass = "rounded-md px-1 py-2 transition-colors duration-fast hover:text-slate-950 dark:hover:text-rf-text";
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const nav = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
 
-  return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-rf-bg/95 sm:px-8 lg:px-16">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <Link href={href("/")} aria-label={`AP3K ${t("home")}`}>
-          <AP3KLogo className="text-base text-slate-950 dark:text-white" />
-        </Link>
-        <ul className="hidden items-center gap-5 text-sm font-semibold text-slate-600 dark:text-rf-muted xl:flex">
-          <li><Link href={`${href("/")}#features`} className={navClass}>{t("features")}</Link></li>
-          <li><Link href={`${href("/")}#how-it-works`} className={navClass}>{t("howItWorks")}</Link></li>
-          <li><Link href={href("/pricing")} aria-current={current === "pricing" ? "page" : undefined} className={current === "pricing" ? "text-slate-950 dark:text-rf-text" : navClass}>{t("pricing")}</Link></li>
-          <li><Link href={href("/blog")} aria-current={current === "blog" ? "page" : undefined} className={current === "blog" ? "text-slate-950 dark:text-rf-text" : navClass}>{t("blog")}</Link></li>
-        </ul>
-        <div className="hidden items-center gap-2 xl:flex">
-          <ThemeToggle compact />
-          <LanguageSwitcher compact />
-          <Link href={href("/sign-in")} className="rounded-full px-5 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white">
-            {t("signIn")}
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: PointerEvent) => {
+      const target = event.target as Element;
+      if (!nav.current?.contains(target) && !target.closest('[role="menu"]')) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setOpen(false); toggle.current?.focus(); }
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
+  }, [open]);
+
+  const links = <>
+    <Link href={href("/pricing")} aria-current={current === "pricing" ? "page" : undefined} onClick={() => setOpen(false)}>{t("pricing")}</Link>
+    <Link href={href("/sign-in")} onClick={() => setOpen(false)}>{copy.login}</Link>
+    <Link href={href("/sign-up")} className={styles.join} onClick={() => setOpen(false)}>{copy.join}</Link>
+  </>;
+
+  return <div className={styles.space}>
+    <nav ref={nav} aria-label={t("openNavigation")} className={`${styles.nav} ${inter.className}`} data-open={open}>
+      <div className={styles.row}>
+        <div className={styles.brand}>
+          <Link href={href("/")} aria-label={`AP3K ${t("home")}`} onClick={() => setOpen(false)}>
+            <AP3KLogo className="gap-2 text-xl text-slate-950 dark:text-white" markClassName="h-6 w-6 rounded-lg shadow-none ring-0 [&>svg]:p-1" />
           </Link>
-          <Link href={href("/sign-up")} className="ap3k-gradient-button px-5 py-2 text-sm uppercase">{t("getStarted")}</Link>
+          <div className={styles.desktopLanguage}><LanguageSwitcher textOnly /></div>
         </div>
-        <div className="ms-auto me-2 xl:hidden"><LanguageSwitcher compact /></div>
-        <Sheet trigger={<Menu aria-hidden="true" className="h-5 w-5" />} triggerLabel={t("openNavigation")} className="xl:hidden" side="right" closeOnNavigation contentClassName="w-[min(22rem,calc(100vw-1rem))] overflow-y-auto">
-          <div className="pt-16 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <div className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
-              <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={`${href("/")}#features`}>{t("features")}</Link>
-              <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={`${href("/")}#how-it-works`}>{t("howItWorks")}</Link>
-              <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={href("/pricing")}>{t("pricing")}</Link>
-              <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={href("/blog")}>{t("blog")}</Link>
-              <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={href("/contact")}>{t("support")}</Link>
-              <Link className="flex min-h-11 items-center rounded-xl px-3 py-3 transition-colors duration-fast hover:bg-slate-100 dark:hover:bg-white/10" href={href("/sign-in")}>{t("signIn")}</Link>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-white/10">
-              <ThemeToggle compact />
-              <Link href={href("/sign-up")} className="ap3k-gradient-button flex-1 px-4 py-2 text-center text-sm uppercase">{t("getStarted")}</Link>
-            </div>
-          </div>
-        </Sheet>
+        <div className={styles.links}>{links}</div>
+        <button ref={toggle} type="button" className={styles.toggle} aria-label={t("openNavigation")} aria-expanded={open} aria-controls="public-mobile-navigation" onClick={() => setOpen(!open)}>
+          <svg aria-hidden="true" width="16" height="14" viewBox="0 0 16 14" fill="none"><path d={open ? "M3 2 13 12M13 2 3 12" : "M1 3h14M1 11h14"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+        </button>
+      </div>
+      <div id="public-mobile-navigation" className={styles.mobile} hidden={!open}>
+        {links}
+        <LanguageSwitcher textOnly />
       </div>
     </nav>
-  );
+  </div>;
 }
