@@ -1,4 +1,5 @@
 "use server";
+import { normalizeCopyList, readCommentReplies, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
 
 import { readAiConversation } from "@/lib/ai-conversation";
 
@@ -158,6 +159,7 @@ export const createCompleteMessageAutomation = async (
         create: {
           listener: "MESSAGE",
           prompt: payload.message,
+          messageVariations: payload.messageVariations ?? [],
           responseFormat: payload.responseFormat,
           quickReplies: payload.quickReplies,
           ctaLink: payload.ctaLink,
@@ -219,6 +221,7 @@ export const updateCompleteMessageAutomation = async (
           create: {
             listener: "MESSAGE",
             prompt: payload.message,
+          messageVariations: payload.messageVariations ?? [],
             responseFormat: payload.responseFormat,
             quickReplies: payload.quickReplies,
             ctaLink: payload.ctaLink,
@@ -385,7 +388,7 @@ export const duplicateAutomationQuery = async (
       posts: { create: automation.posts.map(({ postid, caption, media, mediaType }) => ({ postid, caption, media, mediaType })) },
       keywords: { create: automation.keywords.map(({ word }) => ({ word })) },
       trigger: { create: { type: automation.source === "STORY" ? `STORY_${automation.storyTriggerType}` : automation.source } },
-      listener: { create: { ...listener, flowRevision: 0, aiProtectionRules: undefined, aiConversation: undefined, quickReplies: undefined, flowDefinition: automation.listener.flowDefinition } },
+      listener: { create: { ...listener, flowRevision: 0, commentReplies: undefined, messageVariations: undefined, aiProtectionRules: undefined, aiConversation: undefined, quickReplies: undefined, flowDefinition: automation.listener.flowDefinition } },
     }, select: { id: true } });
   }
 
@@ -407,6 +410,7 @@ export const duplicateAutomationQuery = async (
           ? automation.listener.responseFormat
           : "TEXT",
       message: automation.listener.prompt,
+      messageVariations: normalizeCopyList(automation.listener.messageVariations, MAX_MESSAGE_VARIATIONS),
       quickReplies: automation.listener.responseFormat === "LINK"
         ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
         : readLegacyQuickReplies(automation.listener.quickReplies),
@@ -445,6 +449,9 @@ export const duplicateAutomationQuery = async (
     listener: {
       listener: "MESSAGE",
       prompt: automation.listener.prompt,
+      messageVariations: normalizeCopyList(automation.listener.messageVariations, MAX_MESSAGE_VARIATIONS),
+      commentReplies: readCommentReplies(automation.listener),
+      publicReplyLimit: automation.listener.publicReplyLimit,
       commentReply: automation.listener.commentReply ?? undefined,
       commentReply2: automation.listener.commentReply2 ?? undefined,
       commentReply3: automation.listener.commentReply3 ?? undefined,

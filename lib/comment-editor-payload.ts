@@ -7,7 +7,7 @@ export function createCommentEditorPayload(data: WizardData & { post: NonNullabl
       return {
         name: data.campaignName,
         active: typeof activeOverride === "boolean" ? activeOverride : data.active,
-        matchingMode: "CONTAINS",
+        matchingMode: data.matchingMode,
         triggerMode: data.triggerMode,
         sendPrivateDm: data.sendPrivateDm,
         followGateRequired: data.followGateRequired,
@@ -24,6 +24,9 @@ export function createCommentEditorPayload(data: WizardData & { post: NonNullabl
           followUpMessage: data.followUpMessage,
           followUpDelayMinutes: data.followUpDelayMinutes,
           prompt: data.dmMessage,
+          messageVariations: data.messageVariations ?? [],
+          commentReplies: data.publicReplyEnabled ? data.commentReplies : [],
+          publicReplyLimit: data.publicReplyLimit ?? 0,
           commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
           commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
           commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,

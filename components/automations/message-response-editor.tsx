@@ -4,6 +4,7 @@ import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import { DEFAULT_LINK_BUTTON_LABEL, MAX_LINK_BUTTONS, type LinkButton } from "@/lib/link-buttons";
+import { editorStyles as s } from "./editor-layout";
 import { useId } from "react";
 import { Link2, Plus, Trash2 } from "lucide-react";
 
@@ -35,32 +36,14 @@ export default function MessageResponseEditor({ message, linkButtons, onChange, 
         <textarea id={messageId} dir="auto" value={message} maxLength={1000} onChange={(event) => onChange({ message: event.target.value })} rows={5} placeholder={tr("Write the message shown above your links…")} className="ap3k-textarea w-full resize-none rounded-2xl px-4 py-3 text-sm" />
       </div>}
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300"><Link2 className="h-4 w-4 text-rf-purple" /> <UiMessage source="Links ({count}/{max})" values={{ count: buttons.length, max: MAX_LINK_BUTTONS }} /></p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400"><UiText>{"Each label appears as a full-width button below the DM."}</UiText></p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {buttons.map((button, index) => (
-            <div key={index} className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-slate-950/35 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto] sm:items-end">
-              <label className="min-w-0 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{"Button label"}</UiText><input value={button.label} maxLength={20} onChange={(event) => updateButton(index, { label: event.target.value })} placeholder={tr("Link {number}").replace("{number}", String(index + 1))} className="ap3k-input mt-2 w-full rounded-xl px-4 py-3 text-sm normal-case tracking-normal" />
-              </label>
-              <label className="min-w-0 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400"><UiText>{"Destination URL"}</UiText><input dir="ltr" type="url" inputMode="url" value={button.url} onChange={(event) => updateButton(index, { url: event.target.value })} placeholder={tr("https://your-site.com/offer")} className="ap3k-input mt-2 w-full rounded-xl px-4 py-3 text-sm normal-case tracking-normal" />
-              </label>
-              {buttons.length > 1 ? (
-                <button type="button" onClick={() => onChange({ linkButtons: buttons.filter((_, buttonIndex) => buttonIndex !== index) })} aria-label={tr("Remove link {number}").replace("{number}", String(index + 1))} className="grid h-11 w-11 place-items-center rounded-xl border border-red-500/20 text-red-500 transition hover:bg-red-500/10">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              ) : <span className="hidden h-11 w-11 sm:block" />}
-            </div>
-          ))}
-        </div>
-        {buttons.length < MAX_LINK_BUTTONS ? (
-          <button type="button" onClick={() => onChange({ linkButtons: [...buttons, { label: tr("Link {number}").replace("{number}", String(buttons.length + 1)), url: "" }] })} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-rf-purple/30 bg-rf-purple/10 px-4 text-sm font-black text-rf-purple transition hover:bg-rf-purple/15">
-            <Plus className="h-4 w-4" /><UiText>{" Add link"}</UiText></button>
-        ) : null}
+      <div className={s.linkEditor}>
+        <div className={s.copyHeading}><strong>{tr("Buttons")} · {buttons.length}/{MAX_LINK_BUTTONS}</strong></div>
+        {buttons.map((button,index)=><div key={index} className={s.linkRow}>
+          <label>{tr("Button label")}<input value={button.label} maxLength={20} onChange={e=>updateButton(index,{label:e.target.value})} placeholder={tr("Get the Link")}/></label>
+          <label>{tr("Destination URL")}<input dir="ltr" type="url" value={button.url} onChange={e=>updateButton(index,{url:e.target.value})} placeholder="https://example.com"/></label>
+          {buttons.length > 1 && <button type="button" className={s.remove} aria-label={tr("Remove link {number}").replace("{number}",String(index+1))} onClick={()=>onChange({linkButtons:buttons.filter((_,i)=>i!==index)})}><Trash2 size={15}/></button>}
+        </div>)}
+        {buttons.length < MAX_LINK_BUTTONS && <button type="button" className={s.outlineAction} onClick={()=>onChange({linkButtons:[...buttons,{label:tr("Link {number}").replace("{number}",String(buttons.length+1)),url:""}]})}><Plus size={15}/>{tr("Add button")}</button>}
       </div>
     </div>
   );

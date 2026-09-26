@@ -36,6 +36,9 @@ export type WizardData = {
   matchingMode: "EXACT" | "CONTAINS";
   sendPrivateDm: boolean;
   dmMessage: string;
+  messageVariations?: string[];
+  commentReplies?: string[];
+  publicReplyLimit?: number;
   messageFormat?: "TEXT" | "LINK";
   emailCaptureEnabled?: boolean;
   emailCapturePrompt?: string;

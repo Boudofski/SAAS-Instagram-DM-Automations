@@ -93,6 +93,7 @@ describe("adminUpdateCampaignRepliesAction", () => {
         commentReply: "New Reply 1",
         commentReply2: "New Reply 2",
         commentReply3: null, // Trimming and nullifying empty strings
+        commentReplies: ["New Reply 1", "New Reply 2"],
       },
     });
 

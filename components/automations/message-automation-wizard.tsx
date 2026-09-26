@@ -11,6 +11,8 @@ import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
 import { saveMessageAutomation } from "@/actions/automation";
 import { getAiWorkspace } from "@/actions/ai-workspace";
+import { MessageCopyComposer } from "./copy-composer";
+import { normalizeCopyList, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
 import {
   DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
@@ -31,6 +33,7 @@ type Draft = {
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
   keywords: string[];
   message: string;
+  messageVariations?: string[];
   messageFormat: "TEXT" | "LINK";
   linkButtons: LinkButton[];
   followGateRequired: boolean;
@@ -103,6 +106,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
       triggerMode: automation.triggerMode === "SPECIFIC_KEYWORD" ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE",
       keywords: Array.isArray(automation.keywords) ? automation.keywords.map((item: any) => item.word).filter(Boolean) : [],
       message: automation.listener.prompt ?? "",
+      messageVariations: normalizeCopyList(automation.listener.messageVariations,MAX_MESSAGE_VARIATIONS),
       linkButtons: storedLinks.length ? storedLinks : [{ label: DEFAULT_LINK_BUTTON_LABEL, url: "" }],
       followGateRequired: Boolean(automation.followGateRequired),
       followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
@@ -114,7 +118,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
   useEffect(() => {
     void getAiWorkspace().then((result) => {
       const paid = result.plan === "PRO" || result.plan === "BUSINESS";
-      setAiAvailable(paid && result.profile.aiRepliesEnabled);
+      setAiAvailable(paid);
     }).catch(() => setAiAvailable(false));
   }, []);
 
@@ -172,8 +176,8 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
       <EditorRow title="Message" icon={<Text/>} open={openMessage === "message"} onOpen={()=>setOpenMessage(v=>v === "message" ? null : "message")}
         controls={<select aria-label={tr("Message format")} value={draft.aiReplyEnabled ? "AI" : draft.messageFormat} onChange={e=>{const value=e.target.value;setDraft(v=>({...v,aiReplyEnabled:value === "AI",messageFormat:value === "LINK" ? "LINK" : "TEXT",...(value === "AI" ? {followGateRequired:false} : {})}));setOpenMessage("message");}}><option value="TEXT">{tr("plain text")}</option><option value="LINK">{tr("text with button")}</option><option value="AI" disabled={!aiAvailable && !draft.aiReplyEnabled}>{tr("AP3K AI reply")} · {tr("Pro")}</option></select>}>
         {draft.aiReplyEnabled && <p className={`${s.hint} mb-4`}>{tr("AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. When a saved knowledge URL answers the request, AI can attach it as one native Instagram button. The message below is sent only if the provider is unavailable.")}</p>}
-        {draft.aiReplyEnabled || draft.messageFormat === "TEXT" ? <label className={s.field}>{tr(draft.aiReplyEnabled ? "Safe fallback message" : "DM message text")}<textarea rows={5} maxLength={1000} dir="auto" value={draft.message} onChange={e=>setDraft(v=>({...v,message:e.target.value}))}/></label> : <MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={next=>setDraft(v=>({...v,...next}))}/>}
-        {!aiAvailable && <p className={s.hint}>{tr("Enable AI Replies in AP3K AI first")}</p>}
+        {draft.aiReplyEnabled ? <label className={s.field}>{tr("Safe fallback message")}<textarea rows={5} maxLength={1000} dir="auto" value={draft.message} onChange={e=>setDraft(v=>({...v,message:e.target.value}))}/></label> : <><MessageCopyComposer message={draft.message} onMessageChange={message=>setDraft(v=>({...v,message}))} variations={draft.messageVariations || []} onVariationsChange={messageVariations=>setDraft(v=>({...v,messageVariations}))} context={{integrationId,available:aiAvailable,sendDm:true,hasButtons:draft.messageFormat === "LINK"}}/>{draft.messageFormat === "LINK" && <MessageResponseEditor hideMessage message={draft.message} linkButtons={draft.linkButtons} onChange={next=>setDraft(v=>({...v,...next}))}/>}</>}
+        {!aiAvailable && <p className={s.hint}>{tr("AI generation is available on Pro and Business plans.")}</p>}
       </EditorRow>
       {!draft.followGateRequired && !draft.aiReplyEnabled && <div className={s.addons}><button type="button" onClick={()=>{setDraft(v=>({...v,followGateRequired:true}));setOpenMessage("follow");}}><UserRoundCheck/>{tr("Ask to follow")}</button></div>}
     </EditorGroup>

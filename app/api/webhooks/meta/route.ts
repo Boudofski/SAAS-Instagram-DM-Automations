@@ -1,3 +1,5 @@
+import { readCommentReplies, selectMessageVariation, personalizeUsername } from "@/lib/automation-copy";
+import { reservePublicReplySlot, finishPublicReplySlot } from "@/lib/public-reply-limit";
 import { processAutomationFlow } from "@/lib/automation-flow/runtime";
 import { readAiConversation } from "@/lib/ai-conversation";
 import { prepareAiConversationTurn, finishAiConversationTurn } from "@/lib/ai-conversation-runtime";
@@ -890,11 +892,7 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id, { automationId: automation.id, status: "IGNORED", errorMessage: "flow_plan_upgrade_required", processedAt: new Date() });
         continue;
       }
-      const replyVariants = [
-        listener.commentReply,
-        listener.commentReply2,
-        listener.commentReply3,
-      ].filter(Boolean) as string[];
+      const replyVariants = readCommentReplies(listener);
       const aiReplyEnabled = listener.aiReplyEnabled === true;
       const publicReplyEnabled = aiReplyEnabled || replyVariants.length > 0;
       const privateDmEnabled = automation.sendPrivateDm !== false;
@@ -1123,7 +1121,7 @@ async function processEntry(
       if (aiReplyEnabled && automation.userId) {
         try {
           const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
-          const aiQuota = aiWorkspace.aiCommentsEnabled ? await reserveAiReplyQuota({
+          const aiQuota = await reserveAiReplyQuota({
             userId: automation.userId,
             automationId: automation.id,
             channel: "COMMENT",
@@ -1131,7 +1129,7 @@ async function processEntry(
             mediaId,
             commentId,
             keyword: matchedKeyword,
-          }) : { ok: false as const, reason: "ai_comments_disabled" as const, plan: automation.User?.subscription?.plan ?? "FREE", used: 0, limit: 0, periodLabel: "", reservationId: null };
+          });
           if (!aiQuota.ok) {
             await createMessageLog({
               automationId: automation.id,
@@ -1165,6 +1163,7 @@ async function processEntry(
               tone: listener.aiReplyTone,
               protectionRules: listener.aiProtectionRules,
               workspace: aiWorkspace,
+              deliveryContext: { sendDm: privateDmEnabled, openingDm: listener.openingDmEnabled !== false, username: commenterUsername },
             });
             aiReplyCategory = decision.category;
 
@@ -1245,8 +1244,17 @@ async function processEntry(
         }
       }
 
+      let publicSlot: Awaited<ReturnType<typeof reservePublicReplySlot>> | null = null;
       if (chosenReply) {
-        const replyText = resolveTemplate(chosenReply, templateVars);
+        try { publicSlot = await reservePublicReplySlot({ automationId: automation.id, mediaId: mediaId || "unknown", commentId, limit: listener.publicReplyLimit }); }
+        catch { publicSlot = { ok: false, reason: "public_reply_limit_unavailable" }; }
+        if (!publicSlot.ok) {
+          await createMessageLog({ automationId: automation.id, recipientIgId: commenterId, mediaId, commentId, messageType: "COMMENT_REPLY", status: "SKIPPED", errorMessage: publicSlot.reason });
+          chosenReply = null;
+        }
+      }
+      if (chosenReply) {
+        const replyText = resolveTemplate(personalizeUsername(chosenReply, commenterUsername), templateVars);
         const mediaReplyCount10m = await countRecentPublicReplies({
           automationId: automation.id,
           mediaId,
@@ -1285,7 +1293,7 @@ async function processEntry(
           // Fallback: Standard Access — top-level comment with @mention
           if (mediaId) {
             publicReplyEndpoint = "mention_comment";
-            const mentionText = commenterUsername ? `@${commenterUsername} ${replyText}` : replyText;
+            const mentionText = commenterUsername && !replyText.includes(`@${commenterUsername}`) ? `@${commenterUsername} ${replyText}` : replyText;
             outboundPublicReplyText = mentionText;
             try {
               const fallback = await withRetry(() => sendMediaComment(mediaId, mentionText, token));
@@ -1306,6 +1314,7 @@ async function processEntry(
           }
         }
 
+        if (publicSlot?.ok) await finishPublicReplySlot(publicSlot.id, publicReplySent).catch(() => undefined);
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -1454,7 +1463,7 @@ async function processEntry(
       // immediately. Existing automations retain the opening step by default.
       const openingDmEnabled = listener.openingDmEnabled !== false;
       const dmMessageText = resolveTemplate(
-        openingDmEnabled ? resolveOpeningDmText(listener.openingDmText) : listener.prompt,
+        personalizeUsername(openingDmEnabled ? resolveOpeningDmText(listener.openingDmText) : selectMessageVariation(listener.prompt, listener.messageVariations, commentId), commenterUsername),
         templateVars
       );
       const directLinkButtons = openingDmEnabled
@@ -1971,7 +1980,7 @@ async function processConfiguredMessageAutomation(params: {
   );
   let aiGenerated = false;
   let aiLinkButtons: Array<{ label: string; url: string }> = [];
-  let payloadMessage = resolveTemplate(automation.listener.prompt, {
+  let payloadMessage = resolveTemplate(personalizeUsername(selectMessageVariation(automation.listener.prompt, automation.listener.messageVariations, flowId), profile?.username), {
         username: profile?.username ? `@${profile.username}` : "",
         first_name: profile?.name?.split(/\s+/)[0] ?? "",
         keyword: matchedKeyword,
@@ -1992,7 +2001,7 @@ async function processConfiguredMessageAutomation(params: {
   if (!conversationConfig && automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
     try {
       const workspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
-      if (workspace.aiRepliesEnabled) {
+      { // Each automation opts into AI; shared workspace switches are not prerequisites.
         const quota = await reserveAiReplyQuota({
           userId: automation.userId,
           automationId: automation.id,

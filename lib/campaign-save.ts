@@ -1,3 +1,4 @@
+import { normalizeCopyList, readCommentReplies, normalizeReplyLimit, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
 import { validateEngagementSettings } from "@/lib/automation-engagement-settings";
 import { validateProductCard } from "@/lib/product-card";
 import {
@@ -47,6 +48,9 @@ export type RawCampaignPayload = {
     commentReply?: string | null;
     commentReply2?: string | null;
     commentReply3?: string | null;
+    commentReplies?: unknown;
+    messageVariations?: unknown;
+    publicReplyLimit?: number;
     aiReplyEnabled?: boolean;
     aiReplyTone?: string | null;
     aiReplyInstructions?: string | null;
@@ -95,6 +99,9 @@ export type NormalizedCampaignPayload = {
     commentReply?: string;
     commentReply2?: string;
     commentReply3?: string;
+    commentReplies?: string[];
+    messageVariations?: string[];
+    publicReplyLimit?: number;
     aiReplyEnabled?: boolean;
     aiReplyTone?: AiReplyTone;
     aiReplyInstructions?: string;
@@ -165,13 +172,7 @@ export function normalizeCampaignPayload(
     payload.listener?.ctaLink
   );
   const firstLink = linkButtons[0];
-  const replies = publicReplyEnabled
-    ? [
-        payload.listener?.commentReply?.trim(),
-        payload.listener?.commentReply2?.trim(),
-        payload.listener?.commentReply3?.trim(),
-      ].filter(Boolean)
-    : [];
+  const replies = publicReplyEnabled ? readCommentReplies(payload.listener ?? {}) : [];
 
   return {
     name: payload.name?.trim() || "Untitled automation",
@@ -195,6 +196,9 @@ export function normalizeCampaignPayload(
       commentReply: replies[0],
       commentReply2: replies[1],
       commentReply3: replies[2],
+      commentReplies: replies,
+      messageVariations: sendPrivateDm && responseFormat !== "PRODUCT_CARD" ? normalizeCopyList(payload.listener?.messageVariations, MAX_MESSAGE_VARIATIONS) : [],
+      publicReplyLimit: normalizeReplyLimit(payload.listener?.publicReplyLimit),
       aiReplyEnabled,
       aiReplyTone: normalizeAiReplyTone(payload.listener?.aiReplyTone),
       aiReplyInstructions: aiReplyEnabled ? cleanOptional(payload.listener?.aiReplyInstructions)?.slice(0, 1600) : undefined,
