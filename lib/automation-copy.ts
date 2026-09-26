@@ -29,7 +29,7 @@ export function normalizeReplyLimit(value: unknown): number {
 
 export function personalizeUsername(text: string, username?: string | null) {
   const handle = username?.replace(/^@+/, "").replace(/[^A-Za-z0-9_.]/g, "");
-  return text.replace(/@?\{\{username\}\}|@?\bUsername\b/g, handle ? `@${handle}` : "").replace(/@\s*(?=[,!.?]|$)/g, "");
+  return text.replace(/@?\{\{username\}\}|@?\bUsername\b/gi, handle ? `@${handle}` : "").replace(/@\s*(?=[,!.?]|$)/g, "");
 }
 
 export function ensureCommentUsername(text: string, username?: string | null) {
@@ -38,7 +38,7 @@ export function ensureCommentUsername(text: string, username?: string | null) {
   if (!handle) return reply.slice(0, 220);
   const mention = `@${handle}`;
   const escaped = mention.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`${escaped}(?![A-Za-z0-9_.])`, "i").test(reply.slice(0, 220)) ? reply.slice(0, 220) : `${mention} ${reply}`.slice(0, 220);
+  return new RegExp(`${escaped}(?![A-Za-z0-9_]|\\.[A-Za-z0-9_])`, "i").test(reply.slice(0, 220)) ? reply.slice(0, 220) : `${mention} ${reply}`.slice(0, 220);
 }
 
 export type AutomationCopyMode = "COMMENT_REPLIES" | "COMMENT_PROMPT" | "COMMENT_SAMPLES" | "MESSAGE" | "MESSAGE_VARIATIONS";

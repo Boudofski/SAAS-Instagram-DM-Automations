@@ -118,6 +118,7 @@ export async function adminUpdateCampaignRepliesAction(formData: FormData) {
         commentReply: r1,
         commentReply2: r2,
         commentReply3: r3,
+        commentReplies: [r1,r2,r3].filter((reply): reply is string => Boolean(reply)),
       },
     });
 

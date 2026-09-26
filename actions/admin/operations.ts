@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeCopyList, readCommentReplies, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
+
 import {
   adminFormString,
   createAdminAuditLog,
@@ -455,6 +457,9 @@ export async function duplicateCampaignAction(formData: FormData) {
               commentReply: before.listener.commentReply,
               commentReply2: before.listener.commentReply2,
               commentReply3: before.listener.commentReply3,
+              commentReplies: readCommentReplies(before.listener),
+              messageVariations: normalizeCopyList(before.listener.messageVariations, MAX_MESSAGE_VARIATIONS),
+              publicReplyLimit: before.listener.publicReplyLimit,
               ctaLink: before.listener.ctaLink,
               ctaButtonTitle: before.listener.ctaButtonTitle,
             },

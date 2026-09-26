@@ -782,4 +782,5 @@ model PublicReplySlot {
   createdAt DateTime @default(now())
   @@unique([automationId, commentId])
   @@index([automationId, mediaId, createdAt])
+  @@index([createdAt])
 }

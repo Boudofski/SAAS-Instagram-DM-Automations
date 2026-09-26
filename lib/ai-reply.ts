@@ -219,7 +219,7 @@ export async function generateAiCommentDecision(input: {
     const result = await runCompletion(provider, {
       comment: input.comment,
       postCaption: input.postCaption,
-      instructions: [sharedContext, input.instructions?.trim() || "Reply helpfully using only the post context."].filter(Boolean).join("\n\n"),
+      instructions: [input.instructions?.trim() || (input.deliveryContext ? (input.deliveryContext.sendDm ? DEFAULT_COMMENT_PROMPT : DEFAULT_COMMENT_ONLY_PROMPT) : "Reply helpfully using only the post context."), sharedContext].filter(Boolean).join("\n\n"),
       tone,
       deliveryContext: input.deliveryContext,
     });

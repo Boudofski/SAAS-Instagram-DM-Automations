@@ -17,3 +17,5 @@ CREATE INDEX "PublicReplySlot_automationId_mediaId_createdAt_idx" ON "PublicRepl
 INSERT INTO "PublicReplySlot" ("automationId", "mediaId", "commentId", "status", "createdAt")
 SELECT "automationId", "mediaId", 'legacy:' || "id"::text, 'SENT', "createdAt" FROM "MessageLog"
 WHERE "messageType" = 'COMMENT_REPLY' AND "status" = 'SENT' AND "mediaId" IS NOT NULL AND "createdAt" > CURRENT_TIMESTAMP - INTERVAL '7 days';
+
+CREATE INDEX "PublicReplySlot_createdAt_idx" ON "PublicReplySlot"("createdAt");

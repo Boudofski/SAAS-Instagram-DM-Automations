@@ -29,6 +29,8 @@ describe("automation copy compatibility and delivery", () => {
   });
   it("includes exactly one real username and handles missing names safely", () => {
     expect(ensureCommentUsername("Thanks Username 😊","@creator.one")).toBe("Thanks @creator.one 😊");
+    expect(ensureCommentUsername("Thanks @creator.","creator")).toBe("Thanks @creator.");
+    expect(ensureCommentUsername("Thanks {{USERNAME}}!","creator")).toBe("Thanks @creator!");
     expect(ensureCommentUsername("Thanks!","creator")).toBe("@creator Thanks!");
     expect(ensureCommentUsername("Thanks @{{username}}!","creator")).toBe("Thanks @creator!");
     expect(ensureCommentUsername("Hi {{username}}!",null)).not.toContain("username");
