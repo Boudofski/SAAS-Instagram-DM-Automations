@@ -27,6 +27,14 @@ const nextConfig = {
   },
   async headers() {
     return [
+      // Send indexing rules on the responses themselves rather than publishing
+      // an inventory of internal routes in robots.txt. These are not auth rules.
+      ...["admin", "ap3k-admin", "ap3k-admin-v2", "api", "dashboard", "onboarding", "payment", "callback"].map((route) => ({
+        source: `/${route}/:path*`,
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+        ],
+      })),
       {
         source: "/:path*",
         headers: [
