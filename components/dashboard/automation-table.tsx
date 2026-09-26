@@ -249,7 +249,7 @@ function CampaignMobileCard({
     <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
       <div className="flex items-start gap-2.5 sm:gap-3">
         <Link
-          href={`/dashboard/${slug}/automation/${automation.id}`}
+          href={automationEditHref(slug, automation)}
           aria-label={translateUi("Open {name}", locale).replace("{name}", automation.name || translateUi("Automation", locale))}
           className="shrink-0"
         >
@@ -257,7 +257,7 @@ function CampaignMobileCard({
         </Link>
         <div className="min-w-0 flex-1">
           <Link
-            href={`/dashboard/${slug}/automation/${automation.id}`}
+            href={automationEditHref(slug, automation)}
             className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
           >
             {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
@@ -280,13 +280,13 @@ function CampaignMobileCard({
       </div>
       {compact ? (
         <Link
-          href={`/dashboard/${slug}/automation/${automation.id}`}
+          href={automationEditHref(slug, automation)}
           className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
         ><UiText>{"Manage automation"}</UiText></Link>
       ) : (
         <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_40px] gap-2">
           <Link
-            href={`/dashboard/${slug}/automation/${automation.id}`}
+            href={automationEditHref(slug, automation)}
             className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-900 transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
           ><UiText>{"Open automation"}</UiText></Link>
           <DropdownMenu>
@@ -378,7 +378,7 @@ function CampaignDesktopRow({
           <CampaignThumb post={post} isAny={isAny} source={source} />
           <div className="min-w-0 flex-1">
             <Link
-              href={`/dashboard/${slug}/automation/${automation.id}`}
+              href={automationEditHref(slug, automation)}
               className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
             >
               {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
@@ -451,9 +451,6 @@ function CampaignDesktopRow({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/${slug}/automation/${automation.id}`}><UiText>{"View detail"}</UiText></Link>
-              </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={isPending}
                 onSelect={() => onDuplicate(automation.id)}

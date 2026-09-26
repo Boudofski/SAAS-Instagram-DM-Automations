@@ -142,7 +142,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
     try {
       const result = await saveMessageAutomation(payload, automationId, integrationId);
       if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
-        router.push(`/dashboard/${slug}/automation/${result.data.id}`);router.refresh();return;
+        router.push(`/dashboard/${slug}/automation`);router.refresh();return;
       }
       setError(typeof result.data === "string" ? result.data : "Could not save automation.");
     } catch {setError("Could not save automation.");}

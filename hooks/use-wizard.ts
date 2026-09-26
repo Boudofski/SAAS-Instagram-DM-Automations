@@ -222,7 +222,8 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
         throw new Error(typeof saved.data === "string" ? saved.data : "Could not save automation. Please try again.");
       }
 
-      router.push(`/dashboard/${slug}/automation/${campaignId}`);
+      router.push(`/dashboard/${slug}/automation`);
+      router.refresh();
     } catch (err) {
       console.error("[campaign-wizard] save failed", err);
       setError(err instanceof Error ? err.message : "Could not save automation. Please try again.");

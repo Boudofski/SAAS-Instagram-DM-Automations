@@ -73,7 +73,7 @@ export default function AiConversationBuilder({ slug, integrationId, accountName
       setDirty(false);
       await queryClient.invalidateQueries({ queryKey: ["automation-info"] });
       await queryClient.invalidateQueries({ queryKey: ["user-automation"] });
-      router.push(`/dashboard/${slug}/automation/${result.data.id}`); router.refresh();
+      router.push(`/dashboard/${slug}/automation`); router.refresh();
     } catch { setError("Could not save this flow. Your draft is still here."); } finally { setBusy(null); }
   }
   return <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0c101b] dark:text-slate-50">
