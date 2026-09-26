@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Clock3, Grid2X2, Loader2, Mail, MessageCircle, MoreVertical, Plus, RefreshCw, Send, Target, Text, UserRoundCheck, X } from "lucide-react";
+import { Check, Clock3, Grid2X2, Loader2, Mail, MessageCircle, MoreVertical, Plus, RefreshCw, Target, Text, UserRoundCheck, X } from "lucide-react";
 import type { WizardData } from "@/hooks/use-wizard";
 import { useUi } from "@/components/i18n/use-ui";
 import { FOLLOW_UP_DELAYS } from "@/lib/automation-engagement-settings";
@@ -17,7 +17,7 @@ export type CommentEditorProps = {
   slug: string; data: WizardData; update: (value: Partial<WizardData>) => void; onSave: (active: boolean) => void;
   saving: boolean; error: string | null; editingActive: boolean; posts: EditorPost[]; postsLoading: boolean; postsFetching: boolean;
   refreshPosts: () => void; username?: string | null; avatar?: string | null; connected: boolean; accountLoading: boolean; accountError: boolean;
-  retryAccount: () => void; postsError?: string | null; followUpsReady: boolean; aiAvailable: boolean; aiWorkspaceReady: boolean; paid: boolean; commentOnly: boolean;
+  retryAccount: () => void; postsError?: string | null; followUpsReady: boolean; aiAvailable: boolean; paid: boolean; commentOnly: boolean;
 };
 
 export default function CommentEditor(p: CommentEditorProps) {

@@ -51,7 +51,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const messagingReviewMode = isMessagingReviewMode();
   const commentReplyOnlyReviewMode = appReviewMode && !messagingReviewMode;
   const { data: posts, isLoading: postsLoading, isFetching: postsFetching, refetch: refetchPosts } = useQueryAutomationPosts(needsCommentData);
-  const { data: user, isPending: userPending, isFetching: userFetching, isError: userError, refetch: refetchUser } = useQueryUser();
+  const { data: user, isPending: userPending, isError: userError, refetch: refetchUser } = useQueryUser();
   const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
   const { data, update, activate, isSubmitting, error } = useWizard(slug, editId, user?.data?.integrations?.[0]?.id ?? "");
   const [loadedEdit, setLoadedEdit] = useState(false);
@@ -208,5 +208,5 @@ function AutomationSetup({ params, searchParams }: Props) {
     editingActive={Boolean(editId && data.active)} posts={postList} postsLoading={postsLoading} postsFetching={postsFetching} refreshPosts={()=>void refetchPosts()}
     username={instagram?.instagramUsername} avatar={instagram?.profilePictureUrl} connected={hasInstagramConnection} accountLoading={userPending}
     accountError={!hasInstagramConnection && (userError || user?.status !== 200)} retryAccount={()=>{void refetchUser();void refetchPosts();}}
-    postsError={postsError} followUpsReady={followUpsReady} aiAvailable={aiState.available} aiWorkspaceReady={aiState.ready} paid={aiState.paid} commentOnly={commentReplyOnlyReviewMode}/>;
+    postsError={postsError} followUpsReady={followUpsReady} aiAvailable={aiState.available} paid={aiState.paid} commentOnly={commentReplyOnlyReviewMode}/>;
 }
