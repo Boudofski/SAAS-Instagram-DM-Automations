@@ -25,13 +25,13 @@
   --hero-border: rgba(204, 183, 245, .14);
   --hero-accent: #c4a1ff;
 }
-.glow { position: absolute; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 28%, rgba(139,92,246,.075), transparent 60%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,.05), transparent 38%); }
+.glow { position: absolute; z-index: -2; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 28%, rgba(139,92,246,.075), transparent 60%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,.05), transparent 38%); }
 :global(.dark) .glow { background: radial-gradient(ellipse at 50% 25%, rgba(124,58,237,.16), transparent 62%), radial-gradient(ellipse at 90% 90%, rgba(236,72,153,.065), transparent 38%); }
-.content { position: relative; z-index: 2; max-width: 885px; margin: auto; }
+.content { position: relative; z-index: auto; max-width: 885px; margin: auto; }
 .keywordAnimation { display: flex; justify-content: flex-start; padding: 12px 0 20px; }
 .keywordVideo { display: block; width: auto; max-width: 100%; height: 90px; object-fit: contain; object-position: left center; mix-blend-mode: multiply; filter: hue-rotate(43deg); }
 :global(.dark) .keywordVideo { mix-blend-mode: screen; filter: invert(1) hue-rotate(223deg); }
-.title { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -.025em; }
+.title { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: normal; }
 .title > span { display: block; color: var(--hero-muted); line-height: 1.25; }
 .title strong { display: block; font-weight: 700; line-height: 1.5; background: linear-gradient(100deg, #652ac5 12%, #9b43d3 56%, #d7448e 100%); background-clip: text; -webkit-background-clip: text; color: transparent; }
 :global(.dark) .title strong { background-image: linear-gradient(100deg, #d6c1ff 12%, #e5b5ff 56%, #ffb8d4 100%); }
@@ -45,7 +45,7 @@
 .portraits { display: block; width: auto; height: 36px; max-width: 100%; object-fit: contain; }
 .api { display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin: 34px 0 28px; min-height: 38px; font-size: 16px; font-weight: 600; }
 .api svg { color: var(--hero-accent); flex-shrink: 0; }
-.scene { display: none; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.scene { display: none; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .wing { position: absolute; top: 90px; width: 388.53px; height: 399.43px; translate: 0 calc(var(--scroll) * 1px); }
 .left { left: -50px; transform: scaleX(-1); }
 .right { right: -50px; }
