@@ -44,7 +44,7 @@
 .trust p { font-size: 16px; line-height: 24px; }
 .portraits { display: block; width: auto; height: 36px; max-width: 100%; object-fit: contain; }
 .api { display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin: 34px 0 28px; min-height: 38px; font-size: 16px; font-weight: 600; }
-.api svg { color: var(--hero-accent); flex-shrink: 0; }
+.api img { height: 38px; width: auto; }
 .scene { display: none; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .wing { position: absolute; top: 90px; width: 388.53px; height: 399.43px; translate: 0 calc(var(--scroll) * 1px); }
 .left { left: -50px; transform: scaleX(-1); }

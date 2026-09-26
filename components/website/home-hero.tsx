@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
-import { BadgeCheck } from "lucide-react";
 import { Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
@@ -96,7 +95,10 @@ export default function HomeHero() {
           <p>{copy.audience}</p>
           <Image src="/media/hero/creator-portraits.webp" alt="" width={208} height={36} className={styles.portraits} />
         </div>
-        <p className={styles.api}><BadgeCheck aria-hidden="true" size={29} /><span>{copy.api}</span></p>
+        <div className={styles.api}>
+          <Image className={styles.lightArt} src="/media/hero/meta-business-partner-light.svg" alt="Meta Business Partner" width={108} height={43} unoptimized />
+          <Image className={styles.darkArt} src="/media/hero/meta-business-partner-dark.svg" alt="Meta Business Partner" width={108} height={43} unoptimized />
+        </div>
       </div>
     </section>
   );
