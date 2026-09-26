@@ -5,7 +5,7 @@ import { findUser } from "@/actions/user/queries";
 import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { reserveAiReplyQuota, completeAiReplyReservation, releaseAiReplyReservation } from "@/actions/usage/queries";
 import { generateAutomationCopy } from "@/lib/ai-reply";
-import type { AutomationCopyInput } from "@/lib/automation-copy";
+import { variationGenerationError, type AutomationCopyInput } from "@/lib/automation-copy";
 
 /** Generates drafts only. No Instagram send or automation mutation occurs here. */
 export async function generateAutomationCopyAction(input: AutomationCopyInput) {
@@ -17,6 +17,10 @@ export async function generateAutomationCopyAction(input: AutomationCopyInput) {
     if (!["PRO", "BUSINESS"].includes(profile.subscription?.plan ?? "FREE")) return { ok: false as const, error: "AI generation is available on Pro and Business plans." };
     if (!input || input.integrationId !== await currentInstagramAccountId(clerk.id)) return { ok: false as const, error: "Your Instagram account changed. Reload this page before generating." };
     if (!["COMMENT_REPLIES", "COMMENT_PROMPT", "COMMENT_SAMPLES", "MESSAGE", "MESSAGE_VARIATIONS"].includes(input.mode)) return { ok: false as const, error: "Choose a supported generation mode." };
+    if (input.mode === "MESSAGE_VARIATIONS") {
+      const error = variationGenerationError(input);
+      if (error) return { ok: false as const, error };
+    }
     const quota = await reserveAiReplyQuota({ userId: profile.id, channel: "PLAYGROUND" });
     if (!quota.ok) return { ok: false as const, error: "Your monthly AI limit has been reached." };
     reservationId = quota.reservationId;

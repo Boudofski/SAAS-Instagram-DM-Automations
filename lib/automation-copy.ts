@@ -1,3 +1,5 @@
+import { linkButtonsAreComplete, type LinkButton } from "./link-buttons";
+
 /** Shared editor/delivery rules. Saved arrays contain copy, never executable prompts. */
 export const MAX_COMMENT_REPLIES = 20;
 export const MAX_MESSAGE_VARIATIONS = 10;
@@ -45,4 +47,17 @@ export type AutomationCopyMode = "COMMENT_REPLIES" | "COMMENT_PROMPT" | "COMMENT
 export type AutomationCopyInput = {
   mode: AutomationCopyMode; integrationId: string; locale?: string; text?: string; instructions?: string;
   caption?: string; sendDm?: boolean; openingDm?: boolean; hasButtons?: boolean; existing?: string[];
+  count?: 1 | 5; linkButtons?: LinkButton[];
 };
+
+export function variationGenerationError(input: Pick<AutomationCopyInput, "text" | "hasButtons" | "linkButtons">): string | null {
+  if (typeof input.text !== "string" || !input.text.trim()) return "Write your message before generating variations.";
+  if (input.hasButtons && (!Array.isArray(input.linkButtons) || input.linkButtons.some(b => !b || typeof b.label !== "string" || typeof b.url !== "string") || !linkButtonsAreComplete(input.linkButtons))) return "Complete your message, button label, and destination URL to generate variations.";
+  return null;
+}
+
+/** Generated manual replies are anonymous until the creator inserts a variable. */
+export function removeGeneratedUsername(text: string) {
+  return text.replace(/@?\{\{\s*username\s*\}\}|@?\bUsername\b|(?<![\w@])@[A-Za-z0-9_.]+/gi, "")
+    .replace(/\s+([,!.?])/g, "$1").replace(/,\s*([!.?])/g, "$1").replace(/\s+/g, " ").trim();
+}
