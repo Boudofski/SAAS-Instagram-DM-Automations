@@ -6,6 +6,7 @@ import { Inter } from "next/font/google";
 import Link from "next/link";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import LanguageSwitcher from "@/components/global/language-switcher";
+import ThemeToggle from "@/components/global/theme-toggle";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
 import { HOME_SHOWCASE_COPY } from "@/lib/i18n/home-showcase";
@@ -41,7 +42,10 @@ export default function WebsiteNav({ current }: Props) {
   const links = <>
     <Link href={href("/pricing")} aria-current={current === "pricing" ? "page" : undefined} onClick={() => setOpen(false)}>{t("pricing")}</Link>
     <Link href={href("/sign-in")} onClick={() => setOpen(false)}>{copy.login}</Link>
-    <Link href={href("/sign-up")} className={styles.join} onClick={() => setOpen(false)}>{copy.join}</Link>
+    <div className={styles.actions}>
+      <Link href={href("/sign-up")} className={styles.join} onClick={() => setOpen(false)}>{copy.join}</Link>
+      <ThemeToggle compact className={styles.theme} />
+    </div>
   </>;
 
   return <div className={styles.space}>
@@ -51,7 +55,7 @@ export default function WebsiteNav({ current }: Props) {
           <Link href={href("/")} aria-label={`AP3K ${t("home")}`} onClick={() => setOpen(false)}>
             <AP3KLogo className="gap-2 text-xl text-slate-950 dark:text-white" markClassName="h-6 w-6 rounded-lg shadow-none ring-0 [&>svg]:p-1" />
           </Link>
-          <div className={styles.desktopLanguage}><LanguageSwitcher textOnly /></div>
+          <div className={styles.language}><LanguageSwitcher textOnly /></div>
         </div>
         <div className={styles.links}>{links}</div>
         <button ref={toggle} type="button" className={styles.toggle} aria-label={t("openNavigation")} aria-expanded={open} aria-controls="public-mobile-navigation" onClick={() => setOpen(!open)}>
@@ -60,7 +64,6 @@ export default function WebsiteNav({ current }: Props) {
       </div>
       <div id="public-mobile-navigation" className={styles.mobile} hidden={!open}>
         {links}
-        <LanguageSwitcher textOnly />
       </div>
     </nav>
   </div>;
