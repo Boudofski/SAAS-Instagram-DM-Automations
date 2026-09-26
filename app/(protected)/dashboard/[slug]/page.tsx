@@ -1,7 +1,5 @@
 import QuickStart from "@/components/dashboard/quick-start";
 import { waitUntil } from "@vercel/functions";
-import ActivationChecklist from "@/components/dashboard/activation-checklist";
-import { client } from "@/lib/prisma";
 import { MetricValue, FollowerSubtitle, DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
@@ -45,28 +43,20 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       ? (automationsResult.data as any[])
       : [];
 
-  // Scope progress to the selected account; never borrow another account's send history.
-  const firstSendPromise = userResult.status === 200 && userResult.data?.id && instagram?.id
-    ? client.messageLog.findFirst({
-        where: { status: "SENT", automation: { userId: userResult.data.id, integrationId: instagram.id } },
-        select: { id: true },
-      })
-    : null;
   const isEmpty = automations.length === 0;
   const instagramConnected = isCanonicalInstagramConnected(instagram);
   const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const period = parseDashboardPeriod(searchParams?.period);
 
-  const [usage, dashboardStats, campaignMetrics, snapshotState, firstSend] = userResult.data?.id
+  const [usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
     ? await Promise.all([
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period, new Date(), instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
         getCampaignTableMetrics(userResult.data.id, instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
         getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period, new Date(), waitUntil),
-        firstSendPromise,
       ])
-    : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }, null];
+    : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }];
 
   const snapshotComparison = snapshotState.comparison;
   const profileSnapshot = snapshotComparison?.current;
@@ -94,9 +84,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <UiText>{"See performance, manage automations, and keep Instagram conversations moving."}</UiText>
         </p>
       </div>
-
-      <ActivationChecklist slug={params.slug} connected={instagramConnected && !tokenExpired}
-        created={!isEmpty} active={automations.some(automation => automation.active && !automation.archivedAt)} sent={Boolean(firstSend)} />
 
       {isEmpty && (
         <div className="ap3k-content-enter overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
