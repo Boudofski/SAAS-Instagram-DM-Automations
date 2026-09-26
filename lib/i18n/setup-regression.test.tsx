@@ -1,5 +1,6 @@
 vi.mock("next/font/google", () => ({ Inter: () => ({className:"font-inter"}) }));
 import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SUPPORTED_LOCALES, type Locale } from "./config";
@@ -63,7 +64,7 @@ describe("automation setup localization", () => {
       for (const label of ["Automation templates", "Auto-DM links from comments", "Send affiliate product links"]) expect(picker).toContain(translateUi(label, locale));
       expect(picker).not.toContain("Start from scratch");
       for (const type of ["story", "dm"]) {
-        const text = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} searchParams={{ type }} />));
+        const text = plain(renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><WizardPage params={{ slug: "fixture" }} searchParams={{ type }} /></QueryClientProvider>));
         const heading = "Setup Triggers";
         expect(text).toContain(translateUi(heading, locale));
         if (locale !== "en") expect(text).not.toContain(heading);

@@ -1,4 +1,5 @@
 "use client";
+import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -168,7 +169,7 @@ export default function FlowBuilder({
           ? "Your flow is live. Test it with a real Instagram conversation."
           : "Draft saved. This flow is not sending messages.",
       );
-      await queryClient.invalidateQueries({ queryKey: ["user-automation"] });
+      await refreshSavedAutomation(queryClient, result.id);
     } catch {
       setError(
         "Could not save. Your changes are still here. Please try again.",

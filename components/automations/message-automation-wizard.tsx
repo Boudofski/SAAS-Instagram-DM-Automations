@@ -22,6 +22,8 @@ import {
 } from "@/lib/comment-dm-flow";
 import { DEFAULT_LINK_BUTTON_LABEL, readLinkButtons, type LinkButton } from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import { useEffect, useRef, useState } from "react";
 
 type Source = "STORY" | "DM";
@@ -65,6 +67,7 @@ const INITIAL: Draft = {
 export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation, templateId, username }: { username?: string | null; integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any; templateId?: string }) {
   const tr = useUi();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [openTrigger,setOpenTrigger] = useState(true);
   const [openMessage,setOpenMessage] = useState<string | null>("message");
   const submitting = useRef(false);
@@ -146,6 +149,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
     try {
       const result = await saveMessageAutomation(payload, automationId, integrationId);
       if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
+        await refreshSavedAutomation(queryClient, result.data.id);
         router.push(`/dashboard/${slug}/automation`);router.refresh();return;
       }
       setError(typeof result.data === "string" ? result.data : "Could not save automation.");
