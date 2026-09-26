@@ -25,3 +25,8 @@ Scope: top homepage hero only. Reference https://linktodm.com/, inspected Septem
 - Visual review caught and corrected video blending through an intermediate stacking context; use a shared isolated hero context so white/black video backgrounds blend into the respective theme.
 - Long localized desktop headlines use 54px and natural line spacing; English retains the measured reference sizing.
 - Removed responsive review harness before production.
+
+## Partner badge update
+- User confirmed AP3K has Meta Business Partner status on September 26, 2026.
+- Replace the Official Instagram API label with the exact reference Meta Business Partner artwork (meta.B36JgVLz.svg), rendered at the reference 38px height. Keep Meta blue; use white wordmark text on dark backgrounds. Embedded logo raster is locally optimized.
+- Keep the creator line factual; the user confirmed the requested 19,000+ customer count is not yet true, so it is not published.
