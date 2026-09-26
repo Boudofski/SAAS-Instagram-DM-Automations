@@ -5,5 +5,8 @@ import { buildSitemap } from "@/lib/sitemap";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  return buildSitemap(await getPublishedPosts());
+  // Language alternates are already emitted in each public page's HTML head.
+  // Keep this document in the sitemap namespace only: XHTML link elements
+  // prevent Chromium from showing its readable, expandable XML tree.
+  return buildSitemap(await getPublishedPosts()).map(({ alternates, ...entry }) => entry);
 }
