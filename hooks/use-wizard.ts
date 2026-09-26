@@ -1,6 +1,7 @@
 "use client";
 
 import { DEFAULT_EMAIL_CAPTURE_PROMPT, DEFAULT_FOLLOW_UP_MESSAGE, validateEngagementSettings } from "@/lib/automation-engagement-settings";
+import { createCommentEditorPayload } from "@/lib/comment-editor-payload";
 import { validateProductCard } from "@/lib/product-card";
 import { useUi } from "@/components/i18n/use-ui";
 import {
@@ -35,6 +36,7 @@ export type WizardData = {
   matchingMode: "EXACT" | "CONTAINS";
   sendPrivateDm: boolean;
   dmMessage: string;
+  messageFormat?: "TEXT" | "LINK";
   emailCaptureEnabled?: boolean;
   emailCapturePrompt?: string;
   followUpEnabled?: boolean;
@@ -83,6 +85,7 @@ const INITIAL: WizardData = {
   matchingMode: "CONTAINS",
   sendPrivateDm: false,
   dmMessage: DEFAULT_DM_MESSAGE,
+  messageFormat: "LINK",
   linkButtons: [{ label: DEFAULT_LINK_BUTTON_LABEL, url: "" }],
   followGateRequired: false,
   openingDmText: DEFAULT_OPENING_DM_TEXT,
@@ -119,6 +122,7 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
       return next;
     });
   }, [tr, automationId]);
+  const submitting = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -143,13 +147,14 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
       if (data.sendPrivateDm && data.openingDmEnabled && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
       if (data.sendPrivateDm && data.openingDmEnabled && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) return false;
       if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
-      if (data.sendPrivateDm && !linkButtonsAreComplete(data.linkButtons)) return false;
+      if (data.sendPrivateDm && (data.productCard || data.messageFormat !== "TEXT") && !linkButtonsAreComplete(data.linkButtons)) return false;
       return true;
     }
     return true;
   };
 
   const activate = async (activeOverride?: boolean) => {
+    if (submitting.current) return;
     if (!data.post || (data.sendPrivateDm && (!data.dmMessage.trim() || (data.openingDmEnabled && (!data.openingDmText.trim() || !data.openingDmButtonText.trim()))))) {
       setError("Please complete all required steps before activating.");
       return;
@@ -162,7 +167,7 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
       setError("Choose a comment reply or DM before activating this automation.");
       return;
     }
-    if (data.sendPrivateDm && !linkButtonsAreComplete(data.linkButtons)) {
+    if (data.sendPrivateDm && (data.productCard || data.messageFormat !== "TEXT") && !linkButtonsAreComplete(data.linkButtons)) {
       setError("Complete every link label and add a valid destination URL.");
       return;
     }
@@ -178,51 +183,12 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
 
     const engagementError = validateEngagementSettings(data, data.sendPrivateDm, data.openingDmEnabled);
     if (engagementError) { setError(engagementError); return; }
+    submitting.current = true;
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const firstLink = data.linkButtons[0];
-      const payload = {
-        name: data.campaignName,
-        active: typeof activeOverride === "boolean" ? activeOverride : data.active,
-        matchingMode: "CONTAINS",
-        triggerMode: data.triggerMode,
-        sendPrivateDm: data.sendPrivateDm,
-        followGateRequired: data.followGateRequired,
-        typingIndicator: false,
-        deliveryDelaySeconds: 0,
-        post: data.post,
-        keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
-        publicReplyEnabled: data.publicReplyEnabled,
-        listener: {
-          listener: "MESSAGE",
-          emailCaptureEnabled: data.sendPrivateDm && data.emailCaptureEnabled,
-          emailCapturePrompt: data.emailCapturePrompt,
-          followUpEnabled: data.sendPrivateDm && data.followUpEnabled,
-          followUpMessage: data.followUpMessage,
-          followUpDelayMinutes: data.followUpDelayMinutes,
-          prompt: data.dmMessage,
-          commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
-          commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
-          commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
-          aiReplyEnabled: data.aiReplyEnabled,
-          aiReplyTone: data.aiReplyTone,
-          aiReplyInstructions: data.aiReplyEnabled ? data.aiReplyInstructions : undefined,
-          aiProtectionRules: data.aiProtectionRules,
-          ctaLink: data.sendPrivateDm ? firstLink?.url || undefined : undefined,
-          ctaButtonTitle: data.sendPrivateDm ? firstLink?.label || undefined : undefined,
-          responseFormat: data.sendPrivateDm ? (data.productCard ? "PRODUCT_CARD" : "LINK") : "TEXT",
-          mediaUrl: data.sendPrivateDm && data.productCard ? data.productImageUrl : undefined,
-          cardSubtitle: data.sendPrivateDm && data.productCard ? data.productSubtitle : undefined,
-          linkButtons: data.sendPrivateDm ? data.linkButtons : [],
-          openingDmText: data.sendPrivateDm ? data.openingDmText : undefined,
-          openingDmButtonText: data.sendPrivateDm ? data.openingDmButtonText : undefined,
-          openingDmEnabled: data.sendPrivateDm ? data.openingDmEnabled : false,
-          followRequestDmText: data.sendPrivateDm ? data.followRequestDmText : undefined,
-          followRequestButtonText: data.sendPrivateDm ? data.followRequestButtonText : undefined,
-        },
-      } as const;
+      const payload = createCommentEditorPayload({...data,post:data.post},activeOverride);
 
       if (process.env.NODE_ENV !== "production") {
         console.info("[campaign-wizard] save payload", {
@@ -260,6 +226,7 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
     } catch (err) {
       console.error("[campaign-wizard] save failed", err);
       setError(err instanceof Error ? err.message : "Could not save automation. Please try again.");
+      submitting.current = false;
       setIsSubmitting(false);
     }
   };

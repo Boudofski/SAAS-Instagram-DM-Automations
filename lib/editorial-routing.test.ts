@@ -1,3 +1,4 @@
+vi.mock("next/font/google", () => ({ Inter: () => ({className:"font-inter"}) }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BLOG_POSTS } from "@/lib/blog";
 const mocks = vi.hoisted(() => ({

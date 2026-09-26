@@ -1,14 +1,16 @@
 "use client";
 import { templateById } from "@/lib/automation-flow/templates";
 
+import EditorLayout, { EditorGroup, EditorRow, editorStyles as s } from "./editor-layout";
+import EditorPreview from "./editor-preview";
+import type { WizardData } from "@/hooks/use-wizard";
+import { DEFAULT_AI_PROTECTION_RULES } from "@/lib/ai-reply-config";
+import { normalizeMessageAutomationPayload, validateMessageAutomationPayload } from "@/lib/message-automation";
+import { AtSign, MessageCircleReply, SmilePlus, Target, Text, UserRoundCheck, X, Plus } from "lucide-react";
 import { useUi } from "@/components/i18n/use-ui";
 import { UiMessage } from "@/components/i18n/dashboard-values";
-import { UiText } from "@/components/i18n/localized-copy";
 import { saveMessageAutomation } from "@/actions/automation";
 import { getAiWorkspace } from "@/actions/ai-workspace";
-import AutomationWizardToolbar from "@/components/automations/automation-wizard-toolbar";
-import DeliveryRules from "@/components/automations/delivery-rules";
-import MessageAutomationPreview from "@/components/automations/message-automation-preview";
 import MessageResponseEditor from "@/components/automations/message-response-editor";
 import {
   DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
@@ -16,11 +18,7 @@ import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
-import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, readLinkButtons, type LinkButton } from "@/lib/link-buttons";
-import { AtSign, Bot, Loader2, MessageCircleReply, SmilePlus, Sparkles } from "lucide-react";
-import MobilePreviewDialog from "@/components/automations/mobile-preview-dialog";
-import { contentTransition } from "@/lib/motion";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { DEFAULT_LINK_BUTTON_LABEL, readLinkButtons, type LinkButton } from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,6 +31,7 @@ type Draft = {
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
   keywords: string[];
   message: string;
+  messageFormat: "TEXT" | "LINK";
   linkButtons: LinkButton[];
   followGateRequired: boolean;
   followRequestDmText: string;
@@ -48,6 +47,7 @@ const STORY_TRIGGERS = [
 
 const INITIAL: Draft = {
   name: "",
+  messageFormat: "LINK",
   storyTriggerType: "MENTION",
   triggerMode: "ANY_MESSAGE",
   keywords: [],
@@ -59,11 +59,12 @@ const INITIAL: Draft = {
   aiReplyEnabled: false,
 };
 
-export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation, templateId }: { integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any; templateId?: string }) {
+export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation, templateId, username }: { username?: string | null; integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any; templateId?: string }) {
   const tr = useUi();
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
-  const [step, setStep] = useState(1);
+  const [openTrigger,setOpenTrigger] = useState(true);
+  const [openMessage,setOpenMessage] = useState<string | null>("message");
+  const submitting = useRef(false);
   const [draft, setDraft] = useState<Draft>(() => ({ ...INITIAL, message: tr(INITIAL.message), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
   const previousTr = useRef(tr);
   useEffect(() => {
@@ -90,15 +91,14 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
   const [keywordDraft, setKeywordDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [aiAvailable, setAiAvailable] = useState(false);
-  const stepsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!automation?.listener) return;
     const storedLinks = readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink);
     setDraft({
       name: automation.name ?? "",
+      messageFormat: automation.listener.responseFormat === "TEXT" ? "TEXT" : "LINK",
       storyTriggerType: automation.storyTriggerType === "REACTION" || automation.storyTriggerType === "REPLY" ? automation.storyTriggerType : "MENTION",
       triggerMode: automation.triggerMode === "SPECIFIC_KEYWORD" ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE",
       keywords: Array.isArray(automation.keywords) ? automation.keywords.map((item: any) => item.word).filter(Boolean) : [],
@@ -118,24 +118,10 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
     }).catch(() => setAiAvailable(false));
   }, []);
 
-  useEffect(() => {
-    if (step <= 1) return;
-    window.requestAnimationFrame(() => {
-      const container = stepsScrollRef.current;
-      if (container) container.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-    });
-  }, [reduceMotion, step]);
-
   const summarySource = source === "STORY"
     ? draft.storyTriggerType === "MENTION" ? "When someone mentions you in a story, AP3K sends them a DM." : draft.storyTriggerType === "REACTION" ? "When someone reacts to your story, AP3K sends them a DM." : "When someone replies to your story, AP3K sends them a DM."
     : draft.triggerMode === "ANY_MESSAGE" ? "When someone sends you a DM, AP3K sends them a DM." : "When someone sends a DM containing {keywords}, AP3K sends them a DM.";
   const ruleSummary = <UiMessage source={summarySource} values={{ keywords: <bdi>{draft.keywords.join(", ") || tr("your keyword")}</bdi> }} />;
-
-  const canContinue = step === 1
-    ? source === "STORY" || draft.triggerMode === "ANY_MESSAGE" || draft.keywords.length > 0
-    : step === 2
-      ? Boolean(draft.message.trim()) && (draft.aiReplyEnabled || linkButtonsAreComplete(draft.linkButtons))
-      : Boolean(draft.name.trim());
 
   const addKeyword = () => {
     const word = keywordDraft.trim().toLowerCase();
@@ -144,131 +130,52 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
     setKeywordDraft("");
   };
 
-  const save = async () => {
-    if (!canContinue) return;
-    setSaving(true);
-    setError(null);
-    const firstLink = draft.linkButtons[0];
+  const save = async (active: boolean) => {
+    if (submitting.current) return;
+    const withLinks = !draft.aiReplyEnabled && draft.messageFormat === "LINK";
+    const firstLink = withLinks ? draft.linkButtons[0] : undefined;
+    const payload = { ...draft, source, active, responseFormat: withLinks ? "LINK" : "TEXT", linkButtons: withLinks ? draft.linkButtons : undefined, ctaLink:firstLink?.url, ctaButtonTitle:firstLink?.label };
+    const invalid = validateMessageAutomationPayload(normalizeMessageAutomationPayload(payload));
+    if (invalid) {setError(invalid);return;}
+    if (!draft.aiReplyEnabled && draft.followGateRequired && (!draft.followRequestDmText.trim() || !draft.followRequestButtonText.trim())) {setError("Add the follow request message and verification button.");return;}
+    submitting.current=true;setSaving(true);setError(null);
     try {
-    const result = await saveMessageAutomation({
-      ...draft,
-      source,
-      active: true,
-      responseFormat: draft.aiReplyEnabled ? "TEXT" : "LINK",
-      ctaLink: draft.aiReplyEnabled ? undefined : firstLink?.url,
-      ctaButtonTitle: draft.aiReplyEnabled ? undefined : firstLink?.label,
-    }, automationId, integrationId);
-    if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
-      router.push(`/dashboard/${slug}/automation/${result.data.id}`);
-      router.refresh();
-      return;
-    }
-    setError(typeof result.data === "string" ? result.data : "Could not save automation.");
-    } catch { setError("Could not save automation."); }
-    finally { setSaving(false); }
+      const result = await saveMessageAutomation(payload, automationId, integrationId);
+      if (result.status === 200 && typeof result.data === "object" && result.data?.id) {
+        router.push(`/dashboard/${slug}/automation/${result.data.id}`);router.refresh();return;
+      }
+      setError(typeof result.data === "string" ? result.data : "Could not save automation.");
+    } catch {setError("Could not save automation.");}
+    finally {submitting.current=false;setSaving(false);}
   };
-
-  return (
-    <div className="min-h-screen min-w-0 bg-[#f5f6fa] pb-24 text-slate-950 dark:bg-[#050816] dark:text-white xl:mt-3 xl:h-[calc(100dvh-7rem)] xl:min-h-[560px] xl:overflow-hidden xl:rounded-2xl xl:pb-0 xl:ring-1 xl:ring-slate-200 xl:dark:ring-white/10">
-      <div className="mx-auto grid w-full min-w-0 max-w-[1700px] gap-4 p-3 sm:p-4 xl:h-full xl:grid-cols-[minmax(0,1.15fr)_minmax(310px,0.85fr)] 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220] xl:min-h-0">
-          <AutomationWizardToolbar backHref={`/dashboard/${slug}/automation`} currentStep={step} totalSteps={3} accountLabel={source === "STORY" ? "Instagram Stories" : "Instagram DMs"} onOpenPreview={() => setMobilePreviewOpen(true)} />
-          <div ref={stepsScrollRef} data-automation-scroll-region className="min-w-0 [overflow-anchor:none] xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
-        <AnimatePresence mode="wait">
-          <motion.main id="current-message-step" key={step} initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? undefined : { opacity: 0, y: 0 }} transition={contentTransition(reduceMotion)} className="h-fit min-w-0 p-5 sm:p-6 xl:min-h-full">
-            {step === 1 && (
-              <section>
-                <PhaseHeader title={source === "STORY" ? "When someone interacts with your story" : "When someone sends you a DM"} description="Set the conditions that launch this automation." />
-                {source === "STORY" ? (
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {STORY_TRIGGERS.map((item) => {
-                      const Icon = item.icon;
-                      const selected = draft.storyTriggerType === item.value;
-                      return <button key={item.value} type="button" onClick={() => setDraft({ ...draft, storyTriggerType: item.value })} className={["min-h-40 rounded-2xl border p-5 text-start transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="grid h-11 w-11 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple"><Icon className="h-5 w-5" /></span><span className="mt-5 block text-lg font-black"><UiText>{item.title}</UiText></span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400"><UiText>{item.description}</UiText></span></button>;
-                    })}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Choice selected={draft.triggerMode === "SPECIFIC_KEYWORD"} title="Specific keyword" description="Launch when the DM contains one of your keywords." onClick={() => setDraft({ ...draft, triggerMode: "SPECIFIC_KEYWORD" })} />
-                      <Choice selected={draft.triggerMode === "ANY_MESSAGE"} title="Any incoming DM" description="Launch for every new conversation message." onClick={() => setDraft({ ...draft, triggerMode: "ANY_MESSAGE", keywords: [] })} />
-                    </div>
-                    {draft.triggerMode === "SPECIFIC_KEYWORD" && <div><div className="flex gap-2"><input value={keywordDraft} onChange={(event) => setKeywordDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addKeyword(); } }} placeholder={tr("Type a keyword, e.g. \"guide\"")} className="ap3k-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm" /><button type="button" onClick={addKeyword} className="rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-active px-5 text-sm font-black text-white"><UiText>{"+ Add"}</UiText></button></div><div className="mt-3 flex flex-wrap gap-2">{draft.keywords.map((word) => <button key={word} type="button" onClick={() => setDraft({ ...draft, keywords: draft.keywords.filter((item) => item !== word) })} className="rounded-full bg-rf-purple/10 px-3 py-2 text-xs font-bold text-rf-purple">{word} ×</button>)}</div></div>}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {step === 2 && (
-              <section>
-                <PhaseHeader title="Choose the DM response" description="Send a saved message or let AP3K AI answer from your shared knowledge." />
-                <div className="mb-5 grid gap-3 sm:grid-cols-2">
-                  <Choice selected={!draft.aiReplyEnabled} title="Saved response" description="A predictable message with up to three link buttons." onClick={() => setDraft({ ...draft, aiReplyEnabled: false })} />
-                  <button type="button" disabled={!aiAvailable} onClick={() => setDraft({ ...draft, aiReplyEnabled: true, followGateRequired: false })} className={["rounded-2xl border p-5 text-start transition disabled:cursor-not-allowed disabled:opacity-50", draft.aiReplyEnabled ? "border-violet-500 bg-violet-500/10 ring-2 ring-violet-500/15" : "border-slate-200 bg-slate-50 hover:border-violet-400/40 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}>
-                    <span className="flex items-center gap-2 text-base font-black"><Sparkles className="h-4 w-4 text-violet-500" /> <UiText>{"AP3K AI reply"}</UiText><span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-violet-500"><UiText>{"Pro"}</UiText></span></span>
-                    <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400"><UiText>{"Answers in your voice using AP3K AI knowledge."}</UiText></span>
-                    {!aiAvailable ? <span className="mt-3 flex items-center gap-1.5 text-xs font-bold text-violet-500"><Bot className="h-3.5 w-3.5" /> <UiText>{"Enable AI Replies in AP3K AI first"}</UiText></span> : null}
-                  </button>
-                </div>
-                {draft.aiReplyEnabled ? (
-                  <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5">
-                    <p className="text-sm font-black"><UiText>{"AI response enabled"}</UiText></p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. When a saved knowledge URL answers the request, AI can attach it as one native Instagram button. The message below is sent only if the provider is unavailable."}</UiText></p>
-                    <label className="mt-4 block text-xs font-black uppercase tracking-wider text-slate-500"><UiText>{"Safe fallback message"}</UiText><textarea value={draft.message} onChange={(event) => setDraft({ ...draft, message: event.target.value })} rows={4} maxLength={1000} dir="auto" className="ap3k-textarea mt-2 w-full rounded-xl px-4 py-3 text-sm" /></label>
-                  </div>
-                ) : <MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} />}
-              </section>
-            )}
-
-            {step === 3 && (
-              <section><PhaseHeader title="Configure rules & name" description={draft.aiReplyEnabled ? "Name the automation. AI replies are sent immediately after a matching message." : "Name the automation and decide whether the saved response is reserved for followers."} /><label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Automation name"}</UiText></label><input value={draft.name} maxLength={120} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={tr(source === "STORY" ? "Story mention welcome" : "Guide request DM")} className="ap3k-input mb-7 w-full rounded-xl px-4 py-3 text-sm" />{draft.aiReplyEnabled ? <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5"><p className="text-sm font-black"><UiText>{"Immediate AI response"}</UiText></p><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Follow requests are disabled for AI replies so AP3K never generates and hides an answer. Your saved fallback is used only if the provider is unavailable."}</UiText></p></div> : <><p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Optional follow request"}</UiText></p><DeliveryRules followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} onChange={(next) => setDraft((current) => ({ ...current, ...next }))} /></>}<div className="mt-6 rounded-2xl border border-rf-purple/25 bg-rf-purple/[0.07] p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple"><UiText>{"Rule logic summary"}</UiText></p><p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{ruleSummary}</p></div></section>
-            )}
-
-            {error && <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"><UiText>{error}</UiText></p>}
-          </motion.main>
-        </AnimatePresence>
-          </div>
-          <div className="hidden shrink-0 border-t border-slate-200 bg-white/95 px-4 py-3 dark:border-white/10 dark:bg-[#0d1220]/95 xl:block">
-            <MessageWizardActions step={step} canContinue={canContinue} saving={saving} onBack={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} onContinue={() => setStep(step + 1)} onSave={() => void save()} />
-          </div>
-        </section>
-        <aside className="hidden min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.025] xl:flex">
-          <MessageAutomationPreview
-            source={source}
-            step={step}
-            trigger={draft.storyTriggerType}
-            triggerMode={draft.triggerMode}
-            keywords={draft.keywords}
-            message={draft.message}
-            linkButtons={draft.linkButtons}
-            followGateRequired={draft.followGateRequired}
-            followRequestDmText={draft.followRequestDmText}
-            followRequestButtonText={draft.followRequestButtonText}
-          />
-        </aside>
-      </div>
-
-      {mobilePreviewOpen && <MobilePreviewDialog onClose={() => setMobilePreviewOpen(false)}><MessageAutomationPreview source={source} step={step} trigger={draft.storyTriggerType} triggerMode={draft.triggerMode} keywords={draft.keywords} message={draft.message} linkButtons={draft.linkButtons} followGateRequired={draft.followGateRequired} followRequestDmText={draft.followRequestDmText} followRequestButtonText={draft.followRequestButtonText} /></MobilePreviewDialog>}
-
-      <div className="ap3k-mobile-actions fixed inset-x-0 bottom-0 z-30 ps-[calc(var(--app-sidebar-offset,0px)+1rem)] border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_40px_-28px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080c18]/95 xl:hidden">
-        <MessageWizardActions step={step} canContinue={canContinue} saving={saving} onBack={() => step === 1 ? router.push(`/dashboard/${slug}/automation`) : setStep(step - 1)} onContinue={() => setStep(step + 1)} onSave={() => void save()} />
-      </div>
-    </div>
-  );
+  const previewData: WizardData = {
+    post:null,campaignName:draft.name,triggerMode:"ANY_COMMENT",keywords:draft.keywords,matchingMode:"CONTAINS",sendPrivateDm:true,dmMessage:draft.message,
+    linkButtons:draft.messageFormat === "LINK" && !draft.aiReplyEnabled ? draft.linkButtons : [],followGateRequired:!draft.aiReplyEnabled && draft.followGateRequired,
+    openingDmEnabled:false,openingDmText:"",openingDmButtonText:"",followRequestDmText:draft.followRequestDmText,followRequestButtonText:draft.followRequestButtonText,
+    publicReply:"",publicReply2:"",publicReply3:"",publicReplyEnabled:false,aiReplyEnabled:false,aiReplyTone:"FRIENDLY",aiReplyInstructions:"",aiProtectionRules:DEFAULT_AI_PROTECTION_RULES,active:Boolean(automation?.active),
+  };
+  const interaction = source === "STORY" ? STORY_TRIGGERS.find(t=>t.value === draft.storyTriggerType)?.description : "When someone sends you a DM";
+  return <EditorLayout slug={slug} name={draft.name} onNameChange={name=>setDraft(v=>({...v,name}))} active={Boolean(automation?.active)} saving={saving} onSave={active=>void save(active)} error={error} accountName={username || undefined}
+    preview={<EditorPreview data={previewData} mode="dm" onModeChange={()=>{}} username={username} source={source} interaction={interaction} aiDmReply={draft.aiReplyEnabled}/> }>
+    <EditorGroup title="Setup Triggers">
+      <EditorRow title={source === "STORY" ? "Story interaction" : "Trigger"} icon={<Target/>} open={openTrigger} onOpen={()=>setOpenTrigger(!openTrigger)}
+        controls={source === "STORY" ? <select aria-label={tr("Story interaction")} value={draft.storyTriggerType} onChange={e=>setDraft(v=>({...v,storyTriggerType:e.target.value as StoryTrigger}))}>{STORY_TRIGGERS.map(t=><option value={t.value} key={t.value}>{tr(t.title)}</option>)}</select> : <select aria-label={tr("Trigger type")} value={draft.triggerMode} onChange={e=>setDraft(v=>({...v,triggerMode:e.target.value as Draft["triggerMode"]}))}><option value="SPECIFIC_KEYWORD">{tr("a specific word (s)")}</option><option value="ANY_MESSAGE">{tr("Any incoming DM")}</option></select>}>
+        {source === "DM" && draft.triggerMode === "SPECIFIC_KEYWORD" && <div className={s.chips}>{draft.keywords.map(word=><span key={word}><bdi>{word}</bdi><button type="button" aria-label={`${tr("Remove keyword")} ${word}`} onClick={()=>setDraft(v=>({...v,keywords:v.keywords.filter(w=>w!==word)}))}><X size={13}/></button></span>)}<input aria-label={tr("Add keyword")} placeholder={tr("Add keyword")} value={keywordDraft} onChange={e=>setKeywordDraft(e.target.value)} onKeyDown={e=>{if(e.key === "Enter"){e.preventDefault();addKeyword();}}}/><button type="button" aria-label={tr("Add keyword")} onClick={addKeyword}><Plus size={16}/></button></div>}
+        <p className={`${s.hint} mt-3`}>{ruleSummary}</p>
+      </EditorRow>
+    </EditorGroup>
+    <EditorGroup title="Setup Direct Message">
+      {!draft.aiReplyEnabled && draft.followGateRequired && <EditorRow title="Ask to follow" icon={<UserRoundCheck/>} open={openMessage === "follow"} onOpen={()=>setOpenMessage(v=>v === "follow" ? null : "follow")} onRemove={()=>setDraft(v=>({...v,followGateRequired:false}))}>
+        <label className={s.field}>{tr("Follow request DM")}<textarea rows={4} maxLength={640} value={draft.followRequestDmText} onChange={e=>setDraft(v=>({...v,followRequestDmText:e.target.value}))}/></label>
+        <label className={s.field}>{tr("Verification button")}<input maxLength={20} value={draft.followRequestButtonText} onChange={e=>setDraft(v=>({...v,followRequestButtonText:e.target.value}))}/></label>
+      </EditorRow>}
+      <EditorRow title="Message" icon={<Text/>} open={openMessage === "message"} onOpen={()=>setOpenMessage(v=>v === "message" ? null : "message")}
+        controls={<select aria-label={tr("Message format")} value={draft.aiReplyEnabled ? "AI" : draft.messageFormat} onChange={e=>{const value=e.target.value;setDraft(v=>({...v,aiReplyEnabled:value === "AI",messageFormat:value === "LINK" ? "LINK" : "TEXT",...(value === "AI" ? {followGateRequired:false} : {})}));setOpenMessage("message");}}><option value="TEXT">{tr("plain text")}</option><option value="LINK">{tr("text with button")}</option><option value="AI" disabled={!aiAvailable && !draft.aiReplyEnabled}>{tr("AP3K AI reply")} · {tr("Pro")}</option></select>}>
+        {draft.aiReplyEnabled && <p className={`${s.hint} mb-4`}>{tr("AP3K AI uses the incoming DM plus your knowledge, behavior, and guardrails. When a saved knowledge URL answers the request, AI can attach it as one native Instagram button. The message below is sent only if the provider is unavailable.")}</p>}
+        {draft.aiReplyEnabled || draft.messageFormat === "TEXT" ? <label className={s.field}>{tr(draft.aiReplyEnabled ? "Safe fallback message" : "DM message text")}<textarea rows={5} maxLength={1000} dir="auto" value={draft.message} onChange={e=>setDraft(v=>({...v,message:e.target.value}))}/></label> : <MessageResponseEditor message={draft.message} linkButtons={draft.linkButtons} onChange={next=>setDraft(v=>({...v,...next}))}/>}
+        {!aiAvailable && <p className={s.hint}>{tr("Enable AI Replies in AP3K AI first")}</p>}
+      </EditorRow>
+      {!draft.followGateRequired && !draft.aiReplyEnabled && <div className={s.addons}><button type="button" onClick={()=>{setDraft(v=>({...v,followGateRequired:true}));setOpenMessage("follow");}}><UserRoundCheck/>{tr("Ask to follow")}</button></div>}
+    </EditorGroup>
+  </EditorLayout>;
 }
-
-function MessageWizardActions({ step, canContinue, saving, onBack, onContinue, onSave }: { step: number; canContinue: boolean; saving: boolean; onBack: () => void; onContinue: () => void; onSave: () => void }) {
-  return (
-    <div className="flex w-full items-center justify-between gap-3">
-      <button type="button" onClick={onBack} className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-600 dark:border-white/10 dark:text-slate-300"><UiText>{"Back"}</UiText></button>
-      {step < 3 ? (
-        <button type="button" disabled={!canContinue} onClick={onContinue} className="rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white disabled:opacity-35 dark:bg-white dark:text-slate-950"><UiText>{"Continue"}</UiText></button>
-      ) : (
-        <button type="button" disabled={!canContinue || saving} onClick={onSave} className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-active px-7 py-2.5 text-sm font-black text-white shadow-lg disabled:opacity-40">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}<UiText>{" Go live"}</UiText></button>
-      )}
-    </div>
-  );
-}
-
-function PhaseHeader({ title, description }: { title: string; description: string }) { return <div className="mb-5"><h1 className="text-2xl font-black tracking-tight"><UiText>{title}</UiText></h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><UiText>{description}</UiText></p></div>; }
-function Choice({ selected, title, description, onClick }: { selected: boolean; title: string; description: string; onClick: () => void }) { return <button type="button" onClick={onClick} className={["rounded-2xl border p-5 text-start transition", selected ? "border-rf-purple bg-rf-purple/10 ring-2 ring-rf-purple/15" : "border-slate-200 bg-slate-50 hover:border-rf-purple/30 dark:border-white/10 dark:bg-white/[0.04]"].join(" ")}><span className="block text-base font-black"><UiText>{title}</UiText></span><span className="mt-1 block text-sm text-slate-500 dark:text-slate-400"><UiText>{description}</UiText></span></button>; }

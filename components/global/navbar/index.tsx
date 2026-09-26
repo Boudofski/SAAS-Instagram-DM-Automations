@@ -36,7 +36,7 @@ function NavBar({ slug }: Props) {
   };
 
   return (
-      <div className="sticky top-3 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 text-slate-950 shadow-sm backdrop-blur-xl  dark:border-white/10 dark:bg-[#111320]/95 dark:text-slate-50 sm:flex-nowrap lg:justify-end">
+      <div data-dashboard-toolbar className="sticky top-3 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 text-slate-950 shadow-sm backdrop-blur-xl  dark:border-white/10 dark:bg-[#111320]/95 dark:text-slate-50 sm:flex-nowrap lg:justify-end">
         <span className="flex flex-1 items-center gap-x-2 lg:hidden">
           <Sheet
             trigger={<Menu aria-hidden="true" />}

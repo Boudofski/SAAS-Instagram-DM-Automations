@@ -1,3 +1,4 @@
+vi.mock("next/font/google", () => ({ Inter: () => ({className:"font-inter"}) }));
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/i18n/server", () => ({ getServerLocale: () => "en" }));
 import { metadata as resources } from "@/app/(website)/resources/page";
