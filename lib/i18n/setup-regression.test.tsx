@@ -1,3 +1,4 @@
+vi.mock("next/font/google", () => ({ Inter: () => ({className:"font-inter"}) }));
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -21,6 +22,8 @@ const data: WizardData = {
 };
 vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale }) }));
 vi.mock("@/components/ui/dialog", () => ({ Dialog: ({children}: any) => <>{children}</>, DialogContent: ({children}: any) => <section>{children}</section>, DialogTitle: ({children}: any) => <h1>{children}</h1>, DialogDescription: ({children}: any) => <p>{children}</p> }));
+vi.mock("@/components/global/language-switcher", () => ({default:()=>null}));
+vi.mock("@/components/global/theme-toggle", () => ({default:()=>null}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/actions/automation", () => ({ saveMessageAutomation: vi.fn() }));
 vi.mock("@/actions/ai-workspace", () => ({ getAiWorkspace: vi.fn() }));
@@ -42,21 +45,16 @@ describe("automation setup localization", () => {
       for (const text of row) { expect(text.trim()).not.toBe(""); expect(text.match(/\{\w+\}/g)?.sort() ?? []).toEqual(tokens); }
     }
   });
-  it("renders all four actual comment setup steps in every language and returns exactly to English", () => {
-    const headings = ["Choose a post or Reel", "What comment starts this automation?", "What should AP3K do?", "Review & Activate"];
-    for (step of [1, 2, 3, 4] as WizardStep[]) {
-      let english = "";
-      for (locale of [...SUPPORTED_LOCALES, "en"] as Locale[]) {
-        const html = renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} searchParams={{ type: "comment" }} />);
-        const text = plain(html);
-        expect(text).toContain(translateUi(headings[step - 1], locale));
-        if (locale !== "en") expect(text).not.toContain(headings[step - 1]);
-        if (step === 3) { expect(text).toContain("Keep my DM unchanged"); expect(html).toContain('value="Keep my reply unchanged"'); }
-        if (step === 4 && locale !== "en") expect(text).not.toContain("Keyword:");
-        if (step === 4) { expect(text).toContain("Save こんにちは"); expect(text).toContain("hello こんにちは"); }
-        expect(html).not.toContain("Step</span>1");
-        if (locale === "en") { if (english) expect(html).toBe(english); english = html; }
+  it("renders the accordion editor in every language without translating customer content", () => {
+    for (locale of SUPPORTED_LOCALES) {
+      const html=renderToStaticMarkup(<WizardPage params={{slug:"fixture"}} searchParams={{type:"comment"}}/>);
+      const text=plain(html);
+      for (const heading of ["Setup Triggers and Public Reply","Setup Direct Message"]) {
+        expect(text).toContain(translateUi(heading,locale));
+        if(locale!=="en")expect(text).not.toContain(heading);
       }
+      expect(html).toContain('value="Save こんにちは"');
+      expect(html).not.toContain("Review &amp; Activate");
     }
   });
   it("renders the actual type picker and both message entry screens without English headings", () => {
@@ -66,7 +64,7 @@ describe("automation setup localization", () => {
       expect(picker).not.toContain("Start from scratch");
       for (const type of ["story", "dm"]) {
         const text = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} searchParams={{ type }} />));
-        const heading = type === "story" ? "When someone interacts with your story" : "When someone sends you a DM";
+        const heading = "Setup Triggers";
         expect(text).toContain(translateUi(heading, locale));
         if (locale !== "en") expect(text).not.toContain(heading);
       }

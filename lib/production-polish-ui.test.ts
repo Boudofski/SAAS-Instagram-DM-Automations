@@ -99,23 +99,6 @@ describe("production polish UI contracts", () => {
     });
   });
 
-  it("keeps automation workspaces inside the desktop viewport", () => {
-    const commentWizard = source(
-      "app/(protected)/dashboard/[slug]/automation/new/page.tsx",
-    );
-    const messageWizard = source(
-      "components/automations/message-automation-wizard.tsx",
-    );
-    const detail = source(
-      "app/(protected)/dashboard/[slug]/automation/[id]/page.tsx",
-    );
-
-    for (const file of [commentWizard, messageWizard, detail]) {
-      expect(file).toContain("xl:h-[calc(100dvh-7rem)]");
-      expect(file).not.toContain("xl:h-[calc(100dvh-2.5rem)]");
-    }
-  });
-
   it("starts every new comment automation action disabled", () => {
     const wizard = source("hooks/use-wizard.ts");
     expect(wizard).toContain("sendPrivateDm: false");

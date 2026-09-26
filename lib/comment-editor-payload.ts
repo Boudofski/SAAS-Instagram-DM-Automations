@@ -1,0 +1,47 @@
+import type { WizardData } from "@/hooks/use-wizard";
+
+/** Preserve saved settings while mapping the editor’s response format to delivery. */
+export function createCommentEditorPayload(data: WizardData & { post: NonNullable<WizardData["post"]> }, activeOverride?: boolean) {
+      const withLinks = data.sendPrivateDm && (data.productCard || data.messageFormat !== "TEXT");
+      const firstLink = withLinks ? data.linkButtons[0] : undefined;
+      return {
+        name: data.campaignName,
+        active: typeof activeOverride === "boolean" ? activeOverride : data.active,
+        matchingMode: "CONTAINS",
+        triggerMode: data.triggerMode,
+        sendPrivateDm: data.sendPrivateDm,
+        followGateRequired: data.followGateRequired,
+        typingIndicator: false,
+        deliveryDelaySeconds: 0,
+        post: data.post,
+        keywords: data.triggerMode === "ANY_COMMENT" ? [] : data.keywords,
+        publicReplyEnabled: data.publicReplyEnabled,
+        listener: {
+          listener: "MESSAGE",
+          emailCaptureEnabled: data.sendPrivateDm && data.emailCaptureEnabled,
+          emailCapturePrompt: data.emailCapturePrompt,
+          followUpEnabled: data.sendPrivateDm && data.followUpEnabled,
+          followUpMessage: data.followUpMessage,
+          followUpDelayMinutes: data.followUpDelayMinutes,
+          prompt: data.dmMessage,
+          commentReply: data.publicReplyEnabled ? data.publicReply || undefined : undefined,
+          commentReply2: data.publicReplyEnabled ? data.publicReply2 || undefined : undefined,
+          commentReply3: data.publicReplyEnabled ? data.publicReply3 || undefined : undefined,
+          aiReplyEnabled: data.aiReplyEnabled,
+          aiReplyTone: data.aiReplyTone,
+          aiReplyInstructions: data.aiReplyEnabled ? data.aiReplyInstructions : undefined,
+          aiProtectionRules: data.aiProtectionRules,
+          ctaLink: data.sendPrivateDm ? firstLink?.url || undefined : undefined,
+          ctaButtonTitle: data.sendPrivateDm ? firstLink?.label || undefined : undefined,
+          responseFormat: data.sendPrivateDm && data.productCard ? "PRODUCT_CARD" : withLinks ? "LINK" : "TEXT",
+          mediaUrl: data.sendPrivateDm && data.productCard ? data.productImageUrl : undefined,
+          cardSubtitle: data.sendPrivateDm && data.productCard ? data.productSubtitle : undefined,
+          linkButtons: withLinks ? data.linkButtons : [],
+          openingDmText: data.sendPrivateDm ? data.openingDmText : undefined,
+          openingDmButtonText: data.sendPrivateDm ? data.openingDmButtonText : undefined,
+          openingDmEnabled: data.sendPrivateDm ? data.openingDmEnabled : false,
+          followRequestDmText: data.sendPrivateDm ? data.followRequestDmText : undefined,
+          followRequestButtonText: data.sendPrivateDm ? data.followRequestButtonText : undefined,
+        },
+      } as const;
+}
