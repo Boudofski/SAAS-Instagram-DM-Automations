@@ -3,6 +3,7 @@ import { UiText } from "@/components/i18n/localized-copy";
 
 
 import AP3KLogo from "@/components/global/ap3k-logo";
+import ThemeToggle from "@/components/global/theme-toggle";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
@@ -30,6 +31,7 @@ export default function WebsiteFooter() {
             <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
               {t("footerDescription")}
             </p>
+            <ThemeToggle />
             <div className="mt-2 flex flex-wrap gap-2" aria-label="AP3K social media">
               {SOCIAL_LINKS.map(({ label, href: socialHref, Icon }) => (
                 <a key={label} href={socialHref} target="_blank" rel="noopener noreferrer" aria-label={`AP3K on ${label}`} className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:border-violet-400/40 dark:hover:text-violet-300">

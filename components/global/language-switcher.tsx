@@ -10,7 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export default function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
+export default function LanguageSwitcher({ compact = false, textOnly = false }: { compact?: boolean; textOnly?: boolean }) {
   const { locale, t, setLocale } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
@@ -39,17 +39,17 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
     <DropdownMenu dir={LOCALE_DETAILS[locale].direction} modal={false}>
       <DropdownMenuTrigger asChild>
         <LocalizedButton type="button" aria-label={t("language")} aria-busy={isPending}
-          className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 ${compact ? "w-11 px-0" : "max-w-44"}`}>
-          <LanguageFlag locale={locale} />
-          {!compact && <span className="truncate">{LOCALE_DETAILS[locale].nativeName}</span>}
-          {!compact && (isPending ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />)}
+          className={textOnly ? "inline-flex h-10 shrink-0 items-center justify-center gap-1 rounded-full px-1 text-sm font-medium text-[#727272] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300" : `inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 ${compact ? "w-11 px-0" : "max-w-44"}`}>
+          {!textOnly && <LanguageFlag locale={locale} />}
+          {textOnly ? <span>{locale.toUpperCase()}</span> : !compact && <span className="truncate">{LOCALE_DETAILS[locale].nativeName}</span>}
+          {(textOnly || !compact) && (isPending ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" /> : <ChevronDown aria-hidden="true" className="h-3 w-3" />)}
         </LocalizedButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="z-[100] w-52 rounded-2xl p-1.5 shadow-xl">
         {SUPPORTED_LOCALES.map((option) => (
           <DropdownMenuItem key={option} onSelect={() => changeLocale(option)}
             className="min-h-11 cursor-pointer gap-3 rounded-xl px-3" lang={LOCALE_DETAILS[option].htmlLang}>
-            <LanguageFlag locale={option} />
+            {!textOnly && <LanguageFlag locale={option} />}
             <span className="flex-1" dir="auto">{LOCALE_DETAILS[option].nativeName}</span>
             {locale === option && <Check aria-hidden="true" className="h-4 w-4 text-violet-600" />}
           </DropdownMenuItem>

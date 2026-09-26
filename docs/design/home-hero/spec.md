@@ -30,3 +30,11 @@ Scope: top homepage hero only. Reference https://linktodm.com/, inspected Septem
 - User confirmed AP3K has Meta Business Partner status on September 26, 2026.
 - Replace the Official Instagram API label with the exact reference Meta Business Partner artwork (meta.B36JgVLz.svg), rendered at the reference 38px height. Keep Meta blue; use white wordmark text on dark backgrounds. Embedded logo raster is locally optimized.
 - Keep the creator line factual; the user confirmed the requested 19,000+ customer count is not yet true, so it is not published.
+
+## Navigation and Automatically showcase — 26 September 2026
+
+- Public navigation follows the reference floating pill: 584px minimum desktop width, 24px top offset, AP3K 24px mark, text-only locale selector, Pricing/Login/Join for free using AP3K localized destinations. Mobile expands the pill into those same links. Theme selection lives in the footer.
+- The showcase follows the Meta badge, with eight selectable features, original paired conversation illustrations, scroll-driven tilted side cards, and a five-second active-text fill and image crossfade. Autoplay pauses while hovered, keyboard-focused, offscreen, or in a background tab; reduced-motion users select static examples. Mobile uses the reference horizontally scrolling cards.
+- The original 16 WebP illustrations are stored locally under `public/media/showcase`; their source is LinktoDM's public homepage, inspected/downloaded at the owner's explicit request. Copy is localized into the five supported site languages; the reference illustrations retain their English example conversations.
+- Shared media received through the DM webhook can enter an ANY_MESSAGE automation; this is a presentation change and introduces no new trigger or backend behavior.
+- Preview verification: desktop, 768px tablet, 390px and 320px phones; dark and light modes; expanded mobile menu; flag-free locale menu; French localized destinations; feature selection, original image loading, and mobile horizontal swiping. TypeScript, production build and 15 existing locale/routing tests passed. Temporary preview harness removed before release.

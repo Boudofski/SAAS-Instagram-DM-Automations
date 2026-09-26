@@ -1,3 +1,4 @@
+import HomeShowcase from "@/components/website/home-showcase";
 import HomeHero from "@/components/website/home-hero";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import { translateUi } from "@/lib/i18n/translate";
@@ -126,6 +127,7 @@ export default async function LandingPage() {
 
       <main>
         <HomeHero />
+        <HomeShowcase />
 
         <section className="relative overflow-hidden border-b border-slate-200/80 bg-[linear-gradient(180deg,#f8f7fc_0%,#f2effa_100%)] px-4 py-20 dark:border-white/[0.08] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#080911_0%,#0c0d19_100%)] sm:px-8 lg:py-24">
           <div aria-hidden="true" className="pointer-events-none absolute -left-28 top-20 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-600/10" />

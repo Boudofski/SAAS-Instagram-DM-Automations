@@ -14,7 +14,6 @@
   background: var(--hero-bg);
   color: var(--hero-text);
   text-align: left;
-  border-bottom: 1px solid var(--hero-border);
 }
 :global(.dark) .hero {
   --hero-bg: #090a12;
