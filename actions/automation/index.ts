@@ -81,12 +81,7 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       if (aiPlan !== "PRO" && aiPlan !== "BUSINESS") {
         return { status: 403, data: "AI replies are available on Pro and Business plans." };
       }
-      const aiWorkspace = aiProfile?.id
-        ? await client.instagramAiConfig.findUnique({ where: { integrationId: await currentInstagramAccountId(user.id) }, select: { aiCommentsEnabled: true } })
-        : null;
-      if (!aiWorkspace?.aiCommentsEnabled) {
-        return { status: 400, data: "Enable AI Comments in AP3K AI before using it in an automation." };
-      }
+
     }
 
     if (process.env.NODE_ENV !== "production") {
@@ -228,12 +223,7 @@ export const saveMessageAutomation = async (
       if (plan !== "PRO" && plan !== "BUSINESS") {
         return { status: 403, data: "AI DM replies are available on Pro and Business plans." };
       }
-      const workspace = profile?.id
-        ? await client.instagramAiConfig.findUnique({ where: { integrationId: await currentInstagramAccountId(user.id) }, select: { aiRepliesEnabled: true } })
-        : null;
-      if (!cleanPayload.aiConversation && !workspace?.aiRepliesEnabled) {
-        return { status: 400, data: "Enable AI Replies in AP3K AI before using it in a DM automation." };
-      }
+
     }
 
     if (cleanPayload.active) {

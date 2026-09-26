@@ -1,7 +1,7 @@
 "use client";
+import { normalizeCopyList, readCommentReplies, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
 
 import CommentEditor from "@/components/automations/comment-editor";
-import { getAiWorkspace } from "@/actions/ai-workspace";
 import { Loader2 } from "lucide-react";
 import { useUi } from "@/components/i18n/use-ui";
 import AutomationTypePicker from "@/components/automations/automation-type-picker";
@@ -56,8 +56,8 @@ function AutomationSetup({ params, searchParams }: Props) {
   const { data, update, activate, isSubmitting, error } = useWizard(slug, editId, user?.data?.integrations?.[0]?.id ?? "");
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [followUpsReady, setFollowUpsReady] = useState(false);
-  const [aiState,setAiState] = useState({available:false,ready:false,paid:false});
-  useEffect(()=>{let cancelled=false;void getAiWorkspace().then(result=>{if(cancelled)return;const paid=result.plan === "PRO" || result.plan === "BUSINESS";setAiState({paid,ready:result.profile.aiCommentsEnabled,available:paid && result.profile.aiCommentsEnabled});}).catch(()=>{});return()=>{cancelled=true;};},[]);
+  const aiPlan = (user as any)?.data?.subscription?.plan;
+  const aiState = { paid: aiPlan === "PRO" || aiPlan === "BUSINESS", available: aiPlan === "PRO" || aiPlan === "BUSINESS" };
   useEffect(() => { let cancelled = false; void getEngagementAvailability().then(result => { if (!cancelled) setFollowUpsReady(result.followUpsReady); }).catch(() => { if (!cancelled) setFollowUpsReady(false); }); return () => { cancelled = true; }; }, []);
   const initializedAffiliate = useRef(false);
   useEffect(() => {
@@ -118,7 +118,6 @@ function AutomationSetup({ params, searchParams }: Props) {
     update({
       campaignName: automation.name ?? "",
       active: Boolean(automation.active),
-      matchingMode: "CONTAINS",
       keywords: Array.isArray(automation.keywords)
         ? automation.keywords.map((keyword: any) => keyword.word).filter(Boolean)
         : [],
@@ -133,6 +132,10 @@ function AutomationSetup({ params, searchParams }: Props) {
       productImageUrl: automation.listener?.mediaUrl ?? "",
       productSubtitle: automation.listener?.cardSubtitle ?? "",
       publicReply: automation.listener?.commentReply ?? "",
+      commentReplies: readCommentReplies(automation.listener ?? {}),
+      messageVariations: normalizeCopyList(automation.listener?.messageVariations, MAX_MESSAGE_VARIATIONS),
+      publicReplyLimit: automation.listener?.publicReplyLimit ?? 0,
+      matchingMode: automation.matchingMode === "EXACT" ? "EXACT" : "CONTAINS",
       publicReply2: automation.listener?.commentReply2 ?? "",
       publicReply3: automation.listener?.commentReply3 ?? "",
       aiReplyEnabled: Boolean(automation.listener?.aiReplyEnabled),
@@ -204,7 +207,7 @@ function AutomationSetup({ params, searchParams }: Props) {
     );
   }
 
-  return <CommentEditor slug={slug} data={data} update={update} onSave={active=>void activate(active)} saving={isSubmitting} error={error}
+  return <CommentEditor integrationId={instagram?.id ?? ""} slug={slug} data={data} update={update} onSave={active=>void activate(active)} saving={isSubmitting} error={error}
     editingActive={Boolean(editId && data.active)} posts={postList} postsLoading={postsLoading} postsFetching={postsFetching} refreshPosts={()=>void refetchPosts()}
     username={instagram?.instagramUsername} avatar={instagram?.profilePictureUrl} connected={hasInstagramConnection} accountLoading={userPending}
     accountError={!hasInstagramConnection && (userError || user?.status !== 200)} retryAccount={()=>{void refetchUser();void refetchPosts();}}

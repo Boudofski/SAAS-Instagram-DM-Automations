@@ -1,3 +1,4 @@
+import { normalizeCopyList, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
 import { readAiConversation, type AiConversationConfig } from "@/lib/ai-conversation";
 import {
   resolveFollowRequestButtonText,
@@ -26,6 +27,7 @@ export type RawMessageAutomationPayload = {
   keywords?: string[];
   responseFormat?: string;
   message?: string | null;
+  messageVariations?: unknown;
   quickReplies?: unknown;
   linkButtons?: unknown;
   ctaLink?: string | null;
@@ -50,6 +52,7 @@ export type NormalizedMessageAutomationPayload = {
   keywords: string[];
   responseFormat: MessageResponseFormat;
   message: string;
+  messageVariations?: string[];
   quickReplies: Array<string | LinkButton>;
   ctaLink?: string;
   ctaButtonTitle?: string;
@@ -96,6 +99,7 @@ export function normalizeMessageAutomationPayload(
         ? Array.from(new Set((payload.keywords ?? []).map((word) => word.trim().toLowerCase()).filter(Boolean))).slice(0, 20)
         : [],
     responseFormat,
+    messageVariations: payload.aiReplyEnabled ? [] : normalizeCopyList(payload.messageVariations, MAX_MESSAGE_VARIATIONS),
     message: (payload.message ?? "").trim().slice(0, 1000),
     quickReplies: payload.aiReplyEnabled ? [] : responseFormat === "LINK" ? linkButtons : readLegacyQuickReplies(payload.quickReplies),
     ctaLink: !payload.aiReplyEnabled && responseFormat === "LINK" ? firstLink?.url : undefined,

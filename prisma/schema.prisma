@@ -255,6 +255,7 @@ model Automation {
   leads                Lead[]
   events               AutomationEvent[]
   messageLogs          MessageLog[]
+  publicReplySlots     PublicReplySlot[]
   webhookEvents        WebhookEvent[]
   conversations        Conversation[]
   aiUsageEvents        AiUsageEvent[]
@@ -296,6 +297,9 @@ model Listener {
   commentReply            String?
   commentReply2           String?
   commentReply3           String?
+  commentReplies          Json?
+  messageVariations       Json?
+  publicReplyLimit        Int        @default(0)
   aiReplyEnabled          Boolean    @default(false)
   aiReplyTone             String     @default("FRIENDLY")
   aiReplyInstructions     String?
@@ -765,4 +769,17 @@ model AutomationFlowReceipt {
   createdAt     DateTime @default(now())
   @@unique([integrationId, recipientIgId, eventId])
   @@index([createdAt])
+}
+
+// Per-post rolling cap and concurrent-send reservation. Ambiguous sends keep their slot.
+model PublicReplySlot {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId String @db.Uuid
+  automation Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  mediaId String
+  commentId String
+  status String @default("RESERVED")
+  createdAt DateTime @default(now())
+  @@unique([automationId, commentId])
+  @@index([automationId, mediaId, createdAt])
 }

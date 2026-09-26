@@ -23,6 +23,9 @@ const mockSendInstagramCommentPrivateReply = vi.fn();
 const mockSendCommentReply = vi.fn();
 const mockSendMediaComment = vi.fn();
 
+const mockPublicSlot = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/public-reply-limit", () => ({ reservePublicReplySlot: (...args: any[]) => mockPublicSlot(...args), finishPublicReplySlot: vi.fn().mockResolvedValue(undefined) }));
+
 vi.mock("@/actions/webhook/queries", () => ({
   findAutomationForCommentWithReason: (...args: any[]) => mockFindAutomationForCommentWithReason(...args),
   findAutomationForDM: vi.fn(),
@@ -80,7 +83,10 @@ vi.mock("@/lib/openai", () => ({
   openai: { chat: { completions: { create: vi.fn() } } },
 }));
 
+const ai = vi.hoisted(()=>({decision:vi.fn(),reserve:vi.fn()}));
+vi.mock("@/lib/ai-reply",()=>({getAiWorkspaceRuntimeConfig:async()=>({aiCommentsEnabled:false}),generateAiCommentDecision:(...args:any[])=>ai.decision(...args),generateAiDmReply:vi.fn()}));
 vi.mock("@/actions/usage/queries", () => ({
+  reserveAiReplyQuota:(...args:any[])=>ai.reserve(...args),completeAiReplyReservation:vi.fn(),releaseAiReplyReservation:vi.fn(),
   canSendStaticReply: (...args: any[]) => mockCanSendStaticReply(...args),
 }));
 
@@ -164,6 +170,9 @@ function commentRequest(overrides: Record<string, any> = {}) {
 }
 
 beforeEach(() => {
+    mockPublicSlot.mockResolvedValue({ok:true,id:"slot"});
+    ai.decision.mockResolvedValue({action:"REPLY",category:"SAFE",reply:"Hi @tester! Check your DMs 😊"});
+    ai.reserve.mockResolvedValue({ok:true,reservationId:"quota"});
   vi.clearAllMocks();
   mockCreateWebhookEvent.mockResolvedValue({ id: "webhook-event-1" });
   mockUpdateWebhookEvent.mockResolvedValue({});
@@ -202,6 +211,31 @@ beforeEach(() => {
 });
 
 describe("comment webhook private DM toggle", () => {
+  it("uses automation AI even when the workspace master switch is false", async () => {
+    const campaign:any = automation(true); campaign.listener.aiReplyEnabled=true; campaign.User.subscription.plan="PRO";
+    mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+    await POST(commentRequest());
+    expect(ai.decision).toHaveBeenCalledWith(expect.objectContaining({deliveryContext:{sendDm:true,openingDm:true,username:"tester"}}));
+    expect(mockSendCommentReply).toHaveBeenCalledWith("comment-1","Hi @tester! Check your DMs 😊","safe-token");
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+  });
+  it("keeps the DM working when the public reply cap is reached",async()=>{
+    const campaign=automation(true);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+    mockPublicSlot.mockResolvedValue({ok:false,reason:"public_reply_weekly_limit"});
+    await POST(commentRequest());
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({status:"SKIPPED",errorMessage:"public_reply_weekly_limit"}));
+  });
+  it("uses a saved DM variation with the original link settings",async()=>{
+    const campaign:any=automation(true); campaign.listener.openingDmEnabled=false; campaign.listener.messageVariations=["Alternative one","Alternative two"];
+    mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+    await POST(commentRequest());
+    const input=mockSendInstagramCommentPrivateReply.mock.calls[0][0];
+    expect(["Here is the link","Alternative one","Alternative two"]).toContain(input.message);
+    expect(input.commentId).toBe("comment-1");
+  });
   it("does not call the private DM endpoint when sendPrivateDm is false and logs DM_SKIPPED", async () => {
     const campaign = automation(false);
     mockFindAutomationForCommentWithReason.mockResolvedValue({

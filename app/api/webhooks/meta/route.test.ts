@@ -563,7 +563,7 @@ describe("Meta webhook route security", () => {
     mockFindAutomationForDM.mockResolvedValue({ automation, matchedKeyword: "any message" });
     mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
     mockReserveAiReplyQuota.mockResolvedValue({ ok: true, reservationId: "reservation-1" });
-    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({ aiRepliesEnabled: true, knowledge: [] });
+    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({ aiRepliesEnabled: false, knowledge: [] });
     mockGenerateAiDmReply.mockResolvedValue({
       ok: true,
       reply: "Create your free AP3K account here.",
