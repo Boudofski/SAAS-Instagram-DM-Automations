@@ -15,42 +15,11 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import FeatureDemos from "@/components/website/feature-demos";
+import HomeFeatures from "@/components/website/home-features";
 import HomeScrollProgress from "@/components/website/home-scroll-progress";
-import { AnimatedSetupSteps } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
-
-const BENEFITS = [
-  {
-    kicker: "Comment automation",
-    title: "Turn comments into conversations that keep moving.",
-    body: "Choose a keyword or any eligible comment, then let AP3K react immediately while intent is still fresh.",
-    bullets: ["Match keywords or any comment", "Keep every automation organized", "See activity as it happens"],
-    src: "/media/instagram-features_01-phone.mp4",
-    poster: "/media/instagram-features_01-poster.webp",
-    label: "Comment triggers",
-  },
-  {
-    kicker: "Lead capture",
-    title: "Catch interested people before the moment disappears.",
-    body: "Move the right commenters into a DM and keep the automation activity and lead context in one place.",
-    bullets: ["Send the requested follow-up by DM", "Track automation leads", "Reduce manual inbox follow-up"],
-    src: "/media/instagram-features_02-phone.mp4",
-    poster: "/media/instagram-features_02-poster.webp",
-    label: "Lead flow",
-  },
-  {
-    kicker: "Always-on engagement",
-    title: "Reply while your audience is still paying attention.",
-    body: "AP3K can reply under the post, send a DM, or do both—using the exact actions you configured for the automation.",
-    bullets: ["Reply to comments automatically", "Send DMs after eligible comments", "Use one action or both"],
-    src: "/media/instagram-features_04-phone.mp4",
-    poster: "/media/instagram-features_04-poster.webp",
-    label: "Reply and DM",
-  },
-] as const;
 
 const SOLUTION_PAGES = [
   ["Instagram DM automation", "/instagram-dm-automation", "Automate useful private follow-up after comments, stories, and messages."],
@@ -132,22 +101,7 @@ export default async function LandingPage() {
 
         <HomeSetup />
 
-        <FeatureDemos demos={BENEFITS} />
-
-        <section id="how-it-works" className="relative overflow-hidden border-y border-violet-200/60 bg-[linear-gradient(180deg,#f8f6fe_0%,#f0ecfb_100%)] px-4 py-16 dark:border-white/[0.08] dark:bg-[linear-gradient(180deg,#0e1020_0%,#090a13_100%)] sm:px-8 sm:py-20 lg:px-16 lg:py-24">
-          <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-0 h-72 w-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-300/25 blur-3xl dark:bg-violet-600/10" />
-
-          <div className="relative mx-auto max-w-7xl">
-            <FadeIn className="grid items-end gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">Start in minutes</p>
-                <h2 className="mt-4 max-w-3xl text-4xl font-black leading-[1.04] tracking-[-0.055em] text-slate-950 dark:text-white sm:text-5xl lg:text-[3.5rem]">New to automation? Do not overthink it.</h2>
-              </div>
-              <p className="max-w-xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg lg:justify-self-end">The customer flow is intentionally simple: Post → Trigger → Actions → Review.</p>
-            </FadeIn>
-            <AnimatedSetupSteps />
-          </div>
-        </section>
+        <HomeFeatures />
 
         <section id="pricing" className="bg-[#f7f7fb] px-4 py-16 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-20">
           <div className="mx-auto max-w-7xl">
