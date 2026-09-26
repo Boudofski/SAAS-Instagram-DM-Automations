@@ -16,6 +16,8 @@ import {
 } from "@/lib/comment-dm-flow";
 import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, type LinkButton } from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import { useState, useEffect, useRef } from "react";
 import { DEFAULT_AI_PROTECTION_RULES, type AiProtectionRules, type AiReplyTone } from "@/lib/ai-reply-config";
 
@@ -109,6 +111,7 @@ const INITIAL: WizardData = {
 
 export function useWizard(slug: string, automationId?: string, integrationId = "") {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const tr = useUi();
   const [step, setStep] = useState<WizardStep>(1);
   const [data, setData] = useState<WizardData>(() => ({ ...INITIAL, dmMessage: tr(INITIAL.dmMessage), publicReply: tr(INITIAL.publicReply), publicReply2: tr(INITIAL.publicReply2), publicReply3: tr(INITIAL.publicReply3), openingDmText: tr(INITIAL.openingDmText), openingDmButtonText: tr(INITIAL.openingDmButtonText), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
@@ -225,6 +228,7 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
         throw new Error(typeof saved.data === "string" ? saved.data : "Could not save automation. Please try again.");
       }
 
+      await refreshSavedAutomation(queryClient, campaignId);
       router.push(`/dashboard/${slug}/automation`);
       router.refresh();
     } catch (err) {
