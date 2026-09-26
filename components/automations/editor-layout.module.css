@@ -134,9 +134,52 @@
 .settingsPanel { position:absolute; inset-inline-end:0; top:33px; z-index:20; width:310px; max-width:calc(100vw - 60px); display:flex; align-items:center; gap:15px; padding:16px; border:1px solid var(--editor-line); border-radius:12px; box-shadow:0 8px 30px #0002; background:var(--editor-card); color:var(--editor-text); font-size:12px; }
 @media(min-width:1600px) { .rowTrigger h3 { font-size:16px; } }
 @media(max-width:479px) { .copyHeading { font-size:12px; } .copyActions { gap:8px; } .textAction,.generateAction { font-size:11px; } .copyField textarea { padding:12px; font-size:13px; } .replyLine { padding-inline-start:10px; } .replyLine textarea { font-size:12px; } .copyDialog { padding:20px 16px; } .settingLine .selectTrigger { width:100%; } .selectTrigger { min-width:100px; font-size:12px; } }
-.linkEditor { display:flex; flex-direction:column; gap:12px; margin-top:16px; }
-.linkRow { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px; border:1px solid var(--editor-line,#e5e4ed); border-radius:10px; padding:12px; }
-.linkRow label { flex:1; min-width:150px; color:var(--editor-muted,#787681); font-size:11px; }
-.linkRow input { display:block; width:100%; margin-top:6px; padding:9px 10px; background:var(--editor-soft,#f6f5fa); color:var(--editor-text,#191429); border:1px solid var(--editor-line,#e5e4ed); border-radius:7px; font-size:13px; }
-:global(.dark) .linkRow input { background:var(--editor-soft,#1d1b2b); color:var(--editor-text,#f5f3fa); border-color:var(--editor-line,#2b283b); }
-@media(max-width:479px) { .linkRow label { flex-basis:100%; min-width:0; } }
+.variationsBar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; min-height:54px; padding:8px 12px; margin-bottom:8px; border-radius:12px; background:var(--editor-soft); }
+.variationsBar>span { display:flex; align-items:center; gap:7px; font-size:13px; }
+.variationsBar>span>svg,.variationInfo { color:var(--editor-muted); }
+.variationAdd { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:36px; border:1px solid var(--editor-line); border-radius:9px; padding:8px 12px; font-size:12px; color:var(--editor-text); }
+.variationAdd>span,.variationDialogHeader>span { color:#7c3aed; font-size:18px; }
+:global(.dark) .variationAdd>span,:global(.dark) .variationDialogHeader>span { color:#c4b5fd; }
+.messageGrid { display:grid; grid-template-columns:minmax(115px,20%) minmax(0,1fr); align-items:start; gap:26px; }
+.messageFields { min-width:0; }
+.messageFields>.copyHeading { margin-bottom:8px; }
+.messageFields .copyField textarea { min-height:74px; font-size:13px; }
+.miniPreview { min-width:0; }
+.miniCaption { display:block; margin-bottom:9px; color:var(--editor-muted); font-size:10px; text-transform:uppercase; }
+.miniCard { padding:10px; border-radius:12px; background:color-mix(in srgb,var(--editor-soft) 85%,#8b5cf6 4%); }
+.miniCard p { padding:12px 10px; border-radius:10px; white-space:pre-wrap; overflow-wrap:anywhere; font-size:10px; line-height:1.6; background:var(--editor-card); }
+.miniCard>span { display:block; margin-top:6px; padding:7px; border:1px solid var(--editor-line); border-radius:9px; background:var(--editor-card); text-align:center; font-size:10px; overflow-wrap:anywhere; }
+.linkEditor { display:flex; flex-direction:column; gap:12px; margin-top:22px; }
+.linkEditor .copyHeading { margin-bottom:7px; min-height:20px; }
+.linkRow { overflow:hidden; border:1px solid var(--editor-line,#e5e4ed); border-radius:12px; }
+.linkRow label { display:flex; align-items:center; gap:10px; padding:10px 13px; min-width:0; color:var(--editor-muted,#787681); font-size:10px; }
+.linkRow label+label { border-top:1px solid var(--editor-line,#e5e4ed); }
+.linkRow label>span { flex:1; min-width:0; }
+.linkRow label>svg { flex-shrink:0; }
+.linkRow small { font-size:10px; flex-shrink:0; }
+.linkRow input { display:block; width:100%; min-width:0; padding:2px 0; background:transparent; color:var(--editor-text,#191429); border:0; font-size:12px; line-height:1.5; }
+:global(.dark) .linkRow input { color:var(--editor-text,#f5f3fa); }
+.addLink { display:inline-flex; align-self:flex-start; align-items:center; gap:5px; min-height:36px; border:1px dashed var(--editor-line); border-radius:10px; padding:8px 10px; color:#7c3aed; font-size:12px; }
+.addLink span { color:var(--editor-muted); font-size:11px; }
+:global(.dark) .addLink { color:#c4b5fd; }
+.variationDialog { display:flex; flex-direction:column; width:calc(100vw - 32px); max-width:680px; max-height:85dvh; padding:0; gap:0; border-radius:24px; overflow:hidden; }
+.variationDialogHeader { display:flex; align-items:flex-start; gap:10px; padding:20px 44px 17px 22px; flex-shrink:0; }
+.variationDialogHeader>span { font-size:24px; line-height:1; }
+.variationDialogHeader h2 { font-size:15px; font-weight:500; }
+.variationDialogHeader p { margin-top:4px; font-size:12px; color:var(--editor-muted); line-height:1.5; }
+.variationScroll { overflow-y:auto; overscroll-behavior:contain; min-height:0; padding:0 22px 18px; scrollbar-width:thin; }
+.variationScroll>.copyHeading { margin-bottom:14px; font-size:11px; }
+.variationList { gap:16px; }
+.variationList .copyHeading { margin-bottom:8px; font-size:11px; color:var(--editor-muted); }
+.variationList .copyHeading strong { font-weight:400; }
+.variationList .copyActions { gap:5px; }
+.variationList .remove { width:20px; height:24px; }
+.variationList .copyField textarea { min-height:84px; padding:12px 14px; font-size:13px; }
+.variationList .copyFooter { padding:3px 14px 10px; font-size:10px; }
+.variationBottomActions { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-top:18px; }
+.variationDialogFooter { display:flex; justify-content:flex-end; align-items:center; gap:14px; padding:12px 22px; border-top:1px solid var(--editor-line); background:var(--editor-card); flex-shrink:0; }
+.variationDialogFooter .publish { min-height:34px; padding:7px 12px; font-weight:500; }
+.cancelAction { padding:8px 0; font-size:12px; }
+.generatingStatus { display:flex; align-items:center; gap:8px; color:var(--editor-muted); font-size:12px; margin:8px 0 18px; }
+@media(min-width:1024px) and (max-width:1279px) { .messageGrid { grid-template-columns:minmax(0,1fr); gap:16px; } .miniPreview { max-width:200px; } }
+@media(max-width:599px) { .messageGrid { grid-template-columns:minmax(0,1fr); gap:16px; } .miniPreview { width:100%; max-width:220px; } .variationsBar { padding:10px; gap:8px; } .variationAdd { font-size:11px; padding:7px 9px; } .variationsBar>span { font-size:12px; } .variationDialog { max-height:90dvh; border-radius:18px; } .variationDialogHeader { padding:18px 38px 16px 16px; } .variationScroll { padding-inline:16px; } .variationDialogFooter { padding:12px 16px; } }

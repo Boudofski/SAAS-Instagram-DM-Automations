@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, Info, Loader2, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Eye, EyeOff, Info, Layers, Loader2, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useUi } from "@/components/i18n/use-ui";
 import { useI18n } from "@/providers/i18n-provider";
 import { generateAutomationCopyAction } from "@/actions/automation-copy";
-import { DEFAULT_COMMENT_PROMPT, DEFAULT_COMMENT_ONLY_PROMPT, MAX_COMMENT_REPLIES, MAX_MESSAGE_VARIATIONS, normalizeCopyList, type AutomationCopyInput, type AutomationCopyMode } from "@/lib/automation-copy";
+import { DEFAULT_COMMENT_PROMPT, DEFAULT_COMMENT_ONLY_PROMPT, MAX_COMMENT_REPLIES, MAX_MESSAGE_VARIATIONS, normalizeCopyList, personalizeUsername, variationGenerationError, type AutomationCopyInput, type AutomationCopyMode } from "@/lib/automation-copy";
+import type { LinkButton } from "@/lib/link-buttons";
 import { editorStyles as s } from "./editor-layout";
 
 type Context = Omit<AutomationCopyInput, "mode" | "text" | "existing" | "instructions" | "locale"> & { available: boolean };
@@ -46,7 +47,7 @@ export function CopyField({ label, value, onChange, maxLength = 1000, rows = 4, 
   }
   return <div className={`${s.copyField} ${compact ? s.copyCompact : ""}`}>
     <textarea ref={ref} aria-label={tr(label)} value={value} onChange={e => onChange(e.target.value)} rows={rows} maxLength={maxLength} dir="auto" disabled={disabled} placeholder={tr("Enter your message here")} />
-    <div className={s.copyFooter}><span>{value.length}/{maxLength}</span><button type="button" title={tr("Insert username")} aria-label={tr("Insert username")} onClick={insertUsername} disabled={disabled}>{"{}"}<span>{tr("Username")}</span></button></div>
+    <div className={s.copyFooter}><span>{value.length}/{maxLength}</span><button type="button" title={tr("Insert username")} aria-label={tr("Insert username")} onClick={insertUsername} disabled={disabled}>{"{}"}</button></div>
   </div>;
 }
 
@@ -55,6 +56,7 @@ export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPr
 }) {
   const tr = useUi(); const generation = useCopyGeneration(context);
   const [draft, setDraft] = useState("");
+  const draftRef = useRef(draft); draftRef.current = draft;
   const [samples, setSamples] = useState<string[]>([]);
   const [showSamples, setShowSamples] = useState(false);
   const repliesRef = useRef(replies); repliesRef.current = replies;
@@ -63,8 +65,9 @@ export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPr
   const defaultPrompt = tr(context.sendDm ? DEFAULT_COMMENT_PROMPT : DEFAULT_COMMENT_ONLY_PROMPT);
   const add = () => { const next = draft.trim(); if (!next || replies.length >= MAX_COMMENT_REPLIES) return; onRepliesChange(normalizeCopyList([...replies, next])); setDraft(""); };
   async function generateReplies() {
-    const items = await generation.generate("COMMENT_REPLIES", { text: draft, existing: replies });
-    if (items) { onRepliesChange(normalizeCopyList([...repliesRef.current, ...items])); setDraft(""); }
+    const before = draft;
+    const items = await generation.generate("COMMENT_REPLIES", { text: draft || replies.find(x => x.trim()) || "", existing: replies });
+    if (items) { onRepliesChange(normalizeCopyList([...repliesRef.current, ...items.slice(0, 1)])); if (draftRef.current === before) setDraft(""); }
   }
   async function regeneratePrompt() {
     const before = prompt;
@@ -93,40 +96,64 @@ export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPr
   </div>;
 }
 
-export function MessageCopyComposer({ message, onMessageChange, variations, onVariationsChange, context, onPreview, maxLength = 1000 }: {
-  message: string; onMessageChange: (value: string) => void; variations: string[]; onVariationsChange: (value: string[]) => void; context: Context; onPreview?: (value: string) => void; maxLength?: number;
+export function MessageCopyComposer({ message, onMessageChange, variations, onVariationsChange, context, linkButtons = [], onPreview, children, maxLength = 1000 }: {
+  message: string; onMessageChange: (value: string) => void; variations: string[]; onVariationsChange: (value: string[]) => void;
+  context: Context; linkButtons?: LinkButton[]; onPreview?: (value: string) => void; children?: ReactNode; maxLength?: number;
 }) {
-  const tr = useUi(); const generation = useCopyGeneration(context);
-  const [open, setOpen] = useState(false); const [draft, setDraft] = useState<string[]>([]);
+  const tr = useUi();
+  const generation = useCopyGeneration({ ...context, linkButtons });
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<string[]>([]);
   const [selected, setSelected] = useState(0);
-  const messageRef = useRef(message); messageRef.current = message;
-  const openRef = useRef(false); openRef.current = open;
+  const sourceKey = JSON.stringify({ message, linkButtons, hasButtons: context.hasButtons });
+  const sourceRef = useRef(sourceKey); sourceRef.current = sourceKey;
+  const openRef = useRef(open); openRef.current = open;
   const draftRef = useRef(draft); draftRef.current = draft;
-  async function generateMessage() {
-    const before = message;
-    const items = await generation.generate("MESSAGE", { text: message });
-    if (items && messageRef.current === before) onMessageChange(items[0].slice(0, maxLength));
-  }
-  async function generateVariations(replace = false, index?: number) {
+  const readiness = variationGenerationError({ text: message, hasButtons: context.hasButtons, linkButtons });
+  const canGenerate = context.available && !readiness;
+  const setCurrentDraft = (next: string[]) => { draftRef.current = next; setDraft(next); };
+
+  async function generateVariations(action: "replace" | "append" | "single", index?: number) {
+    if (!canGenerate) return;
     const before = draftRef.current;
-    const original = message;
-    const items = await generation.generate("MESSAGE_VARIATIONS", { text: message, existing: draftRef.current });
-    if (!items || messageRef.current !== original || !openRef.current || before !== draftRef.current) return;
-    setDraft(current => index !== undefined ? current.map((value, i) => i === index ? items[0] : value) : normalizeCopyList(replace ? items : [...current, ...items], MAX_MESSAGE_VARIATIONS));
+    const source = sourceKey;
+    const count = action === "replace" ? 5 : 1;
+    const items = await generation.generate("MESSAGE_VARIATIONS", { text: message, linkButtons, count, existing: [message, ...before] });
+    if (!items || sourceRef.current !== source || !openRef.current || before !== draftRef.current) return;
+    const copy = items.slice(0, count).map(text => text.slice(0, maxLength));
+    setCurrentDraft(action === "single" && index !== undefined ? before.map((value, i) => i === index ? copy[0] : value) : normalizeCopyList(action === "replace" ? copy : [...before, ...copy], MAX_MESSAGE_VARIATIONS));
   }
-  const show = () => { setDraft([...variations]); setOpen(true); };
+  function show() {
+    setCurrentDraft([...variations]); openRef.current = true; setOpen(true);
+    if (!variations.length) void generateVariations("replace");
+  }
   const shown = selected > 0 ? variations[selected - 1] ?? message : message;
-  return <div className={s.copySection}>
-    <div className={s.copyHeading}><strong>{tr("Message")}</strong><div className={s.copyActions}><button type="button" className={s.textAction} disabled={generation.busy || !context.available} onClick={() => void generateMessage()}>{generation.busy ? <Loader2 className="animate-spin"/> : <Sparkles/>}{tr("Generate message")}</button><button type="button" className={s.textAction} onClick={show}><Sparkles/>{tr(variations.length ? "Edit variations" : "Add variations")}{variations.length ? ` (${variations.length})` : ""}</button></div></div>
+  const previewButtons = context.hasButtons ? linkButtons : [];
+  return <div className={s.copySection} onFocusCapture={() => onPreview?.(shown)}>
+    <div className={s.variationsBar}>
+      <span><Layers size={15}/>{tr("Variations")}<Info size={14} className={s.variationInfo} aria-label={tr("These rotate automatically so your DMs feel personal. Your links and buttons stay the same.")}/></span>
+      <button type="button" className={s.variationAdd} disabled={generation.busy || (!variations.length && !canGenerate)} title={readiness ? tr(readiness) : undefined} onClick={show}><span aria-hidden="true">✦</span>{tr(variations.length ? "Edit variations" : "Add variations")}{variations.length ? ` (${variations.length})` : ""}</button>
+    </div>
+    {readiness && <p className={s.hint}>{tr(readiness)}</p>}
     {variations.length > 0 && <div className={s.variationTabs}>{[message, ...variations].map((_, index) => <button type="button" key={index} aria-pressed={selected === index} onClick={() => { setSelected(index); onPreview?.(index ? variations[index - 1] : message); }}>{index === 0 ? tr("Original") : `${tr("Variation")} ${index}`}</button>)}</div>}
-    <CopyField label="DM message text" value={shown} maxLength={maxLength} onChange={value => { if (selected > 0 && variations[selected - 1] !== undefined) onVariationsChange(variations.map((x, i) => i === selected - 1 ? value : x)); else onMessageChange(value); onPreview?.(value); }}/>
+    <div className={s.messageGrid}>
+      <div className={s.miniPreview} aria-label={tr("Message preview")}><span className={s.miniCaption}>{tr("Preview")}</span><div className={s.miniCard}><p dir="auto">{personalizeUsername(shown || tr("Enter your message here"), "username")}</p>{previewButtons.map((button, index) => <span key={index} dir="auto">{button.label || tr("Get the Link")}</span>)}</div></div>
+      <div className={s.messageFields}><div className={s.copyHeading}><strong>{tr("Message")}</strong></div>
+        <CopyField label="DM message text" value={shown} maxLength={maxLength} onChange={value => { if (selected > 0 && variations[selected - 1] !== undefined) onVariationsChange(variations.map((x, i) => i === selected - 1 ? value : x)); else onMessageChange(value); onPreview?.(value); }}/>
+        {children}
+      </div>
+    </div>
     {generation.error && !open && <p role="alert" className={s.error}>{tr(generation.error)}</p>}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className={s.copyDialog}><DialogTitle>{tr("Variations")}</DialogTitle><DialogDescription>{tr("These rotate automatically so your DMs feel personal. Your links and buttons stay the same.")}</DialogDescription>
-      <div className={s.copyHeading}><span>{draft.length}/{MAX_MESSAGE_VARIATIONS} {tr("variations")}</span><button type="button" className={s.textAction} disabled={generation.busy || !context.available || !message.trim()} onClick={() => void generateVariations(true)}><RefreshCw className={generation.busy ? "animate-spin" : ""}/>{tr("Regenerate")}</button></div>
-      <div className={s.variationList}>{draft.map((value, index) => <div key={index}><div className={s.copyHeading}><strong>{tr("Variation")} {index + 1}</strong><div className={s.copyActions}><button type="button" aria-label={`${tr("Regenerate variation")} ${index + 1}`} disabled={generation.busy || !context.available} onClick={() => void generateVariations(false, index)}><RefreshCw size={15}/></button><button type="button" aria-label={`${tr("Delete variation")} ${index + 1}`} onClick={() => setDraft(x => x.filter((_, i) => i !== index))}><Trash2 size={15}/></button></div></div><CopyField label={`${tr("Variation")} ${index + 1}`} value={value} maxLength={maxLength} onChange={text => setDraft(x => x.map((v, i) => i === index ? text : v))} rows={3}/></div>)}</div>
-      {generation.error && <p role="alert" className={s.error}>{tr(generation.error)}</p>}
-      <div className={s.dialogActions}><button type="button" className={s.outlineAction} disabled={draft.length >= MAX_MESSAGE_VARIATIONS || generation.busy} onClick={() => setDraft(x => [...x, ""])}><Plus/>{tr("Write my own")}</button><button type="button" className={s.generateAction} disabled={draft.length >= MAX_MESSAGE_VARIATIONS || generation.busy || !context.available || !message.trim()} onClick={() => void generateVariations()}>{generation.busy ? <Loader2 className="animate-spin"/> : <Sparkles/>}{tr("Generate more")}</button></div>
-      <div className={s.dialogActions}><button type="button" className={s.outlineAction} onClick={() => setOpen(false)}>{tr("Cancel")}</button><button type="button" className={s.publish} disabled={generation.busy || draft.some(x => !x.trim())} onClick={() => { onVariationsChange(normalizeCopyList(draft, MAX_MESSAGE_VARIATIONS)); setSelected(0); onPreview?.(message); setOpen(false); }}>{tr("Save")}</button></div>
+    <Dialog open={open} onOpenChange={value => { openRef.current = value; setOpen(value); }}><DialogContent className={`${s.copyDialog} ${s.variationDialog}`}>
+      <div className={s.variationDialogHeader}><span aria-hidden="true">✦</span><div><DialogTitle>{tr("Variations")}</DialogTitle><DialogDescription>{tr("These rotate automatically so your DMs feel personal. Your links and buttons stay the same.")}</DialogDescription></div></div>
+      <div className={s.variationScroll}>
+        <div className={s.copyHeading}><span>{tr("{count} variations added").replace("{count}", String(draft.length))}</span><button type="button" className={s.textAction} disabled={generation.busy || !canGenerate} onClick={() => void generateVariations("replace")}><span aria-hidden="true">✦</span>{tr("Regenerate")}</button></div>
+        {generation.busy && <p role="status" className={s.generatingStatus}><Loader2 size={15} className="animate-spin"/>{tr("Writing variations of your message…")}</p>}
+        <div className={s.variationList}>{draft.map((value, index) => <div key={index}><div className={s.copyHeading}><strong>{tr("Variation")} {index + 1}</strong><div className={s.copyActions}><button type="button" className={s.textAction} aria-label={`${tr("Regenerate variation")} ${index + 1}`} disabled={generation.busy || !canGenerate} onClick={() => void generateVariations("single", index)}><RefreshCw size={14}/></button><button type="button" className={s.remove} aria-label={`${tr("Delete variation")} ${index + 1}`} onClick={() => setCurrentDraft(draftRef.current.filter((_, i) => i !== index))}><Trash2 size={14}/></button></div></div><CopyField label={`${tr("Variation")} ${index + 1}`} value={value} maxLength={maxLength} onChange={text => setCurrentDraft(draftRef.current.map((v, i) => i === index ? text : v))} rows={3}/></div>)}</div>
+        {generation.error && <p role="alert" className={s.error}>{tr(generation.error)}</p>}
+        <div className={s.variationBottomActions}><button type="button" className={s.outlineAction} disabled={draft.length >= MAX_MESSAGE_VARIATIONS || generation.busy} onClick={() => setCurrentDraft([...draftRef.current, ""])}><Plus/>{tr("Write my own")}</button><button type="button" className={s.generateAction} disabled={draft.length >= MAX_MESSAGE_VARIATIONS || generation.busy || !canGenerate} onClick={() => void generateVariations("append")}><span aria-hidden="true">✦</span>{tr("Generate more")}</button></div>
+      </div>
+      <div className={s.variationDialogFooter}><button type="button" className={s.cancelAction} onClick={() => { openRef.current = false; setOpen(false); }}>{tr("Cancel")}</button><button type="button" className={s.publish} disabled={generation.busy || draft.some(x => !x.trim())} onClick={() => { onVariationsChange(normalizeCopyList(draft, MAX_MESSAGE_VARIATIONS)); setSelected(0); onPreview?.(message); openRef.current = false; setOpen(false); }}>{tr("Save")}</button></div>
     </DialogContent></Dialog>
   </div>;
 }

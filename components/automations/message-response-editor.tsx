@@ -6,7 +6,7 @@ import { UiText } from "@/components/i18n/localized-copy";
 import { DEFAULT_LINK_BUTTON_LABEL, MAX_LINK_BUTTONS, type LinkButton } from "@/lib/link-buttons";
 import { editorStyles as s } from "./editor-layout";
 import { useId } from "react";
-import { Link2, Plus, Trash2 } from "lucide-react";
+import { Link2, MousePointer2, Plus, Trash2 } from "lucide-react";
 
 type Props = {
   hideMessage?: boolean;
@@ -37,13 +37,14 @@ export default function MessageResponseEditor({ message, linkButtons, onChange, 
       </div>}
 
       <div className={s.linkEditor}>
-        <div className={s.copyHeading}><strong>{tr("Buttons")} · {buttons.length}/{MAX_LINK_BUTTONS}</strong></div>
-        {buttons.map((button,index)=><div key={index} className={s.linkRow}>
-          <label>{tr("Button label")}<input value={button.label} maxLength={20} onChange={e=>updateButton(index,{label:e.target.value})} placeholder={tr("Get the Link")}/></label>
-          <label>{tr("Destination URL")}<input dir="ltr" type="url" value={button.url} onChange={e=>updateButton(index,{url:e.target.value})} placeholder="https://example.com"/></label>
-          {buttons.length > 1 && <button type="button" className={s.remove} aria-label={tr("Remove link {number}").replace("{number}",String(index+1))} onClick={()=>onChange({linkButtons:buttons.filter((_,i)=>i!==index)})}><Trash2 size={15}/></button>}
+        {buttons.map((button,index)=><div key={index}>
+          <div className={s.copyHeading}><strong>{tr("Button")}{buttons.length > 1 ? ` ${index+1}` : ""}</strong>{buttons.length > 1 && <button type="button" className={s.remove} aria-label={tr("Remove link {number}").replace("{number}",String(index+1))} onClick={()=>onChange({linkButtons:buttons.filter((_,i)=>i!==index)})}><Trash2 size={14}/></button>}</div>
+          <div className={s.linkRow}>
+            <label><Link2 size={14}/><span>{tr("Destination URL")}<input dir="ltr" type="url" aria-label={tr("Destination URL")} value={button.url} onChange={e=>updateButton(index,{url:e.target.value})} placeholder="https://example.com"/></span></label>
+            <label><MousePointer2 size={14}/><span>{tr("Button label")}<input dir="auto" aria-label={tr("Button label")} value={button.label} maxLength={20} onChange={e=>updateButton(index,{label:e.target.value})} placeholder={tr("Get the Link")}/></span><small>{button.label.length}/20</small></label>
+          </div>
         </div>)}
-        {buttons.length < MAX_LINK_BUTTONS && <button type="button" className={s.outlineAction} onClick={()=>onChange({linkButtons:[...buttons,{label:tr("Link {number}").replace("{number}",String(buttons.length+1)),url:""}]})}><Plus size={15}/>{tr("Add button")}</button>}
+        {buttons.length < MAX_LINK_BUTTONS && <button type="button" className={s.addLink} onClick={()=>onChange({linkButtons:[...buttons,{label:tr("Link {number}").replace("{number}",String(buttons.length+1)),url:""}]})}><Plus size={13}/>{tr("Add link")}<span>· {tr("{count} more").replace("{count}",String(MAX_LINK_BUTTONS-buttons.length))}</span></button>}
       </div>
     </div>
   );

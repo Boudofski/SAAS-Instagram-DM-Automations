@@ -47,7 +47,16 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Generate samples to preview your prompt.": "Generate samples to preview your prompt.",
     "Generating replies…": "Generating replies…",
     "Add 3 or more replies to keep responses varied. Every variation should communicate the same next step.": "Add 3 or more replies to keep responses varied. Every variation should communicate the same next step.",
-    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization."
+    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.",
+    "Write your message before generating variations.": "Write your message before generating variations.",
+    "Complete your message, button label, and destination URL to generate variations.": "Complete your message, button label, and destination URL to generate variations.",
+    "{count} variations added": "{count} variations added",
+    "Writing variations of your message…": "Writing variations of your message…",
+    "{count} more": "{count} more",
+    "Message preview": "Message preview",
+    "Today": "Today",
+    "Button": "Button",
+    "Add link": "Add link"
   },
   "fr": {
     "Manual": "Manuel",
@@ -96,7 +105,16 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Generate samples to preview your prompt.": "Générez des exemples pour tester la consigne.",
     "Generating replies…": "Génération des réponses…",
     "Add 3 or more replies to keep responses varied. Every variation should communicate the same next step.": "Ajoutez au moins 3 réponses variées, avec la même prochaine étape.",
-    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "L’IA est prête automatiquement. Activez-la dans chaque automatisation. Connaissances et comportement sont facultatifs."
+    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "L’IA est prête automatiquement. Activez-la dans chaque automatisation. Connaissances et comportement sont facultatifs.",
+    "Write your message before generating variations.": "Rédigez votre message avant de générer des variantes.",
+    "Complete your message, button label, and destination URL to generate variations.": "Complétez le message, le libellé du bouton et l’URL pour générer des variantes.",
+    "{count} variations added": "{count} variantes ajoutées",
+    "Writing variations of your message…": "Création de variantes de votre message…",
+    "{count} more": "{count} de plus",
+    "Message preview": "Aperçu du message",
+    "Today": "Aujourd’hui",
+    "Button": "Bouton",
+    "Add link": "Ajouter un lien"
   },
   "es": {
     "Manual": "Manual",
@@ -145,7 +163,16 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Generate samples to preview your prompt.": "Genera ejemplos para probar las instrucciones.",
     "Generating replies…": "Generando respuestas…",
     "Add 3 or more replies to keep responses varied. Every variation should communicate the same next step.": "Añade 3 respuestas o más, todas con el mismo siguiente paso.",
-    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "La IA está lista automáticamente. Elígela en cada automatización. El conocimiento y comportamiento son opcionales."
+    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "La IA está lista automáticamente. Elígela en cada automatización. El conocimiento y comportamiento son opcionales.",
+    "Write your message before generating variations.": "Escribe tu mensaje antes de generar variantes.",
+    "Complete your message, button label, and destination URL to generate variations.": "Completa el mensaje, el texto del botón y la URL para generar variantes.",
+    "{count} variations added": "{count} variantes añadidas",
+    "Writing variations of your message…": "Creando variantes de tu mensaje…",
+    "{count} more": "{count} más",
+    "Message preview": "Vista previa del mensaje",
+    "Today": "Hoy",
+    "Button": "Botón",
+    "Add link": "Añadir enlace"
   },
   "de": {
     "Manual": "Manuell",
@@ -194,7 +221,16 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Generate samples to preview your prompt.": "Erstelle Beispiele zur Vorschau der Anweisung.",
     "Generating replies…": "Antworten werden erstellt…",
     "Add 3 or more replies to keep responses varied. Every variation should communicate the same next step.": "Füge mindestens 3 Antworten hinzu, die denselben nächsten Schritt nennen.",
-    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "KI ist automatisch verfügbar. Wähle sie in jeder Automation. Wissen und Verhalten sind optional anpassbar."
+    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "KI ist automatisch verfügbar. Wähle sie in jeder Automation. Wissen und Verhalten sind optional anpassbar.",
+    "Write your message before generating variations.": "Schreibe deine Nachricht, bevor du Varianten erstellst.",
+    "Complete your message, button label, and destination URL to generate variations.": "Fülle Nachricht, Button-Beschriftung und Ziel-URL aus, um Varianten zu erstellen.",
+    "{count} variations added": "{count} Varianten hinzugefügt",
+    "Writing variations of your message…": "Varianten deiner Nachricht werden erstellt…",
+    "{count} more": "{count} weitere",
+    "Message preview": "Nachrichtenvorschau",
+    "Today": "Heute",
+    "Button": "Button",
+    "Add link": "Link hinzufügen"
   },
   "pt": {
     "Manual": "Manual",
@@ -243,6 +279,15 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Generate samples to preview your prompt.": "Gere exemplos para testar as instruções.",
     "Generating replies…": "A gerar respostas…",
     "Add 3 or more replies to keep responses varied. Every variation should communicate the same next step.": "Adicione 3 ou mais respostas com o mesmo próximo passo.",
-    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "A IA está pronta automaticamente. Escolha-a em cada automação. Conhecimento e comportamento são opcionais."
+    "AI is ready automatically. Choose AI inside each automation to use it. Knowledge and behavior are optional customization.": "A IA está pronta automaticamente. Escolha-a em cada automação. Conhecimento e comportamento são opcionais.",
+    "Write your message before generating variations.": "Escreva a sua mensagem antes de gerar variantes.",
+    "Complete your message, button label, and destination URL to generate variations.": "Complete a mensagem, o texto do botão e o URL de destino para gerar variantes.",
+    "{count} variations added": "{count} variantes adicionadas",
+    "Writing variations of your message…": "A criar variantes da sua mensagem…",
+    "{count} more": "Mais {count}",
+    "Message preview": "Pré-visualização da mensagem",
+    "Today": "Hoje",
+    "Button": "Botão",
+    "Add link": "Adicionar link"
   }
 };

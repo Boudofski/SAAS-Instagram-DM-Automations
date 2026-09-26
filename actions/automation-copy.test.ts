@@ -9,6 +9,12 @@ import { generateAutomationCopyAction } from "./automation-copy";
 const input = {mode:"MESSAGE" as const,integrationId:"account",text:"Hello"};
 beforeEach(()=>{vi.clearAllMocks();m.profile.mockResolvedValue({id:"user",subscription:{plan:"PRO"}});m.scope.mockResolvedValue("account");m.reserve.mockResolvedValue({ok:true,reservationId:"quota"});m.generate.mockResolvedValue(["Hi"]);m.release.mockResolvedValue(undefined);});
 describe("automation AI generation",()=>{
+  it("does not reserve quota for incomplete variation sources",async()=>{
+    for(const source of [{text:""},{text:"Hello",hasButtons:true,linkButtons:[]},{text:"Hello",hasButtons:true,linkButtons:[{label:"Guide",url:""}]}]) {
+      expect((await generateAutomationCopyAction({...input,...source,mode:"MESSAGE_VARIATIONS"})).ok).toBe(false);
+    }
+    expect(m.reserve).not.toHaveBeenCalled();expect(m.generate).not.toHaveBeenCalled();
+  });
   it("works with no AI workspace activation and accounts for the request",async()=>{expect(await generateAutomationCopyAction(input)).toEqual({ok:true,items:["Hi"]});expect(m.complete).toHaveBeenCalledWith("quota",{purpose:"AUTOMATION_EDITOR",mode:"MESSAGE"});});
   it("rejects stale account scope before using AI",async()=>{expect((await generateAutomationCopyAction({...input,integrationId:"other"})).ok).toBe(false);expect(m.reserve).not.toHaveBeenCalled();});
   it("enforces plan and monthly quota",async()=>{m.profile.mockResolvedValue({id:"user",subscription:{plan:"FREE"}});expect((await generateAutomationCopyAction(input)).ok).toBe(false);expect(m.generate).not.toHaveBeenCalled();m.profile.mockResolvedValue({id:"user",subscription:{plan:"PRO"}});m.reserve.mockResolvedValue({ok:false});expect((await generateAutomationCopyAction(input)).ok).toBe(false);expect(m.generate).not.toHaveBeenCalled();});
