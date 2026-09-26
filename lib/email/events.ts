@@ -171,7 +171,7 @@ export async function notifyAutomationActivatedEmail(input: {
     idempotencyKey: `automation-activated:${input.automationId}`,
     context: {
       automationName: input.automationName,
-      actionUrl: workspaceUrl(user.clerkId, `/automation/${input.automationId}`),
+      actionUrl: workspaceUrl(user.clerkId, `/automation/new?edit=${encodeURIComponent(input.automationId)}`),
     },
     metadata: { automationId: input.automationId },
   });

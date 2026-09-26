@@ -104,7 +104,7 @@ describe("workspace search", () => {
     expect(mockAutomationFindMany.mock.calls[0][0].where.name).toEqual({ contains: "launch", mode: "insensitive" });
     expect(results?.campaigns[0]).toMatchObject({
       title: "Launch Guide",
-      href: "/dashboard/clerk-user-a/automation/campaign-1",
+      href: "/dashboard/clerk-user-a/automation/new?edit=campaign-1",
     });
   });
 
@@ -119,7 +119,7 @@ describe("workspace search", () => {
     expect(results?.keywords[0]).toMatchObject({
       title: "GUIDE",
       subtitle: "Lead Magnet",
-      href: "/dashboard/clerk-user-a/automation/campaign-1",
+      href: "/dashboard/clerk-user-a/automation/new?edit=campaign-1",
     });
   });
 
@@ -142,7 +142,7 @@ describe("workspace search", () => {
     expect(results?.leads[0]).toMatchObject({
       title: "@sarah.creates",
       subtitle: "Please send the guide · Lead Magnet",
-      href: "/dashboard/clerk-user-a/automation/campaign-1",
+      href: "/dashboard/clerk-user-a/automation/new?edit=campaign-1",
     });
   });
 

@@ -39,7 +39,7 @@ export default function CampaignCard({
 
   return (
     <Link
-      href={safeId ? `/dashboard/${slug}/automation/${safeId}` : `/dashboard/${slug}/automation`}
+      href={safeId ? `/dashboard/${slug}/automation/new?edit=${encodeURIComponent(safeId)}` : `/dashboard/${slug}/automation`}
       className="ap3k-card ap3k-card-hover group relative overflow-hidden rounded-2xl p-4
                  flex flex-col gap-4 sm:flex-row sm:items-center"
     >
