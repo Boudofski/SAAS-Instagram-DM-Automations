@@ -77,6 +77,9 @@
 @media (min-width: 1024px) {
   .title { font-size: 60px; }
   .title > span { line-height: 45px; }
+  .hero:not(:lang(en)) .title { font-size: 54px; }
+  .hero:not(:lang(en)) .title > span { line-height: 1.15; }
+  .hero:not(:lang(en)) .title strong { line-height: 1.3; }
 }
 @media (min-width: 1280px) {
   .hero { min-height: 645px; }

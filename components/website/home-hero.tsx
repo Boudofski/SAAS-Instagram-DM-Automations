@@ -71,7 +71,7 @@ export default function HomeHero() {
   }, [reducedMotion]);
 
   return (
-    <section ref={section} className={`${styles.hero} ${inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
+    <section ref={section} lang={locale} className={`${styles.hero} ${inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
       <div className={styles.glow} aria-hidden="true" />
       <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
         <ConversationCards side="left" />

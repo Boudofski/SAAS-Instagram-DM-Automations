@@ -16,3 +16,12 @@ Scope: top homepage hero only. Reference https://linktodm.com/, inspected Septem
 - Remove visible pause/play control as explicitly requested. Video stops when offscreen/document hidden and respects reduced motion. No mobile card composition: match reference's hidden side cards.
 - Main copy localized for English, French, Spanish, German, Portuguese; original illustrative artwork remains English.
 - Temporary noindex responsive review page is preview-only and must be removed before production.
+
+## Verification results
+- TypeScript, local production build and 24 selected locale/SEO/redirect regression tests passed.
+- Browser preview checked in desktop light/dark, 390px English, 320px German and 768px French. No horizontal overflow (380/310/758px client and scroll widths respectively).
+- Original visible card images and portrait strip loaded successfully; video plays and advances, with zero hero buttons.
+- At scroll 210px, six card opacities and translations match the measured reference exactly.
+- Visual review caught and corrected video blending through an intermediate stacking context; use a shared isolated hero context so white/black video backgrounds blend into the respective theme.
+- Long localized desktop headlines use 54px and natural line spacing; English retains the measured reference sizing.
+- Removed responsive review harness before production.
