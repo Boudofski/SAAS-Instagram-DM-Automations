@@ -1,3 +1,4 @@
+import HomeSetup from "@/components/website/home-setup";
 import HomeShowcase from "@/components/website/home-showcase";
 import HomeHero from "@/components/website/home-hero";
 import LocalizedCopy from "@/components/i18n/localized-copy";
@@ -16,7 +17,7 @@ import {
 import Link from "next/link";
 import FeatureDemos from "@/components/website/feature-demos";
 import HomeScrollProgress from "@/components/website/home-scroll-progress";
-import { AnimatedSetupSteps, AnimatedWorkflowCards } from "@/components/website/animated-step-sections";
+import { AnimatedSetupSteps } from "@/components/website/animated-step-sections";
 import { getServerLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -129,24 +130,7 @@ export default async function LandingPage() {
         <HomeHero />
         <HomeShowcase />
 
-        <section className="relative overflow-hidden border-b border-slate-200/80 bg-[linear-gradient(180deg,#f8f7fc_0%,#f2effa_100%)] px-4 py-20 dark:border-white/[0.08] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#080911_0%,#0c0d19_100%)] sm:px-8 lg:py-24">
-          <div aria-hidden="true" className="pointer-events-none absolute -left-28 top-20 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-600/10" />
-          <div aria-hidden="true" className="pointer-events-none absolute -right-28 bottom-0 h-72 w-72 rounded-full bg-fuchsia-200/25 blur-3xl dark:bg-fuchsia-500/[0.08]" />
-
-          <div className="relative mx-auto max-w-6xl">
-            <FadeIn className="mx-auto max-w-4xl text-center">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-300 sm:text-sm">The AP3K workflow</p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] text-slate-950 dark:text-white sm:text-6xl">
-                From Instagram comment to delivered link—automatically.
-              </h2>
-              <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-                Choose the post, trigger, and actions once. When the right comment arrives, AP3K can publish your reply, send the DM and link, and record the result.
-              </p>
-            </FadeIn>
-
-            <AnimatedWorkflowCards />
-          </div>
-        </section>
+        <HomeSetup />
 
         <FeatureDemos demos={BENEFITS} />
 

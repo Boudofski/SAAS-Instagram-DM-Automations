@@ -40,3 +40,7 @@ Scope: top homepage hero only. Reference https://linktodm.com/, inspected Septem
 - Preview verification: desktop, 768px tablet, 390px and 320px phones; dark and light modes; expanded mobile menu; flag-free locale menu; French localized destinations; feature selection, original image loading, and mobile horizontal swiping. TypeScript, production build and 15 existing locale/routing tests passed. Temporary preview harness removed before release.
 
 - Navigation control follow-up: visually checked 390px and 320px mobile menus, desktop placement, flag-free dropdown, light/dark switching and French signup-label wrapping. TypeScript and targeted lint passed; the preview production build passed.
+
+## Setup section — 26 September 2026
+
+Replaces only the former “The AP3K workflow” section with the requested ChatAutoDM reference section. Keeps its exact English headline, subtitle, three card labels and descriptions, 1280px container, responsive font sizes, card rotations (-2/1/-1 degrees), floating labels, shadows, and upward entrance. AP3K purple/pink replaces the reference gradient and blue accent; dark mode uses AP3K surfaces. Cards stack below 768px. Reduced motion skips the entrance. All five site locales have dedicated copy. Geist variable font comes from Vercel's official geist 1.7.2 package, bundled locally with its SIL Open Font License.
