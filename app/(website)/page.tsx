@@ -1,4 +1,3 @@
-import { loadHomepagePosts } from "@/lib/homepage-posts";
 import HomeSetup from "@/components/website/home-setup";
 import HomeShowcase from "@/components/website/home-showcase";
 import HomeHero from "@/components/website/home-hero";
@@ -9,14 +8,10 @@ import { SITE_METADATA } from "@/lib/i18n/metadata";
 import { COMPANY_SCHEMA } from "@/lib/company";
 import {
   FadeIn,
-  HoverLift,
-  StaggerContainer,
-  StaggerItem,
 } from "@/components/global/motion/fade-in";
-import PricingExperience from "@/components/global/pricing-experience";
+import HomeUniqueResponses from "@/components/website/home-unique-responses";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import { getPublishedPosts } from "@/lib/editorial-server";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import HomeFeatures from "@/components/website/home-features";
@@ -24,39 +19,6 @@ import HomeScrollProgress from "@/components/website/home-scroll-progress";
 import { getServerLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
-
-const SOLUTION_PAGES = [
-  [
-    "Instagram DM automation",
-    "/instagram-dm-automation",
-    "Automate useful private follow-up after comments, stories, and messages.",
-  ],
-  [
-    "Comment-to-DM automation",
-    "/instagram-comment-to-dm",
-    "Turn a clear Instagram keyword into the promised DM or link.",
-  ],
-  [
-    "Instagram automation for creators",
-    "/instagram-automation-for-creators",
-    "Deliver guides, launch details, and product links without repetitive inbox work.",
-  ],
-  [
-    "Instagram automation for coaches",
-    "/instagram-automation-for-coaches",
-    "Move high-intent comments toward a resource, application, or booking.",
-  ],
-  [
-    "Instagram automation for ecommerce",
-    "/instagram-automation-for-ecommerce",
-    "Connect product interest to the right storefront destination.",
-  ],
-  [
-    "A focused ManyChat alternative",
-    "/manychat-alternative",
-    "Use a simpler Instagram-first workflow when you do not need a broad multi-channel builder.",
-  ],
-] as const;
 
 const FAQS = [
   [
@@ -141,7 +103,6 @@ const softwareSchema = {
 };
 
 export default async function LandingPage() {
-  const posts = await loadHomepagePosts(getPublishedPosts);
   const locale = getServerLocale();
   const localizedSoftware = {
     ...softwareSchema,
@@ -200,120 +161,7 @@ export default async function LandingPage() {
 
           <HomeFeatures />
 
-          <section
-            id="pricing"
-            className="bg-[#f7f7fb] px-4 py-16 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-20"
-          >
-            <div className="mx-auto max-w-7xl">
-              <FadeIn className="mb-8 text-center">
-                <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">
-                  Simple pricing
-                </p>
-                <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-6xl">
-                  Start free. Save more annually.
-                </h2>
-                <p className="mx-auto mt-5 max-w-2xl text-slate-600 dark:text-slate-400">
-                  Start Free with 500 automated actions each month and up to 5
-                  active automations, choose Pro at $9/month, or Business at
-                  $29/month.
-                </p>
-              </FadeIn>
-              <FadeIn delay={0.04}>
-                <PricingExperience compact />
-              </FadeIn>
-              <div className="mt-8 text-center">
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300"
-                >
-                  See the full plan comparison{" "}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <section className="border-y border-slate-200 bg-white px-4 py-20 dark:border-white/10 dark:bg-[#0b0c15] sm:px-8 lg:px-16">
-            <div className="mx-auto max-w-6xl">
-              <FadeIn className="max-w-3xl">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">
-                  Explore by goal
-                </p>
-                <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">
-                  Start with the Instagram outcome you need.
-                </h2>
-                <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-400">
-                  See practical workflows, real product previews, honest
-                  limitations, and setup tutorials for each use case.
-                </p>
-              </FadeIn>
-              <StaggerContainer className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {SOLUTION_PAGES.map(([title, href, description]) => (
-                  <StaggerItem key={href}>
-                    <Link
-                      href={href}
-                      className="group block h-full rounded-2xl border border-slate-200 bg-[#fafafe] p-6 transition motion-safe:hover:-translate-y-px hover:border-violet-300 hover:shadow-surface dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-violet-400/30"
-                    >
-                      <h3 className="text-lg font-black">{title}</h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
-                        {description}
-                      </p>
-                      <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">
-                        Explore{" "}
-                        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                      </span>
-                    </Link>
-                  </StaggerItem>
-                ))}
-              </StaggerContainer>
-            </div>
-          </section>
-
-          <section className="bg-white px-4 py-20 dark:bg-[#0b0c15] sm:px-8 lg:px-16 lg:py-24">
-            <div className="mx-auto max-w-6xl">
-              <FadeIn className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">
-                    Instagram automation guides
-                  </p>
-                  <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] sm:text-5xl">
-                    Learn the strategy behind the automation.
-                  </h2>
-                </div>
-                <Link
-                  href="/blog"
-                  className="inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300"
-                >
-                  Explore the blog <ArrowRight className="h-4 w-4" />
-                </Link>
-              </FadeIn>
-              <StaggerContainer className="mt-10 grid gap-5 md:grid-cols-3">
-                {posts.slice(0, 3).map((post) => (
-                  <StaggerItem key={post.slug}>
-                    <HoverLift>
-                      <Link
-                        href={`/blog/${post.slug}`}
-                        className="block h-full rounded-2xl border border-slate-200 bg-[#fafafe] p-6 shadow-sm transition hover:border-violet-200 dark:border-white/8 dark:bg-[#10121d] dark:hover:border-violet-400/20"
-                      >
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">
-                          Guide
-                        </p>
-                        <h3 className="mt-4 text-xl font-black leading-tight">
-                          {post.title}
-                        </h3>
-                        <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
-                          {post.description}
-                        </p>
-                        <span className="mt-6 inline-flex items-center gap-2 text-sm font-black text-violet-600 dark:text-violet-300">
-                          Read guide <ArrowRight className="h-4 w-4" />
-                        </span>
-                      </Link>
-                    </HoverLift>
-                  </StaggerItem>
-                ))}
-              </StaggerContainer>
-            </div>
-          </section>
+          <HomeUniqueResponses />
 
           <section className="bg-[#11131d] px-4 py-20 text-white sm:px-8 lg:px-16 lg:py-24">
             <div className="mx-auto max-w-4xl">
