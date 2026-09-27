@@ -29,6 +29,25 @@ describe("flow assistant proposals", () => {
     expect(parsed.needsInput).toBe(false);
     expect(parsed.flow.nodes[0]).toMatchObject({ kind: "delay", seconds: 10 });
   });
+  it("fits generated coordinates into the canvas without changing branches or relative spacing", () => {
+    const draft = response();
+    draft.flow.nodes[0].y = -280;
+    draft.flow.nodes[1].y = 280;
+    const parsed = parseFlowAssistantDraft(JSON.stringify(draft), input);
+    expect(parsed.flow.nodes.map(node => node.y)).toEqual([0, 560]);
+    expect(parsed.flow.nodes[0]).toMatchObject({ id: "delay", next: "message", seconds: 10 });
+    expect(parsed.flow.entry).toBe("delay");
+    draft.flow.nodes[1].x = 8000;
+    expect(parseFlowAssistantDraft(JSON.stringify(draft), input).flow.nodes[1].x).toBe(6000);
+  });
+  it("still rejects non-numeric coordinates and invalid logic after fitting positions", () => {
+    const draft = response();
+    (draft.flow.nodes[1] as unknown as { y: unknown }).y = "below";
+    expect(() => parseFlowAssistantDraft(JSON.stringify(draft), input)).toThrow("invalid");
+    draft.flow.nodes[1].y = -280;
+    draft.flow.nodes[1].next = "missing";
+    expect(() => parseFlowAssistantDraft(JSON.stringify(draft), input)).toThrow();
+  });
   it("supports free-text capture in a generated graph without allowing reserved profile writes", () => {
     const draft = { ...response(), flow: { version: 1, oncePerContact: false, entry: "capture", nodes: [{ id: "capture", label: "Ask name", x: 0, y: 0, kind: "capture", text: "What is your name?", field: "first_name", next: "send", skip: "send" }, { ...message, id: "send", text: "Hello {{first_name}}" }] } };
     expect(parseFlowAssistantDraft(JSON.stringify(draft), input).flow.nodes[0].kind).toBe("capture");

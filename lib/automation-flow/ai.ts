@@ -59,6 +59,30 @@ export function normalizeFlowAssistantInput(raw: unknown): FlowAssistantInput {
   return input;
 }
 
+/** Generated coordinates are presentation only; translate/scale them without changing graph logic. */
+function fitGeneratedCoordinates(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || !Array.isArray((raw as { nodes?: unknown }).nodes)) return raw;
+  const graph = raw as { nodes: unknown[] };
+  if (graph.nodes.length > 50) return raw;
+  let nodes = graph.nodes;
+  for (const axis of ["x", "y"] as const) {
+    const positions = nodes.flatMap(node => {
+      const value = node && typeof node === "object" ? (node as Record<string, unknown>)[axis] : undefined;
+      return typeof value === "number" && Number.isFinite(value) ? [value] : [];
+    });
+    if (!positions.length) continue;
+    const low = Math.min(0, ...positions), high = Math.max(...positions);
+    if (low === 0 && high <= 6000) continue;
+    const scale = Math.min(1, 6000 / (high - low || 1));
+    nodes = nodes.map(node => {
+      if (!node || typeof node !== "object") return node;
+      const value = (node as Record<string, unknown>)[axis];
+      return typeof value === "number" && Number.isFinite(value) ? { ...node, [axis]: (value - low) * scale } : node;
+    });
+  }
+  return { ...graph, nodes };
+}
+
 export function parseFlowAssistantDraft(raw: string, input: FlowAssistantInput): FlowAssistantDraft {
   if (!raw.trim() || raw.length > MAX_JSON_LENGTH) throw new Error("The AI provider returned an empty or oversized flow. Try a smaller request.");
   const body = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
@@ -72,7 +96,7 @@ export function parseFlowAssistantDraft(raw: string, input: FlowAssistantInput):
     const permitted = new Set(["id", "label", "x", "y", "kind", "url", "body", "next"]);
     if (Object.keys(rawNode).some(key => !permitted.has(key))) throw new Error("The generated flow contains unsupported webhook options. Webhooks use POST with no custom headers.");
   }
-  const checked = validateFlow(parsed.data.flow);
+  const checked = validateFlow(fitGeneratedCoordinates(parsed.data.flow));
   if (!checked.flow) throw new Error(`The generated flow is invalid: ${checked.errors.join(" ")}`);
   const allowed = suppliedUrls(input);
   let needsInput = false;
