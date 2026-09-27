@@ -25,7 +25,7 @@ function runMigrationWithRetry(command, args, env) {
   }
 }
 
-if (process.env.VERCEL_ENV === "production" || (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_GIT_COMMIT_REF === "codex/automation-reference-20260927")) {
+if (process.env.VERCEL_ENV === "production") {
   if (!process.env.DATABASE_URL) {
     console.error("Production build stopped: DATABASE_URL is not configured.");
     process.exit(1);
