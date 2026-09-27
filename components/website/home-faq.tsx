@@ -1,0 +1,36 @@
+"use client";
+
+import Image from "next/image";
+import { Inter } from "next/font/google";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useI18n } from "@/providers/i18n-provider";
+import { HOME_FAQ } from "@/lib/i18n/home-faq";
+import styles from "./home-faq.module.css";
+
+const inter = Inter({ subsets: ["latin"], display: "swap" });
+
+export default function HomeFaq() {
+  const { locale } = useI18n();
+  const copy = HOME_FAQ[locale];
+  return <section id="faq" aria-labelledby="home-faq-title" className={`${styles.section} ${inter.className}`}>
+    <div className={styles.container}>
+      <header className={styles.heading}>
+        <p>{copy.eyebrow}</p>
+        <h2 id="home-faq-title">{copy.title}</h2>
+      </header>
+      <Accordion type="multiple" className={styles.questions}>
+        {copy.items.map(([question, answer], index) => <AccordionItem key={index} value={`faq-${index}`} className={styles.item}>
+          <AccordionTrigger className={styles.trigger}>{question}</AccordionTrigger>
+          <AccordionContent className={styles.answer}>{answer}</AccordionContent>
+        </AccordionItem>)}
+      </Accordion>
+      <div className={styles.trust}>
+        <span className={styles.badge}>
+          <Image className={styles.lightLogo} src="/media/hero/meta-business-partner-light.svg" alt="Meta Business Partner" width={88} height={35} unoptimized />
+          <Image className={styles.darkLogo} src="/media/hero/meta-business-partner-dark.svg" alt="Meta Business Partner" width={88} height={35} unoptimized />
+        </span>
+        <p>{copy.trust}</p>
+      </div>
+    </div>
+  </section>;
+}

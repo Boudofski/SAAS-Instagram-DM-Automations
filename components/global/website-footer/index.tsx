@@ -35,18 +35,18 @@ export default function WebsiteFooter() {
   const { locale, t } = useI18n();
   const href = (path: string) => localizePublicPath(path, locale);
   const linkClass =
-    "text-slate-500 transition-colors hover:text-slate-900 dark:text-rf-muted dark:hover:text-rf-text";
+    "max-w-full [overflow-wrap:anywhere] text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white";
 
   return (
-    <footer className="relative z-10 border-t border-slate-200 bg-white/60 px-4 py-10 backdrop-blur dark:border-white/10 dark:bg-transparent sm:px-8 lg:px-16">
-      <div className="mx-auto max-w-[1120px]">
-        <div className="grid gap-10">
-          <div className="flex flex-col items-start gap-3">
+    <footer className="relative z-10 border-t border-slate-200 bg-white/60 px-4 py-10 backdrop-blur dark:border-white/10 dark:bg-[#080911] sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-[1320px]">
+        <div className="grid gap-10 lg:grid-cols-[200px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] xl:gap-14">
+          <div className="flex min-w-0 flex-col items-start gap-3">
             <AP3KLogo
-              className="text-sm text-slate-700 dark:text-rf-muted"
-              markClassName="h-7 w-7 rounded-lg"
+              className="text-lg text-slate-950 dark:text-white"
+              markClassName="h-9 w-9 rounded-xl"
             />
-            <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
+            <p className="max-w-sm text-sm leading-6 text-slate-500 dark:text-rf-muted">
               {t("footerDescription")}
             </p>
             <div
@@ -69,7 +69,7 @@ export default function WebsiteFooter() {
           </div>
           <nav
             aria-label="Footer"
-            className="grid grid-cols-2 gap-x-6 gap-y-8 text-xs sm:grid-cols-3 lg:grid-cols-6"
+            className="grid min-w-0 grid-cols-2 gap-x-6 gap-y-8 text-[13px] leading-5 sm:grid-cols-3 xl:grid-cols-5"
           >
             {[
               {
@@ -94,20 +94,15 @@ export default function WebsiteFooter() {
                 ],
               },
               {
-                title: "For",
-                links: [
-                  ["Creators", "/instagram-automation-for-creators"],
-                  ["Coaches", "/instagram-automation-for-coaches"],
-                  ["Ecommerce", "/instagram-automation-for-ecommerce"],
-                ],
-              },
-              {
                 title: "Solutions",
                 links: [
                   ["Grow followers", "/solutions/grow-followers"],
                   ["Increase sales", "/solutions/increase-sales"],
                   ["Enhance engagement", "/solutions/enhance-engagements"],
                   ["All solutions", "/solutions"],
+                  ["Creators", "/instagram-automation-for-creators"],
+                  ["Coaches", "/instagram-automation-for-coaches"],
+                  ["Ecommerce", "/instagram-automation-for-ecommerce"],
                 ],
               },
               {
@@ -135,7 +130,7 @@ export default function WebsiteFooter() {
             ].map((group) => (
               <div
                 key={group.title}
-                className="flex flex-col items-start gap-3"
+                className="flex min-w-0 flex-col items-start gap-3"
               >
                 <p className="mb-1 font-bold text-slate-900 dark:text-white">
                   <UiText>{group.title}</UiText>
@@ -157,11 +152,11 @@ export default function WebsiteFooter() {
             ))}
           </nav>
         </div>
-        <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-xs dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-xs dark:border-white/10 xl:flex-row xl:items-center xl:justify-between">
           <p className="text-slate-600 dark:text-slate-400">
             {t("footerCopyright")}
           </p>
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <Link href={href("/privacy")} className={linkClass}>
               {t("privacy")}
             </Link>

@@ -2,7 +2,8 @@ import HomeSetup from "@/components/website/home-setup";
 import HomeShowcase from "@/components/website/home-showcase";
 import HomeHero from "@/components/website/home-hero";
 import LocalizedCopy from "@/components/i18n/localized-copy";
-import { translateUi } from "@/lib/i18n/translate";
+import { HOME_FAQ } from "@/lib/i18n/home-faq";
+import HomeFaq from "@/components/website/home-faq";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import { COMPANY_SCHEMA } from "@/lib/company";
@@ -19,59 +20,6 @@ import HomeScrollProgress from "@/components/website/home-scroll-progress";
 import { getServerLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
-
-const FAQS = [
-  [
-    "What does AP3K automate?",
-    "AP3K watches new comments, story interactions, and incoming DMs. When an interaction matches your automation, it can publish a comment reply, send a DM, or run both actions.",
-  ],
-  [
-    "Which Instagram accounts can connect to AP3K?",
-    "AP3K supports Instagram Business and Creator accounts through Instagram's official authorization flow. Personal Instagram accounts must be changed to a professional account before connecting.",
-  ],
-  [
-    "What is the difference between Specific keyword and Any comment?",
-    "Specific keyword runs only when a new comment contains a word you configured, such as GUIDE. Any comment runs for every eligible new comment in that automation's post scope.",
-  ],
-  [
-    "Can AP3K reply publicly and send a DM at the same time?",
-    "Yes. You can enable a public Comment reply, a private DM, or both. When both are enabled, the public reply confirms the action while the DM delivers the private follow-up.",
-  ],
-  [
-    "Can the automated DM include a clickable link?",
-    "Yes. Add your destination URL and edit the button label—for example, Get the Link—so the commenter can open the promised guide, product, booking page, or offer from the DM.",
-  ],
-  [
-    "Will a new automation respond to old interactions?",
-    "No. Automations react to eligible new events received after they are active. They do not go backward through comments or messages that already existed.",
-  ],
-  [
-    "How do I test an automation before promoting it?",
-    "Activate the automation, then trigger it from a different Instagram account. Check the public reply, AP3K Inbox, activity, DM content, and link button before sending traffic to it.",
-  ],
-  [
-    "Will AP3K reply to its own automated comments?",
-    "No. AP3K ignores replies from the connected Instagram account and duplicate comment events so an automation cannot create a reply loop.",
-  ],
-  [
-    "What is included in the AP3K Free plan?",
-    "Free includes 500 automated actions each month, one Instagram Business or Creator account, and up to five active automations. AI replies are available on paid plans.",
-  ],
-  [
-    "How does the AP3K referral program work?",
-    "Share your tracked link from the Refer & earn dashboard. When a new referred user connects Instagram and completes a qualifying paid Pro or Business invoice, eligible Founding 10 partners earn a $9 AP3K account credit.",
-  ],
-] as const;
-
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQS.map(([question, answer]) => ({
-    "@type": "Question",
-    name: question,
-    acceptedAnswer: { "@type": "Answer", text: answer },
-  })),
-};
 
 const softwareSchema = {
   "@context": "https://schema.org",
@@ -111,12 +59,13 @@ export default async function LandingPage() {
     description: SITE_METADATA[locale].description,
   };
   const localizedFaq = {
-    ...faqSchema,
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
     inLanguage: locale,
-    mainEntity: FAQS.map(([question, answer]) => ({
+    mainEntity: HOME_FAQ[locale].items.map(([question, answer]) => ({
       "@type": "Question",
-      name: translateUi(question, locale),
-      acceptedAnswer: { "@type": "Answer", text: translateUi(answer, locale) },
+      name: question,
+      acceptedAnswer: { "@type": "Answer", text: answer },
     })),
   };
   const websiteSchema = {
@@ -163,33 +112,7 @@ export default async function LandingPage() {
 
           <HomeUniqueResponses />
 
-          <section className="bg-[#11131d] px-4 py-20 text-white sm:px-8 lg:px-16 lg:py-24">
-            <div className="mx-auto max-w-4xl">
-              <FadeIn className="text-center">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-300">
-                  FAQs
-                </p>
-                <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">
-                  The important questions, answered.
-                </h2>
-              </FadeIn>
-              <div className="mt-10 divide-y divide-white/10 border-y border-white/10">
-                {FAQS.map(([question, answer]) => (
-                  <details key={question} className="group py-5">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-left font-black">
-                      <span>{question}</span>
-                      <span className="text-2xl font-light text-violet-300 transition group-open:rotate-45">
-                        +
-                      </span>
-                    </summary>
-                    <p className="max-w-3xl pb-2 pt-4 text-sm leading-7 text-white/62">
-                      {answer}
-                    </p>
-                  </details>
-                ))}
-              </div>
-            </div>
-          </section>
+          <HomeFaq />
 
           <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5420ca,#7331e5_50%,#963be5)] px-4 py-20 text-center text-white sm:px-8 lg:py-24">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(244,114,182,0.32),transparent_32rem)]" />
