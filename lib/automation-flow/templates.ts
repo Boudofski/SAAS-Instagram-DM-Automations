@@ -6,13 +6,67 @@ export type Template = {
   goal: "followers" | "engagement" | "traffic";
   trigger: "comment" | "dm" | "story" | "live";
   type: "comment" | "affiliate" | "story" | "dm" | "ai" | "flow";
+  /** Catalog grouping is independent of which execution engine a preset needs. */
+  group?: "basic" | "flow";
   popular?: boolean;
   pro?: boolean;
   unavailable?: string;
   keyword: string;
   steps: string[];
 };
+/** The sixteen cards observed in the reference library, in its displayed order. */
 export const TEMPLATES: Template[] = [
+  { id: "comment-links", name: "Auto-DM from comments", description: "Send a DM when people comment on a post or reel", goal: "traffic", trigger: "comment", type: "comment", group: "basic", popular: true, keyword: "link", steps: ["Choose a post or Reel", "Match a comment keyword", "Send your content DM"] },
+  { id: "all-dms", name: "Respond to all your DMs", description: "Reply automatically when someone sends you a direct message with specific keywords.", goal: "engagement", trigger: "dm", type: "dm", group: "basic", popular: true, keyword: "Hello", steps: ["Match a DM keyword", "Send your welcome message"] },
+  { id: "followers", name: "Grow followers from comments", description: "Ask users to follow your account before sharing your content.", goal: "followers", trigger: "comment", type: "comment", group: "basic", popular: true, keyword: "link", steps: ["Receive a comment", "Ask for a follow", "Verify their follow", "Send your content"] },
+  { id: "all-posts", name: "Auto-DM on all posts and reels", description: "Send a DM to all users who comment on any of your posts or reels.", goal: "traffic", trigger: "comment", type: "comment", group: "basic", keyword: "", steps: ["Listen on all posts and Reels", "Receive a comment", "Send your content DM"] },
+  { id: "next-post", name: "Auto-DM on next post or reel", description: "Send a DM to all users who comment on your next post or reel when it get published.", goal: "traffic", trigger: "comment", type: "comment", group: "basic", keyword: "", steps: ["Wait for your next post or Reel", "Receive a comment on that post", "Send your content DM"] },
+  { id: "comment-leads", name: "Collect email/phone from comments", description: "Send a DM in response to a comment and guide users to submit their email or phone number before sharing your content.", goal: "engagement", trigger: "comment", type: "flow", group: "basic", pro: true, keyword: "link", steps: ["Receive a comment", "Start a DM conversation", "Collect their email", "Collect their phone", "Send your content"] },
+  { id: "shared-post", name: "Auto-DM when someone shares your Post or Reel", description: "Send message whenever someone shares your post or reel directly to your inbox.", goal: "engagement", trigger: "dm", type: "dm", group: "basic", keyword: "", steps: ["Someone shares a post or Reel to your inbox", "Send your saved response"] },
+  { id: "story-mentions", name: "Respond to story mentions", description: "Send a thank you message, offer, or link whenever someone mentions you in their story.", goal: "engagement", trigger: "story", type: "story", group: "basic", keyword: "", steps: ["Someone mentions you in their story", "Send your thank-you DM"] },
+  { id: "dm-leads", name: "Capture leads from DMs", description: "Reply to incoming DM’s leads and guide them to submit their email or phone number.", goal: "engagement", trigger: "dm", type: "flow", group: "basic", pro: true, keyword: "connect", steps: ["Match connect in a DM", "Collect their email", "Collect their phone", "Collect their name", "Confirm their details"] },
+  { id: "dm-sales", name: "Sell products or services from DMs", description: "List products or services and guide users to purchase them directly from your DMs.", goal: "traffic", trigger: "dm", type: "flow", group: "basic", pro: true, keyword: "Hello", steps: ["Match Hello in a DM", "Ask what they need", "Route to tips or products"] },
+  { id: "follow-up", name: "Re-engage with follow-up message", description: "Send a follow up message using specific conditions and time delays to bring back users who stopped responding.", goal: "engagement", trigger: "comment", type: "flow", group: "basic", pro: true, keyword: "link", steps: ["Share your link", "Wait for your chosen delay", "Check whether they clicked", "Follow up only when they have not clicked"] },
+  { id: "comment-opener", name: "Auto-DM from comments with an opener message", description: "Send a introductory opener message when people comment on a post or reel and user can click on button to receive actual content DM.", goal: "traffic", trigger: "comment", type: "comment", group: "basic", keyword: "link", steps: ["Receive a comment", "Send an opening DM", "Wait for the button click", "Send your content DM"] },
+  { id: "product-carousel", name: "Auto DM product link carousel", description: "Send up to ten clickable links in one automated message when someone comments or sends your selected keyword.", goal: "traffic", trigger: "comment", type: "flow", group: "basic", pro: true, keyword: "link", steps: ["Match your keyword", "Customize your product cards", "Send your clickable carousel"] },
+  { id: "comment-delay", name: "Comment to DM after Delay", description: "Send an automated DM to users after they comment with a timed delay", goal: "traffic", trigger: "comment", type: "flow", group: "flow", pro: true, keyword: "link", steps: ["Receive a link comment", "Ask them to tap Get info", "Wait 10 seconds", "Send the details"] },
+  { id: "ask-to-follow", name: "Ask to follow", description: "Prompt users to follow your account before sharing gated details", goal: "followers", trigger: "comment", type: "flow", group: "flow", pro: true, keyword: "link", steps: ["Ask for a follow", "Wait for Yes, I followed", "Wait 30 seconds", "Check their follow", "Share details or ask them again"] },
+  { id: "dm-qualifier", name: "DM Qualifier", description: "Automatically identify and segment creators and brands in your inbox", goal: "engagement", trigger: "dm", type: "flow", group: "flow", pro: true, keyword: "collab", steps: ["Receive a collab DM", "Ask creator or brand", "Check their follower count", "Send the matching response"] },
+];
+
+export type TemplatePreset = {
+  source: "COMMENT" | "DM" | "STORY";
+  storyTrigger: "REPLY" | "MENTION" | "REACTION";
+  postScope: "specific" | "all" | "next";
+  sharedPost?: boolean;
+  keyword: string;
+  anyMessage: boolean;
+  opening?: string;
+  openingButton?: string;
+  followGateRequired?: boolean;
+};
+
+/** Trigger settings live alongside the graph so selecting a card applies real rules. */
+export function templatePreset(id?: string): TemplatePreset {
+  const template = templateById(id);
+  const preset: TemplatePreset = {
+    source: template?.trigger === "comment" ? "COMMENT" : template?.trigger === "story" ? "STORY" : "DM",
+    storyTrigger: id === "story-mentions" ? "MENTION" : "REPLY",
+    postScope: id === "all-posts" ? "all" : id === "next-post" ? "next" : "specific",
+    keyword: template?.keyword ?? "",
+    anyMessage: !template?.keyword,
+  };
+  if (id === "shared-post") preset.sharedPost = true;
+  if (id === "followers" || id === "follow-freebie") preset.followGateRequired = true;
+  if (id === "comment-opener") {
+    preset.opening = "Thanks for your interest! Tap below to get the details.";
+    preset.openingButton = "Get info";
+  }
+  return preset;
+}
+
+// Historical links and saved template IDs continue to resolve, but are not extra cards.
+const LEGACY_TEMPLATES: Template[] = [
   {
     id: "comment-links",
     name: "Auto-DM links from comments",
@@ -363,7 +417,7 @@ export const TEMPLATES: Template[] = [
   },
 ];
 export function templateById(id?: string) {
-  return TEMPLATES.find((t) => t.id === id);
+  return TEMPLATES.find((t) => t.id === id) ?? LEGACY_TEMPLATES.find((t) => t.id === id);
 }
 const message = (
   id: string,
@@ -373,7 +427,72 @@ const message = (
   y: number,
   next: string | null = null,
 ): FlowNode => ({ id, kind: "message", label, text, links: [], x, y, next });
+
+function referenceTemplateFlow(id?: string): Flow | null {
+  if (!TEMPLATES.some((template) => template.id === id)) return null;
+  const flow = (entry: string, nodes: FlowNode[]): Flow => ({ version: 1, entry, oncePerContact: false, nodes });
+  if (id === "comment-delay") return flow("opener", [
+    { id: "opener", kind: "question", label: "Opening message", text: "Thanks for your comment .Want the details?", field: "requestedDetails", options: [{ label: "Get info", next: "delay" }], x: 100, y: 180 },
+    { id: "delay", kind: "delay", label: "Wait 10 seconds", seconds: 10, next: "details", x: 480, y: 180 },
+    message("details", "Send details", "Here is your details", 860, 180),
+  ]);
+  if (id === "ask-to-follow") return flow("follow", [
+    { id: "follow", kind: "question", label: "Ask to follow", text: "Hey glad you reached out. Please follow us to unlock full details", field: "followConfirmation", options: [{ label: "Yes, I followed", next: "delay" }], x: 100, y: 180 },
+    { id: "delay", kind: "delay", label: "Wait 30 seconds", seconds: 30, next: "checkFollow", x: 480, y: 180 },
+    { id: "checkFollow", kind: "condition", label: "If user followed me", field: "_followsBusiness", operator: "eq", equals: "true", yes: "details", no: "retryFollow", x: 860, y: 180 },
+    message("details", "Send gated details", "Thanks for following. Here is everything you need", 1240, 80),
+    { id: "retryFollow", kind: "question", label: "Ask again", text: "Follow us and message again to continue", field: "followConfirmation", options: [{ label: "Yes, I followed", next: "delay" }], x: 1240, y: 420 },
+  ]);
+  if (id === "dm-qualifier") return flow("qualifier", [
+    { id: "qualifier", kind: "question", label: "Creator or brand", text: "Are you a creator or brand", field: "contactType", options: [{ label: "Creator", next: "creatorCount" }, { label: "Brand", next: "brandCount" }], x: 100, y: 300 },
+    { id: "creatorCount", kind: "condition", label: "Creator followers > 1000", field: "_followerCount", operator: "gt", equals: "1000", yes: "creatorAccepted", no: "creatorDeclined", x: 480, y: 100 },
+    { id: "brandCount", kind: "condition", label: "Brand followers > 500", field: "_followerCount", operator: "gt", equals: "500", yes: "brandAccepted", no: "brandDeclined", x: 480, y: 640 },
+    message("creatorAccepted", "Qualified creator", "Thanks we will review your profile", 860, 80),
+    message("creatorDeclined", "Creator requirement", "Atleast 1000 followers needed for collab", 860, 350),
+    message("brandAccepted", "Qualified brand", "Great, can I have your contact details. I'll reach out shortly", 860, 640),
+    message("brandDeclined", "Brand response", "Oops, we are currently not open for collabs.", 860, 910),
+  ]);
+  if (id === "comment-leads" || id === "dm-leads") {
+    const nodes: FlowNode[] = [
+      { id: "email", kind: "email", label: "Collect email", text: "Just drop email, and I’ll send all the good stuff straight to your inbox!", next: "phone", skip: null, x: 100, y: 180 },
+      { id: "phone", kind: "phone", label: "Collect phone", text: "What’s your contact number?", next: id === "dm-leads" ? "name" : "delivery", skip: null, x: 480, y: 180 },
+    ];
+    if (id === "dm-leads") nodes.push({ id: "name", kind: "capture", label: "Collect name", text: "What’s your name?", field: "name", next: "delivery", skip: null, x: 860, y: 180 });
+    nodes.push(message("delivery", id === "dm-leads" ? "Confirm details" : "Send your content", id === "dm-leads" ? "Thank you for providing contact details, We will connect soon." : "Thanks! Here is the content you requested.", id === "dm-leads" ? 1240 : 860, 180));
+    if (id === "comment-leads") {
+      const delivery = nodes[nodes.length - 1];
+      if (delivery.kind === "message") delivery.links = [{ label: "Get the content", url: "" }];
+    }
+    return flow("email", nodes);
+  }
+  if (id === "dm-sales") return flow("interest", [
+    { id: "interest", kind: "question", label: "What do they need?", text: "Hey! We’re so excited to have you here! How can I help you?", field: "interest", options: [{ label: "Get expert tips", next: "tips" }, { label: "Discover products", next: "products" }], x: 100, y: 180 },
+    // Reference branches start blank. Explicit editing prompts avoid inventing an offer.
+    message("tips", "Write your expert tips", "[Add your expert tips here]", 480, 80),
+    message("products", "Write your product offer", "[Add your product or service details here]", 480, 390),
+  ]);
+  if (id === "follow-up") return flow("delivery", [
+    { id: "delivery", kind: "message", label: "Send your link", text: "Here is the link you requested.", links: [{ label: "Get the link", url: "" }], next: "delay", x: 100, y: 180 },
+    // Ten minutes is an editable starting value, not a claimed reference delay.
+    { id: "delay", kind: "delay", label: "Follow-up delay", seconds: 600, next: "clicked", x: 480, y: 180 },
+    { id: "clicked", kind: "condition", label: "If link was clicked", field: "_linkClicked", operator: "eq", equals: "true", yes: "end", no: "reminder", x: 860, y: 180 },
+    { id: "end", kind: "end", label: "Already clicked", x: 1240, y: 80 },
+    message("reminder", "Follow-up message", "Did you get a chance to check the link? Let us know if you need any help.", 1240, 390),
+  ]);
+  if (id === "product-carousel") return flow("products", [
+    { id: "products", kind: "carousel", label: "Your product carousel", text: "Explore our products below.", cards: [{ title: "Your product title", subtitle: "Add a short product description", image: "", links: [{ label: "View product", url: "" }] }], next: null, x: 100, y: 180 },
+  ]);
+  if (id === "all-dms") return flow("welcome", [message("welcome", "Welcome message", "Thanks for reaching out!. How can we assist you today?", 100, 180)]);
+  if (id === "story-mentions") return flow("thanks", [message("thanks", "Thank you message", "Thanks for mentioning us in your story!", 100, 180)]);
+  if (id === "shared-post") return flow("thanks", [message("thanks", "Reply to a shared post", "Thanks for sharing this with us! How can we help?", 100, 180)]);
+  return flow("delivery", [
+    { id: "delivery", kind: "message", label: "Send your content", text: "Here is the link you requested.", links: [{ label: "Get the link", url: "" }], next: null, x: 100, y: 180 },
+  ]);
+}
+
 export function templateFlow(id?: string): Flow {
+  const reference = referenceTemplateFlow(id);
+  if (reference) return reference;
   if (id === "giveaway")
     return {
       version: 1,

@@ -23,10 +23,14 @@ const mockSendInstagramCommentPrivateReply = vi.fn();
 const mockSendCommentReply = vi.fn();
 const mockSendMediaComment = vi.fn();
 
+const followTracking = vi.hoisted(()=>({observe:vi.fn(),profile:vi.fn()}));
+vi.mock("@/lib/automation-tracking",()=>({recordAutomationHit:vi.fn(),observeAutomationFollow:followTracking.observe}));
 const mockPublicSlot = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/public-reply-limit", () => ({ reservePublicReplySlot: (...args: any[]) => mockPublicSlot(...args), finishPublicReplySlot: vi.fn().mockResolvedValue(undefined) }));
 
 vi.mock("@/actions/webhook/queries", () => ({
+  flowTriggerForEvent: vi.fn().mockReturnValue(undefined),
+  isCurrentFlowOpening: vi.fn().mockReturnValue(true),
   findAutomationForCommentWithReason: (...args: any[]) => mockFindAutomationForCommentWithReason(...args),
   findAutomationForDM: vi.fn(),
   findAutomationById: vi.fn(),
@@ -70,6 +74,7 @@ vi.mock("@/lib/fetch", () => ({
 }));
 
 vi.mock("@/lib/instagram-dm", () => ({
+  getInstagramRecipientProfile: followTracking.profile,
   sendInstagramCommentPrivateReply: (...args: any[]) => mockSendInstagramCommentPrivateReply(...args),
   formatPrivateReplyError: () => "dm_failed",
 }));
@@ -211,6 +216,14 @@ beforeEach(() => {
 });
 
 describe("comment webhook private DM toggle", () => {
+  it("observes follow status before sending the initial follow request",async()=>{
+    const campaign:any=automation(true);campaign.followGateRequired=true;campaign.User.subscription.plan="PRO";
+    followTracking.profile.mockResolvedValue({followsBusiness:false});
+    mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+    await POST(commentRequest());
+    expect(followTracking.observe).toHaveBeenCalledWith({integrationId:"integration-1",automationId:campaign.id,recipientIgId:"commenter-1",followsBusiness:false});
+    expect(followTracking.observe.mock.invocationCallOrder[0]).toBeLessThan(mockSendInstagramCommentPrivateReply.mock.invocationCallOrder[0]);
+  });
   it("uses automation AI even when the workspace master switch is false", async () => {
     const campaign:any = automation(true); campaign.listener.aiReplyEnabled=true; campaign.User.subscription.plan="PRO";
     mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});

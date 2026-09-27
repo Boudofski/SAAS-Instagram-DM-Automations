@@ -38,6 +38,8 @@ vi.mock("@/lib/automation-engagement", () => ({
 }));
 
 vi.mock("@/actions/webhook/queries", () => ({
+  flowTriggerForEvent: vi.fn().mockReturnValue(undefined),
+  isCurrentFlowOpening: vi.fn().mockReturnValue(true),
   findAutomationForCommentWithReason: vi.fn(),
   findAutomationForDM: (...args: unknown[]) => mockFindAutomationForDM(...args),
   findAutomationForStory: vi.fn(),

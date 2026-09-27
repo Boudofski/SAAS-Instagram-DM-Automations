@@ -190,6 +190,9 @@ model Integrations {
   conversations                      Conversation[]
   aiConfig                           InstagramAiConfig?
   aiChats                            AiChatMessage[]
+  followerStates                     AutomationFollowerState[]
+  conversationStarters               Json?
+  starterReceipts                    ConversationStarterReceipt[]
 
   @@index([metaAppScopedUserId])
 }
@@ -264,6 +267,10 @@ model Automation {
   flowSessions           AutomationFlowSession[]
   flowEntries            AutomationFlowEntry[]
   flowReceipts           AutomationFlowReceipt[]
+  analyticsHits          AutomationHit[]
+  trackedLinks           AutomationTrackedLink[]
+  analyticsClicks        AutomationClick[]
+  followerStates         AutomationFollowerState[]
 
   @@index([userId, integrationId])
 }
@@ -307,6 +314,8 @@ model Listener {
   aiDmReplyEnabled        Boolean    @default(false)
   aiConversation          Json?
   flowDefinition          Json?
+  flowTriggers Json?
+  flowDraft Json?
   flowRevision            Int        @default(0)
   ctaLink                 String?
   ctaButtonTitle          String?
@@ -473,6 +482,8 @@ model Lead {
   commentText  String?
   email        String?
   emailCollectedAt DateTime?
+  phone        String?
+  customFields Json @default("{}")
   mediaId      String?
   createdAt    DateTime   @default(now())
 
@@ -742,10 +753,12 @@ model AutomationFlowSession {
   lastEventId   String?
   startEventId  String?
   startedAt     DateTime @default(now())
+  resumeAt      DateTime?
   expiresAt     DateTime
   updatedAt     DateTime @updatedAt
   @@unique([integrationId, recipientIgId])
   @@index([status, expiresAt])
+  @@index([status, resumeAt])
 }
 
 // Durable once-per-contact entry; edits never reset giveaway eligibility.
@@ -783,4 +796,67 @@ model PublicReplySlot {
   @@unique([automationId, commentId])
   @@index([automationId, mediaId, createdAt])
   @@index([createdAt])
+}
+
+// Analytics begins when this migration is deployed; no inferred history.
+model AutomationHit {
+  id            String     @id @default(cuid())
+  automationId  String     @db.Uuid
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  eventKey      String
+  recipientIgId String
+  source        String
+  createdAt     DateTime   @default(now())
+  @@index([automationId, recipientIgId])
+  @@unique([automationId, eventKey])
+  @@index([automationId, createdAt])
+}
+
+model AutomationTrackedLink {
+  id            String     @id @default(uuid()) @db.Uuid
+  automationId  String     @db.Uuid
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  recipientIgId String
+  destination   String
+  key           String     @unique
+  createdAt     DateTime   @default(now())
+  @@index([automationId])
+}
+
+model AutomationClick {
+  id            String     @id @default(cuid())
+  automationId  String     @db.Uuid
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  recipientIgId String
+  country       String?
+  createdAt     DateTime   @default(now())
+  @@unique([automationId, recipientIgId])
+  @@index([automationId, createdAt])
+}
+
+model AutomationFollowerState {
+  id             String       @id @default(cuid())
+  integrationId  String       @db.Uuid
+  integration    Integrations @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  recipientIgId  String
+  automationId   String?      @db.Uuid
+  automation     Automation?  @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  firstFollowing Boolean
+  firstSeenAt    DateTime     @default(now())
+  lastNotFollowingAt DateTime?
+  followedAt     DateTime?
+  @@unique([integrationId, recipientIgId])
+  @@index([automationId, followedAt])
+}
+
+model ConversationStarterReceipt {
+  id String @id @default(uuid()) @db.Uuid
+  integrationId String @db.Uuid
+  integration Integrations @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  recipientIgId String
+  eventId String
+  status String @default("PROCESSING")
+  createdAt DateTime @default(now())
+  @@unique([integrationId, recipientIgId, eventId])
+  @@index([integrationId, status, createdAt])
 }

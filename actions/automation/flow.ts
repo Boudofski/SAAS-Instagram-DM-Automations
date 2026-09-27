@@ -6,7 +6,8 @@ import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 import { canActivateCampaign } from "@/actions/usage/queries";
 import { validateFlow } from "@/lib/automation-flow/definition";
-import { productImageId } from "@/lib/product-card";
+import { flowPostSchema, flowTriggerSchema, readFlowDraft, type FlowTrigger } from "@/lib/automation-flow/triggers";
+import { flowAssetIssue } from "@/lib/automation-flow/publication";
 
 const inputSchema = z.object({
   id: z.string().uuid().optional(),
@@ -18,16 +19,11 @@ const inputSchema = z.object({
   storyTrigger: z.enum(["REPLY", "MENTION", "REACTION"]),
   keyword: z.string().trim().max(100),
   anyMessage: z.boolean(),
-  post: z
-    .object({
-      postid: z.string().min(1).max(100),
-      media: z.string().max(4000),
-      caption: z.string().max(4000).optional(),
-      mediaType: z.enum(["IMAGE", "VIDEO", "CAROUSEL_ALBUM"]),
-    })
-    .nullable(),
-  opening: z.string().trim().min(1).max(800),
-  openingButton: z.string().trim().min(1).max(20),
+  post: flowPostSchema.nullable(),
+  triggers: z.array(flowTriggerSchema).max(10).optional(),
+  openingEnabled: z.boolean().optional(),
+  opening: z.string().trim().max(800),
+  openingButton: z.string().trim().max(20),
   publicReply: z.string().trim().max(300),
   flow: z.unknown(),
 });
@@ -38,12 +34,17 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
   if (!parsed.success)
     return { status: 400, error: parsed.error.issues[0].message };
   const input = parsed.data;
-  const checked = validateFlow(input.flow);
+  const checked = input.active ? validateFlow(input.flow) : { flow: readFlowDraft(input.flow), errors: ["Invalid draft structure."] };
   if (!checked.flow) return { status: 400, error: checked.errors.join(" ") };
-  if (input.source !== "STORY" && !input.anyMessage && !input.keyword)
-    return { status: 400, error: "Add a trigger keyword." };
-  if (input.source === "COMMENT" && !input.post)
-    return { status: 400, error: "Choose a post or Any post." };
+  const triggers: FlowTrigger[] = input.triggers ?? [{ id: "primary", source: input.source, storyTrigger: input.storyTrigger, keyword: input.keyword, anyMessage: input.anyMessage, post: input.post, postScope: input.post?.postid === "ANY" ? "all" : "specific" }];
+  if (new Set(triggers.map(t => t.id)).size !== triggers.length) return {status:400,error:"Trigger IDs must be unique."};
+  if (input.active) {
+    if (!triggers.length) return {status:400,error:"Add a trigger before publishing."};
+    for (const trigger of triggers) {
+      if (trigger.source !== "STORY" && !trigger.anyMessage && !trigger.keyword) return { status:400,error:"Add a trigger keyword or select any message." };
+      if (trigger.source === "COMMENT" && (trigger.postScope ?? "specific") === "specific" && !trigger.post) return {status:400,error:"Choose a post or Any post."};
+    }
+  }
   const accountId = await currentInstagramAccountId(current.id);
   if (input.integrationId !== accountId)
     return {
@@ -107,30 +108,39 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
         error: "Your active-automation limit has been reached.",
       };
   }
-  for (const node of checked.flow.nodes)
-    if (node.kind === "product") {
-      const imageId = productImageId(node.image);
-      if (
-        !imageId ||
-        !(await client.automationImage.findFirst({
-          where: { id: imageId, userId: user.id },
-          select: { id: true },
-        }))
-      )
-        return {
-          status: 400,
-          error: `${node.label}: upload a product image from your own account.`,
-        };
-    }
+  if (input.active) {
+    const published = validateFlow(input.flow).flow!;
+    const assetIssue=await flowAssetIssue(published,user.id);
+    if(assetIssue)return {status:400,error:assetIssue};
+  }
+  const primary = triggers[0];
+  const flow = checked.flow;
+  const entry = input.active ? validateFlow(input.flow).flow!.nodes.find(node=>node.id===flow.entry) : null;
+  const entryOpening = entry?.kind === "question" && entry.options.length === 1 ? entry : null;
+  const opening = entryOpening?.text ?? input.opening;
+  const openingButton = entryOpening?.options[0].label ?? input.openingButton;
+  if (input.active && triggers.some(t=>t.source === "COMMENT") && (!opening || !openingButton)) return {status:400,error:"Comment flows need an opening message and button to start the messaging window."};
+  const oldTriggers = Array.isArray(existing?.listener?.flowTriggers) ? existing.listener.flowTriggers as unknown as FlowTrigger[] : [];
+  const savedTriggers = triggers.map(trigger=> {
+    // Binding metadata is server-owned. Editing the same next-post trigger preserves its publication boundary.
+    const old = input.active && !existing?.active ? undefined : oldTriggers.find(t=>t.id===trigger.id && t.postScope === "next");
+    const {publishedAt: _publishedAt,boundPostId:_boundPostId,...clean} = trigger;
+    return trigger.postScope === "next" ? {...clean,publishedAt:old?.publishedAt ?? new Date().toISOString(),...(old?.boundPostId ? {boundPostId:old.boundPostId} : {})} : clean;
+  });
   try {
     const saved = await client.$transaction(async (tx) => {
-      if (input.id) {
+      const draftOnly = Boolean(existing?.active && !input.active);
+      if (input.id && existing?.listener) {
+        const draft = existing.listener.flowDraft as {revision?:number} | null;
+        const expectedRevision = draft?.revision ?? existing.listener.flowRevision;
+        if (expectedRevision !== undefined && expectedRevision !== input.revision) throw new Error("FLOW_CONFLICT");
         const claimed = await tx.listener.updateMany({
-          where: { automationId: input.id, flowRevision: input.revision },
-          data: { flowRevision: { increment: 1 } },
+          where: { automationId: input.id, flowRevision: existing.listener.flowRevision ?? input.revision, ...(existing.listener.flowDraft !== undefined ? {flowDraft:{equals:existing.listener.flowDraft ?? Prisma.DbNull}} : {}) },
+          data: draftOnly ? {flowDraft:{revision:input.revision+1,flow,triggers:savedTriggers,name:input.name,opening:input.opening,openingButton:input.openingButton,publicReply:input.publicReply,openingEnabled:input.openingEnabled ?? true} as Prisma.InputJsonValue} : {flowRevision: input.revision + 1},
         });
         if (!claimed.count) throw new Error("FLOW_CONFLICT");
       }
+      if (draftOnly) return {id:existing!.id};
       const automation = await tx.automation.upsert({
         where: { id: input.id ?? crypto.randomUUID() },
         create: { userId: user.id, integrationId: accountId, name: input.name },
@@ -150,49 +160,35 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
         data: {
           name: input.name,
           active: input.active,
-          source: input.source,
+          source: primary?.source ?? input.source,
           sendPrivateDm: true,
-          storyTriggerType:
-            input.source === "STORY" ? input.storyTrigger : null,
-          triggerMode: input.anyMessage
-            ? input.source === "COMMENT"
-              ? "ANY_COMMENT"
-              : "ANY_MESSAGE"
-            : "SPECIFIC_KEYWORD",
+          storyTriggerType: primary?.source === "STORY" ? primary.storyTrigger : null,
+          triggerMode: primary?.anyMessage ? primary.source === "COMMENT" ? "ANY_COMMENT" : "ANY_MESSAGE" : "SPECIFIC_KEYWORD",
           matchingMode: "CONTAINS",
           followGateRequired: false,
-          keywords:
-            !input.anyMessage && input.source !== "STORY"
-              ? { create: { word: input.keyword.toLowerCase() } }
-              : undefined,
-          posts:
-            input.source === "COMMENT" && input.post
-              ? { create: input.post }
-              : undefined,
-          trigger: {
-            create: {
-              type:
-                input.source === "STORY"
-                  ? `STORY_${input.storyTrigger}`
-                  : input.source,
-            },
-          },
+          keywords: {create: Array.from(new Set(triggers.filter(t=>!t.anyMessage && t.keyword).map(t=>t.keyword.toLowerCase()))).map(word=>({word}))},
+          posts: {create: Array.from(new Map(triggers.filter(t=>t.source === "COMMENT").flatMap(t=>t.postScope === "all" ? [{postid:"ANY",media:"",mediaType:"IMAGE" as const}] : t.postScope === "next" ? [] : t.post ? [t.post] : []).map(post=>[post.postid,post])).values())},
+          trigger: {create: Array.from(new Set(triggers.map(t=>t.source === "STORY" ? `STORY_${t.storyTrigger}` : t.source))).map(type=>({type}))},
           listener: {
             upsert: {
               create: {
                 flowRevision: 1,
                 prompt: "Continue the conversation",
-                flowDefinition: checked.flow as Prisma.InputJsonValue,
+                flowDefinition: flow as Prisma.InputJsonValue,
+                flowTriggers: savedTriggers as Prisma.InputJsonValue,
+                flowDraft: Prisma.DbNull,
                 openingDmEnabled: true,
-                openingDmText: input.opening,
-                openingDmButtonText: input.openingButton,
+                openingDmText: opening,
+                openingDmButtonText: openingButton,
                 commentReply: input.publicReply || null,
               },
               update: {
-                flowDefinition: checked.flow as Prisma.InputJsonValue,
+                flowDefinition: flow as Prisma.InputJsonValue,
+                flowTriggers: savedTriggers as Prisma.InputJsonValue,
+                flowDraft: Prisma.DbNull,
                 openingDmEnabled: true,
-                openingDmText: input.opening,
-                openingDmButtonText: input.openingButton,
+                openingDmText: opening,
+                openingDmButtonText: openingButton,
                 commentReply: input.publicReply || null,
               },
             },

@@ -1,29 +1,43 @@
 "use client";
-import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
-  ArrowRight,
+  ArrowUp,
   Check,
+  ChevronDown,
+  Diamond,
   Eye,
   GitBranch,
   Loader2,
+  Menu,
+  Pencil,
+  Plus,
+  Redo2,
   Save,
+  Sparkles,
+  Undo2,
+  X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { saveAutomationFlow } from "@/actions/automation/flow";
+import { generateAutomationFlow } from "@/actions/automation/flow-assistant";
 import {
-  saveAutomationFlow,
-  type SaveFlowInput,
-} from "@/actions/automation/flow";
-import { templateById, templateFlow } from "@/lib/automation-flow/templates";
+  templateById,
+  templateFlow,
+  templatePreset,
+} from "@/lib/automation-flow/templates";
 import {
-  readFlow,
-  validateFlow,
-  type Flow,
-} from "@/lib/automation-flow/definition";
+  readFlowTriggers,
+  type FlowTrigger,
+} from "@/lib/automation-flow/triggers";
+import { prepareFlowCanvas } from "@/lib/automation-flow/layout";
+import { type Flow, validateFlow } from "@/lib/automation-flow/definition";
+import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import FlowCanvas from "./flow-canvas";
 import FlowPreview from "./flow-preview";
+import FlowTriggerEditor, { triggerLabel } from "./flow-trigger-editor";
+import FlowNodeEditor, { newFlowNode, NODE_NAMES } from "./flow-node-editor";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +56,20 @@ type Props = {
   refreshPosts: () => void;
   plan?: string;
 };
+type Document = {
+  flow: Flow;
+  triggers: FlowTrigger[];
+  name: string;
+  opening: string;
+  openingButton: string;
+  publicReply: string;
+  openingEnabled: boolean;
+};
+const suggestions = [
+  "Collect email from anyone who sends 'FREEBIE' in post comment, then send message to 'check email'",
+  "DM anyone who comments on my post with my link, after a 10 second delay",
+  "Reply to comments, wait 30 seconds, send a DM, then a follow-up card with image and buttons a day later",
+];
 export default function FlowBuilder({
   slug,
   integrationId,
@@ -53,70 +81,201 @@ export default function FlowBuilder({
   refreshPosts,
   plan = "FREE",
 }: Props) {
-  const template = templateById(templateId);
+  const search = useSearchParams();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState(automation ? 2 : 1);
-  const stepContent = useRef<HTMLElement>(null);
-  const previousStep = useRef(step);
-  useEffect(() => {
-    if (previousStep.current !== step) {
-      stepContent.current?.scrollIntoView({ block: "start", behavior: "auto" });
-      previousStep.current = step;
-    }
-  }, [step]);
-  const [preview, setPreview] = useState(false);
-  const [flow, setFlow] = useState<Flow>(
-    () =>
-      readFlow(automation?.listener?.flowDefinition) ??
-      templateFlow(templateId),
+  const template = templateById(templateId);
+  const preset = templatePreset(templateId);
+  const [doc, setDoc] = useState<Document>(() => {
+    const saved = automation?.listener?.flowDraft;
+    const source = automation?.source ?? preset.source;
+    const original: Flow =
+      automation?.listener?.flowDefinition ??
+      (templateId
+        ? templateFlow(templateId)
+        : { version: 1, entry: "", oncePerContact: false, nodes: [] });
+    return {
+      flow: prepareFlowCanvas(saved?.flow ?? original),
+      triggers:
+        saved?.triggers ??
+        readFlowTriggers(automation?.listener?.flowTriggers) ??
+        (automation
+          ? [
+              {
+                id: "primary",
+                source,
+                storyTrigger: automation.storyTriggerType ?? "REPLY",
+                keyword: automation.keywords?.[0]?.word ?? "",
+                anyMessage: automation.triggerMode !== "SPECIFIC_KEYWORD",
+                post: automation.posts?.[0] ?? null,
+                postScope:
+                  automation.posts?.[0]?.postid === "ANY" ? "all" : "specific",
+              },
+            ]
+          : templateId
+            ? [
+                {
+                  id: "primary",
+                  ...preset,
+                  post:
+                    preset.postScope === "all"
+                      ? { postid: "ANY", media: "", mediaType: "IMAGE" }
+                      : null,
+                },
+              ]
+            : []),
+      name:
+        saved?.name ??
+        automation?.name ??
+        template?.name ??
+        `Untitled ${new Date().toLocaleDateString("en-GB")}`,
+      opening:
+        saved?.opening ??
+        automation?.listener?.openingDmText ??
+        preset.opening ??
+        "Thanks for your interest! Tap below to continue.",
+      openingButton:
+        saved?.openingButton ??
+        automation?.listener?.openingDmButtonText ??
+        preset.openingButton ??
+        "Continue",
+      publicReply:
+        saved?.publicReply ?? automation?.listener?.commentReply ?? "",
+      openingEnabled:
+        saved?.openingEnabled ??
+        automation?.listener?.openingDmEnabled ??
+        Boolean(preset.opening),
+    };
+  });
+  const [basic, setBasic] = useState(search.get("editor") === "basic");
+  const [expanded, setExpanded] = useState<string | null>("trigger");
+  const [id, setId] = useState<string | undefined>(automation?.id);
+  const idRef = useRef(id);
+  const revision = useRef<number>(
+    automation?.listener?.flowDraft?.revision ??
+      automation?.listener?.flowRevision ??
+      0,
   );
-  const [draft, setDraft] = useState<Omit<SaveFlowInput, "flow">>(() => ({
-    id: automation?.id,
-    revision: automation?.listener?.flowRevision ?? 0,
-    integrationId,
-    name: automation?.name ?? template?.name ?? "Untitled flow",
-    active: false,
-    source:
-      automation?.source ??
-      (template?.trigger === "comment"
-        ? "COMMENT"
-        : template?.trigger === "story"
-          ? "STORY"
-          : "DM"),
-    storyTrigger: automation?.storyTriggerType ?? "REPLY",
-    keyword: automation?.keywords?.[0]?.word ?? template?.keyword ?? "",
-    anyMessage: automation
-      ? automation.triggerMode !== "SPECIFIC_KEYWORD"
-      : false,
-    post: automation?.posts?.[0]
-      ? {
-          postid: automation.posts[0].postid,
-          media: automation.posts[0].media,
-          mediaType: automation.posts[0].mediaType,
-          caption: automation.posts[0].caption ?? "",
-        }
-      : null,
-    opening:
-      automation?.listener?.openingDmText ??
-      "Thanks for your interest! Tap below to continue.",
-    openingButton: automation?.listener?.openingDmButtonText ?? "Continue",
-    publicReply: automation?.listener?.commentReply ?? "",
-  }));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [dirty, setDirty] = useState(false);
+  const edits = useRef(0);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [savedAt, setSavedAt] = useState("");
+  const [error, setError] = useState("");
   const [live, setLive] = useState(Boolean(automation?.active));
-  const patch = (p: Partial<typeof draft>) => {
-    setDraft((v) => ({ ...v, ...p }));
+  const [past, setPast] = useState<Document[]>([]);
+  const [future, setFuture] = useState<Document[]>([]);
+  const [triggerPanel, setTriggerPanel] = useState(false);
+  const [editingTrigger, setEditingTrigger] = useState<string | undefined>();
+  const [assistant, setAssistant] = useState(search.get("assistant") === "1");
+  const [prompt, setPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [aiMessages, setAiMessages] = useState<
+    Array<{ role: "user" | "assistant"; content: string }>
+  >([]);
+  const [aiWarning, setAiWarning] = useState("");
+  const [preview, setPreview] = useState(false);
+  const change = (next: Document, history = true) => {
+    if (history) {
+      setPast((p) => [...p.slice(-49), doc]);
+      setFuture([]);
+    }
+    setDoc(next);
+    edits.current++;
     setDirty(true);
-    setNotice("");
+    setError("");
   };
-  const changeFlow = (f: Flow) => {
-    setFlow(f);
+  const patch = (p: Partial<Document>) => change({ ...doc, ...p });
+  const changeFlow = (flow: Flow) => patch({ flow });
+  const undo = () => {
+    if (!past.length) return;
+    setFuture((f) => [doc, ...f]);
+    setDoc(past[past.length - 1]);
+    setPast((p) => p.slice(0, -1));
+    edits.current++;
     setDirty(true);
-    setNotice("");
   };
+  const redo = () => {
+    if (!future.length) return;
+    setPast((p) => [...p, doc]);
+    setDoc(future[0]);
+    setFuture((f) => f.slice(1));
+    edits.current++;
+    setDirty(true);
+  };
+  async function save(publish: boolean) {
+    if (busyRef.current) return;
+    const seq = edits.current;
+    if (publish) {
+      const checked = validateFlow(doc.flow);
+      if (!checked.flow) {
+        setError(checked.errors.join(" "));
+        return;
+      }
+    }
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    const primary = doc.triggers[0] ?? {
+      source: "DM" as const,
+      storyTrigger: "REPLY" as const,
+      keyword: "",
+      anyMessage: true,
+      post: null,
+    };
+    try {
+      const result = await saveAutomationFlow({
+        id: idRef.current,
+        revision: revision.current,
+        integrationId,
+        name: doc.name || "Untitled flow",
+        active: publish,
+        source: primary.source,
+        storyTrigger: primary.storyTrigger,
+        keyword: primary.keyword,
+        anyMessage: primary.anyMessage,
+        post: primary.post ?? null,
+        triggers: doc.triggers,
+        openingEnabled: doc.openingEnabled,
+        opening: doc.opening,
+        openingButton: doc.openingButton,
+        publicReply: doc.publicReply,
+        flow: doc.flow,
+      });
+      if (result.status !== 200 || !result.id) {
+        setError(result.error ?? "Could not save this flow.");
+        return;
+      }
+      const firstSave = !idRef.current;
+      idRef.current = result.id;
+      setId(result.id);
+      if (firstSave && window.location.pathname.endsWith("/automation/new")) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("edit", result.id);
+        url.searchParams.set("type", "flow");
+        window.history.replaceState(window.history.state, "", url.toString());
+      }
+      revision.current = result.revision ?? revision.current + 1;
+      if (seq === edits.current) setDirty(false);
+      setSavedAt(
+        new Date().toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+        }),
+      );
+      if (publish) setLive(true);
+      await refreshSavedAutomation(queryClient, result.id);
+    } catch {
+      setError("Could not save your changes. Please try again.");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+  useEffect(() => {
+    if (!dirty || busy || error || !integrationId) return;
+    const timer = setTimeout(() => void save(false), 1400);
+    return () => clearTimeout(timer);
+  }, [doc, dirty, busy, error, integrationId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirty) {
@@ -127,486 +286,624 @@ export default function FlowBuilder({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const validation = validateFlow(flow);
-  const triggerReady = Boolean(
-    draft.name.trim() &&
-    (draft.source === "STORY" || draft.anyMessage || draft.keyword.trim()) &&
-    (draft.source !== "COMMENT" || draft.post),
-  );
-  async function save(active: boolean) {
-    setError("");
-    setNotice("");
-    if (!triggerReady) {
-      setError("Complete the trigger settings before saving.");
-      setStep(1);
-      return;
-    }
-    if (!validation.flow) {
-      setError(validation.errors.join(" "));
-      return;
-    }
-    setBusy(true);
+  async function ask(text = prompt) {
+    if (!text.trim() || generating) return;
+    setAssistant(true);
+    setGenerating(true);
+    setPrompt("");
+    setAiWarning("");
+    const history = aiMessages
+      .slice(-6)
+      .map((m) => ({ ...m, content: m.content.slice(0, 2000) }));
+    setAiMessages((m) => [...m, { role: "user", content: text }]);
     try {
-      const result = await saveAutomationFlow({
-        ...draft,
+      const result = await generateAutomationFlow({
         integrationId,
-        active,
-        flow,
+        prompt: text,
+        currentFlow: doc.flow.nodes.length ? doc.flow : undefined,
+        history,
       });
-      if (result.status !== 200 || !result.id) {
-        setError(result.error ?? "Could not save this flow.");
+      if (result.status !== 200 || !result.flow) {
+        setAiMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content:
+              result.error ?? "The flow could not be generated. Try again.",
+          },
+        ]);
         return;
       }
-      setDraft((v) => ({
-        ...v,
-        id: result.id,
-        revision: result.revision ?? v.revision,
-      }));
-      setDirty(false);
-      setLive(active);
-      setNotice(
-        active
-          ? "Your flow is live. Test it with a real Instagram conversation."
-          : "Draft saved. This flow is not sending messages.",
-      );
-      await refreshSavedAutomation(queryClient, result.id);
+      const triggers = result.trigger
+        ? [
+            {
+              id: doc.triggers[0]?.id ?? "primary",
+              source: result.trigger.source,
+              storyTrigger: result.trigger.storyTrigger ?? "REPLY",
+              keyword: result.trigger.keyword,
+              anyMessage: result.trigger.anyMessage,
+              post: doc.triggers[0]?.post ?? null,
+              postScope: doc.triggers[0]?.postScope ?? "specific",
+            } as FlowTrigger,
+            ...doc.triggers.slice(1),
+          ]
+        : doc.triggers;
+      change({
+        ...doc,
+        flow: prepareFlowCanvas(result.flow),
+        triggers,
+        name: result.name || doc.name,
+      });
+      setAiMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content:
+            result.summary ??
+            "Your flow is ready on the canvas. Review it before publishing.",
+        },
+      ]);
+      setAiWarning(result.warnings?.join(" ") ?? "");
     } catch {
-      setError(
-        "Could not save. Your changes are still here. Please try again.",
-      );
+      setAiMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content:
+            "The assistant could not connect. Your existing flow is unchanged.",
+        },
+      ]);
     } finally {
-      setBusy(false);
+      setGenerating(false);
     }
   }
+  const updateTrigger = (t: FlowTrigger) =>
+    patch({ triggers: doc.triggers.map((x) => (x.id === t.id ? t : x)) });
+  const addTrigger = (t: FlowTrigger) => {
+    if (doc.triggers.length >= 10) return;
+    patch({ triggers: [...doc.triggers, t] });
+    setEditingTrigger(t.id);
+  };
+  const triggerSummary = doc.triggers.map((t) => ({
+    id: t.id,
+    label: triggerLabel(t),
+    detail: t.sharedPost
+      ? "Post or reel shared to your inbox"
+      : t.source === "STORY"
+        ? `Story ${t.storyTrigger.toLowerCase()}`
+        : t.anyMessage
+          ? t.source === "COMMENT"
+            ? "Any comment"
+            : "Any message"
+          : `Keyword is ${t.keyword || "…"}`,
+  }));
+  const headerButton =
+    "grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
   return (
-    <div className="min-w-0 max-w-full min-h-[80vh] overflow-hidden rounded-2xl border border-slate-200 bg-[#f7f8fc] text-slate-950 dark:border-white/10 dark:bg-[#0b0f19] dark:text-slate-100">
-      <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141824]">
+    <div
+      className="font-sans fixed inset-0 z-40 flex flex-col bg-[#f5f5f5] text-slate-950 dark:bg-[#0d1421] dark:text-slate-100"
+      onKeyDown={(e) => {
+        if (
+          (e.metaKey || e.ctrlKey) &&
+          e.key === "z" &&
+          !["INPUT", "TEXTAREA", "SELECT"].includes(
+            (e.target as HTMLElement).tagName,
+          )
+        ) {
+          e.preventDefault();
+          e.shiftKey ? redo() : undo();
+        }
+      }}
+    >
+      <header className="flex min-h-[60px] shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-3 dark:border-white/5 dark:bg-[#111827] sm:gap-3 sm:px-5">
         <Link
-          onClick={(e) => {
-            if (dirty && !window.confirm("Leave without saving these changes?"))
-              e.preventDefault();
-          }}
           href={`/dashboard/${slug}/automation`}
           aria-label="Back to automations"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-white/10"
+          className={headerButton}
         >
-          <ArrowLeft size={18} />
+          <Menu size={18} />
         </Link>
-        <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-auto">
-          <p className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">
-            Flow Builder
-          </p>
-          <h1 className="mt-1 break-words font-bold">
-            {draft.name || "Untitled flow"}{" "}
-            <span className="ml-2 rounded-md bg-slate-100 px-2 py-1 text-[10px] uppercase text-slate-500 dark:bg-white/5 dark:text-slate-400">
-              {dirty ? "Unsaved" : live ? "Live" : "Draft"}
-            </span>
-          </h1>
+        <Link
+          href={`/dashboard/${slug}/automation`}
+          className="hidden whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 sm:block"
+        >
+          {basic ? "Automations" : "Flow builder"}
+        </Link>
+        <span className="hidden text-slate-500 dark:text-slate-400 sm:block">
+          /
+        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <input
+            aria-label="Automation name"
+            value={doc.name}
+            maxLength={120}
+            onChange={(e) => patch({ name: e.target.value })}
+            className="min-w-0 max-w-[340px] flex-1 bg-transparent text-sm font-semibold outline-none focus:rounded focus:ring-2 focus:ring-violet-400"
+          />
+          <Pencil
+            size={13}
+            className="hidden shrink-0 text-slate-500 dark:text-slate-400 sm:block"
+          />
+          <span
+            className={`hidden rounded-md px-2 py-0.5 text-[10px] font-medium sm:block ${live ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"}`}
+          >
+            {live ? "Active" : "Draft"}
+          </span>
+        </div>
+        <div className="hidden items-center gap-1 md:flex">
+          <button
+            aria-label="Undo"
+            disabled={!past.length}
+            onClick={undo}
+            className={headerButton}
+          >
+            <Undo2 size={16} />
+          </button>
+          <button
+            aria-label="Redo"
+            disabled={!future.length}
+            onClick={redo}
+            className={headerButton}
+          >
+            <Redo2 size={16} />
+          </button>
+          <span
+            role="status"
+            className="mx-2 inline-flex min-w-24 items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400"
+          >
+            {busy ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : !dirty ? (
+              <Check size={12} />
+            ) : null}
+            {busy
+              ? "Saving…"
+              : dirty
+                ? "Unsaved changes"
+                : savedAt
+                  ? `Saved at ${savedAt}`
+                  : "Draft"}
+          </span>
         </div>
         <button
+          aria-label="Preview flow"
           onClick={() => setPreview(true)}
-          className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-white/15"
+          className={headerButton}
         >
-          <Eye size={16} />
-          Preview
+          <Eye size={17} />
         </button>
         <button
-          disabled={busy || !integrationId}
+          aria-label="Save draft"
+          disabled={busy}
           onClick={() => void save(false)}
-          className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-white/15"
+          className={headerButton}
         >
-          {busy ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Save size={16} />
-          )}
-          Save draft
+          <Save size={17} />
+        </button>
+        <button
+          onClick={() => void save(true)}
+          disabled={busy || generating}
+          className="h-9 shrink-0 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 px-3 text-xs font-medium text-white disabled:opacity-50 sm:px-4"
+        >
+          {busy ? "Saving…" : "Publish"}
         </button>
       </header>
-      <nav
-        aria-label="Flow setup steps"
-        className="grid grid-cols-3 gap-1 border-b border-slate-200 p-2 sm:gap-2 sm:p-4 dark:border-white/10"
-      >
-        {["Choose trigger", "Build conversation", "Review & publish"].map(
-          (label, i) => (
-            <button
-              key={label}
-              onClick={() => setStep(i + 1)}
-              aria-current={step === i + 1 ? "step" : undefined}
-              className={`flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-2.5 text-center text-xs sm:flex-row sm:px-4 sm:text-sm font-semibold ${step === i + 1 ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5"}`}
-            >
-              <span className="grid h-5 w-5 place-items-center rounded-full border border-current text-xs">
-                {i + 1}
-              </span>
-              {label}
-            </button>
-          ),
-        )}
-      </nav>
       {error && (
-        <p
+        <div
           role="alert"
-          className="m-4 rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          className="flex shrink-0 items-start gap-3 border-b border-red-200 bg-red-50 px-5 py-3 text-xs leading-5 text-red-700 dark:border-red-500/20 dark:bg-red-950 dark:text-red-200"
         >
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p
-          role="status"
-          className="m-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-        >
-          {notice}
-        </p>
+          <span className="flex-1">{error}</span>
+          <button aria-label="Dismiss error" onClick={() => setError("")}>
+            <X size={16} />
+          </button>
+        </div>
       )}
       {!integrationId && (
-        <p className="m-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
-          No Instagram account is available. Connect or select an account before
-          saving this flow.
+        <p className="bg-amber-50 p-3 text-center text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+          Connect your Instagram account to save and publish.
         </p>
       )}
-      <main ref={stepContent} className="min-w-0 scroll-mt-4 p-3 sm:p-6">
-        {step === 1 ? (
-          <div className="mx-auto grid max-w-5xl gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <section className="min-w-0 space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">
-                  When should this flow start?
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  Choose the starting interaction. The conversation steps come
-                  next.
-                </p>
-              </div>
-              <label className="block text-sm font-semibold">
-                Automation name
-                <input
-                  value={draft.name}
-                  maxLength={120}
-                  onChange={(e) => patch({ name: e.target.value })}
-                  className="ap3k-input mt-2 w-full rounded-xl p-3"
-                />
-              </label>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {(["COMMENT", "DM", "STORY"] as const).map((source) => (
-                  <button
-                    aria-pressed={draft.source === source}
-                    key={source}
-                    onClick={() => patch({ source, anyMessage: false })}
-                    className={`rounded-xl border p-3 text-sm font-semibold ${draft.source === source ? "border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300" : "border-slate-200 dark:border-white/15"}`}
-                  >
-                    {source === "COMMENT"
-                      ? "Post comment"
-                      : source === "STORY"
-                        ? "Story reply"
-                        : "Instagram DM"}
-                  </button>
-                ))}
-              </div>
-              {draft.source === "STORY" ? (
-                <label className="block text-sm font-semibold">
-                  Story interaction
-                  <select
-                    value={draft.storyTrigger}
-                    onChange={(e) =>
-                      patch({
-                        storyTrigger: e.target
-                          .value as SaveFlowInput["storyTrigger"],
-                      })
-                    }
-                    className="ap3k-input mt-2 w-full rounded-xl p-3"
-                  >
-                    <option value="REPLY">Text reply</option>
-                    <option value="REACTION">Emoji reaction</option>
-                    <option value="MENTION">Mention</option>
-                  </select>
-                </label>
-              ) : (
-                <>
-                  <label className="flex items-center gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={draft.anyMessage}
-                      onChange={(e) => patch({ anyMessage: e.target.checked })}
-                    />
-                    Any {draft.source === "COMMENT" ? "comment" : "incoming DM"}
-                  </label>
-                  {!draft.anyMessage && (
-                    <label className="block text-sm font-semibold">
-                      Contains keyword
-                      <input
-                        value={draft.keyword}
-                        maxLength={100}
-                        placeholder="EBOOK, JOIN, WIN…"
-                        onChange={(e) => patch({ keyword: e.target.value })}
-                        className="ap3k-input mt-2 w-full rounded-xl p-3"
-                      />
-                      <span className="mt-1 block text-xs font-normal text-slate-500">
-                        Enter one phrase. Matching is case insensitive.
-                      </span>
-                    </label>
-                  )}
-                </>
-              )}
-              {draft.source === "COMMENT" && (
-                <>
-                  <div>
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">
-                        Choose a post or Reel
-                      </h3>
-                      <button
-                        onClick={refreshPosts}
-                        className="text-xs font-semibold text-violet-500"
-                      >
-                        Refresh posts
-                      </button>
-                    </div>
-                    <button
-                      onClick={() =>
-                        patch({
-                          post: {
-                            postid: "ANY",
-                            media: "",
-                            mediaType: "IMAGE",
-                          },
-                        })
-                      }
-                      className={`mb-3 w-full rounded-xl border p-3 text-sm ${draft.post?.postid === "ANY" ? "border-violet-500 bg-violet-500/10" : "border-slate-200 dark:border-white/15"}`}
-                    >
-                      Any post or Reel
-                    </button>
-                    {postsLoading ? (
-                      <p className="p-4 text-sm text-slate-500">
-                        Loading posts…
-                      </p>
-                    ) : (
-                      <div className="grid max-h-72 grid-cols-3 gap-2 overflow-auto">
-                        {posts.map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() =>
-                              patch({
-                                post: {
-                                  postid: p.id,
-                                  media: p.thumbnail_url ?? p.media_url ?? "",
-                                  caption: p.caption ?? "",
-                                  mediaType:
-                                    p.media_type === "VIDEO"
-                                      ? "VIDEO"
-                                      : p.media_type === "CAROUSEL_ALBUM"
-                                        ? "CAROUSEL_ALBUM"
-                                        : "IMAGE",
-                                },
-                              })
-                            }
-                            className={`overflow-hidden rounded-xl border-2 text-left ${draft.post?.postid === p.id ? "border-violet-500" : "border-transparent"}`}
-                          >
-                            <img
-                              src={p.thumbnail_url ?? p.media_url}
-                              alt={p.caption?.slice(0, 80) ?? "Instagram post"}
-                              className="aspect-square w-full object-cover"
-                            />
-                            <span className="block truncate p-2 text-xs">
-                              {p.caption || "Instagram post"}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {postsError && (
-                      <p className="mt-2 text-xs text-red-500">{postsError}</p>
-                    )}
-                  </div>
-                  <label className="block text-sm font-semibold">
-                    Opening DM
-                    <textarea
-                      rows={3}
-                      value={draft.opening}
-                      maxLength={800}
-                      onChange={(e) => patch({ opening: e.target.value })}
-                      className="ap3k-textarea mt-2 w-full rounded-xl p-3"
-                    />
-                  </label>
-                  <label className="block text-sm font-semibold">
-                    Opening button
-                    <input
-                      value={draft.openingButton}
-                      maxLength={20}
-                      onChange={(e) => patch({ openingButton: e.target.value })}
-                      className="ap3k-input mt-2 w-full rounded-xl p-3"
-                    />
-                  </label>
-                  <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    The person must respond to this opening DM before your
-                    custom conversation runs.
-                  </p>
-                  <label className="block text-sm font-semibold">
-                    Public comment reply (optional)
-                    <input
-                      value={draft.publicReply}
-                      maxLength={300}
-                      onChange={(e) => patch({ publicReply: e.target.value })}
-                      placeholder="Thanks! Check your DMs."
-                      className="ap3k-input mt-2 w-full rounded-xl p-3"
-                    />
-                  </label>
-                </>
-              )}
-              <button
-                disabled={!triggerReady}
-                onClick={() => setStep(2)}
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
-              >
-                Build conversation
-                <ArrowRight size={16} />
-              </button>
-            </section>
-            <FlowPreview flow={flow} />
-          </div>
-        ) : step === 2 ? (
-          <>
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">
-                  Build the conversation
-                </h2>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Connect each step to what happens next. Test every path in
-                  preview.
-                </p>
-              </div>
-              <button
-                onClick={() => setStep(3)}
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white"
-              >
-                Review flow
-                <ArrowRight size={16} />
-              </button>
-            </div>
-            <FlowCanvas flow={flow} onChange={changeFlow} />
-          </>
-        ) : (
-          <div className="mx-auto grid max-w-5xl gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <section className="min-w-0 space-y-5">
-              <h2 className="text-2xl font-bold tracking-tight">
-                Ready for a real conversation?
-              </h2>
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 text-sm dark:border-white/10 dark:bg-[#141824]">
-                <p>
-                  <strong>Trigger:</strong>{" "}
-                  {draft.source === "COMMENT"
-                    ? "Post / Reel comment"
-                    : draft.source === "STORY"
-                      ? `Story ${draft.storyTrigger.toLowerCase()}`
-                      : "Instagram DM"}
-                </p>
-                <p>
-                  <strong>Keyword:</strong>{" "}
-                  {draft.source === "STORY"
-                    ? "Not required"
-                    : draft.anyMessage
-                      ? "Any message"
-                      : draft.keyword || "Missing"}
-                </p>
-                <p>
-                  <strong>Conversation:</strong> {flow.nodes.length} steps
-                </p>
-                <p>
-                  <strong>Usage:</strong> Each message sent counts toward your
-                  plan’s action limit.
-                </p>
-              </div>
-              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 text-sm dark:border-white/10">
-                <input
-                  type="checkbox"
-                  checked={flow.oncePerContact}
-                  onChange={(e) =>
-                    changeFlow({ ...flow, oncePerContact: e.target.checked })
-                  }
-                  className="mt-1"
-                />
-                <span>
-                  <strong>One entry per person</strong>
-                  <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    Repeated triggers will not restart this flow for the same
-                    person. Existing entry records survive edits.
-                  </span>
-                </span>
-              </label>
-              {flow.nodes.some((n) => n.kind === "random") && (
-                <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
-                  Random splits are probabilities, not a guaranteed winner
-                  count. Add the giveaway rules and prize details to your
-                  opening message before publishing.
-                </p>
-              )}
-              {!validation.flow ? (
-                <div
-                  role="alert"
-                  className="rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
-                >
-                  <strong>Fix these steps first:</strong>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
-                    {validation.errors.map((e) => (
-                      <li key={e}>{e}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-300">
-                  <Check size={17} />
-                  All steps are connected and valid.
-                </p>
-              )}
-              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-                Flows run only after an inbound Instagram interaction and within
-                its messaging window. STOP cancels the conversation. Saving
-                edits cancels pending runs of this flow.
-              </p>
-              {["PRO", "BUSINESS"].includes(plan) ? (
-                <button
-                  disabled={
-                    busy || !integrationId || !validation.flow || !triggerReady
-                  }
-                  onClick={() => void save(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 font-semibold text-white disabled:opacity-40"
-                >
-                  {busy ? (
-                    <Loader2 size={17} className="animate-spin" />
-                  ) : (
-                    <GitBranch size={17} />
-                  )}
-                  Publish flow
-                </button>
-              ) : (
-                <div className="rounded-2xl bg-violet-50 p-5 dark:bg-violet-500/10">
-                  <h3 className="font-semibold">
-                    Publish with Pro or Business
-                  </h3>
-                  <p className="my-3 text-sm text-slate-600 dark:text-slate-300">
-                    Keep designing, previewing, and saving drafts on Free.
-                  </p>
-                  <Link
-                    href={`/dashboard/${slug}/settings`}
-                    className="text-sm font-bold text-violet-600 dark:text-violet-300"
-                  >
-                    View your plan →
-                  </Link>
-                </div>
-              )}
-            </section>
-            <FlowPreview flow={flow} />
+      <main className="relative min-h-0 flex-1">
+        {!basic && (
+          <div className="absolute right-3 top-3 z-10 flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-[#192233] md:hidden">
+            <button
+              aria-label="Undo"
+              disabled={!past.length}
+              onClick={undo}
+              className={headerButton}
+            >
+              <Undo2 size={16} />
+            </button>
+            <button
+              aria-label="Redo"
+              disabled={!future.length}
+              onClick={redo}
+              className={headerButton}
+            >
+              <Redo2 size={16} />
+            </button>
           </div>
         )}
+        {basic ? (
+          <div className="h-full overflow-y-auto">
+            <div className="mx-auto grid max-w-[1160px] gap-8 px-4 py-6 lg:grid-cols-[minmax(0,620px)_minmax(280px,1fr)] lg:px-8">
+              <div className="space-y-3">
+                <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Setup triggers and public reply
+                </h2>
+                <section className="overflow-hidden rounded-2xl bg-white dark:bg-[#192233]">
+                  <button
+                    className="flex min-h-14 w-full items-center justify-between px-5 text-sm font-semibold"
+                    onClick={() =>
+                      setExpanded(expanded === "trigger" ? null : "trigger")
+                    }
+                  >
+                    Trigger ·{" "}
+                    {doc.triggers[0]
+                      ? triggerLabel(doc.triggers[0])
+                      : "Choose a trigger"}
+                    <ChevronDown size={17} />
+                  </button>
+                  {expanded === "trigger" && (
+                    <FlowTriggerEditor
+                      trigger={doc.triggers[0]}
+                      posts={posts}
+                      postsLoading={postsLoading}
+                      postsError={postsError}
+                      refreshPosts={refreshPosts}
+                      onChange={updateTrigger}
+                      onAdd={addTrigger}
+                    />
+                  )}
+                </section>
+                <label className="block rounded-2xl bg-white p-5 text-sm font-medium dark:bg-[#192233]">
+                  Public comment reply
+                  <textarea
+                    value={doc.publicReply}
+                    maxLength={300}
+                    placeholder="Thanks! Check your DMs."
+                    onChange={(e) => patch({ publicReply: e.target.value })}
+                    className="flow-editor-input"
+                    rows={2}
+                  />
+                </label>
+                <h2 className="pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Setup direct message
+                </h2>
+                {doc.flow.nodes.map((n) => (
+                  <section
+                    key={n.id}
+                    className="overflow-hidden rounded-2xl bg-white dark:bg-[#192233]"
+                  >
+                    <button
+                      className="flex min-h-14 w-full items-center justify-between px-5 text-left text-sm font-semibold"
+                      onClick={() =>
+                        setExpanded(expanded === n.id ? null : n.id)
+                      }
+                    >
+                      {n.label || NODE_NAMES[n.kind]}
+                      <ChevronDown size={17} />
+                    </button>
+                    {expanded === n.id && (
+                      <FlowNodeEditor
+                        node={n}
+                        flow={doc.flow}
+                        onChange={changeFlow}
+                      />
+                    )}
+                  </section>
+                ))}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {(
+                    [
+                      "message",
+                      "question",
+                      "email",
+                      "phone",
+                      "delay",
+                      "carousel",
+                    ] as const
+                  ).map((kind) => (
+                    <button
+                      key={kind}
+                      onClick={() => {
+                        const n = newFlowNode(kind, doc.flow.nodes.length);
+                        let flow = {
+                          ...doc.flow,
+                          entry: doc.flow.entry || n.id,
+                          nodes: [...doc.flow.nodes, n],
+                        };
+                        const prev = doc.flow.nodes[doc.flow.nodes.length - 1];
+                        if (prev && "next" in prev)
+                          flow = {
+                            ...flow,
+                            nodes: flow.nodes.map((x) =>
+                              x.id === prev.id ? { ...x, next: n.id } : x,
+                            ),
+                          };
+                        changeFlow(flow);
+                        setExpanded(n.id);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs dark:border-white/10 dark:bg-[#192233]"
+                    >
+                      + {NODE_NAMES[kind]}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setBasic(false)}
+                  className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-violet-600 dark:text-violet-300"
+                >
+                  <GitBranch size={15} />
+                  Open in flow builder
+                </button>
+              </div>
+              <div className="hidden lg:block">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Live preview
+                </p>
+                <FlowPreview flow={doc.flow} />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <FlowCanvas
+            flow={doc.flow}
+            onChange={changeFlow}
+            triggers={triggerSummary}
+            onEditTrigger={(id) => {
+              setEditingTrigger(id);
+              setTriggerPanel(true);
+            }}
+          />
+        )}
+        {!basic && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void ask();
+            }}
+            className="flow-assistant-input absolute bottom-6 left-1/2 z-10 flex w-[min(354px,calc(100%-112px))] -translate-x-1/2 items-center gap-2 rounded-full border border-black/[.02] bg-white p-2 ps-4 dark:border-white/5 dark:bg-[#1b2334]"
+          >
+            <Sparkles
+              size={19}
+              className="shrink-0 text-violet-600 dark:text-violet-400"
+            />
+            <input
+              aria-label="Describe the flow you want to build"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              maxLength={4000}
+              placeholder="Describe the flow you want to build…"
+              className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+            />
+            <button
+              type="button"
+              aria-label="Open the Flow Assistant"
+              onClick={() => setAssistant(true)}
+              className="p-1 text-slate-500 dark:text-slate-400"
+            >
+              <Menu size={16} />
+            </button>
+            <button
+              aria-label="Send to Flow Assistant"
+              disabled={generating || !prompt.trim()}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-r from-violet-600 to-blue-500 text-white disabled:opacity-40"
+            >
+              <ArrowUp size={19} />
+            </button>
+          </form>
+        )}
+        {triggerPanel && (
+          <aside
+            aria-label="Trigger settings"
+            className="absolute inset-y-0 right-0 z-30 flex w-full max-w-[384px] flex-col border-l border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
+          >
+            <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 px-5 dark:border-white/5">
+              <Diamond size={17} />
+              <h2 className="flex-1 text-sm font-semibold">Begin when…</h2>
+              <button
+                aria-label="Close trigger settings"
+                onClick={() => setTriggerPanel(false)}
+                className="p-2"
+              >
+                <X size={18} />
+              </button>
+            </header>
+            <div className="min-h-0 overflow-y-auto">
+              <FlowTriggerEditor
+                trigger={doc.triggers.find((t) => t.id === editingTrigger)}
+                posts={posts}
+                postsLoading={postsLoading}
+                postsError={postsError}
+                refreshPosts={refreshPosts}
+                onChange={updateTrigger}
+                onAdd={addTrigger}
+                onRemove={() => {
+                  patch({
+                    triggers: doc.triggers.filter(
+                      (t) => t.id !== editingTrigger,
+                    ),
+                  });
+                  setEditingTrigger(undefined);
+                }}
+              />
+              <div className="space-y-4 border-t border-slate-100 p-5 dark:border-white/10">
+                <label className="flex items-center justify-between gap-3 text-sm">
+                  <span>Run once per contact</span>
+                  <input
+                    type="checkbox"
+                    checked={doc.flow.oncePerContact}
+                    onChange={(e) =>
+                      changeFlow({
+                        ...doc.flow,
+                        oncePerContact: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 accent-violet-600"
+                  />
+                </label>
+                {doc.triggers.some((t) => t.source === "COMMENT") && (
+                  <>
+                    <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Comment flows start with a private reply and wait for a
+                      button tap. A first step with one button supplies this
+                      opening automatically.
+                    </p>
+                    <label className="block text-xs font-medium">
+                      Opening message
+                      <textarea
+                        value={doc.opening}
+                        maxLength={800}
+                        onChange={(e) => patch({ opening: e.target.value })}
+                        className="flow-editor-input"
+                        rows={3}
+                      />
+                    </label>
+                    <label className="block text-xs font-medium">
+                      Opening button
+                      <input
+                        value={doc.openingButton}
+                        maxLength={20}
+                        onChange={(e) =>
+                          patch({ openingButton: e.target.value })
+                        }
+                        className="flow-editor-input"
+                      />
+                    </label>
+                    <label className="block text-xs font-medium">
+                      Public comment reply
+                      <textarea
+                        value={doc.publicReply}
+                        maxLength={300}
+                        onChange={(e) => patch({ publicReply: e.target.value })}
+                        className="flow-editor-input"
+                        rows={2}
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+              {editingTrigger && (
+                <button
+                  className="mx-5 mb-5 text-xs font-semibold text-violet-600 dark:text-violet-300"
+                  onClick={() => setEditingTrigger(undefined)}
+                >
+                  + Add another trigger
+                </button>
+              )}
+            </div>
+          </aside>
+        )}
       </main>
+      <Dialog open={assistant} onOpenChange={setAssistant}>
+        <DialogContent className="font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
+          <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 px-5 pe-14 dark:border-white/5">
+            <Sparkles size={20} className="text-violet-500" />
+            <DialogTitle className="text-sm font-semibold">
+              Flow Assistant
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Describe an automation and the assistant builds an editable draft
+              on your canvas.
+            </DialogDescription>
+          </header>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5">
+            {!aiMessages.length ? (
+              <>
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl border border-violet-100 bg-violet-50 dark:border-violet-500/20 dark:bg-violet-500/10">
+                    <Sparkles size={29} className="text-violet-500" />
+                  </span>
+                  <h2 className="text-[19px] font-semibold">
+                    How can I help you build?
+                  </h2>
+                  <p className="max-w-[300px] text-xs leading-[21px] text-slate-500 dark:text-slate-400">
+                    Describe an automation in plain words, or start from one of
+                    the ideas below.
+                  </p>
+                </div>
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  Try asking
+                </p>
+                <div className="space-y-2">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => void ask(s)}
+                      disabled={generating}
+                      className="w-full rounded-xl border border-black/[.06] bg-[#f9faf9] px-3.5 py-3 text-left text-xs leading-5 text-slate-500 transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-violet-500/10"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                {aiMessages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`whitespace-pre-wrap rounded-2xl p-3 text-sm leading-6 ${m.role === "user" ? "ms-8 bg-violet-600 text-white" : "me-4 bg-slate-100 dark:bg-white/5"}`}
+                  >
+                    {m.content}
+                  </div>
+                ))}
+                {generating && (
+                  <p
+                    role="status"
+                    className="flex items-center gap-2 text-xs text-violet-500"
+                  >
+                    <Loader2 size={14} className="animate-spin" />
+                    Building your flow…
+                  </p>
+                )}
+                {aiWarning && (
+                  <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                    {aiWarning}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void ask();
+            }}
+            className="flex shrink-0 items-end gap-2 border-t border-slate-100 p-4 dark:border-white/5"
+          >
+            <textarea
+              aria-label="Message to Flow Assistant"
+              rows={2}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              maxLength={4000}
+              placeholder="Describe the flow you want to build…"
+              className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 bg-transparent p-3 text-sm outline-none focus:border-violet-400 dark:border-white/10"
+            />
+            <button
+              aria-label="Generate flow"
+              disabled={generating || !prompt.trim()}
+              className="grid h-11 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-r from-violet-600 to-blue-500 text-white disabled:opacity-40"
+            >
+              {generating ? (
+                <Loader2 size={19} className="animate-spin" />
+              ) : (
+                <ArrowUp size={19} />
+              )}
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
       <Dialog open={preview} onOpenChange={setPreview}>
-        <DialogContent className="max-w-md bg-white p-4 pt-6 dark:bg-[#141824] sm:p-6">
-          <DialogTitle className="pe-10">Test your flow</DialogTitle>
+        <DialogContent className="max-w-xl bg-white dark:bg-[#111827]">
+          <DialogTitle>Preview your flow</DialogTitle>
           <DialogDescription>
-            No Instagram messages are sent from this preview.
+            This simulation does not send messages to Instagram.
           </DialogDescription>
-          <FlowPreview flow={flow} />
+          <FlowPreview flow={doc.flow} />
         </DialogContent>
       </Dialog>
     </div>

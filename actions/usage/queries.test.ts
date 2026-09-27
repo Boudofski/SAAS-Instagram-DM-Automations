@@ -27,6 +27,7 @@ const mockTransaction = vi.fn(async (callback: (tx: any) => unknown) => callback
 vi.mock("@/lib/prisma", () => ({
   client: {
     user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
+    conversationStarterReceipt: { count: vi.fn().mockResolvedValue(0) },
     deletedReplyUsage: { count: (...args: any[]) => mockDeletedReplyUsageCount(...args) },
     messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
     automationEvent: {

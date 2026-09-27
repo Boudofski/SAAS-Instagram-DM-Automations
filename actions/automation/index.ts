@@ -1,5 +1,8 @@
 "use server";
 
+import { validateFlow } from "@/lib/automation-flow/definition";
+import { readFlowTriggers } from "@/lib/automation-flow/triggers";
+import { flowAssetIssue } from "@/lib/automation-flow/publication";
 import { followUpSchedulerReady } from "@/lib/automation-engagement";
 import { productImageId } from "@/lib/product-card";
 import { onCurrentUser } from "../user";
@@ -560,9 +563,18 @@ export const activateAutomation = async (id: string, status: boolean) => {
       const profile = await findUser(user.id);
       const existing = await client.automation.findFirst({
         where: { id, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
-        select: { needsReview: true, reviewReason: true, listener: { select: { flowDefinition: true } } },
+        select: { source: true, needsReview: true, reviewReason: true, listener: { select: { flowDefinition: true, flowTriggers: true, openingDmText: true, openingDmButtonText: true } } },
       });
       if (existing?.listener?.flowDefinition && !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")) return { status: 403, data: "Publishing custom flows requires Pro or Business." };
+      if(existing?.listener?.flowDefinition){
+        const checked=validateFlow(existing.listener.flowDefinition);
+        if(!checked.flow)return {status:400,data:"Finish and publish this flow from the editor before activating it."};
+        const triggers=readFlowTriggers(existing.listener.flowTriggers);
+        if(triggers&&(!triggers.length||triggers.some(t=>(t.source!=="STORY"&&!t.anyMessage&&!t.keyword)||(t.source==="COMMENT"&&(t.postScope??"specific")==="specific"&&!t.post))))return {status:400,data:"Complete this flow’s triggers in the editor before activating it."};
+        if((existing.source==="COMMENT"||triggers?.some(t=>t.source==="COMMENT"))&&(!existing.listener.openingDmText||!existing.listener.openingDmButtonText))return {status:400,data:"Add an opening message and button before activating this comment flow."};
+        const issue=await flowAssetIssue(checked.flow,profile!.id);
+        if(issue)return {status:400,data:issue};
+      }
       if (existing?.needsReview) {
         return {
           status: 403,

@@ -10,7 +10,7 @@ describe("incoming Instagram events cannot cross account boundaries", () => {
     if (kind === "DM") await findAutomationForDM("hello", "ig-b");
     if (kind === "STORY") await findAutomationForStory("MENTION", "ig-b");
     if (kind === "CALLBACK") await findAutomationById("automation-a", "ig-b");
-    const call = kind === "DM" ? db.automation.findMany.mock.calls[0][0] : db.automation.findFirst.mock.calls[0][0];
+    const call = kind !== "CALLBACK" ? db.automation.findMany.mock.calls[0][0] : db.automation.findFirst.mock.calls[0][0];
     expect(call.where.integration).toMatchObject({ status: "CONNECTED", planLocked: false, reconnectRequired: false });
     expect(call.where.integration.OR).toContainEqual({ instagramId: "ig-b" });
   });

@@ -1,3 +1,6 @@
+import { readFlowTriggers, matchFlowTrigger, type FlowTrigger } from "@/lib/automation-flow/triggers";
+import { resolveInstagramMediaConnection } from "@/lib/instagram-media";
+import { resolveIntegrationSendToken } from "@/lib/send-token";
 import { conversationStopIntent, readAiConversation } from "@/lib/ai-conversation";
 import { client } from "@/lib/prisma";
 import { matchKeywordWithMode, normalizeMatchText, resolveCommentTriggerMatch } from "@/lib/matching";
@@ -30,10 +33,71 @@ type AutomationWithRelations = Automation & {
     subscription: Pick<Subscription, "plan"> | null;
     integrations: Pick<
       Integrations,
-      "id" | "token" | "instagramId" | "pageId" | "webhookAccountId" | "businessId" | "instagramUsername" | "status" | "reconnectRequired" | "planLocked"
+      "id" | "token" | "igAccountSource" | "oauthResolutionDiagnostics" | "instagramId" | "pageId" | "webhookAccountId" | "businessId" | "instagramUsername" | "status" | "reconnectRequired" | "planLocked"
     >[];
   } | null;
 };
+
+/** Select this event's trigger before legacy routing, so keywords never leak across sources. */
+export function flowTriggerForEvent(automation: Pick<AutomationWithRelations, "listener">, event: Parameters<typeof matchFlowTrigger>[1]) {
+  const triggers = readFlowTriggers(automation.listener?.flowTriggers);
+  return triggers === null ? undefined : matchFlowTrigger(triggers, event);
+}
+function commentMatch(automation: AutomationWithRelations, mediaId: string, text: string) {
+  const trigger = flowTriggerForEvent(automation,{source:"COMMENT",text,mediaId});
+  if (trigger !== undefined) return trigger ? trigger.anyMessage ? "any comment" : trigger.keyword : null;
+  return resolveCommentTriggerMatch({text,keywords:automation.keywords,mode:automation.matchingMode,triggerMode:automation.triggerMode});
+}
+export async function bindNextPostTriggers(automation: AutomationWithRelations) {
+  const triggers = readFlowTriggers(automation.listener?.flowTriggers);
+  if (!triggers?.some(t=>t.source === "COMMENT" && t.postScope === "next" && !t.boundPostId)) return;
+  const integration = automation.User?.integrations.find(i=>i.id===automation.integrationId);
+  const token = resolveIntegrationSendToken(integration);
+  const connection = resolveInstagramMediaConnection(integration ? [integration] : []);
+  if (!integration?.instagramId || !token.ok || !connection.ok) return;
+  const pending = triggers.filter(t=>t.source === "COMMENT" && t.postScope === "next" && !t.boundPostId && t.publishedAt);
+  if (!pending.length) return;
+  const boundary = Math.min(...pending.map(t=>Date.parse(t.publishedAt!)));
+  const publications: Array<{id:string;at:number}> = [];
+  let after: string | undefined; let complete=false;
+  try {
+    // Read the owning account's timeline once for all pending triggers. A bounded,
+    // incomplete history never falls back to whichever post happened to get a comment.
+    for(let page=0;page<5;page++) {
+      const url = new URL(`${connection.apiBaseUrl}/${encodeURIComponent(integration.instagramId)}/media`);
+      url.searchParams.set("fields","id,timestamp");url.searchParams.set("limit","100");if(after)url.searchParams.set("after",after);
+      const response = await fetch(url,{headers:{Authorization:`Bearer ${token.token}`},signal:AbortSignal.timeout(2000),cache:"no-store"});
+      if(!response.ok) break;
+      const data = await response.json() as {data?:Array<{id?:string;timestamp?:string}>;paging?:{next?:string;cursors?:{after?:string}}};
+      if(!Array.isArray(data.data)) break;
+      let reachedBoundary=false;
+      for(const post of data.data){const at=Date.parse(post.timestamp ?? "");if(!Number.isFinite(at)||!post.id)continue;if(at<=boundary)reachedBoundary=true;else publications.push({id:post.id,at});}
+      if(reachedBoundary||!data.paging?.next){complete=true;break;}
+      after=data.paging.cursors?.after;if(!after)break;
+    }
+  } catch { return; }
+  if (!complete) return;
+  publications.sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
+  let changed=false;
+  const updated = triggers.map(trigger=> {
+    if (!pending.includes(trigger)) return trigger;
+    const first=publications.find(post=>post.at>Date.parse(trigger.publishedAt!));
+    if (!first) return trigger;
+    changed=true;
+    return {...trigger,boundPostId:first.id};
+  });
+  if(changed&&automation.listener) {
+    const claimed=await client.listener.updateMany({where:{automationId:automation.id,flowRevision:automation.listener.flowRevision,flowTriggers:{equals:automation.listener.flowTriggers!}},data:{flowTriggers:updated as Prisma.InputJsonValue}});
+    if(claimed.count) automation.listener.flowTriggers=updated as unknown as Prisma.JsonValue;
+  }
+}
+
+export async function isCurrentFlowOpening(automation: Pick<AutomationWithRelations,"id"|"listener">, recipientIgId: string, commentId?: string) {
+  if (!automation.listener?.flowDefinition || automation.listener.flowTriggers == null) return true;
+  if (!commentId) return false;
+  const event = await client.automationEvent.findFirst({where:{automationId:automation.id,igUserId:recipientIgId,commentId,eventType:"DM_SENT",meta:{path:["flowRevision"],equals:automation.listener.flowRevision}},select:{id:true}});
+  return Boolean(event);
+}
 
 export function normalizeInstagramMediaId(value?: string | null) {
   if (!value) return "";
@@ -91,6 +155,8 @@ export const findAutomationForComment = async (
             select: {
               id: true,
               token: true,
+              igAccountSource: true,
+              oauthResolutionDiagnostics: true,
               instagramId: true,
               pageId: true,
               webhookAccountId: true,
@@ -260,6 +326,8 @@ export const findAutomationForCommentWithReason = async (
                   select: {
                     id: true,
                     token: true,
+              igAccountSource: true,
+              oauthResolutionDiagnostics: true,
                     instagramId: true,
                     pageId: true,
                     webhookAccountId: true,
@@ -277,6 +345,7 @@ export const findAutomationForCommentWithReason = async (
       }))
   );
 
+  await Promise.all(accountAutomationsByIntegration.flatMap(item=>item.automations.filter(a=>a.active).map(bindNextPostTriggers)));
   const accountAutomations = accountAutomationsByIntegration.flatMap((item) =>
     item.automations.map((automation) => ({ automation, integration: item.integration }))
   );
@@ -318,22 +387,17 @@ export const findAutomationForCommentWithReason = async (
     });
   });
   const rankedMatches = activeAutomations.flatMap((item) => {
-    const triggerMatched = options.commentText
-      ? resolveCommentTriggerMatch({
-          text: options.commentText,
-          keywords: item.automation.keywords,
-          mode: item.automation.matchingMode,
-          triggerMode: item.automation.triggerMode,
-        })
-      : "not_evaluated";
-
-    return item.automation.posts
+    const triggerMatched = options.commentText !== undefined ? commentMatch(item.automation,normalizedIncomingMediaId,options.commentText) : "not_evaluated";
+    const flowTriggers = readFlowTriggers(item.automation.listener?.flowTriggers);
+    const flowMatch = flowTriggers === null ? undefined : matchFlowTrigger(flowTriggers,{source:"COMMENT",mediaId:normalizedIncomingMediaId,text:options.commentText ?? ""});
+    const candidatePosts = flowTriggers === null ? item.automation.posts : flowMatch ? [{postid:flowMatch.postScope === "all" ? "ANY" : flowMatch.boundPostId ?? flowMatch.post?.postid ?? ""}] : [];
+    return candidatePosts
       .map((post) => {
         const normalizedStoredPostId = normalizeInstagramMediaId(post.postid);
         const exactPost = normalizedStoredPostId === normalizedIncomingMediaId;
         const anyPost = post.postid === "ANY" || normalizedStoredPostId === "ANY";
         const postMatched = exactPost || anyPost;
-        const anyComment = item.automation.triggerMode === "ANY_COMMENT";
+        const anyComment = flowMatch ? flowMatch.anyMessage : item.automation.triggerMode === "ANY_COMMENT";
         const triggerOk = options.commentText ? Boolean(triggerMatched) : true;
         if (!postMatched || !triggerOk) return null;
         const score =
@@ -467,7 +531,8 @@ function maskId(value?: string | null) {
 export const findAutomationForDM = async (
   dmText: string,
   pageId: string,
-  recipientIgId?: string
+  recipientIgId?: string,
+  sharedPost = false
 ): Promise<{ automation: AutomationWithRelations; matchedKeyword: string } | null> => {
   const automations = await client.automation.findMany({
     where: {
@@ -490,6 +555,8 @@ export const findAutomationForDM = async (
             select: {
               id: true,
               token: true,
+              igAccountSource: true,
+              oauthResolutionDiagnostics: true,
               instagramId: true,
               pageId: true,
               webhookAccountId: true,
@@ -531,6 +598,11 @@ export const findAutomationForDM = async (
   const ordered = [...automations.filter((item) => item.triggerMode !== "ANY_MESSAGE"), ...automations.filter((item) => item.triggerMode === "ANY_MESSAGE")];
   for (const automation of ordered) {
     if (stopped && readAiConversation(automation.listener?.aiConversation)) continue;
+    const flowTrigger = flowTriggerForEvent(automation,{source:"DM",text:dmText,sharedPost});
+    if (flowTrigger !== undefined) {
+      if (flowTrigger) return {automation,matchedKeyword:flowTrigger.anyMessage ? sharedPost ? "shared post" : "any message" : flowTrigger.keyword};
+      continue;
+    }
     if (automation.triggerMode === "ANY_MESSAGE") {
       return { automation, matchedKeyword: "any message" };
     }
@@ -547,15 +619,14 @@ export const findAutomationForDM = async (
 
 export const findAutomationForStory = async (
   interaction: "MENTION" | "REACTION" | "REPLY",
-  accountId: string
+  accountId: string,
+  text = ""
 ): Promise<AutomationWithRelations | null> => {
-  return client.automation.findFirst({
+  const automations = await client.automation.findMany({
     where: {
       active: true,
       archivedAt: null,
       integration: { ...webhookAccountFilter(accountId), status: "CONNECTED", reconnectRequired: false, planLocked: false },
-      source: "STORY",
-      storyTriggerType: interaction,
       trigger: { some: { type: `STORY_${interaction}` } },
       User: {
         status: { not: "SUSPENDED" },
@@ -572,6 +643,8 @@ export const findAutomationForStory = async (
             select: {
               id: true,
               token: true,
+              igAccountSource: true,
+              oauthResolutionDiagnostics: true,
               instagramId: true,
               pageId: true,
               webhookAccountId: true,
@@ -587,6 +660,7 @@ export const findAutomationForStory = async (
     },
     orderBy: { createdAt: "desc" },
   });
+  return automations.find(automation=> {const trigger = flowTriggerForEvent(automation,{source:"STORY",text,storyTrigger:interaction});return trigger === undefined ? automation.source === "STORY" && automation.storyTriggerType === interaction : Boolean(trigger);}) ?? null;
 };
 
 function webhookAccountFilter(accountId: string) {
@@ -729,6 +803,8 @@ export const findAutomationById = async (id: string, accountId?: string) => {
             select: {
               id: true,
               token: true,
+              igAccountSource: true,
+              oauthResolutionDiagnostics: true,
               instagramId: true,
               pageId: true,
               webhookAccountId: true,
@@ -797,6 +873,8 @@ export const findPendingCommentDmActionForText = async (
                 select: {
                   id: true,
                   token: true,
+              igAccountSource: true,
+              oauthResolutionDiagnostics: true,
                   instagramId: true,
                   pageId: true,
                   webhookAccountId: true,

@@ -127,6 +127,7 @@ export async function sendInboxReply(conversationId: string, rawMessage: string)
   }
   // A manual reply takes over any active AI conversation before sending.
   await client.aiConversationSession.updateMany({ where: { integrationId: profile.integrationId, recipientIgId: conversation.recipientIgId }, data: { status: "STOPPED", expiresAt: new Date(Date.now() + 86400000) } });
+  await client.automationFlowSession.updateMany({ where: { integrationId: profile.integrationId, recipientIgId: conversation.recipientIgId, OR: [{ status: { in: ["WAITING", "SCHEDULED"] } }, { status: { startsWith: "PROCESSING:" } }] }, data: { status: "STOPPED", resumeAt: null, expiresAt: new Date(Date.now() + 86400000) } });
   const sent = await sendInstagramDirectResponse({
     token: token.token,
     igBusinessAccountId: integration.instagramId,

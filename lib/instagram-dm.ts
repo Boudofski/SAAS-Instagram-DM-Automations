@@ -1,3 +1,4 @@
+import { knownFollowStatus, withTrackedLinks } from "@/lib/automation-tracking";
 import axios from "axios";
 import { productImageDeliveryUrl } from "@/lib/product-card";
 import { getSafeMetaError } from "@/lib/fetch";
@@ -296,6 +297,16 @@ export function buildProductCardPayload(params: { message: string; cardSubtitle?
   }] } } };
 }
 
+export function buildCarouselPayload(cards: Array<{ title: string; subtitle: string; image: string; links: LinkButton[] }>): InstagramMessagePayload {
+  if (!cards.length || cards.length > 10) throw new Error("A carousel needs 1–10 cards.");
+  return { attachment: { type: "template", payload: { template_type: "generic", image_aspect_ratio: "square", elements: cards.map(card => ({
+    title: Array.from(card.title.trim()).slice(0, 80).join(""),
+    ...(card.subtitle.trim() ? { subtitle: Array.from(card.subtitle.trim()).slice(0, 80).join("") } : {}),
+    image_url: productImageDeliveryUrl(card.image) ?? normalizeCtaUrl(card.image),
+    buttons: normalizeLinkButtons(card.links).slice(0, 3).map(button => ({ type: "web_url", title: Array.from(button.label).slice(0, 20).join(""), url: button.url })),
+  })) } } };
+}
+
 function buildConfiguredPrivateReplyPayload(params: {
   automationId: string;
   message: string;
@@ -397,6 +408,7 @@ export async function sendInstagramDirectResponse(params: {
   responseFormat?: string | null;
   quickReplies?: string[];
   linkButtons?: LinkButton[];
+  carouselCards?: Array<{ title: string; subtitle: string; image: string; links: LinkButton[] }>;
   quickReplyPayloads?: string[];
   ctaTitle?: string | null;
   ctaUrl?: string | null;
@@ -409,6 +421,7 @@ export async function sendInstagramDirectResponse(params: {
   postbackButton?: InstagramPostbackButton;
   preferQuickReplyForPostback?: boolean;
 }): Promise<DirectResponseResult> {
+  params = await withTrackedLinks(params);
   const messageIds: string[] = [];
   const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
 
@@ -461,6 +474,8 @@ export async function sendInstagramDirectResponse(params: {
       } else {
         responseMessage = payload.preferred;
       }
+    } else if (params.carouselCards?.length) {
+      responseMessage = buildCarouselPayload(params.carouselCards);
     } else if (params.responseFormat === "PRODUCT_CARD" && params.mediaUrl) {
       responseMessage = buildProductCardPayload(params);
     } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
@@ -555,14 +570,17 @@ export async function getInstagramRecipientProfile(params: {
 }) {
   try {
     const response = await axios.get(`${INSTAGRAM_GRAPH_API_BASE_URL}/${params.recipientId}`, {
-      params: { fields: "username,name,profile_pic,is_user_follow_business" },
+      params: { fields: "username,name,profile_pic,is_user_follow_business,is_business_follow_user,is_verified_user,follower_count" },
       headers: { Authorization: `Bearer ${params.token}` },
     });
     return {
       username: typeof response.data?.username === "string" ? response.data.username : undefined,
       name: typeof response.data?.name === "string" ? response.data.name : undefined,
       profilePictureUrl: typeof response.data?.profile_pic === "string" ? response.data.profile_pic : undefined,
-      followsBusiness: response.data?.is_user_follow_business === true,
+      followsBusiness: knownFollowStatus(response.data?.is_user_follow_business),
+      businessFollows: knownFollowStatus(response.data?.is_business_follow_user),
+      verified: knownFollowStatus(response.data?.is_verified_user),
+      followerCount: typeof response.data?.follower_count === "number" && Number.isFinite(response.data.follower_count) ? response.data.follower_count : undefined,
     };
   } catch (error) {
     console.warn("[meta-api] recipient profile lookup failed — retrying follow status only", {
@@ -577,7 +595,8 @@ export async function getInstagramRecipientProfile(params: {
         username: undefined,
         name: undefined,
         profilePictureUrl: undefined,
-        followsBusiness: followResponse.data?.is_user_follow_business === true,
+        followsBusiness: knownFollowStatus(followResponse.data?.is_user_follow_business),
+        businessFollows: undefined, verified: undefined, followerCount: undefined,
       };
     } catch (followError) {
       console.warn("[meta-api] recipient follow-status lookup failed", {
@@ -647,6 +666,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   postbackButton?: InstagramPostbackButton;
   preferQuickReplyForPostback?: boolean;
 }): Promise<PrivateReplyResult> {
+  params = await withTrackedLinks(params);
   const { token, igBusinessAccountId, commentId, commenterId } = params;
   const automationId = params.automationId ?? commentId;
   const followGatePayload = params.followGatePrompt
