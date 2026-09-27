@@ -17,6 +17,7 @@ import { FLOW_LINK_PLACEHOLDER, generateFlowAssistantDraft, normalizeFlowAssista
 const input = { integrationId: "c6c9b7d5-6a95-4e3a-aeee-268147c1e8ab", prompt: "Send my https://shop.example/guide link after 10 seconds." };
 const message = { id: "message", label: "Send the guide", x: 440, y: 100, kind: "message", text: "Here is your guide!", links: [{ label: "Get guide", url: "https://shop.example/guide" }], next: null as string | null };
 const response = () => ({ name: "Deliver guide", summary: "Wait ten seconds, then send your guide.", trigger: { source: "COMMENT", keyword: "LINK", anyMessage: false }, flow: { version: 1, entry: "delay", oncePerContact: false, nodes: [{ id: "delay", label: "Wait", x: 20, y: 100, kind: "delay", seconds: 10, next: "message" }, structuredClone(message)] } });
+const actionResponse = (node: Record<string, unknown>) => ({ ...response(), flow: { version: 1, oncePerContact: false, entry: "action", nodes: [{ id: "action", label: "Action", x: 0, y: 0, next: null, ...node }] } });
 describe("flow assistant proposals", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -93,6 +94,45 @@ describe("flow assistant proposals", () => {
     expect(result.flow.nodes).toHaveLength(2);
     expect(mocks.options).toHaveBeenCalledWith(expect.objectContaining({ timeout: 35000, maxRetries: 0, apiKey: "test-secret" }));
     expect(mocks.completion).toHaveBeenCalledWith(expect.objectContaining({ model: "configured-model", max_tokens: 8192 }));
+    const systemPrompt = mocks.completion.mock.calls[0][0].messages[0].content;
+    expect(systemPrompt).toContain('action(optional "add"|"remove", default "add")');
+    expect(systemPrompt).toContain("POST only; no method field, headers, auth headers");
+    expect(systemPrompt).toContain("JSON string VALUES");
+    expect(systemPrompt).toContain("never sends the request");
+  });
+  it("preserves tag add/remove semantics and accepts legacy default-add tags", () => {
+    for (const action of ["add", "remove", undefined]) {
+      const draft = parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "tag", tag: "qualified", ...(action ? { action } : {}) })), input);
+      expect(draft.flow.nodes[0]).toMatchObject({ kind: "tag", tag: "qualified", ...(action ? { action } : {}) });
+    }
+  });
+  it("accepts a user-supplied webhook endpoint and JSON string-value interpolation without executing a request", () => {
+    const url = "https://hooks.example.com/capture";
+    const body = JSON.stringify({ email: "{{email}}", custom: { name: "{{first_name}}" }, active: true });
+    const parsed = parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "webhook", url, body })), { ...input, prompt: `POST the email and first name to ${url}` });
+    expect(parsed.flow.nodes[0]).toMatchObject({ kind: "webhook", url, body });
+    expect(parsed.needsInput).toBe(false);
+    expect(mocks.completion).not.toHaveBeenCalled();
+  });
+  it("replaces invented webhook endpoints and flags missing configuration", () => {
+    const body = JSON.stringify({ email: "{{email}}" });
+    const parsed = parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "webhook", url: "https://invented.example.com/collect", body })), { ...input, prompt: "Send the email to my webhook, I will add its endpoint later." });
+    expect(parsed.flow.nodes[0]).toMatchObject({ kind: "webhook", url: FLOW_LINK_PLACEHOLDER });
+    expect(parsed.needsInput).toBe(true);
+    expect(parsed.warnings.join(" ")).toContain("webhook endpoints");
+  });
+  it("rejects webhook custom methods or headers instead of silently changing their meaning", () => {
+    for (const option of [{ method: "DELETE" }, { headers: { Authorization: "secret" } }, { retry: true }]) {
+      expect(() => parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "webhook", url: "https://hooks.example.com/capture", body: "{}", ...option })), input)).toThrow("unsupported webhook options");
+    }
+  });
+  it("rejects unsafe webhook URLs, non-object/oversized bodies and interpolation in keys", () => {
+    for (const url of ["http://hooks.example.com/capture", "https://hooks.example.com:8443/capture", "https://127.0.0.1/capture", "https://user:secret@hooks.example.com/capture"]) {
+      expect(() => parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "webhook", url, body: "{}" })), { ...input, prompt: `POST to ${url}` })).toThrow();
+    }
+    for (const body of ['["not an object"]', '{"{{email}}":"value"}', '{"email":{{email}}}', JSON.stringify({ value: "x".repeat(8192) })]) {
+      expect(() => parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "webhook", url: "https://hooks.example.com/capture", body })), input)).toThrow();
+    }
   });
   it("surfaces unavailable providers and truncation without manufacturing a draft", async () => {
     mocks.config.mockResolvedValueOnce(null);

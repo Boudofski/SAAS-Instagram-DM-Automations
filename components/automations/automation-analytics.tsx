@@ -2,22 +2,405 @@
 import { useState } from "react";
 import Link from "next/link";
 import { activateAutomation } from "@/actions/automation";
-import { ArrowLeft, ArrowUpRight, BarChart3, Globe2, MousePointer2, Pencil, UserPlus, Users, Zap } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  BarChart3,
+  Globe2,
+  MousePointer2,
+  Pencil,
+  UserPlus,
+  Users,
+  Zap,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import { type AutomationAnalytics } from "@/lib/automation-analytics";
-export default function AutomationAnalyticsView({data,slug}:{data:AutomationAnalytics;slug:string}) {
-  const [tab,setTab]=useState<'hits'|'clicks'|'follows'>('hits');const {automation:a,totals:t}=data;const [active,setActive]=useState(a.active);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
-  async function toggle(){setBusy(true);setError('');try{const r=await activateAutomation(a.id,!active);if(r.status===200)setActive(!active);else setError(String(r.data));}catch{setError('Could not update this automation. Try again.');}finally{setBusy(false);}}
-  const panel='rounded-[20px] border border-slate-200/80 bg-white dark:border-white/[.08] dark:bg-[#111827]';
-  const metrics=[{label:'Total hits',value:t.hits.toLocaleString(),detail:'Automation triggers received',Icon:Zap,color:'text-violet-500 bg-violet-50 dark:bg-violet-500/10'},{label:'Click rate',value:`${t.clickRate}%`,detail:`${t.clicks} of ${t.uniqueHitRecipients} people opened a link`,Icon:MousePointer2,color:'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'},{label:'Follow conversion',value:`${t.followRate}%`,detail:`${t.newFollowers} of ${t.eligibleNonFollowers} verified non-followers followed`,Icon:Users,color:'text-orange-500 bg-orange-50 dark:bg-orange-500/10'},{label:'New followers',value:t.newFollowers.toLocaleString(),detail:'Verified through this automation',Icon:UserPlus,color:'text-blue-500 bg-blue-50 dark:bg-blue-500/10'}];
-  const funnel=[{label:'Hits',value:t.hits,color:'bg-violet-500'},{label:'Clicks',value:t.clicks,color:'bg-emerald-500'},{label:'Follows',value:t.newFollowers,color:'bg-orange-400'}];
-  return <div className="font-sans mx-auto max-w-[1320px] px-4 py-6 text-slate-900 dark:text-slate-100 sm:px-7 sm:py-8"><nav className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><Link className="inline-flex items-center gap-2 hover:text-violet-500" href={`/dashboard/${slug}/automation`}><ArrowLeft size={15}/>Automations</Link><span>/</span><span className="text-slate-700 dark:text-slate-200">Analytics</span></nav>
-    <section className={`${panel} mb-5 flex items-center gap-4 p-5 sm:p-6`}>{a.postThumbnail?<img src={a.postThumbnail} alt="Automation post" className="h-16 w-16 shrink-0 rounded-xl object-cover"/>:<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-500 dark:bg-violet-500/10"><BarChart3 size={25}/></span>}<div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h1 className="break-words text-lg font-semibold sm:text-xl">{a.name}</h1><span className={`rounded-full px-2 py-1 text-[10px] font-medium ${active?'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300':'bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300'}`}>{active?'Active':'Paused'}</span></div><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Created {new Date(a.createdAt).toLocaleDateString()} · {a.responseCount.toLocaleString()} auto replies · {a.source==='COMMENT'?'Post automation':a.source==='STORY'?'Story automation':'Chat automation'}</p></div><Link aria-label="Edit automation" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:text-violet-500 dark:border-white/10" href={`/dashboard/${slug}/automation/new?edit=${a.id}`}><Pencil size={16}/></Link><button role="switch" aria-label="Automation active" aria-checked={active} disabled={busy} onClick={()=>void toggle()} className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-50 ${active?'bg-emerald-500':'bg-slate-300 dark:bg-slate-600'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${active?'left-6':'left-1'}`}/></button></section>{error&&<p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
-    <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(({label,value,detail,Icon,color})=><section key={label} className={`${panel} p-5`}><div className="flex items-center justify-between gap-2"><p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p><span className={`grid h-8 w-8 place-items-center rounded-lg ${color}`}><Icon size={16}/></span></div><p className="mt-2 text-[30px] font-semibold tracking-tight">{value}</p><p className="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{detail}</p></section>)}</div>
-    <div className="mb-5 grid gap-5 lg:grid-cols-2"><section className={`${panel} p-5 sm:p-6`}><h2 className="text-sm font-semibold">Conversion funnel</h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">How your audience moves through this automation</p><div className="mt-7 space-y-5">{funnel.map(f=><div key={f.label}><div className="mb-2 flex items-center gap-2 text-xs"><span className={`h-2 w-2 rounded-full ${f.color}`}/><span className="text-slate-500 dark:text-slate-400">{f.label}</span><span className="ms-auto font-semibold">{f.value.toLocaleString()}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5"><div className={`h-full rounded-full ${f.color}`} style={{width:`${t.hits?Math.min(100,f.value/t.hits*100):0}%`}}/></div></div>)}</div>{!t.hits&&<p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Your funnel will fill as people interact with this automation.</p>}</section>
-    <section className={`${panel} min-w-0 p-5 sm:p-6`}><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Daily activity</h2><span className="text-[11px] text-slate-500 dark:text-slate-400">Last 7 days · UTC</span></div><div className="mb-4 mt-3 flex gap-4 text-[11px] text-slate-500 dark:text-slate-400"><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-blue-500"/>Hits</span><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-emerald-500"/>Clicks</span></div><div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={data.daily} margin={{top:8,right:8,left:-28,bottom:0}}><CartesianGrid strokeDasharray="3 5" stroke="currentColor" opacity={0.07} vertical={false}/><XAxis dataKey="date" tickFormatter={v=>new Date(`${v}T12:00:00Z`).toLocaleDateString(undefined,{month:'short',day:'numeric'})} tick={{fontSize:10,fill:'#94a3b8'}} axisLine={false} tickLine={false} minTickGap={20}/><YAxis allowDecimals={false} tick={{fontSize:10,fill:'#94a3b8'}} axisLine={false} tickLine={false}/><Tooltip contentStyle={{borderRadius:12,fontSize:12,color:'#334155'}}/><Line name="Hits" dataKey="hits" stroke="#6366f1" strokeWidth={2} dot={false}/><Line name="Clicks" dataKey="clicks" stroke="#10b981" strokeWidth={2} dot={false}/></LineChart></ResponsiveContainer></div></section></div>
-    <section className={`${panel} mb-5 p-5 sm:p-6`}><h2 className="flex items-center gap-2 text-sm font-semibold"><Globe2 size={16} className="text-slate-500 dark:text-slate-400"/>Clicks by country</h2>{!data.countries.length?<p className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">Country data appears when someone opens a tracked link.</p>:<div className="mt-5 grid gap-4 sm:grid-cols-2">{data.countries.map(c=><div key={c.country??'unknown'} className="flex items-center gap-4 text-xs"><span className="w-24">{countryName(c.country)}</span><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5"><div className="h-full rounded-full bg-violet-500" style={{width:`${c.clicks/Math.max(1,t.clicks)*100}%`}}/></div><span className="w-8 text-right text-slate-500 dark:text-slate-400">{c.clicks}</span></div>)}</div>}</section>
-    <section className={`${panel} overflow-hidden`}><header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-5 dark:border-white/5 sm:px-6"><h2 className="text-sm font-semibold">Recent activity</h2><div role="tablist" aria-label="Activity type" className="flex rounded-lg bg-slate-100 p-1 dark:bg-white/5">{(['hits','clicks','follows'] as const).map(v=><button role="tab" aria-selected={tab===v} key={v} onClick={()=>setTab(v)} className={`rounded-md px-4 py-1.5 text-xs capitalize ${tab===v?'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white':'text-slate-500 dark:text-slate-400'}`}>{v}</button>)}</div></header>{!data.recent[tab].length?<div className="px-5 py-12 text-center"><ArrowUpRight size={22} className="mx-auto mb-3 text-slate-300"/><p className="text-sm font-medium">No {tab} yet</p><p className="mt-2 text-xs text-slate-500 dark:text-slate-400">New activity will appear here as your automation runs.</p></div>:<div role="tabpanel" className="divide-y divide-slate-100 dark:divide-white/5">{data.recent[tab].map(r=><div key={r.id} className="flex flex-wrap items-center gap-3 px-5 py-4 text-xs sm:px-6"><span className="grid h-8 w-8 place-items-center rounded-full bg-violet-50 text-violet-500 dark:bg-violet-500/10"><Users size={14}/></span><span className="font-medium">Contact {r.recipient}</span><span className="text-slate-500 dark:text-slate-400">{r.source??(r.country?countryName(r.country):tab==='follows'?'Verified new follower':'Tracked link')}</span><time className="ms-auto text-slate-500 dark:text-slate-400" dateTime={r.createdAt}>{new Date(r.createdAt).toLocaleString()}</time></div>)}</div>}</section><p className="mt-4 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{data.trackingStartedAt?`Tracked activity since ${new Date(data.trackingStartedAt).toLocaleDateString()}. `:'Tracking begins with new activity. '}Followers count only when Instagram confirms a change from not following to following after a follow check. Existing followers and unknown statuses are excluded.</p>
-  </div>;
+export default function AutomationAnalyticsView({
+  data,
+  slug,
+}: {
+  data: AutomationAnalytics;
+  slug: string;
+}) {
+  const [tab, setTab] = useState<"hits" | "clicks" | "follows">("hits");
+  const { automation: a, totals: t } = data;
+  const [active, setActive] = useState(a.active);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function toggle() {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await activateAutomation(a.id, !active);
+      if (r.status === 200) setActive(!active);
+      else setError(String(r.data));
+    } catch {
+      setError("Could not update this automation. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const panel =
+    "rounded-[20px] border border-slate-200/80 bg-white dark:border-white/[.08] dark:bg-[#111827]";
+  const metrics = [
+    {
+      label: "Total hits",
+      value: t.hits.toLocaleString(),
+      detail: "Automation triggers received",
+      Icon: Zap,
+      color: "text-violet-500 bg-violet-50 dark:bg-violet-500/10",
+    },
+    {
+      label: "Click rate",
+      value: `${t.clickRate}%`,
+      detail: `${t.clicks} of ${t.uniqueHitRecipients} people opened a link`,
+      Icon: MousePointer2,
+      color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10",
+    },
+    {
+      label: "Follow conversion",
+      value: `${t.followRate}%`,
+      detail: `${t.newFollowers} of ${t.eligibleNonFollowers} verified non-followers followed`,
+      Icon: Users,
+      color: "text-orange-500 bg-orange-50 dark:bg-orange-500/10",
+    },
+    {
+      label: "New followers",
+      value: t.newFollowers.toLocaleString(),
+      detail: "Verified through this automation",
+      Icon: UserPlus,
+      color: "text-blue-500 bg-blue-50 dark:bg-blue-500/10",
+    },
+  ];
+  const funnel = [
+    { label: "Hits", value: t.hits, color: "bg-violet-500" },
+    { label: "Clicks", value: t.clicks, color: "bg-emerald-500" },
+    { label: "Follows", value: t.newFollowers, color: "bg-orange-400" },
+  ];
+  return (
+    <div className="font-sans mx-auto max-w-[1320px] px-4 py-6 text-slate-900 dark:text-slate-100 sm:px-7 sm:py-8">
+      <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <Link
+          className="inline-flex items-center gap-2 hover:text-violet-500"
+          href={`/dashboard/${slug}/automation`}
+        >
+          <ArrowLeft size={15} />
+          Automations
+        </Link>
+        <span>/</span>
+        <span className="text-slate-700 dark:text-slate-200">Analytics</span>
+      </nav>
+      <section className={`${panel} mb-5 flex items-center gap-4 p-5 sm:p-6`}>
+        {a.postThumbnail ? (
+          <img
+            src={a.postThumbnail}
+            alt="Automation post"
+            className="h-16 w-16 shrink-0 rounded-xl object-cover"
+          />
+        ) : (
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-500 dark:bg-violet-500/10">
+            <BarChart3 size={25} />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="break-words text-lg font-semibold sm:text-xl">
+              {a.name}
+            </h1>
+            <span
+              className={`rounded-full px-2 py-1 text-[10px] font-medium ${active ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
+            >
+              {active ? "Active" : "Paused"}
+            </span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            Created {new Date(a.createdAt).toLocaleDateString()} ·{" "}
+            {a.responseCount.toLocaleString()} auto replies ·{" "}
+            {a.source === "COMMENT"
+              ? "Post automation"
+              : a.source === "STORY"
+                ? "Story automation"
+                : "Chat automation"}
+          </p>
+        </div>
+        <Link
+          aria-label="Edit automation"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:text-violet-500 dark:border-white/10"
+          href={`/dashboard/${slug}/automation/new?edit=${a.id}`}
+        >
+          <Pencil size={16} />
+        </Link>
+        <button
+          role="switch"
+          aria-label="Automation active"
+          aria-checked={active}
+          disabled={busy}
+          onClick={() => void toggle()}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-50 ${active ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`}
+        >
+          <span
+            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${active ? "left-6" : "left-1"}`}
+          />
+        </button>
+      </section>
+      {error && (
+        <p
+          role="alert"
+          className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
+        >
+          {error}
+        </p>
+      )}
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, detail, Icon, color }) => (
+          <section key={label} className={`${panel} p-5`}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {label}
+              </p>
+              <span
+                className={`grid h-8 w-8 place-items-center rounded-lg ${color}`}
+              >
+                <Icon size={16} />
+              </span>
+            </div>
+            <p className="mt-2 text-[30px] font-semibold tracking-tight">
+              {value}
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+              {detail}
+            </p>
+          </section>
+        ))}
+      </div>
+      <div className="mb-5 grid gap-5 lg:grid-cols-2">
+        <section className={`${panel} p-5 sm:p-6`}>
+          <h2 className="text-sm font-semibold">Conversion funnel</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            How your audience moves through this automation
+          </p>
+          <div className="mt-7 space-y-5">
+            {funnel.map((f) => (
+              <div key={f.label}>
+                <div className="mb-2 flex items-center gap-2 text-xs">
+                  <span className={`h-2 w-2 rounded-full ${f.color}`} />
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {f.label}
+                  </span>
+                  <span className="ms-auto font-semibold">
+                    {f.value.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
+                  <div
+                    className={`h-full rounded-full ${f.color}`}
+                    style={{
+                      width: `${t.hits ? Math.min(100, (f.value / t.hits) * 100) : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          {!t.hits && (
+            <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+              Your funnel will fill as people interact with this automation.
+            </p>
+          )}
+        </section>
+        <section className={`${panel} min-w-0 p-5 sm:p-6`}>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Daily activity</h2>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Last 7 days · UTC
+            </span>
+          </div>
+          <div className="mb-4 mt-3 flex gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center gap-1.5">
+              <i className="h-2 w-2 rounded-full bg-blue-500" />
+              Hits
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <i className="h-2 w-2 rounded-full bg-emerald-500" />
+              Clicks
+            </span>
+          </div>
+          <div className="h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={data.daily}
+                margin={{ top: 8, right: 8, left: -28, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 5"
+                  stroke="currentColor"
+                  opacity={0.07}
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(v) =>
+                    new Date(`${v}T12:00:00Z`).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  }
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={20}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 12,
+                    fontSize: 12,
+                    color: "#334155",
+                  }}
+                />
+                <Line
+                  name="Hits"
+                  dataKey="hits"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  name="Clicks"
+                  dataKey="clicks"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
+      <section className={`${panel} mb-5 p-5 sm:p-6`}>
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <Globe2 size={16} className="text-slate-500 dark:text-slate-400" />
+          Clicks by country
+        </h2>
+        {!data.countries.length ? (
+          <p className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            Country data appears when someone opens a tracked link.
+          </p>
+        ) : (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {data.countries.map((c) => (
+              <div
+                key={c.country ?? "unknown"}
+                className="flex items-center gap-4 text-xs"
+              >
+                <span className="w-24">{countryName(c.country)}</span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
+                  <div
+                    className="h-full rounded-full bg-violet-500"
+                    style={{
+                      width: `${(c.clicks / Math.max(1, t.clicks)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="w-8 text-right text-slate-500 dark:text-slate-400">
+                  {c.clicks}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <section className={`${panel} overflow-hidden`}>
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-5 dark:border-white/5 sm:px-6">
+          <h2 className="text-sm font-semibold">Recent activity</h2>
+          <div
+            role="tablist"
+            aria-label="Activity type"
+            className="flex rounded-lg bg-slate-100 p-1 dark:bg-white/5"
+          >
+            {(["hits", "clicks", "follows"] as const).map((v) => (
+              <button
+                role="tab"
+                aria-selected={tab === v}
+                key={v}
+                onClick={() => setTab(v)}
+                className={`rounded-md px-4 py-1.5 text-xs capitalize ${tab === v ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </header>
+        {!data.recent[tab].length ? (
+          <div className="px-5 py-12 text-center">
+            <ArrowUpRight size={22} className="mx-auto mb-3 text-slate-300" />
+            <p className="text-sm font-medium">No {tab} yet</p>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              New activity will appear here as your automation runs.
+            </p>
+          </div>
+        ) : (
+          <div
+            role="tabpanel"
+            className="divide-y divide-slate-100 dark:divide-white/5"
+          >
+            {data.recent[tab].map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-wrap items-center gap-3 px-5 py-4 text-xs sm:px-6"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-50 text-violet-500 dark:bg-violet-500/10">
+                  <Users size={14} />
+                </span>
+                <span className="font-medium">Contact {r.recipient}</span>
+                <span className="text-slate-500 dark:text-slate-400">
+                  {r.source ??
+                    (r.country
+                      ? countryName(r.country)
+                      : tab === "follows"
+                        ? "Verified new follower"
+                        : "Tracked link")}
+                </span>
+                <time
+                  className="ms-auto text-slate-500 dark:text-slate-400"
+                  dateTime={r.createdAt}
+                >
+                  {new Date(r.createdAt).toLocaleString()}
+                </time>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <p className="mt-4 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+        {data.trackingStartedAt
+          ? `Tracked activity since ${new Date(data.trackingStartedAt).toLocaleDateString()}. `
+          : "Tracking begins with new activity. "}
+        Followers count only when Instagram confirms a change from not following
+        to following after a follow check. Existing followers and unknown
+        statuses are excluded.
+      </p>
+    </div>
+  );
 }
-function countryName(code:string|null){if(!code)return 'Unknown';try{return new Intl.DisplayNames(['en'],{type:'region'}).of(code)??code;}catch{return code;}}
+function countryName(code: string | null) {
+  if (!code) return "Unknown";
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}

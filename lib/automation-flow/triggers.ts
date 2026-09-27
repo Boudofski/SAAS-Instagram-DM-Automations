@@ -34,7 +34,7 @@ export function isSharedPostAttachment(attachments: Array<{type?: string}>): boo
 // Drafts can be disconnected or empty. Bound payload size/depth and node identities;
 // publication still uses the complete discriminated node and graph validator.
 export function readFlowDraft(raw: unknown) {
-  const parsed = z.object({version:z.literal(1),triggerPosition:z.object({x:z.number().min(0).max(6000),y:z.number().min(0).max(6000)}).optional(),entry:z.string().max(60),oncePerContact:z.boolean(),nodes:z.array(z.object({id:z.string().regex(/^[a-zA-Z0-9_-]{1,60}$/),kind:z.enum(["message","product","email","question","random","condition","delay","capture","phone","setfield","carousel","tag","end"]),label:z.string().max(80),x:z.number().min(0).max(6000),y:z.number().min(0).max(6000)}).passthrough()).max(50)}).safeParse(raw);
+  const parsed = z.object({version:z.literal(1),triggerPosition:z.object({x:z.number().min(0).max(6000),y:z.number().min(0).max(6000)}).optional(),entry:z.string().max(60),oncePerContact:z.boolean(),nodes:z.array(z.object({id:z.string().regex(/^[a-zA-Z0-9_-]{1,60}$/),kind:z.enum(["message","product","email","question","random","condition","delay","capture","phone","setfield","carousel","tag","webhook","end"]),label:z.string().max(80),x:z.number().min(0).max(6000),y:z.number().min(0).max(6000)}).passthrough()).max(50)}).safeParse(raw);
   if (!parsed.success || JSON.stringify(raw).length > 150000) return null;
   if (new Set(parsed.data.nodes.map(n=>n.id)).size !== parsed.data.nodes.length) return null;
   return parsed.data;

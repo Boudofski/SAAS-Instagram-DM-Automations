@@ -1,4 +1,5 @@
-import { randomInt } from "node:crypto";
+import { randomInt, createHash } from "node:crypto";
+import { executeFlowWebhook } from "./webhook-request";
 import { Prisma } from "@prisma/client";
 import { client } from "@/lib/prisma";
 import { messagingWindowOpen } from "@/lib/automation-engagement-settings";
@@ -11,6 +12,7 @@ import {
   isProfileField,
   PROFILE_FIELDS,
   isReservedField,
+  applyFlowTag,
 } from "./definition";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
 import { getInstagramRecipientProfile, sendInstagramDirectResponse } from "@/lib/instagram-dm";
@@ -238,20 +240,23 @@ export async function processAutomationFlow(
           ),
         )
       : {};
-  const saveContactFields = async (updates: FlowValues) => {
+  const saveContactFields = async (updates: FlowValues, remove: string[] = []) => {
     const custom = Object.fromEntries(Object.entries(updates).filter(([key]) => key !== "email" && key !== "phone" && !isReservedField(key)));
     const contactKey = { automationId_igUserId: { automationId, igUserId: input.recipientIgId } };
-    const existing = Object.keys(custom).length ? await client.lead.findUnique({ where: contactKey, select: { customFields: true } }) : null;
+    const existing = Object.keys(custom).length || remove.length ? await client.lead.findUnique({ where: contactKey, select: { customFields: true } }) : null;
     const prior = existing?.customFields && typeof existing.customFields === "object" && !Array.isArray(existing.customFields) ? existing.customFields : {};
+    const merged = { ...prior, ...custom };
+    for (const key of remove) delete merged[key];
     const data = {
       ...(updates.email ? { email: updates.email, emailCollectedAt: now } : {}),
       ...(updates.phone ? { phone: updates.phone } : {}),
-      ...(Object.keys(custom).length ? { customFields: { ...prior, ...custom } as Prisma.InputJsonValue } : {}),
+      ...((Object.keys(custom).length || remove.length) ? { customFields: merged as Prisma.InputJsonValue } : {}),
     };
     if (Object.keys(data).length) await client.lead.upsert({ where: contactKey, create: { automationId, igUserId: input.recipientIgId, ...data }, update: data });
   };
   let nodeId = resuming ? session.nodeId : startingNode;
   let sentCount = 0;
+  let webhookCount = 0;
   try {
     if (!resuming) {
       const contact = await client.lead.findUnique({ where: { automationId_igUserId: { automationId, igUserId: input.recipientIgId } }, select: { email: true, phone: true, customFields: true } });
@@ -354,8 +359,13 @@ export async function processAutomationFlow(
           await saveContactFields({ [node.field]: values[node.field] });
         }
         if (node.kind === "tag") {
-          values[`tag_${node.tag}`] = "true";
-          await saveContactFields({ [`tag_${node.tag}`]: "true" });
+          if (node.action === "remove") {
+            values = applyFlowTag(values, node.tag, "remove");
+            await saveContactFields({}, [`tag_${node.tag}`]);
+          } else {
+            values = applyFlowTag(values, node.tag);
+            await saveContactFields({ [`tag_${node.tag}`]: "true" });
+          }
         }
         nodeId = branchTarget(
           node,
@@ -371,6 +381,31 @@ export async function processAutomationFlow(
             },
           });
         }
+        await persist(lease, nodeId, values);
+        continue;
+      }
+      if (node.kind === "webhook") {
+        if (++webhookCount > 3) throw new Error("flow_webhook_limit");
+        // This external side effect uses the same non-retriable receipt and lease
+        // as message delivery. A crash or ambiguous timeout never replays it.
+        const owned = await client.automationFlowSession.findFirst({ where: { id: sessionId, status: lease }, select: { id: true } });
+        const active = await client.automation.findFirst({ where: {
+          id: automationId, integrationId: input.integrationId, userId: automation.userId,
+          active: true, archivedAt: null, integration: { status: "CONNECTED", reconnectRequired: false, planLocked: false },
+          User: { status: { not: "SUSPENDED" }, subscription: { plan: { in: ["PRO", "BUSINESS"] } } },
+        }, select: { id: true } });
+        if (!owned || !active || !messagingWindowOpen(input.inboundAt)) { await persist("CANCELLED", nodeId, values); return true; }
+        const idempotencyKey = createHash("sha256").update(`${integration.id}:${input.recipientIgId}:${input.eventId}:${node.id}`).digest("hex");
+        await executeFlowWebhook({ url: node.url, body: node.body, values, idempotencyKey, beforeSend: async () => {
+          const leaseOwned = await client.automationFlowSession.findFirst({ where: { id: sessionId, status: lease }, select: { id: true } });
+          const stillActive = await client.automation.findFirst({ where: {
+            id: automationId, integrationId: input.integrationId, userId: automation.userId, active: true, archivedAt: null,
+            integration: { status: "CONNECTED", reconnectRequired: false, planLocked: false },
+            User: { status: { not: "SUSPENDED" }, subscription: { plan: { in: ["PRO", "BUSINESS"] } } },
+          }, select: { id: true } });
+          return Boolean(leaseOwned && stillActive && input.inboundAt && messagingWindowOpen(input.inboundAt));
+        } });
+        nodeId = node.next;
         await persist(lease, nodeId, values);
         continue;
       }

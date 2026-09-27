@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseWebhookUrl, parseWebhookBody, WEBHOOK_TEMPLATE_LIMIT } from "./webhook-contract";
 
 const id = z.string().regex(/^[a-zA-Z0-9_-]{1,60}$/);
 const link = z.object({
@@ -79,7 +80,13 @@ export const flowNodeSchema = z.discriminatedUnion("kind", [
       image: z.string().url(), links: z.array(link).min(1).max(3),
     })).min(1).max(10), next,
   }),
-  z.object({ ...base, kind: z.literal("tag"), tag: id, next }),
+  z.object({ ...base, kind: z.literal("tag"), tag: id, action: z.enum(["add", "remove"]).optional(), next }),
+  z.object({
+    ...base, kind: z.literal("webhook"),
+    url: z.string().trim().max(2048).refine(value => Boolean(parseWebhookUrl(value)), "Use a public HTTPS destination on port 443."),
+    body: z.string().max(WEBHOOK_TEMPLATE_LIMIT).refine(value => Boolean(parseWebhookBody(value)), "Use a JSON object; variables are allowed only in string values."),
+    next,
+  }),
   z.object({ ...base, kind: z.literal("end") }),
 ]);
 export const flowSchema = z.object({
@@ -174,16 +181,18 @@ export function validateFlow(
   }
   for (const n of flow.nodes) acyclic(n.id);
   const states = new Set<string>();
-  function burst(key: string, sends: number) {
-    const state = `${key}:${sends}`;
+  function burst(key: string, sends: number, requests = 0) {
+    const state = `${key}:${sends}:${requests}`;
     if (states.has(state)) return;
     states.add(state);
     const n = nodes.get(key);
     if (!n) return;
     const count = ["message", "product", "carousel", "email", "phone", "capture", "question"].includes(n.kind) ? sends + 1 : sends;
     if (count > 6) { errors.push("Use at most six messages between customer replies or delays."); return; }
+    const external = requests + (n.kind === "webhook" ? 1 : 0);
+    if (external > 3) { errors.push("Use at most three external requests between customer replies or delays."); return; }
     for (const edge of edges(n)) if (edge.target)
-      burst(edge.target, isResponseNode(n) || n.kind === "delay" ? 0 : count);
+      burst(edge.target, isResponseNode(n) || n.kind === "delay" ? 0 : count, isResponseNode(n) || n.kind === "delay" ? 0 : external);
   }
   burst(flow.entry, 0);
   return errors.length
@@ -261,4 +270,12 @@ export function conditionMatches(actual: string | undefined, expected: string, o
   if (!actual.trim() || !expected.trim()) return false;
   const a = Number(actual), b = Number(expected);
   return Number.isFinite(a) && Number.isFinite(b) && (operator === "gt" ? a > b : a < b);
+}
+
+/** Shared by the server and preview; a removed tag is absent, not the string false. */
+export function applyFlowTag(values: FlowValues, tag: string, action: "add" | "remove" = "add"): FlowValues {
+  const next = { ...values };
+  if (action === "remove") delete next[`tag_${tag}`];
+  else next[`tag_${tag}`] = "true";
+  return next;
 }

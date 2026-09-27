@@ -17,6 +17,8 @@ const db = vi.hoisted(() => ({
   lead: { upsert: vi.fn(), findUnique: vi.fn() },
 }));
 const send = vi.hoisted(() => vi.fn());
+const webhook = vi.hoisted(() => vi.fn());
+vi.mock("./webhook-request", () => ({ executeFlowWebhook: webhook }));
 const profile = vi.hoisted(() => vi.fn());
 const observeFollow = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/automation-tracking", () => ({ observeAutomationFollow: observeFollow }));
@@ -89,6 +91,7 @@ beforeEach(() => {
   db.lead.findUnique.mockResolvedValue(null);
   db.automationClick.findUnique.mockResolvedValue(null);
   send.mockResolvedValue({ ok: true, messageIds: ["out1"] });
+  webhook.mockResolvedValue({ status: 200 });
 });
 afterEach(() => vi.useRealTimers());
 describe("persistent flow delivery", () => {
@@ -464,3 +467,57 @@ function profileFlow(): import("./definition").Flow {
     { ...base, id: "condition", kind: "condition", field: "_followsBusiness", equals: "true", yes: "yes", no: "no" }, message("yes"), message("no"),
   ] };
 }
+
+describe("flow external side effects", () => {
+  function externalFlow(): import("./definition").Flow {
+    return { version: 1, oncePerContact: false, entry: "request", nodes: [
+      { ...base, id: "request", kind: "webhook", url: "https://hooks.zapier.com/hooks/catch/example/", body: '{"email":"{{email}}"}', next: "delivery" }, message("delivery"),
+    ] };
+  }
+  it("posts once through the bounded executor then advances to the next message", async () => {
+    db.automation.findFirst.mockResolvedValue(automation(externalFlow()));
+    await processAutomationFlow(input);
+    expect(webhook).toHaveBeenCalledTimes(1);
+    expect(webhook.mock.calls[0][0]).toMatchObject({ url: "https://hooks.zapier.com/hooks/catch/example/", body: '{"email":"{{email}}"}', idempotencyKey: expect.stringMatching(/^[a-f0-9]{64}$/), beforeSend: expect.any(Function) });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+  it("does not execute after losing its lease or receiving a duplicate event", async () => {
+    db.automation.findFirst.mockResolvedValue(automation(externalFlow()));
+    db.automationFlowSession.findFirst.mockResolvedValue(null);
+    await processAutomationFlow(input);
+    expect(webhook).not.toHaveBeenCalled();
+    db.automationFlowSession.findFirst.mockResolvedValue({ id: "s1" });
+    db.automationFlowReceipt.createMany.mockResolvedValue({ count: 0 });
+    await processAutomationFlow(input);
+    expect(webhook).not.toHaveBeenCalled();
+  });
+  it("rechecks active state and the original messaging window after DNS", async () => {
+    db.automation.findFirst.mockResolvedValue(automation(externalFlow()));
+    webhook.mockImplementation(async ({ beforeSend }) => {
+      vi.setSystemTime(new Date(now.getTime() + 86400000));
+      expect(await beforeSend()).toBe(false);
+      throw new Error("webhook_cancelled");
+    });
+    await processAutomationFlow(input);
+    expect(send).not.toHaveBeenCalled();
+  });
+  it("fails closed without retrying an uncertain POST or sending downstream content", async () => {
+    db.automation.findFirst.mockResolvedValue(automation(externalFlow()));
+    webhook.mockRejectedValue(new Error("webhook_timeout"));
+    await processAutomationFlow(input);
+    expect(webhook).toHaveBeenCalledTimes(1);
+    expect(send).not.toHaveBeenCalled();
+    expect(db.automationFlowSession.updateMany).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "FAILED", nodeId: "request" }) }));
+  });
+  it("removes a tag from persistent contact values before evaluating a condition", async () => {
+    const flow: import("./definition").Flow = { version: 1, oncePerContact: false, entry: "remove", nodes: [
+      { ...base, id: "remove", kind: "tag", tag: "vip", action: "remove", next: "check" },
+      { ...base, id: "check", kind: "condition", field: "tag_vip", operator: "exists", equals: "", yes: "yes", no: "no" }, message("yes"), message("no"),
+    ] };
+    db.lead.findUnique.mockResolvedValueOnce({ customFields: { tag_vip: "true", name: "Alex" } }).mockResolvedValueOnce({ customFields: { tag_vip: "true", name: "Alex" } }).mockResolvedValue({ customFields: { name: "Alex" } });
+    db.automation.findFirst.mockResolvedValue(automation(flow));
+    await processAutomationFlow(input);
+    expect(db.lead.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { customFields: { name: "Alex" } } }));
+    expect(send.mock.calls[0][0].message).toBe("no");
+  });
+});
