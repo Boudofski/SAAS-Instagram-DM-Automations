@@ -63,6 +63,10 @@ describe("flow assistant proposals", () => {
     invalidNode.flow.nodes[1] = { ...message, kind: "http-request" };
     expect(() => parseFlowAssistantDraft(JSON.stringify(invalidNode), input)).toThrow("invalid");
   });
+  it("accepts incomplete editor drafts so the assistant can finish them", () => {
+    const currentFlow={version:1,entry:"message",oncePerContact:false,nodes:[{...message,text:"",links:[{label:"Guide",url:""}]}]};
+    expect(normalizeFlowAssistantInput({...input,currentFlow}).currentFlow).toMatchObject(currentFlow);
+  });
   it("rejects stale schema and oversized inputs before a provider request", () => {
     expect(() => normalizeFlowAssistantInput({ ...input, currentFlow: { garbage: true } })).toThrow();
     expect(() => normalizeFlowAssistantInput({ ...input, prompt: "a".repeat(4001) })).toThrow();

@@ -7,7 +7,7 @@ import { client } from "@/lib/prisma";
 import { canActivateCampaign } from "@/actions/usage/queries";
 import { validateFlow } from "@/lib/automation-flow/definition";
 import { flowPostSchema, flowTriggerSchema, readFlowDraft, type FlowTrigger } from "@/lib/automation-flow/triggers";
-import { productImageId } from "@/lib/product-card";
+import { flowAssetIssue } from "@/lib/automation-flow/publication";
 
 const inputSchema = z.object({
   id: z.string().uuid().optional(),
@@ -110,15 +110,8 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
   }
   if (input.active) {
     const published = validateFlow(input.flow).flow!;
-    for (const node of published.nodes) {
-      const images = node.kind === "product" ? [node.image] : node.kind === "carousel" ? node.cards.map(card => card.image) : [];
-      for (const image of images) {
-        const imageId = productImageId(image);
-        if (!imageId || !(await client.automationImage.findFirst({where:{id:imageId,userId:user.id},select:{id:true}}))) return {status:400,error:`${node.label}: upload an image from your own account.`};
-      }
-      const links = node.kind === "message" || node.kind === "product" ? node.links : node.kind === "carousel" ? node.cards.flatMap(card=>card.links) : [];
-      if (links.some(link => /(^|\.)example\.(com|org|net)$/i.test(new URL(link.url).hostname) || /replace[-_]me/i.test(link.url))) return {status:400,error:`${node.label}: replace the example link before publishing.`};
-    }
+    const assetIssue=await flowAssetIssue(published,user.id);
+    if(assetIssue)return {status:400,error:assetIssue};
   }
   const primary = triggers[0];
   const flow = checked.flow;

@@ -4,6 +4,7 @@ import { client } from "@/lib/prisma";
 import { decryptAiProviderSecret } from "@/lib/ai-provider-crypto";
 import { AI_PROVIDER_IDS, getAiProviderDefinition } from "@/lib/ai-providers";
 import { aiCompletionBudget } from "@/lib/ai-completion-budget";
+import { readFlowDraft } from "./triggers";
 import { flowSchema, validateFlow, type Flow } from "./definition";
 
 export const FLOW_LINK_PLACEHOLDER = "https://example.com/replace-me";
@@ -46,7 +47,7 @@ function suppliedUrls(input: FlowAssistantInput): Set<string> {
     else if (Array.isArray(value)) value.forEach(visit);
     else if (value && typeof value === "object") Object.values(value).forEach(visit);
   };
-  if (input.currentFlow) visit(flowSchema.parse(input.currentFlow));
+  if (input.currentFlow) visit(input.currentFlow);
   return allowed;
 }
 
@@ -54,7 +55,7 @@ export function normalizeFlowAssistantInput(raw: unknown): FlowAssistantInput {
   // Bound the whole request before recursively parsing a graph or sending provider context.
   if (JSON.stringify(raw)?.length > MAX_JSON_LENGTH) throw new Error("This flow is too large for the assistant. Reduce the graph or conversation.");
   const input = flowAssistantInputSchema.parse(raw);
-  if (input.currentFlow !== undefined) input.currentFlow = flowSchema.parse(input.currentFlow);
+  if (input.currentFlow !== undefined) { const draft = readFlowDraft(input.currentFlow); if (!draft) throw new Error("This draft structure is not supported."); input.currentFlow = draft; }
   return input;
 }
 
