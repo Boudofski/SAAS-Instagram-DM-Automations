@@ -1,3 +1,4 @@
+import { PUBLIC_REDESIGN_COPY } from "./public-redesign-copy";
 import { AUTOMATION_COPY_CONTROLS } from "./automation-copy-controls";
 import { AUTOMATION_EDITOR_COPY } from "./automation-editor-copy";
 import { DESIGN_COPY } from "./design-copy";
@@ -16,25 +17,38 @@ import { DASHBOARD_COPY } from "./dashboard-copy";
 import { PUBLIC_COPY } from "./public-copy";
 import type { Locale } from "./config";
 
-const catalogs = Object.fromEntries(Object.entries(MESSAGES).map(([locale, messages]) => [locale, {
-  ...EXTENDED_COPY[locale as Locale],
-  ...Object.fromEntries(Object.entries(MESSAGES.en).map(([key, source]) => [source, messages[key as keyof typeof messages]])),
-  ...PHRASE_TRANSLATIONS[locale as Locale],
-  ...PUBLIC_COPY[locale as Locale],
-  ...DASHBOARD_COPY[locale as Locale],
-  ...SETUP_COPY[locale as Locale],
-  ...REMAINING_COPY[locale as Locale],
-  ...GROWTH_COPY[locale as Locale],
-  ...COMPANY_TRANSLATIONS[locale as Locale],
-  ...ACCOUNT_PLAN_COPY[locale as Locale],
-  ...AUTOMATION_DEFAULT_COPY[locale as Locale],
-  ...HELP_COPY[locale as Locale],
-  ...DESIGN_COPY[locale as Locale],
-  ...AUTOMATION_EDITOR_COPY[locale as Locale],
-  ...AUTOMATION_COPY_CONTROLS[locale as Locale],
-  // Reviewed wording overrides legacy machine translations and older phrase catalogs.
-  ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[locale as Locale],
-}])) as Record<Locale, Record<string, string>>;
+const catalogs = Object.fromEntries(
+  Object.entries(MESSAGES).map(([locale, messages]) => [
+    locale,
+    {
+      ...EXTENDED_COPY[locale as Locale],
+      ...Object.fromEntries(
+        Object.entries(MESSAGES.en).map(([key, source]) => [
+          source,
+          messages[key as keyof typeof messages],
+        ]),
+      ),
+      ...PHRASE_TRANSLATIONS[locale as Locale],
+      ...PUBLIC_COPY[locale as Locale],
+      ...PUBLIC_REDESIGN_COPY[locale as Locale],
+      ...DASHBOARD_COPY[locale as Locale],
+      ...SETUP_COPY[locale as Locale],
+      ...REMAINING_COPY[locale as Locale],
+      ...GROWTH_COPY[locale as Locale],
+      ...COMPANY_TRANSLATIONS[locale as Locale],
+      ...ACCOUNT_PLAN_COPY[locale as Locale],
+      ...AUTOMATION_DEFAULT_COPY[locale as Locale],
+      ...HELP_COPY[locale as Locale],
+      ...DESIGN_COPY[locale as Locale],
+      ...AUTOMATION_EDITOR_COPY[locale as Locale],
+      ...AUTOMATION_COPY_CONTROLS[locale as Locale],
+      // Reviewed wording overrides legacy machine translations and older phrase catalogs.
+      ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[
+        locale as Locale
+      ],
+    },
+  ]),
+) as Record<Locale, Record<string, string>>;
 
 export function translateUi(source: string, locale: Locale): string {
   if (locale === "en") return source;
@@ -45,5 +59,11 @@ export function translateUi(source: string, locale: Locale): string {
 }
 
 export function hasUiTranslation(source: string, locale: Locale): boolean {
-  return locale === "en" || Object.prototype.hasOwnProperty.call(catalogs[locale], source.replace(/\s+/g, " ").trim());
+  return (
+    locale === "en" ||
+    Object.prototype.hasOwnProperty.call(
+      catalogs[locale],
+      source.replace(/\s+/g, " ").trim(),
+    )
+  );
 }

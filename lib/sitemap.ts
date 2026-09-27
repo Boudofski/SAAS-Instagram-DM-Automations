@@ -115,7 +115,9 @@ export function buildSitemap(
   const commercialPages: MetadataRoute.Sitemap = [
     ...COMMERCIAL_PAGES.map((page) => ({
       url: `${baseUrl}/${page.slug}`,
-      lastModified: page.updatedAt ? new Date(`${page.updatedAt}T00:00:00Z`) : publicContentUpdated,
+      lastModified: page.updatedAt
+        ? new Date(`${page.updatedAt}T00:00:00Z`)
+        : publicContentUpdated,
       changeFrequency: "monthly" as const,
       priority: page.slug === "manychat-alternative" ? 0.9 : 0.85,
     })),
@@ -131,7 +133,12 @@ export function buildSitemap(
   );
 
   const resourcePages: MetadataRoute.Sitemap = [
-    { url: `${baseUrl}/resources/instagram-growth-library`, lastModified: new Date("2026-09-24T00:00:00Z"), changeFrequency: "weekly", priority: 0.85 },
+    {
+      url: `${baseUrl}/resources/instagram-growth-library`,
+      lastModified: new Date("2026-09-24T00:00:00Z"),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
     {
       url: `${baseUrl}/resources`,
       lastModified: new Date("2026-09-22T00:00:00Z"),
@@ -154,8 +161,18 @@ export function buildSitemap(
 
   return [
     ...staticPages,
-    ...["/compare", "/solutions", ...COMPARISONS.filter(page => page.slug !== "manychat").map(comparisonPath), ...SOLUTIONS.map(page => `/solutions/${page.slug}`)].map(path => ({
-      url: `${baseUrl}${path}`, lastModified: publicContentUpdated, changeFrequency: "monthly" as const, priority: 0.8,
+    ...[
+      "/compare",
+      "/solutions",
+      ...COMPARISONS.filter((page) => page.slug !== "manychat").map(
+        comparisonPath,
+      ),
+      ...SOLUTIONS.map((page) => `/solutions/${page.slug}`),
+    ].map((path) => ({
+      url: `${baseUrl}${path}`,
+      lastModified: publicContentUpdated,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
     })),
     ...commercialPages,
     ...blogArchivePages,

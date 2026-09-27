@@ -25,7 +25,8 @@ export const PLAN_CARDS: PlanCard[] = [
   {
     id: "FREE",
     name: "Free",
-    description: "Start real comment-to-DM automation with a useful monthly allowance.",
+    description:
+      "Start real comment-to-DM automation with a useful monthly allowance.",
     monthlyPrice: 0,
     annualPrice: 0,
     annualSavingsPercent: null,
@@ -60,7 +61,8 @@ export const PLAN_CARDS: PlanCard[] = [
   {
     id: "BUSINESS",
     name: "Business",
-    description: "For high-volume creators and brands running heavier automation.",
+    description:
+      "For high-volume creators and brands running heavier automation.",
     monthlyPrice: AP3K_PRICING.BUSINESS_MONTHLY,
     annualPrice: AP3K_PRICING.BUSINESS_ANNUAL,
     annualSavingsPercent: 20,
@@ -78,22 +80,87 @@ export const PLAN_CARDS: PlanCard[] = [
 
 export const PLAN_COMPARISON = [
   { feature: "Monthly price", free: "$0", pro: "$9", business: "$29" },
-  { feature: "Annual price", free: "$0", pro: "$79/year", business: "$279/year" },
-  { feature: "Annual savings", free: "\u2014", pro: "Save 27%", business: "Save 20%" },
-  { feature: "Automated actions / month", free: "500", pro: "5,000", business: "20,000" },
+  {
+    feature: "Annual price",
+    free: "$0",
+    pro: "$79/year",
+    business: "$279/year",
+  },
+  {
+    feature: "Annual savings",
+    free: "\u2014",
+    pro: "Save 27%",
+    business: "Save 20%",
+  },
+  {
+    feature: "Automated actions / month",
+    free: "500",
+    pro: "5,000",
+    business: "20,000",
+  },
   { feature: "AI replies / month", free: "0", pro: "500", business: "2,000" },
   { feature: "Instagram accounts", free: "1", pro: "3", business: "10" },
-  { feature: "Automations", free: "Up to 5 active automations", pro: "Unlimited", business: "Unlimited" },
-  { feature: "Keyword triggers", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Any Comment trigger", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Comment replies", free: "Included", pro: "Included", business: "Included" },
+  {
+    feature: "Automations",
+    free: "Up to 5 active automations",
+    pro: "Unlimited",
+    business: "Unlimited",
+  },
+  {
+    feature: "Keyword triggers",
+    free: "Included",
+    pro: "Included",
+    business: "Included",
+  },
+  {
+    feature: "Any Comment trigger",
+    free: "Included",
+    pro: "Included",
+    business: "Included",
+  },
+  {
+    feature: "Comment replies",
+    free: "Included",
+    pro: "Included",
+    business: "Included",
+  },
   { feature: "DMs", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Comment-reply variations", free: "Up to 20", pro: "Up to 20", business: "Up to 20" },
-  { feature: "AI comment protection", free: "Not included", pro: "Included", business: "Included" },
-  { feature: "DM link button", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Lead tracking", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Automation analytics", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Billing portal", free: "Not included", pro: "Included", business: "Included" },
+  {
+    feature: "Comment-reply variations",
+    free: "Up to 20",
+    pro: "Up to 20",
+    business: "Up to 20",
+  },
+  {
+    feature: "AI comment protection",
+    free: "Not included",
+    pro: "Included",
+    business: "Included",
+  },
+  {
+    feature: "DM link button",
+    free: "Included",
+    pro: "Included",
+    business: "Included",
+  },
+  {
+    feature: "Lead tracking",
+    free: "Included",
+    pro: "Included",
+    business: "Included",
+  },
+  {
+    feature: "Automation analytics",
+    free: "Included",
+    pro: "Included",
+    business: "Included",
+  },
+  {
+    feature: "Billing portal",
+    free: "Not included",
+    pro: "Included",
+    business: "Included",
+  },
 ] as const;
 
 export function planDisplayName(plan?: string | null) {
@@ -107,6 +174,7 @@ export function checkoutHref(plan: PaidPlan, interval: BillingInterval) {
 }
 
 export function annualMonthlyEquivalent(plan: PaidPlan) {
-  const annual = plan === "PRO" ? AP3K_PRICING.PRO_ANNUAL : AP3K_PRICING.BUSINESS_ANNUAL;
+  const annual =
+    plan === "PRO" ? AP3K_PRICING.PRO_ANNUAL : AP3K_PRICING.BUSINESS_ANNUAL;
   return annual / 12;
 }

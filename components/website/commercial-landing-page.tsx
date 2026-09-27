@@ -9,7 +9,11 @@ import type { CommercialPage } from "@/lib/commercial-pages";
 import { localizePublicPath } from "@/lib/i18n/config";
 import Link from "next/link";
 
-export default function CommercialLandingPage({ page }: { page: CommercialPage }) {
+export default function CommercialLandingPage({
+  page,
+}: {
+  page: CommercialPage;
+}) {
   const locale = page.contentLocale ?? getServerLocale();
   const faqSchema = {
     "@context": "https://schema.org",
@@ -18,7 +22,10 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
     mainEntity: page.faqs.map((faq) => ({
       "@type": "Question",
       name: translateUi(faq.question, locale),
-      acceptedAnswer: { "@type": "Answer", text: translateUi(faq.answer, locale) },
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: translateUi(faq.answer, locale),
+      },
     })),
   };
   const productSchema = {
@@ -30,39 +37,115 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
     inLanguage: locale,
     url: `https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`,
     description: translateUi(page.description, locale),
-    featureList: page.workflow.map(item => translateUi(item.title, locale)),
+    featureList: page.workflow.map((item) => translateUi(item.title, locale)),
   };
 
-  return <LocalizedCopy><div className={styles.page}>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
-    <WebsiteNav />
-    <main className={styles.article} lang={page.contentLocale} translate={page.contentLocale ? "no" : undefined}>
-      <Breadcrumbs items={[{ name: page.eyebrow, path: `/${page.slug}` }]} />
-      <span className={styles.badge}>{page.eyebrow}</span>
-      <h1>{page.title}</h1>
-      <p>{page.description}</p>
-      <p>{page.proof}</p>
-      <h2>How it works</h2>
-      <ol>{page.workflow.map(item => <li key={item.title}><strong>{item.title}.</strong> {item.body}</li>)}</ol>
-      <h2>Make every conversation useful</h2>
-      {page.useCases.map(item => <section key={item.title}><h3>{item.title}</h3><p>{item.body}</p></section>)}
-      <h2>See the conversation</h2>
-      <p>Choose a clear trigger and deliver what your post promises. This example shows the interaction from your audience’s perspective.</p>
-      <figure className={styles.demo}><video autoPlay muted loop playsInline poster={page.media} preload="none" aria-label={page.mediaAlt}><source src={page.video} type="video/mp4" /></video></figure>
-      <h2>Before you activate</h2>
-      <ul>{page.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul>
-      <div id="pricing" className={styles.note}><p><strong>Start free with AP3K.</strong> Connect one Instagram account, run up to five active automations and send 500 automated actions each month. <Link href="/pricing">Compare plans →</Link></p></div>
-      <h2>Frequently asked questions</h2>
-      {page.faqs.map(faq => <section key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></section>)}
-      <h2>Related guides</h2>
-      <div className={styles.related}>
-        {page.tutorials.map(tutorial => <Link key={tutorial.slug} href={`/blog/${tutorial.slug}`}>{tutorial.title} →</Link>)}
-        <Link href="/resources/instagram-comment-to-dm-templates">Comment-to-DM message templates →</Link>
-        <Link href="/compare">Compare Instagram automation tools →</Link>
+  return (
+    <LocalizedCopy>
+      <div className={styles.page}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(productSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+        <WebsiteNav />
+        <main
+          className={styles.article}
+          lang={page.contentLocale}
+          translate={page.contentLocale ? "no" : undefined}
+        >
+          <Breadcrumbs
+            items={[{ name: page.eyebrow, path: `/${page.slug}` }]}
+          />
+          <span className={styles.badge}>{page.eyebrow}</span>
+          <h1>{page.title}</h1>
+          <p>{page.description}</p>
+          <p>{page.proof}</p>
+          <h2>How it works</h2>
+          <ol>
+            {page.workflow.map((item) => (
+              <li key={item.title}>
+                <strong>{item.title}.</strong> {item.body}
+              </li>
+            ))}
+          </ol>
+          <h2>Make every conversation useful</h2>
+          {page.useCases.map((item) => (
+            <section key={item.title}>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </section>
+          ))}
+          <h2>See the conversation</h2>
+          <p>
+            Choose a clear trigger and deliver what your post promises. This
+            example shows the interaction from your audience’s perspective.
+          </p>
+          <figure className={styles.demo}>
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              poster={page.media}
+              preload="none"
+              aria-label={page.mediaAlt}
+            >
+              <source src={page.video} type="video/mp4" />
+            </video>
+          </figure>
+          <h2>Before you activate</h2>
+          <ul>
+            {page.limitations.map((limit) => (
+              <li key={limit}>{limit}</li>
+            ))}
+          </ul>
+          <div id="pricing" className={styles.note}>
+            <p>
+              <strong>Start free with AP3K.</strong> Connect one Instagram
+              account, run up to five active automations and send 500 automated
+              actions each month. <Link href="/pricing">Compare plans →</Link>
+            </p>
+          </div>
+          <h2>Frequently asked questions</h2>
+          {page.faqs.map((faq) => (
+            <section key={faq.question}>
+              <h3>{faq.question}</h3>
+              <p>{faq.answer}</p>
+            </section>
+          ))}
+          <h2>Related guides</h2>
+          <div className={styles.related}>
+            {page.tutorials.map((tutorial) => (
+              <Link key={tutorial.slug} href={`/blog/${tutorial.slug}`}>
+                {tutorial.title} →
+              </Link>
+            ))}
+            <Link href="/resources/instagram-comment-to-dm-templates">
+              Comment-to-DM message templates →
+            </Link>
+            <Link href="/compare">Compare Instagram automation tools →</Link>
+          </div>
+          <section className={styles.cta}>
+            <h2>Put your next conversation on autopilot.</h2>
+            <p>
+              Start with one campaign. Test it, then let AP3K handle the
+              replies.
+            </p>
+            <Link href="/sign-up" className={styles.button}>
+              Join for free
+            </Link>
+          </section>
+        </main>
+        <WebsiteFooter />
       </div>
-      <section className={styles.cta}><h2>Put your next conversation on autopilot.</h2><p>Start with one campaign. Test it, then let AP3K handle the replies.</p><Link href="/sign-up" className={styles.button}>Join for free</Link></section>
-    </main>
-    <WebsiteFooter />
-  </div></LocalizedCopy>;
+    </LocalizedCopy>
+  );
 }

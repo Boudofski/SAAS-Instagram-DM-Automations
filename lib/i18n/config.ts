@@ -3,10 +3,10 @@ import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
-  ...expansionSlugs.map(slug => `/blog/${slug}`),
-  ...commercialSlugs.map(slug => `/${slug}`),
+  ...expansionSlugs.map((slug) => `/blog/${slug}`),
+  ...commercialSlugs.map((slug) => `/${slug}`),
   "/resources/instagram-growth-library",
-  ...englishArticleSlugs.map(slug => `/blog/${slug}`),
+  ...englishArticleSlugs.map((slug) => `/blog/${slug}`),
   "/resources",
   "/resources/instagram-comment-to-dm-templates",
   "/resources/instagram-comment-automation-checklist",
@@ -22,8 +22,15 @@ const englishArticles = new Set([
   "/help/automation-types",
 ]);
 export function isEnglishOnlyArticle(pathname: string): boolean {
-  const path = stripLocaleFromPath(pathname.split(/[?#]/)[0]).replace(/\/$/, "");
-  return /^\/(compare|solutions)(\/|$)/.test(path) || path === "/manychat-alternative" || englishArticles.has(path);
+  const path = stripLocaleFromPath(pathname.split(/[?#]/)[0]).replace(
+    /\/$/,
+    "",
+  );
+  return (
+    /^\/(compare|solutions)(\/|$)/.test(path) ||
+    path === "/manychat-alternative" ||
+    englishArticles.has(path)
+  );
 }
 
 export const SUPPORTED_LOCALES = ["en", "fr", "es", "de", "pt"] as const;
@@ -35,13 +42,43 @@ export const LOCALE_COOKIE = "ap3k_locale";
 
 export const LOCALE_DETAILS: Record<
   Locale,
-  { nativeName: string; htmlLang: string; direction: "ltr" | "rtl"; openGraph: string }
+  {
+    nativeName: string;
+    htmlLang: string;
+    direction: "ltr" | "rtl";
+    openGraph: string;
+  }
 > = {
-  en: { nativeName: "English", htmlLang: "en", direction: "ltr", openGraph: "en_US" },
-  fr: { nativeName: "Français", htmlLang: "fr", direction: "ltr", openGraph: "fr_FR" },
-  es: { nativeName: "Español", htmlLang: "es", direction: "ltr", openGraph: "es_ES" },
-  de: { nativeName: "Deutsch", htmlLang: "de", direction: "ltr", openGraph: "de_DE" },
-  pt: { nativeName: "Português", htmlLang: "pt", direction: "ltr", openGraph: "pt_PT" },
+  en: {
+    nativeName: "English",
+    htmlLang: "en",
+    direction: "ltr",
+    openGraph: "en_US",
+  },
+  fr: {
+    nativeName: "Français",
+    htmlLang: "fr",
+    direction: "ltr",
+    openGraph: "fr_FR",
+  },
+  es: {
+    nativeName: "Español",
+    htmlLang: "es",
+    direction: "ltr",
+    openGraph: "es_ES",
+  },
+  de: {
+    nativeName: "Deutsch",
+    htmlLang: "de",
+    direction: "ltr",
+    openGraph: "de_DE",
+  },
+  pt: {
+    nativeName: "Português",
+    htmlLang: "pt",
+    direction: "ltr",
+    openGraph: "pt_PT",
+  },
 };
 
 // Keep translation source columns explicit so locale changes cannot shift copy.
@@ -66,10 +103,14 @@ export function normalizeLocale(value: string | null | undefined): Locale {
 /** Locale prefixes that were previously public and now permanently resolve to English. */
 export const RETIRED_LOCALES = ["ar"] as const;
 
-export function retiredLocaleFromPath(pathname: string): (typeof RETIRED_LOCALES)[number] | null {
+export function retiredLocaleFromPath(
+  pathname: string,
+): (typeof RETIRED_LOCALES)[number] | null {
   const firstSegment = pathname.split("/").filter(Boolean)[0];
-  return RETIRED_LOCALES.includes(firstSegment as (typeof RETIRED_LOCALES)[number])
-    ? firstSegment as (typeof RETIRED_LOCALES)[number]
+  return RETIRED_LOCALES.includes(
+    firstSegment as (typeof RETIRED_LOCALES)[number],
+  )
+    ? (firstSegment as (typeof RETIRED_LOCALES)[number])
     : null;
 }
 
@@ -96,20 +137,33 @@ export function localizePublicPath(pathname: string, locale: Locale): string {
   const path = suffixIndex === -1 ? pathname : pathname.slice(0, suffixIndex);
   const suffix = suffixIndex === -1 ? "" : pathname.slice(suffixIndex);
   const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(path));
-  if (locale === DEFAULT_LOCALE || isProtectedPath(cleanPath) || isEnglishOnlyArticle(cleanPath)) return cleanPath + suffix;
+  if (
+    locale === DEFAULT_LOCALE ||
+    isProtectedPath(cleanPath) ||
+    isEnglishOnlyArticle(cleanPath)
+  )
+    return cleanPath + suffix;
   return (cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`) + suffix;
 }
 
 export function isProtectedPath(pathname: string): boolean {
   const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(pathname));
-  return /^(?:\/dashboard|\/onboarding|\/admin|\/ap3k-admin(?:-v2)?|\/api|\/callback|\/payment|\/account-deletion-preview|\/r)(?:\/|$)/.test(cleanPath);
+  return /^(?:\/dashboard|\/onboarding|\/admin|\/ap3k-admin(?:-v2)?|\/api|\/callback|\/payment|\/account-deletion-preview|\/r)(?:\/|$)/.test(
+    cleanPath,
+  );
 }
 
 // Public URLs are authoritative. A stale locale cookie must never override them.
 // Callbacks, payments and APIs must never acquire a language prefix.
-export function resolveRequestLocale(pathname: string, cookie?: string): Locale {
+export function resolveRequestLocale(
+  pathname: string,
+  cookie?: string,
+): Locale {
   if (isEnglishOnlyArticle(pathname)) return DEFAULT_LOCALE;
-  return localeFromPath(pathname) ?? (isProtectedPath(pathname) ? normalizeLocale(cookie) : DEFAULT_LOCALE);
+  return (
+    localeFromPath(pathname) ??
+    (isProtectedPath(pathname) ? normalizeLocale(cookie) : DEFAULT_LOCALE)
+  );
 }
 
 export function localeAlternates(pathname = "/") {
@@ -119,7 +173,10 @@ export function localeAlternates(pathname = "/") {
   }
   return {
     ...Object.fromEntries(
-    SUPPORTED_LOCALES.map((locale) => [LOCALE_DETAILS[locale].htmlLang, localizePublicPath(pathname, locale)]),
+      SUPPORTED_LOCALES.map((locale) => [
+        LOCALE_DETAILS[locale].htmlLang,
+        localizePublicPath(pathname, locale),
+      ]),
     ),
     "x-default": localizePublicPath(pathname, DEFAULT_LOCALE),
   };
@@ -127,12 +184,18 @@ export function localeAlternates(pathname = "/") {
 
 /** Negotiate browser preferences, including regional tags and quality weights. */
 export function browserLocale(header: string | null | undefined): Locale {
-  const choices = (header || "").split(",").map((part, index) => {
-    const [tag, ...params] = part.trim().split(";");
-    const quality = params.find(value => value.trim().startsWith("q="));
-    const q = quality ? Number(quality.trim().slice(2)) : 1;
-    return { language: tag.toLowerCase().split(/[-_]/)[0], q, index };
-  }).filter(item => Number.isFinite(item.q) && item.q > 0 && item.q <= 1)
+  const choices = (header || "")
+    .split(",")
+    .map((part, index) => {
+      const [tag, ...params] = part.trim().split(";");
+      const quality = params.find((value) => value.trim().startsWith("q="));
+      const q = quality ? Number(quality.trim().slice(2)) : 1;
+      return { language: tag.toLowerCase().split(/[-_]/)[0], q, index };
+    })
+    .filter((item) => Number.isFinite(item.q) && item.q > 0 && item.q <= 1)
     .sort((a, b) => b.q - a.q || a.index - b.index);
-  return choices.find(item => isLocale(item.language))?.language as Locale || DEFAULT_LOCALE;
+  return (
+    (choices.find((item) => isLocale(item.language))?.language as Locale) ||
+    DEFAULT_LOCALE
+  );
 }
