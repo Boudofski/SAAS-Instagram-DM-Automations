@@ -73,13 +73,13 @@ describe("public site discovery and billing", () => {
         title: "Content calendar",
         visual: "workflow",
       }).src,
-    ).toContain("photo-1506784242126");
+    ).toContain("/api/blog-cover?title=Content%20calendar");
     expect(
       getArticleImage({
         slug: "instagram-ecommerce",
         title: "Ecommerce",
         visual: "workflow",
       }).src,
-    ).toContain("photo-1585221330389");
+    ).toContain("/api/blog-cover?title=Ecommerce");
   });
 });

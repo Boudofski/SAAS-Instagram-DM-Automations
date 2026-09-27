@@ -161,6 +161,9 @@ export const PLAN_COMPARISON = [
     pro: "Included",
     business: "Included",
   },
+  { feature: "Publish custom canvas flows", free: "Not included", pro: "Included", business: "Included" },
+  { feature: "AI tone and custom instructions", free: "Not included", pro: "Included", business: "Included" },
+  { feature: "Export leads", free: "Not included", pro: "Included", business: "Included" },
 ] as const;
 
 export function planDisplayName(plan?: string | null) {

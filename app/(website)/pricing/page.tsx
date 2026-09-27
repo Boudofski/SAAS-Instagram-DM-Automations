@@ -1,4 +1,6 @@
 import PublicPricing from "@/components/website/public-pricing";
+import pricing from "@/components/website/public-pricing.module.css";
+import { Inter } from "next/font/google";
 import styles from "@/components/website/public-pages.module.css";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
@@ -6,6 +8,8 @@ import type { Metadata } from "next";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import { getServerLocale } from "@/lib/i18n/server";
 import { localeAlternates, localizePublicPath } from "@/lib/i18n/config";
+
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--pricing-font" });
 
 const PRICING_METADATA = {
   en: [
@@ -90,18 +94,25 @@ const FAQ = [
 export default function PricingPage() {
   return (
     <LocalizedCopy>
-      <div className={styles.page}>
+      <div className={`${styles.page} ${pricing.pricingPage} ${inter.variable}`}>
         <WebsiteNav current="pricing" />
         <main>
-          <header className={styles.hero}>
-            <span className={styles.badge}>AP3K PLANS</span>
+          <header className={pricing.hero}>
+            <div className={pricing.proVisual} aria-hidden="true">
+              <video autoPlay loop muted playsInline disablePictureInPicture preload="metadata" poster="/media/pricing/pro-poster.svg">
+                <source src="/media/pricing/pro-animation.mp4" type="video/mp4" />
+              </video>
+              {/* Static alternative for visitors who prefer reduced motion. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/media/pricing/pro-poster.svg" alt="" width="161" height="100" />
+            </div>
             <h1>Start free. Grow at your pace.</h1>
             <p>
               Turn Instagram comments into conversations. Choose the capacity
               and AI tools that fit your business.
             </p>
           </header>
-          <div className={styles.wide}>
+          <div className={pricing.container}>
             <PublicPricing />
           </div>
           <section className={styles.faq}>
