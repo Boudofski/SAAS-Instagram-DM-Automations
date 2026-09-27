@@ -72,7 +72,12 @@ const softwareSchema = {
 };
 
 export default async function LandingPage() {
-  const posts = await getPublishedPosts();
+  // This optional discovery feed must never take down the public homepage.
+  // Do not fall back to static posts: the editor may have hidden them.
+  const posts = await getPublishedPosts().catch(() => {
+    console.error("AP3K homepage: editorial feed unavailable");
+    return [];
+  });
   const locale = getServerLocale();
   const localizedSoftware = { ...softwareSchema, inLanguage: locale,
     url: `https://ap3k.com${localizePublicPath("/", locale)}`,

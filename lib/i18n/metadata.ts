@@ -3,7 +3,7 @@ import type { Locale } from "./config";
 export const SITE_METADATA: Record<Locale, { title: string; description: string }> = {
   en: {
     title: "AP3K — Instagram Comment & DM Automation",
-    description: "Automatically reply to Instagram comments, send the promised link by DM, and track every lead—without complicated flows or code.",
+    description: "Automate Instagram comment replies and DMs with AP3K. Send links, collect leads and track your campaigns. Start free with 500 automated actions per month.",
   },
   fr: {
     title: "AP3K — Automatisation des commentaires et DM Instagram",

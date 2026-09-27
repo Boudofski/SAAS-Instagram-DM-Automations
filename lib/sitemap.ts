@@ -1,3 +1,5 @@
+import { COMPARISONS, comparisonPath } from "@/lib/comparisons";
+import { SOLUTIONS } from "@/lib/solutions";
 import { COMPANY } from "@/lib/company";
 import { AP3K_HELP_ARTICLES } from "@/lib/ap3k-help";
 import { BLOG_POSTS } from "@/lib/blog";
@@ -18,10 +20,10 @@ const baseUrl = "https://ap3k.com";
 export function buildSitemap(
   posts: BlogPost[] = BLOG_POSTS,
 ): MetadataRoute.Sitemap {
-  const updated = new Date("2026-09-12T00:00:00Z");
+  const updated = new Date("2026-09-27T00:00:00Z");
   // Significant public-copy and navigation updates shipped on this date.
   // Keep this fixed to the release date; never stamp every crawl with today.
-  const publicContentUpdated = new Date("2026-09-23T00:00:00Z");
+  const publicContentUpdated = new Date("2026-09-27T00:00:00Z");
   const companyUpdated = new Date(`${COMPANY.detailsUpdated}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -152,6 +154,9 @@ export function buildSitemap(
 
   return [
     ...staticPages,
+    ...["/compare", "/solutions", ...COMPARISONS.filter(page => page.slug !== "manychat").map(comparisonPath), ...SOLUTIONS.map(page => `/solutions/${page.slug}`)].map(path => ({
+      url: `${baseUrl}${path}`, lastModified: publicContentUpdated, changeFrequency: "monthly" as const, priority: 0.8,
+    })),
     ...commercialPages,
     ...blogArchivePages,
     ...blogPages,

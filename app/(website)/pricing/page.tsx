@@ -1,5 +1,5 @@
-import PricingExperience from "@/components/global/pricing-experience";
-import { FadeIn } from "@/components/global/motion/fade-in";
+import PublicPricing from "@/components/website/public-pricing";
+import styles from "@/components/website/public-pages.module.css";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
@@ -59,58 +59,20 @@ const FAQ = [
 ] as const;
 
 export default function PricingPage() {
-  const locale = getServerLocale();
-
-  return (
-    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-rf-text">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.12),transparent_30rem),radial-gradient(circle_at_84%_12%,rgba(236,72,153,0.10),transparent_30rem)]" />
-      <WebsiteNav current="pricing" />
-
-      <main className="relative z-10">
-        <section className="px-4 pb-12 pt-20 text-center sm:px-8 lg:px-16">
-          <FadeIn>
-            <p className="ap3k-kicker mb-4">Simple pricing</p>
-            <h1 className="text-4xl font-black tracking-tight sm:text-6xl">
-              Start free. <span className="ap3k-gradient-text">Save more annually.</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-rf-muted sm:text-lg">
-              One Instagram account, 500 automated actions and up to five active automations on Free. Upgrade when your audience or AI usage grows.
-            </p>
-          </FadeIn>
-        </section>
-
-        <section className="mx-auto max-w-[1500px] px-4 pb-24 sm:px-8 lg:px-12">
-          <FadeIn delay={0.08}>
-            <PricingExperience />
-          </FadeIn>
-        </section>
-
-        <section className="mx-auto max-w-3xl px-4 pb-24 sm:px-8">
-          <FadeIn>
-            <div className="mb-8 text-center">
-              <p className="ap3k-kicker">FAQ</p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight">Billing without surprises</h2>
-            </div>
-          </FadeIn>
-          <div className="flex flex-col gap-4">
-            {FAQ.map((item, index) => (
-              <FadeIn key={item.q} delay={index * 0.035}>
-                <details className="group rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-all duration-300 open:border-orange-500/25 open:shadow-lg dark:border-white/10 dark:bg-white/[0.04]">
-                  <summary className="cursor-pointer list-none text-sm font-black text-slate-950 marker:hidden dark:text-white">
-                    <span className="flex items-center justify-between gap-4">
-                      {item.q}
-                      <span className="text-lg text-orange-500 transition-transform group-open:rotate-45">+</span>
-                    </span>
-                  </summary>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.a}</p>
-                </details>
-              </FadeIn>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <WebsiteFooter />
-    </div></LocalizedCopy>
-  );
+  return <LocalizedCopy><div className={styles.page}>
+    <WebsiteNav current="pricing" />
+    <main>
+      <header className={styles.hero}>
+        <span className={styles.badge}>AP3K PLANS</span>
+        <h1>Start free. Grow at your pace.</h1>
+        <p>Turn Instagram comments into conversations. Choose the capacity and AI tools that fit your business.</p>
+      </header>
+      <div className={styles.wide}><PublicPricing /></div>
+      <section className={styles.faq}>
+        <h2>Frequently asked questions</h2>
+        {FAQ.map(item => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+      </section>
+    </main>
+    <WebsiteFooter />
+  </div></LocalizedCopy>;
 }

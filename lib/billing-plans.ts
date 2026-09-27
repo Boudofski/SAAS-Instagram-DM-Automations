@@ -88,7 +88,7 @@ export const PLAN_COMPARISON = [
   { feature: "Any Comment trigger", free: "Included", pro: "Included", business: "Included" },
   { feature: "Comment replies", free: "Included", pro: "Included", business: "Included" },
   { feature: "DMs", free: "Included", pro: "Included", business: "Included" },
-  { feature: "Comment-reply variations", free: "Up to 3", pro: "Up to 3", business: "Up to 3" },
+  { feature: "Comment-reply variations", free: "Up to 20", pro: "Up to 20", business: "Up to 20" },
   { feature: "AI comment protection", free: "Not included", pro: "Included", business: "Included" },
   { feature: "DM link button", free: "Included", pro: "Included", business: "Included" },
   { feature: "Lead tracking", free: "Included", pro: "Included", business: "Included" },

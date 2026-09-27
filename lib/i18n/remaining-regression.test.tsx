@@ -107,12 +107,12 @@ describe("complete public localization and search metadata", () => {
       for (const page of COMMERCIAL_PAGES) {
         const metadata = commercialMetadata({ params: { slug: page.slug } });
         expect(metadata.alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`);
-        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(page.contentLocale ? 2 : 6);
-        const expectedTitle = page.seoTitle ?? (locale === "en" && page.slug === "instagram-comment-to-dm"
+        expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(isEnglishOnlyArticle(`/${page.slug}`) ? 2 : 6);
+        const expectedTitle = page.slug === "manychat-alternative" ? "ManyChat Alternative: AP3K vs ManyChat" : page.seoTitle ?? (locale === "en" && page.slug === "instagram-comment-to-dm"
           ? "Instagram Comment-to-DM Automation | AP3K"
           : `${translateUi(page.title, locale)} | AP3K`);
         expect(metadata.title).toBe(expectedTitle);
-        if (locale !== "en" && !page.contentLocale) expect(metadata.description).not.toBe(page.description);
+        if (locale !== "en" && !isEnglishOnlyArticle(`/${page.slug}`)) expect(metadata.description).not.toBe(page.description);
       }
       expect(privacyMetadata().alternates?.canonical).toBe(`https://ap3k.com${localizePublicPath("/privacy", locale)}`);
     }

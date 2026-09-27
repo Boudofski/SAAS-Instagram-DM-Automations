@@ -1,103 +1,16 @@
 import Breadcrumbs from "@/components/seo/breadcrumbs";
-import { UiText } from "@/components/i18n/localized-copy";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
 import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import PricingExperience from "@/components/global/pricing-experience";
+import styles from "./public-pages.module.css";
 import type { CommercialPage } from "@/lib/commercial-pages";
 import { localizePublicPath } from "@/lib/i18n/config";
-import { ArrowRight, CheckCircle2, CircleAlert } from "lucide-react";
 import Link from "next/link";
-
-const THEME_STYLES = {
-  violet: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(217,70,239,0.3),transparent_28rem),linear-gradient(135deg,#32107e,#6225cc_48%,#8b2ed8)]",
-    glow: "bg-fuchsia-300/30",
-    soft: "bg-violet-50 dark:bg-violet-500/[0.055]",
-    step: "bg-violet-600",
-    accent: "text-violet-600 dark:text-violet-300",
-    edge: "from-violet-600 to-fuchsia-600",
-    button: "text-violet-700",
-  },
-  blue: {
-    hero: "bg-[radial-gradient(circle_at_82%_18%,rgba(56,189,248,0.34),transparent_28rem),linear-gradient(135deg,#172554,#1d4ed8_50%,#6d28d9)]",
-    glow: "bg-sky-300/30",
-    soft: "bg-sky-50 dark:bg-sky-500/[0.055]",
-    step: "bg-blue-600",
-    accent: "text-blue-600 dark:text-blue-300",
-    edge: "from-blue-600 to-violet-600",
-    button: "text-blue-700",
-  },
-  fuchsia: {
-    hero: "bg-[radial-gradient(circle_at_84%_18%,rgba(251,113,133,0.32),transparent_28rem),linear-gradient(135deg,#4a044e,#a21caf_50%,#7c3aed)]",
-    glow: "bg-pink-300/30",
-    soft: "bg-fuchsia-50 dark:bg-fuchsia-500/[0.055]",
-    step: "bg-fuchsia-600",
-    accent: "text-fuchsia-600 dark:text-fuchsia-300",
-    edge: "from-fuchsia-600 to-violet-600",
-    button: "text-fuchsia-700",
-  },
-  rose: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(253,164,175,0.35),transparent_28rem),linear-gradient(135deg,#4c0519,#be123c_50%,#7c3aed)]",
-    glow: "bg-rose-300/30",
-    soft: "bg-rose-50 dark:bg-rose-500/[0.055]",
-    step: "bg-rose-600",
-    accent: "text-rose-600 dark:text-rose-300",
-    edge: "from-rose-600 to-fuchsia-600",
-    button: "text-rose-700",
-  },
-  cyan: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(103,232,249,0.3),transparent_28rem),linear-gradient(135deg,#083344,#0e7490_48%,#5b21b6)]",
-    glow: "bg-cyan-300/30",
-    soft: "bg-cyan-50 dark:bg-cyan-500/[0.055]",
-    step: "bg-cyan-600",
-    accent: "text-cyan-700 dark:text-cyan-300",
-    edge: "from-cyan-600 to-violet-600",
-    button: "text-cyan-800",
-  },
-  indigo: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(165,180,252,0.32),transparent_28rem),linear-gradient(135deg,#1e1b4b,#4338ca_50%,#7e22ce)]",
-    glow: "bg-indigo-300/30",
-    soft: "bg-indigo-50 dark:bg-indigo-500/[0.055]",
-    step: "bg-indigo-600",
-    accent: "text-indigo-600 dark:text-indigo-300",
-    edge: "from-indigo-600 to-purple-600",
-    button: "text-indigo-700",
-  },
-  pink: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(249,168,212,0.34),transparent_28rem),linear-gradient(135deg,#500724,#db2777_48%,#7c3aed)]",
-    glow: "bg-pink-300/30",
-    soft: "bg-pink-50 dark:bg-pink-500/[0.055]",
-    step: "bg-pink-600",
-    accent: "text-pink-600 dark:text-pink-300",
-    edge: "from-pink-600 to-violet-600",
-    button: "text-pink-700",
-  },
-  emerald: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(110,231,183,0.3),transparent_28rem),linear-gradient(135deg,#022c22,#047857_48%,#4338ca)]",
-    glow: "bg-emerald-300/30",
-    soft: "bg-emerald-50 dark:bg-emerald-500/[0.055]",
-    step: "bg-emerald-600",
-    accent: "text-emerald-700 dark:text-emerald-300",
-    edge: "from-emerald-600 to-indigo-600",
-    button: "text-emerald-800",
-  },
-  orange: {
-    hero: "bg-[radial-gradient(circle_at_82%_20%,rgba(253,186,116,0.34),transparent_28rem),linear-gradient(135deg,#431407,#ea580c_48%,#7c2d12)]",
-    glow: "bg-orange-300/30",
-    soft: "bg-orange-50 dark:bg-orange-500/[0.055]",
-    step: "bg-orange-600",
-    accent: "text-orange-700 dark:text-orange-300",
-    edge: "from-orange-500 to-rose-600",
-    button: "text-orange-800",
-  },
-} as const;
 
 export default function CommercialLandingPage({ page }: { page: CommercialPage }) {
   const locale = page.contentLocale ?? getServerLocale();
-  const theme = THEME_STYLES[page.theme];
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -120,131 +33,36 @@ export default function CommercialLandingPage({ page }: { page: CommercialPage }
     featureList: page.workflow.map(item => translateUi(item.title, locale)),
   };
 
-  return (
-    <LocalizedCopy><div className="min-h-screen bg-[#f8f7fc] text-slate-950 dark:bg-[#080911] dark:text-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
-      <WebsiteNav />
-      <main lang={page.contentLocale} translate={page.contentLocale ? "no" : undefined}>
-        <section className={`relative overflow-hidden px-4 py-16 text-white sm:px-8 lg:px-16 lg:py-24 ${theme.hero}`}>
-          <div aria-hidden="true" className={`pointer-events-none absolute -right-24 top-20 h-80 w-80 rounded-full blur-[110px] ${theme.glow}`} />
-          <div aria-hidden="true" className="pointer-events-none absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-white/10 blur-[130px]" />
-          <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.08fr_.92fr]">
-            <div>
-              <Breadcrumbs items={[{ name: page.eyebrow, path: `/${page.slug}` }]} />
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">{page.eyebrow}</p>
-              <h1 className="mt-5 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.05em] sm:text-6xl lg:text-7xl">{page.title}</h1>
-              <p className="mt-6 max-w-2xl text-base leading-8 text-white/80 sm:text-lg">{page.description}</p>
-              <p className="mt-5 max-w-2xl text-sm font-bold leading-6 text-white/75">{page.proof}</p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/sign-up" className={`inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black shadow-xl transition hover:-translate-y-0.5 ${theme.button}`}><UiText>{"GET STARTED "}</UiText><ArrowRight className="h-4 w-4" /></Link>
-                <a href="#pricing" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-7 py-4 text-sm font-black text-white backdrop-blur transition hover:bg-white/15"><UiText>{"Compare plans"}</UiText><ArrowRight className="h-4 w-4" /></a>
-              </div>
-              <p className="mt-4 text-xs font-bold text-white/65"><UiText>{"500 automated actions/month · 1 Instagram account · 5 active automations"}</UiText></p>
-            </div>
-            <div className="ap3k-product-float relative mx-auto w-full max-w-[390px]">
-              <div aria-hidden="true" className={`pointer-events-none absolute -inset-12 rounded-[4rem] blur-3xl ${theme.glow}`} />
-              <div className="relative overflow-hidden rounded-[2.6rem] border border-white/25 bg-[#08090e] p-2 shadow-[0_34px_110px_rgba(10,3,35,.52)] ring-1 ring-black/20">
-                <video autoPlay muted loop playsInline poster={page.media} preload="metadata" aria-label={page.mediaAlt} className="aspect-[1200/2128] w-full rounded-[2.15rem] bg-black object-cover object-top">
-                  <source src={page.video} type="video/mp4" />
-                </video>
-              </div>
-              <p className="relative mt-4 text-center text-xs font-semibold text-white/65"><UiText>{"Real Instagram automation example"}</UiText></p>
-            </div>
-          </div>
-        </section>
-
-        <section className={`px-4 py-20 sm:px-8 lg:px-16 ${theme.soft}`}>
-          <div className="mx-auto max-w-6xl">
-            <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme.accent}`}><UiText>{"How it works"}</UiText></p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-5xl"><UiText>{"A workflow your team can explain."}</UiText></h2>
-            <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {page.workflow.map((item, index) => (
-                <div key={item.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-                  <span className={`grid h-9 w-9 place-items-center rounded-xl text-xs font-black text-white ${theme.step}`}>{index + 1}</span>
-                  <h3 className="mt-5 font-black">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{item.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="scroll-mt-20 bg-[#f7f6fb] px-4 py-20 dark:bg-[#0b0c14] sm:px-8 lg:px-16">
-          <div className="mx-auto max-w-[1240px]">
-            <div className="mx-auto mb-12 max-w-3xl text-center">
-              <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme.accent}`}><UiText>{"Simple pricing"}</UiText></p>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-5xl"><UiText>{"Start free. Save more annually."}</UiText></h2>
-              <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300"><UiText>{"One Instagram account, 500 automated actions and up to five active automations on Free. Upgrade when your audience or AI usage grows."}</UiText></p>
-            </div>
-            <PricingExperience compact />
-          </div>
-        </section>
-
-        <section className="px-4 py-20 sm:px-8 lg:px-16">
-          <div className="mx-auto max-w-6xl">
-            <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme.accent}`}><UiText>{"Practical uses"}</UiText></p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-5xl"><UiText>{"Built around an outcome, not a diagram."}</UiText></h2>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {page.useCases.map((item) => (
-                <div key={item.title} className={`rounded-3xl bg-gradient-to-br p-[1px] ${theme.edge}`}>
-                  <div className="h-full rounded-[calc(1.5rem-1px)] bg-white p-6 dark:bg-[#11131d]">
-                    <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                    <h3 className="mt-5 text-xl font-black">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">{item.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-violet-50 px-4 py-16 dark:bg-violet-500/[0.05] sm:px-8 lg:px-16">
-          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[.75fr_1.25fr]">
-            <div>
-              <CircleAlert className="h-7 w-7 text-violet-600 dark:text-violet-300" />
-              <h2 className="mt-4 text-3xl font-black tracking-tight"><UiText>{"Know the limits before launch."}</UiText></h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400"><UiText>{"Reliable automation starts with accurate expectations."}</UiText></p>
-            </div>
-            <ul className="grid gap-3">
-              {page.limitations.map((limit) => <li key={limit} className="flex gap-3 rounded-2xl border border-violet-200/60 bg-white/80 p-4 text-sm leading-6 dark:border-white/10 dark:bg-white/[0.04]"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-600 dark:text-violet-300" />{limit}</li>)}
-            </ul>
-          </div>
-        </section>
-
-        <section className="px-4 py-20 sm:px-8 lg:px-16">
-          <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.15fr_.85fr]">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300"><UiText>{"FAQ"}</UiText></p>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-5xl"><UiText>{"Questions before you automate."}</UiText></h2>
-              <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200 dark:divide-white/10 dark:border-white/10">
-                {page.faqs.map((faq) => <details key={faq.question} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-black">{faq.question}<span className="text-xl text-violet-500 transition group-open:rotate-45">+</span></summary><p className="max-w-2xl pt-4 text-sm leading-7 text-slate-600 dark:text-slate-400">{faq.answer}</p></details>)}
-              </div>
-            </div>
-            <aside className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300"><UiText>{"Related tutorials"}</UiText></p>
-              <div className="mt-5 grid gap-3">
-                <Link href="/blog/instagram-comment-to-dm-automation" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Instagram comment to DM automation: practical guide and campaign library →</Link>
-                {page.slug === "instagram-comment-to-dm" ? <>
-                  <Link href="/resources/instagram-comment-to-dm-templates" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Free comment-to-DM message templates →</Link>
-                  <Link href="/tools/instagram-comment-to-dm-calculator" prefetch={false} lang="en" dir="ltr" translate="no" className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">Comment-to-DM funnel calculator →</Link>
-                  <Link href={localizePublicPath("/blog/compare-instagram-dm-automation-tools", locale)} className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">{translateUi("Compare Instagram DM Automation Tools: AP3K and Alternatives", locale)} →</Link>
-                  <Link href={localizePublicPath("/blog/is-instagram-dm-automation-safe", locale)} className="rounded-2xl border border-violet-200 px-4 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-400/20 dark:text-violet-300 dark:hover:bg-violet-400/10">{translateUi("Is Instagram DM Automation Safe? API Rules and Risks", locale)} →</Link>
-                </> : null}
-                {page.tutorials.map((tutorial) => <Link key={tutorial.slug} href={`/blog/${tutorial.slug}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 px-4 py-4 text-sm font-black transition hover:border-violet-300 hover:text-violet-600 dark:border-white/10 dark:hover:border-violet-400/30 dark:hover:text-violet-300">{tutorial.title}<ArrowRight className="h-4 w-4 shrink-0" /></Link>)}
-              </div>
-              <Link href="/pricing" className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-violet-600 px-5 py-3 text-sm font-black text-white transition hover:bg-violet-500"><UiText>{"Compare pricing"}</UiText></Link>
-            </aside>
-          </div>
-        </section>
-
-        <section className={`bg-gradient-to-r px-4 py-16 text-center text-white sm:px-8 ${theme.edge}`}>
-          <h2 className="text-3xl font-black tracking-tight sm:text-5xl"><UiText>{"Build your first AP3K automation free."}</UiText></h2>
-          <p className="mx-auto mt-4 max-w-2xl text-white/75"><UiText>{"500 automated actions every month. No credit card required."}</UiText></p>
-          <Link href="/sign-up" className={`mt-7 inline-flex items-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-black shadow-xl ${theme.button}`}><UiText>{"GET STARTED "}</UiText><ArrowRight className="h-4 w-4" /></Link>
-        </section>
-      </main>
-      <WebsiteFooter />
-    </div></LocalizedCopy>
-  );
+  return <LocalizedCopy><div className={styles.page}>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
+    <WebsiteNav />
+    <main className={styles.article} lang={page.contentLocale} translate={page.contentLocale ? "no" : undefined}>
+      <Breadcrumbs items={[{ name: page.eyebrow, path: `/${page.slug}` }]} />
+      <span className={styles.badge}>{page.eyebrow}</span>
+      <h1>{page.title}</h1>
+      <p>{page.description}</p>
+      <p>{page.proof}</p>
+      <h2>How it works</h2>
+      <ol>{page.workflow.map(item => <li key={item.title}><strong>{item.title}.</strong> {item.body}</li>)}</ol>
+      <h2>Make every conversation useful</h2>
+      {page.useCases.map(item => <section key={item.title}><h3>{item.title}</h3><p>{item.body}</p></section>)}
+      <h2>See the conversation</h2>
+      <p>Choose a clear trigger and deliver what your post promises. This example shows the interaction from your audience’s perspective.</p>
+      <figure className={styles.demo}><video autoPlay muted loop playsInline poster={page.media} preload="none" aria-label={page.mediaAlt}><source src={page.video} type="video/mp4" /></video></figure>
+      <h2>Before you activate</h2>
+      <ul>{page.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul>
+      <div id="pricing" className={styles.note}><p><strong>Start free with AP3K.</strong> Connect one Instagram account, run up to five active automations and send 500 automated actions each month. <Link href="/pricing">Compare plans →</Link></p></div>
+      <h2>Frequently asked questions</h2>
+      {page.faqs.map(faq => <section key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></section>)}
+      <h2>Related guides</h2>
+      <div className={styles.related}>
+        {page.tutorials.map(tutorial => <Link key={tutorial.slug} href={`/blog/${tutorial.slug}`}>{tutorial.title} →</Link>)}
+        <Link href="/resources/instagram-comment-to-dm-templates">Comment-to-DM message templates →</Link>
+        <Link href="/compare">Compare Instagram automation tools →</Link>
+      </div>
+      <section className={styles.cta}><h2>Put your next conversation on autopilot.</h2><p>Start with one campaign. Test it, then let AP3K handle the replies.</p><Link href="/sign-up" className={styles.button}>Join for free</Link></section>
+    </main>
+    <WebsiteFooter />
+  </div></LocalizedCopy>;
 }

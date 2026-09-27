@@ -22,7 +22,8 @@ const englishArticles = new Set([
   "/help/automation-types",
 ]);
 export function isEnglishOnlyArticle(pathname: string): boolean {
-  return englishArticles.has(stripLocaleFromPath(pathname.split(/[?#]/)[0]).replace(/\/$/, ""));
+  const path = stripLocaleFromPath(pathname.split(/[?#]/)[0]).replace(/\/$/, "");
+  return /^\/(compare|solutions)(\/|$)/.test(path) || path === "/manychat-alternative" || englishArticles.has(path);
 }
 
 export const SUPPORTED_LOCALES = ["en", "fr", "es", "de", "pt"] as const;

@@ -1,3 +1,6 @@
+import BlogCover from "@/components/website/blog-cover";
+import { getArticleImage, articleImageUrl } from "@/lib/blog-images";
+import s from "@/components/website/public-pages.module.css";
 import CommentDmLibrary from "@/components/website/comment-dm-library";
 import { COMMENT_DM_HUB } from "@/lib/content/comment-dm";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
@@ -7,17 +10,13 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
 import { localizePublicPath } from "@/lib/i18n/config";
 import LocalizedCopy from "@/components/i18n/localized-copy";
-import { ReadableReveal } from "@/components/global/motion/fade-in";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
-import BlogVisual, { getBlogVisualSrc } from "@/components/website/blog-visual";
 import TutorialScreenshot from "@/components/website/tutorial-screenshot";
 import TutorialGuides from "@/components/website/tutorial-guides";
-import { TUTORIAL_LABELS, TUTORIAL_SCREENSHOTS, tutorialImageSrc } from "@/lib/tutorial-content";
 import GrowthGuideExtras, { GrowthSectionSources } from "@/components/website/growth-guide-extras";
 import { BLOG_POSTS } from "@/lib/blog";
 import { getPublishedPost, getPublishedPosts } from "@/lib/editorial-server";
-import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -42,7 +41,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPublishedPost(params.slug);
   if (!post) return {};
-  const socialImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
+  const cover = getArticleImage(post);
+  const socialImage = articleImageUrl(cover);
   const locale = post.contentLocale ?? getServerLocale();
   const seoTitle = post.seoTitle || (locale === "en" && ENGLISH_SEO_TITLES[post.slug]
     ? ENGLISH_SEO_TITLES[post.slug]
@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       siteName: "AP3K",
-      images: [{ url: socialImage, width: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440, height: post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810, alt: translateUi(post.cover ? TUTORIAL_SCREENSHOTS[post.cover].caption : post.visualAlt, locale) }],
+      images: [{ url: socialImage, width: cover.width, height: cover.height, alt: translateUi(cover.alt, locale) }],
     },
     twitter: {
       card: "summary_large_image",
@@ -94,9 +94,10 @@ export default async function BlogPostPage({ params }: Props) {
     .map(({ item }) => item);
   const products = COMMERCIAL_PAGES.filter(page => page.tutorials.some(guide => guide.slug === post.slug));
   const locale = post.contentLocale ?? getServerLocale();
-  const articleImage = `${SITE_URL}${post.cover ? tutorialImageSrc(post.cover) : getBlogVisualSrc(post.visual)}`;
-  const articleImageWidth = post.cover ? TUTORIAL_SCREENSHOTS[post.cover].width : 1440;
-  const articleImageHeight = post.cover ? TUTORIAL_SCREENSHOTS[post.cover].height : 810;
+  const cover = getArticleImage(post);
+  const articleImage = articleImageUrl(cover);
+  const articleImageWidth = cover.width;
+  const articleImageHeight = cover.height;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -121,148 +122,40 @@ export default async function BlogPostPage({ params }: Props) {
     keywords: post.keywords.map(key => translateUi(key, locale)).join(", "),
   };
 
-  return (
-    <LocalizedCopy><div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-[#070808] dark:text-white">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.10),transparent_30rem),radial-gradient(circle_at_82%_10%,rgba(236,72,153,0.08),transparent_30rem)]" />
-      <WebsiteNav current="blog" />
-      <main className="relative z-10">
-        <article lang={post.contentLocale} dir={post.contentLocale ? "ltr" : undefined} translate={post.contentLocale ? "no" : undefined} className="mx-auto max-w-4xl px-4 pb-20 pt-14 sm:px-8 sm:pt-20">
-          <Breadcrumbs items={[{ name: "Blog", path: "/blog" }, { name: post.title, path: `/blog/${post.slug}` }]} />
-          <ReadableReveal>
-            <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-300">
-              <ArrowLeft className="h-4 w-4" /> All guides
-            </Link>
-            <div className="mt-8 flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
-              <span className="rounded-full bg-orange-500/10 px-3 py-1.5 text-orange-600 dark:text-orange-300">{post.category}</span>
-              <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" /> {formatDate(post.publishedAt)}</span>
-              <span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4" /> {post.readingTime}</span>
-            </div>
-            {post.contentLocale && <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">By <Link href="/contact" className="underline underline-offset-4">AP3K</Link> · English guide</p>}
-            <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-6xl">{post.title}</h1>
-            <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">{post.intro}</p>
-          </ReadableReveal>
-
-          <ReadableReveal delay={0.06}>
-            <div className="mt-10">
-              {post.cover ? <><TutorialScreenshot id={post.cover} /><p className="mt-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-7 text-slate-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-300">{TUTORIAL_LABELS.hint}</p></> : <BlogVisual variant={post.visual} alt={post.visualAlt} caption={post.visualCaption} />}
-            </div>
-          </ReadableReveal>
-
-          <ReadableReveal delay={0.09}>
-            <nav aria-label="Article contents" className="mt-10 rounded-2xl border border-slate-200 bg-white/80 p-5 dark:border-white/10 dark:bg-white/[0.04]">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">In this guide</p>
-              <ol className="mt-3 grid gap-2 sm:grid-cols-2">
-                {post.sections.map((section, index) => (
-                  <li key={section.heading}>
-                    <a href={`#section-${index + 1}`} className="text-sm font-bold leading-6 text-slate-600 transition hover:text-violet-600 dark:text-slate-300 dark:hover:text-violet-300">
-                      {index + 1}. {section.heading.replace(/^\d+\.\s*/, "")}
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          </ReadableReveal>
-
-          <div className="mt-12 space-y-12">
-            {post.sections.map((section, index) => (
-              <ReadableReveal key={section.heading} delay={Math.min(index * 0.03, 0.15)}>
-                <section id={`section-${index + 1}`} className="scroll-mt-24">
-                  <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{section.heading}</h2>
-                  <div className="mt-4 space-y-4 text-base leading-8 text-slate-600 dark:text-slate-300">
-                    {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                    {section.steps && (
-                      <ol className="grid gap-3">
-                        {section.steps.map((item, stepIndex) => (
-                          <li key={item.title} className="group flex gap-4 rounded-2xl border border-violet-500/15 bg-violet-50/70 p-5 transition duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-violet-500/30 dark:bg-violet-500/[0.06]">
-                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-sm font-black text-white shadow-lg shadow-violet-600/20">{stepIndex + 1}</span>
-                            <span>
-                              <strong className="block text-slate-950 dark:text-white">{item.title}</strong>
-                              <span className="mt-1 block text-sm leading-6">{item.body}</span>
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                    {section.bullets && (
-                      <ul className="space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-5 dark:border-white/10 dark:bg-white/[0.04]">
-                        {section.bullets.map((bullet) => (
-                          <li key={bullet} className="flex gap-3">
-                            <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
-                            <span>{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  {section.links && <ul className="mt-5 space-y-2">
-                    {section.links.map(link => <li key={link.href}><Link href={link.href} prefetch={false} className="inline-block py-1 text-sm font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">{link.label}</Link></li>)}
-                  </ul>}
-                  <GrowthSectionSources slug={post.slug} index={index} />
-                  {section.screenshot && <TutorialScreenshot id={section.screenshot} />}
-                </section>
-              </ReadableReveal>
-            ))}
-          </div>
-
-          {post.contentLocale && <CommentDmLibrary expanded={`/blog/${post.slug}` === COMMENT_DM_HUB} />}
-          <GrowthGuideExtras slug={post.slug} />
-          {post.cover && <TutorialGuides />}
-
-          <ReadableReveal>
-            <div className="mt-12 border-t border-slate-200 pt-6 dark:border-white/10">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Topics</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {post.keywords.map((keyword) => (
-                  <span key={keyword} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">{keyword}</span>
-                ))}
-              </div>
-            </div>
-          </ReadableReveal>
-
-          <ReadableReveal>
-            <aside className="mt-14 rounded-[30px] border border-orange-500/20 bg-gradient-to-br from-orange-50 via-pink-50 to-white p-7 dark:from-orange-500/10 dark:via-pink-500/10 dark:to-white/[0.03] sm:p-8">
-              <p className="ap3k-kicker">Try the workflow</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight">Turn your next Instagram comment into an action.</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Start with one campaign, one clear trigger, and a useful Comment reply or DM. You can expand after you see the full flow working.</p>
-              {products.length > 0 && <ul className="mt-4 space-y-2">
-                {products.map(page => <li key={page.slug}><Link href={`/${page.slug}`} className="text-sm font-bold underline underline-offset-4">{page.eyebrow}</Link></li>)}
-              </ul>}
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <Link href="/sign-up" className="ap3k-gradient-button px-5 py-2.5 text-center text-sm">GET STARTED</Link>
-                <Link href="/pricing" className="ap3k-outline-button px-5 py-2.5 text-center text-sm">Compare plans</Link>
-              </div>
-            </aside>
-          </ReadableReveal>
-        </article>
-
-        <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-8">
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <p className="ap3k-kicker">Keep learning</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight">Related guides</h2>
-            </div>
-            <Link href="/blog" className="hidden items-center gap-1 text-sm font-black text-orange-600 sm:inline-flex dark:text-orange-300">All guides <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {related.map((item) => (
-              <Link key={item.slug} href={`/blog/${item.slug}`} prefetch={false} lang={item.contentLocale} dir={item.contentLocale ? "ltr" : undefined} translate={item.contentLocale ? "no" : undefined} className="group rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:border-orange-500/30 motion-safe:hover:shadow-lg dark:border-white/10 dark:bg-[#101112]">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-orange-500">{item.category}</p>
-                <h3 className="mt-2 text-lg font-black leading-snug group-hover:text-orange-600 dark:group-hover:text-orange-300">{item.title}</h3>
-                <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{item.description}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      </main>
-      <WebsiteFooter />
-    </div></LocalizedCopy>
-  );
+  return <LocalizedCopy><div className={s.page}>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd).replace(/</g,"\\u003c")}}/>
+    <WebsiteNav current="blog"/>
+    <main>
+      <article className={`${s.article} ${s.blogArticle}`} lang={post.contentLocale} dir={post.contentLocale?"ltr":undefined} translate={post.contentLocale?"no":undefined}>
+        <header className={s.articleHeader}>
+        <Breadcrumbs items={[{name:"Blog",path:"/blog"},{name:post.title,path:`/blog/${post.slug}`}]}/>
+        <span className={s.badge}>{post.category}</span>
+        <h1>{post.title}</h1>
+        <p>{post.intro}</p>
+        <div className={s.byline}><span>By <Link href="/contact">AP3K</Link></span><time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time><span>{post.readingTime}</span></div>
+        </header>
+        <div className="mt-7"><BlogCover post={post} priority credit/></div>
+        <nav className={s.contents} aria-label="Article contents"><strong>In this guide</strong><ol>{post.sections.map((section,index)=><li key={section.heading}><a href={`#section-${index+1}`}>{section.heading.replace(/^\d+\.\s*/,"")}</a></li>)}</ol></nav>
+        {post.sections.map((section,index)=><section id={`section-${index+1}`} key={section.heading} className="scroll-mt-24">
+          <h2>{section.heading}</h2>
+          {section.paragraphs.map(paragraph=><p key={paragraph}>{paragraph}</p>)}
+          {section.steps&&<ol>{section.steps.map(item=><li key={item.title}><strong>{item.title}.</strong> {item.body}</li>)}</ol>}
+          {section.bullets&&<ul>{section.bullets.map(bullet=><li key={bullet}>{bullet}</li>)}</ul>}
+          {section.links&&<ul>{section.links.map(link=><li key={link.href}><Link href={link.href} prefetch={false}>{link.label}</Link></li>)}</ul>}
+          <GrowthSectionSources slug={post.slug} index={index}/>
+          {section.screenshot&&<TutorialScreenshot id={section.screenshot}/>}
+        </section>)}
+        {post.contentLocale&&<CommentDmLibrary expanded={`/blog/${post.slug}`===COMMENT_DM_HUB}/>}
+        <GrowthGuideExtras slug={post.slug}/>
+        {post.cover&&<TutorialGuides/>}
+        <div className="mt-10 border-t border-slate-200 pt-5 dark:border-white/10"><span className={s.credit}>Updated <time dateTime={post.updatedAt}>{formatDate(post.updatedAt)}</time></span><div className="mt-3 flex flex-wrap gap-2">{post.keywords.map(keyword=><span key={keyword} className={s.badge}>{keyword}</span>)}</div></div>
+        <section className={s.cta}><h2>Turn the next comment into a conversation.</h2><p>Choose a clear trigger, write a useful response and try your first AP3K campaign.</p>{products.length>0&&<p>{products.map(page=><Link key={page.slug} href={`/${page.slug}`} className="mr-4">{page.eyebrow} →</Link>)}</p>}<Link href="/sign-up" className={s.button}>Join for free</Link></section>
+      </article>
+      <section className={`${s.blog} pb-16`}><h2>Related articles</h2><div className={s.blogGrid}>{related.slice(0,4).map(item=><article className={s.blogCard} key={item.slug} lang={item.contentLocale} translate={item.contentLocale?"no":undefined}><Link href={localizePublicPath(`/blog/${item.slug}`,item.contentLocale??locale)} prefetch={false}><BlogCover post={item}/><h3>{item.title}</h3></Link><p>{item.description}</p></article>)}</div></section>
+    </main><WebsiteFooter/>
+  </div></LocalizedCopy>;
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(getServerLocale(), { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
+function formatDate(value:string) {
+  return new Intl.DateTimeFormat(getServerLocale(),{month:"long",day:"numeric",year:"numeric",timeZone:"UTC"}).format(new Date(`${value}T00:00:00Z`));
 }

@@ -3,7 +3,6 @@ import { UiText } from "@/components/i18n/localized-copy";
 
 
 import AP3KLogo from "@/components/global/ap3k-logo";
-import ThemeToggle from "@/components/global/theme-toggle";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
@@ -24,14 +23,13 @@ export default function WebsiteFooter() {
 
   return (
     <footer className="relative z-10 border-t border-slate-200 bg-white/60 px-4 py-10 backdrop-blur dark:border-white/10 dark:bg-transparent sm:px-8 lg:px-16">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_1.85fr]">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="grid gap-10">
           <div className="flex flex-col items-start gap-3">
             <AP3KLogo className="text-sm text-slate-700 dark:text-rf-muted" markClassName="h-7 w-7 rounded-lg" />
             <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-rf-muted">
               {t("footerDescription")}
             </p>
-            <ThemeToggle />
             <div className="mt-2 flex flex-wrap gap-2" aria-label="AP3K social media">
               {SOCIAL_LINKS.map(({ label, href: socialHref, Icon }) => (
                 <a key={label} href={socialHref} target="_blank" rel="noopener noreferrer" aria-label={`AP3K on ${label}`} className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:border-violet-400/40 dark:hover:text-violet-300">
@@ -40,26 +38,20 @@ export default function WebsiteFooter() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-8 text-xs sm:grid-cols-3">
-            <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("product")}</p>
-              <Link href={`${href("/")}#features`} className={linkClass}>{t("features")}</Link>
-              <Link href={href("/pricing")} className={linkClass}>{t("pricing")}</Link>
-              <Link href={href("/blog")} className={linkClass}>{t("blog")}</Link>
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">Instagram</p>
-              <Link href={href("/instagram-dm-automation")} className={linkClass}>{t("instagramDmAutomation")}</Link>
-              <Link href={href("/instagram-comment-automation")} className={linkClass}>{t("commentAutomation")}</Link>
-              <Link href={href("/manychat-alternative")} className={linkClass}>{t("manychatAlternative")}</Link>
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">{t("support")}</p>
-              <Link href={href("/help")} className={linkClass}>{t("knowledgeBase")}</Link>
-              <Link href={href("/contact")} className={linkClass}>{t("contactSupport")}</Link>
-              <a href="mailto:support@ap3k.com" className={linkClass}><UiText>{"support@ap3k.com"}</UiText></a>
-            </div>
-          </div>
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-8 text-xs sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              { title: "Product", links: [["Pricing", "/pricing"], ["Instagram automation", "/instagram-dm-automation"], ["Login", "/sign-in"], ["Join for free", "/sign-up"]] },
+              { title: "Resources", links: [["Blog", "/blog"], ["Support center", "/help"], ["Message templates", "/resources/instagram-comment-to-dm-templates"], ["Growth library", "/resources/instagram-growth-library"]] },
+              { title: "For", links: [["Creators", "/instagram-automation-for-creators"], ["Coaches", "/instagram-automation-for-coaches"], ["Ecommerce", "/instagram-automation-for-ecommerce"]] },
+              { title: "Solutions", links: [["Grow followers", "/solutions/grow-followers"], ["Increase sales", "/solutions/increase-sales"], ["Enhance engagement", "/solutions/enhance-engagements"], ["All solutions", "/solutions"]] },
+              { title: "Compare", links: [["ManyChat", "/manychat-alternative"], ["CreatorFlow", "/compare/creatorflow"], ["LinkDM", "/compare/linkdm"], ["Zorcha", "/compare/zorcha"], ["Linktree", "/compare/linktree"], ["Beacons", "/compare/beacons-ai"], ["HighLevel", "/compare/high-level"], ["All comparisons", "/compare"]] },
+              { title: "AP3K", links: [["Contact us", "/contact"], ["Privacy", "/privacy"], ["Terms of service", "/terms"], ["Refund policy", "/refund-policy"]] },
+            ].map(group => <div key={group.title} className="flex flex-col items-start gap-3">
+              <p className="mb-1 font-bold text-slate-900 dark:text-white"><UiText>{group.title}</UiText></p>
+              {group.links.map(([label,path]) => <Link key={path} href={href(path)} className={linkClass}><UiText>{label}</UiText></Link>)}
+              {group.title === "AP3K" && <a href="mailto:support@ap3k.com" className={`${linkClass} break-all`}>support@ap3k.com</a>}
+            </div>)}
+          </nav>
         </div>
         <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-xs dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-slate-600 dark:text-slate-400">{t("footerCopyright")}</p>

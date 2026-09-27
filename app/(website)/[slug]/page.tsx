@@ -1,3 +1,5 @@
+import ComparisonPage from "@/components/website/comparison-page";
+import { getComparison } from "@/lib/comparisons";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
 import CommercialLandingPage from "@/components/website/commercial-landing-page";
 import { COMMERCIAL_PAGES, getCommercialPage } from "@/lib/commercial-pages";
@@ -25,6 +27,10 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: Props): Metadata {
+  if (params.slug === "manychat-alternative") {
+    const comparison = getComparison("manychat")!;
+    return localizedMetadata({ title: "ManyChat Alternative: AP3K vs ManyChat", description: comparison.description, openGraph: { images: ["https://ap3k.com/opengraph-image"] } }, "/manychat-alternative", "en");
+  }
   const page = getCommercialPage(params.slug);
   if (!page) return {};
   const pathname = `/${page.slug}`;
@@ -55,5 +61,6 @@ export function generateMetadata({ params }: Props): Metadata {
 export default function CommercialPageRoute({ params }: Props) {
   const page = getCommercialPage(params.slug);
   if (!page) notFound();
+  if (params.slug === "manychat-alternative") return <ComparisonPage page={getComparison("manychat")!} />;
   return <CommercialLandingPage page={page} />;
 }
