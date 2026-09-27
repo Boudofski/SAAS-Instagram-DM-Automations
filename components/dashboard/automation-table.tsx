@@ -247,10 +247,10 @@ function CampaignMobileCard({
   const replySummary = getReplySummary(automation);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
+    <article onClick={(event) => openAnalyticsRow(event, automationAnalyticsHref(slug, automation))} className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
       <div className="flex items-start gap-2.5 sm:gap-3">
         <Link
-          href={automationEditHref(slug, automation)}
+          href={automationAnalyticsHref(slug, automation)}
           aria-label={translateUi("Open {name}", locale).replace("{name}", automation.name || translateUi("Automation", locale))}
           className="shrink-0"
         >
@@ -258,7 +258,7 @@ function CampaignMobileCard({
         </Link>
         <div className="min-w-0 flex-1">
           <Link
-            href={automationEditHref(slug, automation)}
+            href={automationAnalyticsHref(slug, automation)}
             className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
           >
             {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
@@ -281,13 +281,13 @@ function CampaignMobileCard({
       </div>
       {compact ? (
         <Link
-          href={automationEditHref(slug, automation)}
+          href={automationAnalyticsHref(slug, automation)}
           className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
         ><UiText>{"Manage automation"}</UiText></Link>
       ) : (
         <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_40px] gap-2">
           <Link
-            href={automationEditHref(slug, automation)}
+            href={automationAnalyticsHref(slug, automation)}
             className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-900 transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
           ><UiText>{"Open automation"}</UiText></Link>
           <DropdownMenu>
@@ -374,13 +374,13 @@ function CampaignDesktopRow({
   const replySummary = getReplySummary(automation);
 
   return (
-    <div className="grid grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
+    <div onClick={(event) => openAnalyticsRow(event, automationAnalyticsHref(slug, automation))} className="cursor-pointer grid grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} source={source} />
           <div className="min-w-0 flex-1">
             <Link
-              href={automationEditHref(slug, automation)}
+              href={automationAnalyticsHref(slug, automation)}
               className="block max-w-full truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
             >
               {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
@@ -587,6 +587,10 @@ function storyTriggerLabel(value: string) {
   return "Mention";
 }
 
+function automationAnalyticsHref(slug: string, automation: any) {
+  return `/dashboard/${encodeURIComponent(slug)}/automation/${encodeURIComponent(automation.id)}/analytics`;
+}
+
 function automationEditHref(slug: string, automation: any) {
   const source = automationSource(automation).toLowerCase();
   return `/dashboard/${slug}/automation/new?edit=${automation.id}&type=${source}`;
@@ -651,4 +655,11 @@ function ReplyPill({
       <UiText>{compact ? summary.compactLabel : summary.label}</UiText>
     </span>
   );
+}
+
+function openAnalyticsRow(event: React.MouseEvent<HTMLElement>, href: string) {
+  const target = event.target as HTMLElement;
+  if (event.defaultPrevented || target.closest("a,button,input,select,[role=menuitem],[role=menu]") || window.getSelection()?.toString()) return;
+  const link = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>("a")).find(item => item.getAttribute("href") === href);
+  link?.click();
 }

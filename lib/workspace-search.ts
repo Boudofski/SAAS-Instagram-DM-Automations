@@ -94,7 +94,7 @@ export async function searchWorkspaceForClerkUser(clerkId: string, query: string
   ]);
 
   const basePath = dashboardPath(user.clerkId);
-  const campaignHref = (automationId: string) => `${basePath}/automation/new?edit=${encodeURIComponent(automationId)}`;
+  const campaignHref = (automationId: string) => `${basePath}/automation/${encodeURIComponent(automationId)}/analytics`;
 
   return {
     campaigns: campaignRows.slice(0, WORKSPACE_SEARCH_RESULT_LIMIT).map((campaign) => ({
