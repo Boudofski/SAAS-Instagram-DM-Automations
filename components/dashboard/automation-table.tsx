@@ -20,6 +20,7 @@ import {
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
 import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
+import { toast } from "sonner";
 import { MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -90,7 +91,7 @@ export default function AutomationTable({
 
   function handleActivate(id: string, active: boolean) {
     startTransition(() => {
-      void activateAutomation(id, active).then(() => router.refresh());
+      void activateAutomation(id, active).then(result => { if(result.status===200)router.refresh();else toast.error(String(result.data)); }).catch(()=>toast.error("Could not update this automation. Try again."));
     });
   }
 

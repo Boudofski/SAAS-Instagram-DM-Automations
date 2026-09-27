@@ -1479,6 +1479,11 @@ async function processEntry(
       const fullWidthCallbacksReady = openingDmEnabled
         ? await ensureInstagramButtonCallbacks(integrationRaw?.id, token)
         : false;
+      // Establish the baseline before the first follow request; a button press is never proof of a follow.
+      if (integrationRaw && (automation.followGateRequired || readFlow(listener.flowDefinition)?.nodes.some(n=>n.kind === "condition" && n.field === "_followsBusiness"))) {
+        const baseline = await getInstagramRecipientProfile({token, recipientId:commenterId});
+        await observeAutomationFollow({integrationId:integrationRaw.id,automationId:automation.id,recipientIgId:commenterId,followsBusiness:baseline?.followsBusiness});
+      }
       const dmResult = await sendInstagramCommentPrivateReply({
         // Use the full-width postback only after both subscription layers are
         // confirmed. Otherwise retain the native quick-reply fallback.
@@ -1949,7 +1954,7 @@ async function processConfiguredMessageAutomation(params: {
   if (!dmFlowAction && !params.emailCompletionId) {
     await recordAutomationHit({ automationId: automation.id, eventKey: `message:${messageMid ?? webhookEventId}`, recipientIgId: senderId, source: matchedKeyword.startsWith("story_") ? "STORY" : "DM" });
   }
-  if (automation.followGateRequired) {
+  if (automation.followGateRequired || readFlow(automation.listener.flowDefinition)?.nodes.some(n=>n.kind === "condition" && n.field === "_followsBusiness")) {
     const followProfile = params.senderProfile ?? await getInstagramRecipientProfile({ token: tokenResolution.token, recipientId: senderId });
     params.senderProfile = followProfile;
     await observeAutomationFollow({ integrationId: integration.id, automationId: automation.id, recipientIgId: senderId, followsBusiness: followProfile?.followsBusiness });
