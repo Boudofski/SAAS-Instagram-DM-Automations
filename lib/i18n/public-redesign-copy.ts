@@ -1,6 +1,24 @@
 import { SUPPORTED_LOCALES, type Locale } from "./config";
 type Row = readonly [string, string, string, string, string];
 const rows: Row[] = [
+  ["Advanced", "Avancé", "Avanzado", "Erweitert", "Avançado"],
+  ["Automation", "Automatisation", "Automatización", "Automatisierung", "Automação"],
+  ["Insights", "Statistiques", "Estadísticas", "Auswertungen", "Estatísticas"],
+  ["Safety", "Protection", "Protección", "Schutz", "Proteção"],
+  ["Free plan includes", "L’offre gratuite inclut", "El plan gratuito incluye", "Im kostenlosen Tarif enthalten", "O plano grátis inclui"],
+  ["Export leads", "Exporter les prospects", "Exportar contactos", "Leads exportieren", "Exportar contactos"],
+  ["Compare plans & features", "Comparer les offres et fonctionnalités", "Comparar planes y funciones", "Tarife und Funktionen vergleichen", "Comparar planos e funcionalidades"],
+  ["Comparison billing interval", "Période de facturation du comparatif", "Periodo de facturación de la comparación", "Abrechnungszeitraum des Vergleichs", "Período de faturação da comparação"],
+  ["Swipe to compare all plans", "Faites glisser pour comparer toutes les offres", "Desliza para comparar todos los planes", "Wischen, um alle Tarife zu vergleichen", "Deslize para comparar todos os planos"],
+  [", billed yearly", ", facturé annuellement", ", facturado anualmente", ", jährlich abgerechnet", ", faturado anualmente"],
+  ["billed monthly", "facturé mensuellement", "facturado mensualmente", "monatlich abgerechnet", "faturado mensalmente"],
+  ["Free forever", "Gratuit pour toujours", "Gratis para siempre", "Dauerhaft kostenlos", "Grátis para sempre"],
+  ["Cancel anytime", "Annulez à tout moment", "Cancela cuando quieras", "Jederzeit kündbar", "Cancele quando quiser"],
+  ["$79 billed yearly", "79 $ facturés par an", "79 $ facturados al año", "79 $ jährlich abgerechnet", "79 $ faturados por ano"],
+  ["$279 billed yearly", "279 $ facturés par an", "279 $ facturados al año", "279 $ jährlich abgerechnet", "279 $ faturados por ano"],
+  ["$9 billed monthly", "9 $ facturés par mois", "9 $ facturados al mes", "9 $ monatlich abgerechnet", "9 $ faturados por mês"],
+  ["$29 billed monthly", "29 $ facturés par mois", "29 $ facturados al mes", "29 $ monatlich abgerechnet", "29 $ faturados por mês"],
+  ["Save $", "Économisez $", "Ahorra $", "Spare $", "Poupe $"],
   [
     "Start free. Grow at your pace.",
     "Commencez gratuitement. Avancez à votre rythme.",
