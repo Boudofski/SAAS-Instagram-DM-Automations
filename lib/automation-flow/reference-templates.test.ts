@@ -60,6 +60,17 @@ describe("observed automation templates", () => {
     expect(templatePreset("comment-opener").openingButton).toBe("Get info");
   });
 
+  it("gates the basic follower template on a verified follow and rechecks after each reply", () => {
+    const graph = templateFlow("followers");
+    const check = graph.nodes.find(n=>n.id===graph.entry)!;
+    expect(branchTarget(check, {_followsBusiness:"true"}, 0)).toBe("delivery");
+    for (const status of ["false", ""]) expect(branchTarget(check, {_followsBusiness:status}, 0)).toBe("askFollow");
+    expect(branchTarget(check, {}, 0)).toBe("askFollow");
+    const ask = graph.nodes.find(n=>n.id==="askFollow")!;
+    expect(responseTarget(ask, "I followed")?.next).toBe(graph.entry);
+    expect(validateFlow(configured("followers")).errors).toEqual([]);
+  });
+
   it("reproduces the comment-to-DM reply boundary before the ten-second delay", () => {
     const flow = templateFlow("comment-delay");
     expect(flow.entry).toBe("opener");

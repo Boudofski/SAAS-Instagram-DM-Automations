@@ -42,6 +42,7 @@ export default function EditorPreview({
   toolbar,
   messagesRef,
   className = "",
+  postPlaceholder,
 }: {
   commentPreview?: string;
   data: Partial<WizardData>;
@@ -57,6 +58,7 @@ export default function EditorPreview({
   toolbar?: ReactNode;
   messagesRef?: Ref<HTMLDivElement>;
   className?: string;
+  postPlaceholder?: string;
 }) {
   const tr = useUi();
   const reduced = useReducedMotion();
@@ -173,7 +175,7 @@ export default function EditorPreview({
                     />
                   ) : (
                     <div className={styles.placeholder}>
-                      {tr(
+                      {postPlaceholder || tr(
                         data.post?.postid === "ANY"
                           ? "Any post or Reel"
                           : "You haven’t picked a post",

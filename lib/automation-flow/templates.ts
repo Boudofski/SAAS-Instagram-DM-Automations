@@ -431,6 +431,11 @@ const message = (
 function referenceTemplateFlow(id?: string): Flow | null {
   if (!TEMPLATES.some((template) => template.id === id)) return null;
   const flow = (entry: string, nodes: FlowNode[]): Flow => ({ version: 1, entry, oncePerContact: false, nodes });
+  if (id === "followers") return flow("checkFollow", [
+    { id: "checkFollow", kind: "condition", label: "Check follow status", field: "_followsBusiness", operator: "eq", equals: "true", yes: "delivery", no: "askFollow", x: 100, y: 180 },
+    { id: "askFollow", kind: "question", label: "Ask to follow", text: "Follow this account to get the link, then tap below so we can check your follow.", field: "followConfirmation", options: [{ label: "I followed", next: "checkFollow" }], x: 480, y: 420 },
+    { id: "delivery", kind: "message", label: "Send your content", text: "Thanks for following! Here is the link you requested.", links: [{ label: "Get the link", url: "" }], next: null, x: 860, y: 80 },
+  ]);
   if (id === "comment-delay") return flow("opener", [
     { id: "opener", kind: "question", label: "Opening message", text: "Thanks for your comment .Want the details?", field: "requestedDetails", options: [{ label: "Get info", next: "delay" }], x: 100, y: 180 },
     { id: "delay", kind: "delay", label: "Wait 10 seconds", seconds: 10, next: "details", x: 480, y: 180 },

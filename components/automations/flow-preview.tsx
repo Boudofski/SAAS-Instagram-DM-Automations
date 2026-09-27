@@ -326,6 +326,7 @@ export default function FlowPreview({
         </label>
       )}
       <EditorPreview
+        postPlaceholder={trigger?.postScope === "next" && !trigger.post?.media ? "Your next published post or Reel" : undefined}
         className={styles.interactivePreview}
         username={username}
         avatar={avatar}
@@ -372,6 +373,8 @@ export default function FlowPreview({
                 }
               />
             ))}
+            {simulated._linkClicked === "true" && <p role="status" className={styles.interaction}>Link click recorded in this preview.</p>}
+            {error && <p role="alert" className="text-xs text-red-600 dark:text-red-300">{error}</p>}
             {!messages.length && !error && (
               <p className={styles.interaction}>
                 Add a message to see your conversation here.
@@ -445,11 +448,6 @@ export default function FlowPreview({
           </form>
         }
       />
-      {error && (
-        <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-300">
-          {error}
-        </p>
-      )}
       <details className="mt-4 rounded-xl border border-slate-200 p-3 dark:border-white/10">
         <summary className="cursor-pointer text-sm font-medium">
           Simulated contact
