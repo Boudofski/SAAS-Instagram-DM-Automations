@@ -52,7 +52,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const commentReplyOnlyReviewMode = appReviewMode && !messagingReviewMode;
   const { data: posts, isLoading: postsLoading, isFetching: postsFetching, refetch: refetchPosts } = useQueryAutomationPosts(needsCommentData);
   const { data: user, isPending: userPending, isError: userError, refetch: refetchUser } = useQueryUser();
-  const { data: editing, isLoading: editingLoading } = useQueryAutomations(editId ?? "", Boolean(editId));
+  const { data: editing, isPending: editingPending } = useQueryAutomations(editId ?? "", Boolean(editId));
   const { data, update, activate, isSubmitting, error } = useWizard(slug, editId, user?.data?.integrations?.[0]?.id ?? "");
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [followUpsReady, setFollowUpsReady] = useState(false);
@@ -178,7 +178,7 @@ function AutomationSetup({ params, searchParams }: Props) {
     return <AutomationTypePicker slug={slug} />;
   }
 
-  if (editId && editingLoading) {
+  if (editId && editingPending) {
     return <div className="grid min-h-screen place-items-center bg-slate-50 dark:bg-[#050816]"><Loader2 className="h-6 w-6 animate-spin text-rf-purple" /></div>;
   }
 
