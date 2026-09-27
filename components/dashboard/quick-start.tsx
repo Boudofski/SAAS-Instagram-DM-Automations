@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Clapperboard, CirclePlay, MessageCircle } from "lucide-react";
 import { UiText } from "@/components/i18n/localized-copy";
 export default function QuickStart({ slug }: { slug: string }) {
-  return <section aria-labelledby="quick-start-title" className="ap3k-content-enter"><div className="mb-3 flex items-center justify-between gap-3"><h2 id="quick-start-title" className="text-sm font-bold text-slate-700 dark:text-slate-200"><UiText>What would you like to automate?</UiText></h2><Link href={`/dashboard/${slug}/automation/new`} className="text-xs font-semibold text-violet-700 dark:text-violet-300"><UiText>View all</UiText></Link></div><div className="grid gap-3 sm:grid-cols-3">{[
+  return <section aria-labelledby="quick-start-title" className="ap3k-content-enter"><div className="mb-3 flex items-center justify-between gap-3"><h2 id="quick-start-title" className="text-sm font-bold text-slate-700 dark:text-slate-200"><UiText>What would you like to automate?</UiText></h2><Link href={`/dashboard/${slug}/automation/new`} className="shrink-0 whitespace-nowrap text-xs font-semibold text-violet-700 dark:text-violet-300"><UiText>View all</UiText></Link></div><div className="grid gap-3 sm:grid-cols-3">{[
     {type:"comment",title:"Post automation",subtitle:"Replies when someone comments on a post or reel",icon:Clapperboard,color:"from-violet-500 to-blue-500"},
     {type:"story",title:"Story automation",subtitle:"Replies to story replies and reactions",icon:CirclePlay,color:"from-fuchsia-500 to-violet-500"},
     {type:"dm",title:"Chat automation",subtitle:"Replies to keywords sent in DMs",icon:MessageCircle,color:"from-orange-400 to-pink-500"},
