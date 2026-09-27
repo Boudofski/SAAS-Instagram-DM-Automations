@@ -1,406 +1,127 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { activateAutomation } from "@/actions/automation";
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  BarChart3,
-  Globe2,
-  MousePointer2,
-  Pencil,
-  UserPlus,
-  Users,
-  Zap,
-} from "lucide-react";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
-import { type AutomationAnalytics } from "@/lib/automation-analytics";
-export default function AutomationAnalyticsView({
-  data,
-  slug,
-}: {
-  data: AutomationAnalytics;
-  slug: string;
-}) {
+import { refreshSavedAutomation } from "@/lib/automation-query-cache";
+import { BarChart3, Lightbulb, MessageCircleMore, MousePointerClick, SquarePen, UserRoundCheck, UsersRound } from "lucide-react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import type { AutomationAnalytics } from "@/lib/automation-analytics";
+import "./automation-analytics.css";
+
+export default function AutomationAnalyticsView({ data, slug }: { data: AutomationAnalytics; slug: string }) {
   const [tab, setTab] = useState<"hits" | "clicks" | "follows">("hits");
   const { automation: a, totals: t } = data;
   const [active, setActive] = useState(a.active);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  useEffect(() => setActive(a.active), [a.active]);
   async function toggle() {
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
-      const r = await activateAutomation(a.id, !active);
-      if (r.status === 200) setActive(!active);
-      else setError(String(r.data));
+      const next = !active;
+      const result = await activateAutomation(a.id, next);
+      if (result.status === 200) {
+        setActive(next);
+        await refreshSavedAutomation(queryClient, a.id);
+        router.refresh();
+      } else setError(String(result.data));
     } catch {
       setError("Could not update this automation. Try again.");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
-  const panel =
-    "rounded-[20px] border border-slate-200/80 bg-white dark:border-white/[.08] dark:bg-[#111827]";
+  const sourceLabel = a.source === "COMMENT" ? "Comment" : a.source === "STORY" ? "Story" : "Message";
+  const sourceNoun = sourceLabel.toLowerCase();
+  const followDescription = "New followers are counted only when Instagram confirms a change from not following to following within seven days of a follow check. Existing followers and unknown statuses are excluded.";
   const metrics = [
-    {
-      label: "Total hits",
-      value: t.hits.toLocaleString(),
-      detail: "Automation triggers received",
-      Icon: Zap,
-      color: "text-violet-500 bg-violet-50 dark:bg-violet-500/10",
-    },
-    {
-      label: "Click rate",
-      value: `${t.clickRate}%`,
-      detail: `${t.clicks} of ${t.uniqueHitRecipients} people opened a link`,
-      Icon: MousePointer2,
-      color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10",
-    },
-    {
-      label: "Follow conversion",
-      value: `${t.followRate}%`,
-      detail: `${t.newFollowers} of ${t.eligibleNonFollowers} verified non-followers followed`,
-      Icon: Users,
-      color: "text-orange-500 bg-orange-50 dark:bg-orange-500/10",
-    },
-    {
-      label: "New followers",
-      value: t.newFollowers.toLocaleString(),
-      detail: "Verified through this automation",
-      Icon: UserPlus,
-      color: "text-blue-500 bg-blue-50 dark:bg-blue-500/10",
-    },
+    { label: "Total hits", value: t.hits.toLocaleString(), detail: `${sourceLabel} triggers received`, Icon: MessageCircleMore, explanation: "Recorded automation triggers. Duplicate webhook deliveries are counted once." },
+    { label: "Click rate", value: `${t.clickRate.toFixed(1)}%`, detail: `${t.clicks.toLocaleString()} of ${t.uniqueHitRecipients.toLocaleString()} opened link`, Icon: MousePointerClick, explanation: "Unique people who opened a tracked link divided by unique people who triggered this automation." },
+    { label: "Follow conversion", value: `${t.followRate.toFixed(1)}%`, detail: `${t.newFollowers.toLocaleString()} followed via Ask-to-Follow`, Icon: UsersRound, explanation: `${t.newFollowers.toLocaleString()} of ${t.eligibleNonFollowers.toLocaleString()} verified non-followers followed. ${followDescription}` },
+    { label: "New followers", value: t.newFollowers.toLocaleString(), detail: "From this automation", Icon: UserRoundCheck, explanation: followDescription },
   ];
   const funnel = [
-    { label: "Hits", value: t.hits, color: "bg-violet-500" },
-    { label: "Clicks", value: t.clicks, color: "bg-emerald-500" },
-    { label: "Follows", value: t.newFollowers, color: "bg-orange-400" },
+    { label: "Hits", detail: `${sourceNoun} triggers`, value: t.hits, color: "#a5b4fc" },
+    { label: "Clicks", detail: "opened the link", value: t.clicks, color: "#84bf46" },
+    { label: "Follows", detail: "followed to unlock", value: t.newFollowers, color: "#e99b20" },
   ];
+  const tabDescription = { hits: `Latest ${sourceNoun} triggers`, clicks: "Latest link opens", follows: "Latest new followers" };
+  const hasDailyActivity = data.daily.some(day => day.hits > 0 || day.clicks > 0);
+  const dateLabel = (date: string, weekday = false) => new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", weekday ? { weekday: "short", timeZone: "UTC" } : { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   return (
-    <div className="font-sans mx-auto max-w-[1320px] px-4 py-6 text-slate-900 dark:text-slate-100 sm:px-7 sm:py-8">
-      <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-        <Link
-          className="inline-flex items-center gap-2 hover:text-violet-500"
-          href={`/dashboard/${slug}/automation`}
-        >
-          <ArrowLeft size={15} />
-          Automations
-        </Link>
-        <span>/</span>
-        <span className="text-slate-700 dark:text-slate-200">Analytics</span>
-      </nav>
-      <section className={`${panel} mb-5 flex items-center gap-4 p-5 sm:p-6`}>
-        {a.postThumbnail ? (
-          <img
-            src={a.postThumbnail}
-            alt="Automation post"
-            className="h-16 w-16 shrink-0 rounded-xl object-cover"
-          />
-        ) : (
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-500 dark:bg-violet-500/10">
-            <BarChart3 size={25} />
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="break-words text-lg font-semibold sm:text-xl">
-              {a.name}
-            </h1>
-            <span
-              className={`rounded-full px-2 py-1 text-[10px] font-medium ${active ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
-            >
-              {active ? "Active" : "Paused"}
-            </span>
-          </div>
-          <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-            Created {new Date(a.createdAt).toLocaleDateString()} ·{" "}
-            {a.responseCount.toLocaleString()} auto replies ·{" "}
-            {a.source === "COMMENT"
-              ? "Post automation"
-              : a.source === "STORY"
-                ? "Story automation"
-                : "Chat automation"}
-          </p>
+    <main className="automation-analytics-page" aria-label="Automation analytics">
+      <section className="aa-panel aa-summary">
+        {a.postThumbnail ? <img src={a.postThumbnail} alt="Automation post" className="aa-thumbnail" /> : <span className="aa-thumbnail aa-placeholder"><BarChart3 size={25} /></span>}
+        <div className="aa-summary-copy">
+          <div className="aa-title-row"><h1>{a.name}</h1><span className={`aa-status ${active ? "aa-status-active" : ""}`}><i />{active ? "Active" : "Paused"}</span></div>
+          <p>Created {new Date(a.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })} · {a.responseCount.toLocaleString()} Auto Replies · {a.messageType ?? `${sourceLabel} automation`}</p>
         </div>
-        <Link
-          aria-label="Edit automation"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:text-violet-500 dark:border-white/10"
-          href={`/dashboard/${slug}/automation/new?edit=${a.id}`}
-        >
-          <Pencil size={16} />
-        </Link>
-        <button
-          role="switch"
-          aria-label="Automation active"
-          aria-checked={active}
-          disabled={busy}
-          onClick={() => void toggle()}
-          className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-50 ${active ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`}
-        >
-          <span
-            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${active ? "left-6" : "left-1"}`}
-          />
-        </button>
+        <div className="aa-summary-actions">
+          <Link aria-label="Edit automation" title="Edit automation" className="aa-edit" href={`/dashboard/${slug}/automation/new?edit=${a.id}`}><SquarePen size={23} /></Link>
+          <button type="button" role="switch" aria-label="Automation active" aria-checked={active} disabled={busy} onClick={() => void toggle()} className={`aa-switch ${active ? "aa-switch-on" : ""}`}><span /></button>
+        </div>
       </section>
-      {error && (
-        <p
-          role="alert"
-          className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
-        >
-          {error}
-        </p>
-      )}
-      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, detail, Icon, color }) => (
-          <section key={label} className={`${panel} p-5`}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {label}
-              </p>
-              <span
-                className={`grid h-8 w-8 place-items-center rounded-lg ${color}`}
-              >
-                <Icon size={16} />
-              </span>
-            </div>
-            <p className="mt-2 text-[30px] font-semibold tracking-tight">
-              {value}
-            </p>
-            <p className="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-              {detail}
-            </p>
-          </section>
-        ))}
+      {error && <p role="alert" className="aa-error">{error}</p>}
+      <div className="aa-metrics">
+        {metrics.map(({ label, value, detail, Icon, explanation }) => <section key={label} className="aa-panel aa-metric" aria-label={label}>
+          <span className="aa-metric-icon"><Icon size={21} strokeWidth={1.8} /></span>
+          <h2 title={explanation}>{label}</h2><p className="aa-metric-value">{value}</p><p className="aa-metric-detail">{detail}</p>
+        </section>)}
       </div>
-      <div className="mb-5 grid gap-5 lg:grid-cols-2">
-        <section className={`${panel} p-5 sm:p-6`}>
-          <h2 className="text-sm font-semibold">Conversion funnel</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            How your audience moves through this automation
-          </p>
-          <div className="mt-7 space-y-5">
-            {funnel.map((f) => (
-              <div key={f.label}>
-                <div className="mb-2 flex items-center gap-2 text-xs">
-                  <span className={`h-2 w-2 rounded-full ${f.color}`} />
-                  <span className="text-slate-500 dark:text-slate-400">
-                    {f.label}
-                  </span>
-                  <span className="ms-auto font-semibold">
-                    {f.value.toLocaleString()}
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
-                  <div
-                    className={`h-full rounded-full ${f.color}`}
-                    style={{
-                      width: `${t.hits ? Math.min(100, (f.value / t.hits) * 100) : 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          {!t.hits && (
-            <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-              Your funnel will fill as people interact with this automation.
-            </p>
-          )}
+      <div className="aa-chart-grid">
+        <section className="aa-panel aa-funnel">
+          <h2>Conversion funnel</h2><p className="aa-subtitle">From {sourceNoun} to follow</p>
+          <div className="aa-funnel-steps">{funnel.map(item => <div key={item.label}>
+            <div className="aa-funnel-label"><i style={{ background: item.color }} /><strong>{item.label}</strong><span>{item.detail}</span><b>{item.value.toLocaleString()}</b></div>
+            <div className="aa-funnel-track" role="meter" aria-label={item.label} aria-valuenow={item.value} aria-valuemin={0} aria-valuemax={Math.max(1, t.hits, item.value)}>
+              <div style={{ background: item.color, width: `${t.hits ? Math.min(100, item.value / t.hits * 100) : 0}%` }} />
+            </div>
+          </div>)}</div>
+          {!t.hits && <p className="aa-no-activity"><Lightbulb size={18} /><span>No activity yet. Once {a.source === "COMMENT" ? "comments" : a.source === "STORY" ? "story interactions" : "messages"} come in, the funnel fills here.</span></p>}
         </section>
-        <section className={`${panel} min-w-0 p-5 sm:p-6`}>
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Daily activity</h2>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              Last 7 days · UTC
-            </span>
-          </div>
-          <div className="mb-4 mt-3 flex gap-4 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-blue-500" />
-              Hits
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-emerald-500" />
-              Clicks
-            </span>
-          </div>
-          <div className="h-56 w-full">
+        <section className="aa-panel aa-daily">
+          <header className="aa-chart-header"><div><h2>Daily activity</h2><p className="aa-subtitle">Hits vs clicks over the last 7 days</p></div><div className="aa-legend"><span><i className="aa-hit-dot" />Hits</span><span><i className="aa-click-dot" />Clicks</span></div></header>
+          <div className="aa-chart" role="img" aria-label="Hits and clicks over the last seven days, grouped by UTC date">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={data.daily}
-                margin={{ top: 8, right: 8, left: -28, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 5"
-                  stroke="currentColor"
-                  opacity={0.07}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(v) =>
-                    new Date(`${v}T12:00:00Z`).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={20}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 12,
-                    fontSize: 12,
-                    color: "#334155",
-                  }}
-                />
-                <Line
-                  name="Hits"
-                  dataKey="hits"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  name="Clicks"
-                  dataKey="clicks"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={false}
-                />
+              <LineChart data={data.daily} margin={{ top: 14, right: 12, left: 12, bottom: 0 }}>
+                <XAxis dataKey="date" tickFormatter={value => dateLabel(value, true)} tick={{ fontSize: 12, fill: "var(--aa-faint)" }} axisLine={false} tickLine={false} tickMargin={14} interval="preserveStartEnd" minTickGap={16} />
+                <YAxis hide={!hasDailyActivity} allowDecimals={false} domain={[0, "auto"]} tick={{ fontSize: 11, fill: "var(--aa-muted)" }} width={30} axisLine={false} tickLine={false} />
+                <Tooltip labelFormatter={value => `${dateLabel(String(value))} · UTC`} contentStyle={{ background: "var(--aa-panel)", border: "1px solid var(--aa-border)", borderRadius: 10, color: "var(--aa-text)", fontSize: 12 }} />
+                <Line name="Clicks" dataKey="clicks" stroke="#84bf46" strokeWidth={2} dot={false} isAnimationActive={false} />
+                <Line name="Hits" dataKey="hits" stroke="#465fff" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </section>
       </div>
-      <section className={`${panel} mb-5 p-5 sm:p-6`}>
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Globe2 size={16} className="text-slate-500 dark:text-slate-400" />
-          Clicks by country
-        </h2>
-        {!data.countries.length ? (
-          <p className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
-            Country data appears when someone opens a tracked link.
-          </p>
-        ) : (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {data.countries.map((c) => (
-              <div
-                key={c.country ?? "unknown"}
-                className="flex items-center gap-4 text-xs"
-              >
-                <span className="w-24">{countryName(c.country)}</span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
-                  <div
-                    className="h-full rounded-full bg-violet-500"
-                    style={{
-                      width: `${(c.clicks / Math.max(1, t.clicks)) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="w-8 text-right text-slate-500 dark:text-slate-400">
-                  {c.clicks}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+      <section className="aa-panel aa-countries"><h2>Clicks by country</h2><p className="aa-subtitle">Top regions opening your link</p>
+        {!data.countries.length ? <p className="aa-empty aa-empty-muted">No data available</p> : <div className="aa-country-list">{data.countries.map(country => <div className="aa-country" key={country.country ?? "unknown"}>
+          <span>{countryName(country.country)}</span><div className="aa-country-track"><div style={{ width: `${Math.min(100, country.clicks / Math.max(1, t.clicks) * 100)}%` }} /></div><strong>{country.clicks.toLocaleString()}</strong>
+        </div>)}</div>}
       </section>
-      <section className={`${panel} overflow-hidden`}>
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-5 dark:border-white/5 sm:px-6">
-          <h2 className="text-sm font-semibold">Recent activity</h2>
-          <div
-            role="tablist"
-            aria-label="Activity type"
-            className="flex rounded-lg bg-slate-100 p-1 dark:bg-white/5"
-          >
-            {(["hits", "clicks", "follows"] as const).map((v) => (
-              <button
-                role="tab"
-                aria-selected={tab === v}
-                key={v}
-                onClick={() => setTab(v)}
-                className={`rounded-md px-4 py-1.5 text-xs capitalize ${tab === v ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+      <section className="aa-panel aa-recent">
+        <header><div><h2>Recent activity</h2><p className="aa-subtitle">{tabDescription[tab]}</p></div>
+          <div role="tablist" aria-label="Activity type" className="aa-tabs">{(["hits", "clicks", "follows"] as const).map((value, index, values) => <button type="button" role="tab" aria-selected={tab === value} aria-controls="automation-activity-panel" id={`automation-activity-${value}`} tabIndex={tab === value ? 0 : -1} key={value} onClick={() => setTab(value)} onKeyDown={event => {
+            const next = event.key === "ArrowRight" ? (index + 1) % values.length : event.key === "ArrowLeft" ? (index + values.length - 1) % values.length : event.key === "Home" ? 0 : event.key === "End" ? values.length - 1 : -1;
+            if (next < 0) return;
+            event.preventDefault(); setTab(values[next]); document.getElementById(`automation-activity-${values[next]}`)?.focus();
+          }}>{value[0].toUpperCase() + value.slice(1)}</button>)}</div>
         </header>
-        {!data.recent[tab].length ? (
-          <div className="px-5 py-12 text-center">
-            <ArrowUpRight size={22} className="mx-auto mb-3 text-slate-300" />
-            <p className="text-sm font-medium">No {tab} yet</p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              New activity will appear here as your automation runs.
-            </p>
-          </div>
-        ) : (
-          <div
-            role="tabpanel"
-            className="divide-y divide-slate-100 dark:divide-white/5"
-          >
-            {data.recent[tab].map((r) => (
-              <div
-                key={r.id}
-                className="flex flex-wrap items-center gap-3 px-5 py-4 text-xs sm:px-6"
-              >
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-50 text-violet-500 dark:bg-violet-500/10">
-                  <Users size={14} />
-                </span>
-                <span className="font-medium">Contact {r.recipient}</span>
-                <span className="text-slate-500 dark:text-slate-400">
-                  {r.source ??
-                    (r.country
-                      ? countryName(r.country)
-                      : tab === "follows"
-                        ? "Verified new follower"
-                        : "Tracked link")}
-                </span>
-                <time
-                  className="ms-auto text-slate-500 dark:text-slate-400"
-                  dateTime={r.createdAt}
-                >
-                  {new Date(r.createdAt).toLocaleString()}
-                </time>
-              </div>
-            ))}
-          </div>
-        )}
+        <div role="tabpanel" id="automation-activity-panel" aria-labelledby={`automation-activity-${tab}`} tabIndex={0}>
+          {!data.recent[tab].length ? <p className="aa-empty">No data available</p> : <div className="aa-activity-list">{data.recent[tab].map(row => <div className="aa-activity" key={row.id}>
+            <span className="aa-contact-icon"><UsersRound size={17} /></span><strong>Contact {row.recipient}</strong><span className="aa-activity-kind">{tab === "hits" ? `${row.source === "COMMENT" ? "Comment" : row.source === "STORY" ? "Story" : "Message"} trigger` : tab === "follows" ? "New follower" : countryName(row.country ?? null)}</span><time dateTime={row.createdAt}>{new Date(row.createdAt).toLocaleString()}</time>
+          </div>)}</div>}
+        </div>
       </section>
-      <p className="mt-4 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-        {data.trackingStartedAt
-          ? `Tracked activity since ${new Date(data.trackingStartedAt).toLocaleDateString()}. `
-          : "Tracking begins with new activity. "}
-        Followers count only when Instagram confirms a change from not following
-        to following after a follow check. Existing followers and unknown
-        statuses are excluded.
-      </p>
-    </div>
+      <p className="aa-tracking-note">{data.trackingStartedAt ? `Tracked activity since ${new Date(data.trackingStartedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}.` : "Tracking starts with new activity."} <span title={followDescription}>New followers are verified through this automation.</span></p>
+    </main>
   );
 }
 function countryName(code: string | null) {
   if (!code) return "Unknown";
-  try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
-  } catch {
-    return code;
-  }
+  try { return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code; } catch { return code; }
 }

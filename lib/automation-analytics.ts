@@ -6,7 +6,7 @@ export const ANALYTICS_RECENT_LIMIT = 50;
 
 export type AutomationActivity = { id: string; recipient: string; createdAt: string; source?: string; country?: string | null };
 export type AutomationAnalytics = {
-  automation: { id: string; name: string; active: boolean; createdAt: string; source: string; followGateRequired: boolean; postThumbnail: string | null; responseCount: number };
+  automation: { id: string; name: string; active: boolean; createdAt: string; source: string; followGateRequired: boolean; postThumbnail: string | null; responseCount: number; messageType?: string };
   totals: { hits: number; uniqueHitRecipients: number; clicks: number; eligibleNonFollowers: number; newFollowers: number; clickRate: number; followRate: number };
   daily: Array<{ date: string; hits: number; clicks: number }>;
   countries: Array<{ country: string | null; clicks: number }>;
@@ -25,7 +25,7 @@ export async function getAutomationAnalytics(automationId: string, clerkId: stri
   const automation = await client.automation.findFirst({
     where: { id: automationId, integrationId, archivedAt: null, User: { clerkId }, integration: { User: { clerkId } } },
     select: { id: true, name: true, active: true, createdAt: true, source: true, followGateRequired: true,
-      posts: { select: { media: true }, take: 1, orderBy: { id: "asc" } }, listener: { select: { dmCount: true } } },
+      posts: { select: { media: true }, take: 1, orderBy: { id: "asc" } }, listener: { select: { dmCount: true, responseFormat: true, ctaLink: true } } },
   });
   if (!automation) return null;
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -68,7 +68,7 @@ export async function getAutomationAnalytics(automationId: string, clerkId: stri
   const dayMap = new Map(dailyRows.map(day => [day.date, day]));
   const { posts, listener, ...summary } = automation;
   return {
-    automation: { ...summary, createdAt: summary.createdAt.toISOString(), postThumbnail: posts[0]?.media || null, responseCount: listener?.dmCount ?? 0 },
+    automation: { ...summary, createdAt: summary.createdAt.toISOString(), postThumbnail: posts[0]?.media || null, responseCount: listener?.dmCount ?? 0, messageType: listener?.responseFormat === "PRODUCT_CARD" ? "Product Card" : listener?.ctaLink || listener?.responseFormat === "LINK" ? "Button Text" : "Text" },
     totals: { ...totals, clickRate: percent(totals.clicks, totals.uniqueHitRecipients), followRate: percent(totals.newFollowers, totals.eligibleNonFollowers) },
     daily: Array.from({ length: 7 }, (_, index) => { const date = new Date(start.getTime() + index * DAY).toISOString().slice(0, 10); const day = dayMap.get(date); return { date, hits: Number(day?.hits ?? 0), clicks: Number(day?.clicks ?? 0) }; }),
     countries: countries.map(row => ({ country: row.country, clicks: Number(row.clicks) })),
