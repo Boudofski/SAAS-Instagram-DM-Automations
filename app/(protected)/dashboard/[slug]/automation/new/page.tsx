@@ -184,21 +184,22 @@ function AutomationSetup({ params, searchParams }: Props) {
 
   if (editId && (editing?.status !== 200 || !editing.data)) return <div role="alert" className="p-6">{tr("Could not load automation. Please refresh and try again.")}</div>;
 
-  if (selectedType === "starters") return <ConversationStarters integrationId={instagram?.id ?? ""} slug={slug} loading={userPending} />;
+  if (selectedType === "starters") return <ConversationStarters username={instagram?.instagramUsername} avatar={instagram?.profilePictureUrl} integrationId={instagram?.id ?? ""} slug={slug} loading={userPending} />;
 
   if (selectedType === "flow" || (editing as any)?.data?.listener?.flowDefinition || (editing as any)?.data?.listener?.flowDraft) {
     if (userPending) return <div className="grid min-h-96 place-items-center"><Loader2 className="h-6 w-6 animate-spin" aria-label="Loading account" /></div>;
-    return <FlowBuilder key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} templateId={searchParams?.template} automation={(editing as any)?.data} posts={postList} postsLoading={postsLoading} postsError={postsError} refreshPosts={() => void refetchPosts()} plan={(user as any)?.data?.subscription?.plan ?? "FREE"} />;
+    return <FlowBuilder username={instagram?.instagramUsername} avatar={instagram?.profilePictureUrl} key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} templateId={searchParams?.template} automation={(editing as any)?.data} posts={postList} postsLoading={postsLoading} postsError={postsError} refreshPosts={() => void refetchPosts()} plan={(user as any)?.data?.subscription?.plan ?? "FREE"} />;
   }
 
   if (selectedType === "ai" || (editing as any)?.data?.listener?.aiConversation) {
-    return <AiConversationBuilder key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} accountName={instagram?.instagramUsername ?? "Instagram account"} automation={(editing as any)?.data} automationId={editId} />;
+    return <AiConversationBuilder avatar={instagram?.profilePictureUrl} key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} accountName={instagram?.instagramUsername ?? "Instagram account"} automation={(editing as any)?.data} automationId={editId} />;
   }
 
   if (selectedType === "story" || selectedType === "dm") {
     return (
       <MessageAutomationWizard
         username={instagram?.instagramUsername}
+        avatar={instagram?.profilePictureUrl}
         integrationId={instagram?.id ?? ""}
         slug={slug}
         templateId={searchParams?.template}

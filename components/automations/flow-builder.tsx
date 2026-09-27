@@ -36,7 +36,7 @@ import { prepareFlowCanvas } from "@/lib/automation-flow/layout";
 import { type Flow, validateFlow } from "@/lib/automation-flow/definition";
 import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import FlowCanvas from "./flow-canvas";
-import FlowPreview from "./flow-preview";
+import FlowPreview, { needsSeparateFlowOpening } from "./flow-preview";
 import FlowTriggerEditor, { triggerLabel } from "./flow-trigger-editor";
 import FlowNodeEditor, { newFlowNode, NODE_NAMES } from "./flow-node-editor";
 import {
@@ -56,6 +56,8 @@ type Props = {
   postsError?: string;
   refreshPosts: () => void;
   plan?: string;
+  username?: string | null;
+  avatar?: string | null;
 };
 type Document = {
   flow: Flow;
@@ -81,6 +83,8 @@ export default function FlowBuilder({
   postsError,
   refreshPosts,
   plan = "FREE",
+  username,
+  avatar,
 }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -543,7 +547,7 @@ export default function FlowBuilder({
         )}
         {basic ? (
           <div className="h-full overflow-y-auto">
-            <div className="mx-auto grid max-w-[1160px] gap-8 px-4 py-6 lg:grid-cols-[minmax(0,620px)_minmax(280px,1fr)] lg:px-8">
+            <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
               <div className="space-y-3">
                 <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Setup triggers and public reply
@@ -573,20 +577,52 @@ export default function FlowBuilder({
                     />
                   )}
                 </section>
-                <label className="block rounded-2xl bg-white p-5 text-sm font-medium dark:bg-[#192233]">
-                  Public comment reply
-                  <textarea
-                    value={doc.publicReply}
-                    maxLength={300}
-                    placeholder="Thanks! Check your DMs."
-                    onChange={(e) => patch({ publicReply: e.target.value })}
-                    className="flow-editor-input"
-                    rows={2}
-                  />
-                </label>
+                {doc.triggers.some((t) => t.source === "COMMENT") && (
+                  <label className="block rounded-2xl bg-white p-5 text-sm font-medium dark:bg-[#192233]">
+                    Public comment reply
+                    <textarea
+                      value={doc.publicReply}
+                      maxLength={300}
+                      placeholder="Thanks! Check your DMs."
+                      onChange={(e) => patch({ publicReply: e.target.value })}
+                      className="flow-editor-input"
+                      rows={2}
+                    />
+                  </label>
+                )}
                 <h2 className="pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Setup direct message
                 </h2>
+                {doc.triggers.some((t) =>
+                  needsSeparateFlowOpening(doc.flow, t.source),
+                ) && (
+                  <section className="rounded-2xl bg-white p-5 dark:bg-[#192233]">
+                    <h3 className="text-sm font-semibold">Opening DM</h3>
+                    <div className="mt-4 space-y-3">
+                      <label className="block text-xs font-medium">
+                        Opening message
+                        <textarea
+                          className="flow-editor-input"
+                          rows={3}
+                          maxLength={800}
+                          value={doc.opening}
+                          onChange={(e) => patch({ opening: e.target.value })}
+                        />
+                      </label>
+                      <label className="block text-xs font-medium">
+                        Opening button
+                        <input
+                          className="flow-editor-input"
+                          maxLength={20}
+                          value={doc.openingButton}
+                          onChange={(e) =>
+                            patch({ openingButton: e.target.value })
+                          }
+                        />
+                      </label>
+                    </div>
+                  </section>
+                )}
                 {doc.flow.nodes.map((n) => (
                   <section
                     key={n.id}
@@ -655,11 +691,16 @@ export default function FlowBuilder({
                   Open in flow builder
                 </button>
               </div>
-              <div className="hidden lg:block">
-                <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Live preview
-                </p>
-                <FlowPreview flow={doc.flow} />
+              <div className="sticky top-0 hidden max-h-[calc(100dvh-110px)] self-start overflow-y-auto rounded-2xl bg-[#f0eef8] p-5 dark:bg-[#1d1b2e] lg:block">
+                <FlowPreview
+                  flow={doc.flow}
+                  triggers={doc.triggers}
+                  publicReply={doc.publicReply}
+                  opening={doc.opening}
+                  openingButton={doc.openingButton}
+                  username={username}
+                  avatar={avatar}
+                />
               </div>
             </div>
           </div>
@@ -914,12 +955,20 @@ export default function FlowBuilder({
         </DialogContent>
       </Dialog>
       <Dialog open={preview} onOpenChange={setPreview}>
-        <DialogContent className="max-w-xl bg-white dark:bg-[#111827]">
+        <DialogContent className="max-w-[400px] bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
           <DialogTitle>Preview your flow</DialogTitle>
           <DialogDescription>
             This simulation does not send messages to Instagram.
           </DialogDescription>
-          <FlowPreview flow={doc.flow} />
+          <FlowPreview
+            flow={doc.flow}
+            triggers={doc.triggers}
+            publicReply={doc.publicReply}
+            opening={doc.opening}
+            openingButton={doc.openingButton}
+            username={username}
+            avatar={avatar}
+          />
         </DialogContent>
       </Dialog>
     </div>,
