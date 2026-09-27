@@ -326,7 +326,11 @@ export default function FlowPreview({
         </label>
       )}
       <EditorPreview
-        postPlaceholder={trigger?.postScope === "next" && !trigger.post?.media ? "Your next published post or Reel" : undefined}
+        postPlaceholder={
+          trigger?.postScope === "next" && !trigger.post?.media
+            ? "Your next published post or Reel"
+            : undefined
+        }
         className={styles.interactivePreview}
         username={username}
         avatar={avatar}
@@ -373,8 +377,19 @@ export default function FlowPreview({
                 }
               />
             ))}
-            {simulated._linkClicked === "true" && <p role="status" className={styles.interaction}>Link click recorded in this preview.</p>}
-            {error && <p role="alert" className="text-xs text-red-600 dark:text-red-300">{error}</p>}
+            {simulated._linkClicked === "true" && (
+              <p role="status" className={styles.interaction}>
+                Link click recorded in this preview.
+              </p>
+            )}
+            {error && (
+              <p
+                role="alert"
+                className="text-xs text-red-600 dark:text-red-300"
+              >
+                {error}
+              </p>
+            )}
             {!messages.length && !error && (
               <p className={styles.interaction}>
                 Add a message to see your conversation here.

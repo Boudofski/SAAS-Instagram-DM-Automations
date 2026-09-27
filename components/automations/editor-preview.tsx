@@ -175,11 +175,12 @@ export default function EditorPreview({
                     />
                   ) : (
                     <div className={styles.placeholder}>
-                      {postPlaceholder || tr(
-                        data.post?.postid === "ANY"
-                          ? "Any post or Reel"
-                          : "You haven’t picked a post",
-                      )}
+                      {postPlaceholder ||
+                        tr(
+                          data.post?.postid === "ANY"
+                            ? "Any post or Reel"
+                            : "You haven’t picked a post",
+                        )}
                     </div>
                   )}
                 </div>

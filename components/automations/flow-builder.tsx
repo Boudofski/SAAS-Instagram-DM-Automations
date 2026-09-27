@@ -550,7 +550,9 @@ export default function FlowBuilder({
             <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
               <div className="space-y-3">
                 <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Setup triggers and public reply
+                  {doc.triggers.some((t) => t.source === "COMMENT")
+                    ? "Setup triggers and public reply"
+                    : "Setup triggers"}
                 </h2>
                 <section className="overflow-hidden rounded-2xl bg-white dark:bg-[#192233]">
                   <button
