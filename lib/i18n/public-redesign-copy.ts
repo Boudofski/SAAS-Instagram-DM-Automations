@@ -1,6 +1,8 @@
 import { SUPPORTED_LOCALES, type Locale } from "./config";
 type Row = readonly [string, string, string, string, string];
 const rows: Row[] = [
+  ["Billing interval", "Période de facturation", "Periodo de facturación", "Abrechnungszeitraum", "Período de faturação"],
+  ["One successful public reply or DM is one automated action. Usage resets monthly on every billing interval.", "Chaque réponse publique ou DM envoyé avec succès compte comme une action automatisée. Les quotas sont renouvelés chaque mois, quelle que soit la période de facturation.", "Cada respuesta pública o DM enviado correctamente cuenta como una acción automatizada. El uso se restablece cada mes con cualquier periodo de facturación.", "Jede erfolgreich gesendete öffentliche Antwort oder DM zählt als eine automatisierte Aktion. Die Nutzung wird bei jedem Abrechnungszeitraum monatlich zurückgesetzt.", "Cada resposta pública ou DM enviado com sucesso conta como uma ação automatizada. A utilização é reposta mensalmente em qualquer período de faturação."],
   ["Advanced", "Avancé", "Avanzado", "Erweitert", "Avançado"],
   ["Automation", "Automatisation", "Automatización", "Automatisierung", "Automação"],
   ["Insights", "Statistiques", "Estadísticas", "Auswertungen", "Estatísticas"],
