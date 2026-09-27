@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -81,6 +82,20 @@ export default function FlowBuilder({
   refreshPosts,
   plan = "FREE",
 }: Props) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // Escape the dashboard shell's stacking context for the fullscreen editor.
+    const shell = document.querySelector<HTMLElement>(".ap3k-page");
+    const wasInert = shell?.inert ?? false;
+    const previousOverflow = document.body.style.overflow;
+    if (shell) shell.inert = true;
+    document.body.style.overflow = "hidden";
+    setMounted(true);
+    return () => {
+      if (shell) shell.inert = wasInert;
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
   const search = useSearchParams();
   const queryClient = useQueryClient();
   const template = templateById(templateId);
@@ -379,7 +394,8 @@ export default function FlowBuilder({
   }));
   const headerButton =
     "grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <div
       className="font-sans fixed inset-0 z-40 flex flex-col bg-[#f5f5f5] text-slate-950 dark:bg-[#0d1421] dark:text-slate-100"
       onKeyDown={(e) => {
@@ -906,6 +922,7 @@ export default function FlowBuilder({
           <FlowPreview flow={doc.flow} />
         </DialogContent>
       </Dialog>
-    </div>
+    </div>,
+    document.body,
   );
 }
