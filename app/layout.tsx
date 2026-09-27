@@ -11,8 +11,17 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", fallback: ["Arial", "Helvetica", "sans-serif"] });
-const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  fallback: ["Arial", "Helvetica", "sans-serif"],
+});
+// Public ownership token for the connected AP3K Search Console property.
+// Retain an existing environment-provided owner token as well.
+const googleVerification = [
+  process.env.GOOGLE_SITE_VERIFICATION,
+  "gdWdZfN6mkEHA3ltp66WweIosnwXEwCg-ZkH3qSkqCQ",
+].filter((value): value is string => Boolean(value));
 
 export function generateMetadata(): Metadata {
   const locale = getServerLocale();
@@ -23,8 +32,11 @@ export function generateMetadata(): Metadata {
     title: { default: site.title, template: "%s" },
     description: site.description,
     applicationName: "AP3K",
-    alternates: { canonical: locale === "en" ? "/" : `/${locale}`, languages: localeAlternates() },
-    verification: googleVerification ? { google: googleVerification } : undefined,
+    alternates: {
+      canonical: locale === "en" ? "/" : `/${locale}`,
+      languages: localeAlternates(),
+    },
+    verification: { google: googleVerification },
     robots: {
       index: true,
       follow: true,
@@ -44,18 +56,33 @@ export function generateMetadata(): Metadata {
       type: "website",
       locale: LOCALE_DETAILS[locale].openGraph,
     },
-    twitter: { card: "summary_large_image", title: site.title, description: site.description },
+    twitter: {
+      card: "summary_large_image",
+      title: site.title,
+      description: site.description,
+    },
   };
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const locale = getServerLocale();
   const localeDetails = LOCALE_DETAILS[locale];
 
   return (
-    <html lang={localeDetails.htmlLang} dir={localeDetails.direction} suppressHydrationWarning>
+    <html
+      lang={localeDetails.htmlLang}
+      dir={localeDetails.direction}
+      suppressHydrationWarning
+    >
       <body className={jakarta.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
           <I18nProvider locale={locale}>
             <ReduxProvider>
               <ReactQueryProvider>{children}</ReactQueryProvider>

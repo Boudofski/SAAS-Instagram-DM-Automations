@@ -2,6 +2,11 @@
 const nextConfig = {
   images: {
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/photo-*",
+      },
       { protocol: "https", hostname: "*.cdninstagram.com" },
       { protocol: "https", hostname: "*.fbcdn.net" },
     ],
@@ -29,7 +34,16 @@ const nextConfig = {
     return [
       // Send indexing rules on the responses themselves rather than publishing
       // an inventory of internal routes in robots.txt. These are not auth rules.
-      ...["admin", "ap3k-admin", "ap3k-admin-v2", "api", "dashboard", "onboarding", "payment", "callback"].map((route) => ({
+      ...[
+        "admin",
+        "ap3k-admin",
+        "ap3k-admin-v2",
+        "api",
+        "dashboard",
+        "onboarding",
+        "payment",
+        "callback",
+      ].map((route) => ({
         source: `/${route}/:path*`,
         headers: [
           { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
@@ -38,11 +52,17 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "geolocation=(), microphone=(), browsing-topics=()" },
+          {
+            key: "Permissions-Policy",
+            value: "geolocation=(), microphone=(), browsing-topics=()",
+          },
           { key: "X-DNS-Prefetch-Control", value: "off" },
         ],
       },
