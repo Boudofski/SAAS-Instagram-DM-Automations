@@ -388,7 +388,7 @@ export const duplicateAutomationQuery = async (
       posts: { create: automation.posts.map(({ postid, caption, media, mediaType }) => ({ postid, caption, media, mediaType })) },
       keywords: { create: automation.keywords.map(({ word }) => ({ word })) },
       trigger: { create: { type: automation.source === "STORY" ? `STORY_${automation.storyTriggerType}` : automation.source } },
-      listener: { create: { ...listener, flowRevision: 0, commentReplies: undefined, messageVariations: undefined, aiProtectionRules: undefined, aiConversation: undefined, quickReplies: undefined, flowDefinition: automation.listener.flowDefinition } },
+      listener: { create: { ...listener, flowTriggers: listener.flowTriggers ?? undefined, flowDraft: undefined, flowRevision: 0, commentReplies: undefined, messageVariations: undefined, aiProtectionRules: undefined, aiConversation: undefined, quickReplies: undefined, flowDefinition: automation.listener.flowDefinition } },
     }, select: { id: true } });
   }
 

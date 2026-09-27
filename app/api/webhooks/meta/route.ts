@@ -1,3 +1,8 @@
+import { handleConversationStarter } from "@/lib/conversation-starters-runtime";
+import { flowTriggerForEvent, isCurrentFlowOpening } from "@/actions/webhook/queries";
+import { isSharedPostAttachment, readFlowTriggers } from "@/lib/automation-flow/triggers";
+import { readFlow } from "@/lib/automation-flow/definition";
+import { recordAutomationHit, observeAutomationFollow } from "@/lib/automation-tracking";
 import { readCommentReplies, selectMessageVariation, personalizeUsername } from "@/lib/automation-copy";
 import { reservePublicReplySlot, finishPublicReplySlot } from "@/lib/public-reply-limit";
 import { processAutomationFlow } from "@/lib/automation-flow/runtime";
@@ -519,7 +524,8 @@ async function processEntry(
           ? [match.automation]
           : [];
       const triggerDecisions = candidateAutomations.map((candidate) => {
-        const matchedKeyword = resolveCommentTriggerMatch({
+        const flowTrigger = flowTriggerForEvent(candidate,{source:"COMMENT",text:commentText,mediaId});
+        const matchedKeyword = flowTrigger !== undefined ? flowTrigger ? flowTrigger.anyMessage ? "any comment" : flowTrigger.keyword : null : resolveCommentTriggerMatch({
           text: commentText,
           keywords: candidate.keywords,
           mode: candidate.matchingMode,
@@ -860,6 +866,7 @@ async function processEntry(
         continue;
       }
 
+      await recordAutomationHit({ automationId: automation.id, eventKey: `comment:${commentId}`, recipientIgId: commenterId, source: "COMMENT" });
       await trackResponse(automation.id, "COMMENT");
 
       // 4. Duplicate check — skip if we already DM'd this person for this automation
@@ -1514,7 +1521,7 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode, dmFlowStep: openingDmEnabled ? "OPENING" : "FINAL" },
+          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode, dmFlowStep: openingDmEnabled ? "OPENING" : "FINAL", ...(listener.flowDefinition ? {flowRevision:listener.flowRevision} : {}) },
         });
         await trackResponse(automation.id, "DM");
         await updateWebhookEvent(webhookEvent.id, {
@@ -1720,7 +1727,7 @@ async function processEntry(
         }).catch((error) => console.warn("[inbox] inbound persistence failed", { message: error instanceof Error ? error.message : String(error) }));
       }
 
-      if (!senderId || (!dmText && !storyInteraction && !actionPayload && !inboundMediaUrl)) {
+      if (!senderId || (!dmText && !storyInteraction && !actionPayload && !inboundMediaUrl && !(parsed.ok && isSharedPostAttachment(parsed.data.attachments)))) {
         console.log("[webhook] inbound DM missing required fields — ignoring", {
           hasSenderId: Boolean(senderId),
           hasMessageText: Boolean(dmText),
@@ -1736,7 +1743,11 @@ async function processEntry(
 
       const inboundAt = parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : null;
       if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt)) await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
-      if (inboxIntegration && !storyInteraction && !parseCommentDmActionPayload(actionPayload) && await processAutomationFlow({ integrationId: inboxIntegration.id, recipientIgId: senderId, text: dmText, inboundAt, eventId: parsed.ok ? parsed.data.messageMid ?? webhookEvent.id : webhookEvent.id })) {
+      if (inboxIntegration && actionPayload && await handleConversationStarter({integrationId:inboxIntegration.id,recipientIgId:senderId,payload:actionPayload,inboundAt,eventId:parsed.ok ? parsed.data.messageMid ?? webhookEvent.id : webhookEvent.id})) {
+        await updateWebhookEvent(webhookEvent.id,{status:"PROCESSED",errorMessage:"conversation_starter_handled",processedAt:new Date()});
+        continue;
+      }
+      if (inboxIntegration && !storyInteraction && !parseCommentDmActionPayload(actionPayload) && await processAutomationFlow({ scheduleWake: waitUntil, integrationId: inboxIntegration.id, recipientIgId: senderId, text: dmText, inboundAt, eventId: parsed.ok ? parsed.data.messageMid ?? webhookEvent.id : webhookEvent.id })) {
         await updateWebhookEvent(webhookEvent.id, { status: "PROCESSED", errorMessage: "custom_flow_reply_handled", processedAt: new Date() });
         continue;
       }
@@ -1784,16 +1795,18 @@ async function processEntry(
         });
       }
       const storyAutomation = storyInteraction
-        ? await findAutomationForStory(storyInteraction, pageId)
+        ? await findAutomationForStory(storyInteraction, pageId, dmText)
         : null;
+      const currentFlowOpening = dmFlowAction?.type === "OPENING_CONTINUE" && callbackAutomation ? await isCurrentFlowOpening(callbackAutomation,senderId,dmFlowAction.flowId) : true;
       const callbackIsAllowed = Boolean(
+        currentFlowOpening &&
         callbackAutomation?.active &&
         callbackIntegration &&
         callbackIntegration.status !== "DISCONNECTED" &&
         callbackIntegration.reconnectRequired !== true &&
         !callbackIntegration.planLocked &&
         callbackAutomation?.integrationId === callbackIntegration.id &&
-        (dmFlowAction?.type !== "OPENING_CONTINUE" || callbackAutomation.source === "COMMENT")
+        (dmFlowAction?.type !== "OPENING_CONTINUE" || (callbackAutomation.source === "COMMENT" || readFlowTriggers(callbackAutomation.listener?.flowTriggers)?.some(t=>t.source === "COMMENT")))
       );
       if (dmFlowAction && !callbackIsAllowed) {
         console.warn("[webhook] comment DM callback rejected", {
@@ -1803,6 +1816,8 @@ async function processEntry(
           accountMatched: Boolean(callbackIntegration),
           source: callbackAutomation?.source,
         });
+        await updateWebhookEvent(webhookEvent.id,{status:"IGNORED",errorMessage:currentFlowOpening ? "automation_callback_unavailable" : "flow_opening_revision_changed",processedAt:new Date()});
+        continue;
       }
       const directAutomation = callbackIsAllowed
         ? callbackAutomation
@@ -1836,7 +1851,7 @@ async function processEntry(
       }
 
       // 1. Try to match an automation by keyword
-      const result = await findAutomationForDM(dmText, pageId, senderId);
+      const result = await findAutomationForDM(dmText, pageId, senderId, parsed.ok && isSharedPostAttachment(parsed.data.attachments));
 
       if (!result) {
         console.log(`[webhook] inbound DM — no keyword automation matched senderId=${senderId}`, {
@@ -1931,8 +1946,20 @@ async function processConfiguredMessageAutomation(params: {
     return;
   }
 
+  if (!dmFlowAction && !params.emailCompletionId) {
+    await recordAutomationHit({ automationId: automation.id, eventKey: `message:${messageMid ?? webhookEventId}`, recipientIgId: senderId, source: matchedKeyword.startsWith("story_") ? "STORY" : "DM" });
+  }
+  if (automation.followGateRequired) {
+    const followProfile = params.senderProfile ?? await getInstagramRecipientProfile({ token: tokenResolution.token, recipientId: senderId });
+    params.senderProfile = followProfile;
+    await observeAutomationFollow({ integrationId: integration.id, automationId: automation.id, recipientIgId: senderId, followsBusiness: followProfile?.followsBusiness });
+  }
+
   if (automation.listener.flowDefinition) {
-    await processAutomationFlow({ integrationId: integration.id, recipientIgId: senderId, text: inboundText, inboundAt: params.inboundAt, eventId: messageMid ?? webhookEventId, automationId: automation.id, startEventId: dmFlowAction?.flowId });
+    const graph = readFlow(automation.listener.flowDefinition);
+    const entry = graph?.nodes.find(node=>node.id===graph.entry);
+    const openingEntry = dmFlowAction?.type === "OPENING_CONTINUE" && entry?.kind === "question" && entry.options.length === 1 && entry.text === automation.listener.openingDmText && entry.options[0].label === automation.listener.openingDmButtonText ? entry : null;
+    await processAutomationFlow({ scheduleWake: waitUntil, integrationId: integration.id, recipientIgId: senderId, text: inboundText, inboundAt: params.inboundAt, eventId: messageMid ?? webhookEventId, automationId: automation.id, startEventId: dmFlowAction?.flowId, ...(openingEntry ? {startNodeId:openingEntry.options[0].next,initialValues:{[openingEntry.field]:openingEntry.options[0].label}} : {}) });
     await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "PROCESSED", errorMessage: "custom_flow_handled", processedAt: new Date() });
     return;
   }
@@ -2044,7 +2071,7 @@ async function processConfiguredMessageAutomation(params: {
       })
     : needsEmailRequest ? emailRequestMessage(automation.listener.emailCapturePrompt) : payloadMessage;
   const followPromptState = dmFlowAction?.type === "FOLLOW_CHECK"
-    ? profile
+    ? typeof profile?.followsBusiness === "boolean"
       ? "NOT_FOLLOWING" as const
       : "UNAVAILABLE" as const
     : "INITIAL" as const;

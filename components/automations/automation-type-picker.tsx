@@ -1,208 +1,52 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Search,
-  GitBranch,
-  Zap,
-  MessageCircle,
-  Sparkles,
-  Lock,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { TEMPLATES, type Template } from "@/lib/automation-flow/templates";
+import { ArrowLeft, ArrowRight, Clapperboard, CirclePlay, GitBranch, Layers3, LayoutGrid, Megaphone, MessageCircle, Search, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { TEMPLATES } from "@/lib/automation-flow/templates";
 import { UiText } from "@/components/i18n/localized-copy";
 
+const quick = [
+  { name: "Post automation", description: "Replies when someone comments on a post or reel", type: "comment", Icon: Clapperboard, color: "from-violet-500 to-blue-500" },
+  { name: "Story automation", description: "Replies to story replies and reactions", type: "story", Icon: CirclePlay, color: "from-fuchsia-500 to-violet-500" },
+  { name: "Chat automation", description: "Replies to keywords sent in DMs", type: "dm", Icon: MessageCircle, color: "from-orange-400 to-pink-500" },
+];
 export default function AutomationTypePicker({ slug }: { slug: string }) {
   const router = useRouter();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const [templates, setTemplates] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const matches = TEMPLATES.filter(
-    (t) =>
-      (!search ||
-        `${t.name} ${t.description}`
-          .toLowerCase()
-          .includes(search.toLowerCase())) &&
-      (filter === "all" || t.goal === filter || t.trigger === filter),
-  );
-  const href = (t: Template) =>
-    `/dashboard/${slug}/automation/new?type=${t.type}&template=${t.id}`;
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) router.push(`/dashboard/${slug}/automation`);
-      }}
-    >
-      <DialogContent ref={dialogRef} tabIndex={-1} onOpenAutoFocus={(event) => { event.preventDefault(); dialogRef.current?.focus(); }} className="flex h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-h-[calc(100dvh-1rem)] max-w-6xl sm:h-[min(850px,92dvh)] sm:w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden border-slate-200 bg-white p-0 text-slate-950 dark:border-white/10 dark:bg-[#10131e] dark:text-slate-100">
-        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-slate-200 p-4 pe-14 sm:p-5 sm:pe-14 dark:border-white/10">
-          <div className="min-w-0 me-auto">
-            <DialogTitle className="break-words text-xl font-bold tracking-tight sm:text-2xl">
-              <UiText>Automation templates</UiText>
-            </DialogTitle>
-            <DialogDescription className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              <UiText>
-                Start with a proven conversation. Make it your own.
-              </UiText>
-            </DialogDescription>
-          </div>
-        </header>
-        <label className="relative m-4 block shrink-0 sm:m-5">
-          <Search className="absolute start-4 top-3.5 h-5 w-5 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Instagram templates…"
-            aria-label="Search Instagram templates"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 ps-12 pe-4 text-base sm:text-sm outline-none focus:border-violet-500 dark:border-white/10 dark:bg-white/5"
-          />
-        </label>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
-          <nav
-            aria-label="Template filters"
-            className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-200 px-5 pb-4 md:w-52 md:flex-col md:overflow-y-auto md:border-b-0 md:border-r dark:border-white/10"
-          >
-            <Filter
-              value="all"
-              label="All templates"
-              filter={filter}
-              set={setFilter}
-            />
-            <p className="hidden pb-2 pt-6 text-xs font-semibold uppercase tracking-widest text-slate-400 md:block">
-              By goal
-            </p>
-            {[
-              ["followers", "Grow your followers"],
-              ["engagement", "Engage your audience"],
-              ["traffic", "Drive traffic"],
-            ].map(([v, l]) => (
-              <Filter
-                key={v}
-                value={v}
-                label={l}
-                filter={filter}
-                set={setFilter}
-              />
-            ))}
-            <p className="hidden pb-2 pt-6 text-xs font-semibold uppercase tracking-widest text-slate-400 md:block">
-              By trigger
-            </p>
-            {[
-              ["comment", "Post or Reel comment"],
-              ["dm", "DM"],
-              ["story", "Story reply"],
-              ["live", "Live comment"],
-            ].map(([v, l]) => (
-              <Filter
-                key={v}
-                value={v}
-                label={l}
-                filter={filter}
-                set={setFilter}
-              />
-            ))}
-          </nav>
-          <div className="min-h-0 min-w-0 flex-1 overscroll-contain overflow-y-auto px-4 py-4 sm:px-5 md:pt-0">
-            <h2 className="mb-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
-              {search || filter !== "all"
-                ? `${matches.length} templates`
-                : "Recommended for you"}
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {matches.map((t, i) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={Boolean(t.unavailable)}
-                  title={t.unavailable}
-                  onClick={() => router.push(href(t))}
-                  className="group flex min-w-0 min-h-56 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-start transition enabled:hover:border-violet-400 enabled:hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:border-white/10 dark:bg-white/[0.025] dark:enabled:hover:border-violet-400"
-                >
-                  <div className="mb-5 flex w-full items-center justify-between">
-                    <span
-                      className={`grid h-10 w-10 place-items-center rounded-xl ${i % 3 === 0 ? "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300" : i % 3 === 1 ? "bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300" : "bg-sky-100 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300"}`}
-                    >
-                      {t.type === "ai" ? (
-                        <Sparkles size={20} />
-                      ) : t.type === "flow" ? (
-                        <GitBranch size={20} />
-                      ) : (
-                        <MessageCircle size={20} />
-                      )}
-                    </span>
-                    {t.popular && <Badge>Popular</Badge>}
-                  </div>
-                  <h3 className="text-lg font-bold leading-6 tracking-tight">
-                    <UiText>{t.name}</UiText>
-                  </h3>
-                  <p className="mt-3 flex-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    <UiText>{t.description}</UiText>
-                  </p>
-                  <div className="mt-5 flex w-full flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    {t.type === "flow" || t.type === "ai" ? (
-                      <GitBranch size={13} />
-                    ) : (
-                      <Zap size={13} />
-                    )}
-                    <span>
-                      {t.type === "flow" || t.type === "ai"
-                        ? "Flow Builder"
-                        : "Quick Automation"}
-                    </span>
-                    {t.unavailable ? (
-                      <span className="ml-auto">Unavailable</span>
-                    ) : t.pro ? (
-                      <span className="ml-auto inline-flex items-center gap-1 font-semibold text-violet-600 dark:text-violet-300">
-                        <Lock size={11} />
-                        Pro
-                      </span>
-                    ) : null}
-                  </div>
-                </button>
-              ))}
-            </div>
-            {!matches.length && (
-              <p className="py-20 text-center text-slate-500">
-                No templates match. Try another keyword or filter.
-              </p>
-            )}
-          </div>
+  const go = (type: string, query = "") => router.push(`/dashboard/${slug}/automation/new?type=${type}${query}`);
+  const matches = TEMPLATES.filter(t => (filter === "all" || t.group === filter) && `${t.name} ${t.description}`.toLowerCase().includes(search.toLowerCase()));
+  const card = "group bg-white text-left shadow-[0_4px_16px_rgba(15,15,18,0.09)] transition duration-150 hover:shadow-[0_6px_20px_rgba(15,15,18,0.13)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:bg-[#1b2334] dark:shadow-none dark:hover:bg-[#242e44]";
+  return <Dialog open onOpenChange={open => { if (!open) router.push(`/dashboard/${slug}/automation`); }}>
+    <DialogContent className={`flex max-h-[92svh] w-full flex-col gap-0 overflow-hidden border-0 bg-[#f2f2f2] p-0 text-[#111] dark:bg-[#111827] dark:text-slate-100 max-md:bottom-0 max-md:left-0 max-md:top-auto max-md:max-w-full max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-b-none max-md:rounded-t-[26px] md:w-[92vw] md:rounded-[30px] ${templates ? "md:max-w-[896px]" : "md:max-w-[620px]"}`}>
+      <header className="flex shrink-0 items-center gap-3 px-[22px] pb-5 pt-[26px] pe-16">
+        {templates && <button aria-label="Back to new automation" onClick={() => setTemplates(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white shadow-sm dark:bg-slate-800"><ArrowLeft size={17}/></button>}
+        <div><p className="text-[13px] text-slate-500 dark:text-slate-400"><UiText>{templates ? "New automation" : "Create"}</UiText></p><DialogTitle className="mt-0.5 text-[23px] font-bold tracking-[-.23px]"><UiText>{templates ? "Templates" : "New automation"}</UiText></DialogTitle></div>
+        <DialogDescription className="sr-only">Choose a quick automation, an advanced flow, or browse ready-made templates.</DialogDescription>
+      </header>
+      {templates ? <>
+        <div className="flex shrink-0 flex-col gap-3 px-[22px] pb-5 sm:flex-row sm:items-center">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white px-4 py-3 dark:bg-slate-800"><Search size={16} className="text-slate-400"/><input aria-label="Search templates" placeholder="Search 16 templates…" value={search} onChange={e=>setSearch(e.target.value)} className="min-w-0 flex-1 bg-transparent text-base outline-none md:text-[13px]"/></label>
+          <div role="tablist" aria-label="Template type" className="flex w-fit rounded-full bg-black/[.04] p-1 dark:bg-white/5">{["all","basic","flow"].map(v=><button key={v} role="tab" aria-selected={filter===v} onClick={()=>setFilter(v)} className={`rounded-full px-4 py-2 text-xs capitalize transition ${filter===v ? "bg-white shadow-sm dark:bg-slate-700" : "text-slate-500 dark:text-slate-400"}`}>{v}</button>)}</div>
         </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-      {children}
-    </span>
-  );
-}
-function Filter({
-  value,
-  label,
-  filter,
-  set,
-}: {
-  value: string;
-  label: string;
-  filter: string;
-  set: (v: string) => void;
-}) {
-  return (
-    <button
-      aria-pressed={value === filter}
-      onClick={() => set(value)}
-      className={`min-h-11 shrink-0 rounded-lg px-3 py-2.5 text-start text-sm ${value === filter ? "bg-violet-100 font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5"}`}
-    >
-      <UiText>{label}</UiText>
-    </button>
-  );
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-[22px] pb-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">{matches.map(t=>{
+            const Icon=t.group==='flow'?GitBranch:t.trigger==='story'?CirclePlay:t.trigger==='dm'?MessageCircle:Clapperboard;
+            return <button key={t.id} onClick={()=>go('flow',`&template=${t.id}${t.group==='basic'?'&editor=basic':''}`)} className={`${card} flex min-h-[168px] flex-col items-start rounded-[20px] p-4`}>
+              <h3 className="text-[14px] font-semibold leading-[21px]"><UiText>{t.name}</UiText></h3><p className="mt-2 flex-1 text-[12px] leading-[18px] text-[#83838a] dark:text-slate-400"><UiText>{t.description}</UiText></p>
+              <div className="mt-4 flex w-full items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400"><Icon size={17} className="text-violet-500"/><span>{t.group==='flow'?'Flow':t.id==='shared-post'||t.trigger==='comment'?'Post automation':t.trigger==='story'?'Story automation':'Chat automation'}</span>{t.popular&&<span className="ms-auto rounded-full bg-violet-50 px-2 py-1 text-[10px] font-medium text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">Popular</span>}</div>
+            </button>;
+          })}</div>{!matches.length&&<p className="py-12 text-center text-sm text-slate-500">No templates match your search.</p>}
+        </div><footer className="flex shrink-0 justify-between border-t border-black/5 px-[22px] py-4 text-xs text-slate-500 dark:border-white/5 dark:text-slate-400"><span>Showing {matches.length} of 16 templates</span><span>Scroll for more</span></footer>
+      </> : <div className="min-h-0 overflow-y-auto overscroll-contain px-[22px] pb-5">
+        <div className="mb-3 flex items-baseline gap-2"><h2 className="text-base font-bold">Quick automations</h2><span className="text-[11px] text-slate-400">ready in a minute</span></div>
+        <div className="flex flex-col gap-3 md:flex-row">{quick.map(({name,description,type,Icon,color})=><button key={type} onClick={()=>go(type)} className={`${card} flex flex-1 items-center gap-[13px] rounded-[20px] px-[15px] py-4 md:flex-col md:items-start md:gap-0 md:rounded-[22px]`}><span className={`grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[13px] bg-gradient-to-br text-white ${color}`}><Icon size={23}/></span><span className="min-w-0 md:mt-3"><strong className="block text-sm font-semibold">{name}</strong><span className="mt-1 block text-[11.5px] leading-[1.45] text-slate-400">{description}</span></span></button>)}</div>
+        <div className="mb-3 mt-[26px] flex items-baseline gap-2 px-1"><h2 className="text-base font-bold">Advanced flows</h2><span className="text-[11px] text-slate-400">multi-step, full control</span></div>
+        <div className="space-y-2.5">{[{title:'Flow builder',subtitle:'Drag and connect the steps yourself',ai:false,Icon:GitBranch},{title:'AI assisted flow builder',subtitle:'Describe your goal, we build the flow',ai:true,Icon:Sparkles}].map(({title,subtitle,ai,Icon})=><button key={title} onClick={()=>go('flow',ai?'&assistant=1':'')} className={`${card} flex w-full items-center gap-3.5 rounded-[22px] p-4`}><span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300"><Icon size={23}/></span><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2 text-[14.5px] font-semibold">{title}{ai&&<span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] tracking-wider text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">FASTEST</span>}</span><span className="mt-0.5 block text-[11.5px] text-slate-400">{subtitle}</span></span><ArrowRight size={15} className="text-slate-400"/></button>)}</div>
+        <div className="mt-6 space-y-0.5 border-t border-black/[.07] pt-3 dark:border-white/10">{[{Icon:Megaphone,title:'Ad automation',sub:'replies when someone comments on your ad',run:()=>go('comment','&ad=1')},{Icon:Layers3,title:'Set up a conversation starter',sub:'buttons shown before someone messages you',run:()=>go('starters')},{Icon:LayoutGrid,title:'Browse templates',sub:'16 ready-made automations',run:()=>setTemplates(true)}].map(({Icon,title,sub,run})=><button key={title} onClick={run} className="flex min-h-11 w-full items-center gap-[11px] rounded-xl px-1.5 py-2 text-left transition hover:bg-black/[.03] dark:hover:bg-white/5"><Icon size={17} className="shrink-0 text-slate-500"/><span className="flex-1 text-[12.5px] text-slate-700 dark:text-slate-300">{title} <span className="text-slate-400">· {sub}</span></span><ArrowRight size={14} className="shrink-0 text-slate-400"/></button>)}</div>
+      </div>}
+    </DialogContent>
+  </Dialog>;
 }

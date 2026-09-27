@@ -9,13 +9,62 @@ import {
   type FlowNode,
   type FlowValues,
 } from "@/lib/automation-flow/definition";
-type Bubble = {
+export type FlowPreviewBubble = {
   text: string;
   incoming?: boolean;
   image?: string;
   links?: { label: string; url: string }[];
   options?: string[];
+  notice?: boolean;
+  cards?: { title: string; subtitle: string; image: string; links: { label: string; url: string }[] }[];
 };
+type Bubble = FlowPreviewBubble;
+export function advanceFlowPreview(flow: Flow, start: string | null, data: FlowValues, history: Bubble[], draw = 0.001) {
+  let id = start;
+  const messages = [...history];
+  const values = { ...data };
+  let waiting: FlowNode | null = null;
+  let error = "";
+  let steps = 0;
+  while (id && steps++ < 60) {
+    const node = flow.nodes.find(n => n.id === id);
+    if (!node) { error = "Connect this branch to an existing step."; break; }
+    if (node.kind === "end") { id = null; break; }
+    if (node.kind === "random" || node.kind === "condition" || node.kind === "tag" || node.kind === "setfield") {
+      if (node.kind === "tag") values[`tag_${node.tag}`] = "true";
+      if (node.kind === "setfield") values[node.field] = resolveFlowText(node.value, values);
+      id = branchTarget(node, values, draw);
+      continue;
+    }
+    if (node.kind === "delay") {
+      messages.push({ text: `Scheduled wait: ${formatDelay(node.seconds)}. Use Continue preview to skip this wait in the simulation.`, notice: true });
+      waiting = node;
+      break;
+    }
+    const responseHint = node.kind === "email" ? "email" : node.kind === "phone" ? "phone number" : node.kind === "capture" ? "answer" : null;
+    messages.push({
+      text: resolveFlowText(node.text, values) + (node.kind === "product" && node.subtitle ? `\n${resolveFlowText(node.subtitle, values)}` : "") + (responseHint ? `\n\nReply SKIP to continue without sharing your ${responseHint}, or STOP to cancel.` : ""),
+      image: node.kind === "product" ? node.image : undefined,
+      links: "links" in node ? node.links : undefined,
+      options: node.kind === "question" ? node.options.map(o => o.label) : undefined,
+      cards: node.kind === "carousel" ? node.cards.map(card => ({ ...card, title: resolveFlowText(card.title, values), subtitle: resolveFlowText(card.subtitle, values) })) : undefined,
+    });
+    if (node.kind === "email" || node.kind === "phone" || node.kind === "capture" || node.kind === "question") { waiting = node; break; }
+    id = node.next;
+  }
+  if (id && !waiting && !error) error = "Preview stopped after 60 steps. Check the flow for an automatic loop.";
+  return { messages, values, waiting, error, ended: !id };
+}
+function formatDelay(seconds: number) {
+  if (seconds % 86400 === 0) return `${seconds / 86400} day${seconds === 86400 ? "" : "s"}`;
+  if (seconds % 3600 === 0) return `${seconds / 3600} hour${seconds === 3600 ? "" : "s"}`;
+  if (seconds % 60 === 0) return `${seconds / 60} minute${seconds === 60 ? "" : "s"}`;
+  return `${seconds} second${seconds === 1 ? "" : "s"}`;
+}
+const SIMULATED_FIELDS = [
+  ["_followsBusiness", "User follows you"], ["_businessFollows", "You follow the user"],
+  ["_verified", "Verified on Instagram"], ["_linkClicked", "User clicked a flow link"],
+] as const;
 export default function FlowPreview({ flow }: { flow: Flow }) {
   const [messages, setMessages] = useState<Bubble[]>([]);
   const [waiting, setWaiting] = useState<FlowNode | null>(null);
@@ -24,58 +73,33 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
   const [error, setError] = useState("");
   const [draw, setDraw] = useState(0.001);
   const [ended, setEnded] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [simulated, setSimulated] = useState<FlowValues>({ _followsBusiness: "false", _businessFollows: "false", _verified: "false", _linkClicked: "false", _followerCount: "0" });
   useEffect(() => {
     setMessages([]);
     setInput("");
     setWaiting(null);
     setValues({});
     setEnded(false);
+    setStarted(false);
     setError("");
   }, [flow]);
   function advance(start: string | null, data: FlowValues, history: Bubble[]) {
-    let id = start;
-    const out = [...history];
     const vars = { ...data };
-    setError("");
-    setWaiting(null);
-    for (let i = 0; id && i < 30; i++) {
-      const n = flow.nodes.find((n) => n.id === id);
-      if (!n) {
-        setError("Connect this branch to an existing step.");
-        break;
-      }
-      if (n.kind === "end") {
-        id = null;
-        break;
-      }
-      if (n.kind === "random" || n.kind === "condition" || n.kind === "tag") {
-        if (n.kind === "tag") vars[`tag_${n.tag}`] = "true";
-        id = branchTarget(n, vars, draw);
-        continue;
-      }
-      out.push({
-        text:
-          resolveFlowText(n.text, vars) +
-          (n.kind === "email"
-            ? "\n\nReply SKIP to continue without an email, or STOP to cancel."
-            : ""),
-        image: n.kind === "product" ? n.image : undefined,
-        links: "links" in n ? n.links : undefined,
-        options:
-          n.kind === "question" ? n.options.map((o) => o.label) : undefined,
-      });
-      if (n.kind === "email" || n.kind === "question") {
-        setWaiting(n);
-        break;
-      }
-      id = n.next;
+    for (const key of [...SIMULATED_FIELDS.map(([field]) => field), "_followerCount"]) {
+      delete vars[key];
+      if (simulated[key] !== "" && simulated[key] !== undefined) vars[key] = simulated[key];
     }
-    setMessages(out);
-    setValues(vars);
-    setEnded(!id);
+    const next = advanceFlowPreview(flow, start, vars, history, draw);
+    setStarted(true);
+    setMessages(next.messages);
+    setValues(next.values);
+    setWaiting(next.waiting);
+    setError(next.error);
+    setEnded(next.ended);
   }
   function reply(text: string) {
-    if (!waiting || !text.trim()) return;
+    if (!waiting || waiting.kind === "delay" || !text.trim()) return;
     const out = [...messages, { text, incoming: true }];
     setInput("");
     if (/^stop$/i.test(text.trim())) {
@@ -89,6 +113,8 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
       setError(
         waiting.kind === "email"
           ? "Use a valid email, SKIP, or STOP."
+          : waiting.kind === "phone" ? "Use a valid phone number, SKIP, or STOP."
+          : waiting.kind === "capture" ? "Write an answer under 1,001 characters, SKIP, or STOP."
           : "Choose one of the listed answers, or reply STOP.",
       );
       return;
@@ -130,7 +156,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
           className="flex h-[clamp(200px,42dvh,380px)] flex-col gap-3 overflow-auto p-4"
           aria-live="polite"
         >
-          {!messages.length ? (
+          {!started ? (
             <div className="m-auto text-center">
               <p className="mb-4 text-sm text-slate-400">
                 Try your message and every branch.
@@ -146,7 +172,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
             messages.map((m, i) => (
               <div
                 key={i}
-                className={`min-w-0 max-w-[95%] shrink-0 overflow-hidden rounded-2xl ${m.incoming ? "self-end bg-violet-600" : "self-start bg-[#262a33]"}`}
+                className={`min-w-0 max-w-[95%] shrink-0 overflow-hidden rounded-2xl ${m.notice ? "self-center border border-white/10 text-slate-400" : m.incoming ? "self-end bg-violet-600" : "self-start bg-[#262a33]"}`}
               >
                 {m.image && (
                   <img
@@ -158,6 +184,14 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
                 <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] p-3 text-sm leading-6">
                   {m.text}
                 </p>
+                {m.cards && <div className="flex max-w-full snap-x gap-2 overflow-x-auto p-2" aria-label="Preview carousel cards">
+                  {m.cards.map((card, cardIndex) => <article key={cardIndex} className="w-52 shrink-0 snap-start overflow-hidden rounded-xl border border-white/10">
+                    <img src={card.image} alt={card.title} className="h-32 w-full object-cover" />
+                    <p className="break-words px-3 pt-3 text-sm font-semibold">{card.title}</p>
+                    <p className="break-words px-3 pb-2 text-xs text-slate-400">{card.subtitle}</p>
+                    {card.links.map((link, linkIndex) => <span key={linkIndex} className="m-2 block break-words rounded-lg bg-white/10 px-3 py-2 text-center text-sm">{link.label} ↗</span>)}
+                  </article>)}
+                </div>}
                 {m.links?.map((l) => (
                   <span
                     key={l.label}
@@ -179,6 +213,11 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
               </div>
             ))
           )}
+          {waiting?.kind === "delay" && <div className="space-y-2 text-center">
+            {waiting.seconds >= 86400 && <p className="text-xs text-amber-300">A live follow-up may expire outside Instagram&apos;s messaging window.</p>}
+            <button type="button" onClick={() => advance(waiting.next, values, messages)} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold">Continue preview</button>
+            <button type="button" onClick={() => { setWaiting(null); setEnded(true); }} className="ms-2 px-3 py-3 text-sm text-slate-400">Stop preview</button>
+          </div>}
           {ended && (
             <p className="py-2 text-center text-xs text-slate-400">
               Flow finished
@@ -193,16 +232,16 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
           className="flex gap-2 border-t border-white/10 p-3"
         >
           <input
-            disabled={!waiting}
+            disabled={!waiting || waiting.kind === "delay"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={waiting ? "Write a reply…" : "Start preview to test"}
+            placeholder={waiting?.kind === "delay" ? "Skip the wait to continue" : waiting ? "Write a reply…" : ended ? "Preview finished" : "Start preview to test"}
             aria-label="Preview reply"
             className="min-w-0 flex-1 rounded-full bg-white/10 px-4 py-2 text-sm text-white placeholder:text-slate-400"
           />
           <button
             aria-label="Send preview reply"
-            disabled={!waiting}
+            disabled={!waiting || waiting.kind === "delay"}
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-600 p-2.5 disabled:opacity-40"
           >
             <Send size={17} />
@@ -214,6 +253,20 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
           {error}
         </p>
       )}
+      <details className="mt-4 rounded-xl border border-slate-200 p-3 dark:border-white/10">
+        <summary className="cursor-pointer text-sm font-medium">Simulated contact</summary>
+        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">These values only affect this preview. Change them before continuing to test each condition.</p>
+        <div className="mt-3 space-y-3">
+          {SIMULATED_FIELDS.map(([field, label]) => <label key={field} className="block text-xs font-medium">{label}
+            <select value={simulated[field]} onChange={e => setSimulated(v => ({ ...v, [field]: e.target.value }))} className="ap3k-input mt-1 min-h-11 w-full rounded-lg p-2 text-sm">
+              <option value="true">Yes</option><option value="false">No</option><option value="">Unknown / unavailable</option>
+            </select>
+          </label>)}
+          <label className="block text-xs font-medium">Follower count
+            <input type="number" min={0} step={1} value={simulated._followerCount} onChange={e => setSimulated(v => ({ ...v, _followerCount: e.target.value }))} placeholder="Unknown" className="ap3k-input mt-1 min-h-11 w-full rounded-lg p-2 text-sm" />
+          </label>
+        </div>
+      </details>
       {flow.nodes.some((n) => n.kind === "random") && (
         <label className="mt-4 block text-sm">
           Test a random path
@@ -227,6 +280,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
               setValues({});
               setError("");
               setEnded(false);
+              setStarted(false);
             }}
             className="ap3k-input mt-2 w-full rounded-xl p-2"
           >

@@ -27,6 +27,8 @@ const mockPublicSlot = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/public-reply-limit", () => ({ reservePublicReplySlot: (...args: any[]) => mockPublicSlot(...args), finishPublicReplySlot: vi.fn().mockResolvedValue(undefined) }));
 
 vi.mock("@/actions/webhook/queries", () => ({
+  flowTriggerForEvent: vi.fn().mockReturnValue(undefined),
+  isCurrentFlowOpening: vi.fn().mockReturnValue(true),
   findAutomationForCommentWithReason: (...args: any[]) => mockFindAutomationForCommentWithReason(...args),
   findAutomationForDM: vi.fn(),
   findAutomationById: vi.fn(),

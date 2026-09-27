@@ -300,6 +300,7 @@ function CampaignMobileCard({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/automation/${automation.id}/analytics`}>Analytics</Link></DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href={automationEditHref(slug, automation)}>
                   <UiText>{automation.needsReview || automation.stalePost
@@ -451,6 +452,7 @@ function CampaignDesktopRow({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/automation/${automation.id}/analytics`}>Analytics</Link></DropdownMenuItem>
               <DropdownMenuItem
                 disabled={isPending}
                 onSelect={() => onDuplicate(automation.id)}

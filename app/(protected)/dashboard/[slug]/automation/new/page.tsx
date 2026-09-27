@@ -9,6 +9,7 @@ import { getEngagementAvailability } from "@/actions/automation/engagement";
 import { DEFAULT_EMAIL_CAPTURE_PROMPT, DEFAULT_FOLLOW_UP_MESSAGE } from "@/lib/automation-engagement-settings";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import dynamic from "next/dynamic";
+const ConversationStarters = dynamic(() => import("@/components/automations/conversation-starters"));
 const FlowBuilder = dynamic(() => import("@/components/automations/flow-builder"));
 import { templateById } from "@/lib/automation-flow/templates";
 const AiConversationBuilder = dynamic(() => import("@/components/automations/ai-conversation-builder"));
@@ -37,8 +38,7 @@ type Props = {
 
 export default function WizardPage(props: Props) {
   const params = props.searchParams;
-  const requiresTemplate = params?.type === "flow" && templateById(params.template)?.type !== "flow";
-  if (!params?.edit && (!params?.type || requiresTemplate)) return <AutomationTypePicker slug={props.params.slug} />;
+  if (!params?.edit && !params?.type) return <AutomationTypePicker slug={props.params.slug} />;
   return <AutomationSetup {...props} />;
 }
 
@@ -184,7 +184,9 @@ function AutomationSetup({ params, searchParams }: Props) {
 
   if (editId && (editing?.status !== 200 || !editing.data)) return <div role="alert" className="p-6">{tr("Could not load automation. Please refresh and try again.")}</div>;
 
-  if (selectedType === "flow" || (editing as any)?.data?.listener?.flowDefinition) {
+  if (selectedType === "starters") return <ConversationStarters integrationId={instagram?.id ?? ""} slug={slug} loading={userPending} />;
+
+  if (selectedType === "flow" || (editing as any)?.data?.listener?.flowDefinition || (editing as any)?.data?.listener?.flowDraft) {
     if (userPending) return <div className="grid min-h-96 place-items-center"><Loader2 className="h-6 w-6 animate-spin" aria-label="Loading account" /></div>;
     return <FlowBuilder key={`${editId ?? "new"}:${instagram?.id ?? "none"}`} slug={slug} integrationId={instagram?.id ?? ""} templateId={searchParams?.template} automation={(editing as any)?.data} posts={postList} postsLoading={postsLoading} postsError={postsError} refreshPosts={() => void refetchPosts()} plan={(user as any)?.data?.subscription?.plan ?? "FREE"} />;
   }

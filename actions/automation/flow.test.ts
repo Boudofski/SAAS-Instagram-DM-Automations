@@ -115,7 +115,7 @@ describe("custom flow save authorization", () => {
   it("rejects invalid graphs before writes", async () => {
     const flow = templateFlow();
     flow.entry = "missing";
-    expect(await saveAutomationFlow({ ...input, flow })).toMatchObject({
+    expect(await saveAutomationFlow({ ...input, flow, active: true })).toMatchObject({
       status: 400,
     });
     expect(m.transaction).not.toHaveBeenCalled();
@@ -146,7 +146,7 @@ describe("custom flow save authorization", () => {
   });
   it("requires a post for comment flows", async () => {
     expect(
-      await saveAutomationFlow({ ...input, source: "COMMENT" }),
+      await saveAutomationFlow({ ...input, source: "COMMENT", active: true }),
     ).toMatchObject({ status: 400 });
     expect(m.transaction).not.toHaveBeenCalled();
   });
@@ -161,3 +161,34 @@ function configuredEmail() {
       ];
   return flow;
 }
+
+describe("draft and publication separation",()=>{
+ it("saves an empty canvas without requiring a trigger",async()=>{expect(await saveAutomationFlow({...input,triggers:[],flow:{version:1,entry:"",oncePerContact:false,nodes:[]}})).toMatchObject({status:200});});
+ it("does not publish an empty canvas",async()=>{expect(await saveAutomationFlow({...input,active:true,triggers:[],flow:{version:1,entry:"",oncePerContact:false,nodes:[]}})).toMatchObject({status:400});expect(m.transaction).not.toHaveBeenCalled();});
+ it("autosaves a live flow without cancelling runs or changing its live revision",async()=>{
+  m.existing.mockResolvedValue({id,active:true,listener:{flowDefinition:input.flow,flowRevision:3,flowDraft:null}});
+  expect(await saveAutomationFlow({...input,id,revision:3,name:"Draft name"})).toMatchObject({status:200,revision:4});
+  expect(m.clear).not.toHaveBeenCalled();expect(m.update).not.toHaveBeenCalled();
+  expect(m.revision.mock.calls[0][0].data.flowRevision).toBeUndefined();expect(m.revision.mock.calls[0][0].data.flowDraft.revision).toBe(4);
+ });
+ it("compares the current draft revision rather than the older live revision",async()=>{
+  m.existing.mockResolvedValue({id,active:true,listener:{flowDefinition:input.flow,flowRevision:3,flowDraft:{revision:5}}});
+  expect(await saveAutomationFlow({...input,id,revision:4})).toMatchObject({status:409});expect(m.revision).not.toHaveBeenCalled();
+ });
+ it("publishes an edited draft with a fresh runtime revision",async()=>{
+  m.existing.mockResolvedValue({id,active:true,listener:{flowDefinition:input.flow,flowRevision:3,flowDraft:{revision:5}}});
+  expect(await saveAutomationFlow({...input,id,revision:5,active:true})).toMatchObject({status:200,revision:6});
+  expect(m.revision.mock.calls[0][0].data.flowRevision).toBe(6);
+  expect(m.update.mock.calls[0][0].data.listener.upsert.update.flowDraft).toBeDefined();
+ });
+ it("rejects placeholder destinations when publishing",async()=>{
+  const flow=structuredClone(input.flow) as any;flow.nodes.find((n:any)=>n.kind==="message").links=[{label:"Resource",url:"https://example.com/offer"}];
+  expect(await saveAutomationFlow({...input,active:true,flow})).toMatchObject({status:400});expect(m.transaction).not.toHaveBeenCalled();
+ });
+ it("preserves all source-specific triggers on save",async()=>{
+  const triggers=[{id:"comment",source:"COMMENT" as const,storyTrigger:"REPLY" as const,keyword:"BOOK",anyMessage:false,postScope:"all" as const},{id:"dm",source:"DM" as const,storyTrigger:"REPLY" as const,keyword:"SHOP",anyMessage:false}];
+  expect(await saveAutomationFlow({...input,triggers,active:true})).toMatchObject({status:200});
+  expect(m.update.mock.calls[0][0].data.trigger.create).toEqual([{type:"COMMENT"},{type:"DM"}]);
+  expect(m.update.mock.calls[0][0].data.listener.upsert.create.flowTriggers).toHaveLength(2);
+ });
+});
