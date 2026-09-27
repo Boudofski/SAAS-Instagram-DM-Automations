@@ -53,3 +53,20 @@
 .productImage { position:relative; aspect-ratio:1.5; width:90%; flex-shrink:0; border-radius:12px; overflow:hidden; }
 .productImage img { object-fit:cover; }
 @media(max-width:479px) { .caption { font-size:9px; } .profile { padding:12px; } }
+/* Interactive templates use the same Instagram surface as the quick editors. */
+.interactivePreview { height:clamp(430px,72dvh,620px); flex:none; }
+.preview button:focus-visible { outline:2px solid #8b5cf6; outline-offset:2px; }
+.preview button:disabled { cursor:default; }
+.flowProduct { width:100%; max-height:190px; object-fit:contain; border-radius:12px; background:var(--pv-soft); }
+.carousel { display:flex; gap:8px; max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; padding-bottom:8px; }
+.carouselCard { flex:0 0 88%; min-width:0; overflow:hidden; scroll-snap-align:start; border:1px solid var(--pv-line); border-radius:12px; background:var(--pv-soft); }
+.carouselCard>img { height:125px; width:100%; object-fit:cover; }
+.carouselCard>strong,.carouselCard>small { display:block; padding:8px 10px 0; font-size:11px; overflow-wrap:anywhere; }
+.carouselCard>small { padding-top:4px; padding-bottom:8px; font-size:10px; color:var(--pv-muted); }
+.carouselCard>button { width:calc(100% - 12px); margin:6px; }
+.replyInput { min-width:0; width:100%; flex:1; background:transparent; color:var(--pv-text); outline:none; font-size:11px; }
+.replyInput::placeholder { color:var(--pv-muted); }
+.sendReply { display:grid; place-items:center; width:30px; height:30px; flex-shrink:0; color:#7c3aed; }
+.sendReply:disabled { opacity:.35; }
+:global(.dark) .sendReply { color:#c4b5fd; }
+@media(max-width:767px) { .replyInput { font-size:16px; } .button { min-height:40px; } }

@@ -64,7 +64,7 @@ const INITIAL: Draft = {
   aiReplyEnabled: false,
 };
 
-export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation, templateId, username }: { username?: string | null; integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any; templateId?: string }) {
+export default function MessageAutomationWizard({ integrationId = "", slug, source, automationId, automation, templateId, username, avatar }: { avatar?: string | null; username?: string | null; integrationId?: string; slug: string; source: Source; automationId?: string; automation?: any; templateId?: string }) {
   const tr = useUi();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -165,7 +165,7 @@ export default function MessageAutomationWizard({ integrationId = "", slug, sour
   };
   const interaction = source === "STORY" ? STORY_TRIGGERS.find(t=>t.value === draft.storyTriggerType)?.description : "When someone sends you a DM";
   return <EditorLayout slug={slug} name={draft.name} onNameChange={name=>setDraft(v=>({...v,name}))} active={Boolean(automation?.active)} saving={saving} onSave={active=>void save(active)} error={error} accountName={username || undefined}
-    preview={<EditorPreview data={previewData} mode="dm" onModeChange={()=>{}} username={username} source={source} interaction={interaction} aiDmReply={draft.aiReplyEnabled}/> }>
+    preview={<EditorPreview data={previewData} mode="dm" onModeChange={()=>{}} username={username} avatar={avatar} source={source} interaction={interaction} aiDmReply={draft.aiReplyEnabled}/> }>
     <EditorGroup title="Setup Triggers">
       <EditorRow title={source === "STORY" ? "Story interaction" : "Trigger"} icon={<Target/>} open={openTrigger} onOpen={()=>setOpenTrigger(!openTrigger)}
         controls={source === "STORY" ? <select aria-label={tr("Story interaction")} value={draft.storyTriggerType} onChange={e=>setDraft(v=>({...v,storyTriggerType:e.target.value as StoryTrigger}))}>{STORY_TRIGGERS.map(t=><option value={t.value} key={t.value}>{tr(t.title)}</option>)}</select> : <select aria-label={tr("Trigger type")} value={draft.triggerMode} onChange={e=>setDraft(v=>({...v,triggerMode:e.target.value as Draft["triggerMode"]}))}><option value="SPECIFIC_KEYWORD">{tr("a specific word (s)")}</option><option value="ANY_MESSAGE">{tr("Any incoming DM")}</option></select>}>

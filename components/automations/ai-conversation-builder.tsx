@@ -3,19 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowLeft, Check, ChevronRight, GitBranch, Loader2, MessageCircle, Plus, RotateCcw, Send, ShieldCheck, Sparkles, Trash2, Wifi, BatteryFull } from "lucide-react";
+import { ArrowDown, ArrowLeft, Check, ChevronRight, GitBranch, Loader2, MessageCircle, Plus, RotateCcw, Send, ShieldCheck, Sparkles, Trash2, Camera } from "lucide-react";
 import { generateConversationPlan, previewAiConversation } from "@/actions/ai-conversation";
 import { saveMessageAutomation } from "@/actions/automation";
 import { aiConversationSchema, DEFAULT_AI_CONVERSATION, readAiConversation, conversationStopIntent, type AiConversationConfig, type AiConversationTurn } from "@/lib/ai-conversation";
 import { useQueryClient } from "@tanstack/react-query";
 
-type Props = { slug: string; integrationId: string; accountName: string; automationId?: string; automation?: { name?: string; triggerMode?: string; keywords?: Array<{ word: string }>; listener?: { aiConversation?: unknown } } };
+import EditorPreview from "./editor-preview";
+import InstagramPreviewMessage from "./instagram-preview-message";
+import previewStyles from "./editor-preview.module.css";
+
+type Props = { avatar?: string | null; slug: string; integrationId: string; accountName: string; automationId?: string; automation?: { name?: string; triggerMode?: string; keywords?: Array<{ word: string }>; listener?: { aiConversation?: unknown } } };
 type PreviewTurn = AiConversationTurn & { linkButton?: { label: string; url: string } };
 const field = "ap3k-input w-full rounded-xl px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-violet-500/40";
 const button = "inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50";
 const secondary = "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10";
 
-export default function AiConversationBuilder({ slug, integrationId, accountName, automationId, automation }: Props) {
+export default function AiConversationBuilder({ slug, integrationId, accountName, automationId, automation, avatar }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [config, setConfig] = useState<AiConversationConfig>(() => readAiConversation(automation?.listener?.aiConversation) ?? { ...DEFAULT_AI_CONVERSATION, tasks: [...DEFAULT_AI_CONVERSATION.tasks] });
@@ -117,17 +121,18 @@ export default function AiConversationBuilder({ slug, integrationId, accountName
         </footer>
       </section>
       <aside aria-label="Conversation preview" className={`${mobilePreview ? "flex" : "hidden xl:flex"} min-w-0 flex-col items-center justify-center border-s border-slate-200 bg-[radial-gradient(ellipse_at_top_left,_#ede9fe,_#faf5ff_45%,_#fff7ed)] p-5 dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_top_left,_#271944,_#111424_55%,_#171020)] sm:p-8`}>
-        <div className="mb-5 flex w-full max-w-[370px] items-center justify-between"><div><p className="text-sm font-semibold">Live preview</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Try a real conversation with your AI</p></div><button type="button" aria-label="Reset preview conversation" title="Reset preview" disabled={blocked} className={secondary} onClick={() => { setTurns([]); setPreviewStopped(false); setNotice(""); setError(""); }}><RotateCcw size={16} /></button></div>
-        <div className="flex h-[640px] max-h-[78dvh] min-h-[450px] w-full max-w-[370px] flex-col overflow-hidden rounded-[44px] border-[10px] border-[#202330] bg-[#101115] text-white shadow-2xl">
-          <div className="flex items-center justify-between px-6 pb-3 pt-3 text-xs font-semibold"><span>9:41</span><span className="h-5 w-20 rounded-full bg-black" /><span className="flex gap-1.5"><Wifi size={14} /><BatteryFull size={17} /></span></div>
-          <div className="flex items-center gap-3 border-b border-white/10 px-4 pb-4 pt-2"><ArrowLeft size={19} /><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-xs font-bold">{accountName.slice(0, 2).toUpperCase()}</span><div className="min-w-0"><p className="truncate text-sm font-semibold">{accountName}</p><p className="text-xs text-slate-400">Business chat</p></div></div>
-          <div ref={previewEnd} aria-live="polite" aria-label="Preview messages" className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
-            {!turns.length ? <div className="flex h-full flex-col items-center justify-center px-4 text-center"><span className="mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-violet-500/10 text-violet-300"><Sparkles size={30} /></span><h3 className="text-base font-semibold">Meet your AI assistant</h3><p className="mt-2 text-sm leading-6 text-slate-400">Add a goal and context, then start a preview chat.</p>{valid ? <button type="button" disabled={blocked} className={`${button} mt-5`} onClick={() => void chat("Hi! Can you help me?")}>Start conversation</button> : null}</div> : turns.map((turn, index) => <div key={index} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}><div dir="auto" className={`max-w-[88%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-3 text-sm leading-6 ${turn.role === "user" ? "rounded-br-md bg-violet-600" : "rounded-bl-md bg-[#282b33]"}`}>{turn.content}{turn.linkButton ? <a href={turn.linkButton.url} target="_blank" rel="noopener noreferrer" className="mt-3 block rounded-lg bg-white/10 px-3 py-2 text-center font-semibold hover:bg-white/20">{turn.linkButton.label}</a> : null}</div></div>)}
-            {busy === "preview" ? <div role="status" className="flex items-center gap-2 text-xs text-slate-400"><Loader2 size={14} className="animate-spin" /> AI is replying…</div> : null}
-          </div>
-          {mobilePreview && error ? <p role="alert" className="px-4 py-2 text-xs text-red-300 xl:hidden">{error}</p> : null}
-          <form className="m-3 flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2" onSubmit={e => { e.preventDefault(); void chat(); }}><input aria-label="Test customer message" placeholder="Write a message…" maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} disabled={!valid || blocked} className="min-w-0 flex-1 bg-transparent py-1 text-sm text-white outline-none placeholder:text-slate-500 disabled:opacity-50" /><button type="submit" aria-label="Send preview message" disabled={!valid || blocked || !message.trim()} className="text-violet-300 disabled:opacity-30"><Send size={19} /></button></form><div className="mx-auto mb-2 h-1 w-28 rounded-full bg-white/35" />
-        </div>
+        <EditorPreview data={{sendPrivateDm:true}} mode="dm" onModeChange={()=>{}} source="DM" username={accountName} avatar={avatar} className={previewStyles.interactivePreview} messagesRef={previewEnd}
+          toolbar={<button type="button" aria-label="Reset preview conversation" title="Reset preview" disabled={blocked} onClick={()=>{setTurns([]);setPreviewStopped(false);setNotice("");setError("");}}><RotateCcw size={15}/></button>}
+          conversation={<>
+            {!turns.length ? <div className="m-auto px-3 text-center"><Sparkles className="mx-auto mb-4 text-violet-500" size={26}/><h3 className="text-sm font-semibold">Meet your AI assistant</h3><p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Add a goal and context, then start a preview chat.</p>{valid && <button type="button" disabled={blocked} className={`${button} mt-4 text-xs`} onClick={()=>void chat("Hi! Can you help me?")}>Start conversation</button>}</div> : turns.map((turn,index)=><InstagramPreviewMessage key={index} text={turn.content} incoming={turn.role === "user"} avatar={avatar} username={accountName} links={turn.linkButton ? [turn.linkButton] : undefined}/>)}
+            {busy === "preview" && <p role="status" className={previewStyles.interaction}>AI is replying…</p>}
+            {mobilePreview && error && <p role="alert" className="text-xs text-red-600 dark:text-red-300 xl:hidden">{error}</p>}
+          </>}
+          composer={<form className={previewStyles.composer} onSubmit={e=>{e.preventDefault();void chat();}}>
+            <span className={previewStyles.camera}><Camera size={15}/></span><span className={previewStyles.composerInput}><input aria-label="Test customer message" placeholder="Message…" maxLength={1000} value={message} onChange={e=>setMessage(e.target.value)} disabled={!valid || blocked} className={previewStyles.replyInput}/></span><button type="submit" aria-label="Send preview message" disabled={!valid || blocked || !message.trim()} className={previewStyles.sendReply}><Send size={16}/></button>
+          </form>}
+        />
+        <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">Private test · No messages sent to Instagram</p>
       </aside>
     </div>
   </div>;

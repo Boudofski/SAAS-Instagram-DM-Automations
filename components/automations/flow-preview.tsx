@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { RotateCcw, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, RotateCcw, Send } from "lucide-react";
 import {
   branchTarget,
   responseTarget,
@@ -10,6 +10,10 @@ import {
   type FlowValues,
 } from "@/lib/automation-flow/definition";
 import { previewFlowAction } from "@/lib/automation-flow/action-preview";
+import EditorPreview, { type EditorPreviewMode } from "./editor-preview";
+import InstagramPreviewMessage from "./instagram-preview-message";
+import type { FlowTrigger } from "@/lib/automation-flow/triggers";
+import styles from "./editor-preview.module.css";
 export type FlowPreviewBubble = {
   text: string;
   incoming?: boolean;
@@ -136,7 +140,44 @@ const SIMULATED_FIELDS = [
   ["_verified", "Verified on Instagram"],
   ["_linkClicked", "User clicked a flow link"],
 ] as const;
-export default function FlowPreview({ flow }: { flow: Flow }) {
+/** Match publishing: comments require an opener; a single-choice entry supplies its own. */
+export function needsSeparateFlowOpening(
+  flow: Flow,
+  source: "COMMENT" | "DM" | "STORY",
+) {
+  const entry = flow.nodes.find((node) => node.id === flow.entry);
+  return (
+    source === "COMMENT" &&
+    !(entry?.kind === "question" && entry.options.length === 1)
+  );
+}
+export default function FlowPreview({
+  flow,
+  triggers = [],
+  publicReply = "",
+  opening = "",
+  openingButton = "Continue",
+  username,
+  avatar,
+}: {
+  flow: Flow;
+  triggers?: FlowTrigger[];
+  publicReply?: string;
+  opening?: string;
+  openingButton?: string;
+  username?: string | null;
+  avatar?: string | null;
+}) {
+  const [triggerId, setTriggerId] = useState(triggers[0]?.id ?? "");
+  const trigger = triggers.find((t) => t.id === triggerId) ?? triggers[0];
+  const source = trigger?.source ?? "DM";
+  const openingEnabled = needsSeparateFlowOpening(flow, source);
+  const [mode, setMode] = useState<EditorPreviewMode>(
+    source === "COMMENT" ? "post" : "dm",
+  );
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [openingPending, setOpeningPending] = useState(openingEnabled);
+  const initialValues = { username: "username", first_name: "Alex" };
   const [messages, setMessages] = useState<Bubble[]>([]);
   const [waiting, setWaiting] = useState<FlowNode | null>(null);
   const [values, setValues] = useState<FlowValues>({});
@@ -144,7 +185,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
   const [error, setError] = useState("");
   const [draw, setDraw] = useState(0.001);
   const [ended, setEnded] = useState(false);
-  const [started, setStarted] = useState(false);
+
   const [simulated, setSimulated] = useState<FlowValues>({
     _followsBusiness: "false",
     _businessFollows: "false",
@@ -152,15 +193,32 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
     _linkClicked: "false",
     _followerCount: "0",
   });
-  useEffect(() => {
-    setMessages([]);
+  function restart() {
     setInput("");
-    setWaiting(null);
-    setValues({});
-    setEnded(false);
-    setStarted(false);
     setError("");
-  }, [flow]);
+    setValues(initialValues);
+    setOpeningPending(openingEnabled);
+    if (openingEnabled) {
+      setMessages([
+        {
+          text: resolveFlowText(opening, initialValues),
+          options: [openingButton || "Continue"],
+        },
+      ]);
+      setWaiting(null);
+      setEnded(false);
+    } else advance(flow.entry, initialValues, []);
+  }
+  useEffect(() => {
+    restart();
+  }, [flow, opening, openingButton, openingEnabled, draw]);
+  useEffect(() => {
+    if (source !== "COMMENT") setMode("dm");
+  }, [source]);
+  useEffect(() => {
+    const box = scrollRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [messages, mode]);
   function advance(start: string | null, data: FlowValues, history: Bubble[]) {
     const vars = { ...data };
     for (const key of [
@@ -172,7 +230,7 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
         vars[key] = simulated[key];
     }
     const next = advanceFlowPreview(flow, start, vars, history, draw);
-    setStarted(true);
+
     setMessages(next.messages);
     setValues(next.values);
     setWaiting(next.waiting);
@@ -180,15 +238,28 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
     setEnded(next.ended);
   }
   function reply(text: string) {
+    if (!text.trim()) return;
+    if (/^stop$/i.test(text.trim())) {
+      setMessages([...messages, { text, incoming: true }]);
+      setOpeningPending(false);
+      setWaiting(null);
+      setEnded(true);
+      setInput("");
+      setError("");
+      return;
+    }
+    if (openingPending) {
+      setOpeningPending(false);
+      setInput("");
+      advance(flow.entry, initialValues, [
+        ...messages,
+        { text, incoming: true },
+      ]);
+      return;
+    }
     if (!waiting || waiting.kind === "delay" || !text.trim()) return;
     const out = [...messages, { text, incoming: true }];
     setInput("");
-    if (/^stop$/i.test(text.trim())) {
-      setMessages(out);
-      setWaiting(null);
-      setEnded(true);
-      return;
-    }
     const result = responseTarget(waiting, text);
     if (!result) {
       setError(
@@ -204,193 +275,194 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
     }
     advance(result.next, { ...values, ...result.values }, out);
   }
+  const canReply =
+    openingPending || Boolean(waiting && waiting.kind !== "delay");
+  const interaction =
+    source === "STORY"
+      ? trigger?.storyTrigger === "MENTION"
+        ? "Mentioned you in their story"
+        : trigger?.storyTrigger === "REACTION"
+          ? "Reacted to your story"
+          : "Replied to your story"
+      : trigger?.sharedPost
+        ? "Shared a post or Reel with you"
+        : source === "COMMENT"
+          ? "Replied to your comment"
+          : trigger?.keyword
+            ? `Sent “${trigger.keyword}”`
+            : "Sent you a message";
   return (
-    <section className="mx-auto min-w-0 w-full max-w-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold">Interactive preview</h3>
-        <button
-          onClick={() => {
-            setValues({});
-            setInput("");
-            advance(flow.entry, {}, []);
-          }}
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-violet-600 dark:text-violet-300"
-        >
-          <RotateCcw size={15} />
-          Restart
-        </button>
-      </div>
-      <div className="overflow-hidden rounded-[2.5rem] border-[8px] border-[#272b3a] bg-[#101216] text-white shadow-xl">
-        <header className="border-b border-white/10 p-3 sm:p-5">
-          <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-white/20" />
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-violet-600 font-bold">
-              A3
-            </span>
-            <div>
-              <p className="text-sm font-bold">AP3K preview</p>
-              <p className="text-xs text-slate-400">
-                Sample conversation · nothing is sent
-              </p>
-            </div>
-          </div>
-        </header>
-        <div
-          className="flex h-[clamp(200px,42dvh,380px)] flex-col gap-3 overflow-auto p-4"
-          aria-live="polite"
-        >
-          {!started ? (
-            <div className="m-auto text-center">
-              <p className="mb-4 text-sm text-slate-400">
-                Try your message and every branch.
-              </p>
-              <button
-                onClick={() => advance(flow.entry, {}, [])}
-                className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white"
-              >
-                Start preview
-              </button>
-            </div>
-          ) : (
-            messages.map((m, i) => (
-              <div
-                key={i}
-                className={`min-w-0 max-w-[95%] shrink-0 overflow-hidden rounded-2xl ${m.notice ? "self-center border border-white/10 text-slate-400" : m.incoming ? "self-end bg-violet-600" : "self-start bg-[#262a33]"}`}
-              >
-                {m.image && (
-                  <img
-                    src={m.image}
-                    alt="Product preview"
-                    className="max-h-48 w-full object-contain"
-                  />
-                )}
-                <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] p-3 text-sm leading-6">
-                  {m.text}
-                </p>
-                {m.cards && (
-                  <div
-                    className="flex max-w-full snap-x gap-2 overflow-x-auto p-2"
-                    aria-label="Preview carousel cards"
-                  >
-                    {m.cards.map((card, cardIndex) => (
-                      <article
-                        key={cardIndex}
-                        className="w-52 shrink-0 snap-start overflow-hidden rounded-xl border border-white/10"
-                      >
-                        <img
-                          src={card.image}
-                          alt={card.title}
-                          className="h-32 w-full object-cover"
-                        />
-                        <p className="break-words px-3 pt-3 text-sm font-semibold">
-                          {card.title}
-                        </p>
-                        <p className="break-words px-3 pb-2 text-xs text-slate-400">
-                          {card.subtitle}
-                        </p>
-                        {card.links.map((link, linkIndex) => (
-                          <span
-                            key={linkIndex}
-                            className="m-2 block break-words rounded-lg bg-white/10 px-3 py-2 text-center text-sm"
-                          >
-                            {link.label} ↗
-                          </span>
-                        ))}
-                      </article>
-                    ))}
-                  </div>
-                )}
-                {m.links?.map((l) => (
-                  <span
-                    key={l.label}
-                    className="m-2 block break-words rounded-lg bg-white/10 px-4 py-2 text-center text-sm"
-                  >
-                    {l.label} ↗
-                  </span>
-                ))}
-                {m.options?.map((o) => (
-                  <button
-                    key={o}
-                    disabled={i !== messages.length - 1 || !waiting}
-                    onClick={() => reply(o)}
-                    className="m-2 block min-h-11 w-[calc(100%-1rem)] break-words rounded-lg bg-white/10 px-3 py-2 text-sm disabled:opacity-50"
-                  >
-                    {o}
-                  </button>
-                ))}
-              </div>
-            ))
-          )}
-          {waiting?.kind === "delay" && (
-            <div className="space-y-2 text-center">
-              {waiting.seconds >= 86400 && (
-                <p className="text-xs text-amber-300">
-                  A live follow-up may expire outside Instagram&apos;s messaging
-                  window.
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => advance(waiting.next, values, messages)}
-                className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold"
-              >
-                Continue preview
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setWaiting(null);
-                  setEnded(true);
-                }}
-                className="ms-2 px-3 py-3 text-sm text-slate-400"
-              >
-                Stop preview
-              </button>
-            </div>
-          )}
-          {ended && (
-            <p className="py-2 text-center text-xs text-slate-400">
-              Flow finished
-            </p>
-          )}
-        </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            reply(input);
-          }}
-          className="flex gap-2 border-t border-white/10 p-3"
-        >
-          <input
-            disabled={!waiting || waiting.kind === "delay"}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              waiting?.kind === "delay"
-                ? "Skip the wait to continue"
-                : waiting
-                  ? "Write a reply…"
-                  : ended
-                    ? "Preview finished"
-                    : "Start preview to test"
-            }
-            aria-label="Preview reply"
-            className="min-w-0 flex-1 rounded-full bg-white/10 px-4 py-2 text-sm text-white placeholder:text-slate-400"
-          />
-          <button
-            aria-label="Send preview reply"
-            disabled={!waiting || waiting.kind === "delay"}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-600 p-2.5 disabled:opacity-40"
+    <section className="mx-auto w-full min-w-0 max-w-[300px]">
+      {triggers.length > 1 && (
+        <label className="mb-3 block text-xs text-slate-500 dark:text-slate-400">
+          Preview trigger
+          <select
+            aria-label="Preview trigger"
+            className="flow-editor-input"
+            value={trigger?.id}
+            onChange={(e) => {
+              setTriggerId(e.target.value);
+              setMode(
+                triggers.find((t) => t.id === e.target.value)?.source ===
+                  "COMMENT"
+                  ? "post"
+                  : "dm",
+              );
+              restart();
+            }}
           >
-            <Send size={17} />
-          </button>
-        </form>
-      </div>
-      {error && (
-        <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-300">
-          {error}
-        </p>
+            {triggers.map((t, i) => (
+              <option key={t.id} value={t.id}>
+                {i + 1}.{" "}
+                {t.source === "COMMENT"
+                  ? "Post comment"
+                  : t.source === "STORY"
+                    ? "Story interaction"
+                    : "Direct message"}
+                {t.keyword ? ` · ${t.keyword}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
+      <EditorPreview
+        postPlaceholder={
+          trigger?.postScope === "next" && !trigger.post?.media
+            ? "Your next published post or Reel"
+            : undefined
+        }
+        className={styles.interactivePreview}
+        username={username}
+        avatar={avatar}
+        source={source}
+        mode={mode}
+        onModeChange={setMode}
+        interaction={interaction}
+        messagesRef={scrollRef}
+        data={{
+          post:
+            trigger?.post ??
+            (trigger?.postScope === "all"
+              ? { postid: "ANY", media: "", mediaType: "IMAGE" }
+              : null),
+          keywords: trigger?.keyword ? [trigger.keyword] : [],
+          triggerMode: trigger?.anyMessage ? "ANY_COMMENT" : "SPECIFIC_KEYWORD",
+          publicReplyEnabled: Boolean(publicReply),
+          commentReplies: [publicReply],
+          sendPrivateDm: true,
+        }}
+        toolbar={
+          <button
+            type="button"
+            aria-label="Restart preview"
+            title="Restart preview"
+            onClick={restart}
+          >
+            <RotateCcw size={15} />
+          </button>
+        }
+        conversation={
+          <>
+            {messages.map((message, index) => (
+              <InstagramPreviewMessage
+                key={index}
+                {...message}
+                avatar={avatar}
+                username={username}
+                onReply={
+                  index === messages.length - 1 && canReply ? reply : undefined
+                }
+                onLink={() =>
+                  setSimulated((v) => ({ ...v, _linkClicked: "true" }))
+                }
+              />
+            ))}
+            {simulated._linkClicked === "true" && (
+              <p role="status" className={styles.interaction}>
+                Link click recorded in this preview.
+              </p>
+            )}
+            {error && (
+              <p
+                role="alert"
+                className="text-xs text-red-600 dark:text-red-300"
+              >
+                {error}
+              </p>
+            )}
+            {!messages.length && !error && (
+              <p className={styles.interaction}>
+                Add a message to see your conversation here.
+              </p>
+            )}
+            {waiting?.kind === "delay" && (
+              <div className="space-y-2 text-center">
+                {waiting.seconds >= 86400 && (
+                  <p className="text-[10px] text-amber-700 dark:text-amber-300">
+                    A live follow-up may expire outside Instagram&apos;s
+                    messaging window.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className={styles.button}
+                  onClick={() => advance(waiting.next, values, messages)}
+                >
+                  Continue preview
+                </button>
+                <button
+                  type="button"
+                  className="p-2 text-xs text-slate-500 dark:text-slate-400"
+                  onClick={() => {
+                    setWaiting(null);
+                    setEnded(true);
+                  }}
+                >
+                  Stop preview
+                </button>
+              </div>
+            )}
+            {ended && <p className={styles.interaction}>Flow finished</p>}
+          </>
+        }
+        composer={
+          <form
+            className={styles.composer}
+            onSubmit={(e) => {
+              e.preventDefault();
+              reply(input);
+            }}
+          >
+            <span className={styles.camera}>
+              <Camera size={15} />
+            </span>
+            <span className={styles.composerInput}>
+              <input
+                aria-label="Preview reply"
+                className={styles.replyInput}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={!canReply}
+                placeholder={
+                  waiting?.kind === "delay"
+                    ? "Skip the wait to continue"
+                    : ended
+                      ? "Preview finished"
+                      : "Message…"
+                }
+              />
+            </span>
+            <button
+              type="submit"
+              aria-label="Send preview reply"
+              className={styles.sendReply}
+              disabled={!canReply || !input.trim()}
+            >
+              <Send size={16} />
+            </button>
+          </form>
+        }
+      />
       <details className="mt-4 rounded-xl border border-slate-200 p-3 dark:border-white/10">
         <summary className="cursor-pointer text-sm font-medium">
           Simulated contact
@@ -439,13 +511,6 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
             value={draw}
             onChange={(e) => {
               setDraw(Number(e.target.value));
-              setMessages([]);
-              setWaiting(null);
-              setInput("");
-              setValues({});
-              setError("");
-              setEnded(false);
-              setStarted(false);
             }}
             className="ap3k-input mt-2 w-full rounded-xl p-2"
           >
@@ -455,9 +520,8 @@ export default function FlowPreview({ flow }: { flow: Flow }) {
         </label>
       )}
       <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
-        This simulation uses your saved branching rules. Instagram controls the
-        final message appearance. No live messages, entries, or leads are
-        created.
+        Interactive preview · nothing is sent to Instagram. Buttons and contact
+        values only affect this simulation.
       </p>
     </section>
   );
