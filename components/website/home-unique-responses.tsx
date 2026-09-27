@@ -3,8 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 import { Link2 } from "lucide-react";
+import { Inter } from "next/font/google";
 import { useUi } from "@/components/i18n/use-ui";
 import styles from "./home-unique-responses.module.css";
+
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 const examples = [
   { user: "thechefspecial_me", creator: "carlatseventy", customer: "thereal_evelyn", photo: "commenter", brandPhoto: "creator", dmPhoto: "customer", reply: "Thanks, @thechefspecial_me! Your link is waiting in your DMs 🙌", dm: "Hey! So glad you reached out 😊 Tap below to get the link you asked for." },
@@ -45,15 +48,19 @@ export default function HomeUniqueResponses() {
         tick = 0;
         setFrame(previous => ({ index: (previous.index + 1) % examples.length, characters: 0 }));
       } else {
-        setFrame(previous => ({ ...previous, characters: Math.max(0, tick - 20) * 2 }));
+        setFrame(previous => {
+          const limit = Math.max(tr(examples[previous.index].reply).length, tr(examples[previous.index].dm).length);
+          const next = Math.min(limit, Math.max(0, tick - 20) * 2);
+          return previous.characters === next ? previous : { ...previous, characters: next };
+        });
       }
     }, 40);
     return () => window.clearInterval(timer);
-  }, [visible, reducedMotion, pageVisible]);
+  }, [visible, reducedMotion, pageVisible, tr]);
 
   const characters = reducedMotion ? Infinity : frame.characters;
   return (
-    <section ref={ref} id="unique-responses" className={styles.section} aria-labelledby="unique-responses-title">
+    <section ref={ref} id="unique-responses" className={`${styles.section} ${inter.className}`} aria-labelledby="unique-responses-title">
       <div className={styles.container}>
         <header className={styles.heading}>
           <span className={styles.eyebrow}><i />{tr("Unique every time")}</span>
@@ -85,7 +92,7 @@ export default function HomeUniqueResponses() {
                             <Avatar photo={example.brandPhoto} brand />
                             <div className={styles.commentBody}>
                               <div className={styles.user}><b>{example.creator}</b><span className={styles.ai}>✦ AI</span></div>
-                              <p className={styles.typed}>{reply.slice(0, characters)}{characters < reply.length && <span className={styles.cursor} />}</p>
+                              <p className={styles.typed}>{reply.slice(0, characters).split(/(@[A-Za-z0-9_.]+)/g).map((part, i) => part.startsWith("@") ? <span key={i} className={styles.mention}>{part}</span> : part)}{characters < reply.length && <span className={styles.cursor} />}</p>
                             </div>
                           </div>
                         </div> : <>

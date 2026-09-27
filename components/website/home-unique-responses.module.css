@@ -32,6 +32,7 @@
 .user .ai { padding: 2px 6px; border-radius: 10px; background: #eef3fd; color: #2563eb; font-size: 9.5px; font-weight: 600; white-space: nowrap; }
 :global(.dark) .ai { background: #303e61; color: #bed1ff; }
 .typed { min-height: 36px; }
+.mention { color: var(--unique-blue); }
 .cursor { display: inline-block; width: 1px; height: 12px; background: currentColor; vertical-align: -1px; animation: blink 1s steps(2,start) infinite; }
 .dmHeader { display: flex; align-items: center; gap: 9px; padding: 10px 14px; border-bottom: 1px solid var(--unique-border); }
 .back { font-size: 20px; line-height: 1; }
