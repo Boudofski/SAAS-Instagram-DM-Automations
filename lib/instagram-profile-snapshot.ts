@@ -276,6 +276,37 @@ function mergeDiagnosticJson(existing: unknown, diagnostics: InstagramProfileFet
   return diagnosticJson(diagnostics);
 }
 
+async function markIntegrationReconnectRequired(
+  integrationId: string,
+  reason: string,
+  source: string,
+) {
+  const now = new Date();
+  await client.integrations.update({
+    where: { id: integrationId },
+    data: {
+      reconnectRequired: true,
+      oauthLastError: reason,
+      oauthLastErrorAt: now,
+      oauthLastErrorSource: source,
+      lastAdminNote: reason,
+      lastAdminActionAt: now,
+    },
+  }).catch(() => undefined);
+  await client.automation.updateMany({
+    where: {
+      integrationId,
+      active: true,
+      archivedAt: null,
+    },
+    data: {
+      active: false,
+      needsReview: true,
+      reviewReason: "Instagram authorization expired. Reconnect Instagram before reactivating this automation.",
+    },
+  }).catch(() => undefined);
+}
+
 async function storeProfileFetchDiagnostics(
   integrationId: string,
   existing: unknown,
@@ -412,6 +443,11 @@ export async function refreshInstagramProfileSnapshotForUser(
 
   if (integration.expiresAt && integration.expiresAt.getTime() < now.getTime()) {
     await storeProfileFetchDiagnostics(integration.id, integration.oauthResolutionDiagnostics, diagnostics);
+    await markIntegrationReconnectRequired(
+      integration.id,
+      "instagram_token_expired",
+      "profile_snapshot",
+    );
     return {
       status: 401,
       data: serializeInstagramSnapshot(latest),
@@ -463,6 +499,14 @@ export async function refreshInstagramProfileSnapshotForUser(
     };
   } catch (error) {
     await storeProfileFetchDiagnostics(integration.id, integration.oauthResolutionDiagnostics, diagnostics);
+    const safe = getSafeMetaError(error);
+    if (safe.code === 190) {
+      await markIntegrationReconnectRequired(
+        integration.id,
+        "instagram_token_invalidated",
+        "profile_snapshot",
+      );
+    }
     console.warn("[instagram-profile-refresh-failed]", diagnostics);
     return {
       status: 200,
