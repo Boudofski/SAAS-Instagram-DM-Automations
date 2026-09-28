@@ -10,8 +10,8 @@ import styles from "./home-features.module.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 const ART = ["story-automation", "next-post", "universal-automation", "backtrack", "story-mention", "link-tracking", "boosted-posts", "team-access"] as const;
-// Keep reference concepts visible without presenting unimplemented features as available.
-const PREVIEW_ONLY = new Set<string>(["next-post", "backtrack", "link-tracking", "boosted-posts", "team-access"]);
+const HIDDEN_FEATURES = new Set<string>(["boosted-posts", "team-access"]);
+const PREVIEW_ONLY = new Set<string>(["next-post", "backtrack", "link-tracking"]);
 
 function FeatureVideo({ name, label, width, height }: { name: string; label: string; width: number; height: number }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -59,15 +59,19 @@ export default function HomeFeatures() {
         </article>)}
       </div>
       <div className={styles.grid}>
-        {copy.cards.map((card, index) => <article className={styles.card} key={ART[index]}>
-          <div className={styles.copy}>
-            <h3>{card.title}</h3>
-            <p>{card.description}</p>
-            {PREVIEW_ONLY.has(ART[index]) && <span className={styles.preview}>{copy.unavailable}</span>}
-          </div>
-          <Image className={styles.illustration} src={`/media/features/${ART[index]}.avif`} alt="" width={1176} height={654}
-            sizes="(min-width: 1024px) 423px, (min-width: 933px) 885px, calc(100vw - 48px)" unoptimized />
-        </article>)}
+        {copy.cards.flatMap((card, index) => {
+          const art = ART[index];
+          if (!art || HIDDEN_FEATURES.has(art)) return [];
+          return [<article className={styles.card} key={art}>
+            <div className={styles.copy}>
+              <h3>{card.title}</h3>
+              <p>{card.description}</p>
+              {PREVIEW_ONLY.has(art) && <span className={styles.preview}>{copy.unavailable}</span>}
+            </div>
+            <Image className={styles.illustration} src={`/media/features/${art}.avif`} alt="" width={1176} height={654}
+              sizes="(min-width: 1024px) 423px, (min-width: 933px) 885px, calc(100vw - 48px)" unoptimized />
+          </article>];
+        })}
       </div>
     </div>
   </section>;

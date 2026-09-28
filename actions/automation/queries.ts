@@ -442,12 +442,56 @@ export const updateCompleteAutomation = async (
   });
 };
 
+function duplicateBaseName(value?: string | null) {
+  const raw = value?.trim() || "Untitled automation";
+  return raw
+    .replace(/\s+(?:copy|–\s*copy)(?:\s+\d+)?$/i, "")
+    .trim() || "Untitled automation";
+}
+
+async function nextDuplicateAutomationName(
+  userId: string | null | undefined,
+  integrationId: string | null,
+  currentName?: string | null,
+) {
+  const base = duplicateBaseName(currentName);
+  if (!userId) return `${base} – Copy`;
+  const matches = await client.automation.findMany({
+    where: {
+      userId,
+      integrationId,
+      archivedAt: null,
+      OR: [
+        { name: base },
+        { name: { startsWith: `${base} – Copy` } },
+        { name: { startsWith: `${base} copy` } },
+      ],
+    },
+    select: { name: true },
+    take: 100,
+  });
+  const used = new Set(matches.map((item) => item.name.trim().toLowerCase()));
+  const first = `${base} – Copy`;
+  if (!used.has(first.toLowerCase())) return first;
+  for (let index = 2; index <= 101; index += 1) {
+    const candidate = `${base} – Copy ${index}`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+  return `${base} – Copy ${Date.now().toString().slice(-6)}`;
+}
+
 export const duplicateAutomationQuery = async (
   automationId: string,
   clerkId: string,
 ) => {
   const automation = await findAutomationForUser(automationId, clerkId);
   if (!automation?.listener) return null;
+  const integrationId = await currentInstagramAccountId(clerkId);
+  const duplicateName = await nextDuplicateAutomationName(
+    automation.userId,
+    integrationId,
+    automation.name,
+  );
 
   if (automation.listener.flowDefinition) {
     const {
@@ -460,8 +504,8 @@ export const duplicateAutomationQuery = async (
     return client.automation.create({
       data: {
         userId: automation.userId,
-        integrationId: await currentInstagramAccountId(clerkId),
-        name: `${automation.name} copy`,
+        integrationId,
+        name: duplicateName,
         active: false,
         source: automation.source,
         storyTriggerType: automation.storyTriggerType,
@@ -509,7 +553,7 @@ export const duplicateAutomationQuery = async (
   if (automation.source === "STORY" || automation.source === "DM") {
     return createCompleteMessageAutomation(clerkId, {
       ...normalizeEngagementSettings(automation.listener ?? {}),
-      name: `${automation.name || "Untitled automation"} copy`,
+      name: duplicateName,
       active: false,
       source: automation.source,
       storyTriggerType:
@@ -570,7 +614,7 @@ export const duplicateAutomationQuery = async (
 
   const payload: CampaignPayload = {
     adAutomation: automation.adAutomation,
-    name: `${automation.name || "Untitled automation"} copy`,
+    name: duplicateName,
     active: false,
     matchingMode: automation.matchingMode === "EXACT" ? "EXACT" : "CONTAINS",
     triggerMode:
