@@ -89,10 +89,19 @@ export default function AutomationTable({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  function handleActivate(id: string, active: boolean) {
-    startTransition(() => {
-      void activateAutomation(id, active).then(result => { if(result.status===200)router.refresh();else toast.error(String(result.data)); }).catch(()=>toast.error("Could not update this automation. Try again."));
-    });
+  async function handleActivate(id: string, active: boolean) {
+    try {
+      const result = await activateAutomation(id, active);
+      if (result.status === 200) {
+        router.refresh();
+        return true;
+      }
+      toast.error(String(result.data));
+      return false;
+    } catch {
+      toast.error("Could not update this automation. Try again.");
+      return false;
+    }
   }
 
   function handleDuplicate(id: string) {
@@ -285,50 +294,18 @@ function CampaignMobileCard({
           className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
         ><UiText>{"Manage automation"}</UiText></Link>
       ) : (
-        <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_40px] gap-2">
-          <Link
-            href={automationAnalyticsHref(slug, automation)}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-900 transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-          ><UiText>{"Open automation"}</UiText></Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={translateUi("More automation actions", locale)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-rf-pink/30 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/automation/${automation.id}/analytics`}>Analytics</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={automationEditHref(slug, automation)}>
-                  <UiText>{automation.needsReview || automation.stalePost
-                    ? "Review setup"
-                    : "Edit automation"}</UiText>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={isPending}
-                onSelect={() =>
-                  onActivate(automation.id, !Boolean(automation.active))
-                }
-              >
-                <UiText>{automation.active ? "Pause automation" : "Start automation"}</UiText>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={isPending}
-                onSelect={() => onDuplicate(automation.id)}
-              ><UiText>{"Duplicate automation"}</UiText></DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                disabled={isPending}
-                onSelect={() => onDelete(automation.id)}
-                className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
-              ><UiText>{"Delete automation"}</UiText></DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <AutomationToggle
+            active={Boolean(automation.active)}
+            onToggle={(next) => onActivate(automation.id, next)}
+          />
+          <AutomationActionsMenu
+            slug={slug}
+            automation={automation}
+            isPending={isPending}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+          />
         </div>
       )}
     </article>
@@ -426,49 +403,128 @@ function CampaignDesktopRow({
       <div className="min-w-0">
         <StatusPill status={status} />
       </div>
-      <div className="flex justify-end">
-        <div className="inline-flex items-center justify-end rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 dark:border-white/[0.10] dark:bg-white/[0.04]">
-          <Link
-            href={automationEditHref(slug, automation)}
-            className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
-          ><UiText>{"Edit"}</UiText></Link>
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={() =>
-              onActivate(automation.id, !Boolean(automation.active))
-            }
-            className="shrink-0 rounded-[9px] px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
-          >
-            <UiText>{automation.active ? "Pause" : "Start"}</UiText>
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] text-slate-400 transition-colors hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/[0.08] dark:hover:text-slate-300"
-                aria-label={translateUi("More actions", locale)}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/automation/${automation.id}/analytics`}>Analytics</Link></DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={isPending}
-                onSelect={() => onDuplicate(automation.id)}
-              ><UiText>{"Duplicate"}</UiText></DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                disabled={isPending}
-                onSelect={() => onDelete(automation.id)}
-                className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
-              ><UiText>{"Delete"}</UiText></DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <AutomationToggle
+          active={Boolean(automation.active)}
+          onToggle={(next) => onActivate(automation.id, next)}
+        />
+        <AutomationActionsMenu
+          slug={slug}
+          automation={automation}
+          isPending={isPending}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
       </div>
     </div>
+  );
+}
+
+function AutomationToggle({
+  active,
+  onToggle,
+}: {
+  active: boolean;
+  onToggle: (next: boolean) => Promise<boolean>;
+}) {
+  const { locale } = useI18n();
+  const [checked, setChecked] = useState(active);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => setChecked(active), [active]);
+
+  async function toggle() {
+    if (saving) return;
+    const previous = checked;
+    const next = !previous;
+    setChecked(next);
+    setSaving(true);
+    const saved = await onToggle(next);
+    if (!saved) setChecked(previous);
+    setSaving(false);
+  }
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={translateUi(checked ? "Pause automation" : "Start automation", locale)}
+      title={translateUi(checked ? "Pause automation" : "Start automation", locale)}
+      disabled={saving}
+      onClick={() => void toggle()}
+      className={[
+        "relative inline-flex h-9 w-16 shrink-0 items-center rounded-full border transition-[background-color,border-color,box-shadow] duration-200 ease-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111827]",
+        checked
+          ? "border-[#17181d] bg-[#17181d] shadow-sm dark:border-white/20 dark:bg-[#17181d]"
+          : "border-slate-200 bg-[#eef0f3] dark:border-white/10 dark:bg-white/10",
+        saving ? "cursor-wait opacity-70" : "cursor-pointer",
+      ].join(" ")}
+    >
+      <span
+        aria-hidden="true"
+        className={[
+          "absolute left-1 top-1 h-7 w-7 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,.18)] transition-transform duration-200 ease-out",
+          checked ? "translate-x-7" : "translate-x-0",
+        ].join(" ")}
+      />
+    </button>
+  );
+}
+
+function AutomationActionsMenu({
+  slug,
+  automation,
+  isPending,
+  onDuplicate,
+  onDelete,
+}: {
+  slug: string;
+  automation: any;
+  isPending: boolean;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { locale } = useI18n();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={translateUi("More automation actions", locale)}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white"
+        >
+          <MoreHorizontal className="h-5 w-5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={7} className="w-48 rounded-xl p-1.5">
+        <DropdownMenuItem asChild>
+          <Link href={automationEditHref(slug, automation)}>
+            <UiText>{automation.needsReview || automation.stalePost ? "Review setup" : "Edit automation"}</UiText>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={automationAnalyticsHref(slug, automation)}>
+            <UiText>{"Analytics"}</UiText>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isPending}
+          onSelect={() => onDuplicate(automation.id)}
+        >
+          <UiText>{"Duplicate automation"}</UiText>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={isPending}
+          onSelect={() => onDelete(automation.id)}
+          className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-500/10"
+        >
+          <UiText>{"Delete automation"}</UiText>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
