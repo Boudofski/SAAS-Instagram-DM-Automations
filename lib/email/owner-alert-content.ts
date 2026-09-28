@@ -1,6 +1,6 @@
 import type { EmailTemplateContent } from "./catalog";
 
-export type OwnerAlertKind = "signup" | "payment" | "payment_failed" | "cancellation" | "refund" | "dispute" | "test";
+export type OwnerAlertKind = "signup" | "payment" | "payment_failed" | "cancellation" | "refund" | "dispute" | "system" | "test";
 export type OwnerAlert = {
   kind: OwnerAlertKind;
   key: string;
@@ -16,10 +16,10 @@ export type OwnerAlert = {
 };
 export const OWNER_ALERT_LABELS: Record<OwnerAlertKind, string> = {
   signup: "New registration", payment: "Payment received", payment_failed: "Payment needs attention",
-  cancellation: "Subscription canceled", refund: "Payment refunded", dispute: "Payment disputed", test: "Owner alerts are ready",
+  cancellation: "Subscription canceled", refund: "Payment refunded", dispute: "Payment disputed", system: "System health needs attention", test: "Owner alerts are ready",
 };
 export function ownerAlertConfiguration() {
-  const recipient = (process.env.AP3K_OWNER_ALERT_EMAIL || process.env.ADMIN_EMAILS?.split(",")[0] || "officialabde@gmail.com").trim().toLowerCase();
+  const recipient = (process.env.AP3K_OWNER_ALERT_EMAIL || process.env.ADMIN_EMAILS?.split(",")[0] || "boudofi@gmail.com").trim().toLowerCase();
   return {
     recipient,
     enabled: process.env.VERCEL_ENV === "production" && process.env.AP3K_OWNER_ALERTS_ENABLED !== "false" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient),
@@ -42,6 +42,7 @@ export function ownerAlertContent(alert: OwnerAlert): EmailTemplateContent {
     cancellation: "This subscription has ended. Review the customer's account if follow-up is needed.",
     refund: "Stripe reported a refund. The amount below is the total refunded on this charge.",
     dispute: "A customer disputed a payment. Review the evidence deadline in Stripe promptly.",
+    system: "AP3K detected an operational health condition that needs review.",
     test: "Your owner inbox is ready for important AP3K updates. This is a test; no customer registration or payment was created.",
   } satisfies Record<OwnerAlertKind, string>)[alert.kind];
   return {
@@ -59,7 +60,7 @@ export function ownerAlertContent(alert: OwnerAlert): EmailTemplateContent {
     ],
     ...(alert.kind === "test" ? { callout: { title: "Important updates only", text: "Registrations, paid invoices, payment failures, cancellations, refunds, and disputes. No emails for routine logins, comments, DMs, or automation activity.", tone: "success" as const } } : {}),
     cta: { label: alert.userId ? "View customer" : "Open Email Center", url: alert.userId ? `https://ap3k.com/admin/users/${encodeURIComponent(alert.userId)}` : "https://ap3k.com/admin/emails" },
-    secondaryCta: alert.kind !== "signup" && alert.kind !== "test" ? { label: "Open Stripe", url: "https://dashboard.stripe.com" } : undefined,
+    secondaryCta: !["signup", "system", "test"].includes(alert.kind) ? { label: "Open Stripe", url: "https://dashboard.stripe.com" } : undefined,
     closing: "Owner notification · AP3K",
   };
 }
