@@ -4,6 +4,7 @@ const mockFindSnapshotFirst = vi.fn();
 const mockCreateSnapshot = vi.fn();
 const mockFindIntegrationFirst = vi.fn();
 const mockUpdateIntegration = vi.fn();
+const mockPauseAutomations = vi.fn();
 const mockGetInstagramBusinessProfile = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
@@ -15,6 +16,9 @@ vi.mock("@/lib/prisma", () => ({
     integrations: {
       findFirst: (...args: any[]) => mockFindIntegrationFirst(...args),
       update: (...args: any[]) => mockUpdateIntegration(...args),
+    },
+    automation: {
+      updateMany: (...args: any[]) => mockPauseAutomations(...args),
     },
   },
 }));
@@ -189,7 +193,7 @@ describe("instagram profile snapshots", () => {
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
-  it("refresh helper returns reconnect message when token is expired", async () => {
+  it("refresh helper returns reconnect message and pauses automations when token is expired", async () => {
     mockFindIntegrationFirst.mockResolvedValue({
       id: "integration-a",
       token: "page-token-secret",
@@ -199,12 +203,71 @@ describe("instagram profile snapshots", () => {
       profilePictureUrl: null,
       snapshots: [],
     });
+    mockUpdateIntegration.mockResolvedValue({});
+    mockPauseAutomations.mockResolvedValue({ count: 2 });
 
     const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
 
     expect(result.status).toBe(401);
     expect(result.error).toBe("Reconnect Instagram to refresh profile stats.");
+    expect(mockUpdateIntegration).toHaveBeenCalledWith({
+      where: { id: "integration-a" },
+      data: expect.objectContaining({
+        reconnectRequired: true,
+        oauthLastError: "instagram_token_expired",
+        oauthLastErrorSource: "profile_snapshot",
+      }),
+    });
+    expect(mockPauseAutomations).toHaveBeenCalledWith({
+      where: { integrationId: "integration-a", active: true, archivedAt: null },
+      data: expect.objectContaining({
+        active: false,
+        needsReview: true,
+      }),
+    });
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
+  });
+
+  it("marks the integration for reconnect when Meta invalidates the token", async () => {
+    mockFindIntegrationFirst.mockResolvedValue({
+      id: "integration-a",
+      token: "page-token-secret",
+      expiresAt: new Date("2026-06-01T00:00:00Z"),
+      instagramId: "ig-1",
+      instagramUsername: "olduser",
+      profilePictureUrl: null,
+      oauthResolutionDiagnostics: null,
+      snapshots: [],
+    });
+    mockGetInstagramBusinessProfile.mockRejectedValue({
+      safe: {
+        status: 400,
+        code: 190,
+        message: "Error validating access token",
+        type: "OAuthException",
+      },
+    });
+    mockUpdateIntegration.mockResolvedValue({});
+    mockPauseAutomations.mockResolvedValue({ count: 1 });
+
+    const result = await refreshInstagramProfileSnapshotForUser("clerk-a", "integration-a", { now });
+
+    expect(result.error).toBe("Reconnect Instagram to refresh profile stats.");
+    expect(mockUpdateIntegration).toHaveBeenCalledWith({
+      where: { id: "integration-a" },
+      data: expect.objectContaining({
+        reconnectRequired: true,
+        oauthLastError: "instagram_token_invalidated",
+        oauthLastErrorSource: "profile_snapshot",
+      }),
+    });
+    expect(mockPauseAutomations).toHaveBeenCalledWith({
+      where: { integrationId: "integration-a", active: true, archivedAt: null },
+      data: expect.objectContaining({
+        active: false,
+        needsReview: true,
+      }),
+    });
   });
 
   it("refresh helper saves partial snapshot when followers missing but username present", async () => {
