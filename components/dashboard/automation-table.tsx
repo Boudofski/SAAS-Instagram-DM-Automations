@@ -235,7 +235,6 @@ function CampaignMobileCard({
   onDelete,
   compact = false,
 }: any) {
-  const { locale } = useI18n();
   const post = automation.posts?.[0];
   const source = automationSource(automation);
   const isAny = post?.postid === "ANY";
