@@ -31,6 +31,7 @@ function NavBar({ slug }: Props) {
   const currentPage = PAGE_BREAD_CRUMBS.includes(page) || page == slug;
   const isCampaignList = pathname === `/dashboard/${slug}/automation`;
   const isAutomationAnalytics = /^\/dashboard\/[^/]+\/automation\/[^/]+\/analytics\/?$/.test(pathname);
+  const showGlobalSearch = currentPage && !isCampaignList;
 
   const handleSignOut = () => {
     queryClient.clear();
@@ -81,7 +82,7 @@ function NavBar({ slug }: Props) {
           <Link href={`/dashboard/${slug}/automation`} className="hover:text-violet-600">Automations</Link>
           <span aria-hidden="true">/</span><span aria-current="page">Analytics</span>
         </nav>}
-        {currentPage && <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 lg:max-w-sm">
+        {showGlobalSearch && <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 lg:max-w-sm">
           <Search />
         </div>}
         <div className="ms-auto flex shrink-0 items-center gap-2">
