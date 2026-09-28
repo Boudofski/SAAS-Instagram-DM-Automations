@@ -68,7 +68,7 @@ export const createAutomation = async (clerkId: string, id?: string) => {
     data: {
       automations: {
         create: {
-          integrationId,
+          integrationId: await currentInstagramAccountId(clerkId),
           ...(id && { id }),
         },
       },
@@ -85,7 +85,7 @@ export const createCompleteAutomation = async (
     data: {
       automations: {
         create: {
-          integrationId,
+          integrationId: await currentInstagramAccountId(clerkId),
           name: payload.name,
           adAutomation: payload.adAutomation ?? false,
           active: payload.active,
@@ -148,7 +148,7 @@ export const createCompleteMessageAutomation = async (
   return client.automation.create({
     data: {
       userId: user.id,
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
       name: payload.name,
       active: payload.active,
       source: payload.source,
@@ -203,7 +203,7 @@ export const updateCompleteMessageAutomation = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -274,7 +274,7 @@ export const getAutomation = async (clerkId: string) => {
         },
         where: {
           archivedAt: null,
-          integrationId,
+          integrationId: await currentInstagramAccountId(clerkId),
         },
         include: {
           keywords: true,
@@ -300,7 +300,7 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
       id,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     include: {
       keywords: true,
@@ -329,7 +329,7 @@ export const updateAutomation = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: {
       id: true,
@@ -396,7 +396,7 @@ export const updateCompleteAutomation = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -702,7 +702,7 @@ export const deleteAutomationQuery = async (
     where: {
       id: automationId,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
   });
 };
@@ -720,7 +720,7 @@ export const addListener = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -762,7 +762,7 @@ export const addTrigger = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -816,7 +816,7 @@ export const addKeyWords = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -854,7 +854,7 @@ export const deleteKeywordsQuery = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -889,7 +889,7 @@ export const addPosts = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -927,7 +927,7 @@ export const getAutomationAnalytics = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -999,7 +999,7 @@ export const getAutomationActivity = async (
       id: automationId,
       archivedAt: null,
       User: { clerkId },
-      integrationId,
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     select: { id: true },
   });
@@ -1061,7 +1061,7 @@ export const getDashboardActivity = async (clerkId: string) => {
       automations: {
         where: {
           archivedAt: null,
-          integrationId,
+          integrationId: await currentInstagramAccountId(clerkId),
         },
         select: { id: true },
       },
