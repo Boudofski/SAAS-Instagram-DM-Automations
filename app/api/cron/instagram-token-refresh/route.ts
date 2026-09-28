@@ -74,6 +74,27 @@ export async function GET(request: NextRequest) {
 
         if (!response.ok || !payload.access_token || !payload.expires_in) {
           failed += 1;
+          if (payload.error?.code === 190) {
+            await client.integrations.update({
+              where: { id: integration.id },
+              data: {
+                reconnectRequired: true,
+                oauthLastError: "instagram_token_invalidated",
+                oauthLastErrorAt: new Date(),
+                oauthLastErrorSource: "token_refresh",
+                lastAdminNote: "instagram_token_invalidated",
+                lastAdminActionAt: new Date(),
+              },
+            }).catch(() => undefined);
+            await client.automation.updateMany({
+              where: { integrationId: integration.id, active: true, archivedAt: null },
+              data: {
+                active: false,
+                needsReview: true,
+                reviewReason: "Instagram authorization expired. Reconnect Instagram before reactivating this automation.",
+              },
+            }).catch(() => undefined);
+          }
           console.warn("[cron] Instagram token refresh rejected", {
             integrationId: integration.id,
             status: response.status,
