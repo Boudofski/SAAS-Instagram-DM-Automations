@@ -229,6 +229,7 @@ model MetaOAuthSelection {
 }
 
 model Automation {
+  adAutomation Boolean @default(false)
   integrationId        String?           @db.Uuid
   integration          Integrations?     @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -324,6 +325,9 @@ model Listener {
   mediaUrl                String?
   mediaType               String?
   cardSubtitle            String?
+  phoneCaptureEnabled     Boolean @default(false)
+  phoneCapturePrompt      String?
+  followUpCondition       String @default("ALWAYS")
   emailCaptureEnabled     Boolean    @default(false)
   emailCapturePrompt      String?
   followUpEnabled         Boolean    @default(false)
@@ -707,6 +711,12 @@ model AutomationEngagementJob {
   automation     Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
   recipientIgId  String
   flowId         String
+  sentMessageId  String?
+  seenAt         DateTime?
+  reactedAt      DateTime?
+  clickedAt      DateTime?
+  baselineFollows Boolean?
+  condition      String @default("ALWAYS")
   replyMessageId String?    @unique
   kind           String
   status         String     @default("PENDING")

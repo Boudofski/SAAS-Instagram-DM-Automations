@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="robots" content="noindex" />
+    <style>
+      body {
+        margin: 0;
+        background: #ddd;
+        font: 14px Arial;
+      }
+      header {
+        padding: 8px;
+      }
+      iframe {
+        display: block;
+        height: 850px;
+        border: 0;
+        margin: auto;
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <label
+        >Width
+        <select id="width">
+          <option>1440</option>
+          <option>1024</option>
+          <option>768</option>
+          <option selected>390</option>
+          <option>320</option>
+        </select></label
+      >
+      <label
+        >Theme
+        <select id="theme">
+          <option>light</option>
+          <option>dark</option>
+        </select></label
+      >
+      <label
+        >View
+        <select id="view">
+          <option>editor</option>
+          <option>billing</option>
+          <option>flow</option>
+        </select></label
+      >
+    </header>
+    <iframe title="Responsive review"></iframe>
+    <script>
+      const f = document.querySelector("iframe");
+      function set() {
+        f.style.width = document.querySelector("#width").value + "px";
+        f.src =
+          "/engagement-review?theme=" +
+          document.querySelector("#theme").value +
+          "&view=" +
+          document.querySelector("#view").value +
+          "&editor=basic";
+      }
+      document.querySelectorAll("select").forEach((s) => (s.onchange = set));
+      set();
+    </script>
+  </body>
+</html>

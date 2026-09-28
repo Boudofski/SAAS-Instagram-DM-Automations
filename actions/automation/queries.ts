@@ -1,5 +1,10 @@
 "use server";
-import { normalizeCopyList, readCommentReplies, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
+import { normalizeEngagementSettings } from "@/lib/automation-engagement-settings";
+import {
+  normalizeCopyList,
+  readCommentReplies,
+  MAX_MESSAGE_VARIATIONS,
+} from "@/lib/automation-copy";
 
 import { readAiConversation } from "@/lib/ai-conversation";
 
@@ -7,10 +12,16 @@ import { currentInstagramAccountId } from "@/lib/instagram-account-scope";
 import { client } from "@/lib/prisma";
 import type { NormalizedCampaignPayload } from "@/lib/campaign-save";
 import type { NormalizedMessageAutomationPayload } from "@/lib/message-automation";
-import { resolveFollowRequestButtonText, resolveFollowRequestDmText } from "@/lib/comment-dm-flow";
+import {
+  resolveFollowRequestButtonText,
+  resolveFollowRequestDmText,
+} from "@/lib/comment-dm-flow";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
 import type { MATCHING_MODE } from "@prisma/client";
-import { normalizeAiProtectionRules, normalizeAiReplyTone } from "@/lib/ai-reply-config";
+import {
+  normalizeAiProtectionRules,
+  normalizeAiReplyTone,
+} from "@/lib/ai-reply-config";
 
 export type CampaignPayload = NormalizedCampaignPayload;
 
@@ -33,7 +44,7 @@ export const logTenantAccessDenied = async ({
         await client.automation.findUnique({
           where: { id: resourceId },
           select: { id: true },
-        })
+        }),
       );
     }
   } catch {
@@ -67,7 +78,7 @@ export const createAutomation = async (clerkId: string, id?: string) => {
 
 export const createCompleteAutomation = async (
   clerkId: string,
-  payload: CampaignPayload
+  payload: CampaignPayload,
 ) => {
   return await client.user.update({
     where: { clerkId },
@@ -76,6 +87,7 @@ export const createCompleteAutomation = async (
         create: {
           integrationId: await currentInstagramAccountId(clerkId),
           name: payload.name,
+          adAutomation: payload.adAutomation ?? false,
           active: payload.active,
           needsReview: false,
           reviewReason: null,
@@ -125,9 +137,12 @@ function messageTriggerType(payload: NormalizedMessageAutomationPayload) {
 
 export const createCompleteMessageAutomation = async (
   clerkId: string,
-  payload: NormalizedMessageAutomationPayload
+  payload: NormalizedMessageAutomationPayload,
 ) => {
-  const user = await client.user.findUnique({ where: { clerkId }, select: { id: true } });
+  const user = await client.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
   if (!user) return null;
 
   return client.automation.create({
@@ -158,6 +173,7 @@ export const createCompleteMessageAutomation = async (
       listener: {
         create: {
           listener: "MESSAGE",
+          ...normalizeEngagementSettings(payload),
           prompt: payload.message,
           messageVariations: payload.messageVariations ?? [],
           responseFormat: payload.responseFormat,
@@ -180,10 +196,15 @@ export const createCompleteMessageAutomation = async (
 export const updateCompleteMessageAutomation = async (
   automationId: string,
   clerkId: string,
-  payload: NormalizedMessageAutomationPayload
+  payload: NormalizedMessageAutomationPayload,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
   if (!automation) return null;
@@ -220,8 +241,9 @@ export const updateCompleteMessageAutomation = async (
         listener: {
           create: {
             listener: "MESSAGE",
+            ...normalizeEngagementSettings(payload),
             prompt: payload.message,
-          messageVariations: payload.messageVariations ?? [],
+            messageVariations: payload.messageVariations ?? [],
             responseFormat: payload.responseFormat,
             quickReplies: payload.quickReplies,
             ctaLink: payload.ctaLink,
@@ -250,11 +272,21 @@ export const getAutomation = async (clerkId: string) => {
         orderBy: {
           createdAt: "asc",
         },
-        where: { archivedAt: null, integrationId: await currentInstagramAccountId(clerkId) },
+        where: {
+          archivedAt: null,
+          integrationId: await currentInstagramAccountId(clerkId),
+        },
         include: {
           keywords: true,
           listener: true,
-          posts: { select: { postid: true, media: true, caption: true, mediaType: true } },
+          posts: {
+            select: {
+              postid: true,
+              media: true,
+              caption: true,
+              mediaType: true,
+            },
+          },
           _count: { select: { leads: true } },
         },
       },
@@ -267,7 +299,8 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
     where: {
       id,
       archivedAt: null,
-      User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId),
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
     },
     include: {
       keywords: true,
@@ -277,7 +310,9 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
       User: {
         select: {
           subscription: true,
-          integrations: { where: { id: await currentInstagramAccountId(clerkId) } },
+          integrations: {
+            where: { id: await currentInstagramAccountId(clerkId) },
+          },
         },
       },
     },
@@ -287,11 +322,30 @@ export const findAutomationForUser = async (id: string, clerkId: string) => {
 export const updateAutomation = async (
   automationId: string,
   clerkId: string,
-  update: { name?: string; active?: boolean; matchingMode?: MATCHING_MODE }
+  update: { name?: string; active?: boolean; matchingMode?: MATCHING_MODE },
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
-    select: { id: true, userId: true, needsReview: true, reviewReason: true, User: { select: { status: true, integrations: { where: { id: await currentInstagramAccountId(clerkId) }, select: { status: true, reconnectRequired: true, planLocked: true } } } } },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
+    select: {
+      id: true,
+      userId: true,
+      needsReview: true,
+      reviewReason: true,
+      User: {
+        select: {
+          status: true,
+          integrations: {
+            where: { id: await currentInstagramAccountId(clerkId) },
+            select: { status: true, reconnectRequired: true, planLocked: true },
+          },
+        },
+      },
+    },
   });
 
   if (!automation) {
@@ -307,7 +361,14 @@ export const updateAutomation = async (
   if (update.active === true) {
     if (automation.needsReview) return null;
     if (automation.User?.status === "SUSPENDED") return null;
-    if (automation.User?.integrations.some((item) => item.status === "DISCONNECTED" || item.reconnectRequired || item.planLocked)) {
+    if (
+      automation.User?.integrations.some(
+        (item) =>
+          item.status === "DISCONNECTED" ||
+          item.reconnectRequired ||
+          item.planLocked,
+      )
+    ) {
       return null;
     }
   }
@@ -316,9 +377,11 @@ export const updateAutomation = async (
     where: { id: automation.id },
     data: {
       name: update.name,
-        active: update.active,
-        ...(update.active === true ? { needsReview: false, reviewReason: null } : {}),
-        matchingMode: update.matchingMode,
+      active: update.active,
+      ...(update.active === true
+        ? { needsReview: false, reviewReason: null }
+        : {}),
+      matchingMode: update.matchingMode,
     },
   });
 };
@@ -326,10 +389,15 @@ export const updateAutomation = async (
 export const updateCompleteAutomation = async (
   automationId: string,
   clerkId: string,
-  payload: CampaignPayload
+  payload: CampaignPayload,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -345,6 +413,7 @@ export const updateCompleteAutomation = async (
       where: { id: automationId },
       data: {
         name: payload.name,
+        adAutomation: payload.adAutomation ?? false,
         active: payload.active,
         needsReview: false,
         reviewReason: null,
@@ -375,66 +444,138 @@ export const updateCompleteAutomation = async (
 
 export const duplicateAutomationQuery = async (
   automationId: string,
-  clerkId: string
+  clerkId: string,
 ) => {
   const automation = await findAutomationForUser(automationId, clerkId);
   if (!automation?.listener) return null;
 
   if (automation.listener.flowDefinition) {
-    const { id: listenerId, automationId: listenerAutomationId, dmCount, commentCount, ...listener } = automation.listener;
-    return client.automation.create({ data: {
-      userId: automation.userId, integrationId: await currentInstagramAccountId(clerkId), name: `${automation.name} copy`, active: false,
-      source: automation.source, storyTriggerType: automation.storyTriggerType, triggerMode: automation.triggerMode, matchingMode: automation.matchingMode, sendPrivateDm: true,
-      posts: { create: automation.posts.map(({ postid, caption, media, mediaType }) => ({ postid, caption, media, mediaType })) },
-      keywords: { create: automation.keywords.map(({ word }) => ({ word })) },
-      trigger: { create: { type: automation.source === "STORY" ? `STORY_${automation.storyTriggerType}` : automation.source } },
-      listener: { create: { ...listener, flowTriggers: listener.flowTriggers ?? undefined, flowDraft: undefined, flowRevision: 0, commentReplies: undefined, messageVariations: undefined, aiProtectionRules: undefined, aiConversation: undefined, quickReplies: undefined, flowDefinition: automation.listener.flowDefinition } },
-    }, select: { id: true } });
+    const {
+      id: listenerId,
+      automationId: listenerAutomationId,
+      dmCount,
+      commentCount,
+      ...listener
+    } = automation.listener;
+    return client.automation.create({
+      data: {
+        userId: automation.userId,
+        integrationId: await currentInstagramAccountId(clerkId),
+        name: `${automation.name} copy`,
+        active: false,
+        source: automation.source,
+        storyTriggerType: automation.storyTriggerType,
+        triggerMode: automation.triggerMode,
+        matchingMode: automation.matchingMode,
+        sendPrivateDm: true,
+        posts: {
+          create: automation.posts.map(
+            ({ postid, caption, media, mediaType }) => ({
+              postid,
+              caption,
+              media,
+              mediaType,
+            }),
+          ),
+        },
+        keywords: { create: automation.keywords.map(({ word }) => ({ word })) },
+        trigger: {
+          create: {
+            type:
+              automation.source === "STORY"
+                ? `STORY_${automation.storyTriggerType}`
+                : automation.source,
+          },
+        },
+        listener: {
+          create: {
+            ...listener,
+            flowTriggers: listener.flowTriggers ?? undefined,
+            flowDraft: undefined,
+            flowRevision: 0,
+            commentReplies: undefined,
+            messageVariations: undefined,
+            aiProtectionRules: undefined,
+            aiConversation: undefined,
+            quickReplies: undefined,
+            flowDefinition: automation.listener.flowDefinition,
+          },
+        },
+      },
+      select: { id: true },
+    });
   }
 
   if (automation.source === "STORY" || automation.source === "DM") {
     return createCompleteMessageAutomation(clerkId, {
+      ...normalizeEngagementSettings(automation.listener ?? {}),
       name: `${automation.name || "Untitled automation"} copy`,
       active: false,
       source: automation.source,
       storyTriggerType:
-        automation.storyTriggerType === "REACTION" || automation.storyTriggerType === "REPLY"
+        automation.storyTriggerType === "REACTION" ||
+        automation.storyTriggerType === "REPLY"
           ? automation.storyTriggerType
           : automation.source === "STORY"
             ? "MENTION"
             : null,
-      triggerMode: automation.triggerMode === "SPECIFIC_KEYWORD" ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE",
+      triggerMode:
+        automation.triggerMode === "SPECIFIC_KEYWORD"
+          ? "SPECIFIC_KEYWORD"
+          : "ANY_MESSAGE",
       keywords: automation.keywords.map((keyword) => keyword.word),
       responseFormat:
-        automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA"
+        automation.listener.responseFormat === "LINK" ||
+        automation.listener.responseFormat === "MEDIA"
           ? automation.listener.responseFormat
           : "TEXT",
       message: automation.listener.prompt,
-      messageVariations: normalizeCopyList(automation.listener.messageVariations, MAX_MESSAGE_VARIATIONS),
-      quickReplies: automation.listener.responseFormat === "LINK"
-        ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
-        : readLegacyQuickReplies(automation.listener.quickReplies),
+      messageVariations: normalizeCopyList(
+        automation.listener.messageVariations,
+        MAX_MESSAGE_VARIATIONS,
+      ),
+      quickReplies:
+        automation.listener.responseFormat === "LINK"
+          ? readLinkButtons(
+              automation.listener.quickReplies,
+              automation.listener.ctaButtonTitle,
+              automation.listener.ctaLink,
+            )
+          : readLegacyQuickReplies(automation.listener.quickReplies),
       ctaLink: automation.listener.ctaLink ?? undefined,
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
-      mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
+      mediaType:
+        automation.listener.mediaType === "VIDEO"
+          ? "VIDEO"
+          : automation.listener.mediaType === "IMAGE"
+            ? "IMAGE"
+            : undefined,
       followGateRequired: automation.followGateRequired,
       typingIndicator: false,
       deliveryDelaySeconds: 0,
-      followRequestDmText: resolveFollowRequestDmText(automation.listener.followRequestDmText),
-      followRequestButtonText: resolveFollowRequestButtonText(automation.listener.followRequestButtonText),
+      followRequestDmText: resolveFollowRequestDmText(
+        automation.listener.followRequestDmText,
+      ),
+      followRequestButtonText: resolveFollowRequestButtonText(
+        automation.listener.followRequestButtonText,
+      ),
       aiReplyEnabled: automation.listener.aiDmReplyEnabled,
-      aiConversation: readAiConversation(automation.listener.aiConversation) ?? undefined,
+      aiConversation:
+        readAiConversation(automation.listener.aiConversation) ?? undefined,
     });
   }
 
   if (!automation.posts[0]) return null;
 
   const payload: CampaignPayload = {
+    adAutomation: automation.adAutomation,
     name: `${automation.name || "Untitled automation"} copy`,
     active: false,
     matchingMode: automation.matchingMode === "EXACT" ? "EXACT" : "CONTAINS",
-    triggerMode: (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ?? "SPECIFIC_KEYWORD",
+    triggerMode:
+      (automation.triggerMode as "SPECIFIC_KEYWORD" | "ANY_COMMENT") ??
+      "SPECIFIC_KEYWORD",
     sendPrivateDm: automation.sendPrivateDm,
     followGateRequired: automation.followGateRequired,
     typingIndicator: false,
@@ -449,7 +590,10 @@ export const duplicateAutomationQuery = async (
     listener: {
       listener: "MESSAGE",
       prompt: automation.listener.prompt,
-      messageVariations: normalizeCopyList(automation.listener.messageVariations, MAX_MESSAGE_VARIATIONS),
+      messageVariations: normalizeCopyList(
+        automation.listener.messageVariations,
+        MAX_MESSAGE_VARIATIONS,
+      ),
       commentReplies: readCommentReplies(automation.listener),
       publicReplyLimit: automation.listener.publicReplyLimit,
       commentReply: automation.listener.commentReply ?? undefined,
@@ -458,29 +602,48 @@ export const duplicateAutomationQuery = async (
       aiReplyEnabled: automation.listener.aiReplyEnabled,
       aiReplyTone: normalizeAiReplyTone(automation.listener.aiReplyTone),
       aiReplyInstructions: automation.listener.aiReplyInstructions ?? undefined,
-      aiProtectionRules: normalizeAiProtectionRules(automation.listener.aiProtectionRules),
+      aiProtectionRules: normalizeAiProtectionRules(
+        automation.listener.aiProtectionRules,
+      ),
       ctaLink: automation.listener.ctaLink ?? undefined,
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       responseFormat:
-        automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "MEDIA" || automation.listener.responseFormat === "PRODUCT_CARD"
+        automation.listener.responseFormat === "LINK" ||
+        automation.listener.responseFormat === "MEDIA" ||
+        automation.listener.responseFormat === "PRODUCT_CARD"
           ? automation.listener.responseFormat
           : "TEXT",
-      quickReplies: (automation.listener.responseFormat === "LINK" || automation.listener.responseFormat === "PRODUCT_CARD")
-        ? readLinkButtons(automation.listener.quickReplies, automation.listener.ctaButtonTitle, automation.listener.ctaLink)
-        : readLegacyQuickReplies(automation.listener.quickReplies),
+      quickReplies:
+        automation.listener.responseFormat === "LINK" ||
+        automation.listener.responseFormat === "PRODUCT_CARD"
+          ? readLinkButtons(
+              automation.listener.quickReplies,
+              automation.listener.ctaButtonTitle,
+              automation.listener.ctaLink,
+            )
+          : readLegacyQuickReplies(automation.listener.quickReplies),
       cardSubtitle: automation.listener.cardSubtitle ?? undefined,
+      phoneCaptureEnabled: automation.listener.phoneCaptureEnabled,
+      phoneCapturePrompt: automation.listener.phoneCapturePrompt ?? undefined,
+      followUpCondition: automation.listener.followUpCondition,
       emailCaptureEnabled: automation.listener.emailCaptureEnabled,
       emailCapturePrompt: automation.listener.emailCapturePrompt ?? undefined,
       followUpEnabled: automation.listener.followUpEnabled,
       followUpMessage: automation.listener.followUpMessage ?? undefined,
       followUpDelayMinutes: automation.listener.followUpDelayMinutes,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
-      mediaType: automation.listener.mediaType === "VIDEO" ? "VIDEO" : automation.listener.mediaType === "IMAGE" ? "IMAGE" : undefined,
+      mediaType:
+        automation.listener.mediaType === "VIDEO"
+          ? "VIDEO"
+          : automation.listener.mediaType === "IMAGE"
+            ? "IMAGE"
+            : undefined,
       openingDmText: automation.listener.openingDmText ?? undefined,
       openingDmButtonText: automation.listener.openingDmButtonText ?? undefined,
       openingDmEnabled: automation.listener.openingDmEnabled,
       followRequestDmText: automation.listener.followRequestDmText ?? undefined,
-      followRequestButtonText: automation.listener.followRequestButtonText ?? undefined,
+      followRequestButtonText:
+        automation.listener.followRequestButtonText ?? undefined,
     },
   };
 
@@ -489,12 +652,13 @@ export const duplicateAutomationQuery = async (
 
 export const deleteAutomationQuery = async (
   automationId: string,
-  clerkId: string
+  clerkId: string,
 ) => {
   return await client.automation.deleteMany({
     where: {
       id: automationId,
-      User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId),
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
     },
   });
 };
@@ -505,10 +669,15 @@ export const addListener = async (
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
   reply?: string,
-  ctaLink?: string
+  ctaLink?: string,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -542,10 +711,15 @@ export const addListener = async (
 export const addTrigger = async (
   automationId: string,
   clerkId: string,
-  trigger: string[]
+  trigger: string[],
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -591,10 +765,15 @@ export const addTrigger = async (
 export const addKeyWords = async (
   automationId: string,
   clerkId: string,
-  keywords: string
+  keywords: string,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -624,10 +803,15 @@ export const addKeyWords = async (
 
 export const deleteKeywordsQuery = async (
   automationId: string,
-  clerkId: string
+  clerkId: string,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -654,10 +838,15 @@ export const addPosts = async (
     caption?: string;
     media: string;
     mediaType: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
-  }[]
+  }[],
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -687,10 +876,15 @@ export const addPosts = async (
 
 export const getAutomationAnalytics = async (
   automationId: string,
-  clerkId: string
+  clerkId: string,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -716,13 +910,25 @@ export const getAutomationAnalytics = async (
       where: { automationId: automation.id, messageType: "DM", status: "SENT" },
     }),
     client.messageLog.count({
-      where: { automationId: automation.id, messageType: "DM", status: "FAILED" },
+      where: {
+        automationId: automation.id,
+        messageType: "DM",
+        status: "FAILED",
+      },
     }),
     client.messageLog.count({
-      where: { automationId: automation.id, messageType: "COMMENT_REPLY", status: "SENT" },
+      where: {
+        automationId: automation.id,
+        messageType: "COMMENT_REPLY",
+        status: "SENT",
+      },
     }),
     client.messageLog.count({
-      where: { automationId: automation.id, messageType: "COMMENT_REPLY", status: "FAILED" },
+      where: {
+        automationId: automation.id,
+        messageType: "COMMENT_REPLY",
+        status: "FAILED",
+      },
     }),
     client.lead.count({ where: { automationId: automation.id } }),
     client.automationEvent.count({
@@ -742,10 +948,15 @@ export const getAutomationAnalytics = async (
 
 export const getAutomationActivity = async (
   automationId: string,
-  clerkId: string
+  clerkId: string,
 ) => {
   const automation = await client.automation.findFirst({
-    where: { id: automationId, archivedAt: null, User: { clerkId }, integrationId: await currentInstagramAccountId(clerkId) },
+    where: {
+      id: automationId,
+      archivedAt: null,
+      User: { clerkId },
+      integrationId: await currentInstagramAccountId(clerkId),
+    },
     select: { id: true },
   });
 
@@ -789,7 +1000,11 @@ export const getAutomationActivity = async (
       keyword: item.keyword ?? undefined,
       errorMessage: item.errorMessage ?? undefined,
       meta: item.meta ?? item.payload ?? undefined,
-      source: item.messageType ? "message" : item.provider ? "webhook" : "event",
+      source: item.messageType
+        ? "message"
+        : item.provider
+          ? "webhook"
+          : "event",
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 20);
@@ -800,11 +1015,18 @@ export const getDashboardActivity = async (clerkId: string) => {
     where: { clerkId },
     select: {
       automations: {
-        where: { archivedAt: null, integrationId: await currentInstagramAccountId(clerkId) },
+        where: {
+          archivedAt: null,
+          integrationId: await currentInstagramAccountId(clerkId),
+        },
         select: { id: true },
       },
       integrations: {
-        where: { id: await currentInstagramAccountId(clerkId), name: "INSTAGRAM", status: { not: "DISCONNECTED" } },
+        where: {
+          id: await currentInstagramAccountId(clerkId),
+          name: "INSTAGRAM",
+          status: { not: "DISCONNECTED" },
+        },
         select: {
           instagramId: true,
           webhookAccountId: true,
@@ -815,18 +1037,22 @@ export const getDashboardActivity = async (clerkId: string) => {
     },
   });
 
-  const automationIds = user?.automations.map((automation) => automation.id) ?? [];
-  const integrationAccountIds = Array.from(new Set(
-    (user?.integrations ?? [])
-      .flatMap((integration) => [
-        integration.instagramId,
-        integration.webhookAccountId,
-        integration.pageId,
-        integration.businessId,
-      ])
-      .filter((value): value is string => Boolean(value))
-  ));
-  if (automationIds.length === 0 && integrationAccountIds.length === 0) return [];
+  const automationIds =
+    user?.automations.map((automation) => automation.id) ?? [];
+  const integrationAccountIds = Array.from(
+    new Set(
+      (user?.integrations ?? [])
+        .flatMap((integration) => [
+          integration.instagramId,
+          integration.webhookAccountId,
+          integration.pageId,
+          integration.businessId,
+        ])
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+  if (automationIds.length === 0 && integrationAccountIds.length === 0)
+    return [];
 
   const [events, messageLogs, webhookEvents] = await Promise.all([
     client.automationEvent.findMany({
@@ -844,21 +1070,25 @@ export const getDashboardActivity = async (clerkId: string) => {
     client.webhookEvent.findMany({
       where: {
         OR: [
-          ...(automationIds.length ? [{ automationId: { in: automationIds } }] : []),
+          ...(automationIds.length
+            ? [{ automationId: { in: automationIds } }]
+            : []),
           ...(integrationAccountIds.length
-            ? [{
-                igAccountId: { in: integrationAccountIds },
-                eventType: {
-                  in: [
-                    "REAL_COMMENT_EVENT",
-                    "REAL_MESSAGE_EVENT",
-                    "COMMENT_WEBHOOK_RECEIVED",
-                    "AUTOMATION_MATCH_FAILED",
-                    "ACTION_SENT",
-                    "ACTION_SKIPPED",
-                  ],
+            ? [
+                {
+                  igAccountId: { in: integrationAccountIds },
+                  eventType: {
+                    in: [
+                      "REAL_COMMENT_EVENT",
+                      "REAL_MESSAGE_EVENT",
+                      "COMMENT_WEBHOOK_RECEIVED",
+                      "AUTOMATION_MATCH_FAILED",
+                      "ACTION_SENT",
+                      "ACTION_SKIPPED",
+                    ],
+                  },
                 },
-              }]
+              ]
             : []),
         ],
       },
@@ -881,7 +1111,11 @@ export const getDashboardActivity = async (clerkId: string) => {
       keyword: item.keyword ?? undefined,
       errorMessage: item.errorMessage ?? undefined,
       meta: item.meta ?? item.payload ?? undefined,
-      source: item.messageType ? "message" : item.provider ? "webhook" : "event",
+      source: item.messageType
+        ? "message"
+        : item.provider
+          ? "webhook"
+          : "event",
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 20);

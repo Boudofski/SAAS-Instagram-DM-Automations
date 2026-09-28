@@ -48,10 +48,17 @@ export async function getInstagramContacts() {
       },
     }),
     client.lead.findMany({
-      where: { automation: { userId: profile.id, integrationId: profile.integrationId } },
+      where: {
+        automation: {
+          userId: profile.id,
+          integrationId: profile.integrationId,
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 500,
-      include: { automation: { select: { id: true, name: true, source: true } } },
+      include: {
+        automation: { select: { id: true, name: true, source: true } },
+      },
     }),
   ]);
 
@@ -61,8 +68,10 @@ export async function getInstagramContacts() {
       id: `lead:${lead.id}`,
       conversationId: null,
       recipientIgId: lead.igUserId,
+      phone: contacts.get(lead.igUserId)?.phone || lead.phone,
       email: contacts.get(lead.igUserId)?.email || lead.email,
-      emailCollectedAt: contacts.get(lead.igUserId)?.emailCollectedAt || lead.emailCollectedAt,
+      emailCollectedAt:
+        contacts.get(lead.igUserId)?.emailCollectedAt || lead.emailCollectedAt,
       recipientUsername: lead.igUsername,
       profilePictureUrl: null,
       lastMessageAt: lead.createdAt,
@@ -72,19 +81,32 @@ export async function getInstagramContacts() {
   for (const conversation of conversations) {
     contacts.set(conversation.recipientIgId, {
       ...conversation,
+      phone: contacts.get(conversation.recipientIgId)?.phone,
       email: contacts.get(conversation.recipientIgId)?.email,
-      emailCollectedAt: contacts.get(conversation.recipientIgId)?.emailCollectedAt,
+      emailCollectedAt: contacts.get(conversation.recipientIgId)
+        ?.emailCollectedAt,
       conversationId: conversation.id,
     });
   }
-  return { status: 200, data: Array.from(contacts.values()).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()) };
+  return {
+    status: 200,
+    data: Array.from(contacts.values()).sort(
+      (a, b) =>
+        new Date(b.lastMessageAt).getTime() -
+        new Date(a.lastMessageAt).getTime(),
+    ),
+  };
 }
 
 export async function getInboxMessages(conversationId: string) {
   const profile = await currentProfile();
   if (!profile) return { status: 404, data: [] };
   const conversation = await client.conversation.findFirst({
-    where: { id: conversationId, userId: profile.id, integrationId: profile.integrationId },
+    where: {
+      id: conversationId,
+      userId: profile.id,
+      integrationId: profile.integrationId,
+    },
     select: { id: true },
   });
   if (!conversation) return { status: 404, data: [] };
@@ -93,7 +115,10 @@ export async function getInboxMessages(conversationId: string) {
     orderBy: { createdAt: "asc" },
     take: 300,
   });
-  await client.conversation.update({ where: { id: conversation.id }, data: { unreadCount: 0 } });
+  await client.conversation.update({
+    where: { id: conversation.id },
+    data: { unreadCount: 0 },
+  });
   return { status: 200, data: messages };
 }
 
@@ -101,23 +126,40 @@ export async function markConversationRead(conversationId: string) {
   const profile = await currentProfile();
   if (!profile) return { status: 404 };
   const updated = await client.conversation.updateMany({
-    where: { id: conversationId, userId: profile.id, integrationId: profile.integrationId },
+    where: {
+      id: conversationId,
+      userId: profile.id,
+      integrationId: profile.integrationId,
+    },
     data: { unreadCount: 0 },
   });
   return { status: updated.count ? 200 : 404 };
 }
 
-export async function sendInboxReply(conversationId: string, rawMessage: string) {
+export async function sendInboxReply(
+  conversationId: string,
+  rawMessage: string,
+) {
   const message = rawMessage.trim().slice(0, 1000);
   if (!message) return { status: 400, data: "Write a message first." };
   const profile = await currentProfile();
   if (!profile) return { status: 404, data: "Account not found." };
   const conversation = await client.conversation.findFirst({
-    where: { id: conversationId, userId: profile.id, integrationId: profile.integrationId },
+    where: {
+      id: conversationId,
+      userId: profile.id,
+      integrationId: profile.integrationId,
+    },
   });
   if (!conversation) return { status: 404, data: "Conversation not found." };
-  if (!conversation.lastInboundAt || Date.now() - conversation.lastInboundAt.getTime() > 24 * 60 * 60 * 1000) {
-    return { status: 403, data: "This conversation is outside Instagram's 24-hour reply window." };
+  if (
+    !conversation.lastInboundAt ||
+    Date.now() - conversation.lastInboundAt.getTime() > 24 * 60 * 60 * 1000
+  ) {
+    return {
+      status: 403,
+      data: "This conversation is outside Instagram's 24-hour reply window.",
+    };
   }
 
   const integration = getCanonicalInstagramIntegration(profile.integrations);
@@ -126,8 +168,28 @@ export async function sendInboxReply(conversationId: string, rawMessage: string)
     return { status: 403, data: "Reconnect Instagram before replying." };
   }
   // A manual reply takes over any active AI conversation before sending.
-  await client.aiConversationSession.updateMany({ where: { integrationId: profile.integrationId, recipientIgId: conversation.recipientIgId }, data: { status: "STOPPED", expiresAt: new Date(Date.now() + 86400000) } });
-  await client.automationFlowSession.updateMany({ where: { integrationId: profile.integrationId, recipientIgId: conversation.recipientIgId, OR: [{ status: { in: ["WAITING", "SCHEDULED"] } }, { status: { startsWith: "PROCESSING:" } }] }, data: { status: "STOPPED", resumeAt: null, expiresAt: new Date(Date.now() + 86400000) } });
+  await client.aiConversationSession.updateMany({
+    where: {
+      integrationId: profile.integrationId,
+      recipientIgId: conversation.recipientIgId,
+    },
+    data: { status: "STOPPED", expiresAt: new Date(Date.now() + 86400000) },
+  });
+  await client.automationFlowSession.updateMany({
+    where: {
+      integrationId: profile.integrationId,
+      recipientIgId: conversation.recipientIgId,
+      OR: [
+        { status: { in: ["WAITING", "SCHEDULED"] } },
+        { status: { startsWith: "PROCESSING:" } },
+      ],
+    },
+    data: {
+      status: "STOPPED",
+      resumeAt: null,
+      expiresAt: new Date(Date.now() + 86400000),
+    },
+  });
   const sent = await sendInstagramDirectResponse({
     token: token.token,
     igBusinessAccountId: integration.instagramId,
@@ -136,7 +198,11 @@ export async function sendInboxReply(conversationId: string, rawMessage: string)
     message,
     responseFormat: "TEXT",
   });
-  if (!sent.ok) return { status: 502, data: sent.metaError.message ?? "Instagram could not send the message." };
+  if (!sent.ok)
+    return {
+      status: 502,
+      data: sent.metaError.message ?? "Instagram could not send the message.",
+    };
 
   await client.$transaction([
     client.inboxMessage.create({

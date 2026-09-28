@@ -1,4 +1,9 @@
-import { normalizeCopyList, readCommentReplies, normalizeReplyLimit, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
+import {
+  normalizeCopyList,
+  readCommentReplies,
+  normalizeReplyLimit,
+  MAX_MESSAGE_VARIATIONS,
+} from "@/lib/automation-copy";
 import { validateEngagementSettings } from "@/lib/automation-engagement-settings";
 import { validateProductCard } from "@/lib/product-card";
 import {
@@ -25,6 +30,7 @@ export type CampaignMatchingMode = "EXACT" | "CONTAINS" | "SMART_AI";
 export type CampaignMediaType = "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
 
 export type RawCampaignPayload = {
+  adAutomation?: boolean;
   name?: string;
   active?: boolean;
   matchingMode?: string;
@@ -68,16 +74,19 @@ export type RawCampaignPayload = {
     openingDmEnabled?: boolean;
     followRequestDmText?: string | null;
     followRequestButtonText?: string | null;
+    phoneCaptureEnabled?: boolean;
+    phoneCapturePrompt?: string;
+    followUpCondition?: string;
     emailCaptureEnabled?: boolean;
     emailCapturePrompt?: string;
     followUpEnabled?: boolean;
     followUpMessage?: string;
     followUpDelayMinutes?: number;
-
   } | null;
 };
 
 export type NormalizedCampaignPayload = {
+  adAutomation?: boolean;
   name: string;
   active: boolean;
   matchingMode: "EXACT" | "CONTAINS";
@@ -118,16 +127,19 @@ export type NormalizedCampaignPayload = {
     openingDmEnabled?: boolean;
     followRequestDmText?: string;
     followRequestButtonText?: string;
+    phoneCaptureEnabled?: boolean;
+    phoneCapturePrompt?: string;
+    followUpCondition?: string;
     emailCaptureEnabled?: boolean;
     emailCapturePrompt?: string;
     followUpEnabled?: boolean;
     followUpMessage?: string;
     followUpDelayMinutes?: number;
-
   };
 };
 
 export type CampaignPayloadSummary = {
+  adAutomation?: boolean;
   name: string;
   active: boolean;
   triggerMode: CampaignTriggerMode;
@@ -144,7 +156,7 @@ export type CampaignPayloadSummary = {
 };
 
 export function normalizeCampaignPayload(
-  payload: RawCampaignPayload
+  payload: RawCampaignPayload,
 ): NormalizedCampaignPayload {
   const triggerMode: CampaignTriggerMode =
     payload.triggerMode === "ANY_COMMENT" ? "ANY_COMMENT" : "SPECIFIC_KEYWORD";
@@ -158,23 +170,29 @@ export function normalizeCampaignPayload(
   const publicReplyEnabled = payload.publicReplyEnabled !== false;
   const aiReplyEnabled = payload.listener?.aiReplyEnabled === true;
   const sendPrivateDm = payload.sendPrivateDm !== false;
-  const openingDmEnabled = sendPrivateDm && payload.listener?.openingDmEnabled !== false;
-  const responseFormat = payload.listener?.responseFormat === "PRODUCT_CARD"
-    ? "PRODUCT_CARD"
-    : payload.listener?.responseFormat === "MEDIA"
-    ? "MEDIA"
-    : payload.listener?.responseFormat === "LINK" || payload.listener?.ctaLink
-      ? "LINK"
-      : "TEXT";
+  const openingDmEnabled =
+    sendPrivateDm && payload.listener?.openingDmEnabled !== false;
+  const responseFormat =
+    payload.listener?.responseFormat === "PRODUCT_CARD"
+      ? "PRODUCT_CARD"
+      : payload.listener?.responseFormat === "MEDIA"
+        ? "MEDIA"
+        : payload.listener?.responseFormat === "LINK" ||
+            payload.listener?.ctaLink
+          ? "LINK"
+          : "TEXT";
   const linkButtons = normalizeLinkButtons(
     payload.listener?.linkButtons ?? payload.listener?.quickReplies,
     payload.listener?.ctaButtonTitle,
-    payload.listener?.ctaLink
+    payload.listener?.ctaLink,
   );
   const firstLink = linkButtons[0];
-  const replies = publicReplyEnabled ? readCommentReplies(payload.listener ?? {}) : [];
+  const replies = publicReplyEnabled
+    ? readCommentReplies(payload.listener ?? {})
+    : [];
 
   return {
+    adAutomation: payload.adAutomation === true,
     name: payload.name?.trim() || "Untitled automation",
     active: Boolean(payload.active),
     matchingMode,
@@ -197,47 +215,107 @@ export function normalizeCampaignPayload(
       commentReply2: replies[1],
       commentReply3: replies[2],
       commentReplies: replies,
-      messageVariations: sendPrivateDm && responseFormat !== "PRODUCT_CARD" ? normalizeCopyList(payload.listener?.messageVariations, MAX_MESSAGE_VARIATIONS) : [],
+      messageVariations:
+        sendPrivateDm && responseFormat !== "PRODUCT_CARD"
+          ? normalizeCopyList(
+              payload.listener?.messageVariations,
+              MAX_MESSAGE_VARIATIONS,
+            )
+          : [],
       publicReplyLimit: normalizeReplyLimit(payload.listener?.publicReplyLimit),
       aiReplyEnabled,
       aiReplyTone: normalizeAiReplyTone(payload.listener?.aiReplyTone),
-      aiReplyInstructions: aiReplyEnabled ? cleanOptional(payload.listener?.aiReplyInstructions)?.slice(0, 1600) : undefined,
-      aiProtectionRules: normalizeAiProtectionRules(payload.listener?.aiProtectionRules),
-      ctaLink: sendPrivateDm && (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD") ? firstLink?.url : undefined,
-      ctaButtonTitle: sendPrivateDm && (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD") ? firstLink?.label : undefined,
+      aiReplyInstructions: aiReplyEnabled
+        ? cleanOptional(payload.listener?.aiReplyInstructions)?.slice(0, 1600)
+        : undefined,
+      aiProtectionRules: normalizeAiProtectionRules(
+        payload.listener?.aiProtectionRules,
+      ),
+      ctaLink:
+        sendPrivateDm &&
+        (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD")
+          ? firstLink?.url
+          : undefined,
+      ctaButtonTitle:
+        sendPrivateDm &&
+        (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD")
+          ? firstLink?.label
+          : undefined,
       responseFormat,
       quickReplies: sendPrivateDm
-        ? (responseFormat === "LINK" || responseFormat === "PRODUCT_CARD")
+        ? responseFormat === "LINK" || responseFormat === "PRODUCT_CARD"
           ? linkButtons
           : readLegacyQuickReplies(payload.listener?.quickReplies)
         : [],
-      mediaUrl: sendPrivateDm && (responseFormat === "MEDIA" || responseFormat === "PRODUCT_CARD") ? normalizeUrl(payload.listener?.mediaUrl) : undefined,
-      cardSubtitle: responseFormat === "PRODUCT_CARD" ? cleanOptional(payload.listener?.cardSubtitle) : undefined,
-      mediaType: sendPrivateDm && responseFormat === "MEDIA" && payload.listener?.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
-      openingDmText: sendPrivateDm ? resolveOpeningDmText(payload.listener?.openingDmText) : undefined,
-      openingDmButtonText: sendPrivateDm ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText) : undefined,
+      mediaUrl:
+        sendPrivateDm &&
+        (responseFormat === "MEDIA" || responseFormat === "PRODUCT_CARD")
+          ? normalizeUrl(payload.listener?.mediaUrl)
+          : undefined,
+      cardSubtitle:
+        responseFormat === "PRODUCT_CARD"
+          ? cleanOptional(payload.listener?.cardSubtitle)
+          : undefined,
+      mediaType:
+        sendPrivateDm &&
+        responseFormat === "MEDIA" &&
+        payload.listener?.mediaType === "VIDEO"
+          ? "VIDEO"
+          : responseFormat === "MEDIA"
+            ? "IMAGE"
+            : undefined,
+      openingDmText: sendPrivateDm
+        ? resolveOpeningDmText(payload.listener?.openingDmText)
+        : undefined,
+      openingDmButtonText: sendPrivateDm
+        ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText)
+        : undefined,
       openingDmEnabled,
-      emailCaptureEnabled: sendPrivateDm && payload.listener?.emailCaptureEnabled === true,
+      phoneCaptureEnabled:
+        sendPrivateDm && payload.listener?.phoneCaptureEnabled === true,
+      phoneCapturePrompt: cleanOptional(payload.listener?.phoneCapturePrompt),
+      followUpCondition: payload.listener?.followUpCondition || "ALWAYS",
+      emailCaptureEnabled:
+        sendPrivateDm && payload.listener?.emailCaptureEnabled === true,
       emailCapturePrompt: cleanOptional(payload.listener?.emailCapturePrompt),
-      followUpEnabled: sendPrivateDm && payload.listener?.followUpEnabled === true,
+      followUpEnabled:
+        sendPrivateDm && payload.listener?.followUpEnabled === true,
       followUpMessage: cleanOptional(payload.listener?.followUpMessage),
       followUpDelayMinutes: payload.listener?.followUpDelayMinutes ?? 30,
-      followRequestDmText: sendPrivateDm ? resolveFollowRequestDmText(payload.listener?.followRequestDmText) : undefined,
-      followRequestButtonText: sendPrivateDm ? resolveFollowRequestButtonText(payload.listener?.followRequestButtonText) : undefined,
+      followRequestDmText: sendPrivateDm
+        ? resolveFollowRequestDmText(payload.listener?.followRequestDmText)
+        : undefined,
+      followRequestButtonText: sendPrivateDm
+        ? resolveFollowRequestButtonText(
+            payload.listener?.followRequestButtonText,
+          )
+        : undefined,
     },
   };
 }
 
 export function validateNormalizedCampaignPayload(
-  payload: NormalizedCampaignPayload
+  payload: NormalizedCampaignPayload,
 ): string | null {
-  const engagementError = validateEngagementSettings(payload.listener, payload.sendPrivateDm, payload.listener.openingDmEnabled === true);
+  const engagementError = validateEngagementSettings(
+    payload.listener,
+    payload.sendPrivateDm,
+    payload.listener.openingDmEnabled === true,
+  );
   if (engagementError) return engagementError;
+  if (
+    payload.adAutomation &&
+    (!payload.post.postid || payload.post.postid === "ANY")
+  )
+    return "Select the Instagram post used by your ad.";
   if (!payload.post.postid) {
     return "This automation needs a post.";
   }
 
-  if (payload.triggerMode === "SPECIFIC_KEYWORD" && payload.keywords.length === 0) {
+  if (
+    payload.triggerMode === "SPECIFIC_KEYWORD" &&
+    payload.keywords.length === 0
+  ) {
     return "Specific keyword automations need at least one keyword.";
   }
 
@@ -247,18 +325,36 @@ export function validateNormalizedCampaignPayload(
 
   if (
     payload.sendPrivateDm &&
-    (payload.listener.responseFormat === "LINK" || payload.listener.responseFormat === "PRODUCT_CARD") &&
-    !linkButtonsAreComplete(normalizeLinkButtons(payload.listener.quickReplies, payload.listener.ctaButtonTitle, payload.listener.ctaLink))
+    (payload.listener.responseFormat === "LINK" ||
+      payload.listener.responseFormat === "PRODUCT_CARD") &&
+    !linkButtonsAreComplete(
+      normalizeLinkButtons(
+        payload.listener.quickReplies,
+        payload.listener.ctaButtonTitle,
+        payload.listener.ctaLink,
+      ),
+    )
   ) {
     return "Complete every link label and add a valid destination URL.";
   }
 
-  if (payload.sendPrivateDm && payload.listener.responseFormat === "MEDIA" && !payload.listener.mediaUrl) {
+  if (
+    payload.sendPrivateDm &&
+    payload.listener.responseFormat === "MEDIA" &&
+    !payload.listener.mediaUrl
+  ) {
     return "Add a valid public image or video URL.";
   }
 
-  if (payload.sendPrivateDm && payload.listener.responseFormat === "PRODUCT_CARD") {
-    const error = validateProductCard(payload.listener.prompt, payload.listener.mediaUrl, payload.listener.cardSubtitle);
+  if (
+    payload.sendPrivateDm &&
+    payload.listener.responseFormat === "PRODUCT_CARD"
+  ) {
+    const error = validateProductCard(
+      payload.listener.prompt,
+      payload.listener.mediaUrl,
+      payload.listener.cardSubtitle,
+    );
     if (error) return error;
   }
 
@@ -267,7 +363,11 @@ export function validateNormalizedCampaignPayload(
     payload.listener.commentReply2,
     payload.listener.commentReply3,
   ].filter(Boolean).length;
-  if (!payload.sendPrivateDm && publicReplyCount === 0 && !payload.listener.aiReplyEnabled) {
+  if (
+    !payload.sendPrivateDm &&
+    publicReplyCount === 0 &&
+    !payload.listener.aiReplyEnabled
+  ) {
     return "Choose a comment reply or DM before activating this automation.";
   }
 
@@ -279,9 +379,9 @@ export function summarizeCampaignPayload(
   publicReplyEnabled = Boolean(
     payload.listener.aiReplyEnabled ||
     payload.listener.commentReply ||
-      payload.listener.commentReply2 ||
-      payload.listener.commentReply3
-  )
+    payload.listener.commentReply2 ||
+    payload.listener.commentReply3,
+  ),
 ): CampaignPayloadSummary {
   return {
     name: payload.name,
@@ -304,16 +404,19 @@ export function summarizeCampaignPayload(
   };
 }
 
-export function normalizeCampaignMediaType(value?: string | null): CampaignMediaType {
+export function normalizeCampaignMediaType(
+  value?: string | null,
+): CampaignMediaType {
   if (value === "VIDEO") return "VIDEO";
-  if (value === "CAROUSEL_ALBUM" || value === "CAROSEL_ALBUM") return "CAROUSEL_ALBUM";
+  if (value === "CAROUSEL_ALBUM" || value === "CAROSEL_ALBUM")
+    return "CAROUSEL_ALBUM";
   return "IMAGE";
 }
 
 function cleanKeywords(triggerMode: CampaignTriggerMode, keywords: string[]) {
   if (triggerMode === "ANY_COMMENT") return [];
   return Array.from(
-    new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean))
+    new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean)),
   );
 }
 
@@ -327,7 +430,9 @@ function normalizeUrl(value?: string | null) {
   if (!raw) return undefined;
   try {
     const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : undefined;
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? parsed.toString()
+      : undefined;
   } catch {
     return undefined;
   }

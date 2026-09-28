@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/automation-flow/runtime", () => ({ processAutomationFlow: vi.fn().mockResolvedValue(false) }));
+vi.mock("@/lib/automation-flow/runtime", () => ({
+  processAutomationFlow: vi.fn().mockResolvedValue(false),
+}));
 
 const mockCreateWebhookEvent = vi.fn();
 const mockUpdateWebhookEvent = vi.fn();
@@ -30,6 +32,7 @@ const mockTakeEmailReply = vi.fn();
 const mockFinishEngagementJob = vi.fn();
 const mockScheduleFollowUp = vi.fn();
 vi.mock("@/lib/automation-engagement", () => ({
+  recordEngagementReceipt: vi.fn(),
   cancelPendingFollowUps: vi.fn().mockResolvedValue(undefined),
   beginEmailRequest: (...args: unknown[]) => mockBeginEmailRequest(...args),
   takeEmailReply: (...args: unknown[]) => mockTakeEmailReply(...args),
@@ -43,11 +46,14 @@ vi.mock("@/actions/webhook/queries", () => ({
   findAutomationForCommentWithReason: vi.fn(),
   findAutomationForDM: (...args: unknown[]) => mockFindAutomationForDM(...args),
   findAutomationForStory: vi.fn(),
-  findPendingCommentDmActionForText: (...args: unknown[]) => mockFindPendingCommentDmActionForText(...args),
+  findPendingCommentDmActionForText: (...args: unknown[]) =>
+    mockFindPendingCommentDmActionForText(...args),
   findAutomationById: (...args: unknown[]) => mockFindAutomationById(...args),
-  findIntegrationForWebhookAccount: (...args: unknown[]) => mockFindIntegrationForWebhookAccount(...args),
+  findIntegrationForWebhookAccount: (...args: unknown[]) =>
+    mockFindIntegrationForWebhookAccount(...args),
   isDuplicate: (...args: unknown[]) => mockIsDuplicate(...args),
-  hasDeliveredFinalPayload: (...args: unknown[]) => mockHasDeliveredFinalPayload(...args),
+  hasDeliveredFinalPayload: (...args: unknown[]) =>
+    mockHasDeliveredFinalPayload(...args),
   hasProcessedCommentWebhook: vi.fn(),
   hasAp3kGeneratedCommentId: vi.fn(),
   countRecentPublicReplies: vi.fn(),
@@ -55,15 +61,18 @@ vi.mock("@/actions/webhook/queries", () => ({
   pauseAutomationForLoopGuard: vi.fn(),
   createMessageLog: (...args: unknown[]) => mockCreateMessageLog(...args),
   upsertLead: vi.fn(),
-  createAutomationEvent: (...args: unknown[]) => mockCreateAutomationEvent(...args),
+  createAutomationEvent: (...args: unknown[]) =>
+    mockCreateAutomationEvent(...args),
   createWebhookEvent: (...args: unknown[]) => mockCreateWebhookEvent(...args),
   updateWebhookEvent: (...args: unknown[]) => mockUpdateWebhookEvent(...args),
   mergeWebhookEventPayload: vi.fn(),
   createChatHistory: vi.fn(),
   getChatHistory: vi.fn(),
   trackResponse: (...args: unknown[]) => mockTrackResponse(...args),
-  upsertInboundInboxMessage: (...args: unknown[]) => mockUpsertInboundInboxMessage(...args),
-  recordOutboundInboxMessage: (...args: unknown[]) => mockRecordOutboundInboxMessage(...args),
+  upsertInboundInboxMessage: (...args: unknown[]) =>
+    mockUpsertInboundInboxMessage(...args),
+  recordOutboundInboxMessage: (...args: unknown[]) =>
+    mockRecordOutboundInboxMessage(...args),
 }));
 
 vi.mock("@/lib/webhook-signature", () => ({
@@ -80,14 +89,17 @@ vi.mock("@/lib/fetch", () => ({
 
 vi.mock("@/lib/instagram-dm", () => ({
   sendInstagramCommentPrivateReply: vi.fn(),
-  sendInstagramDirectResponse: (...args: unknown[]) => mockSendInstagramDirectResponse(...args),
+  sendInstagramDirectResponse: (...args: unknown[]) =>
+    mockSendInstagramDirectResponse(...args),
   sendInstagramSenderAction: vi.fn(),
-  getInstagramRecipientProfile: (...args: unknown[]) => mockGetInstagramRecipientProfile(...args),
+  getInstagramRecipientProfile: (...args: unknown[]) =>
+    mockGetInstagramRecipientProfile(...args),
   formatPrivateReplyError: () => "dm_failed",
 }));
 
 vi.mock("@/lib/send-token", () => ({
-  resolveIntegrationSendToken: (...args: unknown[]) => mockResolveIntegrationSendToken(...args),
+  resolveIntegrationSendToken: (...args: unknown[]) =>
+    mockResolveIntegrationSendToken(...args),
   tokenResolutionDiagnostics: () => ({}),
 }));
 
@@ -99,7 +111,8 @@ vi.mock("@/actions/usage/queries", () => ({
 }));
 
 vi.mock("@/lib/ai-reply", () => ({
-  getAiWorkspaceRuntimeConfig: (...args: unknown[]) => mockGetAiWorkspaceRuntimeConfig(...args),
+  getAiWorkspaceRuntimeConfig: (...args: unknown[]) =>
+    mockGetAiWorkspaceRuntimeConfig(...args),
   generateAiDmReply: (...args: unknown[]) => mockGenerateAiDmReply(...args),
   generateAiCommentDecision: vi.fn(),
 }));
@@ -154,18 +167,26 @@ describe("Meta webhook route security", () => {
     mockRecordOutboundInboxMessage.mockResolvedValue({});
     mockTrackResponse.mockResolvedValue({});
     mockGetInstagramRecipientProfile.mockResolvedValue(null);
-    mockSendInstagramDirectResponse.mockResolvedValue({ ok: true, messageIds: ["mid.outbound"] });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: false, reason: "token_missing" });
+    mockSendInstagramDirectResponse.mockResolvedValue({
+      ok: true,
+      messageIds: ["mid.outbound"],
+    });
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: false,
+      reason: "token_missing",
+    });
     mockCanSendStaticReply.mockResolvedValue({ ok: true });
-    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({ aiRepliesEnabled: true });
+    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({
+      aiRepliesEnabled: true,
+    });
     mockGenerateAiDmReply.mockResolvedValue({ ok: true, reply: "AI reply" });
   });
 
   it("does not persist failed GET verification attempts", async () => {
     const response = await GET(
       new NextRequest(
-        "https://ap3k.test/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=abc"
-      )
+        "https://ap3k.test/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=abc",
+      ),
     );
 
     expect(response.status).toBe(403);
@@ -175,8 +196,8 @@ describe("Meta webhook route security", () => {
   it("still acknowledges valid GET verification challenges", async () => {
     const response = await GET(
       new NextRequest(
-        "https://ap3k.test/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=verify-token&hub.challenge=challenge-value"
-      )
+        "https://ap3k.test/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=verify-token&hub.challenge=challenge-value",
+      ),
     );
 
     expect(response.status).toBe(200);
@@ -185,18 +206,18 @@ describe("Meta webhook route security", () => {
       expect.objectContaining({
         eventType: "WEBHOOK_VERIFY_GET",
         status: "PROCESSED",
-      })
+      }),
     );
   });
 
   it("verifies the raw body before parsing or writing webhook diagnostics", async () => {
-    const rawBody = "{\"object\":\"instagram\",\"entry\":[]}";
+    const rawBody = '{"object":"instagram","entry":[]}';
     const response = await POST(
       new NextRequest("https://ap3k.test/api/webhooks/meta", {
         method: "POST",
         headers: { "x-hub-signature-256": "sha256=bad" },
         body: rawBody,
-      })
+      }),
     );
 
     expect(response.status).toBe(200);
@@ -212,7 +233,7 @@ describe("Meta webhook route security", () => {
         method: "POST",
         headers: { "x-hub-signature-256": "sha256=good" },
         body: "{not-json",
-      })
+      }),
     );
 
     expect(response.status).toBe(200);
@@ -221,7 +242,7 @@ describe("Meta webhook route security", () => {
         eventType: "PAYLOAD_INVALID",
         status: "FAILED",
         errorMessage: "invalid_json_payload",
-      })
+      }),
     );
   });
 
@@ -234,7 +255,7 @@ describe("Meta webhook route security", () => {
           "x-hub-signature-256": "sha256=bad",
         },
         body: "{}",
-      })
+      }),
     );
 
     expect(response.status).toBe(413);
@@ -246,28 +267,37 @@ describe("Meta webhook route security", () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          delivery: { mids: ["mid.outbound"] },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              delivery: { mids: ["mid.outbound"] },
+            },
+          ],
+        },
+      ],
     });
 
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
-    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith("webhook-event-1", expect.objectContaining({
-      status: "IGNORED",
-      errorMessage: "inbound_system_event_skipped",
-    }));
+    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith(
+      "webhook-event-1",
+      expect.objectContaining({
+        status: "IGNORED",
+        errorMessage: "inbound_system_event_skipped",
+      }),
+    );
     expect(mockFindIntegrationForWebhookAccount).not.toHaveBeenCalled();
     expect(mockUpsertInboundInboxMessage).not.toHaveBeenCalled();
     expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();
@@ -306,117 +336,159 @@ describe("Meta webhook route security", () => {
       },
       User: { integrations: [integration] },
     });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
-
-    const body = JSON.stringify({
-      object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          postback: {
-            title: "Send me the link",
-            payload: "AP3K_OPENING_CONTINUE:automation-1",
-          },
-        }],
-      }],
-    });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
-
-    expect(response.status).toBe(200);
-    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith("automation-1", "recipient-1");
-    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "recipient-1",
-      automationId: "automation-1",
-      message: "Here is the final link",
-      ctaTitle: "Get the Link",
-      ctaUrl: "https://example.com/guide",
-      postbackButton: undefined,
-    }));
-    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
-      status: "SENT",
-      errorMessage: "final_dm_payload_sent",
-    }));
-  });
-
-  it.each(["text", "quick_reply"])("releases the final DM from an opening %s callback", async (kind) => {
-    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
-    const integration = {
-      userId: "user-1",
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: true,
       token: "token-1",
-      instagramId: "ig-business-1",
-      pageId: "ig-business-1",
-      instagramUsername: "ap3k",
-      status: "CONNECTED",
-      reconnectRequired: false,
-    };
-    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
-    const automation = {
-      id: "automation-1",
-      userId: "user-1",
-      source: "COMMENT",
-      active: true,
-      followGateRequired: false,
-      listener: {
-        prompt: "Here is the final link",
-        responseFormat: "LINK",
-        quickReplies: [],
-        ctaButtonTitle: "Get the Link",
-        ctaLink: "https://example.com/guide",
-        mediaUrl: null,
-        mediaType: null,
-      },
-      User: { integrations: [integration] },
-    };
-    mockFindAutomationById.mockResolvedValue(automation);
-    mockFindPendingCommentDmActionForText.mockResolvedValue({
-      automation, action: { type: "OPENING_CONTINUE", automationId: "automation-1" },
     });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          message: {
-            mid: "mid.inbound",
-            text: "Send me the link",
-            ...(kind === "quick_reply" ? { quick_reply: { payload: "AP3K_OPENING_CONTINUE:automation-1" } } : {}),
-          },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              postback: {
+                title: "Send me the link",
+                payload: "AP3K_OPENING_CONTINUE:automation-1",
+              },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
-    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith("automation-1", "recipient-1");
-    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "recipient-1",
-      automationId: "automation-1",
-      message: "Here is the final link",
-      ctaTitle: "Get the Link",
-      ctaUrl: "https://example.com/guide",
-      postbackButton: undefined,
-    }));
-    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
-      status: "SENT",
-      errorMessage: "final_dm_payload_sent",
-    }));
+    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith(
+      "automation-1",
+      "recipient-1",
+    );
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: "recipient-1",
+        automationId: "automation-1",
+        message: "Here is the final link",
+        ctaTitle: "Get the Link",
+        ctaUrl: "https://example.com/guide",
+        postbackButton: undefined,
+      }),
+    );
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "SENT",
+        errorMessage: "final_dm_payload_sent",
+      }),
+    );
   });
+
+  it.each(["text", "quick_reply"])(
+    "releases the final DM from an opening %s callback",
+    async (kind) => {
+      mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+      const integration = {
+        userId: "user-1",
+        token: "token-1",
+        instagramId: "ig-business-1",
+        pageId: "ig-business-1",
+        instagramUsername: "ap3k",
+        status: "CONNECTED",
+        reconnectRequired: false,
+      };
+      mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+      const automation = {
+        id: "automation-1",
+        userId: "user-1",
+        source: "COMMENT",
+        active: true,
+        followGateRequired: false,
+        listener: {
+          prompt: "Here is the final link",
+          responseFormat: "LINK",
+          quickReplies: [],
+          ctaButtonTitle: "Get the Link",
+          ctaLink: "https://example.com/guide",
+          mediaUrl: null,
+          mediaType: null,
+        },
+        User: { integrations: [integration] },
+      };
+      mockFindAutomationById.mockResolvedValue(automation);
+      mockFindPendingCommentDmActionForText.mockResolvedValue({
+        automation,
+        action: { type: "OPENING_CONTINUE", automationId: "automation-1" },
+      });
+      mockResolveIntegrationSendToken.mockReturnValue({
+        ok: true,
+        token: "token-1",
+      });
+
+      const body = JSON.stringify({
+        object: "instagram",
+        entry: [
+          {
+            id: "ig-business-1",
+            messaging: [
+              {
+                sender: { id: "recipient-1" },
+                recipient: { id: "ig-business-1" },
+                timestamp: Date.now(),
+                message: {
+                  mid: "mid.inbound",
+                  text: "Send me the link",
+                  ...(kind === "quick_reply"
+                    ? {
+                        quick_reply: {
+                          payload: "AP3K_OPENING_CONTINUE:automation-1",
+                        },
+                      }
+                    : {}),
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const response = await POST(
+        new NextRequest("https://ap3k.test/api/webhooks/meta", {
+          method: "POST",
+          headers: { "x-hub-signature-256": "sha256=good" },
+          body,
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith(
+        "automation-1",
+        "recipient-1",
+      );
+      expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipientId: "recipient-1",
+          automationId: "automation-1",
+          message: "Here is the final link",
+          ctaTitle: "Get the Link",
+          ctaUrl: "https://example.com/guide",
+          postbackButton: undefined,
+        }),
+      );
+      expect(mockCreateMessageLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "SENT",
+          errorMessage: "final_dm_payload_sent",
+        }),
+      );
+    },
+  );
 
   it("persists inbound Instagram image attachments for the inbox", async () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
@@ -429,7 +501,10 @@ describe("Meta webhook route security", () => {
       status: "CONNECTED",
       reconnectRequired: false,
     });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: true,
+      token: "token-1",
+    });
     mockGetInstagramRecipientProfile.mockResolvedValue({
       username: "prospect",
       name: "Prospect",
@@ -438,33 +513,48 @@ describe("Meta webhook route security", () => {
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          message: {
-            mid: "mid.image",
-            attachments: [{ type: "image", payload: { url: "https://scontent.cdninstagram.com/inbound.jpg" } }],
-          },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              message: {
+                mid: "mid.image",
+                attachments: [
+                  {
+                    type: "image",
+                    payload: {
+                      url: "https://scontent.cdninstagram.com/inbound.jpg",
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
-    expect(mockUpsertInboundInboxMessage).toHaveBeenCalledWith(expect.objectContaining({
-      userId: "user-1",
-      senderIgId: "recipient-1",
-      content: "Sent an image",
-      messageType: "IMAGE",
-      mediaUrl: "https://scontent.cdninstagram.com/inbound.jpg",
-    }));
+    expect(mockUpsertInboundInboxMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        senderIgId: "recipient-1",
+        content: "Sent an image",
+        messageType: "IMAGE",
+        mediaUrl: "https://scontent.cdninstagram.com/inbound.jpg",
+      }),
+    );
   });
 
   it("uses the saved DM fallback when AI quota reservation fails", async () => {
@@ -498,37 +588,56 @@ describe("Meta webhook route security", () => {
       User: { integrations: [integration] },
     };
     mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
-    mockFindAutomationForDM.mockResolvedValue({ automation, matchedKeyword: "any message" });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
-    mockReserveAiReplyQuota.mockRejectedValue(new Error("quota database unavailable"));
+    mockFindAutomationForDM.mockResolvedValue({
+      automation,
+      matchedKeyword: "any message",
+    });
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: true,
+      token: "token-1",
+    });
+    mockReserveAiReplyQuota.mockRejectedValue(
+      new Error("quota database unavailable"),
+    );
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          message: { mid: "mid.inbound", text: "What do you sell?" },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              message: { mid: "mid.inbound", text: "What do you sell?" },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
-    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "recipient-1",
-      automationId: "automation-1",
-      message: "Saved fallback reply",
-    }));
-    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith("webhook-event-1", expect.objectContaining({
-      status: "PROCESSED",
-    }));
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: "recipient-1",
+        automationId: "automation-1",
+        message: "Saved fallback reply",
+      }),
+    );
+    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith(
+      "webhook-event-1",
+      expect.objectContaining({
+        status: "PROCESSED",
+      }),
+    );
   });
 
   it("sends an approved AI-selected URL as a native Instagram button", async () => {
@@ -562,10 +671,22 @@ describe("Meta webhook route security", () => {
       User: { integrations: [integration] },
     };
     mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
-    mockFindAutomationForDM.mockResolvedValue({ automation, matchedKeyword: "any message" });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
-    mockReserveAiReplyQuota.mockResolvedValue({ ok: true, reservationId: "reservation-1" });
-    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({ aiRepliesEnabled: false, knowledge: [] });
+    mockFindAutomationForDM.mockResolvedValue({
+      automation,
+      matchedKeyword: "any message",
+    });
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: true,
+      token: "token-1",
+    });
+    mockReserveAiReplyQuota.mockResolvedValue({
+      ok: true,
+      reservationId: "reservation-1",
+    });
+    mockGetAiWorkspaceRuntimeConfig.mockResolvedValue({
+      aiRepliesEnabled: false,
+      knowledge: [],
+    });
     mockGenerateAiDmReply.mockResolvedValue({
       ok: true,
       reply: "Create your free AP3K account here.",
@@ -574,32 +695,44 @@ describe("Meta webhook route security", () => {
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          message: { mid: "mid.ai-link", text: "How do I start?" },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              message: { mid: "mid.ai-link", text: "How do I start?" },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
-    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "recipient-1",
-      message: "Create your free AP3K account here.",
-      responseFormat: "LINK",
-      linkButtons: [{ label: "GET STARTED", url: "https://ap3k.com/sign-up" }],
-    }));
-    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(expect.objectContaining({
-      meta: expect.objectContaining({ responseFormat: "AI_LINK" }),
-    }));
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: "recipient-1",
+        message: "Create your free AP3K account here.",
+        responseFormat: "LINK",
+        linkButtons: [
+          { label: "GET STARTED", url: "https://ap3k.com/sign-up" },
+        ],
+      }),
+    );
+    expect(mockCreateAutomationEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: expect.objectContaining({ responseFormat: "AI_LINK" }),
+      }),
+    );
   });
 
   it("rechecks a follow-button postback instead of treating the gate prompt as a duplicate", async () => {
@@ -639,49 +772,65 @@ describe("Meta webhook route security", () => {
       profilePictureUrl: undefined,
       followsBusiness: false,
     });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: true,
+      token: "token-1",
+    });
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          postback: {
-            title: "I followed ✅",
-            payload: "AP3K_FOLLOW_CHECK:automation-1",
-          },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              postback: {
+                title: "I followed ✅",
+                payload: "AP3K_FOLLOW_CHECK:automation-1",
+              },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
     expect(mockIsDuplicate).not.toHaveBeenCalled();
-    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith("automation-1", "recipient-1");
-    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "recipient-1",
-      automationId: "automation-1",
-      preferQuickReplyForPostback: false,
-      followGatePrompt: {
-        username: "ap3k",
-        state: "NOT_FOLLOWING",
-        message: undefined,
-        verificationButtonTitle: "Following",
-        verificationPayload: "AP3K_FOLLOW_CHECK:automation-1",
-      },
-      postbackButton: undefined,
-    }));
-    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
-      status: "SENT",
-      errorMessage: "follow_request_dm_sent",
-    }));
+    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith(
+      "automation-1",
+      "recipient-1",
+    );
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: "recipient-1",
+        automationId: "automation-1",
+        preferQuickReplyForPostback: false,
+        followGatePrompt: {
+          username: "ap3k",
+          state: "NOT_FOLLOWING",
+          message: undefined,
+          verificationButtonTitle: "Following",
+          verificationPayload: "AP3K_FOLLOW_CHECK:automation-1",
+        },
+        postbackButton: undefined,
+      }),
+    );
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "SENT",
+        errorMessage: "follow_request_dm_sent",
+      }),
+    );
   });
 
   it("releases the protected payload after Instagram verifies the follow", async () => {
@@ -720,41 +869,57 @@ describe("Meta webhook route security", () => {
       profilePictureUrl: undefined,
       followsBusiness: true,
     });
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    mockResolveIntegrationSendToken.mockReturnValue({
+      ok: true,
+      token: "token-1",
+    });
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          postback: {
-            title: "I followed ✅",
-            payload: "AP3K_FOLLOW_CHECK:automation-1",
-          },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              postback: {
+                title: "I followed ✅",
+                payload: "AP3K_FOLLOW_CHECK:automation-1",
+              },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
-    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith("automation-1", "recipient-1");
-    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "recipient-1",
-      automationId: "automation-1",
-      message: "Here is your protected payload",
-      postbackButton: undefined,
-    }));
-    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({
-      status: "SENT",
-      errorMessage: "final_dm_payload_sent",
-    }));
+    expect(mockHasDeliveredFinalPayload).toHaveBeenCalledWith(
+      "automation-1",
+      "recipient-1",
+    );
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: "recipient-1",
+        automationId: "automation-1",
+        message: "Here is your protected payload",
+        postbackButton: undefined,
+      }),
+    );
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "SENT",
+        errorMessage: "final_dm_payload_sent",
+      }),
+    );
   });
 
   it("does not release the protected payload twice", async () => {
@@ -781,56 +946,171 @@ describe("Meta webhook route security", () => {
 
     const body = JSON.stringify({
       object: "instagram",
-      entry: [{
-        id: "ig-business-1",
-        messaging: [{
-          sender: { id: "recipient-1" },
-          recipient: { id: "ig-business-1" },
-          timestamp: Date.now(),
-          postback: {
-            title: "I followed ✅",
-            payload: "AP3K_FOLLOW_CHECK:automation-1",
-          },
-        }],
-      }],
+      entry: [
+        {
+          id: "ig-business-1",
+          messaging: [
+            {
+              sender: { id: "recipient-1" },
+              recipient: { id: "ig-business-1" },
+              timestamp: Date.now(),
+              postback: {
+                title: "I followed ✅",
+                payload: "AP3K_FOLLOW_CHECK:automation-1",
+              },
+            },
+          ],
+        },
+      ],
     });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", {
-      method: "POST",
-      headers: { "x-hub-signature-256": "sha256=good" },
-      body,
-    }));
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
 
     expect(response.status).toBe(200);
     expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();
-    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith("webhook-event-1", expect.objectContaining({
-      status: "PROCESSED",
-      errorMessage: "duplicate_skipped",
-    }));
+    expect(mockUpdateWebhookEvent).toHaveBeenCalledWith(
+      "webhook-event-1",
+      expect.objectContaining({
+        status: "PROCESSED",
+        errorMessage: "duplicate_skipped",
+      }),
+    );
   });
-  it.each(["request", "waiting", "email", "reminder"])("handles the %s engagement stage without leaking the product link", async stage => {
-    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
-    const integration = { id: "i1", userId: "user-1", token: "test", instagramId: "ig-business-1", status: "CONNECTED", reconnectRequired: false, planLocked: false };
-    const automation = { id: "automation-1", integrationId: "i1", userId: "user-1", source: "COMMENT", active: true, followGateRequired: false,
-      listener: { prompt: "Your product", responseFormat: "PRODUCT_CARD", ctaLink: "https://example.com/product", ctaButtonTitle: "Shop", mediaUrl: "https://ap3k.com/image.jpg", emailCaptureEnabled: stage !== "reminder", emailCapturePrompt: "Reply with your email", followUpEnabled: stage === "reminder", followUpDelayMinutes: 30 },
-      User: { integrations: [integration] } };
-    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
-    mockFindAutomationById.mockResolvedValue(automation);
-    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "test" });
-    mockBeginEmailRequest.mockResolvedValue(stage === "waiting" ? { kind: "waiting" } : { kind: "request", jobId: "email-job" });
-    if (stage === "email") mockTakeEmailReply.mockResolvedValue({ kind: "continue", automationId: "automation-1", flowId: "comment-1", jobId: "email-job" });
-    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", { method: "POST", headers: { "x-hub-signature-256": "sha256=good" }, body: JSON.stringify({ object: "instagram", entry: [{ id: "ig-business-1", messaging: [{ sender: { id: "recipient-1" }, recipient: { id: "ig-business-1" }, timestamp: Date.now(),
-      ...(stage === "email" ? { message: { mid: "email-reply", text: "person@example.com" } } : { postback: { payload: "AP3K_OPENING_CONTINUE:automation-1:comment-1", title: "Continue" } }) }] }] }) }));
-    expect(response.status).toBe(200);
-    if (stage === "waiting") { expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled(); return; }
-    if (stage === "request") {
-      expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({ responseFormat: "TEXT", ctaUrl: undefined, mediaUrl: undefined, linkButtons: [], message: expect.stringContaining("SKIP") }));
-      expect(mockFinishEngagementJob).toHaveBeenCalledWith("email-job", "WAITING");
-      expect(mockScheduleFollowUp).not.toHaveBeenCalled();
-    } else {
-      expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({ responseFormat: "PRODUCT_CARD", ctaUrl: "https://example.com/product" }));
-      if (stage === "email") expect(mockFinishEngagementJob).toHaveBeenCalledWith("email-job", "COMPLETED");
-      else expect(mockScheduleFollowUp).toHaveBeenCalledWith("automation-1", "recipient-1", "comment-1", expect.any(Date), 30);
-    }
-  });
-
+  it.each(["request", "waiting", "email", "reminder"])(
+    "handles the %s engagement stage without leaking the product link",
+    async (stage) => {
+      mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+      const integration = {
+        id: "i1",
+        userId: "user-1",
+        token: "test",
+        instagramId: "ig-business-1",
+        status: "CONNECTED",
+        reconnectRequired: false,
+        planLocked: false,
+      };
+      const automation = {
+        id: "automation-1",
+        integrationId: "i1",
+        userId: "user-1",
+        source: "COMMENT",
+        active: true,
+        followGateRequired: false,
+        listener: {
+          prompt: "Your product",
+          responseFormat: "PRODUCT_CARD",
+          ctaLink: "https://example.com/product",
+          ctaButtonTitle: "Shop",
+          mediaUrl: "https://ap3k.com/image.jpg",
+          emailCaptureEnabled: stage !== "reminder",
+          emailCapturePrompt: "Reply with your email",
+          followUpEnabled: stage === "reminder",
+          followUpDelayMinutes: 30,
+        },
+        User: { integrations: [integration] },
+      };
+      mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+      mockFindAutomationById.mockResolvedValue(automation);
+      mockResolveIntegrationSendToken.mockReturnValue({
+        ok: true,
+        token: "test",
+      });
+      mockBeginEmailRequest.mockResolvedValue(
+        stage === "email"
+          ? { kind: "complete" }
+          : stage === "waiting"
+            ? { kind: "waiting" }
+            : { kind: "request", jobId: "email-job" },
+      );
+      if (stage === "email")
+        mockTakeEmailReply.mockResolvedValue({
+          kind: "continue",
+          automationId: "automation-1",
+          flowId: "comment-1",
+          jobId: "email-job",
+        });
+      const response = await POST(
+        new NextRequest("https://ap3k.test/api/webhooks/meta", {
+          method: "POST",
+          headers: { "x-hub-signature-256": "sha256=good" },
+          body: JSON.stringify({
+            object: "instagram",
+            entry: [
+              {
+                id: "ig-business-1",
+                messaging: [
+                  {
+                    sender: { id: "recipient-1" },
+                    recipient: { id: "ig-business-1" },
+                    timestamp: Date.now(),
+                    ...(stage === "email"
+                      ? {
+                          message: {
+                            mid: "email-reply",
+                            text: "person@example.com",
+                          },
+                        }
+                      : {
+                          postback: {
+                            payload:
+                              "AP3K_OPENING_CONTINUE:automation-1:comment-1",
+                            title: "Continue",
+                          },
+                        }),
+                  },
+                ],
+              },
+            ],
+          }),
+        }),
+      );
+      expect(response.status).toBe(200);
+      if (stage === "waiting") {
+        expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();
+        return;
+      }
+      if (stage === "request") {
+        expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            responseFormat: "TEXT",
+            ctaUrl: undefined,
+            mediaUrl: undefined,
+            linkButtons: [],
+            message: expect.stringContaining("SKIP"),
+          }),
+        );
+        expect(mockFinishEngagementJob).toHaveBeenCalledWith(
+          "email-job",
+          "WAITING",
+        );
+        expect(mockScheduleFollowUp).not.toHaveBeenCalled();
+      } else {
+        expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            responseFormat: "PRODUCT_CARD",
+            ctaUrl: "https://example.com/product",
+          }),
+        );
+        if (stage === "email")
+          expect(mockFinishEngagementJob).toHaveBeenCalledWith(
+            "email-job",
+            "COMPLETED",
+          );
+        else
+          expect(mockScheduleFollowUp).toHaveBeenCalledWith(
+            "automation-1",
+            "recipient-1",
+            "comment-1",
+            expect.any(Date),
+            30,
+            expect.objectContaining({ messageId: "mid.outbound" }),
+          );
+      }
+    },
+  );
 });
