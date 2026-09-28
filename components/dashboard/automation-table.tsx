@@ -254,60 +254,103 @@ function CampaignMobileCard({
   );
   const status = campaignStatus(automation);
   const replySummary = getReplySummary(automation);
+  const showExceptionalStatus = !["Live", "Paused"].includes(status);
 
   return (
-    <article onClick={(event) => openAnalyticsRow(event, automationAnalyticsHref(slug, automation))} className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 p-3 [contain-intrinsic-size:auto_140px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4">
-      <div className="flex items-start gap-2.5 sm:gap-3">
+    <article
+      onClick={(event) =>
+        openAnalyticsRow(event, automationAnalyticsHref(slug, automation))
+      }
+      className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 [contain-intrinsic-size:auto_104px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4"
+    >
+      <div className="flex min-w-0 items-start gap-2.5">
         <Link
           href={automationAnalyticsHref(slug, automation)}
-          aria-label={translateUi("Open {name}", locale).replace("{name}", automation.name || translateUi("Automation", locale))}
-          className="shrink-0"
+          aria-label={translateUi("Open {name}", locale).replace(
+            "{name}",
+            automation.name || translateUi("Automation", locale),
+          )}
+          className="shrink-0 pt-0.5"
         >
           <CampaignThumb post={post} isAny={isAny} source={source} />
         </Link>
+
         <div className="min-w-0 flex-1">
           <Link
             href={automationAnalyticsHref(slug, automation)}
-            className="block truncate font-black text-slate-950 hover:text-pink-600 dark:text-white"
+            className="block truncate text-[15px] font-black leading-5 text-slate-950 hover:text-pink-600 dark:text-white sm:text-base"
           >
-            {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
+            {automation.name ? (
+              <bdi dir="auto">{automation.name}</bdi>
+            ) : (
+              <UiText>{"Untitled automation"}</UiText>
+            )}
           </Link>
           <p
             title={translateUi(mode.full, locale)}
-            className="mt-0.5 truncate text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs"
+            className="mt-0.5 truncate text-[11px] leading-4 text-slate-500 dark:text-slate-400 sm:text-xs"
           >
-            <UiText>{source === "STORY" ? "Story" : source === "DM" ? "DM" : isAny ? "Any post" : "Specific post"}</UiText>
-            {" · "}<UiText>{source === "STORY" ? storyTriggerLabel(automation.storyTriggerType) : source === "DM" ? (automation.triggerMode === "ANY_MESSAGE" ? "Any message" : "Keyword") : isAnyComment ? "Any comment" : "Keyword trigger"}</UiText>
+            <UiText>
+              {source === "STORY"
+                ? "Story"
+                : source === "DM"
+                  ? "DM"
+                  : isAny
+                    ? "Any post"
+                    : "Specific post"}
+            </UiText>
+            {" · "}
+            <UiText>
+              {source === "STORY"
+                ? storyTriggerLabel(automation.storyTriggerType)
+                : source === "DM"
+                  ? automation.triggerMode === "ANY_MESSAGE"
+                    ? "Any message"
+                    : "Keyword"
+                  : isAnyComment
+                    ? "Any comment"
+                    : "Keyword trigger"}
+            </UiText>
           </p>
         </div>
-        <StatusPill status={status} />
+
+        {!compact && (
+          <div className="flex shrink-0 items-center gap-1.5">
+            <AutomationToggle
+              active={Boolean(automation.active)}
+              onToggle={(next) => onActivate(automation.id, next)}
+              compact
+            />
+            <AutomationActionsMenu
+              slug={slug}
+              automation={automation}
+              isPending={isPending}
+              onDuplicate={onDuplicate}
+              onDelete={onDelete}
+              compact
+            />
+          </div>
+        )}
       </div>
-      <div className="mt-2.5 flex items-center gap-1.5">
+
+      <div className="mt-2 flex min-w-0 items-center gap-2">
         <ReplyPill summary={replySummary} />
-        <span className="ms-auto whitespace-nowrap text-[11px] font-bold text-slate-500 dark:text-slate-400">
-          <MetricValue value={runs} /> <UiText>{"Runs"}</UiText> · <MetricValue value={leads} /> <UiText>{"Leads"}</UiText>
+        {showExceptionalStatus ? <StatusPill status={status} /> : null}
+        <span className="ms-auto whitespace-nowrap text-[10px] font-bold text-slate-500 dark:text-slate-400 sm:text-[11px]">
+          <MetricValue value={runs} /> <UiText>{"Runs"}</UiText>
+          {" · "}
+          <MetricValue value={leads} /> <UiText>{"Leads"}</UiText>
         </span>
       </div>
+
       {compact ? (
         <Link
           href={automationAnalyticsHref(slug, automation)}
-          className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
-        ><UiText>{"Manage automation"}</UiText></Link>
-      ) : (
-        <div className="mt-3 flex items-center justify-end gap-2">
-          <AutomationToggle
-            active={Boolean(automation.active)}
-            onToggle={(next) => onActivate(automation.id, next)}
-          />
-          <AutomationActionsMenu
-            slug={slug}
-            automation={automation}
-            isPending={isPending}
-            onDuplicate={onDuplicate}
-            onDelete={onDelete}
-          />
-        </div>
-      )}
+          className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
+        >
+          <UiText>{"Manage automation"}</UiText>
+        </Link>
+      ) : null}
     </article>
   );
 }
@@ -422,9 +465,11 @@ function CampaignDesktopRow({
 function AutomationToggle({
   active,
   onToggle,
+  compact = false,
 }: {
   active: boolean;
   onToggle: (next: boolean) => Promise<boolean>;
+  compact?: boolean;
 }) {
   const { locale } = useI18n();
   const [checked, setChecked] = useState(active);
@@ -453,19 +498,25 @@ function AutomationToggle({
       disabled={saving}
       onClick={() => void toggle()}
       className={[
-        "relative inline-flex h-9 w-16 shrink-0 items-center rounded-full border transition-[background-color,border-color,box-shadow] duration-200 ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111827]",
+        "relative inline-flex shrink-0 items-center rounded-full border transition-[background-color,border-color,box-shadow] duration-200 ease-out",
+        compact ? "h-6 w-11" : "h-7 w-12",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111827]",
         checked
-          ? "border-[#17181d] bg-[#17181d] shadow-sm dark:border-white/20 dark:bg-[#17181d]"
-          : "border-slate-200 bg-[#eef0f3] dark:border-white/10 dark:bg-white/10",
+          ? "border-emerald-500 bg-emerald-500 shadow-sm dark:border-emerald-400 dark:bg-emerald-500"
+          : "border-slate-200 bg-[#edf0f3] dark:border-white/10 dark:bg-white/[0.12]",
         saving ? "cursor-wait opacity-70" : "cursor-pointer",
       ].join(" ")}
     >
       <span
         aria-hidden="true"
         className={[
-          "absolute left-1 top-1 h-7 w-7 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,.18)] transition-transform duration-200 ease-out",
-          checked ? "translate-x-7" : "translate-x-0",
+          "absolute rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,.20)] transition-transform duration-200 ease-out",
+          compact ? "left-[3px] top-[3px] h-[18px] w-[18px]" : "left-[3px] top-[3px] h-5 w-5",
+          checked
+            ? compact
+              ? "translate-x-5"
+              : "translate-x-5"
+            : "translate-x-0",
         ].join(" ")}
       />
     </button>
@@ -478,12 +529,14 @@ function AutomationActionsMenu({
   isPending,
   onDuplicate,
   onDelete,
+  compact = false,
 }: {
   slug: string;
   automation: any;
   isPending: boolean;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
+  compact?: boolean;
 }) {
   const { locale } = useI18n();
   return (
@@ -492,9 +545,12 @@ function AutomationActionsMenu({
         <button
           type="button"
           aria-label={translateUi("More automation actions", locale)}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white"
+          className={[
+            "inline-flex shrink-0 items-center justify-center border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white",
+            compact ? "h-7 w-7 rounded-lg" : "h-8 w-8 rounded-lg",
+          ].join(" ")}
         >
-          <MoreHorizontal className="h-5 w-5" />
+          <MoreHorizontal className={compact ? "h-4 w-4" : "h-[18px] w-[18px]"} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={7} className="w-48 rounded-xl p-1.5">
