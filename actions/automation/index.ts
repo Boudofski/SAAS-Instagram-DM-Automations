@@ -1,5 +1,6 @@
 "use server";
 
+import { hasProEngagement } from "@/lib/automation-engagement-settings";
 import { validateFlow } from "@/lib/automation-flow/definition";
 import { readFlowTriggers } from "@/lib/automation-flow/triggers";
 import { flowAssetIssue } from "@/lib/automation-flow/publication";
@@ -23,7 +24,10 @@ import {
   refreshExpiredCampaignMediaForClerkUser,
   refreshExpiredCampaignMediaListForClerkUser,
 } from "@/lib/campaign-media-refresh";
-import { instagramMediaFetchError, resolveInstagramMediaConnection } from "@/lib/instagram-media";
+import {
+  instagramMediaFetchError,
+  resolveInstagramMediaConnection,
+} from "@/lib/instagram-media";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { canActivateCampaign } from "@/actions/usage/queries";
 import { client } from "@/lib/prisma";
@@ -63,28 +67,64 @@ export const createAutomations = async (id?: string) => {
   }
 };
 
-export const saveCampaign = async (payload: RawCampaignPayload, automationId?: string, expectedIntegrationId?: string) => {
+export const saveCampaign = async (
+  payload: RawCampaignPayload,
+  automationId?: string,
+  expectedIntegrationId?: string,
+) => {
   const user = await onCurrentUser();
   let saveStage = "account-scope";
 
   try {
-    if (expectedIntegrationId !== undefined && expectedIntegrationId !== await currentInstagramAccountId(user.id)) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." };
+    if (
+      expectedIntegrationId !== undefined &&
+      expectedIntegrationId !== (await currentInstagramAccountId(user.id))
+    )
+      return {
+        status: 409,
+        data: "Your Instagram account changed. Reload this page before saving.",
+      };
     saveStage = "validation";
     const cleanPayload = normalizeCampaignPayload(payload);
     const validationError = validateNormalizedCampaignPayload(cleanPayload);
-    const summary = summarizeCampaignPayload(cleanPayload, payload.publicReplyEnabled !== false);
+    const summary = summarizeCampaignPayload(
+      cleanPayload,
+      payload.publicReplyEnabled !== false,
+    );
     let activationProfile: Awaited<ReturnType<typeof findUser>> = null;
 
-    if (cleanPayload.active && cleanPayload.listener.followUpEnabled && !await followUpSchedulerReady()) {
-      return { status: 400, data: "Scheduled follow-ups are not connected yet. Save a draft or turn off the reminder before activating." };
+    if (
+      cleanPayload.active &&
+      cleanPayload.listener.followUpEnabled &&
+      !(await followUpSchedulerReady())
+    ) {
+      return {
+        status: 400,
+        data: "Scheduled follow-ups are not connected yet. Save a draft or turn off the reminder before activating.",
+      };
+    }
+    if (
+      hasProEngagement({
+        ...cleanPayload.listener,
+        followGateRequired: cleanPayload.followGateRequired,
+      })
+    ) {
+      const profile = await findUser(user.id);
+      if (!["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE"))
+        return {
+          status: 403,
+          data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
+        };
     }
     if (cleanPayload.listener.aiReplyEnabled) {
       const aiProfile = await findUser(user.id);
       const aiPlan = aiProfile?.subscription?.plan ?? "FREE";
       if (aiPlan !== "PRO" && aiPlan !== "BUSINESS") {
-        return { status: 403, data: "AI replies are available on Pro and Business plans." };
+        return {
+          status: 403,
+          data: "AI replies are available on Pro and Business plans.",
+        };
       }
-
     }
 
     if (process.env.NODE_ENV !== "production") {
@@ -107,11 +147,23 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       return { status: 400, data: validationError };
     }
 
-    if (cleanPayload.sendPrivateDm && cleanPayload.listener.responseFormat === "PRODUCT_CARD") {
+    if (
+      cleanPayload.sendPrivateDm &&
+      cleanPayload.listener.responseFormat === "PRODUCT_CARD"
+    ) {
       saveStage = "image-ownership";
       const imageId = productImageId(cleanPayload.listener.mediaUrl);
-      const image = imageId ? await client.automationImage.findFirst({ where: { id: imageId, user: { clerkId: user.id } }, select: { id: true } }) : null;
-      if (!image) return { status: 400, data: "Upload a product image from your own account before saving." };
+      const image = imageId
+        ? await client.automationImage.findFirst({
+            where: { id: imageId, user: { clerkId: user.id } },
+            select: { id: true },
+          })
+        : null;
+      if (!image)
+        return {
+          status: 400,
+          data: "Upload a product image from your own account before saving.",
+        };
     }
 
     if (cleanPayload.active) {
@@ -124,7 +176,10 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
           data: "Your account is suspended. Contact support before creating or activating automations.",
         };
       }
-      if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
+      if (
+        (profile as any)?.integrations?.length &&
+        !getCanonicalInstagramIntegration((profile as any).integrations)
+      ) {
         return {
           status: 403,
           data: "Reconnect Instagram before activating automations.",
@@ -138,11 +193,19 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       }
       if (automationId) {
         const existing = await client.automation.findFirst({
-          where: { id: automationId, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
+          where: {
+            id: automationId,
+            User: { clerkId: user.id },
+            integrationId: await currentInstagramAccountId(user.id),
+            archivedAt: null,
+          },
           select: { needsReview: true, reviewReason: true },
         });
         if (existing?.needsReview) {
-          const repaired = await validatePostForReviewedCampaign(profile?.integrations, cleanPayload.post.postid);
+          const repaired = await validatePostForReviewedCampaign(
+            profile?.integrations,
+            cleanPayload.post.postid,
+          );
           if (!repaired.ok) {
             return {
               status: 403,
@@ -168,10 +231,12 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       ? await updateCompleteAutomation(automationId, user.id, cleanPayload)
       : await createCompleteAutomation(user.id, cleanPayload);
 
-    const savedResult = saved as
-      | { automations?: { id: string }[]; id?: string }
-      | null;
-    const id = automationId || savedResult?.automations?.[0]?.id || savedResult?.id;
+    const savedResult = saved as {
+      automations?: { id: string }[];
+      id?: string;
+    } | null;
+    const id =
+      automationId || savedResult?.automations?.[0]?.id || savedResult?.id;
     if (saved && id) {
       if (cleanPayload.active && activationProfile?.id) {
         await notifyAutomationActivatedEmail({
@@ -195,7 +260,12 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
       saveStage,
       errorName: error instanceof Error ? error.name : typeof error,
       // Keep diagnostics useful without logging messages, URLs, tokens, or payloads.
-      errorHint: error instanceof Error ? error.message.match(/Cannot read properties of (?:undefined|null) \(reading '[\w]+'\)|Unknown argument `[\w]+`|Argument `[\w]+` is missing|[\w.]+ is not a function/)?.[0] : undefined,
+      errorHint:
+        error instanceof Error
+          ? error.message.match(
+              /Cannot read properties of (?:undefined|null) \(reading '[\w]+'\)|Unknown argument `[\w]+`|Argument `[\w]+` is missing|[\w.]+ is not a function/,
+            )?.[0]
+          : undefined,
       message,
     });
     return { status: 500, data: message };
@@ -205,45 +275,95 @@ export const saveCampaign = async (payload: RawCampaignPayload, automationId?: s
 export const saveMessageAutomation = async (
   payload: RawMessageAutomationPayload,
   automationId?: string,
-  expectedIntegrationId?: string
+  expectedIntegrationId?: string,
 ) => {
   const user = await onCurrentUser();
 
   try {
-    if (expectedIntegrationId !== undefined && expectedIntegrationId !== await currentInstagramAccountId(user.id)) return { status: 409, data: "Your Instagram account changed. Reload this page before saving." };
+    if (
+      expectedIntegrationId !== undefined &&
+      expectedIntegrationId !== (await currentInstagramAccountId(user.id))
+    )
+      return {
+        status: 409,
+        data: "Your Instagram account changed. Reload this page before saving.",
+      };
     const cleanPayload = normalizeMessageAutomationPayload(payload);
-    if (payload.aiConversation && (!cleanPayload.aiConversation || !cleanPayload.aiReplyEnabled || cleanPayload.source !== "DM")) return { status: 400, data: "Complete the AI conversation goal, context and tasks." };
+    if (
+      payload.aiConversation &&
+      (!cleanPayload.aiConversation ||
+        !cleanPayload.aiReplyEnabled ||
+        cleanPayload.source !== "DM")
+    )
+      return {
+        status: 400,
+        data: "Complete the AI conversation goal, context and tasks.",
+      };
     const validationError = validateMessageAutomationPayload(cleanPayload);
     if (validationError) return { status: 400, data: validationError };
 
     const profile = await findUser(user.id);
     if ((profile as any)?.status === "SUSPENDED") {
-      return { status: 403, data: "Your account is suspended. Contact support before activating automations." };
+      return {
+        status: 403,
+        data: "Your account is suspended. Contact support before activating automations.",
+      };
     }
 
+    if (
+      hasProEngagement(cleanPayload) &&
+      !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")
+    )
+      return {
+        status: 403,
+        data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
+      };
+    if (
+      cleanPayload.active &&
+      cleanPayload.followUpEnabled &&
+      !(await followUpSchedulerReady())
+    )
+      return {
+        status: 400,
+        data: "Scheduled reminders are temporarily unavailable.",
+      };
     if (cleanPayload.aiReplyEnabled) {
       const plan = profile?.subscription?.plan ?? "FREE";
       if (plan !== "PRO" && plan !== "BUSINESS") {
-        return { status: 403, data: "AI DM replies are available on Pro and Business plans." };
+        return {
+          status: 403,
+          data: "AI DM replies are available on Pro and Business plans.",
+        };
       }
-
     }
 
     if (cleanPayload.active) {
-      const instagram = getCanonicalInstagramIntegration((profile as any)?.integrations);
+      const instagram = getCanonicalInstagramIntegration(
+        (profile as any)?.integrations,
+      );
       if (!instagram) {
-        return { status: 403, data: "Connect or reconnect Instagram before activating automations." };
+        return {
+          status: 403,
+          data: "Connect or reconnect Instagram before activating automations.",
+        };
       }
       const activation = profile?.id
         ? await canActivateCampaign(profile.id, automationId)
         : { ok: false };
       if (!activation.ok) {
-        return { status: 403, data: "Your plan's active automation limit has been reached. Pause one or upgrade." };
+        return {
+          status: 403,
+          data: "Your plan's active automation limit has been reached. Pause one or upgrade.",
+        };
       }
     }
 
     const saved = automationId
-      ? await updateCompleteMessageAutomation(automationId, user.id, cleanPayload)
+      ? await updateCompleteMessageAutomation(
+          automationId,
+          user.id,
+          cleanPayload,
+        )
       : await createCompleteMessageAutomation(user.id, cleanPayload);
     if (!saved?.id) return { status: 404, data: "Automation not found" };
     if (cleanPayload.active && profile?.id) {
@@ -260,7 +380,10 @@ export const saveMessageAutomation = async (
       userId: user.id,
       message: error instanceof Error ? error.message : String(error),
     });
-    return { status: 500, data: "Could not save automation. Please try again." };
+    return {
+      status: 500,
+      data: "Could not save automation. Please try again.",
+    };
   }
 };
 
@@ -269,7 +392,11 @@ function campaignSaveErrorMessage(error: unknown) {
   const text = error instanceof Error ? error.message : String(error);
   const meta = JSON.stringify(getSafePrismaMeta(error) ?? {});
 
-  if (code === "P2022" || text.includes("triggerMode") || meta.includes("triggerMode")) {
+  if (
+    code === "P2022" ||
+    text.includes("triggerMode") ||
+    meta.includes("triggerMode")
+  ) {
     return "Could not save automation because the database migration is missing. Deploy migration.";
   }
 
@@ -292,7 +419,8 @@ function getPrismaErrorCode(error: unknown) {
 }
 
 function getSafePrismaMeta(error: unknown) {
-  if (typeof error !== "object" || error === null || !("meta" in error)) return undefined;
+  if (typeof error !== "object" || error === null || !("meta" in error))
+    return undefined;
   return (error as { meta?: unknown }).meta;
 }
 
@@ -350,7 +478,10 @@ export const duplicateAutomation = async (id: string) => {
   try {
     const duplicated = await duplicateAutomationQuery(id, user.id);
     if (duplicated) return { status: 200, data: "Automation duplicated" };
-    return { status: 404, data: "This automation needs a post and DM before it can be duplicated" };
+    return {
+      status: 404,
+      data: "This automation needs a post and DM before it can be duplicated",
+    };
   } catch {
     return { status: 500, data: "Failed to duplicate automation" };
   }
@@ -374,7 +505,7 @@ export const updateAutomationName = async (
     name?: string;
     active?: boolean;
     automation?: string;
-  }
+  },
 ) => {
   const user = await onCurrentUser();
 
@@ -387,7 +518,10 @@ export const updateAutomationName = async (
           data: "Your account is suspended. Contact support before activating automations.",
         };
       }
-      if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
+      if (
+        (profile as any)?.integrations?.length &&
+        !getCanonicalInstagramIntegration((profile as any).integrations)
+      ) {
         return {
           status: 403,
           data: "Reconnect Instagram before activating automations.",
@@ -400,13 +534,20 @@ export const updateAutomationName = async (
         };
       }
       const existing = await client.automation.findFirst({
-        where: { id: automationId, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
+        where: {
+          id: automationId,
+          User: { clerkId: user.id },
+          integrationId: await currentInstagramAccountId(user.id),
+          archivedAt: null,
+        },
         select: { needsReview: true, reviewReason: true },
       });
       if (existing?.needsReview) {
         return {
           status: 403,
-          data: existing.reviewReason ?? "Review this automation before activating.",
+          data:
+            existing.reviewReason ??
+            "Review this automation before activating.",
         };
       }
       const activation = profile?.id
@@ -434,12 +575,19 @@ export const saveListener = async (
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
   reply?: string,
-  ctaLink?: string
+  ctaLink?: string,
 ) => {
   const user = await onCurrentUser();
 
   try {
-    const create = await addListener(automationId, user.id, listener, prompt, reply, ctaLink);
+    const create = await addListener(
+      automationId,
+      user.id,
+      listener,
+      prompt,
+      reply,
+      ctaLink,
+    );
 
     if (create) return { status: 200, data: "Listener created" };
     return { status: 404, data: "Failed to create listener" };
@@ -495,20 +643,23 @@ export const getProfilePosts = async () => {
     const profile = await findUser(user.id);
     const connection = resolveInstagramMediaConnection(profile?.integrations);
     if (!connection.ok) {
-      console.log("[instagram-media] fetch skipped: missing connected Instagram token or business account");
+      console.log(
+        "[instagram-media] fetch skipped: missing connected Instagram token or business account",
+      );
       return {
         status: 401,
         data: { data: [], error: connection.error },
       };
     }
 
-    const baseUrl = process.env.INSTAGRAM_BASE_URL || "https://graph.facebook.com/v20.0";
+    const baseUrl =
+      process.env.INSTAGRAM_BASE_URL || "https://graph.facebook.com/v20.0";
     const posts = await fetch(
       `${baseUrl}/${connection.instagramBusinessAccountId}/media?fields=id,caption,media_url,thumbnail_url,media_type,timestamp,permalink&limit=25`,
       {
         headers: { Authorization: `Bearer ${connection.token}` },
         cache: "no-store",
-      }
+      },
     );
 
     const parsed = await posts.json();
@@ -530,7 +681,10 @@ export const getProfilePosts = async () => {
       message: error instanceof Error ? error.message : String(error),
     });
 
-    return { status: 500, data: { data: [], error: "AP3K could not load posts right now." } };
+    return {
+      status: 500,
+      data: { data: [], error: "AP3K could not load posts right now." },
+    };
   }
 };
 
@@ -541,7 +695,7 @@ export const savePosts = async (
     caption?: string;
     media: string;
     mediaType: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
-  }[]
+  }[],
 ) => {
   const user = await onCurrentUser();
 
@@ -562,23 +716,92 @@ export const activateAutomation = async (id: string, status: boolean) => {
     if (status) {
       const profile = await findUser(user.id);
       const existing = await client.automation.findFirst({
-        where: { id, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
-        select: { source: true, needsReview: true, reviewReason: true, listener: { select: { flowDefinition: true, flowTriggers: true, openingDmText: true, openingDmButtonText: true } } },
+        where: {
+          id,
+          User: { clerkId: user.id },
+          integrationId: await currentInstagramAccountId(user.id),
+          archivedAt: null,
+        },
+        select: {
+          source: true,
+          followGateRequired: true,
+          needsReview: true,
+          reviewReason: true,
+          listener: {
+            select: {
+              phoneCaptureEnabled: true,
+              emailCaptureEnabled: true,
+              followUpEnabled: true,
+              flowDefinition: true,
+              flowTriggers: true,
+              openingDmText: true,
+              openingDmButtonText: true,
+            },
+          },
+        },
       });
-      if (existing?.listener?.flowDefinition && !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")) return { status: 403, data: "Publishing custom flows requires Pro or Business." };
-      if(existing?.listener?.flowDefinition){
-        const checked=validateFlow(existing.listener.flowDefinition);
-        if(!checked.flow)return {status:400,data:"Finish and publish this flow from the editor before activating it."};
-        const triggers=readFlowTriggers(existing.listener.flowTriggers);
-        if(triggers&&(!triggers.length||triggers.some(t=>(t.source!=="STORY"&&!t.anyMessage&&!t.keyword)||(t.source==="COMMENT"&&(t.postScope??"specific")==="specific"&&!t.post))))return {status:400,data:"Complete this flow’s triggers in the editor before activating it."};
-        if((existing.source==="COMMENT"||triggers?.some(t=>t.source==="COMMENT"))&&(!existing.listener.openingDmText||!existing.listener.openingDmButtonText))return {status:400,data:"Add an opening message and button before activating this comment flow."};
-        const issue=await flowAssetIssue(checked.flow,profile!.id);
-        if(issue)return {status:400,data:issue};
+      if (
+        existing &&
+        hasProEngagement({
+          ...existing.listener,
+          followGateRequired: existing.followGateRequired,
+        }) &&
+        !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")
+      )
+        return {
+          status: 403,
+          data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
+        };
+      if (
+        existing?.listener?.flowDefinition &&
+        !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")
+      )
+        return {
+          status: 403,
+          data: "Publishing custom flows requires Pro or Business.",
+        };
+      if (existing?.listener?.flowDefinition) {
+        const checked = validateFlow(existing.listener.flowDefinition);
+        if (!checked.flow)
+          return {
+            status: 400,
+            data: "Finish and publish this flow from the editor before activating it.",
+          };
+        const triggers = readFlowTriggers(existing.listener.flowTriggers);
+        if (
+          triggers &&
+          (!triggers.length ||
+            triggers.some(
+              (t) =>
+                (t.source !== "STORY" && !t.anyMessage && !t.keyword) ||
+                (t.source === "COMMENT" &&
+                  (t.postScope ?? "specific") === "specific" &&
+                  !t.post),
+            ))
+        )
+          return {
+            status: 400,
+            data: "Complete this flow’s triggers in the editor before activating it.",
+          };
+        if (
+          (existing.source === "COMMENT" ||
+            triggers?.some((t) => t.source === "COMMENT")) &&
+          (!existing.listener.openingDmText ||
+            !existing.listener.openingDmButtonText)
+        )
+          return {
+            status: 400,
+            data: "Add an opening message and button before activating this comment flow.",
+          };
+        const issue = await flowAssetIssue(checked.flow, profile!.id);
+        if (issue) return { status: 400, data: issue };
       }
       if (existing?.needsReview) {
         return {
           status: 403,
-          data: existing.reviewReason ?? "Review this automation before activating.",
+          data:
+            existing.reviewReason ??
+            "Review this automation before activating.",
         };
       }
       if ((profile as any)?.status === "SUSPENDED") {
@@ -587,7 +810,10 @@ export const activateAutomation = async (id: string, status: boolean) => {
           data: "Your account is suspended. Contact support before activating automations.",
         };
       }
-      if ((profile as any)?.integrations?.length && !getCanonicalInstagramIntegration((profile as any).integrations)) {
+      if (
+        (profile as any)?.integrations?.length &&
+        !getCanonicalInstagramIntegration((profile as any).integrations)
+      ) {
         return {
           status: 403,
           data: "Reconnect Instagram before activating automations.",
@@ -635,7 +861,12 @@ export const repairCampaign = async (automationId: string) => {
   try {
     const [automation, profile] = await Promise.all([
       client.automation.findFirst({
-        where: { id: automationId, User: { clerkId: user.id }, integrationId: await currentInstagramAccountId(user.id), archivedAt: null },
+        where: {
+          id: automationId,
+          User: { clerkId: user.id },
+          integrationId: await currentInstagramAccountId(user.id),
+          archivedAt: null,
+        },
         include: { posts: true, keywords: true, listener: true },
       }),
       findUser(user.id),
@@ -644,26 +875,39 @@ export const repairCampaign = async (automationId: string) => {
     const integrationId = profile?.integrations?.[0]?.id;
     if (integrationId) {
       try {
-        await refreshInstagramProfileSnapshotForUser(user.id, integrationId, { force: true });
+        await refreshInstagramProfileSnapshotForUser(user.id, integrationId, {
+          force: true,
+        });
       } catch {
         // Profile refresh is helpful for repair, but media validation below decides the outcome.
       }
     }
 
     const postId = automation.posts[0]?.postid;
-    const validAction = Boolean(
-      automation.sendPrivateDm !== false && automation.listener?.prompt?.trim()
-    ) || Boolean(
-      automation.listener?.commentReply?.trim() ||
-      automation.listener?.commentReply2?.trim() ||
-      automation.listener?.commentReply3?.trim()
-    );
-    const validTrigger = automation.triggerMode === "ANY_COMMENT" || automation.keywords.some((keyword) => keyword.word.trim());
+    const validAction =
+      Boolean(
+        automation.sendPrivateDm !== false &&
+        automation.listener?.prompt?.trim(),
+      ) ||
+      Boolean(
+        automation.listener?.commentReply?.trim() ||
+        automation.listener?.commentReply2?.trim() ||
+        automation.listener?.commentReply3?.trim(),
+      );
+    const validTrigger =
+      automation.triggerMode === "ANY_COMMENT" ||
+      automation.keywords.some((keyword) => keyword.word.trim());
     if (!validAction || !validTrigger) {
-      return { status: 403, data: "This automation is missing trigger or reply settings." };
+      return {
+        status: 403,
+        data: "This automation is missing trigger or reply settings.",
+      };
     }
 
-    const postValidation = await validatePostForReviewedCampaign(profile?.integrations, postId);
+    const postValidation = await validatePostForReviewedCampaign(
+      profile?.integrations,
+      postId,
+    );
     if (!postValidation.ok) {
       return { status: 409, data: postValidation.message };
     }
@@ -672,40 +916,61 @@ export const repairCampaign = async (automationId: string) => {
       where: { id: automation.id },
       data: { needsReview: false, reviewReason: null },
     });
-    return { status: 200, data: "Automation repaired. You can activate it now." };
+    return {
+      status: 200,
+      data: "Automation repaired. You can activate it now.",
+    };
   } catch {
     return { status: 500, data: "Could not repair automation." };
   }
 };
 
-async function validatePostForReviewedCampaign(integrations: any[] | undefined, postId?: string | null) {
+async function validatePostForReviewedCampaign(
+  integrations: any[] | undefined,
+  postId?: string | null,
+) {
   if (!postId) {
-    return { ok: false, message: "Choose Any Post or a current-account post before reactivating." };
+    return {
+      ok: false,
+      message: "Choose Any Post or a current-account post before reactivating.",
+    };
   }
   if (postId === "ANY") return { ok: true, message: "Any Post remains valid." };
 
   const connection = resolveInstagramMediaConnection(integrations);
   if (!connection.ok) {
-    return { ok: false, message: "Reconnect Instagram before reviewing this automation." };
+    return {
+      ok: false,
+      message: "Reconnect Instagram before reviewing this automation.",
+    };
   }
 
   try {
-    const baseUrl = process.env.INSTAGRAM_BASE_URL || "https://graph.facebook.com/v20.0";
+    const baseUrl =
+      process.env.INSTAGRAM_BASE_URL || "https://graph.facebook.com/v20.0";
     const response = await fetch(
       `${baseUrl}/${connection.instagramBusinessAccountId}/media?fields=id&limit=100`,
-      { headers: { Authorization: `Bearer ${connection.token}` }, cache: "no-store" }
+      {
+        headers: { Authorization: `Bearer ${connection.token}` },
+        cache: "no-store",
+      },
     );
     const parsed = await response.json();
-    const ids = Array.isArray(parsed?.data) ? parsed.data.map((item: any) => String(item.id)) : [];
-    if (response.ok && ids.includes(postId)) return { ok: true, message: "Selected post belongs to current account." };
+    const ids = Array.isArray(parsed?.data)
+      ? parsed.data.map((item: any) => String(item.id))
+      : [];
+    if (response.ok && ids.includes(postId))
+      return { ok: true, message: "Selected post belongs to current account." };
     return {
       ok: false,
-      message: "Selected post is not in the current Instagram account media list. Choose Any Post or a fresh current-account post.",
+      message:
+        "Selected post is not in the current Instagram account media list. Choose Any Post or a fresh current-account post.",
     };
   } catch {
     return {
       ok: false,
-      message: "Could not verify selected post ownership. Choose Any Post or a fresh current-account post.",
+      message:
+        "Could not verify selected post ownership. Choose Any Post or a fresh current-account post.",
     };
   }
 }
@@ -747,11 +1012,13 @@ export const getRecentAutomationActivity = async () => {
 
 export const saveMatchingMode = async (
   automationId: string,
-  mode: "EXACT" | "CONTAINS" | "SMART_AI"
+  mode: "EXACT" | "CONTAINS" | "SMART_AI",
 ) => {
   const user = await onCurrentUser();
   try {
-    const update = await updateAutomation(automationId, user.id, { matchingMode: mode as any });
+    const update = await updateAutomation(automationId, user.id, {
+      matchingMode: mode as any,
+    });
     if (update) return { status: 200, data: "Matching mode saved" };
     return { status: 404, data: "Failed to save matching mode" };
   } catch (error) {

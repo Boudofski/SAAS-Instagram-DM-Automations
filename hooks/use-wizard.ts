@@ -1,12 +1,14 @@
 "use client";
 
-import { DEFAULT_EMAIL_CAPTURE_PROMPT, DEFAULT_FOLLOW_UP_MESSAGE, validateEngagementSettings } from "@/lib/automation-engagement-settings";
+import {
+  DEFAULT_EMAIL_CAPTURE_PROMPT,
+  DEFAULT_FOLLOW_UP_MESSAGE,
+  validateEngagementSettings,
+} from "@/lib/automation-engagement-settings";
 import { createCommentEditorPayload } from "@/lib/comment-editor-payload";
 import { validateProductCard } from "@/lib/product-card";
 import { useUi } from "@/components/i18n/use-ui";
-import {
-  saveCampaign,
-} from "@/actions/automation";
+import { saveCampaign } from "@/actions/automation";
 import { canAdvanceTriggerStep } from "@/lib/campaign-validation";
 import {
   DEFAULT_FOLLOW_REQUEST_BUTTON_TEXT,
@@ -14,12 +16,20 @@ import {
   DEFAULT_OPENING_DM_BUTTON_TEXT,
   DEFAULT_OPENING_DM_TEXT,
 } from "@/lib/comment-dm-flow";
-import { DEFAULT_LINK_BUTTON_LABEL, linkButtonsAreComplete, type LinkButton } from "@/lib/link-buttons";
+import {
+  DEFAULT_LINK_BUTTON_LABEL,
+  linkButtonsAreComplete,
+  type LinkButton,
+} from "@/lib/link-buttons";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { refreshSavedAutomation } from "@/lib/automation-query-cache";
 import { useState, useEffect, useRef } from "react";
-import { DEFAULT_AI_PROTECTION_RULES, type AiProtectionRules, type AiReplyTone } from "@/lib/ai-reply-config";
+import {
+  DEFAULT_AI_PROTECTION_RULES,
+  type AiProtectionRules,
+  type AiReplyTone,
+} from "@/lib/ai-reply-config";
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
@@ -32,6 +42,7 @@ type SelectedPost = {
 
 export type WizardData = {
   post: SelectedPost | null;
+  adAutomation?: boolean;
   campaignName: string;
   triggerMode: "SPECIFIC_KEYWORD" | "ANY_COMMENT";
   keywords: string[];
@@ -42,6 +53,9 @@ export type WizardData = {
   commentReplies?: string[];
   publicReplyLimit?: number;
   messageFormat?: "TEXT" | "LINK";
+  phoneCaptureEnabled?: boolean;
+  phoneCapturePrompt?: string;
+  followUpCondition?: string;
   emailCaptureEnabled?: boolean;
   emailCapturePrompt?: string;
   followUpEnabled?: boolean;
@@ -80,6 +94,9 @@ export const DEFAULT_CTA_BUTTON_TITLE = "Get the Link";
 const INITIAL: WizardData = {
   post: null,
   campaignName: "",
+  phoneCaptureEnabled: false,
+  phoneCapturePrompt: "What’s your phone number, including country code?",
+  followUpCondition: "ALWAYS",
   emailCaptureEnabled: false,
   emailCapturePrompt: DEFAULT_EMAIL_CAPTURE_PROMPT,
   followUpEnabled: false,
@@ -109,22 +126,55 @@ const INITIAL: WizardData = {
   active: true,
 };
 
-export function useWizard(slug: string, automationId?: string, integrationId = "") {
+export function useWizard(
+  slug: string,
+  automationId?: string,
+  integrationId = "",
+) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const tr = useUi();
   const [step, setStep] = useState<WizardStep>(1);
-  const [data, setData] = useState<WizardData>(() => ({ ...INITIAL, dmMessage: tr(INITIAL.dmMessage), publicReply: tr(INITIAL.publicReply), publicReply2: tr(INITIAL.publicReply2), publicReply3: tr(INITIAL.publicReply3), openingDmText: tr(INITIAL.openingDmText), openingDmButtonText: tr(INITIAL.openingDmButtonText), followRequestDmText: tr(INITIAL.followRequestDmText), followRequestButtonText: tr(INITIAL.followRequestButtonText), linkButtons: INITIAL.linkButtons.map(button => ({ ...button, label: tr(button.label) })) }));
+  const [data, setData] = useState<WizardData>(() => ({
+    ...INITIAL,
+    dmMessage: tr(INITIAL.dmMessage),
+    publicReply: tr(INITIAL.publicReply),
+    publicReply2: tr(INITIAL.publicReply2),
+    publicReply3: tr(INITIAL.publicReply3),
+    openingDmText: tr(INITIAL.openingDmText),
+    openingDmButtonText: tr(INITIAL.openingDmButtonText),
+    followRequestDmText: tr(INITIAL.followRequestDmText),
+    followRequestButtonText: tr(INITIAL.followRequestButtonText),
+    linkButtons: INITIAL.linkButtons.map((button) => ({
+      ...button,
+      label: tr(button.label),
+    })),
+  }));
   const previousTr = useRef(tr);
   useEffect(() => {
     const before = previousTr.current;
     previousTr.current = tr;
     if (automationId || before === tr) return;
-    setData(current => {
+    setData((current) => {
       const next = { ...current };
-      const fields = ["dmMessage", "publicReply", "publicReply2", "publicReply3", "openingDmText", "openingDmButtonText", "followRequestDmText", "followRequestButtonText"] as const;
-      for (const field of fields) if (current[field] === before(INITIAL[field])) next[field] = tr(INITIAL[field]);
-      next.linkButtons = current.linkButtons.map(button => button.label === before(DEFAULT_LINK_BUTTON_LABEL) ? { ...button, label: tr(DEFAULT_LINK_BUTTON_LABEL) } : button);
+      const fields = [
+        "dmMessage",
+        "publicReply",
+        "publicReply2",
+        "publicReply3",
+        "openingDmText",
+        "openingDmButtonText",
+        "followRequestDmText",
+        "followRequestButtonText",
+      ] as const;
+      for (const field of fields)
+        if (current[field] === before(INITIAL[field]))
+          next[field] = tr(INITIAL[field]);
+      next.linkButtons = current.linkButtons.map((button) =>
+        button.label === before(DEFAULT_LINK_BUTTON_LABEL)
+          ? { ...button, label: tr(DEFAULT_LINK_BUTTON_LABEL) }
+          : button,
+      );
       return next;
     });
   }, [tr, automationId]);
@@ -141,19 +191,56 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
 
   const hasCommentReply =
     data.aiReplyEnabled ||
-    (data.publicReplyEnabled && [data.publicReply, data.publicReply2, data.publicReply3].some((reply) => reply.trim()));
+    (data.publicReplyEnabled &&
+      [data.publicReply, data.publicReply2, data.publicReply3].some((reply) =>
+        reply.trim(),
+      ));
 
   const canAdvance = (): boolean => {
     if (step === 1) return !!data.post;
-    if (step === 2) return canAdvanceTriggerStep(data.triggerMode, data.keywords);
+    if (step === 2)
+      return canAdvanceTriggerStep(data.triggerMode, data.keywords);
     if (step === 3) {
-      if (validateEngagementSettings(data, data.sendPrivateDm, data.openingDmEnabled)) return false;
-      if (data.sendPrivateDm && data.productCard && validateProductCard(data.dmMessage, data.productImageUrl, data.productSubtitle)) return false;
+      if (
+        validateEngagementSettings(
+          data,
+          data.sendPrivateDm,
+          data.openingDmEnabled,
+        )
+      )
+        return false;
+      if (
+        data.sendPrivateDm &&
+        data.productCard &&
+        validateProductCard(
+          data.dmMessage,
+          data.productImageUrl,
+          data.productSubtitle,
+        )
+      )
+        return false;
       if (!hasCommentReply && !data.sendPrivateDm) return false;
-      if (data.sendPrivateDm && data.openingDmEnabled && (!data.openingDmText.trim() || !data.openingDmButtonText.trim())) return false;
-      if (data.sendPrivateDm && data.openingDmEnabled && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) return false;
+      if (
+        data.sendPrivateDm &&
+        data.openingDmEnabled &&
+        (!data.openingDmText.trim() || !data.openingDmButtonText.trim())
+      )
+        return false;
+      if (
+        data.sendPrivateDm &&
+        data.openingDmEnabled &&
+        data.followGateRequired &&
+        (!data.followRequestDmText.trim() ||
+          !data.followRequestButtonText.trim())
+      )
+        return false;
       if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
-      if (data.sendPrivateDm && (data.productCard || data.messageFormat !== "TEXT") && !linkButtonsAreComplete(data.linkButtons)) return false;
+      if (
+        data.sendPrivateDm &&
+        (data.productCard || data.messageFormat !== "TEXT") &&
+        !linkButtonsAreComplete(data.linkButtons)
+      )
+        return false;
       return true;
     }
     return true;
@@ -161,40 +248,76 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
 
   const activate = async (activeOverride?: boolean) => {
     if (submitting.current) return;
-    if (!data.post || (data.sendPrivateDm && (!data.dmMessage.trim() || (data.openingDmEnabled && (!data.openingDmText.trim() || !data.openingDmButtonText.trim()))))) {
+    if (
+      !data.post ||
+      (data.sendPrivateDm &&
+        (!data.dmMessage.trim() ||
+          (data.openingDmEnabled &&
+            (!data.openingDmText.trim() || !data.openingDmButtonText.trim()))))
+    ) {
       setError("Please complete all required steps before activating.");
       return;
     }
     if (data.triggerMode === "SPECIFIC_KEYWORD" && data.keywords.length === 0) {
-      setError("Add at least one keyword or switch the trigger to Any comment.");
+      setError(
+        "Add at least one keyword or switch the trigger to Any comment.",
+      );
       return;
     }
     if (!hasCommentReply && !data.sendPrivateDm) {
-      setError("Choose a comment reply or DM before activating this automation.");
+      setError(
+        "Choose a comment reply or DM before activating this automation.",
+      );
       return;
     }
-    if (data.sendPrivateDm && (data.productCard || data.messageFormat !== "TEXT") && !linkButtonsAreComplete(data.linkButtons)) {
+    if (
+      data.sendPrivateDm &&
+      (data.productCard || data.messageFormat !== "TEXT") &&
+      !linkButtonsAreComplete(data.linkButtons)
+    ) {
       setError("Complete every link label and add a valid destination URL.");
       return;
     }
-    if (data.sendPrivateDm && data.openingDmEnabled && data.followGateRequired && (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())) {
+    if (
+      data.sendPrivateDm &&
+      data.openingDmEnabled &&
+      data.followGateRequired &&
+      (!data.followRequestDmText.trim() || !data.followRequestButtonText.trim())
+    ) {
       setError("Add the follow request message and verification button.");
       return;
     }
 
     if (data.sendPrivateDm && data.productCard) {
-      const cardError = validateProductCard(data.dmMessage, data.productImageUrl, data.productSubtitle);
-      if (cardError) { setError(cardError); return; }
+      const cardError = validateProductCard(
+        data.dmMessage,
+        data.productImageUrl,
+        data.productSubtitle,
+      );
+      if (cardError) {
+        setError(cardError);
+        return;
+      }
     }
 
-    const engagementError = validateEngagementSettings(data, data.sendPrivateDm, data.openingDmEnabled);
-    if (engagementError) { setError(engagementError); return; }
+    const engagementError = validateEngagementSettings(
+      data,
+      data.sendPrivateDm,
+      data.openingDmEnabled,
+    );
+    if (engagementError) {
+      setError(engagementError);
+      return;
+    }
     submitting.current = true;
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const payload = createCommentEditorPayload({...data,post:data.post},activeOverride);
+      const payload = createCommentEditorPayload(
+        { ...data, post: data.post },
+        activeOverride,
+      );
 
       if (process.env.NODE_ENV !== "production") {
         console.info("[campaign-wizard] save payload", {
@@ -225,7 +348,11 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
           : null;
 
       if (saved.status !== 200 || !campaignId) {
-        throw new Error(typeof saved.data === "string" ? saved.data : "Could not save automation. Please try again.");
+        throw new Error(
+          typeof saved.data === "string"
+            ? saved.data
+            : "Could not save automation. Please try again.",
+        );
       }
 
       await refreshSavedAutomation(queryClient, campaignId);
@@ -233,11 +360,26 @@ export function useWizard(slug: string, automationId?: string, integrationId = "
       router.refresh();
     } catch (err) {
       console.error("[campaign-wizard] save failed", err);
-      setError(err instanceof Error ? err.message : "Could not save automation. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not save automation. Please try again.",
+      );
       submitting.current = false;
       setIsSubmitting(false);
     }
   };
 
-  return { step, data, update, next, back, goTo, canAdvance, activate, isSubmitting, error };
+  return {
+    step,
+    data,
+    update,
+    next,
+    back,
+    goTo,
+    canAdvance,
+    activate,
+    isSubmitting,
+    error,
+  };
 }

@@ -1,5 +1,16 @@
-import { normalizeCopyList, MAX_MESSAGE_VARIATIONS } from "@/lib/automation-copy";
-import { readAiConversation, type AiConversationConfig } from "@/lib/ai-conversation";
+import {
+  normalizeEngagementSettings,
+  validateEngagementSettings,
+  type EngagementSettings,
+} from "./automation-engagement-settings";
+import {
+  normalizeCopyList,
+  MAX_MESSAGE_VARIATIONS,
+} from "@/lib/automation-copy";
+import {
+  readAiConversation,
+  type AiConversationConfig,
+} from "@/lib/ai-conversation";
 import {
   resolveFollowRequestButtonText,
   resolveFollowRequestDmText,
@@ -17,7 +28,7 @@ export type MessageResponseFormat = "TEXT" | "LINK" | "MEDIA";
 export type MessageTriggerMode = "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
 export type DeliveryDelaySeconds = 0 | 3 | 5 | 10 | 30;
 
-export type RawMessageAutomationPayload = {
+export type RawMessageAutomationPayload = EngagementSettings & {
   aiConversation?: unknown;
   name?: string;
   active?: boolean;
@@ -42,7 +53,9 @@ export type RawMessageAutomationPayload = {
   aiReplyEnabled?: boolean;
 };
 
-export type NormalizedMessageAutomationPayload = {
+export type NormalizedMessageAutomationPayload = ReturnType<
+  typeof normalizeEngagementSettings
+> & {
   aiConversation?: AiConversationConfig;
   name: string;
   active: boolean;
@@ -67,11 +80,13 @@ export type NormalizedMessageAutomationPayload = {
 };
 
 export function normalizeMessageAutomationPayload(
-  payload: RawMessageAutomationPayload
+  payload: RawMessageAutomationPayload,
 ): NormalizedMessageAutomationPayload {
-  const source: MessageAutomationSource = payload.source === "DM" ? "DM" : "STORY";
-  const responseFormat: MessageResponseFormat =
-    payload.aiReplyEnabled ? "TEXT" : (payload.linkButtons || payload.responseFormat === "LINK")
+  const source: MessageAutomationSource =
+    payload.source === "DM" ? "DM" : "STORY";
+  const responseFormat: MessageResponseFormat = payload.aiReplyEnabled
+    ? "TEXT"
+    : payload.linkButtons || payload.responseFormat === "LINK"
       ? "LINK"
       : payload.responseFormat === "MEDIA"
         ? "MEDIA"
@@ -83,58 +98,110 @@ export function normalizeMessageAutomationPayload(
   const linkButtons = normalizeLinkButtons(
     payload.linkButtons ?? payload.quickReplies,
     payload.ctaButtonTitle,
-    payload.ctaLink
+    payload.ctaLink,
   );
   const firstLink = linkButtons[0];
 
   return {
+    ...normalizeEngagementSettings(payload),
     aiConversation: readAiConversation(payload.aiConversation) ?? undefined,
-    name: cleanOptional(payload.name)?.slice(0, 120) || `Untitled ${source === "STORY" ? "story" : "DM"} automation`,
+    name:
+      cleanOptional(payload.name)?.slice(0, 120) ||
+      `Untitled ${source === "STORY" ? "story" : "DM"} automation`,
     active: Boolean(payload.active),
     source,
-    storyTriggerType: source === "STORY" ? normalizeStoryTrigger(payload.storyTriggerType) : null,
+    storyTriggerType:
+      source === "STORY"
+        ? normalizeStoryTrigger(payload.storyTriggerType)
+        : null,
     triggerMode,
     keywords:
       triggerMode === "SPECIFIC_KEYWORD"
-        ? Array.from(new Set((payload.keywords ?? []).map((word) => word.trim().toLowerCase()).filter(Boolean))).slice(0, 20)
+        ? Array.from(
+            new Set(
+              (payload.keywords ?? [])
+                .map((word) => word.trim().toLowerCase())
+                .filter(Boolean),
+            ),
+          ).slice(0, 20)
         : [],
     responseFormat,
-    messageVariations: payload.aiReplyEnabled ? [] : normalizeCopyList(payload.messageVariations, MAX_MESSAGE_VARIATIONS),
+    messageVariations: payload.aiReplyEnabled
+      ? []
+      : normalizeCopyList(payload.messageVariations, MAX_MESSAGE_VARIATIONS),
     message: (payload.message ?? "").trim().slice(0, 1000),
-    quickReplies: payload.aiReplyEnabled ? [] : responseFormat === "LINK" ? linkButtons : readLegacyQuickReplies(payload.quickReplies),
-    ctaLink: !payload.aiReplyEnabled && responseFormat === "LINK" ? firstLink?.url : undefined,
+    quickReplies: payload.aiReplyEnabled
+      ? []
+      : responseFormat === "LINK"
+        ? linkButtons
+        : readLegacyQuickReplies(payload.quickReplies),
+    ctaLink:
+      !payload.aiReplyEnabled && responseFormat === "LINK"
+        ? firstLink?.url
+        : undefined,
     ctaButtonTitle:
       !payload.aiReplyEnabled && responseFormat === "LINK"
         ? firstLink?.label
         : undefined,
-    mediaUrl: responseFormat === "MEDIA" ? normalizeUrl(payload.mediaUrl) : undefined,
-    mediaType: responseFormat === "MEDIA" && payload.mediaType === "VIDEO" ? "VIDEO" : responseFormat === "MEDIA" ? "IMAGE" : undefined,
+    mediaUrl:
+      responseFormat === "MEDIA" ? normalizeUrl(payload.mediaUrl) : undefined,
+    mediaType:
+      responseFormat === "MEDIA" && payload.mediaType === "VIDEO"
+        ? "VIDEO"
+        : responseFormat === "MEDIA"
+          ? "IMAGE"
+          : undefined,
     // AI answers the inbound message immediately. A follow gate would consume
     // quota before hiding that generated answer and later send the fallback,
     // so it is intentionally unavailable for AI responses.
-    followGateRequired: payload.aiReplyEnabled ? false : Boolean(payload.followGateRequired),
+    followGateRequired: payload.aiReplyEnabled
+      ? false
+      : Boolean(payload.followGateRequired),
     typingIndicator: false,
     deliveryDelaySeconds: 0,
-    followRequestDmText: resolveFollowRequestDmText(payload.followRequestDmText),
-    followRequestButtonText: resolveFollowRequestButtonText(payload.followRequestButtonText),
+    followRequestDmText: resolveFollowRequestDmText(
+      payload.followRequestDmText,
+    ),
+    followRequestButtonText: resolveFollowRequestButtonText(
+      payload.followRequestButtonText,
+    ),
     aiReplyEnabled: payload.aiReplyEnabled === true,
   };
 }
 
 export function validateMessageAutomationPayload(
-  payload: NormalizedMessageAutomationPayload
+  payload: NormalizedMessageAutomationPayload,
 ): string | null {
+  const engagementError = validateEngagementSettings(payload, true, true);
+  if (engagementError) return engagementError;
+  if (
+    payload.aiReplyEnabled &&
+    (payload.emailCaptureEnabled ||
+      payload.phoneCaptureEnabled ||
+      payload.followUpEnabled)
+  )
+    return "Turn off AI reply before adding conversation steps.";
   if (!payload.name) return "Give this automation a name.";
   if (payload.source === "STORY" && !payload.storyTriggerType) {
     return "Choose a story interaction.";
   }
-  if (payload.source === "DM" && payload.triggerMode === "SPECIFIC_KEYWORD" && payload.keywords.length === 0) {
+  if (
+    payload.source === "DM" &&
+    payload.triggerMode === "SPECIFIC_KEYWORD" &&
+    payload.keywords.length === 0
+  ) {
     return "Add at least one DM keyword or choose any incoming message.";
   }
   if (!payload.message) return "Write the DM that AP3K should send.";
   if (
     payload.responseFormat === "LINK" &&
-    !linkButtonsAreComplete(normalizeLinkButtons(payload.quickReplies, payload.ctaButtonTitle, payload.ctaLink))
+    !linkButtonsAreComplete(
+      normalizeLinkButtons(
+        payload.quickReplies,
+        payload.ctaButtonTitle,
+        payload.ctaLink,
+      ),
+    )
   ) {
     return "Complete every link label and add a valid destination URL.";
   }
@@ -160,7 +227,9 @@ function normalizeUrl(value?: string | null) {
   if (!raw) return undefined;
   try {
     const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : undefined;
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? parsed.toString()
+      : undefined;
   } catch {
     return undefined;
   }

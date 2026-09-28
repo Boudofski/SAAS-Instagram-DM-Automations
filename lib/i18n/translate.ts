@@ -1,3 +1,4 @@
+import { ENGAGEMENT_COPY } from "./engagement-copy";
 import { PUBLIC_REDESIGN_COPY } from "./public-redesign-copy";
 import { AUTOMATION_COPY_CONTROLS } from "./automation-copy-controls";
 import { AUTOMATION_EDITOR_COPY } from "./automation-editor-copy";
@@ -41,6 +42,7 @@ const catalogs = Object.fromEntries(
       ...HELP_COPY[locale as Locale],
       ...DESIGN_COPY[locale as Locale],
       ...AUTOMATION_EDITOR_COPY[locale as Locale],
+      ...ENGAGEMENT_COPY[locale as Locale],
       ...AUTOMATION_COPY_CONTROLS[locale as Locale],
       // Reviewed wording overrides legacy machine translations and older phrase catalogs.
       ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[

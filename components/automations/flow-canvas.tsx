@@ -446,6 +446,8 @@ export default function FlowCanvas({
         minZoom={0.2}
         maxZoom={1.5}
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        fitView
+        fitViewOptions={{ padding: 0.15, maxZoom: 0.8 }}
         nodeExtent={[
           [0, 0],
           [6000, 6000],
@@ -473,12 +475,12 @@ export default function FlowCanvas({
           setMenu(!menu);
           setSubMenu(null);
         }}
-        className="absolute bottom-[134px] left-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-violet-600 text-white shadow-lg transition hover:bg-violet-500"
+        className="absolute bottom-[160px] left-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-violet-600 text-white shadow-lg transition hover:bg-violet-500"
       >
         <Plus size={23} />
       </button>
       {menu && (
-        <div className="absolute bottom-[186px] left-3 z-20 w-[240px] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#1b2334]">
+        <div className="absolute bottom-[212px] left-3 z-20 w-[240px] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#1b2334]">
           <p className="px-3 py-2 text-xs font-semibold text-slate-400">
             {subMenu === "message"
               ? "Message type"

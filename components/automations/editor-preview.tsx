@@ -23,7 +23,10 @@ import {
 } from "lucide-react";
 import { useUi } from "@/components/i18n/use-ui";
 import type { WizardData } from "@/hooks/use-wizard";
-import { emailRequestMessage } from "@/lib/automation-engagement-settings";
+import {
+  FOLLOW_UP_CONDITIONS,
+  emailRequestMessage,
+} from "@/lib/automation-engagement-settings";
 import styles from "./editor-preview.module.css";
 
 export type EditorPreviewMode = "post" | "comments" | "dm";
@@ -299,6 +302,14 @@ export default function EditorPreview({
                             {bubble("creator@example.com", [], true)}
                           </>
                         )}
+                        {data.phoneCaptureEnabled && (
+                          <>
+                            {bubble(
+                              `${data.phoneCapturePrompt || tr("What’s your phone number, including country code?")}\n\n${tr("Reply SKIP to continue or STOP to cancel.")}`,
+                            )}
+                            {bubble("+1 415 555 0123", [], true)}
+                          </>
+                        )}
                         {aiDmReply && (
                           <p className={styles.interaction}>
                             {tr("AI response enabled")}
@@ -334,7 +345,12 @@ export default function EditorPreview({
                           <>
                             <p className={styles.interaction}>
                               {data.followUpDelayMinutes}{" "}
-                              {tr("minutes without a reply")}
+                              {tr("minutes without a reply")} ·{" "}
+                              {tr(
+                                FOLLOW_UP_CONDITIONS.find(
+                                  (c) => c.value === data.followUpCondition,
+                                )?.label || "Always",
+                              )}
                             </p>
                             {bubble(
                               data.followUpMessage || "",

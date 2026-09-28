@@ -1,15 +1,45 @@
 import { handleConversationStarter } from "@/lib/conversation-starters-runtime";
-import { flowTriggerForEvent, isCurrentFlowOpening } from "@/actions/webhook/queries";
-import { isSharedPostAttachment, readFlowTriggers } from "@/lib/automation-flow/triggers";
+import {
+  flowTriggerForEvent,
+  isCurrentFlowOpening,
+} from "@/actions/webhook/queries";
+import {
+  isSharedPostAttachment,
+  readFlowTriggers,
+} from "@/lib/automation-flow/triggers";
 import { readFlow } from "@/lib/automation-flow/definition";
-import { recordAutomationHit, observeAutomationFollow } from "@/lib/automation-tracking";
-import { readCommentReplies, selectMessageVariation, personalizeUsername } from "@/lib/automation-copy";
-import { reservePublicReplySlot, finishPublicReplySlot } from "@/lib/public-reply-limit";
+import {
+  recordAutomationHit,
+  observeAutomationFollow,
+} from "@/lib/automation-tracking";
+import {
+  readCommentReplies,
+  selectMessageVariation,
+  personalizeUsername,
+} from "@/lib/automation-copy";
+import {
+  reservePublicReplySlot,
+  finishPublicReplySlot,
+} from "@/lib/public-reply-limit";
 import { processAutomationFlow } from "@/lib/automation-flow/runtime";
 import { readAiConversation } from "@/lib/ai-conversation";
-import { prepareAiConversationTurn, finishAiConversationTurn } from "@/lib/ai-conversation-runtime";
-import { beginEmailRequest, cancelPendingFollowUps, finishEngagementJob, scheduleFollowUp, takeEmailReply } from "@/lib/automation-engagement";
-import { emailRequestMessage, messagingWindowOpen, parseEmailReply } from "@/lib/automation-engagement-settings";
+import {
+  prepareAiConversationTurn,
+  finishAiConversationTurn,
+} from "@/lib/ai-conversation-runtime";
+import {
+  recordEngagementReceipt,
+  beginEmailRequest,
+  cancelPendingFollowUps,
+  finishEngagementJob,
+  scheduleFollowUp,
+  takeEmailReply,
+} from "@/lib/automation-engagement";
+import {
+  emailRequestMessage,
+  messagingWindowOpen,
+  parseEmailReply,
+} from "@/lib/automation-engagement-settings";
 import type { Integrations } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
@@ -65,14 +95,21 @@ import {
   type CommentDmAction,
 } from "@/lib/comment-dm-flow";
 import { resolveTemplate } from "@/lib/template";
-import { resolveIntegrationSendToken, tokenResolutionDiagnostics } from "@/lib/send-token";
+import {
+  resolveIntegrationSendToken,
+  tokenResolutionDiagnostics,
+} from "@/lib/send-token";
 import {
   canSendStaticReply,
   completeAiReplyReservation,
   releaseAiReplyReservation,
   reserveAiReplyQuota,
 } from "@/actions/usage/queries";
-import { generateAiCommentDecision, generateAiDmReply, getAiWorkspaceRuntimeConfig } from "@/lib/ai-reply";
+import {
+  generateAiCommentDecision,
+  generateAiDmReply,
+  getAiWorkspaceRuntimeConfig,
+} from "@/lib/ai-reply";
 import {
   parseMessagingItem,
   classifyStoryInteraction,
@@ -106,10 +143,14 @@ const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 let nextRateLimitCleanupAt = 0;
 const PUBLIC_REPLY_SENT_REASON = "PUBLIC_REPLY_SENT";
 const PUBLIC_REPLY_SKIPPED_SELF_COMMENT = "PUBLIC_REPLY_SKIPPED_SELF_COMMENT";
-const PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT = "PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT";
-const PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY = "PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY";
-const PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH = "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH";
-const PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH = "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH";
+const PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT =
+  "PUBLIC_REPLY_SKIPPED_DUPLICATE_COMMENT";
+const PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY =
+  "PUBLIC_REPLY_SKIPPED_AP3K_GENERATED_REPLY";
+const PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH =
+  "PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH";
+const PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH =
+  "PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH";
 const PUBLIC_REPLY_FAILED_META_API = "PUBLIC_REPLY_FAILED_META_API";
 const PUBLIC_REPLY_FAILED_RATE_LIMIT = "PUBLIC_REPLY_FAILED_RATE_LIMIT";
 const PUBLIC_REPLY_FAILED_UNKNOWN = "PUBLIC_REPLY_FAILED_UNKNOWN";
@@ -154,7 +195,10 @@ export async function GET(req: NextRequest) {
     }
     return new NextResponse(challenge, { status: 200 });
   }
-  return NextResponse.json({ error: "webhook_verification_failed" }, { status: 403 });
+  return NextResponse.json(
+    { error: "webhook_verification_failed" },
+    { status: 403 },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -180,14 +224,21 @@ export async function POST(req: NextRequest) {
         bytesRead: bodyRead.bytesRead,
         maxBytes: WEBHOOK_MAX_BODY_BYTES,
       });
-      return NextResponse.json({ received: false, error: bodyRead.reason }, { status: 413 });
+      return NextResponse.json(
+        { received: false, error: bodyRead.reason },
+        { status: 413 },
+      );
     }
 
     const rawBody = bodyRead.rawBody;
     const signature = req.headers.get("x-hub-signature-256");
 
     const signatureResult = verifyMetaSignature(rawBody, signature);
-    const requestMeta = getRequestMetadata(req, signature, signatureResult.verified);
+    const requestMeta = getRequestMetadata(
+      req,
+      signature,
+      signatureResult.verified,
+    );
 
     if (!signatureResult.verified) {
       console.warn("[webhook] signature verification failed", {
@@ -217,7 +268,13 @@ export async function POST(req: NextRequest) {
         errorMessage: "invalid_json_payload",
         payload: {
           routeVersion: WEBHOOK_ROUTE_VERSION,
-          ...safeWebhookMetadata(undefined, true, undefined, undefined, requestMeta),
+          ...safeWebhookMetadata(
+            undefined,
+            true,
+            undefined,
+            undefined,
+            requestMeta,
+          ),
           parseError: parsedBody.error,
         },
       });
@@ -225,12 +282,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = parsedBody.body;
-    const isDryRun = body.dryRun === true || body.source === "INTERNAL_SELF_TEST";
+    const isDryRun =
+      body.dryRun === true || body.source === "INTERNAL_SELF_TEST";
 
     try {
       const firstEntry = Array.isArray(body?.entry) ? body.entry[0] : undefined;
       await createWebhookEvent({
-        eventType: isDryRun ? "INTERNAL_SELF_TEST" : "WEBHOOK_POST_RECEIVED_RAW",
+        eventType: isDryRun
+          ? "INTERNAL_SELF_TEST"
+          : "WEBHOOK_POST_RECEIVED_RAW",
         eventSource: isDryRun ? "SIMULATED_INTERNAL" : "META_REAL",
         status: isDryRun ? "PROCESSED" : "RECEIVED",
         igAccountId: firstEntry?.id,
@@ -243,7 +303,9 @@ export async function POST(req: NextRequest) {
           object: body?.object,
           entryId: firstEntry?.id,
           entryCount: Array.isArray(body?.entry) ? body.entry.length : 0,
-          changesCount: Array.isArray(firstEntry?.changes) ? firstEntry.changes.length : 0,
+          changesCount: Array.isArray(firstEntry?.changes)
+            ? firstEntry.changes.length
+            : 0,
         },
       });
     } catch {
@@ -269,7 +331,7 @@ export async function POST(req: NextRequest) {
             signatureResult.verified,
             undefined,
             undefined,
-            requestMeta
+            requestMeta,
           ),
         },
       });
@@ -279,7 +341,7 @@ export async function POST(req: NextRequest) {
     if (!isDryRun) {
       try {
         const rateLimit = await consumeWebhookAccountRateLimit(
-          entries.map((entry: any) => String(entry?.id ?? ""))
+          entries.map((entry: any) => String(entry?.id ?? "")),
         );
         if (!rateLimit.allowed) {
           console.warn("[webhook] account rate limited", {
@@ -315,7 +377,7 @@ export async function POST(req: NextRequest) {
     // retries or duplicate replies.
     const backgroundProcessing = Promise.all([
       ...entries.map((entry: any) =>
-        processEntry(entry, body, signatureResult.verified, requestMeta)
+        processEntry(entry, body, signatureResult.verified, requestMeta),
       ),
       cleanupWebhookRateLimitBuckets().catch(() => 0),
     ]).catch(async (error) => {
@@ -353,7 +415,8 @@ export async function POST(req: NextRequest) {
         errorMessage: error instanceof Error ? error.message : String(error),
         payload: {
           routeVersion: WEBHOOK_ROUTE_VERSION,
-          stack: error instanceof Error ? error.stack?.split("\n")[0] : undefined,
+          stack:
+            error instanceof Error ? error.stack?.split("\n")[0] : undefined,
         },
       });
     } catch {
@@ -368,13 +431,14 @@ async function processEntry(
   entry: any,
   envelope: any,
   signatureValid: boolean,
-  requestMeta: ReturnType<typeof getRequestMetadata>
+  requestMeta: ReturnType<typeof getRequestMetadata>,
 ) {
   const pageId: string = entry.id;
   const changes = Array.isArray(entry.changes) ? entry.changes : [];
   const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
 
-  const field = changes[0]?.field ?? (messaging.length ? "messaging" : "unknown");
+  const field =
+    changes[0]?.field ?? (messaging.length ? "messaging" : "unknown");
   console.log(`[webhook] POST field=${field} pageId=${pageId}`);
 
   if (changes.length === 0 && messaging.length === 0) {
@@ -390,14 +454,13 @@ async function processEntry(
         signatureValid,
         entry,
         undefined,
-        requestMeta
+        requestMeta,
       ),
     });
     return;
   }
 
   for (const changeItem of changes) {
-
     // -----------------------------------------------------------------------
     // COMMENT EVENT
     // -----------------------------------------------------------------------
@@ -410,25 +473,16 @@ async function processEntry(
         change.media?.media_id ??
         undefined;
       const commentId: string | undefined =
-        change.id ??
-        change.comment_id ??
-        change.comment?.id ??
-        undefined;
+        change.id ?? change.comment_id ?? change.comment?.id ?? undefined;
       const commenterId: string | undefined =
-        change.from?.id ??
-        change.user?.id ??
-        change.sender?.id ??
-        undefined;
+        change.from?.id ?? change.user?.id ?? change.sender?.id ?? undefined;
       const commenterUsername: string | undefined =
         change.from?.username ??
         change.username ??
         change.user?.username ??
         undefined;
       const commentText: string =
-        change.text ??
-        change.comment_text ??
-        change.message ??
-        "";
+        change.text ?? change.comment_text ?? change.message ?? "";
       const valueIgAccountId: string | undefined =
         change.instagram_id ??
         change.ig_id ??
@@ -469,7 +523,13 @@ async function processEntry(
         mediaId,
         commentId,
         payload: {
-          ...safeWebhookMetadata(envelope, signatureValid, entry, changeItem, requestMeta),
+          ...safeWebhookMetadata(
+            envelope,
+            signatureValid,
+            entry,
+            changeItem,
+            requestMeta,
+          ),
           hasMediaId: Boolean(mediaId),
           hasCommentId: Boolean(commentId),
           hasCommenterId: Boolean(commenterId),
@@ -485,12 +545,17 @@ async function processEntry(
           !commentId && "comment_id",
           !commenterId && "commenter_id",
           !commentText && "comment_text",
-        ].filter(Boolean).join(",");
-        console.warn("[webhook] Instagram comment parse failed — missing fields", {
-          field: changeItem.field,
-          missing,
-          valueKeys: change ? Object.keys(change) : [],
-        });
+        ]
+          .filter(Boolean)
+          .join(",");
+        console.warn(
+          "[webhook] Instagram comment parse failed — missing fields",
+          {
+            field: changeItem.field,
+            missing,
+            valueKeys: change ? Object.keys(change) : [],
+          },
+        );
         await updateWebhookEvent(webhookEvent.id, {
           eventType: "COMMENT_PARSE_FAILED",
           status: "IGNORED",
@@ -524,17 +589,31 @@ async function processEntry(
           ? [match.automation]
           : [];
       const triggerDecisions = candidateAutomations.map((candidate) => {
-        const flowTrigger = flowTriggerForEvent(candidate,{source:"COMMENT",text:commentText,mediaId});
-        const matchedKeyword = flowTrigger !== undefined ? flowTrigger ? flowTrigger.anyMessage ? "any comment" : flowTrigger.keyword : null : resolveCommentTriggerMatch({
+        const flowTrigger = flowTriggerForEvent(candidate, {
+          source: "COMMENT",
           text: commentText,
-          keywords: candidate.keywords,
-          mode: candidate.matchingMode,
-          triggerMode: candidate.triggerMode,
+          mediaId,
         });
+        const matchedKeyword =
+          flowTrigger !== undefined
+            ? flowTrigger
+              ? flowTrigger.anyMessage
+                ? "any comment"
+                : flowTrigger.keyword
+              : null
+            : resolveCommentTriggerMatch({
+                text: commentText,
+                keywords: candidate.keywords,
+                mode: candidate.matchingMode,
+                triggerMode: candidate.triggerMode,
+              });
         return { automation: candidate, matchedKeyword };
       });
-      const selectedDecision = triggerDecisions.find((decision) => Boolean(decision.matchedKeyword));
-      const automation = selectedDecision?.automation ?? candidateAutomations[0] ?? null;
+      const selectedDecision = triggerDecisions.find((decision) =>
+        Boolean(decision.matchedKeyword),
+      );
+      const automation =
+        selectedDecision?.automation ?? candidateAutomations[0] ?? null;
       const matchedKeyword = selectedDecision?.matchedKeyword ?? null;
       const triggerDiagnostics = {
         ...commentDiagnostics,
@@ -542,31 +621,39 @@ async function processEntry(
           match.diagnostics && typeof match.diagnostics === "object"
             ? (match.diagnostics as any).matchedIntegrationId
             : undefined,
-        matchedAutomationIds: candidateAutomations.map((candidate) => candidate.id),
-        triggerDecisions: triggerDecisions.map(({ automation: candidate, matchedKeyword }) => ({
-          automationId: candidate.id,
-          automationName: candidate.name,
-          automationActive: candidate.active,
-          triggerMode: candidate.triggerMode,
-          matchingMode: candidate.matchingMode,
-          storedKeywords: candidate.keywords.map((keyword) => keyword.word),
-          normalizedKeywords: candidate.keywords.map((keyword) => normalizeMatchText(keyword.word)),
-          storedPostIds: candidate.posts?.map((post) => post.postid) ?? [],
-          matchedKeyword,
-          noMatchReason: matchedKeyword ? undefined : "no_keyword_match",
-        })),
+        matchedAutomationIds: candidateAutomations.map(
+          (candidate) => candidate.id,
+        ),
+        triggerDecisions: triggerDecisions.map(
+          ({ automation: candidate, matchedKeyword }) => ({
+            automationId: candidate.id,
+            automationName: candidate.name,
+            automationActive: candidate.active,
+            triggerMode: candidate.triggerMode,
+            matchingMode: candidate.matchingMode,
+            storedKeywords: candidate.keywords.map((keyword) => keyword.word),
+            normalizedKeywords: candidate.keywords.map((keyword) =>
+              normalizeMatchText(keyword.word),
+            ),
+            storedPostIds: candidate.posts?.map((post) => post.postid) ?? [],
+            matchedKeyword,
+            noMatchReason: matchedKeyword ? undefined : "no_keyword_match",
+          }),
+        ),
       };
       await mergeWebhookEventPayload(webhookEvent.id, {
         mediaMatching: match.diagnostics,
         triggerMatching: triggerDiagnostics,
       });
       if (!automation?.listener) {
-        const failureReason = match.failureReason ?? "no_active_automation_for_media";
-        const publicReplySkipReason = failureReason === "keyword_mismatch"
-          ? PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH
-          : failureReason === "no_active_automation_for_media"
-            ? PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH
-            : failureReason;
+        const failureReason =
+          match.failureReason ?? "no_active_automation_for_media";
+        const publicReplySkipReason =
+          failureReason === "keyword_mismatch"
+            ? PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH
+            : failureReason === "no_active_automation_for_media"
+              ? PUBLIC_REPLY_SKIPPED_MEDIA_MISMATCH
+              : failureReason;
         const wouldHaveMatchedCampaign = failureReason === "keyword_mismatch";
         const matchedIntegrationId =
           match.diagnostics && typeof match.diagnostics === "object"
@@ -577,11 +664,12 @@ async function processEntry(
             ? (match.diagnostics as any).matchedIntegrationOwnerUserId
             : undefined;
         await createWebhookEvent({
-          eventType: match.failureReason === "no_matching_integration"
-            ? "INTEGRATION_MATCH_FAILED"
-            : match.failureReason === "ambiguous"
-              ? "AMBIGUOUS_INTEGRATION_MATCH"
-              : "AUTOMATION_MATCH_FAILED",
+          eventType:
+            match.failureReason === "no_matching_integration"
+              ? "INTEGRATION_MATCH_FAILED"
+              : match.failureReason === "ambiguous"
+                ? "AMBIGUOUS_INTEGRATION_MATCH"
+                : "AUTOMATION_MATCH_FAILED",
           eventSource: "META_REAL",
           field: changeItem.field,
           igAccountId: pageId,
@@ -628,7 +716,7 @@ async function processEntry(
       const integrationRaw = selectIntegrationForWebhook(
         automation.User?.integrations,
         pageId,
-        automation.integrationId ?? matchedIntegrationId
+        automation.integrationId ?? matchedIntegrationId,
       );
       const selfComment = getSelfCommentReason({
         commenterId,
@@ -675,7 +763,7 @@ async function processEntry(
         if (automation.triggerMode === "ANY_COMMENT" && !isAppReviewMode()) {
           const recentSelfCommentSkips = await countRecentSelfCommentSkips(
             automation.id,
-            new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS)
+            new Date(Date.now() - LOOP_GUARD_MEDIA_WINDOW_MS),
           );
           if (recentSelfCommentSkips >= SELF_COMMENT_PAUSE_THRESHOLD) {
             await pauseAutomationForLoopGuard(automation.id);
@@ -687,7 +775,8 @@ async function processEntry(
               commentId,
               meta: {
                 reason: "repeated_self_comment_skips",
-                message: "Automation paused: repeated self-comment skips detected.",
+                message:
+                  "Automation paused: repeated self-comment skips detected.",
                 recentSelfCommentSkips,
               },
             });
@@ -732,7 +821,13 @@ async function processEntry(
         continue;
       }
 
-      if (await hasProcessedCommentWebhook(automation.id, commentId, webhookEvent.id)) {
+      if (
+        await hasProcessedCommentWebhook(
+          automation.id,
+          commentId,
+          webhookEvent.id,
+        )
+      ) {
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DUPLICATE_SKIPPED",
@@ -776,7 +871,9 @@ async function processEntry(
           triggerMode: automation.triggerMode,
           matchingMode: automation.matchingMode,
           storedKeywords: automation.keywords.map((keyword) => keyword.word),
-          normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
+          normalizedKeywords: automation.keywords.map((keyword) =>
+            normalizeMatchText(keyword.word),
+          ),
           storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
           commenterUsername,
           commentText,
@@ -784,7 +881,9 @@ async function processEntry(
       });
 
       if (!matchedKeyword) {
-        console.log(`[webhook] automation match: none (automationId=${automation.id} mode=${automation.matchingMode})`);
+        console.log(
+          `[webhook] automation match: none (automationId=${automation.id} mode=${automation.matchingMode})`,
+        );
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "NO_MATCH",
@@ -801,7 +900,9 @@ async function processEntry(
             triggerMode: automation.triggerMode,
             matchingMode: automation.matchingMode,
             storedKeywords: automation.keywords.map((keyword) => keyword.word),
-            normalizedKeywords: automation.keywords.map((keyword) => normalizeMatchText(keyword.word)),
+            normalizedKeywords: automation.keywords.map((keyword) =>
+              normalizeMatchText(keyword.word),
+            ),
             storedPostIds: automation.posts?.map((post) => post.postid) ?? [],
             noMatchReason: "no_keyword_match",
             reason: PUBLIC_REPLY_SKIPPED_KEYWORD_MISMATCH,
@@ -820,7 +921,9 @@ async function processEntry(
         continue;
       }
 
-      console.log(`[webhook] automation match: ${automation.id} keyword="${matchedKeyword}"`);
+      console.log(
+        `[webhook] automation match: ${automation.id} keyword="${matchedKeyword}"`,
+      );
 
       await createAutomationEvent({
         automationId: automation.id,
@@ -866,7 +969,12 @@ async function processEntry(
         continue;
       }
 
-      await recordAutomationHit({ automationId: automation.id, eventKey: `comment:${commentId}`, recipientIgId: commenterId, source: "COMMENT" });
+      await recordAutomationHit({
+        automationId: automation.id,
+        eventKey: `comment:${commentId}`,
+        recipientIgId: commenterId,
+        source: "COMMENT",
+      });
       await trackResponse(automation.id, "COMMENT");
 
       // 4. Duplicate check — skip if we already DM'd this person for this automation
@@ -895,8 +1003,18 @@ async function processEntry(
       }
 
       const listener = automation.listener;
-      if (listener.flowDefinition && !["PRO", "BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE")) {
-        await updateWebhookEvent(webhookEvent.id, { automationId: automation.id, status: "IGNORED", errorMessage: "flow_plan_upgrade_required", processedAt: new Date() });
+      if (
+        listener.flowDefinition &&
+        !["PRO", "BUSINESS"].includes(
+          automation.User?.subscription?.plan ?? "FREE",
+        )
+      ) {
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: automation.id,
+          status: "IGNORED",
+          errorMessage: "flow_plan_upgrade_required",
+          processedAt: new Date(),
+        });
         continue;
       }
       const replyVariants = readCommentReplies(listener);
@@ -997,7 +1115,8 @@ async function processEntry(
               used: usageAllowed.usage.staticReplies.used,
               limit: usageAllowed.usage.staticReplies.limit,
               periodLabel: usageAllowed.usage.periodLabel,
-              enforcementStart: usageAllowed.usage.enforcementStart.toISOString(),
+              enforcementStart:
+                usageAllowed.usage.enforcementStart.toISOString(),
             },
           });
           await createMessageLog({
@@ -1120,14 +1239,18 @@ async function processEntry(
       // 5. Send public comment reply — pick a random non-empty variation
       // Primary: threaded reply via POST /{commentId}/replies (Advanced Access)
       // Fallback: top-level @mention comment via POST /{mediaId}/comments (Standard Access)
-      let chosenReply = publicReplyEnabled && !aiReplyEnabled
-        ? replyVariants[Math.floor(Math.random() * replyVariants.length)]
-        : null;
+      let chosenReply =
+        publicReplyEnabled && !aiReplyEnabled
+          ? replyVariants[Math.floor(Math.random() * replyVariants.length)]
+          : null;
       let aiReplyCategory: string | null = null;
 
       if (aiReplyEnabled && automation.userId) {
         try {
-          const aiWorkspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
+          const aiWorkspace = await getAiWorkspaceRuntimeConfig(
+            automation.userId,
+            automation.integrationId,
+          );
           const aiQuota = await reserveAiReplyQuota({
             userId: automation.userId,
             automationId: automation.id,
@@ -1170,11 +1293,18 @@ async function processEntry(
               tone: listener.aiReplyTone,
               protectionRules: listener.aiProtectionRules,
               workspace: aiWorkspace,
-              deliveryContext: { sendDm: privateDmEnabled, openingDm: listener.openingDmEnabled !== false, username: commenterUsername },
+              deliveryContext: {
+                sendDm: privateDmEnabled,
+                openingDm: listener.openingDmEnabled !== false,
+                username: commenterUsername,
+              },
             });
             aiReplyCategory = decision.category;
 
-            if ("reason" in decision && decision.reason === "ai_provider_unavailable") {
+            if (
+              "reason" in decision &&
+              decision.reason === "ai_provider_unavailable"
+            ) {
               await releaseAiReplyReservation(aiQuota.reservationId);
             } else {
               await completeAiReplyReservation(aiQuota.reservationId, {
@@ -1191,7 +1321,9 @@ async function processEntry(
               let protectionError: string | undefined;
               if (decision.action === "DELETE") {
                 try {
-                  await withRetry(() => deleteInstagramComment(commentId, token));
+                  await withRetry(() =>
+                    deleteInstagramComment(commentId, token),
+                  );
                 } catch (deleteError) {
                   protectionError = formatSafeMetaError(deleteError);
                 }
@@ -1203,7 +1335,9 @@ async function processEntry(
                 commentId,
                 messageType: "COMMENT_REPLY",
                 status: "SKIPPED",
-                errorMessage: protectionError ? "ai_protection_delete_failed" : decision.reason,
+                errorMessage: protectionError
+                  ? "ai_protection_delete_failed"
+                  : decision.reason,
               });
               await createAutomationEvent({
                 automationId: automation.id,
@@ -1213,7 +1347,9 @@ async function processEntry(
                 commentId,
                 keyword: matchedKeyword,
                 meta: {
-                  reason: protectionError ? "ai_protection_delete_failed" : decision.reason,
+                  reason: protectionError
+                    ? "ai_protection_delete_failed"
+                    : decision.reason,
                   category: decision.category,
                   protectionAction: decision.action,
                   deleted: decision.action === "DELETE" && !protectionError,
@@ -1226,7 +1362,8 @@ async function processEntry(
           console.error("[webhook] AI comment reply failed", {
             automationId: automation.id,
             commentId,
-            error: aiError instanceof Error ? aiError.message : "unknown_ai_error",
+            error:
+              aiError instanceof Error ? aiError.message : "unknown_ai_error",
           });
           await Promise.allSettled([
             createMessageLog({
@@ -1251,17 +1388,38 @@ async function processEntry(
         }
       }
 
-      let publicSlot: Awaited<ReturnType<typeof reservePublicReplySlot>> | null = null;
+      let publicSlot: Awaited<
+        ReturnType<typeof reservePublicReplySlot>
+      > | null = null;
       if (chosenReply) {
-        try { publicSlot = await reservePublicReplySlot({ automationId: automation.id, mediaId: mediaId || "unknown", commentId, limit: listener.publicReplyLimit }); }
-        catch { publicSlot = { ok: false, reason: "public_reply_limit_unavailable" }; }
+        try {
+          publicSlot = await reservePublicReplySlot({
+            automationId: automation.id,
+            mediaId: mediaId || "unknown",
+            commentId,
+            limit: listener.publicReplyLimit,
+          });
+        } catch {
+          publicSlot = { ok: false, reason: "public_reply_limit_unavailable" };
+        }
         if (!publicSlot.ok) {
-          await createMessageLog({ automationId: automation.id, recipientIgId: commenterId, mediaId, commentId, messageType: "COMMENT_REPLY", status: "SKIPPED", errorMessage: publicSlot.reason });
+          await createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "COMMENT_REPLY",
+            status: "SKIPPED",
+            errorMessage: publicSlot.reason,
+          });
           chosenReply = null;
         }
       }
       if (chosenReply) {
-        const replyText = resolveTemplate(personalizeUsername(chosenReply, commenterUsername), templateVars);
+        const replyText = resolveTemplate(
+          personalizeUsername(chosenReply, commenterUsername),
+          templateVars,
+        );
         const mediaReplyCount10m = await countRecentPublicReplies({
           automationId: automation.id,
           mediaId,
@@ -1276,52 +1434,72 @@ async function processEntry(
           automationReplyCount1h >= MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR;
 
         let publicReplySent = false;
-        let publicReplyEndpoint: "threaded_reply" | "mention_comment" = "threaded_reply";
+        let publicReplyEndpoint: "threaded_reply" | "mention_comment" =
+          "threaded_reply";
         let publicReplyErrorMessage: string | undefined;
         let publicReplyCommentId: string | undefined;
         let outboundPublicReplyText = replyText;
 
         try {
           // Primary: Advanced Access — true threaded reply linked to the comment
-          const replyResult = await withRetry(() => sendCommentReply(commentId, replyText, token));
+          const replyResult = await withRetry(() =>
+            sendCommentReply(commentId, replyText, token),
+          );
           publicReplyCommentId = extractMetaCreatedObjectId(replyResult);
-          publicReplySent = replyResult.status === 200 && Boolean(publicReplyCommentId);
+          publicReplySent =
+            replyResult.status === 200 && Boolean(publicReplyCommentId);
           if (replyResult.status === 200 && !publicReplyCommentId) {
             publicReplyErrorMessage = "meta_public_reply_missing_id";
           }
         } catch (threadedErr) {
           const threadedError = formatSafeMetaError(threadedErr);
-          console.warn("[webhook] threaded comment reply failed — trying Standard Access @mention fallback", {
-            error: getSafeMetaError(threadedErr),
-            hasCommenterUsername: Boolean(commenterUsername),
-            hasMediaId: Boolean(mediaId),
-          });
+          console.warn(
+            "[webhook] threaded comment reply failed — trying Standard Access @mention fallback",
+            {
+              error: getSafeMetaError(threadedErr),
+              hasCommenterUsername: Boolean(commenterUsername),
+              hasMediaId: Boolean(mediaId),
+            },
+          );
 
           // Fallback: Standard Access — top-level comment with @mention
           if (mediaId) {
             publicReplyEndpoint = "mention_comment";
-            const mentionText = commenterUsername && !replyText.includes(`@${commenterUsername}`) ? `@${commenterUsername} ${replyText}` : replyText;
+            const mentionText =
+              commenterUsername && !replyText.includes(`@${commenterUsername}`)
+                ? `@${commenterUsername} ${replyText}`
+                : replyText;
             outboundPublicReplyText = mentionText;
             try {
-              const fallback = await withRetry(() => sendMediaComment(mediaId, mentionText, token));
+              const fallback = await withRetry(() =>
+                sendMediaComment(mediaId, mentionText, token),
+              );
               publicReplyCommentId = extractMetaCreatedObjectId(fallback);
-              publicReplySent = fallback.status === 200 && Boolean(publicReplyCommentId);
+              publicReplySent =
+                fallback.status === 200 && Boolean(publicReplyCommentId);
               if (fallback.status === 200 && !publicReplyCommentId) {
                 publicReplyErrorMessage = "meta_public_reply_missing_id";
               }
               if (!commenterUsername) {
-                publicReplyErrorMessage = "commenter_username_missing_mention_omitted";
+                publicReplyErrorMessage =
+                  "commenter_username_missing_mention_omitted";
               }
             } catch (mentionErr) {
               publicReplyErrorMessage = `threaded=${threadedError} mention=${formatSafeMetaError(mentionErr)}`;
-              console.warn("[webhook] Standard Access @mention fallback also failed", getSafeMetaError(mentionErr));
+              console.warn(
+                "[webhook] Standard Access @mention fallback also failed",
+                getSafeMetaError(mentionErr),
+              );
             }
           } else {
             publicReplyErrorMessage = threadedError;
           }
         }
 
-        if (publicSlot?.ok) await finishPublicReplySlot(publicSlot.id, publicReplySent).catch(() => undefined);
+        if (publicSlot?.ok)
+          await finishPublicReplySlot(publicSlot.id, publicReplySent).catch(
+            () => undefined,
+          );
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -1333,7 +1511,9 @@ async function processEntry(
         });
         await createAutomationEvent({
           automationId: automation.id,
-          eventType: publicReplySent ? "PUBLIC_REPLY_SENT" : "PUBLIC_REPLY_FAILED",
+          eventType: publicReplySent
+            ? "PUBLIC_REPLY_SENT"
+            : "PUBLIC_REPLY_FAILED",
           igUserId: commenterId,
           mediaId,
           commentId: publicReplySent ? publicReplyCommentId : commentId,
@@ -1351,12 +1531,20 @@ async function processEntry(
             mediaReplyCount10m,
             automationReplyCount1h,
             replyTextPreview: outboundPublicReplyText.slice(0, 180),
-            publicReplyTextHash: hashNormalizedText(normalizeMatchText(outboundPublicReplyText)),
-            normalizedPublicReplyText: normalizeMatchText(outboundPublicReplyText),
-            mentionOmitted: publicReplyErrorMessage === "commenter_username_missing_mention_omitted",
+            publicReplyTextHash: hashNormalizedText(
+              normalizeMatchText(outboundPublicReplyText),
+            ),
+            normalizedPublicReplyText: normalizeMatchText(
+              outboundPublicReplyText,
+            ),
+            mentionOmitted:
+              publicReplyErrorMessage ===
+              "commenter_username_missing_mention_omitted",
             replyMode: aiReplyEnabled ? "AI" : "SAVED",
             ...(aiReplyCategory ? { aiReplyCategory } : {}),
-            ...(publicReplyErrorMessage && !publicReplySent ? { error: publicReplyErrorMessage } : {}),
+            ...(publicReplyErrorMessage && !publicReplySent
+              ? { error: publicReplyErrorMessage }
+              : {}),
           },
         });
         await createWebhookEvent({
@@ -1470,24 +1658,52 @@ async function processEntry(
       // immediately. Existing automations retain the opening step by default.
       const openingDmEnabled = listener.openingDmEnabled !== false;
       const dmMessageText = resolveTemplate(
-        personalizeUsername(openingDmEnabled ? resolveOpeningDmText(listener.openingDmText) : selectMessageVariation(listener.prompt, listener.messageVariations, commentId), commenterUsername),
-        templateVars
+        personalizeUsername(
+          openingDmEnabled
+            ? resolveOpeningDmText(listener.openingDmText)
+            : selectMessageVariation(
+                listener.prompt,
+                listener.messageVariations,
+                commentId,
+              ),
+          commenterUsername,
+        ),
+        templateVars,
       );
       const directLinkButtons = openingDmEnabled
         ? []
-        : readLinkButtons(listener.quickReplies, listener.ctaButtonTitle, listener.ctaLink);
+        : readLinkButtons(
+            listener.quickReplies,
+            listener.ctaButtonTitle,
+            listener.ctaLink,
+          );
       const fullWidthCallbacksReady = openingDmEnabled
         ? await ensureInstagramButtonCallbacks(integrationRaw?.id, token)
         : false;
       // Establish the baseline before the first follow request; a button press is never proof of a follow.
-      if (integrationRaw && (automation.followGateRequired || readFlow(listener.flowDefinition)?.nodes.some(n=>n.kind === "condition" && n.field === "_followsBusiness"))) {
-        const baseline = await getInstagramRecipientProfile({token, recipientId:commenterId});
-        await observeAutomationFollow({integrationId:integrationRaw.id,automationId:automation.id,recipientIgId:commenterId,followsBusiness:baseline?.followsBusiness});
+      if (
+        integrationRaw &&
+        (automation.followGateRequired ||
+          readFlow(listener.flowDefinition)?.nodes.some(
+            (n) => n.kind === "condition" && n.field === "_followsBusiness",
+          ))
+      ) {
+        const baseline = await getInstagramRecipientProfile({
+          token,
+          recipientId: commenterId,
+        });
+        await observeAutomationFollow({
+          integrationId: integrationRaw.id,
+          automationId: automation.id,
+          recipientIgId: commenterId,
+          followsBusiness: baseline?.followsBusiness,
+        });
       }
       const dmResult = await sendInstagramCommentPrivateReply({
         // Use the full-width postback only after both subscription layers are
         // confirmed. Otherwise retain the native quick-reply fallback.
-        preferQuickReplyForPostback: openingDmEnabled && !fullWidthCallbacksReady,
+        preferQuickReplyForPostback:
+          openingDmEnabled && !fullWidthCallbacksReady,
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1495,21 +1711,29 @@ async function processEntry(
         message: dmMessageText,
         automationId: automation.id,
         responseFormat: openingDmEnabled ? "TEXT" : listener.responseFormat,
-        quickReplies: openingDmEnabled ? [] : readLegacyQuickReplies(Array.isArray(listener.quickReplies) ? listener.quickReplies : []),
+        quickReplies: openingDmEnabled
+          ? []
+          : readLegacyQuickReplies(
+              Array.isArray(listener.quickReplies) ? listener.quickReplies : [],
+            ),
         linkButtons: directLinkButtons,
         ctaTitle: openingDmEnabled ? undefined : listener.ctaButtonTitle,
         ctaUrl: openingDmEnabled ? undefined : listener.ctaLink,
         cardSubtitle: openingDmEnabled ? undefined : listener.cardSubtitle,
         mediaUrl: openingDmEnabled ? undefined : listener.mediaUrl,
         mediaType: openingDmEnabled ? undefined : listener.mediaType,
-        postbackButton: openingDmEnabled ? {
-          title: resolveOpeningDmButtonText(listener.openingDmButtonText),
-          payload: openingDmActionPayload(automation.id, commentId),
-        } : undefined,
+        postbackButton: openingDmEnabled
+          ? {
+              title: resolveOpeningDmButtonText(listener.openingDmButtonText),
+              payload: openingDmActionPayload(automation.id, commentId),
+            }
+          : undefined,
       });
 
       if (dmResult.ok) {
-        console.log(`[webhook] DM_SENT recipientId=${commenterId} automationId=${automation.id} endpoint=${dmResult.endpoint} ctaMode=${dmResult.ctaMode}`);
+        console.log(
+          `[webhook] DM_SENT recipientId=${commenterId} automationId=${automation.id} endpoint=${dmResult.endpoint} ctaMode=${dmResult.ctaMode}`,
+        );
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -1517,7 +1741,9 @@ async function processEntry(
           commentId,
           messageType: "DM",
           status: "SENT",
-          errorMessage: openingDmEnabled ? "opening_dm_sent" : "final_dm_payload_sent",
+          errorMessage: openingDmEnabled
+            ? "opening_dm_sent"
+            : "final_dm_payload_sent",
         });
         await createAutomationEvent({
           automationId: automation.id,
@@ -1526,18 +1752,29 @@ async function processEntry(
           mediaId,
           commentId,
           keyword: matchedKeyword,
-          meta: { endpoint: dmResult.endpoint, ctaMode: dmResult.ctaMode, dmFlowStep: openingDmEnabled ? "OPENING" : "FINAL", ...(listener.flowDefinition ? {flowRevision:listener.flowRevision} : {}) },
+          meta: {
+            endpoint: dmResult.endpoint,
+            ctaMode: dmResult.ctaMode,
+            dmFlowStep: openingDmEnabled ? "OPENING" : "FINAL",
+            ...(listener.flowDefinition
+              ? { flowRevision: listener.flowRevision }
+              : {}),
+          },
         });
         await trackResponse(automation.id, "DM");
         await updateWebhookEvent(webhookEvent.id, {
           automationId: automation.id,
           status: "PROCESSED",
-          errorMessage: openingDmEnabled ? "opening_dm_sent" : "final_dm_payload_sent",
+          errorMessage: openingDmEnabled
+            ? "opening_dm_sent"
+            : "final_dm_payload_sent",
           processedAt: new Date(),
         });
       } else {
         const errorMessage = formatPrivateReplyError(dmResult);
-        console.warn(`[webhook] DM_FAILED recipientId=${commenterId} automationId=${automation.id} reason=${dmResult.reason} endpoint=${dmResult.endpoint}`);
+        console.warn(
+          `[webhook] DM_FAILED recipientId=${commenterId} automationId=${automation.id} reason=${dmResult.reason} endpoint=${dmResult.endpoint}`,
+        );
         await createMessageLog({
           automationId: automation.id,
           recipientIgId: commenterId,
@@ -1570,14 +1807,22 @@ async function processEntry(
       }
       continue;
     } else {
-      console.log("[webhook] unsupported change ignored", { field: changeItem.field });
+      console.log("[webhook] unsupported change ignored", {
+        field: changeItem.field,
+      });
       await createWebhookEvent({
         eventType: "UNHANDLED_WEBHOOK",
         eventSource: "META_REAL",
         field: changeItem.field,
         igAccountId: pageId,
         status: "IGNORED",
-        payload: safeWebhookMetadata(envelope, signatureValid, entry, changeItem, requestMeta),
+        payload: safeWebhookMetadata(
+          envelope,
+          signatureValid,
+          entry,
+          changeItem,
+          requestMeta,
+        ),
       });
       continue;
     }
@@ -1590,39 +1835,67 @@ async function processEntry(
     if (!messagingItem) continue;
 
     const parsed = parseMessagingItem(messagingItem);
-    const senderId = parsed.ok ? parsed.data.senderId : (messagingItem.sender?.id ? String(messagingItem.sender.id) : undefined);
-    const dmText = parsed.ok ? (parsed.data.messageText ?? "") : (messagingItem.message?.text ?? "");
-    console.log("[webhook] messaging item received", parsed.ok
-      ? {
-          hasSenderId: parsed.diagnostics.hasSenderId,
-          hasMessageText: parsed.diagnostics.hasMessageText,
-          hasQuickReply: parsed.diagnostics.hasQuickReply,
-          hasPostback: parsed.diagnostics.hasPostback,
-          isEcho: parsed.diagnostics.isEcho,
-        }
-      : {
-          parseFailureReason: parsed.reason,
-          ...parsed.diagnostics,
-        });
-    const storyInteraction = parsed.ok ? classifyStoryInteraction(parsed.data) : null;
+    const senderId = parsed.ok
+      ? parsed.data.senderId
+      : messagingItem.sender?.id
+        ? String(messagingItem.sender.id)
+        : undefined;
+    const dmText = parsed.ok
+      ? (parsed.data.messageText ?? "")
+      : (messagingItem.message?.text ?? "");
+    console.log(
+      "[webhook] messaging item received",
+      parsed.ok
+        ? {
+            hasSenderId: parsed.diagnostics.hasSenderId,
+            hasMessageText: parsed.diagnostics.hasMessageText,
+            hasQuickReply: parsed.diagnostics.hasQuickReply,
+            hasPostback: parsed.diagnostics.hasPostback,
+            isEcho: parsed.diagnostics.isEcho,
+          }
+        : {
+            parseFailureReason: parsed.reason,
+            ...parsed.diagnostics,
+          },
+    );
+    const storyInteraction = parsed.ok
+      ? classifyStoryInteraction(parsed.data)
+      : null;
     const actionPayload = parsed.ok
-      ? parsed.data.quickReplyPayload ?? parsed.data.postback?.payload
+      ? (parsed.data.quickReplyPayload ?? parsed.data.postback?.payload)
       : undefined;
-    const inboundAttachment = parsed.ok ? parsed.data.attachments.find((attachment) => attachment.url) : undefined;
-    const inboundMediaUrl = inboundAttachment?.url ?? (parsed.ok ? parsed.data.replyToStory?.url : undefined);
+    const inboundAttachment = parsed.ok
+      ? parsed.data.attachments.find((attachment) => attachment.url)
+      : undefined;
+    const inboundMediaUrl =
+      inboundAttachment?.url ??
+      (parsed.ok ? parsed.data.replyToStory?.url : undefined);
     const inboundMessageType = storyInteraction
       ? `STORY_${storyInteraction}`
       : actionPayload
-        ? parsed.ok && parsed.data.postback ? "POSTBACK" : "QUICK_REPLY"
-        : inboundAttachment?.type?.toUpperCase() ?? "TEXT";
-    const attachmentLabel = inboundAttachment?.type === "video"
-      ? "Sent a video"
-      : inboundAttachment?.type === "reel"
-        ? "Shared a Reel"
-        : inboundAttachment
-          ? "Sent an image"
-          : "Instagram message";
-    const inboundContent = dmText || (storyInteraction === "MENTION" ? "Mentioned you in a story" : storyInteraction === "REACTION" ? "Reacted to your story" : storyInteraction === "REPLY" ? "Replied to your story" : parsed.ok && parsed.data.postback?.title ? parsed.data.postback.title : attachmentLabel);
+        ? parsed.ok && parsed.data.postback
+          ? "POSTBACK"
+          : "QUICK_REPLY"
+        : (inboundAttachment?.type?.toUpperCase() ?? "TEXT");
+    const attachmentLabel =
+      inboundAttachment?.type === "video"
+        ? "Sent a video"
+        : inboundAttachment?.type === "reel"
+          ? "Shared a Reel"
+          : inboundAttachment
+            ? "Sent an image"
+            : "Instagram message";
+    const inboundContent =
+      dmText ||
+      (storyInteraction === "MENTION"
+        ? "Mentioned you in a story"
+        : storyInteraction === "REACTION"
+          ? "Reacted to your story"
+          : storyInteraction === "REPLY"
+            ? "Replied to your story"
+            : parsed.ok && parsed.data.postback?.title
+              ? parsed.data.postback.title
+              : attachmentLabel);
 
     // Echo messages are copies of outbound messages sent by the IG account — skip them.
     if (parsed.ok && parsed.data.isEcho) {
@@ -1633,7 +1906,13 @@ async function processEntry(
         igAccountId: pageId,
         igUserId: senderId,
         payload: {
-          ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
+          ...safeWebhookMetadata(
+            envelope,
+            signatureValid,
+            entry,
+            undefined,
+            requestMeta,
+          ),
           ...parsed.diagnostics,
           messageMid: parsed.data.messageMid,
           entryId: entry?.id,
@@ -1652,6 +1931,16 @@ async function processEntry(
     // not inbound DMs. Record them without profile calls, inbox rows, or a
     // misleading missing-required-fields warning.
     if (parsed.ok && parsed.data.systemEventType) {
+      const receiptIntegration =
+        parsed.data.systemEventType === "DELIVERY"
+          ? null
+          : await findIntegrationForWebhookAccount(pageId);
+      if (receiptIntegration && senderId)
+        await recordEngagementReceipt(
+          receiptIntegration.id,
+          senderId,
+          messagingItem,
+        );
       const systemEvent = await createWebhookEvent({
         eventType: "REAL_MESSAGE_EVENT",
         eventSource: "META_REAL",
@@ -1659,7 +1948,13 @@ async function processEntry(
         igAccountId: pageId,
         igUserId: senderId,
         payload: {
-          ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
+          ...safeWebhookMetadata(
+            envelope,
+            signatureValid,
+            entry,
+            undefined,
+            requestMeta,
+          ),
           ...parsed.diagnostics,
           systemEventType: parsed.data.systemEventType,
           entryId: entry?.id,
@@ -1706,17 +2001,28 @@ async function processEntry(
         igAccountId: pageId,
         igUserId: senderId,
         payload: {
-          ...safeWebhookMetadata(envelope, signatureValid, entry, undefined, requestMeta),
+          ...safeWebhookMetadata(
+            envelope,
+            signatureValid,
+            entry,
+            undefined,
+            requestMeta,
+          ),
           ...messagingPayload,
         },
       });
 
       const inboxIntegration = await findIntegrationForWebhookAccount(pageId);
-      let senderProfile: Awaited<ReturnType<typeof getInstagramRecipientProfile>> = null;
+      let senderProfile: Awaited<
+        ReturnType<typeof getInstagramRecipientProfile>
+      > = null;
       if (senderId && inboxIntegration?.userId) {
         const inboxToken = resolveIntegrationSendToken(inboxIntegration);
         if (inboxToken.ok) {
-          senderProfile = await getInstagramRecipientProfile({ token: inboxToken.token, recipientId: senderId });
+          senderProfile = await getInstagramRecipientProfile({
+            token: inboxToken.token,
+            recipientId: senderId,
+          });
         }
         await upsertInboundInboxMessage({
           userId: inboxIntegration.userId,
@@ -1728,11 +2034,25 @@ async function processEntry(
           profilePictureUrl: senderProfile?.profilePictureUrl,
           messageType: inboundMessageType,
           mediaUrl: inboundMediaUrl,
-          occurredAt: parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : undefined,
-        }).catch((error) => console.warn("[inbox] inbound persistence failed", { message: error instanceof Error ? error.message : String(error) }));
+          occurredAt:
+            parsed.ok && parsed.data.messageTimestamp
+              ? new Date(parsed.data.messageTimestamp)
+              : undefined,
+        }).catch((error) =>
+          console.warn("[inbox] inbound persistence failed", {
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
       }
 
-      if (!senderId || (!dmText && !storyInteraction && !actionPayload && !inboundMediaUrl && !(parsed.ok && isSharedPostAttachment(parsed.data.attachments)))) {
+      if (
+        !senderId ||
+        (!dmText &&
+          !storyInteraction &&
+          !actionPayload &&
+          !inboundMediaUrl &&
+          !(parsed.ok && isSharedPostAttachment(parsed.data.attachments)))
+      ) {
         console.log("[webhook] inbound DM missing required fields — ignoring", {
           hasSenderId: Boolean(senderId),
           hasMessageText: Boolean(dmText),
@@ -1746,30 +2066,101 @@ async function processEntry(
         continue;
       }
 
-      const inboundAt = parsed.ok && parsed.data.messageTimestamp ? new Date(parsed.data.messageTimestamp) : null;
-      if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt)) await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
-      if (inboxIntegration && actionPayload && await handleConversationStarter({integrationId:inboxIntegration.id,recipientIgId:senderId,payload:actionPayload,inboundAt,eventId:parsed.ok ? parsed.data.messageMid ?? webhookEvent.id : webhookEvent.id})) {
-        await updateWebhookEvent(webhookEvent.id,{status:"PROCESSED",errorMessage:"conversation_starter_handled",processedAt:new Date()});
+      const inboundAt =
+        parsed.ok && parsed.data.messageTimestamp
+          ? new Date(parsed.data.messageTimestamp)
+          : null;
+      if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt))
+        await cancelPendingFollowUps(inboxIntegration.id, senderId, inboundAt);
+      if (
+        inboxIntegration &&
+        actionPayload &&
+        (await handleConversationStarter({
+          integrationId: inboxIntegration.id,
+          recipientIgId: senderId,
+          payload: actionPayload,
+          inboundAt,
+          eventId: parsed.ok
+            ? (parsed.data.messageMid ?? webhookEvent.id)
+            : webhookEvent.id,
+        }))
+      ) {
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "PROCESSED",
+          errorMessage: "conversation_starter_handled",
+          processedAt: new Date(),
+        });
         continue;
       }
-      if (inboxIntegration && !storyInteraction && !parseCommentDmActionPayload(actionPayload) && await processAutomationFlow({ scheduleWake: waitUntil, integrationId: inboxIntegration.id, recipientIgId: senderId, text: dmText, inboundAt, eventId: parsed.ok ? parsed.data.messageMid ?? webhookEvent.id : webhookEvent.id })) {
-        await updateWebhookEvent(webhookEvent.id, { status: "PROCESSED", errorMessage: "custom_flow_reply_handled", processedAt: new Date() });
+      if (
+        inboxIntegration &&
+        !storyInteraction &&
+        !parseCommentDmActionPayload(actionPayload) &&
+        (await processAutomationFlow({
+          scheduleWake: waitUntil,
+          integrationId: inboxIntegration.id,
+          recipientIgId: senderId,
+          text: dmText,
+          inboundAt,
+          eventId: parsed.ok
+            ? (parsed.data.messageMid ?? webhookEvent.id)
+            : webhookEvent.id,
+        }))
+      ) {
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "PROCESSED",
+          errorMessage: "custom_flow_reply_handled",
+          processedAt: new Date(),
+        });
         continue;
       }
       if (inboxIntegration && inboundAt && messagingWindowOpen(inboundAt)) {
-        const emailReply = !actionPayload && !storyInteraction
-          ? await takeEmailReply(inboxIntegration.id, senderId, dmText, inboundAt, parsed.ok ? parsed.data.messageMid : undefined) : null;
-        if (parseEmailReply(dmText).kind === "stop") await findAutomationForDM(dmText, pageId, senderId);
-        if (emailReply?.kind === "waiting" || parseEmailReply(dmText).kind === "stop") {
-          await updateWebhookEvent(webhookEvent.id, { status: "PROCESSED", errorMessage: "engagement_reply_handled", processedAt: new Date() });
+        const emailReply =
+          !actionPayload && !storyInteraction
+            ? await takeEmailReply(
+                inboxIntegration.id,
+                senderId,
+                dmText,
+                inboundAt,
+                parsed.ok ? parsed.data.messageMid : undefined,
+              )
+            : null;
+        if (parseEmailReply(dmText).kind === "stop")
+          await findAutomationForDM(dmText, pageId, senderId);
+        if (
+          emailReply?.kind === "waiting" ||
+          parseEmailReply(dmText).kind === "stop"
+        ) {
+          await updateWebhookEvent(webhookEvent.id, {
+            status: "PROCESSED",
+            errorMessage: "engagement_reply_handled",
+            processedAt: new Date(),
+          });
           continue;
         }
         if (emailReply?.kind === "continue") {
-          const emailAutomation = await findAutomationById(emailReply.automationId, pageId);
+          const emailAutomation = await findAutomationById(
+            emailReply.automationId,
+            pageId,
+          );
           if (emailAutomation?.active && emailAutomation.listener) {
-            await processConfiguredMessageAutomation({ automation: emailAutomation, pageId, senderId, senderProfile, webhookEventId: webhookEvent.id,
-              messageMid: parsed.ok ? parsed.data.messageMid : undefined, matchedKeyword: "email_reply", inboundText: dmText, inboundAt,
-              dmFlowAction: { type: "OPENING_CONTINUE", automationId: emailReply.automationId, flowId: emailReply.flowId }, emailCompletionId: emailReply.jobId });
+            await processConfiguredMessageAutomation({
+              automation: emailAutomation,
+              pageId,
+              senderId,
+              senderProfile,
+              webhookEventId: webhookEvent.id,
+              messageMid: parsed.ok ? parsed.data.messageMid : undefined,
+              matchedKeyword: "email_reply",
+              inboundText: dmText,
+              inboundAt,
+              dmFlowAction: {
+                type: "OPENING_CONTINUE",
+                automationId: emailReply.automationId,
+                flowId: emailReply.flowId,
+              },
+              emailCompletionId: emailReply.jobId,
+            });
           } else await finishEngagementJob(emailReply.jobId, "FAILED");
           continue;
         }
@@ -1780,29 +2171,45 @@ async function processEntry(
         ? await findPendingCommentDmActionForText(
             pageId,
             senderId,
-            dmText || (parsed.ok ? parsed.data.postback?.title ?? "" : "")
+            dmText || (parsed.ok ? (parsed.data.postback?.title ?? "") : ""),
           )
         : null;
       const dmFlowAction = payloadAction ?? fallbackAction?.action ?? null;
-      const callbackAutomation = fallbackAction?.automation ?? (dmFlowAction
-        ? await findAutomationById(dmFlowAction.automationId, pageId)
-        : null);
+      const callbackAutomation =
+        fallbackAction?.automation ??
+        (dmFlowAction
+          ? await findAutomationById(dmFlowAction.automationId, pageId)
+          : null);
       const callbackIntegration = callbackAutomation
-        ? selectIntegrationForWebhook(callbackAutomation.User?.integrations, pageId)
+        ? selectIntegrationForWebhook(
+            callbackAutomation.User?.integrations,
+            pageId,
+          )
         : undefined;
       if (dmFlowAction) {
         console.log("[webhook] comment DM callback resolved", {
           automationId: dmFlowAction.automationId,
           action: dmFlowAction.type,
           source: payloadAction ? "payload" : "pending_text_fallback",
-          hasQuickReplyPayload: Boolean(parsed.ok && parsed.data.quickReplyPayload),
-          hasPostbackPayload: Boolean(parsed.ok && parsed.data.postback?.payload),
+          hasQuickReplyPayload: Boolean(
+            parsed.ok && parsed.data.quickReplyPayload,
+          ),
+          hasPostbackPayload: Boolean(
+            parsed.ok && parsed.data.postback?.payload,
+          ),
         });
       }
       const storyAutomation = storyInteraction
         ? await findAutomationForStory(storyInteraction, pageId, dmText)
         : null;
-      const currentFlowOpening = dmFlowAction?.type === "OPENING_CONTINUE" && callbackAutomation ? await isCurrentFlowOpening(callbackAutomation,senderId,dmFlowAction.flowId) : true;
+      const currentFlowOpening =
+        dmFlowAction?.type === "OPENING_CONTINUE" && callbackAutomation
+          ? await isCurrentFlowOpening(
+              callbackAutomation,
+              senderId,
+              dmFlowAction.flowId,
+            )
+          : true;
       const callbackIsAllowed = Boolean(
         currentFlowOpening &&
         callbackAutomation?.active &&
@@ -1811,7 +2218,11 @@ async function processEntry(
         callbackIntegration.reconnectRequired !== true &&
         !callbackIntegration.planLocked &&
         callbackAutomation?.integrationId === callbackIntegration.id &&
-        (dmFlowAction?.type !== "OPENING_CONTINUE" || (callbackAutomation.source === "COMMENT" || readFlowTriggers(callbackAutomation.listener?.flowTriggers)?.some(t=>t.source === "COMMENT")))
+        (dmFlowAction?.type !== "OPENING_CONTINUE" ||
+          callbackAutomation.source === "COMMENT" ||
+          readFlowTriggers(callbackAutomation.listener?.flowTriggers)?.some(
+            (t) => t.source === "COMMENT",
+          )),
       );
       if (dmFlowAction && !callbackIsAllowed) {
         console.warn("[webhook] comment DM callback rejected", {
@@ -1821,7 +2232,13 @@ async function processEntry(
           accountMatched: Boolean(callbackIntegration),
           source: callbackAutomation?.source,
         });
-        await updateWebhookEvent(webhookEvent.id,{status:"IGNORED",errorMessage:currentFlowOpening ? "automation_callback_unavailable" : "flow_opening_revision_changed",processedAt:new Date()});
+        await updateWebhookEvent(webhookEvent.id, {
+          status: "IGNORED",
+          errorMessage: currentFlowOpening
+            ? "automation_callback_unavailable"
+            : "flow_opening_revision_changed",
+          processedAt: new Date(),
+        });
         continue;
       }
       const directAutomation = callbackIsAllowed
@@ -1829,15 +2246,32 @@ async function processEntry(
         : storyAutomation;
 
       if (directAutomation?.listener) {
-        await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSING" });
+        await updateWebhookEvent(webhookEvent.id, {
+          automationId: directAutomation.id,
+          status: "PROCESSING",
+        });
         const callbackRequested = Boolean(dmFlowAction && callbackIsAllowed);
         const duplicate = callbackRequested
           ? dmFlowAction?.flowId
-            ? await hasDeliveredFinalPayload(directAutomation.id, senderId, dmFlowAction.flowId)
+            ? await hasDeliveredFinalPayload(
+                directAutomation.id,
+                senderId,
+                dmFlowAction.flowId,
+              )
             : await hasDeliveredFinalPayload(directAutomation.id, senderId)
-          : await isDuplicate(directAutomation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined);
+          : await isDuplicate(
+              directAutomation.id,
+              senderId,
+              undefined,
+              parsed.ok ? parsed.data.messageMid : undefined,
+            );
         if (duplicate) {
-          await updateWebhookEvent(webhookEvent.id, { automationId: directAutomation.id, status: "PROCESSED", errorMessage: "duplicate_skipped", processedAt: new Date() });
+          await updateWebhookEvent(webhookEvent.id, {
+            automationId: directAutomation.id,
+            status: "PROCESSED",
+            errorMessage: "duplicate_skipped",
+            processedAt: new Date(),
+          });
           continue;
         }
         await processConfiguredMessageAutomation({
@@ -1847,7 +2281,9 @@ async function processEntry(
           senderProfile,
           webhookEventId: webhookEvent.id,
           messageMid: parsed.ok ? parsed.data.messageMid : undefined,
-          matchedKeyword: storyInteraction ? `story_${storyInteraction.toLowerCase()}` : dmFlowAction?.type.toLowerCase() ?? "message",
+          matchedKeyword: storyInteraction
+            ? `story_${storyInteraction.toLowerCase()}`
+            : (dmFlowAction?.type.toLowerCase() ?? "message"),
           inboundText: dmText || inboundContent,
           inboundAt,
           dmFlowAction: callbackRequested ? dmFlowAction : null,
@@ -1856,12 +2292,20 @@ async function processEntry(
       }
 
       // 1. Try to match an automation by keyword
-      const result = await findAutomationForDM(dmText, pageId, senderId, parsed.ok && isSharedPostAttachment(parsed.data.attachments));
+      const result = await findAutomationForDM(
+        dmText,
+        pageId,
+        senderId,
+        parsed.ok && isSharedPostAttachment(parsed.data.attachments),
+      );
 
       if (!result) {
-        console.log(`[webhook] inbound DM — no keyword automation matched senderId=${senderId}`, {
-          hint: "Configure a DM automation with keywords or Any incoming DM to respond automatically.",
-        });
+        console.log(
+          `[webhook] inbound DM — no keyword automation matched senderId=${senderId}`,
+          {
+            hint: "Configure a DM automation with keywords or Any incoming DM to respond automatically.",
+          },
+        );
         await updateWebhookEvent(webhookEvent.id, {
           status: "PROCESSED",
           errorMessage: INBOUND_MESSAGE_NO_AUTOMATION,
@@ -1871,14 +2315,23 @@ async function processEntry(
       }
 
       const { automation, matchedKeyword } = result;
-      console.log(`[webhook] DM match: automationId=${automation.id} keyword="${matchedKeyword}"`);
+      console.log(
+        `[webhook] DM match: automationId=${automation.id} keyword="${matchedKeyword}"`,
+      );
       await updateWebhookEvent(webhookEvent.id, {
         automationId: automation.id,
         status: "PROCESSING",
       });
 
       // 2. Duplicate check
-      if (await isDuplicate(automation.id, senderId, undefined, parsed.ok ? parsed.data.messageMid : undefined)) {
+      if (
+        await isDuplicate(
+          automation.id,
+          senderId,
+          undefined,
+          parsed.ok ? parsed.data.messageMid : undefined,
+        )
+      ) {
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DUPLICATE_SKIPPED",
@@ -1936,36 +2389,115 @@ async function processConfiguredMessageAutomation(params: {
   emailCompletionId?: string;
   dmFlowAction?: CommentDmAction | null;
 }) {
-  const { automation, pageId, senderId, webhookEventId, messageMid, matchedKeyword, inboundText, dmFlowAction = null } = params;
-  const integration = selectIntegrationForWebhook<Integrations>(automation.User?.integrations, pageId, automation.integrationId ?? undefined);
-  if (!integration || integration.id !== automation.integrationId || integration.planLocked) return;
+  const {
+    automation,
+    pageId,
+    senderId,
+    webhookEventId,
+    messageMid,
+    matchedKeyword,
+    inboundText,
+    dmFlowAction = null,
+  } = params;
+  const integration = selectIntegrationForWebhook<Integrations>(
+    automation.User?.integrations,
+    pageId,
+    automation.integrationId ?? undefined,
+  );
+  if (
+    !integration ||
+    integration.id !== automation.integrationId ||
+    integration.planLocked
+  )
+    return;
   const tokenResolution = resolveIntegrationSendToken(integration);
   const instagramBusinessAccountId = integration?.instagramId;
-  if (!automation.listener || !automation.userId || !tokenResolution.ok || !instagramBusinessAccountId) {
+  if (
+    !automation.listener ||
+    !automation.userId ||
+    !tokenResolution.ok ||
+    !instagramBusinessAccountId
+  ) {
     await updateWebhookEvent(webhookEventId, {
       automationId: automation.id,
       status: "FAILED",
-      errorMessage: !instagramBusinessAccountId ? "instagram_business_account_missing" : !automation.listener ? "listener_missing" : "token_missing",
+      errorMessage: !instagramBusinessAccountId
+        ? "instagram_business_account_missing"
+        : !automation.listener
+          ? "listener_missing"
+          : "token_missing",
       processedAt: new Date(),
     });
     return;
   }
 
   if (!dmFlowAction && !params.emailCompletionId) {
-    await recordAutomationHit({ automationId: automation.id, eventKey: `message:${messageMid ?? webhookEventId}`, recipientIgId: senderId, source: matchedKeyword.startsWith("story_") ? "STORY" : "DM" });
+    await recordAutomationHit({
+      automationId: automation.id,
+      eventKey: `message:${messageMid ?? webhookEventId}`,
+      recipientIgId: senderId,
+      source: matchedKeyword.startsWith("story_") ? "STORY" : "DM",
+    });
   }
-  if (automation.followGateRequired || readFlow(automation.listener.flowDefinition)?.nodes.some(n=>n.kind === "condition" && n.field === "_followsBusiness")) {
-    const followProfile = params.senderProfile ?? await getInstagramRecipientProfile({ token: tokenResolution.token, recipientId: senderId });
+  if (
+    ["FOLLOWED", "UNFOLLOWED"].includes(
+      automation.listener.followUpCondition,
+    ) ||
+    automation.followGateRequired ||
+    readFlow(automation.listener.flowDefinition)?.nodes.some(
+      (n) => n.kind === "condition" && n.field === "_followsBusiness",
+    )
+  ) {
+    const followProfile =
+      params.senderProfile ??
+      (await getInstagramRecipientProfile({
+        token: tokenResolution.token,
+        recipientId: senderId,
+      }));
     params.senderProfile = followProfile;
-    await observeAutomationFollow({ integrationId: integration.id, automationId: automation.id, recipientIgId: senderId, followsBusiness: followProfile?.followsBusiness });
+    await observeAutomationFollow({
+      integrationId: integration.id,
+      automationId: automation.id,
+      recipientIgId: senderId,
+      followsBusiness: followProfile?.followsBusiness,
+    });
   }
 
   if (automation.listener.flowDefinition) {
     const graph = readFlow(automation.listener.flowDefinition);
-    const entry = graph?.nodes.find(node=>node.id===graph.entry);
-    const openingEntry = dmFlowAction?.type === "OPENING_CONTINUE" && entry?.kind === "question" && entry.options.length === 1 && entry.text === automation.listener.openingDmText && entry.options[0].label === automation.listener.openingDmButtonText ? entry : null;
-    await processAutomationFlow({ scheduleWake: waitUntil, integrationId: integration.id, recipientIgId: senderId, text: inboundText, inboundAt: params.inboundAt, eventId: messageMid ?? webhookEventId, automationId: automation.id, startEventId: dmFlowAction?.flowId, ...(openingEntry ? {startNodeId:openingEntry.options[0].next,initialValues:{[openingEntry.field]:openingEntry.options[0].label}} : {}) });
-    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "PROCESSED", errorMessage: "custom_flow_handled", processedAt: new Date() });
+    const entry = graph?.nodes.find((node) => node.id === graph.entry);
+    const openingEntry =
+      dmFlowAction?.type === "OPENING_CONTINUE" &&
+      entry?.kind === "question" &&
+      entry.options.length === 1 &&
+      entry.text === automation.listener.openingDmText &&
+      entry.options[0].label === automation.listener.openingDmButtonText
+        ? entry
+        : null;
+    await processAutomationFlow({
+      scheduleWake: waitUntil,
+      integrationId: integration.id,
+      recipientIgId: senderId,
+      text: inboundText,
+      inboundAt: params.inboundAt,
+      eventId: messageMid ?? webhookEventId,
+      automationId: automation.id,
+      startEventId: dmFlowAction?.flowId,
+      ...(openingEntry
+        ? {
+            startNodeId: openingEntry.options[0].next,
+            initialValues: {
+              [openingEntry.field]: openingEntry.options[0].label,
+            },
+          }
+        : {}),
+    });
+    await updateWebhookEvent(webhookEventId, {
+      automationId: automation.id,
+      status: "PROCESSED",
+      errorMessage: "custom_flow_handled",
+      processedAt: new Date(),
+    });
     return;
   }
 
@@ -1976,64 +2508,132 @@ async function processConfiguredMessageAutomation(params: {
       callbackAction: dmFlowAction?.type,
       reason: usageAllowed.reason,
     });
-    await createAutomationEvent({ automationId: automation.id, eventType: "DM_SKIPPED", igUserId: senderId, keyword: matchedKeyword, meta: { reason: usageAllowed.reason } });
-    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "IGNORED", errorMessage: usageAllowed.reason, processedAt: new Date() });
+    await createAutomationEvent({
+      automationId: automation.id,
+      eventType: "DM_SKIPPED",
+      igUserId: senderId,
+      keyword: matchedKeyword,
+      meta: { reason: usageAllowed.reason },
+    });
+    await updateWebhookEvent(webhookEventId, {
+      automationId: automation.id,
+      status: "IGNORED",
+      errorMessage: usageAllowed.reason,
+      processedAt: new Date(),
+    });
     return;
   }
 
   const token = tokenResolution.token;
-  const profile = params.senderProfile ?? (automation.followGateRequired
-    ? await getInstagramRecipientProfile({ token, recipientId: senderId })
-    : null);
-  const needsFollowRequest = automation.followGateRequired && profile?.followsBusiness !== true;
+  const profile =
+    params.senderProfile ??
+    (automation.followGateRequired
+      ? await getInstagramRecipientProfile({ token, recipientId: senderId })
+      : null);
+  const needsFollowRequest =
+    automation.followGateRequired && profile?.followsBusiness !== true;
   const flowId = dmFlowAction?.flowId ?? messageMid ?? webhookEventId;
   let emailRequestId: string | undefined;
-  if (!needsFollowRequest && automation.source === "COMMENT" && automation.listener.emailCaptureEnabled && !params.emailCompletionId) {
-    if (!params.inboundAt || !messagingWindowOpen(params.inboundAt)) {
-      await updateWebhookEvent(webhookEventId, { status: "IGNORED", errorMessage: "email_request_window_expired", processedAt: new Date() });
-      return;
+  let captureKind: "EMAIL" | "PHONE" = "EMAIL";
+  if (!needsFollowRequest) {
+    // Complete the claimed reply before moving to the next field. Replays cannot
+    // consume it again; SKIP also marks only this field complete for this journey.
+    if (params.emailCompletionId)
+      await finishEngagementJob(params.emailCompletionId, "COMPLETED");
+    for (const kind of ["EMAIL", "PHONE"] as const) {
+      if (
+        !(kind === "EMAIL"
+          ? automation.listener.emailCaptureEnabled
+          : automation.listener.phoneCaptureEnabled)
+      )
+        continue;
+      if (!params.inboundAt || !messagingWindowOpen(params.inboundAt)) return;
+      const step = await beginEmailRequest(
+        automation.id,
+        senderId,
+        flowId,
+        params.inboundAt,
+        kind,
+      );
+      if (step.kind === "waiting") return;
+      if (step.kind === "request") {
+        emailRequestId = step.jobId;
+        captureKind = kind;
+        break;
+      }
     }
-    const emailStep = await beginEmailRequest(automation.id, senderId, flowId, params.inboundAt);
-    if (emailStep.kind === "waiting") {
-      await updateWebhookEvent(webhookEventId, { status: "PROCESSED", errorMessage: "email_request_pending", processedAt: new Date() });
-      return;
-    }
-    if (emailStep.kind === "request") emailRequestId = emailStep.jobId;
   }
   const needsEmailRequest = Boolean(emailRequestId);
   const intermediateStep = needsFollowRequest || needsEmailRequest;
   const quickReplies = Array.isArray(automation.listener.quickReplies)
-    ? automation.listener.quickReplies.filter((item: unknown): item is string => typeof item === "string")
+    ? automation.listener.quickReplies.filter(
+        (item: unknown): item is string => typeof item === "string",
+      )
     : [];
   const linkButtons = readLinkButtons(
     automation.listener.quickReplies,
     automation.listener.ctaButtonTitle,
-    automation.listener.ctaLink
+    automation.listener.ctaLink,
   );
   let aiGenerated = false;
   let aiLinkButtons: Array<{ label: string; url: string }> = [];
-  let payloadMessage = resolveTemplate(personalizeUsername(selectMessageVariation(automation.listener.prompt, automation.listener.messageVariations, flowId), profile?.username), {
-        username: profile?.username ? `@${profile.username}` : "",
-        first_name: profile?.name?.split(/\s+/)[0] ?? "",
-        keyword: matchedKeyword,
-        link: automation.listener.ctaLink ?? "",
-      });
-  const conversationConfig = readAiConversation(automation.listener.aiConversation);
-  let conversationTurn: Awaited<ReturnType<typeof prepareAiConversationTurn>> = null;
+  let payloadMessage = resolveTemplate(
+    personalizeUsername(
+      selectMessageVariation(
+        automation.listener.prompt,
+        automation.listener.messageVariations,
+        flowId,
+      ),
+      profile?.username,
+    ),
+    {
+      username: profile?.username ? `@${profile.username}` : "",
+      first_name: profile?.name?.split(/\s+/)[0] ?? "",
+      keyword: matchedKeyword,
+      link: automation.listener.ctaLink ?? "",
+    },
+  );
+  const conversationConfig = readAiConversation(
+    automation.listener.aiConversation,
+  );
+  let conversationTurn: Awaited<ReturnType<typeof prepareAiConversationTurn>> =
+    null;
   if (conversationConfig && !dmFlowAction) {
-    conversationTurn = await prepareAiConversationTurn({ automationId: automation.id, userId: automation.userId, integrationId: integration.id, recipientIgId: senderId, message: inboundText, inboundAt: params.inboundAt, config: conversationConfig });
+    conversationTurn = await prepareAiConversationTurn({
+      automationId: automation.id,
+      userId: automation.userId,
+      integrationId: integration.id,
+      recipientIgId: senderId,
+      message: inboundText,
+      inboundAt: params.inboundAt,
+      config: conversationConfig,
+    });
     if (!conversationTurn) {
-      await updateWebhookEvent(webhookEventId, { status: "IGNORED", errorMessage: "ai_conversation_paused_busy_or_quota", processedAt: new Date() });
+      await updateWebhookEvent(webhookEventId, {
+        status: "IGNORED",
+        errorMessage: "ai_conversation_paused_busy_or_quota",
+        processedAt: new Date(),
+      });
       return;
     }
     payloadMessage = conversationTurn.reply;
     aiGenerated = true;
-    aiLinkButtons = conversationTurn.linkButton ? [conversationTurn.linkButton] : [];
+    aiLinkButtons = conversationTurn.linkButton
+      ? [conversationTurn.linkButton]
+      : [];
   }
-  if (!conversationConfig && automation.listener.aiDmReplyEnabled === true && !dmFlowAction) {
+  if (
+    !conversationConfig &&
+    automation.listener.aiDmReplyEnabled === true &&
+    !dmFlowAction
+  ) {
     try {
-      const workspace = await getAiWorkspaceRuntimeConfig(automation.userId, automation.integrationId);
-      { // Each automation opts into AI; shared workspace switches are not prerequisites.
+      const workspace = await getAiWorkspaceRuntimeConfig(
+        automation.userId,
+        automation.integrationId,
+      );
+      {
+        // Each automation opts into AI; shared workspace switches are not prerequisites.
         const quota = await reserveAiReplyQuota({
           userId: automation.userId,
           automationId: automation.id,
@@ -2051,7 +2651,10 @@ async function processConfiguredMessageAutomation(params: {
             payloadMessage = generated.reply;
             aiLinkButtons = generated.linkButton ? [generated.linkButton] : [];
             aiGenerated = true;
-            await completeAiReplyReservation(quota.reservationId, { channel: "DM", outcome: "generated" });
+            await completeAiReplyReservation(quota.reservationId, {
+              channel: "DM",
+              outcome: "generated",
+            });
           } else {
             await releaseAiReplyReservation(quota.reservationId);
           }
@@ -2068,19 +2671,32 @@ async function processConfiguredMessageAutomation(params: {
     }
   }
   const resolvedMessage = needsFollowRequest
-    ? resolveTemplate(resolveFollowRequestDmText(automation.listener.followRequestDmText), {
-        username: profile?.username ? `@${profile.username}` : "",
-        first_name: profile?.name?.split(/\s+/)[0] ?? "",
-        keyword: matchedKeyword,
-        link: automation.listener.ctaLink ?? "",
-      })
-    : needsEmailRequest ? emailRequestMessage(automation.listener.emailCapturePrompt) : payloadMessage;
-  const followPromptState = dmFlowAction?.type === "FOLLOW_CHECK"
-    ? typeof profile?.followsBusiness === "boolean"
-      ? "NOT_FOLLOWING" as const
-      : "UNAVAILABLE" as const
-    : "INITIAL" as const;
-  const followVerificationButtonTitle = resolveFollowRequestButtonText(automation.listener.followRequestButtonText);
+    ? resolveTemplate(
+        resolveFollowRequestDmText(automation.listener.followRequestDmText),
+        {
+          username: profile?.username ? `@${profile.username}` : "",
+          first_name: profile?.name?.split(/\s+/)[0] ?? "",
+          keyword: matchedKeyword,
+          link: automation.listener.ctaLink ?? "",
+        },
+      )
+    : needsEmailRequest
+      ? captureKind === "PHONE"
+        ? `${automation.listener.phoneCapturePrompt || "What’s your phone number, including country code?"}\n\nReply SKIP to continue without sharing your phone number, or STOP to cancel.`
+        : emailRequestMessage(
+            automation.listener.emailCapturePrompt ||
+              "What’s your email address?",
+          )
+      : payloadMessage;
+  const followPromptState =
+    dmFlowAction?.type === "FOLLOW_CHECK"
+      ? typeof profile?.followsBusiness === "boolean"
+        ? ("NOT_FOLLOWING" as const)
+        : ("UNAVAILABLE" as const)
+      : ("INITIAL" as const);
+  const followVerificationButtonTitle = resolveFollowRequestButtonText(
+    automation.listener.followRequestButtonText,
+  );
   const fullWidthCallbacksReady = needsFollowRequest
     ? await ensureInstagramButtonCallbacks(integration?.id, token)
     : false;
@@ -2092,39 +2708,89 @@ async function processConfiguredMessageAutomation(params: {
     recipientId: senderId,
     automationId: automation.id,
     message: resolvedMessage,
-    responseFormat: intermediateStep ? "TEXT" : aiGenerated ? (aiLinkButtons.length ? "LINK" : "TEXT") : automation.listener.responseFormat,
-    quickReplies: intermediateStep || aiGenerated ? [] : readLegacyQuickReplies(quickReplies),
-    linkButtons: intermediateStep ? [] : aiGenerated ? aiLinkButtons : linkButtons,
-    ctaTitle: intermediateStep || aiGenerated ? undefined : automation.listener.ctaButtonTitle,
-    ctaUrl: intermediateStep || aiGenerated ? undefined : automation.listener.ctaLink,
-    cardSubtitle: intermediateStep || aiGenerated ? undefined : automation.listener.cardSubtitle,
-    mediaUrl: intermediateStep || aiGenerated ? undefined : automation.listener.mediaUrl,
-    mediaType: intermediateStep || aiGenerated ? undefined : automation.listener.mediaType,
+    responseFormat: intermediateStep
+      ? "TEXT"
+      : aiGenerated
+        ? aiLinkButtons.length
+          ? "LINK"
+          : "TEXT"
+        : automation.listener.responseFormat,
+    quickReplies:
+      intermediateStep || aiGenerated
+        ? []
+        : readLegacyQuickReplies(quickReplies),
+    linkButtons: intermediateStep
+      ? []
+      : aiGenerated
+        ? aiLinkButtons
+        : linkButtons,
+    ctaTitle:
+      intermediateStep || aiGenerated
+        ? undefined
+        : automation.listener.ctaButtonTitle,
+    ctaUrl:
+      intermediateStep || aiGenerated ? undefined : automation.listener.ctaLink,
+    cardSubtitle:
+      intermediateStep || aiGenerated
+        ? undefined
+        : automation.listener.cardSubtitle,
+    mediaUrl:
+      intermediateStep || aiGenerated
+        ? undefined
+        : automation.listener.mediaUrl,
+    mediaType:
+      intermediateStep || aiGenerated
+        ? undefined
+        : automation.listener.mediaType,
     followGatePrompt: needsFollowRequest
       ? {
           username: integration?.instagramUsername,
           state: followPromptState,
-          message: followPromptState === "INITIAL" ? resolvedMessage : undefined,
+          message:
+            followPromptState === "INITIAL" ? resolvedMessage : undefined,
           verificationButtonTitle: followVerificationButtonTitle,
-          verificationPayload: followRequestActionPayload(automation.id, dmFlowAction?.flowId),
+          verificationPayload: followRequestActionPayload(
+            automation.id,
+            dmFlowAction?.flowId,
+          ),
         }
       : undefined,
     postbackButton: undefined,
   });
 
   const sent = result.ok;
-  if (conversationTurn) await finishAiConversationTurn(conversationTurn, { message: inboundText, sent, automationId: automation.id, recipientIgId: senderId })
-    .catch(() => console.error("[ai-conversation] session persistence failed", { automationId: automation.id }));
-  const sentMarker = needsFollowRequest ? "follow_request_dm_sent" : needsEmailRequest ? "email_request_dm_sent" : "final_dm_payload_sent";
-  if (emailRequestId) await finishEngagementJob(emailRequestId, sent ? "WAITING" : "FAILED");
-  if (params.emailCompletionId) await finishEngagementJob(params.emailCompletionId, sent && !intermediateStep ? "COMPLETED" : "FAILED");
+  if (conversationTurn)
+    await finishAiConversationTurn(conversationTurn, {
+      message: inboundText,
+      sent,
+      automationId: automation.id,
+      recipientIgId: senderId,
+    }).catch(() =>
+      console.error("[ai-conversation] session persistence failed", {
+        automationId: automation.id,
+      }),
+    );
+  const sentMarker = needsFollowRequest
+    ? "follow_request_dm_sent"
+    : needsEmailRequest
+      ? "email_request_dm_sent"
+      : "final_dm_payload_sent";
+  if (emailRequestId)
+    await finishEngagementJob(emailRequestId, sent ? "WAITING" : "FAILED");
+
   const errorMessage = result.ok
     ? undefined
-    : [result.metaError.status, result.metaError.code, result.metaError.message].filter(Boolean).join(": ") || "meta_api_error";
+    : [result.metaError.status, result.metaError.code, result.metaError.message]
+        .filter(Boolean)
+        .join(": ") || "meta_api_error";
   console.log("[webhook] configured DM delivery completed", {
     automationId: automation.id,
     callbackAction: dmFlowAction?.type,
-    step: needsFollowRequest ? "FOLLOW_REQUEST" : needsEmailRequest ? "EMAIL_REQUEST" : "FINAL",
+    step: needsFollowRequest
+      ? "FOLLOW_REQUEST"
+      : needsEmailRequest
+        ? "EMAIL_REQUEST"
+        : "FINAL",
     sent,
     messageIdCount: result.ok ? result.messageIds.length : 0,
     error: errorMessage,
@@ -2143,10 +2809,20 @@ async function processConfiguredMessageAutomation(params: {
     igUserId: senderId,
     keyword: matchedKeyword,
     meta: {
-      responseFormat: needsFollowRequest ? "FOLLOW_REQUEST" : needsEmailRequest ? "EMAIL_REQUEST" : aiGenerated ? (aiLinkButtons.length ? "AI_LINK" : "AI_TEXT") : automation.listener.responseFormat,
+      responseFormat: needsFollowRequest
+        ? "FOLLOW_REQUEST"
+        : needsEmailRequest
+          ? "EMAIL_REQUEST"
+          : aiGenerated
+            ? aiLinkButtons.length
+              ? "AI_LINK"
+              : "AI_TEXT"
+            : automation.listener.responseFormat,
       dmFlowAction: dmFlowAction?.type,
       followRequired: Boolean(automation.followGateRequired),
-      followVerified: automation.followGateRequired ? profile?.followsBusiness === true : undefined,
+      followVerified: automation.followGateRequired
+        ? profile?.followsBusiness === true
+        : undefined,
       error: errorMessage,
     },
   });
@@ -2161,11 +2837,36 @@ async function processConfiguredMessageAutomation(params: {
         automationId: automation.id,
         content: resolvedMessage,
         metaMessageId: result.messageIds[0] || undefined,
-      }).catch((error) => console.warn("[inbox] outbound persistence failed", { message: error instanceof Error ? error.message : String(error) })),
+      }).catch((error) =>
+        console.warn("[inbox] outbound persistence failed", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
+      ),
     ]);
   }
-  if (sent && !intermediateStep && automation.source === "COMMENT" && automation.listener.followUpEnabled && params.inboundAt) {
-    await scheduleFollowUp(automation.id, senderId, flowId, params.inboundAt, automation.listener.followUpDelayMinutes);
+  if (
+    sent &&
+    !intermediateStep &&
+    automation.listener.followUpEnabled &&
+    params.inboundAt
+  ) {
+    const receiptsReady =
+      !["SEEN", "NOT_SEEN", "REACTED"].includes(
+        automation.listener.followUpCondition,
+      ) || (await ensureInstagramButtonCallbacks(integration.id, token));
+    if (receiptsReady)
+      await scheduleFollowUp(
+        automation.id,
+        senderId,
+        flowId,
+        params.inboundAt,
+        automation.listener.followUpDelayMinutes,
+        {
+          messageId: result.messageIds[0],
+          condition: automation.listener.followUpCondition,
+          baselineFollows: params.senderProfile?.followsBusiness,
+        },
+      );
   }
   await updateWebhookEvent(webhookEventId, {
     automationId: automation.id,
@@ -2181,7 +2882,7 @@ function ok() {
 
 async function readBodyWithLimit(
   req: NextRequest,
-  maxBytes: number
+  maxBytes: number,
 ): Promise<
   | { ok: true; rawBody: string; bytesRead: number }
   | { ok: false; reason: string; bytesRead: number }
@@ -2219,11 +2920,12 @@ async function readBodyWithLimit(
 
   return {
     ok: true,
-    rawBody: Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8"),
+    rawBody: Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString(
+      "utf8",
+    ),
     bytesRead,
   };
 }
-
 
 function classifyWebhookEnvelope(body: any) {
   // Meta Test button sends entry.id="0" for both object=page and object=instagram
@@ -2261,7 +2963,7 @@ function safeWebhookMetadata(
   signatureValid: boolean,
   entry?: any,
   changeItem?: any,
-  requestMeta?: ReturnType<typeof getRequestMetadata>
+  requestMeta?: ReturnType<typeof getRequestMetadata>,
 ) {
   const entries = Array.isArray(envelope?.entry) ? envelope.entry : [];
   const changes = Array.isArray(entry?.changes) ? entry.changes : [];
@@ -2286,15 +2988,17 @@ function safeWebhookMetadata(
     mediaId: value?.media?.id,
     fromId: value?.from?.id,
     igAccountId: entry?.id,
-    appearsSynthetic: entry ? isSyntheticWebhook(envelope, entry, changeItem) : false,
+    appearsSynthetic: entry
+      ? isSyntheticWebhook(envelope, entry, changeItem)
+      : false,
     signatureValid,
     processingStatus: "RECEIVED",
   };
 }
 
-function parseJsonSafely(rawBody: string):
-  | { ok: true; body: any }
-  | { ok: false; error: string } {
+function parseJsonSafely(
+  rawBody: string,
+): { ok: true; body: any } | { ok: false; error: string } {
   try {
     return { ok: true, body: JSON.parse(rawBody) };
   } catch (error) {
@@ -2308,7 +3012,7 @@ function parseJsonSafely(rawBody: string):
 function getRequestMetadata(
   req: NextRequest,
   signature: string | null,
-  signatureValid: boolean
+  signatureValid: boolean,
 ) {
   return {
     timestamp: new Date().toISOString(),
@@ -2344,7 +3048,10 @@ function isRateLimited(key: string) {
 }
 
 function pruneRateLimitBuckets(now: number) {
-  if (now < nextRateLimitCleanupAt && rateLimitBuckets.size <= WEBHOOK_RATE_LIMIT_MAX_BUCKETS) {
+  if (
+    now < nextRateLimitCleanupAt &&
+    rateLimitBuckets.size <= WEBHOOK_RATE_LIMIT_MAX_BUCKETS
+  ) {
     return;
   }
 
@@ -2361,28 +3068,52 @@ function pruneRateLimitBuckets(now: number) {
   nextRateLimitCleanupAt = now + WEBHOOK_RATE_LIMIT_WINDOW_MS;
 }
 
-function selectIntegrationForWebhook<T extends {
-  id?: string | null;
-  pageId?: string | null;
-  webhookAccountId?: string | null;
-  instagramId?: string | null;
-  businessId?: string | null;
-  instagramUsername?: string | null;
-}>(integrations: T[] | undefined, entryId: string, matchedIntegrationId?: string): T | undefined {
+function selectIntegrationForWebhook<
+  T extends {
+    id?: string | null;
+    pageId?: string | null;
+    webhookAccountId?: string | null;
+    instagramId?: string | null;
+    businessId?: string | null;
+    instagramUsername?: string | null;
+  },
+>(
+  integrations: T[] | undefined,
+  entryId: string,
+  matchedIntegrationId?: string,
+): T | undefined {
   const byId = matchedIntegrationId
-    ? integrations?.find((integration) => integration.id === matchedIntegrationId)
+    ? integrations?.find(
+        (integration) => integration.id === matchedIntegrationId,
+      )
     : undefined;
-  if (matchedIntegrationId) return byId && [byId.webhookAccountId, byId.instagramId, byId.businessId, byId.pageId].some((id) => id && String(id).trim() === String(entryId).trim()) ? byId : undefined;
+  if (matchedIntegrationId)
+    return byId &&
+      [
+        byId.webhookAccountId,
+        byId.instagramId,
+        byId.businessId,
+        byId.pageId,
+      ].some((id) => id && String(id).trim() === String(entryId).trim())
+      ? byId
+      : undefined;
 
   return integrations?.find((integration) =>
-    [integration.webhookAccountId, integration.instagramId, integration.businessId, integration.pageId]
+    [
+      integration.webhookAccountId,
+      integration.instagramId,
+      integration.businessId,
+      integration.pageId,
+    ]
       .filter(Boolean)
-      .some((id) => String(id).trim() === String(entryId).trim())
+      .some((id) => String(id).trim() === String(entryId).trim()),
   );
 }
 
 function normalizeAccountUsername(value?: string | null) {
-  return value ? String(value).trim().replace(/^@+/, "").toLocaleLowerCase() : "";
+  return value
+    ? String(value).trim().replace(/^@+/, "").toLocaleLowerCase()
+    : "";
 }
 
 function normalizeAccountId(value?: string | null) {
@@ -2406,16 +3137,28 @@ function getSelfCommentReason(input: {
   const commenterUsername = normalizeAccountUsername(input.commenterUsername);
   const igAccountId = normalizeAccountId(input.igAccountId);
   const diagnostics =
-    input.diagnostics && typeof input.diagnostics === "object" && !Array.isArray(input.diagnostics)
+    input.diagnostics &&
+    typeof input.diagnostics === "object" &&
+    !Array.isArray(input.diagnostics)
       ? (input.diagnostics as Record<string, unknown>)
       : {};
 
-  const integrationInstagramId = normalizeAccountId(input.integration?.instagramId);
-  const integrationWebhookAccountId = normalizeAccountId(input.integration?.webhookAccountId);
+  const integrationInstagramId = normalizeAccountId(
+    input.integration?.instagramId,
+  );
+  const integrationWebhookAccountId = normalizeAccountId(
+    input.integration?.webhookAccountId,
+  );
   const integrationPageId = normalizeAccountId(input.integration?.pageId);
-  const integrationBusinessId = normalizeAccountId(input.integration?.businessId);
-  const diagnosticInstagramId = normalizeAccountId(diagnostics.matchedIntegrationInstagramId as string | undefined);
-  const diagnosticWebhookId = normalizeAccountId(diagnostics.matchedIntegrationWebhookAccountId as string | undefined);
+  const integrationBusinessId = normalizeAccountId(
+    input.integration?.businessId,
+  );
+  const diagnosticInstagramId = normalizeAccountId(
+    diagnostics.matchedIntegrationInstagramId as string | undefined,
+  );
+  const diagnosticWebhookId = normalizeAccountId(
+    diagnostics.matchedIntegrationWebhookAccountId as string | undefined,
+  );
 
   const ownIds = [
     integrationInstagramId,
@@ -2427,11 +3170,18 @@ function getSelfCommentReason(input: {
     igAccountId,
   ].filter(Boolean);
 
-  if (commenterId && ownIds.includes(commenterId)) return "commenter_id_matches_connected_account";
+  if (commenterId && ownIds.includes(commenterId))
+    return "commenter_id_matches_connected_account";
 
-  const integrationUsername = normalizeAccountUsername(input.integration?.instagramUsername);
-  const diagnosticUsername = normalizeAccountUsername(diagnostics.matchedIntegrationUsername as string | undefined);
-  const ownUsernames = [integrationUsername, diagnosticUsername].filter(Boolean);
+  const integrationUsername = normalizeAccountUsername(
+    input.integration?.instagramUsername,
+  );
+  const diagnosticUsername = normalizeAccountUsername(
+    diagnostics.matchedIntegrationUsername as string | undefined,
+  );
+  const ownUsernames = [integrationUsername, diagnosticUsername].filter(
+    Boolean,
+  );
   if (commenterUsername && ownUsernames.includes(commenterUsername)) {
     return "commenter_username_matches_connected_account";
   }
@@ -2444,12 +3194,15 @@ function hashNormalizedText(value: string) {
 }
 
 function extractMetaCreatedObjectId(response: unknown) {
-  const data = response && typeof response === "object" && "data" in response
-    ? (response as { data?: unknown }).data
-    : undefined;
+  const data =
+    response && typeof response === "object" && "data" in response
+      ? (response as { data?: unknown }).data
+      : undefined;
   if (!data || typeof data !== "object") return undefined;
   const record = data as Record<string, unknown>;
-  return typeof record.id === "string" && record.id.trim() ? record.id.trim() : undefined;
+  return typeof record.id === "string" && record.id.trim()
+    ? record.id.trim()
+    : undefined;
 }
 
 function classifyPublicReplyFailureReason(errorMessage?: string) {
@@ -2474,7 +3227,10 @@ function classifyPublicReplyFailureReason(errorMessage?: string) {
   return PUBLIC_REPLY_FAILED_UNKNOWN;
 }
 
-async function withRetry<T>(operation: () => Promise<T>, attempts = SEND_RETRY_ATTEMPTS): Promise<T> {
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  attempts = SEND_RETRY_ATTEMPTS,
+): Promise<T> {
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -2483,7 +3239,8 @@ async function withRetry<T>(operation: () => Promise<T>, attempts = SEND_RETRY_A
     } catch (error) {
       lastError = error;
       const status = getSafeMetaError(error).status;
-      const shouldRetry = status === 429 || (typeof status === "number" && status >= 500);
+      const shouldRetry =
+        status === 429 || (typeof status === "number" && status >= 500);
       if (!shouldRetry || attempt === attempts) break;
       await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
     }
