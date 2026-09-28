@@ -9,7 +9,6 @@ import {
   GitBranch,
   Layers3,
   LayoutGrid,
-  Megaphone,
   MessageCircle,
   Search,
   Sparkles,
@@ -269,12 +268,6 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
             </div>
             <div className="mt-6 space-y-0.5 border-t border-black/[.07] pt-3 dark:border-white/10">
               {[
-                {
-                  Icon: Megaphone,
-                  title: "Ad automation",
-                  sub: "replies when someone comments on your ad",
-                  run: () => go("comment", "&ad=1"),
-                },
                 {
                   Icon: Layers3,
                   title: "Set up a conversation starter",
