@@ -49,7 +49,7 @@ export default async function AutomationsPage({ params }: Props) {
     <div className="relative flex flex-col gap-3 px-1 py-3 text-slate-950 dark:text-slate-50 sm:gap-5 sm:p-6 lg:p-8">
       <div className="ap3k-page-header">
         <div>
-          <p className="ap3k-kicker"><UiText>{"Instagram automation"}</UiText></p>
+          <p className="ap3k-kicker hidden sm:block"><UiText>{"Instagram automation"}</UiText></p>
           <div className="mt-1 flex items-baseline gap-2">
             <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Automations"}</UiText></h1>
             {automations.length > 0 ? (
@@ -66,9 +66,9 @@ export default async function AutomationsPage({ params }: Props) {
         </div>
         <Link
           href={`/dashboard/${params.slug}/automation/new`}
-          className="ap3k-gradient-button inline-flex min-h-11 w-full items-center justify-center px-5 text-sm sm:w-auto"
+          className="ap3k-gradient-button inline-flex min-h-10 w-auto items-center justify-center self-start px-4 text-xs sm:min-h-11 sm:px-5 sm:text-sm"
         >
-          <span className="sm:hidden"><UiText>{"+ New automation"}</UiText></span>
+          <span className="sm:hidden"><UiText>{"+ New"}</UiText></span>
           <span className="hidden sm:inline"><UiText>{"+ Create Automation"}</UiText></span>
         </Link>
       </div>
