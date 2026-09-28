@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-const processQueue = vi.hoisted(() => vi.fn(async () => ({ attempted: 1, sent: 1 })));
-vi.mock("@/lib/email/owner-alerts", () => ({ processOwnerAlertQueue: processQueue }));
+const { processQueue, enqueueOwnerAlert } = vi.hoisted(() => ({
+  processQueue: vi.fn(async () => ({ attempted: 1, sent: 1 })),
+  enqueueOwnerAlert: vi.fn(async () => null),
+}));
+vi.mock("@/lib/email/owner-alerts", () => ({
+  processOwnerAlertQueue: processQueue,
+  enqueueOwnerAlert,
+}));
 import { GET } from "./route";
 afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 describe("owner alert worker authorization", () => {
