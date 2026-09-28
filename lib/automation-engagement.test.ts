@@ -19,6 +19,7 @@ const db = vi.hoisted(() => ({
 const profile = vi.hoisted(() => vi.fn());
 const send = vi.hoisted(() => vi.fn());
 const quota = vi.hoisted(() => vi.fn());
+vi.mock("./automation-tracking", () => ({ observeAutomationFollow: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ client: db }));
 vi.mock("@/actions/webhook/queries", () => ({
   createMessageLog: vi.fn(),
@@ -68,7 +69,7 @@ beforeEach(() => {
     userId: "u1",
     active: true,
     sendPrivateDm: true,
-    User: { status: "ACTIVE" },
+    User: { status: "ACTIVE", subscription: { plan: "PRO" } },
     integration: { id: "i1", instagramId: "ig1", status: "CONNECTED" },
     listener: {
       followUpEnabled: true,
@@ -84,6 +85,19 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 describe("durable engagement delivery", () => {
+  it("cancels scheduled follow-ups after a downgrade to Free", async () => {
+    const automation = await db.automation.findUnique();
+    db.automation.findUnique.mockResolvedValue({
+      ...automation,
+      User: { status: "ACTIVE", subscription: { plan: "FREE" } },
+    });
+    await processAutomationFollowUps(now);
+    expect(send).not.toHaveBeenCalled();
+    expect(db.automationEngagementJob.update).toHaveBeenCalledWith({
+      where: { id: job.id },
+      data: { status: "CANCELLED" },
+    });
+  });
   it("does not advertise a scheduler with an expired or missing heartbeat", async () => {
     db.automationSchedulerHeartbeat.findUnique.mockResolvedValue(null);
     expect(await followUpSchedulerReady()).toBe(false);

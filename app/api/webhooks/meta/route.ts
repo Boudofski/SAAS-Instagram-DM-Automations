@@ -2440,6 +2440,9 @@ async function processConfiguredMessageAutomation(params: {
     });
   }
   if (
+    ["FOLLOWED", "UNFOLLOWED"].includes(
+      automation.listener.followUpCondition,
+    ) ||
     automation.followGateRequired ||
     readFlow(automation.listener.flowDefinition)?.nodes.some(
       (n) => n.kind === "condition" && n.field === "_followsBusiness",
@@ -2847,25 +2850,23 @@ async function processConfiguredMessageAutomation(params: {
     automation.listener.followUpEnabled &&
     params.inboundAt
   ) {
-    if (
-      ["SEEN", "NOT_SEEN", "REACTED"].includes(
+    const receiptsReady =
+      !["SEEN", "NOT_SEEN", "REACTED"].includes(
         automation.listener.followUpCondition,
-      ) &&
-      !(await ensureInstagramButtonCallbacks(integration.id, token))
-    )
-      return;
-    await scheduleFollowUp(
-      automation.id,
-      senderId,
-      flowId,
-      params.inboundAt,
-      automation.listener.followUpDelayMinutes,
-      {
-        messageId: result.messageIds[0],
-        condition: automation.listener.followUpCondition,
-        baselineFollows: params.senderProfile?.followsBusiness,
-      },
-    );
+      ) || (await ensureInstagramButtonCallbacks(integration.id, token));
+    if (receiptsReady)
+      await scheduleFollowUp(
+        automation.id,
+        senderId,
+        flowId,
+        params.inboundAt,
+        automation.listener.followUpDelayMinutes,
+        {
+          messageId: result.messageIds[0],
+          condition: automation.listener.followUpCondition,
+          baselineFollows: params.senderProfile?.followsBusiness,
+        },
+      );
   }
   await updateWebhookEvent(webhookEventId, {
     automationId: automation.id,

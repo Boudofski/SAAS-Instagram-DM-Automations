@@ -1,3 +1,4 @@
+import { observeAutomationFollow } from "./automation-tracking";
 import { client } from "@/lib/prisma";
 import { canSendStaticReply } from "@/actions/usage/queries";
 import {
@@ -92,7 +93,10 @@ export async function takeEmailReply(
         listener: {
           OR: [{ emailCaptureEnabled: true }, { phoneCaptureEnabled: true }],
         },
-        User: { status: { not: "SUSPENDED" } },
+        User: {
+          status: { not: "SUSPENDED" },
+          subscription: { plan: { in: ["PRO", "BUSINESS"] } },
+        },
         integration: {
           status: "CONNECTED",
           reconnectRequired: false,
@@ -323,7 +327,9 @@ export async function processAutomationFollowUps(now = new Date()) {
         include: {
           listener: true,
           integration: true,
-          User: { select: { status: true } },
+          User: {
+            select: { status: true, subscription: { select: { plan: true } } },
+          },
         },
       });
       const integration = automation?.integration;
@@ -344,6 +350,9 @@ export async function processAutomationFollowUps(now = new Date()) {
         !automation.archivedAt &&
         automation.sendPrivateDm &&
         automation.User?.status !== "SUSPENDED" &&
+        ["PRO", "BUSINESS"].includes(
+          automation.User?.subscription?.plan ?? "FREE",
+        ) &&
         listener?.followUpEnabled &&
         listener.followUpMessage?.trim() &&
         integration?.status === "CONNECTED" &&
@@ -397,6 +406,13 @@ export async function processAutomationFollowUps(now = new Date()) {
             recipientId: job.recipientIgId,
           })
         : null;
+      if (profile)
+        await observeAutomationFollow({
+          integrationId: integration.id,
+          automationId: automation.id,
+          recipientIgId: job.recipientIgId,
+          followsBusiness: profile.followsBusiness,
+        });
       // Refresh receipts at send time. Unknown follow status never means unfollowed.
       const evidence = await client.automationEngagementJob.findUnique({
         where: { id: job.id },
