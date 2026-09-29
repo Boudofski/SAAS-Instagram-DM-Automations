@@ -89,7 +89,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
               "inline-flex min-w-0 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-all duration-200",
               active
                 ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 dark:bg-violet-500/15 dark:text-white dark:ring-violet-400/25"
-                : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
+                : "text-slate-500 light:text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
             )}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />

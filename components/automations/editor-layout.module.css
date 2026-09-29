@@ -188,3 +188,6 @@
 :global(html:not(.dark)) .switch { background:#64748b; }
 :global(html:not(.dark)) .switchOn { background:#6d28d9; }
 :global(html:not(.dark)) .rowControls select { border:1px solid #cbd5e1; }
+
+.editor :is(input,textarea)::placeholder { color:var(--editor-muted); opacity:1; }
+:global(html:not(.dark)) .postActions button { color:#6d28d9; }

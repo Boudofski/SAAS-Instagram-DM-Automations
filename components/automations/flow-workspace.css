@@ -18,3 +18,7 @@ html:not(.dark) .flow-card .flow-output-handle { border:0; }
 html:not(.dark) .flow-editor-input { border-color:#94a3b8; }
 .flow-editor-input:focus-visible { outline:2px solid #7c3aed; outline-offset:2px; }
 html:not(.dark) .flow-workspace .react-flow__controls { border-color:#94a3b8; }
+
+html:not(.dark) .flow-workspace .react-flow__attribution { color:#475569; font-size:11px; opacity:1; }
+html:not(.dark) .flow-workspace .react-flow__attribution a { color:inherit; }
+html:not(.dark) .flow-assistant-input input::placeholder, html:not(.dark) .flow-editor-input::placeholder { color:#475569; opacity:1; }
