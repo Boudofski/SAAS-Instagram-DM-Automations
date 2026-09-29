@@ -120,3 +120,5 @@
   .aa-activity-kind { margin-left: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .aa-switch, .aa-switch span { transition: none; } }
+
+html:not(.dark) .aa-switch:not(.aa-switch-on) { background:#64748b; }
