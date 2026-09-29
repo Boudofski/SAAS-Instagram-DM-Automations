@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import type { EMAIL_DELIVERY_STATUS } from "@prisma/client";
 import { client } from "@/lib/prisma";
 import { getEmailConfiguration } from "@/lib/email/delivery";
 
@@ -16,6 +17,16 @@ const statusForEvent = {
   "email.suppressed": "SUPPRESSED",
   "email.failed": "FAILED",
 } as const;
+
+// Provider callbacks can arrive out of order. An older sent/delivered event
+// must not erase stronger delivery evidence or a terminal suppression.
+const previousStatuses: Partial<Record<EMAIL_DELIVERY_STATUS, EMAIL_DELIVERY_STATUS[]>> = {
+  SENT: ["PENDING", "SENT"],
+  DELIVERED: ["PENDING", "SENT", "FAILED", "DELIVERED"],
+  OPENED: ["PENDING", "SENT", "FAILED", "DELIVERED", "OPENED"],
+  CLICKED: ["PENDING", "SENT", "FAILED", "DELIVERED", "OPENED", "CLICKED"],
+  FAILED: ["PENDING", "SENT", "FAILED"],
+};
 
 export async function POST(request: Request) {
   const configuration = getEmailConfiguration();
@@ -51,13 +62,16 @@ export async function POST(request: Request) {
       const recipients = event.data.to.filter((value): value is string => typeof value === "string").map(value => value.trim().toLowerCase());
       if (recipients.length) await client.marketingLead.updateMany({ where: { email: { in: recipients }, suppressedAt: null }, data: { suppressedAt: occurredAt } });
     }
+    // Keep individual milestones even when a stronger event arrived first.
+    const milestone = status === "DELIVERED" ? "deliveredAt" : status === "OPENED" ? "openedAt" : status === "CLICKED" ? "clickedAt" : null;
+    if (milestone) await client.emailDelivery.updateMany({
+      where: { providerMessageId: event.data.email_id, [milestone]: null },
+      data: { [milestone]: occurredAt },
+    });
     await client.emailDelivery.updateMany({
-      where: { providerMessageId: event.data.email_id, ...(!suppress ? { status: { notIn: [...terminal] } } : {}) },
+      where: { providerMessageId: event.data.email_id, ...(!suppress ? { status: { in: previousStatuses[status] } } : {}) },
       data: {
         status,
-        ...(status === "DELIVERED" ? { deliveredAt: occurredAt } : {}),
-        ...(status === "OPENED" ? { openedAt: occurredAt } : {}),
-        ...(status === "CLICKED" ? { clickedAt: occurredAt } : {}),
         ...(["BOUNCED", "COMPLAINED", "SUPPRESSED", "FAILED"].includes(status)
           ? { errorCode: event.type, errorMessage: `Resend reported ${event.type}.` }
           : {}),
