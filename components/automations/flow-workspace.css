@@ -8,3 +8,13 @@
 .flow-card .flow-output-handle:hover::after,.flow-card .flow-output-handle.connectingfrom::after{border-color:#7c3aed;background:#ede9fe}
 .flow-workspace .react-flow__node.draggable{cursor:grab}
 .flow-workspace .react-flow__node.dragging{cursor:grabbing}
+
+/* Light canvas: visible boundaries and ports without changing canvas geometry. */
+html:not(.dark) .flow-workspace { background:#eef1f6; }
+html:not(.dark) .flow-card { border-color:#aebccc; box-shadow:0 2px 6px #0f172a0d,0 8px 24px #0f172a08; }
+html:not(.dark) .flow-card.is-selected { border-color:#168343; }
+html:not(.dark) .flow-card .react-flow__handle,html:not(.dark) .flow-output-handle::after { border-color:#64748b; }
+html:not(.dark) .flow-card .flow-output-handle { border:0; }
+html:not(.dark) .flow-editor-input { border-color:#94a3b8; }
+.flow-editor-input:focus-visible { outline:2px solid #7c3aed; outline-offset:2px; }
+html:not(.dark) .flow-workspace .react-flow__controls { border-color:#94a3b8; }

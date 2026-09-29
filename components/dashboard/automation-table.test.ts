@@ -14,6 +14,6 @@ describe("campaign table display helpers", () => {
 
     expect(getCampaignModeLabel(true, true)).toEqual({ short: "Comment", full: "Comment reply mode" });
     expect(getCampaignModeLabel(false, true)).toEqual({ short: "Comment", full: "Comment reply active" });
-    expect(source).toContain('className="hidden xl:block"');
+    expect(source).toMatch(/className="hidden xl:block(?: [^"]*)?"/);
   });
 });

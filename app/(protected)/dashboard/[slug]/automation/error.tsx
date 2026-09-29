@@ -28,7 +28,7 @@ export default function AutomationError({
         ><UiText>{"Try again"}</UiText></button>
         <Link
           href="../automation/new"
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-950"
+          className="rounded-xl border border-slate-200 light:border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-950"
         ><UiText>{" Create Campaign "}</UiText></Link>
       </div>
     </div>

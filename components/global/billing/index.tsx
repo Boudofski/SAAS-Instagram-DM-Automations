@@ -94,7 +94,7 @@ export default function Billing({
           <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
             <UiText>Billing</UiText>
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1.5 text-sm text-slate-500 light:text-slate-600 dark:text-slate-400">
             <UiText>Your plan, usage and payment details.</UiText>
           </p>
         </div>
@@ -131,7 +131,7 @@ export default function Billing({
 
       <section
         aria-labelledby="current-plan-title"
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#151b28]"
+        className="overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-sm dark:border-white/10 dark:bg-[#151b28]"
       >
         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-center gap-4">
@@ -139,7 +139,7 @@ export default function Billing({
               <CreditCard size={23} aria-hidden="true" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              <p className="text-xs font-medium text-slate-500 light:text-slate-600 dark:text-slate-400">
                 <UiText>Current plan</UiText>
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2.5">
@@ -156,7 +156,7 @@ export default function Billing({
                 </span>
               </div>
               {billing?.interval && (
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
                   <UiText>
                     {billing.interval === "year"
                       ? "Annual billing"
@@ -166,14 +166,14 @@ export default function Billing({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3 border-t border-slate-100 pt-4 text-sm dark:border-white/5 sm:border-0 sm:pt-0">
+          <div className="flex items-center gap-3 border-t border-slate-100 light:border-slate-200 pt-4 text-sm dark:border-white/5 sm:border-0 sm:pt-0">
             <CalendarDays
               size={18}
               aria-hidden="true"
-              className="text-slate-400"
+              className="text-slate-400 light:text-slate-600"
             />
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
                 <UiText>{renewalLabel}</UiText>
               </p>
               <p className="mt-1 font-semibold text-slate-900 dark:text-white">
@@ -183,14 +183,14 @@ export default function Billing({
           </div>
         </div>
         {internalAccess && (
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500 dark:border-white/5 dark:text-slate-400 sm:px-6">
+          <p className="border-t border-slate-100 light:border-slate-200 px-5 py-3 text-xs text-slate-500 light:text-slate-600 dark:border-white/5 dark:text-slate-400 sm:px-6">
             <UiText>Internal plan access</UiText>
             <span> · </span>
             <UiText>No recurring charge</UiText>
           </p>
         )}
         {hasStripeSubscription && (
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500 dark:border-white/5 dark:text-slate-400 sm:px-6">
+          <p className="border-t border-slate-100 light:border-slate-200 px-5 py-3 text-xs text-slate-500 light:text-slate-600 dark:border-white/5 dark:text-slate-400 sm:px-6">
             <UiText>
               Manage your plan, payment method, invoices and cancellation in the
               secure billing portal.
@@ -208,7 +208,7 @@ export default function Billing({
             <UiText>Usage this month</UiText>
           </h2>
           {usage && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
               <UiText>Resets</UiText> {date(usage.periodEnd)} <span>(UTC)</span>
             </p>
           )}
@@ -242,7 +242,7 @@ export default function Billing({
                 metric={usage.activeCampaigns}
               />
             </div>
-            <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
               <UiText>
                 One public reply + one DM = 2 actions. Usage resets monthly,
                 including on annual plans.
@@ -252,7 +252,7 @@ export default function Billing({
         ) : (
           <p
             role="status"
-            className="rounded-xl border border-slate-200 p-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400"
+            className="rounded-xl border border-slate-200 light:border-slate-300 p-4 text-sm text-slate-500 light:text-slate-600 dark:border-white/10 dark:text-slate-400"
           >
             <UiText>
               Usage is temporarily unavailable. Refresh to try again.
@@ -296,8 +296,8 @@ function UsageCard({
         ? "bg-amber-500"
         : "bg-violet-500";
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#151b28]">
-      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+    <div className="min-w-0 rounded-xl border border-slate-200 light:border-slate-300 bg-white p-4 dark:border-white/10 dark:bg-[#151b28]">
+      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 light:text-slate-600 dark:text-slate-400">
         <Icon size={15} className="shrink-0" aria-hidden="true" />
         <span>
           <UiText>{label}</UiText>
@@ -307,7 +307,7 @@ function UsageCard({
         <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-950 dark:text-white">
           {metric.used.toLocaleString(locale)}
         </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <span className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
           /{" "}
           {unlimited ? (
             <UiText>Unlimited</UiText>

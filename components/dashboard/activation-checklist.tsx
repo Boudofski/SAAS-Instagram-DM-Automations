@@ -21,7 +21,7 @@ export default function ActivationChecklist({ slug, connected, created, active, 
     </div>
     <ol className="mt-4 grid gap-3 sm:grid-cols-2">
       {steps.map(step => <li key={step.label} className="flex items-center gap-2 text-sm">
-        {step.done ? <CheckCircle2 aria-hidden className="h-5 w-5 shrink-0 text-emerald-600" /> : <Circle aria-hidden className="h-5 w-5 shrink-0 text-slate-400" />}
+        {step.done ? <CheckCircle2 aria-hidden className="h-5 w-5 shrink-0 text-emerald-600 light:text-emerald-700" /> : <Circle aria-hidden className="h-5 w-5 shrink-0 text-slate-400 light:text-slate-600" />}
         {step.done ? <span><UiText>{step.label}</UiText><span className="sr-only"> ✓</span></span> : <Link href={step.href} className="min-h-11 content-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300"><UiText>{step.label}</UiText></Link>}
       </li>)}
     </ol>

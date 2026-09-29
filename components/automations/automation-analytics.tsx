@@ -45,9 +45,9 @@ export default function AutomationAnalyticsView({ data, slug }: { data: Automati
     { label: "New followers", value: t.newFollowers.toLocaleString(), detail: "From this automation", Icon: UserRoundCheck, explanation: followDescription },
   ];
   const funnel = [
-    { label: "Hits", detail: `${sourceNoun} triggers`, value: t.hits, color: "#a5b4fc" },
-    { label: "Clicks", detail: "opened the link", value: t.clicks, color: "#84bf46" },
-    { label: "Follows", detail: "followed to unlock", value: t.newFollowers, color: "#e99b20" },
+    { label: "Hits", detail: `${sourceNoun} triggers`, value: t.hits, color: "var(--aa-hits)" },
+    { label: "Clicks", detail: "opened the link", value: t.clicks, color: "var(--aa-clicks)" },
+    { label: "Follows", detail: "followed to unlock", value: t.newFollowers, color: "var(--aa-follows)" },
   ];
   const tabDescription = { hits: `Latest ${sourceNoun} triggers`, clicks: "Latest link opens", follows: "Latest new followers" };
   const hasDailyActivity = data.daily.some(day => day.hits > 0 || day.clicks > 0);
@@ -91,8 +91,8 @@ export default function AutomationAnalyticsView({ data, slug }: { data: Automati
                 <XAxis dataKey="date" tickFormatter={value => dateLabel(value, true)} tick={{ fontSize: 12, fill: "var(--aa-faint)" }} axisLine={false} tickLine={false} tickMargin={14} interval="preserveStartEnd" minTickGap={16} />
                 <YAxis hide={!hasDailyActivity} allowDecimals={false} domain={[0, "auto"]} tick={{ fontSize: 11, fill: "var(--aa-muted)" }} width={30} axisLine={false} tickLine={false} />
                 <Tooltip labelFormatter={value => `${dateLabel(String(value))} · UTC`} contentStyle={{ background: "var(--aa-panel)", border: "1px solid var(--aa-border)", borderRadius: 10, color: "var(--aa-text)", fontSize: 12 }} />
-                <Line name="Clicks" dataKey="clicks" stroke="#84bf46" strokeWidth={2} dot={false} isAnimationActive={false} />
-                <Line name="Hits" dataKey="hits" stroke="#465fff" strokeWidth={2} dot={false} isAnimationActive={false} />
+                <Line name="Clicks" dataKey="clicks" stroke="var(--aa-clicks)" strokeWidth={2} dot={false} isAnimationActive={false} />
+                <Line name="Hits" dataKey="hits" stroke="var(--aa-hits)" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

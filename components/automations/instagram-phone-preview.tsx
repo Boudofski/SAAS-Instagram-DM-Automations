@@ -84,7 +84,7 @@ export default function InstagramPhonePreview({ data, step, username, profilePic
               "min-h-11 min-w-20 rounded-full px-3 py-2 text-xs font-black transition-colors duration-fast sm:min-w-24 sm:px-4",
               mode === item.value
                 ? "bg-white text-slate-950 shadow-sm dark:bg-white dark:text-slate-950"
-                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                : "text-slate-500 light:text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
             ].join(" ")}
           >
             <UiText>{item.label}</UiText>

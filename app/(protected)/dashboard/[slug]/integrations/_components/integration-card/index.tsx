@@ -124,7 +124,7 @@ function IntegrationCard({
   return (
     <div
       className={[
-        "w-full rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
+        "w-full rounded-2xl border border-slate-200 light:border-slate-300 bg-white text-slate-950 shadow-sm transition-colors hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white",
         compact ? "p-4 sm:p-5" : "p-5",
         onboarding ? "sm:p-6" : "",
       ].join(" ")}
@@ -177,13 +177,13 @@ function IntegrationCard({
                     : "Instagram connected"}
                 </p>
                 {!appReviewMode && (
-                  <p className="truncate text-[11px] text-slate-500 dark:text-slate-400"><UiText>{" Instagram ID: "}</UiText>{displayIntegration.instagramId}
+                  <p className="truncate text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Instagram ID: "}</UiText>{displayIntegration.instagramId}
                   </p>
                 )}
                 {!appReviewMode &&
                   !directInstagramLogin &&
                   displayIntegration.pageId && (
-                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400"><UiText>{" Linked Page ID: "}</UiText>{displayIntegration.pageId}
+                    <p className="truncate text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Linked Page ID: "}</UiText>{displayIntegration.pageId}
                     </p>
                   )}
               </div>
@@ -216,7 +216,7 @@ function IntegrationCard({
               variant="outline"
               onClick={onConnect}
               disabled={!isInstagram || isConnecting}
-              className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+              className="min-h-11 w-full border-slate-200 light:border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
             >
               <UiText>{isConnecting ? "Connecting..." : "Reconnect Instagram"}</UiText>
             </Button>
@@ -230,7 +230,7 @@ function IntegrationCard({
                 variant="outline"
                 onClick={() => resubscribe.mutate()}
                 disabled={resubscribe.isPending}
-                className="min-h-11 w-full border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+                className="min-h-11 w-full border-slate-200 light:border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
               >
                 <UiText>{resubscribe.isPending
                   ? "Refreshing..."
@@ -260,8 +260,8 @@ function IntegrationCard({
       )}
 
       {connected && !appReviewMode && (
-        <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300">
-          <p className="font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"Connection health"}</UiText></p>
+        <div className="mt-5 w-full rounded-2xl border border-slate-200 light:border-slate-300 bg-slate-50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-[#101827] dark:text-slate-300">
+          <p className="font-black uppercase tracking-[0.16em] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Connection health"}</UiText></p>
 
           {displayIntegration?.instagramId &&
             health?.data?.oauth?.reconnectRequired && (
@@ -372,8 +372,8 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
 
 function HealthItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+    <div className="rounded-xl border border-slate-200 light:border-slate-300 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 light:text-slate-600 dark:text-slate-400">
         <UiText>{label}</UiText>
       </p>
       <p className="mt-1 break-words font-bold text-slate-800 dark:text-slate-100">

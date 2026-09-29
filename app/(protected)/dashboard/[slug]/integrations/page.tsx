@@ -120,7 +120,7 @@ async function Page({ searchParams }: PageProps) {
       )}
 
       <div className="ap3k-panel p-4 sm:p-6">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{" Instagram connection "}</UiText></p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600 light:text-pink-700"><UiText>{" Instagram connection "}</UiText></p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
           <UiText>{connected ? "Instagram connected" : "Connect Instagram"}</UiText>
         </h1>
@@ -145,7 +145,7 @@ async function Page({ searchParams }: PageProps) {
       ))}
 
       <section className="rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-4 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft sm:p-5">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{"How it works"}</UiText></p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600 light:text-pink-700"><UiText>{"How it works"}</UiText></p>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-bold text-slate-700 dark:text-slate-200 sm:text-sm">
           {["Connect", "Create automation", "Test & launch"].map(
             (item, index) => (
@@ -167,7 +167,7 @@ async function Page({ searchParams }: PageProps) {
         <section className="ap3k-panel overflow-hidden p-4 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600"><UiText>{"Permission readiness"}</UiText></p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600 light:text-pink-700"><UiText>{"Permission readiness"}</UiText></p>
               <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white"><UiText>{" Instagram capabilities "}</UiText></h2>
               <p className="mt-1 hidden text-sm text-slate-600 dark:text-slate-400 sm:block"><UiText>{" AP3K checks what this Instagram account actually granted, not just what the app requested. "}</UiText></p>
             </div>
@@ -178,7 +178,7 @@ async function Page({ searchParams }: PageProps) {
                   ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
                   : capabilities.authoritative
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
-                    : "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
+                    : "border-slate-200 light:border-slate-300 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
               ].join(" ")}
             >
               <UiText>{permissionWarning
@@ -247,7 +247,7 @@ function PermissionCard({
   const granted = state === "granted";
   const missing = state === "missing";
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04] sm:rounded-2xl sm:p-4">
+    <div className="rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04] sm:rounded-2xl sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="font-black text-slate-950 dark:text-white"><UiText>{title}</UiText></p>
         <span
@@ -257,7 +257,7 @@ function PermissionCard({
               ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
               : missing
                 ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
-                : "border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
+                : "border-slate-200 light:border-slate-300 bg-white text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
           ].join(" ")}
         >
           <UiText>{granted ? "Granted" : missing ? "Missing" : "Unknown"}</UiText>

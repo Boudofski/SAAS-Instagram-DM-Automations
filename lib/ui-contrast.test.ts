@@ -32,7 +32,7 @@ describe("light-mode contrast invariants", () => {
 
   it("ap3k-kicker uses a light-mode pink override", () => {
     const src = read("app/globals.css");
-    expect(src).toContain("text-pink-600 dark:text-rf-pink");
+    expect(src).toContain("text-pink-700 dark:text-rf-pink");
   });
 
   it("onboarding pages do not use exact unguarded rf text utilities", () => {

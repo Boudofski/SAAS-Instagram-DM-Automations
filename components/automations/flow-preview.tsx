@@ -294,7 +294,7 @@ export default function FlowPreview({
   return (
     <section className="mx-auto w-full min-w-0 max-w-[300px]">
       {triggers.length > 1 && (
-        <label className="mb-3 block text-xs text-slate-500 dark:text-slate-400">
+        <label className="mb-3 block text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
           Preview trigger
           <select
             aria-label="Preview trigger"
@@ -412,7 +412,7 @@ export default function FlowPreview({
                 </button>
                 <button
                   type="button"
-                  className="p-2 text-xs text-slate-500 dark:text-slate-400"
+                  className="p-2 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400"
                   onClick={() => {
                     setWaiting(null);
                     setEnded(true);
@@ -463,11 +463,11 @@ export default function FlowPreview({
           </form>
         }
       />
-      <details className="mt-4 rounded-xl border border-slate-200 p-3 dark:border-white/10">
+      <details className="mt-4 rounded-xl border border-slate-200 light:border-slate-300 p-3 dark:border-white/10">
         <summary className="cursor-pointer text-sm font-medium">
           Simulated contact
         </summary>
-        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
           These values only affect this preview. Change them before continuing
           to test each condition.
         </p>
@@ -519,7 +519,7 @@ export default function FlowPreview({
           </select>
         </label>
       )}
-      <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+      <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
         Interactive preview · nothing is sent to Instagram. Buttons and contact
         values only affect this simulation.
       </p>

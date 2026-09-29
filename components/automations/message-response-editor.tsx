@@ -30,8 +30,8 @@ export default function MessageResponseEditor({ message, linkButtons, onChange, 
     <div className="space-y-5">
       {!hideMessage && <div>
         <div className="mb-2 flex items-center justify-between gap-4">
-          <label htmlFor={messageId} className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"><UiText>{"DM message text"}</UiText></label>
-          <span className={message.length > 1000 ? "text-xs font-bold text-red-500" : "text-xs font-bold text-slate-400"}>{message.length}/1000</span>
+          <label htmlFor={messageId} className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"DM message text"}</UiText></label>
+          <span className={message.length > 1000 ? "text-xs font-bold text-red-500" : "text-xs font-bold text-slate-400 light:text-slate-600"}>{message.length}/1000</span>
         </div>
         <textarea id={messageId} dir="auto" value={message} maxLength={1000} onChange={(event) => onChange({ message: event.target.value })} rows={5} placeholder={tr("Write the message shown above your links…")} className="ap3k-textarea w-full resize-none rounded-2xl px-4 py-3 text-sm" />
       </div>}

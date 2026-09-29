@@ -39,7 +39,7 @@ function NavBar({ slug }: Props) {
   };
 
   return (
-      <div data-dashboard-toolbar className={`${isAutomationAnalytics ? "aa-toolbar" : "sticky top-3 rounded-2xl border border-slate-200 p-2 shadow-sm backdrop-blur-xl"} z-30 flex flex-wrap items-center gap-2 bg-white/95 text-slate-950 dark:border-white/10 dark:bg-[#111320]/95 dark:text-slate-50 sm:flex-nowrap lg:justify-end`}>
+      <div data-dashboard-toolbar className={`${isAutomationAnalytics ? "aa-toolbar" : "sticky top-3 rounded-2xl border border-slate-200 light:border-slate-300 p-2 shadow-sm backdrop-blur-xl"} z-30 flex flex-wrap items-center gap-2 bg-white/95 text-slate-950 dark:border-white/10 dark:bg-[#111320]/95 dark:text-slate-50 sm:flex-nowrap lg:justify-end`}>
         <span className={`flex ${isAutomationAnalytics ? "shrink-0" : "flex-1"} items-center gap-x-2 lg:hidden`}>
           <Sheet
             trigger={<Menu aria-hidden="true" />}
@@ -62,14 +62,14 @@ function NavBar({ slug }: Props) {
                   <Items page={page} slug={slug} />
                 </div>
                 <div className="px-1 pb-3"><LanguageSwitcher /></div>
-                <div className="mt-3 border-t border-slate-200 pt-3 dark:border-white/10"><HelpHub slug={slug} mobile /></div>
+                <div className="mt-3 border-t border-slate-200 light:border-slate-300 pt-3 dark:border-white/10"><HelpHub slug={slug} mobile /></div>
               </div>
 
-              <div className="shrink-0 border-t border-slate-200 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] dark:border-white/10">
+              <div className="shrink-0 border-t border-slate-200 light:border-slate-300 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] dark:border-white/10">
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-pink dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                  className="flex w-full items-center justify-center rounded-xl border border-slate-200 light:border-slate-300 px-3 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-pink dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
                 >
                   {t("signOut")}
                 </button>
@@ -78,7 +78,7 @@ function NavBar({ slug }: Props) {
           </Sheet>
         </span>
         {isAutomationAnalytics && <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-3 text-sm font-semibold sm:text-base">
-          <PanelLeft className="hidden h-[18px] w-[18px] text-slate-400 lg:block" aria-hidden="true" />
+          <PanelLeft className="hidden h-[18px] w-[18px] text-slate-400 light:text-slate-600 lg:block" aria-hidden="true" />
           <Link href={`/dashboard/${slug}/automation`} className="hover:text-violet-600">Automations</Link>
           <span aria-hidden="true">/</span><span aria-current="page">Analytics</span>
         </nav>}

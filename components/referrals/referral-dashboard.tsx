@@ -19,13 +19,13 @@ export default function ReferralDashboard({ dashboard, inviteUrl, foundingPartne
       <header className="px-1 sm:px-0">
         <p className="ap3k-kicker">{copy.kicker}</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">{copy.title}</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-500 dark:text-slate-400">
+        <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
           {copy.description}
         </p>
       </header>
 
       <section className="ap3k-panel overflow-hidden">
-        <div className="border-b border-slate-200 bg-violet-50/80 p-4 dark:border-white/10 dark:bg-violet-500/[0.07] sm:p-5">
+        <div className="border-b border-slate-200 light:border-slate-300 bg-violet-50/80 p-4 dark:border-white/10 dark:bg-violet-500/[0.07] sm:p-5">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-600/20">
               <Gift className="h-5 w-5" />
@@ -55,7 +55,7 @@ export default function ReferralDashboard({ dashboard, inviteUrl, foundingPartne
             <p className="ap3k-kicker">{copy.howEarn}</p>
             <h2 id="referral-steps" className="mt-1 text-lg font-black">{copy.stepsTitle}</h2>
           </div>
-          <span className="hidden text-xs font-bold text-slate-500 sm:block">{copy.perFriend}</span>
+          <span className="hidden text-xs font-bold text-slate-500 light:text-slate-600 sm:block">{copy.perFriend}</span>
         </div>
         <ol className="mt-4 grid gap-2 sm:grid-cols-3">
           <Step number="1" title={copy.steps[0].title} text={copy.steps[0].text} stepLabel={copy.step} icon={<Link2 className="h-4 w-4" />} />
@@ -85,26 +85,26 @@ export default function ReferralDashboard({ dashboard, inviteUrl, foundingPartne
             <div key={referral.id} className="flex items-center justify-between gap-3 py-3 first:pt-1 last:pb-0">
               <div className="min-w-0">
                 <p className="truncate text-sm font-black"><bdi dir="auto">{referral.name}</bdi></p>
-                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{copy.joined} {formatDate(referral.createdAt, locale)}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">{copy.joined} {formatDate(referral.createdAt, locale)}</p>
               </div>
               <Status status={referral.status} copy={copy} />
             </div>
           )) : (
             <div className="py-5 text-center">
-              <Users className="mx-auto h-6 w-6 text-violet-500" />
+              <Users className="mx-auto h-6 w-6 text-violet-500 light:text-violet-700" />
               <p className="mt-2 text-sm font-black">{copy.noFriends}</p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{copy.noFriendsDescription}</p>
+              <p className="mt-1 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">{copy.noFriendsDescription}</p>
             </div>
           )}
         </div>
       </section>
 
-      <details className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+      <details className="group rounded-2xl border border-slate-200 light:border-slate-300 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
         <summary className="flex min-h-6 cursor-pointer list-none items-center justify-between gap-3 font-black text-slate-700 marker:content-none dark:text-slate-200">
           {copy.rulesTitle}
           <ChevronDown className="h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
         </summary>
-        <p className="mt-3 border-t border-slate-200 pt-3 dark:border-white/10">
+        <p className="mt-3 border-t border-slate-200 light:border-slate-300 pt-3 dark:border-white/10">
           {copy.rulesBody}
         </p>
       </details>
@@ -124,19 +124,19 @@ function Stat({ label, value, icon }: { label: string; value: string | number; i
       <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
         {icon}<p className="text-lg font-black text-slate-950 dark:text-white"><bdi>{value}</bdi></p>
       </div>
-      <p className="mt-1 text-[11px] font-bold leading-4 text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-[11px] font-bold leading-4 text-slate-500 light:text-slate-600 dark:text-slate-400">{label}</p>
     </div>
   );
 }
 
 function Step({ number, title, text, stepLabel, icon }: { number: string; title: string; text: string; stepLabel: string; icon: React.ReactNode }) {
   return (
-    <li className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+    <li className="flex gap-3 rounded-2xl border border-slate-200 light:border-slate-300 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.03]">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{icon}</span>
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.12em] text-violet-600 dark:text-violet-300">{stepLabel} {number}</p>
         <p className="mt-0.5 text-sm font-black">{title}</p>
-        <p className="mt-0.5 text-[11px] leading-4 text-slate-500 dark:text-slate-400">{text}</p>
+        <p className="mt-0.5 text-[11px] leading-4 text-slate-500 light:text-slate-600 dark:text-slate-400">{text}</p>
       </div>
     </li>
   );

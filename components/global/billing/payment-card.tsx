@@ -27,7 +27,7 @@ export default function PaymentCard({ label, current }: Props) {
         "flex h-full flex-col rounded-3xl border p-6 text-slate-950 shadow-sm transition-all duration-300 dark:text-white",
         isActive
           ? "border-rf-pink/40 bg-gradient-to-br from-orange-50 via-pink-50 to-white dark:border-pink-500/30 dark:from-[#17110f] dark:via-[#161116] dark:to-[#101112]"
-          : "border-slate-200 bg-white hover:-translate-y-1 hover:border-rf-pink/30 hover:shadow-lg dark:border-white/[0.12] dark:bg-[#111827]"
+          : "border-slate-200 light:border-slate-300 bg-white hover:-translate-y-1 hover:border-rf-pink/30 hover:shadow-lg dark:border-white/[0.12] dark:bg-[#111827]"
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -41,7 +41,7 @@ export default function PaymentCard({ label, current }: Props) {
         ) : (
           <>
             <span className="text-4xl font-black tracking-tight">${plan.monthlyPrice}</span>
-            <span className="text-sm text-slate-500 dark:text-rf-muted"><UiText>{"/month"}</UiText></span>
+            <span className="text-sm text-slate-500 light:text-slate-600 dark:text-rf-muted"><UiText>{"/month"}</UiText></span>
           </>
         )}
       </div>

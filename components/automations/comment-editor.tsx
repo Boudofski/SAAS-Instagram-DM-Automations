@@ -281,7 +281,7 @@ export default function CommentEditor(p: CommentEditorProps) {
             <p>
               {tr("Connect Instagram first")}{" "}
               <Link
-                className="text-violet-500 underline"
+                className="text-violet-500 light:text-violet-700 underline"
                 href={`/dashboard/${p.slug}/integrations`}
               >
                 {tr("Connect Instagram")}

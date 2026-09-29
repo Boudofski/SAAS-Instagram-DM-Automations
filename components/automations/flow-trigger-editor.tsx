@@ -82,7 +82,7 @@ export default function FlowTriggerEditor({
               <strong className="block text-[13px] font-semibold">
                 {c.label}
               </strong>
-              <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+              <span className="mt-1 block text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
                 {c.detail}
               </span>
             </span>
@@ -189,7 +189,7 @@ export default function FlowTriggerEditor({
                 <p className="py-5 text-center text-xs">Loading posts…</p>
               )}
               {!postsLoading && !posts.length && (
-                <p className="py-5 text-center text-xs text-slate-500">
+                <p className="py-5 text-center text-xs text-slate-500 light:text-slate-600">
                   No posts loaded. Refresh your connected Instagram account.
                 </p>
               )}
@@ -238,7 +238,7 @@ export default function FlowTriggerEditor({
                 placeholder="e.g. link"
                 onChange={(e) => patch({ keyword: e.target.value })}
               />
-              <span className="mt-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+              <span className="mt-2 block text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
                 Matches this phrase inside the message. Add another trigger for
                 a different keyword.
               </span>
@@ -247,7 +247,7 @@ export default function FlowTriggerEditor({
         </>
       )}
       {trigger.sharedPost && (
-        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+        <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
           Runs when Instagram delivers a post or reel share in your inbox.
           Ordinary text messages do not trigger this rule.
         </p>

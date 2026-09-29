@@ -42,7 +42,7 @@ export default function CommercialLandingPage({
 
   return (
     <LocalizedCopy>
-      <div className={styles.page}>
+      <div className={`${styles.page} ${styles.commercialPage}`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -57,7 +57,7 @@ export default function CommercialLandingPage({
         />
         <WebsiteNav />
         <main
-          className={styles.article}
+          className={`${styles.article} ${styles.commercialArticle}`}
           lang={page.contentLocale}
           translate={page.contentLocale ? "no" : undefined}
         >
@@ -78,7 +78,7 @@ export default function CommercialLandingPage({
           </ol>
           <h2>Make every conversation useful</h2>
           {page.useCases.map((item) => (
-            <section key={item.title}>
+            <section className={styles.contentSection} key={item.title}>
               <h3>{item.title}</h3>
               <p>{item.body}</p>
             </section>
@@ -116,7 +116,7 @@ export default function CommercialLandingPage({
           </div>
           <h2>Frequently asked questions</h2>
           {page.faqs.map((faq) => (
-            <section key={faq.question}>
+            <section className={styles.contentSection} key={faq.question}>
               <h3>{faq.question}</h3>
               <p>{faq.answer}</p>
             </section>

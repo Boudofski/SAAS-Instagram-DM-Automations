@@ -1,3 +1,4 @@
+import WorkspacePreview from "@/components/website/workspace-preview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import WebsiteNav from "@/components/global/website-nav";
@@ -27,9 +28,13 @@ export default function SolutionPage({ params }: { params: { slug: string } }) {
   const page = SOLUTIONS.find((item) => item.slug === params.slug);
   if (!page) notFound();
   return (
-    <div className={s.page}>
+    <div className={`${s.page} ${s.commercialPage}`}>
       <WebsiteNav />
-      <main className={s.article} lang="en" translate="no">
+      <main
+        className={`${s.article} ${s.commercialArticle}`}
+        lang="en"
+        translate="no"
+      >
         <Breadcrumbs
           items={[
             { name: "Solutions", path: "/solutions" },
@@ -39,8 +44,9 @@ export default function SolutionPage({ params }: { params: { slug: string } }) {
         <span className={s.badge}>INSTAGRAM AUTOMATION</span>
         <h1>{page.title}</h1>
         <p>{page.intro}</p>
+        <WorkspacePreview />
         {page.sections.map((section) => (
-          <section key={section.title}>
+          <section className={s.contentSection} key={section.title}>
             <h2>{section.title}</h2>
             <p>{section.body}</p>
             {section.bullets && (
@@ -52,17 +58,19 @@ export default function SolutionPage({ params }: { params: { slug: string } }) {
             )}
           </section>
         ))}
-        <h2>Set it up in AP3K</h2>
-        <ol>
-          {page.steps.map((step) => (
-            <li key={step.title}>
-              <strong>{step.title}.</strong> {step.body}
-            </li>
-          ))}
-        </ol>
+        <section className={s.contentSection}>
+          <h2>Set it up in AP3K</h2>
+          <ol>
+            {page.steps.map((step) => (
+              <li key={step.title}>
+                <strong>{step.title}.</strong> {step.body}
+              </li>
+            ))}
+          </ol>
+        </section>
         <h2>Frequently asked questions</h2>
         {page.faq.map((item) => (
-          <section key={item.question}>
+          <section className={s.contentSection} key={item.question}>
             <h3>{item.question}</h3>
             <p>{item.answer}</p>
           </section>

@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 220 30% 97%;
+    --background: 220 30% 95%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -15,12 +15,12 @@
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215 19% 40%;
+    --muted-foreground: 215 25% 32%;
     --accent: 260 30% 96%;
     --accent-foreground: 222 47% 11%;
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
+    --border: 214 25% 84%;
     --input: 215 20% 76%;
     --ring: 263 70% 50%;
     --radius: 0.75rem;
@@ -28,7 +28,7 @@
     --primary-active: 263 70% 38%;
     --primary-subtle: 263 90% 97%;
     --surface-elevated: 0 0% 100%;
-    --border-subtle: 214 28% 94%;
+    --border-subtle: 214 25% 89%;
     --text-secondary: 215 25% 32%;
     --success: 158 64% 28%;
     --warning: 32 95% 32%;
@@ -48,8 +48,10 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-    --page-background: #f5f6fa;
-    --brand-pink: 333 71% 41%;
+    --page-background: #eef1f6;
+    --brand-pink: 333 71% 35%;
+    --brand-purple: 109 40 217;
+    --brand-magenta: 179 30 97;
 
     --scrollbar-track: transparent;
     --scrollbar-thumb: #c1c8d5;
@@ -93,6 +95,8 @@
     --sidebar-ring: 217 91% 60%;
     --page-background: #050816;
     --brand-pink: 329 86% 70%;
+    --brand-purple: 167 139 250;
+    --brand-magenta: 221 42 123;
     --scrollbar-thumb: #545454;
     --scrollbar-thumb-hover: #5c5c5f;
     --primary-subtle: 260 30% 16%;
@@ -177,7 +181,7 @@
   }
 
   .ap3k-kicker {
-    @apply text-xs font-black uppercase tracking-[0.2em] text-pink-600 dark:text-rf-pink;
+    @apply text-xs font-black uppercase tracking-[0.2em] text-pink-700 dark:text-rf-pink;
   }
 
   .ap3k-page {

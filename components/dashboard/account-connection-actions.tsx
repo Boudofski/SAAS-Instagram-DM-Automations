@@ -104,7 +104,7 @@ export default function AccountConnectionActions({
             variant="outline"
             onClick={refreshProfile}
             disabled={isProfileRefreshing || isPending}
-            className="h-11 min-w-0 rounded-xl border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08] sm:px-4 sm:text-sm"
+            className="h-11 min-w-0 rounded-xl border-slate-200 light:border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08] sm:px-4 sm:text-sm"
           >
             {isProfileRefreshing ? "Refreshing..." : "Refresh profile"}
           </Button>
@@ -112,7 +112,7 @@ export default function AccountConnectionActions({
       </div>
       {refreshStatus && (
         <p
-          className={`text-xs font-bold ${refreshStatus.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
+          className={`text-xs font-bold ${refreshStatus.ok ? "text-emerald-600 light:text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
         >
           {refreshStatus.message}
         </p>

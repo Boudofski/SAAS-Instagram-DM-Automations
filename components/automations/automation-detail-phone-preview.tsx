@@ -108,7 +108,7 @@ export default function AutomationDetailPhonePreview(props: Props) {
               "relative z-10 rounded-full px-3 py-2 text-xs font-black transition-colors duration-300 sm:px-4",
               mode === item.value
                 ? "text-slate-950"
-                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                : "text-slate-500 light:text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
             ].join(" ")}
           >
             <UiText>{item.label}</UiText>

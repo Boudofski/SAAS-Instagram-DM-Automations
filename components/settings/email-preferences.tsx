@@ -20,7 +20,7 @@ export function EmailPreferences({ preferences }: Props) {
     <form id="email-preferences" action={updateEmailPreferencesAction} className="scroll-mt-6 space-y-4">
       <div className="space-y-2">
         {options.map((option) => (
-          <label key={option.name} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3 transition hover:border-violet-300 dark:border-white/[0.07] dark:bg-white/[0.025] dark:hover:border-violet-400/30">
+          <label key={option.name} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50/70 p-3 transition hover:border-violet-300 dark:border-white/[0.07] dark:bg-white/[0.025] dark:hover:border-violet-400/30">
             <input
               type="checkbox"
               name={option.name}
@@ -29,12 +29,12 @@ export function EmailPreferences({ preferences }: Props) {
             />
             <span className="min-w-0">
               <span className="block text-xs font-black text-slate-900 dark:text-white"><UiText>{option.title}</UiText></span>
-              <span className="mt-1 block text-[11px] leading-5 text-slate-500 dark:text-slate-400"><UiText>{option.detail}</UiText></span>
+              <span className="mt-1 block text-[11px] leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{option.detail}</UiText></span>
             </span>
           </label>
         ))}
       </div>
-      <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Security, account connection, automation failure, usage-limit, support, and billing emails cannot be disabled because they protect the service you asked AP3K to run."}</UiText></p>
+      <p className="text-[11px] leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Security, account connection, automation failure, usage-limit, support, and billing emails cannot be disabled because they protect the service you asked AP3K to run."}</UiText></p>
       <button type="submit" className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-violet-600/15 transition hover:-translate-y-0.5 hover:shadow-violet-600/25"><UiText>{"Save email preferences"}</UiText></button>
     </form>
   );

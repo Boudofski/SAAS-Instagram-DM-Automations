@@ -25,7 +25,7 @@ export default function ReviewDemoPage({ params }: Props) {
       <section className="ap3k-card rounded-2xl p-5 sm:p-6">
         <ol className="grid gap-3">
           {REVIEW_STEPS.map((step, index) => (
-            <li key={step} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+            <li key={step} className="flex items-start gap-3 rounded-xl border border-slate-200 light:border-slate-300 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-rf-pink/10 text-xs font-black text-rf-pink">
                 {index + 1}
               </span>

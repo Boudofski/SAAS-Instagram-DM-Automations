@@ -1,3 +1,4 @@
+import plugin from "tailwindcss/plugin";
 import type { Config } from "tailwindcss";
 import { motionDuration } from "./lib/motion";
 
@@ -93,10 +94,10 @@ const config = {
         "rf-surface2":"#111827",
         "rf-border":  "#26324A",
         "rf-blue":    "#60A5FA",
-        "rf-purple":  "#A78BFA",
+        "rf-purple":  "rgb(var(--brand-purple) / <alpha-value>)",
         "rf-pink":    "hsl(var(--brand-pink))",
         "rf-orange":  "#F58529",
-        "rf-magenta": "#DD2A7B",
+        "rf-magenta": "rgb(var(--brand-magenta) / <alpha-value>)",
         "rf-violet":  "#8134AF",
         "rf-indigo":  "#515BD4",
         "rf-green":   "#10B981",
@@ -162,7 +163,10 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), plugin(({ addVariant }) => {
+    // Explicit light overrides leave existing dark surfaces and states intact.
+    addVariant("light", "html:not(.dark) &");
+  })],
 } satisfies Config;
 
 export default config;
