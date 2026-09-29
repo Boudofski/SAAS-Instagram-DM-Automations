@@ -33,3 +33,13 @@ Do not expose recipient/token/payload metadata in public logs. Confirmation and 
 ## Tests and release evidence
 
 Focused tests cover consent, CSRF, input validation, rate-limit rejection, no scanner side effects, confirmation expiry, signed unsubscribe, customer exit, suppression, duplicate claims, provider retry identity, expiry limits, preview isolation, pacing, and safe campaign attribution. The additive migration was also applied to isolated PGlite/PostgreSQL, checking nullable opt-in state and unique email enforcement. Live confirmation/delivery and scheduled execution must be reported separately from unit-test results.
+
+### Production verification — 2026-09-29
+
+- Release `60a6d24` reached Vercel production READY and passed GitHub CI.
+- Simulator requests exercised confirmation, kit delivery, both delayed lessons, completion, and unauthenticated mailbox one-click unsubscribe. Only simulator timestamps were aged to exercise the two-day/five-day eligibility rules; this is not evidence that five calendar days elapsed.
+- The signed GitHub worker authenticated successfully in [workflow run 36529150053](https://github.com/Boudofski/SAAS-Instagram-DM-Automations/actions/runs/36529150053). The second attempt processed one due lesson (`enabled: true, sent: 1, attempted: 1`). The natural daily schedule remains configured for 05:17 UTC; this evidence is a manual workflow dispatch, not an observed timer event.
+- An immediate repeat of the owner queue control sent no duplicate. Each simulator stage retained one delivery record. Completed test subscribers were unsubscribed after verification.
+- Real provider bounce and complaint simulator callbacks permanently suppressed their test leads. Test addresses remain excluded from acquisition subscriber totals.
+- Verification exposed a late `email.sent` event downgrading a delivered confirmation. The webhook now applies atomic forward-only success transitions, preserves terminal suppressions, and independently records delivery/open/click milestones. Replayed callbacks cannot erase stronger evidence.
+- These are operational tests, not customer acquisition or revenue results. Publishing and paid campaigns require separate channel execution.
