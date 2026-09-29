@@ -13,20 +13,11 @@ export type BillingLookup =
   | { state: "subscription"; snapshot: BillingSnapshot }
   | { state: "unavailable"; snapshot: null };
 
-const MANAGEABLE_SUBSCRIPTION_STATUSES = new Set([
-  "active",
-  "trialing",
-  "past_due",
-  "unpaid",
-  "paused",
-]);
-
-export function isManageableSubscriptionStatus(status?: string | null) {
-  return Boolean(status && MANAGEABLE_SUBSCRIPTION_STATUSES.has(status));
-}
+import { isManageableSubscriptionStatus } from "./billing-presentation";
+export { isManageableSubscriptionStatus } from "./billing-presentation";
 
 export async function getBillingLookup(
-  customerId?: string | null
+  customerId?: string | null,
 ): Promise<BillingLookup> {
   if (!customerId) return { state: "none", snapshot: null };
 
@@ -37,9 +28,8 @@ export async function getBillingLookup(
       limit: 10,
     });
     const subscription =
-      result.data.find((item) =>
-        isManageableSubscriptionStatus(item.status)
-      ) ?? result.data[0];
+      result.data.find((item) => isManageableSubscriptionStatus(item.status)) ??
+      result.data[0];
     if (!subscription) return { state: "none", snapshot: null };
 
     const price = subscription.items.data[0]?.price;
@@ -50,7 +40,8 @@ export async function getBillingLookup(
       state: "subscription",
       snapshot: {
         status: subscription.status,
-        interval: interval === "year" ? "year" : interval === "month" ? "month" : null,
+        interval:
+          interval === "year" ? "year" : interval === "month" ? "month" : null,
         renewsAt:
           typeof periodEnd === "number"
             ? new Date(periodEnd * 1000).toISOString()
