@@ -29,7 +29,7 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
         <button
           ref={helpButtonRef}
           type="button"
-          className={cn("flex min-h-11 w-full items-center rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white", expanded ? "gap-2.5 px-3" : "justify-center")}
+          className={cn("flex min-h-11 w-full items-center rounded-xl text-sm font-bold text-slate-500 light:text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white", expanded ? "gap-2.5 px-3" : "justify-center")}
           aria-expanded={menuOpen}
           aria-label={translateUi("Help", locale)}
         >
@@ -41,13 +41,13 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
             <p className="px-3 pb-2 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><UiText>{"Support"}</UiText></p>
             <button type="button" onClick={() => { setAssistantOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-start transition hover:bg-violet-50 dark:hover:bg-violet-500/10">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-violet-500"><Sparkles className="h-4 w-4" /></span>
-              <span><span className="block text-sm font-black"><UiText>{"Get help"}</UiText></span><span className="block text-xs text-slate-500"><UiText>{"Ask AP3K Support Assistant"}</UiText></span></span>
+              <span><span className="block text-sm font-black"><UiText>{"Get help"}</UiText></span><span className="block text-xs text-slate-500 light:text-slate-600"><UiText>{"Ask AP3K Support Assistant"}</UiText></span></span>
             </button>
             <HelpLink href="/help" icon={BookOpen} title="Knowledge base" detail="Guides for every AP3K feature" />
             <HelpLink href={`/dashboard/${slug}/account`} icon={RefreshCw} title="Fix Instagram permissions" detail="Reconnect your professional account" />
             <HelpLink href="/contact" icon={Mail} title="Email support" detail="Contact support@ap3k.com" />
             <div className="my-2 border-t border-slate-200 dark:border-white/10" />
-            <div className="grid grid-cols-2 gap-1 px-1 pb-1 text-xs font-bold text-slate-500">
+            <div className="grid grid-cols-2 gap-1 px-1 pb-1 text-xs font-bold text-slate-500 light:text-slate-600">
               <Link href={localizePublicPath("/terms", locale)} className="rounded-lg px-2 py-2 hover:bg-slate-100 dark:hover:bg-white/[0.06]"><UiText>{"Terms"}</UiText></Link>
               <Link href={localizePublicPath("/privacy", locale)} className="rounded-lg px-2 py-2 hover:bg-slate-100 dark:hover:bg-white/[0.06]"><UiText>{"Privacy"}</UiText></Link>
             </div>
@@ -60,7 +60,7 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
 
 function HelpLink({ href, icon: Icon, title, detail }: { href: string; icon: typeof BookOpen; title: string; detail: string }) {
   const { locale } = useI18n();
-  return <Link href={localizePublicPath(href, locale)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-100 dark:hover:bg-white/[0.06]"><span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 dark:bg-white/[0.06]"><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block text-sm font-black"><UiText>{title}</UiText></span><span className="block truncate text-xs text-slate-500"><UiText>{detail}</UiText></span></span><ExternalLink className="h-3.5 w-3.5 text-slate-400" /></Link>;
+  return <Link href={localizePublicPath(href, locale)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-100 dark:hover:bg-white/[0.06]"><span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 light:text-slate-600 dark:bg-white/[0.06]"><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block text-sm font-black"><UiText>{title}</UiText></span><span className="block truncate text-xs text-slate-500 light:text-slate-600"><UiText>{detail}</UiText></span></span><ExternalLink className="h-3.5 w-3.5 text-slate-400" /></Link>;
 }
 
 function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; onRestoreFocus: () => void }) {
@@ -145,15 +145,15 @@ function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; on
         >
         <header className="flex min-h-[72px] shrink-0 items-center gap-3 border-b border-slate-200 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] dark:border-white/10 sm:py-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ap3k-gradient text-white shadow-lg shadow-violet-500/20"><Sparkles className="h-5 w-5" /></span>
-          <div className="min-w-0 flex-1"><Dialog.Title className="truncate font-black"><UiText>{"AP3K Support Assistant"}</UiText></Dialog.Title><Dialog.Description className="truncate text-xs text-slate-500 dark:text-slate-400"><UiText>{"Answers based on AP3K"}</UiText></Dialog.Description></div>
-          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={tr("Close support")} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"><X className="h-5 w-5" /></button>
+          <div className="min-w-0 flex-1"><Dialog.Title className="truncate font-black"><UiText>{"AP3K Support Assistant"}</UiText></Dialog.Title><Dialog.Description className="truncate text-xs text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Answers based on AP3K"}</UiText></Dialog.Description></div>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={tr("Close support")} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 light:text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"><X className="h-5 w-5" /></button>
         </header>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-5">
           <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-slate-100 px-4 py-3 text-sm leading-6 dark:bg-white/[0.07]"><UiText>{"Hi! Ask me how to connect Instagram, build an automation, use AP3K AI, manage billing, or troubleshoot your workspace."}</UiText></div>
           <p className="px-1 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400"><UiText>{"Support Assistant · AI agent"}</UiText></p>
           {loading ? <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-violet-500" /></div> : null}
           {messages.map((message) => <div dir="auto" key={message.id} className={cn("whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6", message.role === "user" ? "ms-auto max-w-[85%] rounded-br-md bg-violet-600 text-white" : "max-w-[92%] rounded-bl-md bg-slate-100 dark:bg-white/[0.07]")}>{message.content}</div>)}
-          {pending ? <div className="flex w-fit items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs text-slate-500 dark:bg-white/[0.07]"><Loader2 className="h-3.5 w-3.5 animate-spin" /><UiText>{" Thinking…"}</UiText></div> : null}
+          {pending ? <div className="flex w-fit items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs text-slate-500 light:text-slate-600 dark:bg-white/[0.07]"><Loader2 className="h-3.5 w-3.5 animate-spin" /><UiText>{" Thinking…"}</UiText></div> : null}
           {notice ? <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-200"><UiText>{notice}</UiText></p> : null}
           <div ref={bottomRef} />
         </div>
@@ -162,7 +162,7 @@ function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; on
             <textarea aria-label={tr("Ask a question…")} dir="auto" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(); } }} rows={1} maxLength={1200} placeholder={tr("Ask a question…")} className="max-h-32 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-base outline-none sm:text-sm" />
             <button type="button" onClick={send} disabled={!draft.trim() || pending} aria-label={tr("Send")} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:opacity-60 dark:disabled:bg-white/10"><Send className="h-4 w-4" /></button>
           </div>
-          <div className="mt-2 flex items-center justify-between gap-3 text-[10px] text-slate-500"><span><UiText>{"AI can make mistakes. Never share secrets."}</UiText></span><button type="button" disabled={pending} onClick={() => void clearHistory()} className="inline-flex shrink-0 items-center gap-1 font-bold hover:text-slate-900 dark:hover:text-white"><RotateCcw className="h-3 w-3" /> <UiText>{"Start over"}</UiText></button></div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-[10px] text-slate-500 light:text-slate-600"><span><UiText>{"AI can make mistakes. Never share secrets."}</UiText></span><button type="button" disabled={pending} onClick={() => void clearHistory()} className="inline-flex shrink-0 items-center gap-1 font-bold hover:text-slate-900 dark:hover:text-white"><RotateCcw className="h-3 w-3" /> <UiText>{"Start over"}</UiText></button></div>
         </footer>
         </Dialog.Content>
       </Dialog.Portal>
