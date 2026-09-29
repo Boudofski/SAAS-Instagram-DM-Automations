@@ -4,9 +4,11 @@ import { client } from "@/lib/prisma";
 import { AdminPageHeader, AdminSurface } from "@/components/admin-v2/page-header";
 import { marketingReady } from "@/lib/marketing/delivery";
 import { LAUNCH_KIT_PATH, marketingEmail } from "@/lib/marketing/content";
+import { processMarketingEmailsAction } from "@/actions/admin/marketing";
 
 export const dynamic = "force-dynamic";
-export default async function AcquisitionPage() {
+export const maxDuration = 60;
+export default async function AcquisitionPage({ searchParams }: { searchParams?: { run?: string } }) {
   await requireOwnerAdmin();
   const since = new Date(Date.now() - 30 * 86400000);
   const realLead = { NOT: { email: { endsWith: "@resend.dev" } } };
@@ -26,7 +28,9 @@ export default async function AcquisitionPage() {
     <AdminPageHeader eyebrow="Customer acquisition" title="Acquisition" description="Follow new email subscribers and the activation of accounts created in the last 30 days. These are database records; visits, ad attribution, and paid invoices are measured separately." />
     <AdminSurface className="p-6">
       <h2 className="text-lg font-bold">Launch-kit email series</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{marketingReady() ? "Ready for new confirmed subscribers. Sends only in production; at most 30 marketing attempts per day." : "Paused: production delivery, signed webhooks, and the scheduler secret must be configured. The public kit remains available."}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{marketingReady() ? "Ready for new confirmed subscribers. Sends only in production; at most 30 marketing attempts per day. Daily processing uses the dedicated signed GitHub workflow." : "Paused: production delivery and signed webhooks must be configured. The public kit remains available."}</p>
+      {searchParams?.run ? <p role="status" className="mt-3 text-sm">{searchParams.run.startsWith("sent-") && /^sent-\d+$/.test(searchParams.run) ? `Queue processed: ${searchParams.run.slice(5)} emails accepted by the provider.` : "Queue could not run. Check delivery configuration and Email Center."}</p> : null}
+      <form action={processMarketingEmailsAction} className="mt-4"><button className="min-h-11 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-accent">Process due emails</button><p className="mt-2 text-xs text-muted-foreground">Sends only eligible queued messages and due lessons. Existing consent, suppression, pacing, and daily limits still apply.</p></form>
       <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-3">{[["Requested", requested], ["Confirmed", confirmed], ["Unsubscribed", unsubscribed], ["Suppressed", suppressed], ["Completed or customer exit", completed]].map(([label, value]) => <div key={label} className="rounded-xl border border-border bg-muted/30 p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div>)}</div>
       <p className="mt-4 text-sm text-muted-foreground">Requested and confirmed counts are cumulative, including subsequent opt-outs. Resend simulator addresses are excluded. No existing account or Instagram contact is automatically added.</p>
       <div className="mt-5 flex flex-wrap gap-5 text-sm font-semibold"><Link href={LAUNCH_KIT_PATH} className="text-violet-700 underline dark:text-violet-300">Open the public kit</Link><Link href="/admin/emails" className="text-violet-700 underline dark:text-violet-300">Inspect delivery records</Link></div>

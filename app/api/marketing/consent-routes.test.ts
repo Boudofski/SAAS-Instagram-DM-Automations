@@ -7,7 +7,7 @@ import { GET as confirmGet, POST as confirmPost } from "./confirm/route";
 import { GET as unsubscribeGet, POST as unsubscribePost } from "./unsubscribe/route";
 const id = "00000000-0000-4000-8000-000000000001", token = "b".repeat(64);
 beforeEach(() => {
-  vi.resetAllMocks(); vi.stubEnv("CRON_SECRET", "test-secret");
+  vi.resetAllMocks(); vi.stubEnv("RESEND_WEBHOOK_SECRET", "test-secret");
   const lead = { id, confirmationHash: hashToken(token), expiresAt: new Date(Date.now() + 60000), confirmedAt: null, unsubscribedAt: null, suppressedAt: null };
   mocks.findUnique.mockResolvedValue(lead); mocks.findUniqueOrThrow.mockResolvedValue({ ...lead, confirmedAt: new Date() }); mocks.queue.mockResolvedValue({ id: "delivery" });
 });
