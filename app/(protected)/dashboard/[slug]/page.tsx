@@ -1,3 +1,4 @@
+import { recentAutomations } from "@/lib/recent-automations";
 import QuickStart from "@/components/dashboard/quick-start";
 import { waitUntil } from "@vercel/functions";
 import { MetricValue, FollowerSubtitle, DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
@@ -191,7 +192,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="ap3k-kicker"><UiText>{"Automations"}</UiText></p>
-            <h2 className="font-black text-slate-950 dark:text-white"><UiText>{"Active automations"}</UiText></h2>
+            <h2 className="font-black text-slate-950 dark:text-white"><UiText>{"Recent automations"}</UiText></h2>
           </div>
           <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition hover:-translate-y-0.5 hover:bg-violet-100 dark:hover:bg-rf-pink/15"><UiText>{"View all"}</UiText></Link>
         </div>
@@ -205,7 +206,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             ctaHref={`/dashboard/${params.slug}/automation/new`}
           />
         ) : (
-          <AutomationTable slug={params.slug} automations={automationsWithMetrics.slice(0, 4)} showControls={false} pageSize={4} />
+          <AutomationTable slug={params.slug} automations={recentAutomations(automationsWithMetrics)} showControls={false} pageSize={5} />
         )}
       </section>
     </div>
