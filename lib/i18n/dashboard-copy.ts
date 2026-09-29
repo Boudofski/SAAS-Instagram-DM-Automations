@@ -60,6 +60,7 @@ export const DASHBOARD_ROWS: readonly (readonly [string, string, string, string,
   ["Choose a comment, story, or DM trigger, configure the response, and activate it.", "Choisissez un déclencheur de commentaire, de story ou de DM, configurez la réponse et activez l’automatisation.", "Elige un activador de comentario, historia o DM, configura la respuesta y actívalo.", "Wähle einen Kommentar-, Story- oder DM-Auslöser, konfiguriere die Antwort und aktiviere ihn.", "Escolha um acionador de comentário, história ou DM, configure a resposta e ative-o."],
   ["Delete this automation? This removes it from your account.", "Supprimer cette automatisation ? Elle sera retirée de votre compte.", "¿Eliminar esta automatización? Se quitará de tu cuenta.", "Diese Automatisierung löschen? Sie wird aus deinem Konto entfernt.", "Eliminar esta automatização? Será removida da sua conta."],
   ["{start}–{end} of {total}", "{start}–{end} sur {total}", "{start}–{end} de {total}", "{start}–{end} von {total}", "{start}–{end} de {total}"],
+  ["Recent automations", "Automatisations récentes", "Automatizaciones recientes", "Neueste Automatisierungen", "Automatizações recentes"],
   ["0 automations", "Aucune automatisation", "Sin automatizaciones", "Keine Automatisierungen", "Sem automatizações"],
   ["Open {name}", "Ouvrir {name}", "Abrir {name}", "{name} öffnen", "Abrir {name}"],
 ];
