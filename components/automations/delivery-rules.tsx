@@ -46,7 +46,7 @@ export default function DeliveryRules({
         role="switch"
         aria-checked={followGateRequired}
         onClick={(event) => toggleFollowGate(event.currentTarget)}
-        className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-start transition hover:border-rf-purple/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-purple/40 dark:border-white/10 dark:bg-white/[0.04]"
+        className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 light:border-slate-300 bg-slate-50 p-4 text-start transition hover:border-rf-purple/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rf-purple/40 dark:border-white/10 dark:bg-white/[0.04]"
       >
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rf-purple/10 text-rf-purple">
           <UserCheck className="h-5 w-5" />
@@ -54,7 +54,7 @@ export default function DeliveryRules({
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-black text-slate-950 dark:text-white">
             <UiText>{"Ask people to follow before sending the link"}</UiText></span>
-          <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <span className="mt-1 block text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
             <UiText>{"Optional. Instagram shows Follow and verification as two full-width buttons in the same message. AP3K sends the final DM only after verification confirms the follow."}</UiText></span>
         </span>
         <span aria-hidden="true" className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition ${followGateRequired ? "bg-rf-purple" : "bg-slate-300 dark:bg-slate-700"}`}>
@@ -67,7 +67,7 @@ export default function DeliveryRules({
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-rf-purple dark:text-violet-300"><UiText>{"Follow request DM"}</UiText></p>
-              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"Sent only when the person is not following yet."}</UiText></p>
+              <p className="mt-1 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Sent only when the person is not following yet."}</UiText></p>
             </div>
             <span className="rounded-full bg-rf-purple/10 px-2.5 py-1 text-[11px] font-black text-rf-purple"><UiText>{"Optional step"}</UiText></span>
           </div>
@@ -93,7 +93,7 @@ export default function DeliveryRules({
             <span className="rounded-xl border border-rf-purple/20 bg-white px-4 py-3 text-center text-xs font-black text-rf-purple dark:bg-[#111827]">
               <UiText>{"Rechecks follow"}</UiText></span>
           </div>
-          <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
             <UiText>{"Both controls appear inside the message. AP3K verifies the callback subscription before using them and falls back safely if Meta does not confirm it."}</UiText></p>
         </div>
       ) : null}

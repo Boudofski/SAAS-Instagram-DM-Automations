@@ -118,7 +118,7 @@ export function newFlowNode(kind: FlowNode["kind"], index: number): FlowNode {
 import { connectFlow } from "@/lib/automation-flow/connections";
 export { connectFlow } from "@/lib/automation-flow/connections";
 const input =
-  "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-500 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-100";
+  "mt-2 w-full rounded-xl border border-slate-200 light:border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-500 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-100";
 export default function FlowNodeEditor({
   node,
   flow,
@@ -137,7 +137,7 @@ export default function FlowNodeEditor({
     });
   return (
     <div className="space-y-5 p-5">
-      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+      <label className="block text-xs font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">
         Step name
         <input
           value={node.label}
@@ -155,7 +155,7 @@ export default function FlowNodeEditor({
         "product",
         "carousel",
       ].includes(node.kind) && (
-        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <label className="block text-xs font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">
           Message type
           <select
             className={input}
@@ -200,7 +200,7 @@ export default function FlowNodeEditor({
             onChange={(e) => update({ text: e.target.value })}
             className={input}
           />
-          <span className="mt-1 block text-right text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="mt-1 block text-right text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">
             {node.text.length} characters
           </span>
         </label>
@@ -286,7 +286,7 @@ export default function FlowNodeEditor({
           {node.cards.map((card, i) => (
             <div
               key={i}
-              className="space-y-3 border-b border-slate-200 pb-5 dark:border-white/10"
+              className="space-y-3 border-b border-slate-200 light:border-slate-300 pb-5 dark:border-white/10"
             >
               <div className="flex justify-between text-sm font-semibold">
                 <span>
@@ -432,7 +432,7 @@ export default function FlowNodeEditor({
             seconds={node.seconds}
             onChange={(seconds) => update({ seconds })}
           />
-          <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
             The first delay up to 30 seconds runs in the background. Longer
             waits and recovery are checked every five minutes. Messages send
             only while Instagram’s reply window is open.
@@ -530,7 +530,7 @@ export default function FlowNodeEditor({
               />
             </label>
           )}
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
             Instagram profile conditions are verified when this step runs.
             Unavailable profile data does not qualify.
           </p>
@@ -548,7 +548,7 @@ export default function FlowNodeEditor({
             onChange={(e) => update({ percent: Number(e.target.value) })}
             className="mt-4 w-full accent-violet-600"
           />
-          <span className="mt-2 block text-xs text-slate-500">
+          <span className="mt-2 block text-xs text-slate-500 light:text-slate-600">
             Second branch: {100 - node.percent}%
           </span>
         </label>
@@ -575,7 +575,7 @@ export default function FlowNodeEditor({
               className={`${input} font-mono`}
             />
           </label>
-          <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
             Sends a POST request with JSON. Insert contact fields as{" "}
             {"{{email}}"} inside string values. Preview never sends a request.
           </p>
@@ -607,8 +607,8 @@ export default function FlowNodeEditor({
         </label>
       )}
       {edges(node).length > 0 && (
-        <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-white/10">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="space-y-3 border-t border-slate-200 light:border-slate-300 pt-4 dark:border-white/10">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600">
             Connections
           </h3>
           {edges(node).map((edge, i) => (

@@ -123,9 +123,9 @@ export default function AutomationTable({
   }
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors duration-fast dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-2xl">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-sm transition-colors duration-fast dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-2xl">
       {showControls && (
-        <div className="flex flex-col gap-2 border-b border-slate-200 p-3 dark:border-white/10 sm:gap-3 sm:p-4 xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-2 border-b border-slate-200 light:border-slate-300 p-3 dark:border-white/10 sm:gap-3 sm:p-4 xl:flex-row xl:items-center">
           <div className="relative min-w-0 flex-1">
             <Input
               value={query}
@@ -147,7 +147,7 @@ export default function AutomationTable({
               <option value="active"><UiText>{"Active first"}</UiText></option>
               <option value="name"><UiText>{"Name A–Z"}</UiText></option>
             </select>
-            <span className="whitespace-nowrap rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 sm:rounded-2xl sm:text-xs">
+            <span className="whitespace-nowrap rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-500 light:text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 sm:rounded-2xl sm:text-xs">
               {filtered.length
                 ? <UiMessage source="{start}–{end} of {total}" values={{ start: <MetricValue value={(safePage - 1) * pageSize + 1} />, end: <MetricValue value={Math.min(safePage * pageSize, filtered.length)} />, total: <MetricValue value={filtered.length} /> }} />
                 : <UiText>{"0 automations"}</UiText>}
@@ -177,8 +177,8 @@ export default function AutomationTable({
         )}
       </div>
 
-      <div className="hidden xl:block">
-        <div className="grid grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.05] dark:text-slate-400">
+      <div className="hidden xl:block overflow-x-auto">
+        <div className="grid min-w-[1100px] grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.06em] text-slate-500 light:text-slate-600 dark:bg-white/[0.05] dark:text-slate-400">
           <span><UiText>{"Automation"}</UiText></span>
           <span><UiText>{"Channel"}</UiText></span>
           <span><UiText>{"Trigger"}</UiText></span>
@@ -188,7 +188,7 @@ export default function AutomationTable({
           <span><UiText>{"Status"}</UiText></span>
           <span className="text-right"><UiText>{"Manage"}</UiText></span>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-white/10">
+        <div className="divide-y divide-slate-100 light:divide-slate-200 dark:divide-white/10">
           {paged.length === 0 ? (
             <div className="p-4">
               <EmptyRows />
@@ -261,7 +261,7 @@ function CampaignMobileCard({
       onClick={(event) =>
         openAnalyticsRow(event, automationAnalyticsHref(slug, automation))
       }
-      className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 [contain-intrinsic-size:auto_104px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4"
+      className="cursor-pointer rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50 px-3 py-2.5 [contain-intrinsic-size:auto_104px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4"
     >
       <div className="flex min-w-0 items-start gap-2.5">
         <Link
@@ -288,7 +288,7 @@ function CampaignMobileCard({
           </Link>
           <p
             title={translateUi(mode.full, locale)}
-            className="mt-0.5 truncate text-[11px] leading-4 text-slate-500 dark:text-slate-400 sm:text-xs"
+            className="mt-0.5 truncate text-[11px] leading-4 text-slate-500 light:text-slate-600 dark:text-slate-400 sm:text-xs"
           >
             <UiText>
               {source === "STORY"
@@ -336,7 +336,7 @@ function CampaignMobileCard({
       <div className="mt-2 flex min-w-0 items-center gap-2">
         <ReplyPill summary={replySummary} />
         {showExceptionalStatus ? <StatusPill status={status} /> : null}
-        <span className="ms-auto whitespace-nowrap text-[10px] font-bold text-slate-500 dark:text-slate-400 sm:text-[11px]">
+        <span className="ms-auto whitespace-nowrap text-[10px] font-bold text-slate-500 light:text-slate-600 dark:text-slate-400 sm:text-[11px]">
           <MetricValue value={runs} /> <UiText>{"Runs"}</UiText>
           {" · "}
           <MetricValue value={leads} /> <UiText>{"Leads"}</UiText>
@@ -346,7 +346,7 @@ function CampaignMobileCard({
       {compact ? (
         <Link
           href={automationAnalyticsHref(slug, automation)}
-          className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
+          className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-slate-200 light:border-slate-300 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
         >
           <UiText>{"Manage automation"}</UiText>
         </Link>
@@ -393,7 +393,7 @@ function CampaignDesktopRow({
   const replySummary = getReplySummary(automation);
 
   return (
-    <div onClick={(event) => openAnalyticsRow(event, automationAnalyticsHref(slug, automation))} className="cursor-pointer grid grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
+    <div onClick={(event) => openAnalyticsRow(event, automationAnalyticsHref(slug, automation))} className="cursor-pointer grid min-w-[1100px] grid-cols-[minmax(190px,1.6fr)_minmax(78px,.55fr)_minmax(118px,.8fr)_minmax(86px,.55fr)_minmax(68px,.42fr)_minmax(68px,.42fr)_minmax(84px,.52fr)_minmax(148px,.85fr)] items-center gap-3 px-4 py-3 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.04]">
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-3">
           <CampaignThumb post={post} isAny={isAny} source={source} />
@@ -404,10 +404,10 @@ function CampaignDesktopRow({
             >
               {automation.name ? <bdi dir="auto">{automation.name}</bdi> : <UiText>{"Untitled automation"}</UiText>}
             </Link>
-            <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
               <span className="min-w-0 break-words"><UiText>{modeLabel}</UiText>{source === "STORY" && <> · <UiText>{storyTriggerLabel(automation.storyTriggerType)}</UiText></>}</span>
               {automation.currentAccountLabel && (
-                <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 dark:bg-white/[0.07] dark:text-slate-400 2xl:inline-flex">
+                <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 light:text-slate-600 dark:bg-white/[0.07] dark:text-slate-400 2xl:inline-flex">
                   <bdi dir="ltr">{automation.currentAccountLabel}</bdi>
                 </span>
               )}
@@ -503,7 +503,7 @@ function AutomationToggle({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111827]",
         checked
           ? "border-emerald-500 bg-emerald-500 shadow-sm dark:border-emerald-400 dark:bg-emerald-500"
-          : "border-slate-200 bg-[#edf0f3] dark:border-white/10 dark:bg-white/[0.12]",
+          : "border-slate-200 light:border-slate-300 bg-[#edf0f3] dark:border-white/10 dark:bg-white/[0.12]",
         saving ? "cursor-wait opacity-70" : "cursor-pointer",
       ].join(" ")}
     >
@@ -546,7 +546,7 @@ function AutomationActionsMenu({
           type="button"
           aria-label={translateUi("More automation actions", locale)}
           className={[
-            "inline-flex shrink-0 items-center justify-center border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white",
+            "inline-flex shrink-0 items-center justify-center border border-slate-200 light:border-slate-300 bg-white text-slate-500 light:text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white",
             compact ? "h-7 w-7 rounded-lg" : "h-8 w-8 rounded-lg",
           ].join(" ")}
         >
@@ -598,8 +598,8 @@ function PaginationFooter({
 }) {
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
-      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+    <div className="flex flex-col gap-3 border-t border-slate-200 light:border-slate-300 px-4 py-4 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
+      <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400">
         <UiMessage source="{start}–{end} of {total}" values={{ start: <MetricValue value={(page - 1) * pageSize + 1} />, end: <MetricValue value={Math.min(page * pageSize, total)} />, total: <MetricValue value={total} /> }} /> · <UiText>{"Automations"}</UiText>
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -618,7 +618,7 @@ function PaginationFooter({
               "h-8 min-w-8 rounded-xl px-2 text-xs font-black transition-all duration-200",
               item === page
                 ? "bg-rf-pink text-white shadow-ap3k-glow"
-                : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
+                : "border border-slate-200 light:border-slate-300 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300",
             ].join(" ")}
           >
             {item}
@@ -662,7 +662,7 @@ function CampaignThumb({
   }
   return (
     <div
-      className={`${sizeClass} grid flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300`}
+      className={`${sizeClass} grid flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 text-xs font-black text-pink-600 light:text-pink-700 dark:border dark:border-white/10 dark:bg-[#0b1020] dark:bg-none dark:text-pink-300`}
     >
       {source === "STORY" ? "ST" : source === "DM" ? "DM" : isAny ? "∞" : "AP"}
     </div>
@@ -671,7 +671,7 @@ function CampaignThumb({
 
 function EmptyRows() {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400"><UiText>{"No automations match your search."}</UiText></div>
+    <div className="rounded-2xl border border-dashed border-slate-200 light:border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 light:text-slate-600 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-slate-400"><UiText>{"No automations match your search."}</UiText></div>
   );
 }
 

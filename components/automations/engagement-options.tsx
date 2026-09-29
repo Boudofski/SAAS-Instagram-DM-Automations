@@ -10,7 +10,7 @@ export function EngagementOption({ title, description, enabled, onToggle, icon, 
   title: string; description: string; enabled: boolean; onToggle: () => void; icon: ReactNode; children: ReactNode; disabled?: boolean;
 }) {
   const id = useId();
-  return <section className={`overflow-hidden rounded-2xl border transition-colors ${enabled ? "border-violet-300 bg-violet-50/60 dark:border-violet-400/30 dark:bg-violet-400/[0.06]" : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.035]"}`}>
+  return <section className={`overflow-hidden rounded-2xl border transition-colors ${enabled ? "border-violet-300 bg-violet-50/60 dark:border-violet-400/30 dark:bg-violet-400/[0.06]" : "border-slate-200 light:border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-white/[0.035]"}`}>
     <button type="button" role="switch" aria-checked={enabled} aria-controls={id} disabled={disabled && !enabled} onClick={onToggle} className="flex min-h-24 w-full items-start gap-3 p-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 disabled:cursor-not-allowed sm:p-5">
       <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-violet-600 shadow-sm dark:bg-white/5 dark:text-violet-300" aria-hidden="true">{icon}</span>
       <span className="min-w-0 flex-1"><span className="block text-sm font-bold leading-6 text-slate-900 dark:text-slate-100"><UiText>{title}</UiText></span><span className="mt-1 block text-xs leading-5 text-slate-600 dark:text-slate-400"><UiText>{description}</UiText></span></span>

@@ -80,7 +80,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
             </button>
           )}
           <div>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400">
+            <p className="text-[13px] text-slate-500 light:text-slate-600 dark:text-slate-400">
               <UiText>{templates ? "New automation" : "Create"}</UiText>
             </p>
             <DialogTitle className="mt-0.5 text-[23px] font-bold tracking-[-.23px]">
@@ -98,7 +98,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
               <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white px-4 py-3 dark:bg-slate-800">
                 <Search
                   size={16}
-                  className="text-slate-500 dark:text-slate-400"
+                  className="text-slate-500 light:text-slate-600 dark:text-slate-400"
                 />
                 <input
                   aria-label="Search templates"
@@ -119,7 +119,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                     role="tab"
                     aria-selected={filter === v}
                     onClick={() => setFilter(v)}
-                    className={`rounded-full px-4 py-2 text-xs capitalize transition ${filter === v ? "bg-white shadow-sm dark:bg-slate-700" : "text-slate-500 dark:text-slate-400"}`}
+                    className={`rounded-full px-4 py-2 text-xs capitalize transition ${filter === v ? "bg-white shadow-sm dark:bg-slate-700" : "text-slate-500 light:text-slate-600 dark:text-slate-400"}`}
                   >
                     {v}
                   </button>
@@ -154,8 +154,8 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                       <p className="mt-2 flex-1 text-[12px] leading-[18px] text-[#83838a] dark:text-slate-400">
                         <UiText>{t.description}</UiText>
                       </p>
-                      <div className="mt-4 flex w-full items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                        <Icon size={17} className="text-violet-500" />
+                      <div className="mt-4 flex w-full items-center gap-2 text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">
+                        <Icon size={17} className="text-violet-500 light:text-violet-700" />
                         <span>
                           {t.group === "flow"
                             ? "Flow"
@@ -176,12 +176,12 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                 })}
               </div>
               {!matches.length && (
-                <p className="py-12 text-center text-sm text-slate-500">
+                <p className="py-12 text-center text-sm text-slate-500 light:text-slate-600">
                   No templates match your search.
                 </p>
               )}
             </div>
-            <footer className="flex shrink-0 justify-between border-t border-black/5 px-[22px] py-4 text-xs text-slate-500 dark:border-white/5 dark:text-slate-400">
+            <footer className="flex shrink-0 justify-between border-t border-black/5 px-[22px] py-4 text-xs text-slate-500 light:text-slate-600 dark:border-white/5 dark:text-slate-400">
               <span>Showing {matches.length} of 16 templates</span>
               <span>Scroll for more</span>
             </footer>
@@ -190,7 +190,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
           <div className="min-h-0 overflow-y-auto overscroll-contain px-[22px] pb-5">
             <div className="mb-3 flex items-baseline gap-2">
               <h2 className="text-base font-bold">Quick automations</h2>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">
                 ready in a minute
               </span>
             </div>
@@ -210,7 +210,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                     <strong className="block text-sm font-semibold">
                       {name}
                     </strong>
-                    <span className="mt-1 block text-[11.5px] leading-[1.45] text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 block text-[11.5px] leading-[1.45] text-slate-500 light:text-slate-600 dark:text-slate-400">
                       {description}
                     </span>
                   </span>
@@ -219,7 +219,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
             </div>
             <div className="mb-3 mt-[26px] flex items-baseline gap-2 px-1">
               <h2 className="text-base font-bold">Advanced flows</h2>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">
                 multi-step, full control
               </span>
             </div>
@@ -255,13 +255,13 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-slate-500 dark:text-slate-400">
+                    <span className="mt-0.5 block text-[11.5px] text-slate-500 light:text-slate-600 dark:text-slate-400">
                       {subtitle}
                     </span>
                   </span>
                   <ArrowRight
                     size={15}
-                    className="text-slate-500 dark:text-slate-400"
+                    className="text-slate-500 light:text-slate-600 dark:text-slate-400"
                   />
                 </button>
               ))}
@@ -286,16 +286,16 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                   onClick={run}
                   className="flex min-h-11 w-full items-center gap-[11px] rounded-xl px-1.5 py-2 text-left transition hover:bg-black/[.03] dark:hover:bg-white/5"
                 >
-                  <Icon size={17} className="shrink-0 text-slate-500" />
+                  <Icon size={17} className="shrink-0 text-slate-500 light:text-slate-600" />
                   <span className="flex-1 text-[12.5px] text-slate-700 dark:text-slate-300">
                     {title}{" "}
-                    <span className="text-slate-500 dark:text-slate-400">
+                    <span className="text-slate-500 light:text-slate-600 dark:text-slate-400">
                       · {sub}
                     </span>
                   </span>
                   <ArrowRight
                     size={14}
-                    className="shrink-0 text-slate-500 dark:text-slate-400"
+                    className="shrink-0 text-slate-500 light:text-slate-600 dark:text-slate-400"
                   />
                 </button>
               ))}

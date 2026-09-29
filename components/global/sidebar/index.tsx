@@ -44,7 +44,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
   return (
     <aside
       className={cn(
-        "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-visible border-r border-slate-200 bg-[#f6f6fa] py-0 text-slate-950 transition-[width] duration-base ease-ui-out rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 dark:border-white/10 dark:bg-[#0c0e18] dark:text-slate-50 lg:flex",
+        "peer fixed bottom-0 left-0 top-0 z-40 hidden flex-col overflow-visible border-r border-slate-200 light:border-slate-300 bg-[#f6f6fa] py-0 text-slate-950 transition-[width] duration-base ease-ui-out rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 dark:border-white/10 dark:bg-[#0c0e18] dark:text-slate-50 lg:flex",
         drawer
           ? "!relative !inset-auto !flex !h-full !w-full !border-0"
           : expanded
@@ -55,7 +55,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
     >
       <div
         className={cn(
-          "shrink-0 border-b border-slate-200 py-4 dark:border-white/10",
+          "shrink-0 border-b border-slate-200 light:border-slate-300 py-4 dark:border-white/10",
           expanded ? "px-4" : "px-3",
         )}
       >
@@ -103,7 +103,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
                         : "justify-center px-0 py-2.5",
                       isActive
                         ? "border-violet-100 bg-white text-violet-800 shadow-sm dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-200"
-                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white",
+                        : "text-slate-500 light:text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white",
                     )}
                   >
                     <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -137,7 +137,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
             expanded ? t("collapseNavigation") : t("expandNavigation")
           }
           title={expanded ? t("collapseNavigation") : t("expandNavigation")}
-          className="mx-auto grid h-10 w-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
+          className="mx-auto grid h-10 w-10 place-items-center rounded-xl text-slate-500 light:text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           {expanded ? (
             <ChevronsLeft className="h-4 w-4 rtl:rotate-180" />
@@ -147,7 +147,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
         </LocalizedButton>
       </div>
 
-      <div className="shrink-0 border-t border-slate-200 p-3 dark:border-white/10">
+      <div className="shrink-0 border-t border-slate-200 light:border-slate-300 p-3 dark:border-white/10">
         <LocalizedButton
           onClick={() => {
             queryClient.clear();
@@ -156,7 +156,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
           title={!expanded ? t("signOut") : undefined}
           aria-label={!expanded ? t("signOut") : undefined}
           className={cn(
-            "flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white",
+            "flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 light:border-slate-300 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white",
             expanded ? "gap-2 px-3 py-2.5" : "px-0",
           )}
         >

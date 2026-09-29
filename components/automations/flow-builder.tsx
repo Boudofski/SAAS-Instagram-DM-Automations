@@ -411,7 +411,7 @@ export default function FlowBuilder({
           : `Keyword is ${t.keyword || "…"}`,
   }));
   const headerButton =
-    "grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
+    "grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 light:text-slate-600 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
   if (!mounted) return null;
   return createPortal(
     <div
@@ -432,7 +432,7 @@ export default function FlowBuilder({
       <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
       <Sidebar slug={slug} />
       <div className="flex h-full min-w-0 flex-col transition-[margin] lg:ml-[76px] lg:peer-data-[expanded=true]:ml-[232px]">
-        <header className="flex min-h-[60px] shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-3 dark:border-white/5 dark:bg-[#111827] sm:gap-3 sm:px-5">
+        <header className="flex min-h-[60px] shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 bg-white px-3 dark:border-white/5 dark:bg-[#111827] sm:gap-3 sm:px-5">
           <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
             <SheetTrigger asChild>
               <button
@@ -458,7 +458,7 @@ export default function FlowBuilder({
           >
             {basic ? "Automations" : "Flow builder"}
           </Link>
-          <span className="hidden text-slate-500 dark:text-slate-400 sm:block">
+          <span className="hidden text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
             /
           </span>
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -471,10 +471,10 @@ export default function FlowBuilder({
             />
             <Pencil
               size={13}
-              className="hidden shrink-0 text-slate-500 dark:text-slate-400 sm:block"
+              className="hidden shrink-0 text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block"
             />
             <span
-              className={`hidden rounded-md px-2 py-0.5 text-[10px] font-medium sm:block ${live ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"}`}
+              className={`hidden rounded-md px-2 py-0.5 text-[10px] font-medium sm:block ${live ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-amber-50 text-amber-600 light:text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"}`}
             >
               {live ? "Active" : "Draft"}
             </span>
@@ -498,7 +498,7 @@ export default function FlowBuilder({
             </button>
             <span
               role="status"
-              className="mx-2 inline-flex min-w-24 items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400"
+              className="mx-2 inline-flex min-w-24 items-center gap-1 text-[10px] text-slate-500 light:text-slate-600 dark:text-slate-400"
             >
               {busy ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -555,7 +555,7 @@ export default function FlowBuilder({
         )}
         <main className="relative min-h-0 flex-1">
           {!basic && (
-            <div className="absolute right-3 top-3 z-10 flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-[#192233] md:hidden">
+            <div className="absolute right-3 top-3 z-10 flex rounded-xl border border-slate-200 light:border-slate-300 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-[#192233] md:hidden">
               <button
                 aria-label="Undo"
                 disabled={!past.length}
@@ -578,7 +578,7 @@ export default function FlowBuilder({
             <div className="h-full overflow-y-auto">
               <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
                 <div className="space-y-3">
-                  <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600 dark:text-slate-400">
                     {doc.triggers.some((t) => t.source === "COMMENT")
                       ? "Setup triggers and public reply"
                       : "Setup triggers"}
@@ -621,7 +621,7 @@ export default function FlowBuilder({
                       />
                     </label>
                   )}
-                  <h2 className="pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <h2 className="pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600 dark:text-slate-400">
                     Setup direct message
                   </h2>
                   {doc.triggers.some((t) =>
@@ -709,7 +709,7 @@ export default function FlowBuilder({
                           changeFlow(flow);
                           setExpanded(n.id);
                         }}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs dark:border-white/10 dark:bg-[#192233]"
+                        className="rounded-full border border-slate-200 light:border-slate-300 bg-white px-3 py-2 text-xs dark:border-white/10 dark:bg-[#192233]"
                       >
                         + {NODE_NAMES[kind]}
                       </button>
@@ -771,7 +771,7 @@ export default function FlowBuilder({
                 type="button"
                 aria-label="Open the Flow Assistant"
                 onClick={() => setAssistant(true)}
-                className="p-1 text-slate-500 dark:text-slate-400"
+                className="p-1 text-slate-500 light:text-slate-600 dark:text-slate-400"
               >
                 <Menu size={16} />
               </button>
@@ -787,9 +787,9 @@ export default function FlowBuilder({
           {triggerPanel && (
             <aside
               aria-label="Trigger settings"
-              className="absolute inset-y-0 right-0 z-30 flex w-full max-w-[384px] flex-col border-l border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
+              className="absolute inset-y-0 right-0 z-30 flex w-full max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
             >
-              <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 px-5 dark:border-white/5">
+              <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
                 <Diamond size={17} />
                 <h2 className="flex-1 text-sm font-semibold">Begin when…</h2>
                 <button
@@ -818,7 +818,7 @@ export default function FlowBuilder({
                     setEditingTrigger(undefined);
                   }}
                 />
-                <div className="space-y-4 border-t border-slate-100 p-5 dark:border-white/10">
+                <div className="space-y-4 border-t border-slate-100 light:border-slate-200 p-5 dark:border-white/10">
                   <label className="flex items-center justify-between gap-3 text-sm">
                     <span>Run once per contact</span>
                     <input
@@ -835,7 +835,7 @@ export default function FlowBuilder({
                   </label>
                   {doc.triggers.some((t) => t.source === "COMMENT") && (
                     <>
-                      <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
                         Comment flows start with a private reply and wait for a
                         button tap. A first step with one button supplies this
                         opening automatically.
@@ -890,8 +890,8 @@ export default function FlowBuilder({
         </main>
         <Dialog open={assistant} onOpenChange={setAssistant}>
           <DialogContent className="font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
-            <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 px-5 pe-14 dark:border-white/5">
-              <Sparkles size={20} className="text-violet-500" />
+            <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 pe-14 dark:border-white/5">
+              <Sparkles size={20} className="text-violet-500 light:text-violet-700" />
               <DialogTitle className="text-sm font-semibold">
                 Flow Assistant
               </DialogTitle>
@@ -905,17 +905,17 @@ export default function FlowBuilder({
                 <>
                   <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
                     <span className="grid h-14 w-14 place-items-center rounded-2xl border border-violet-100 bg-violet-50 dark:border-violet-500/20 dark:bg-violet-500/10">
-                      <Sparkles size={29} className="text-violet-500" />
+                      <Sparkles size={29} className="text-violet-500 light:text-violet-700" />
                     </span>
                     <h2 className="text-[19px] font-semibold">
                       How can I help you build?
                     </h2>
-                    <p className="max-w-[300px] text-xs leading-[21px] text-slate-500 dark:text-slate-400">
+                    <p className="max-w-[300px] text-xs leading-[21px] text-slate-500 light:text-slate-600 dark:text-slate-400">
                       Describe an automation in plain words, or start from one
                       of the ideas below.
                     </p>
                   </div>
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 light:text-slate-600 dark:text-slate-400">
                     Try asking
                   </p>
                   <div className="space-y-2">
@@ -924,7 +924,7 @@ export default function FlowBuilder({
                         key={s}
                         onClick={() => void ask(s)}
                         disabled={generating}
-                        className="w-full rounded-xl border border-black/[.06] bg-[#f9faf9] px-3.5 py-3 text-left text-xs leading-5 text-slate-500 transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-violet-500/10"
+                        className="w-full rounded-xl border border-black/[.06] bg-[#f9faf9] px-3.5 py-3 text-left text-xs leading-5 text-slate-500 light:text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-violet-500/10"
                       >
                         {s}
                       </button>
@@ -944,7 +944,7 @@ export default function FlowBuilder({
                   {generating && (
                     <p
                       role="status"
-                      className="flex items-center gap-2 text-xs text-violet-500"
+                      className="flex items-center gap-2 text-xs text-violet-500 light:text-violet-700"
                     >
                       <Loader2 size={14} className="animate-spin" />
                       Building your flow…
@@ -963,7 +963,7 @@ export default function FlowBuilder({
                 e.preventDefault();
                 void ask();
               }}
-              className="flex shrink-0 items-end gap-2 border-t border-slate-100 p-4 dark:border-white/5"
+              className="flex shrink-0 items-end gap-2 border-t border-slate-100 light:border-slate-200 p-4 dark:border-white/5"
             >
               <textarea
                 aria-label="Message to Flow Assistant"
@@ -972,7 +972,7 @@ export default function FlowBuilder({
                 onChange={(e) => setPrompt(e.target.value)}
                 maxLength={4000}
                 placeholder="Describe the flow you want to build…"
-                className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 bg-transparent p-3 text-sm outline-none focus:border-violet-400 dark:border-white/10"
+                className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 light:border-slate-300 bg-transparent p-3 text-sm outline-none focus:border-violet-400 dark:border-white/10"
               />
               <button
                 aria-label="Generate flow"

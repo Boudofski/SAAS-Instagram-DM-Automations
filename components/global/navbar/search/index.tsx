@@ -132,11 +132,11 @@ export default function Search() {
 
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <div className="flex min-w-0 items-center gap-x-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-0.5 shadow-sm focus-within:border-pink-300 focus-within:ring-2 focus-within:ring-pink-100 dark:border-white/10 dark:bg-white/[0.035] dark:focus-within:border-rf-blue/60 dark:focus-within:ring-rf-blue/20">
+      <div className="flex min-w-0 items-center gap-x-2 rounded-xl border border-slate-200 light:border-slate-300 bg-white/70 px-3 py-0.5 shadow-sm focus-within:border-pink-300 focus-within:ring-2 focus-within:ring-pink-100 dark:border-white/10 dark:bg-white/[0.035] dark:focus-within:border-rf-blue/60 dark:focus-within:ring-rf-blue/20">
         {isLoading ? (
           <Loader2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-spin text-rf-pink" />
         ) : (
-          <SearchIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+          <SearchIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-slate-400 light:text-slate-600 dark:text-slate-500" />
         )}
         <Input
           value={query}
@@ -151,7 +151,7 @@ export default function Search() {
           aria-expanded={isOpen && canSearch}
           aria-controls="workspace-search-results"
           aria-activedescendant={activeIndex >= 0 ? `workspace-search-result-${activeIndex}` : undefined}
-          className="h-9 min-w-0 flex-1 border-none bg-transparent px-0 text-sm text-slate-950 shadow-none outline-none ring-0 placeholder:text-slate-400 focus:ring-0 dark:bg-transparent dark:text-slate-50 dark:placeholder:text-slate-500"
+          className="h-9 min-w-0 flex-1 border-none bg-transparent px-0 text-sm text-slate-950 shadow-none outline-none ring-0 placeholder:text-slate-400 light:placeholder:text-slate-600 focus:ring-0 dark:bg-transparent dark:text-slate-50 dark:placeholder:text-slate-500"
         />
       </div>
 
@@ -160,18 +160,18 @@ export default function Search() {
           id="workspace-search-results"
           role="listbox"
           aria-label={t("searchResults")}
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(420px,70vh)] min-w-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-[#101827]"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(420px,70vh)] min-w-0 overflow-y-auto rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-[#101827]"
         >
           {isLoading && !hasResults ? (
-            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">{t("searching")}</p>
+            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">{t("searching")}</p>
           ) : error ? (
             <p role="alert" className="px-3 py-5 text-center text-sm font-semibold text-red-600 dark:text-red-300">{error}</p>
           ) : !hasResults ? (
-            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">{t("noResults")}: “{trimmedQuery}”.</p>
+            <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">{t("noResults")}: “{trimmedQuery}”.</p>
           ) : (
             sections.map((section) => section.items.length > 0 && (
               <div key={section.label} role="group" aria-label={section.label} className="py-1">
-                <p className="px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{section.label}</p>
+                <p className="px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 light:text-slate-600 dark:text-slate-500">{section.label}</p>
                 {section.items.map((item) => {
                   itemIndex += 1;
                   const index = itemIndex;
@@ -191,7 +191,7 @@ export default function Search() {
                       }`}
                     >
                       <span className="w-full truncate text-sm font-black">{item.title}</span>
-                      <span className="mt-0.5 w-full truncate text-xs text-slate-500 dark:text-slate-400">{item.subtitle}</span>
+                      <span className="mt-0.5 w-full truncate text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">{item.subtitle}</span>
                     </button>
                   );
                 })}

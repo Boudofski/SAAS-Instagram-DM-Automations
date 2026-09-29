@@ -73,7 +73,7 @@ export default function RemoveInstagramAccountButton({ integrationId }: { integr
         <AlertDialogFooter className="gap-2 p-5 sm:space-x-0">
           <AlertDialogCancel
             disabled={isRemoving}
-            className="h-11 rounded-xl border-slate-200 bg-white px-5 font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+            className="h-11 rounded-xl border-slate-200 light:border-slate-300 bg-white px-5 font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
           ><UiText>{" Keep Account "}</UiText></AlertDialogCancel>
           <Button
             type="button"

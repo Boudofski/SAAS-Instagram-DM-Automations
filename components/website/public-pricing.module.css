@@ -85,7 +85,7 @@
 }
 .billing p {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 16px;
   margin-top: 10px;
 }
@@ -128,7 +128,7 @@
 }
 .name > span {
   flex-shrink: 0;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1;
   font-weight: 650;
   letter-spacing: 0.05em;
@@ -175,7 +175,7 @@
 }
 .price > span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16.5px;
 }
 .billed {
@@ -183,7 +183,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16.5px;
   min-height: 20px;
   color: var(--muted);
@@ -194,7 +194,7 @@
   border-radius: 4px;
   padding: 2px 5px;
   font-weight: 650;
-  font-size: 10px;
+  font-size: 12px;
 }
 :global(.dark) .saving,
 .featured .saving {
@@ -202,7 +202,7 @@
   color: #99f6bd;
 }
 .cancel {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16.5px;
   color: var(--muted);
   margin-top: 4px;
@@ -240,7 +240,7 @@
   padding-top: 18px;
 }
 .included {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -252,7 +252,7 @@
   margin-top: 18px;
 }
 .groupLabel {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 14px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -309,7 +309,7 @@
 }
 .usage {
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
   color: var(--muted);
   margin: 24px auto 0;
@@ -387,14 +387,14 @@
 }
 .tablePlan small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 17px;
 }
 .compactToggle {
   width: 150px;
 }
 .compactToggle button {
-  font-size: 10px;
+  font-size: 12px;
   padding: 5px 12px;
   min-height: 28px;
 }
@@ -479,7 +479,7 @@
   .scrollHint {
     display: block;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     margin-bottom: 12px;
     text-align: right;
   }
@@ -506,7 +506,7 @@
 
 .pricingSurface {
   --ink: #15151b;
-  --muted: #71717a;
+  --muted: #52525b;
   --paper: #fff;
   --soft: #f5f5f7;
   --line: #e4e4e7;

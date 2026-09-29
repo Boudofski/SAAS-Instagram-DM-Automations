@@ -37,8 +37,8 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
 
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{t("personalInviteLink")}</p>
-      <div dir="ltr" className="mt-2 flex min-h-11 items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 px-3 dark:border-white/10 dark:bg-[#0b1020]">
+      <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500 light:text-slate-600 dark:text-slate-400">{t("personalInviteLink")}</p>
+      <div dir="ltr" className="mt-2 flex min-h-11 items-center overflow-hidden rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50 px-3 dark:border-white/10 dark:bg-[#0b1020]">
         <span className="block min-w-0 flex-1 truncate text-xs font-bold text-slate-700 dark:text-slate-200">{inviteUrl}</span>
       </div>
       <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
@@ -46,7 +46,7 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? t("copied") : t("copyInviteLink")}
         </button>
-        <LocalizedButton type="button" onClick={shareLink} aria-label={t("shareReferralLink")} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08] sm:px-4">
+        <LocalizedButton type="button" onClick={shareLink} aria-label={t("shareReferralLink")} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-slate-200 light:border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08] sm:px-4">
           <Send className="h-4 w-4" /><span className="hidden sm:inline">{t("share")}</span>
         </LocalizedButton>
       </div>

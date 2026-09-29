@@ -40,7 +40,7 @@ export function TimeZoneSettings() {
   return <div className="space-y-4">
     <div>
       <h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{"Time zone"}</UiText></h2>
-      <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{"AP3K detects your device time zone automatically. Choose a fixed zone if you manage the account from another location."}</UiText></p>
+      <p className="mt-0.5 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"AP3K detects your device time zone automatically. Choose a fixed zone if you manage the account from another location."}</UiText></p>
     </div>
     <label className="block">
       <span className="sr-only"><UiText>{"Time zone"}</UiText></span>

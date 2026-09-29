@@ -106,7 +106,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           "group ap3k-content-enter overflow-hidden rounded-2xl border p-5 shadow-surface  dark:bg-white/[0.04]",
           tokenExpired
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
-            : "border-slate-200 bg-white dark:bg-gradient-to-br dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
+            : "border-slate-200 light:border-slate-300 bg-white dark:bg-gradient-to-br dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-4">
@@ -118,7 +118,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
                   </p>
                   <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}><UiText>{tokenExpired ? "Reconnect" : "Connected"}</UiText></span>
                 </div>
-                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">
                   {tokenExpired
                     ? <UiText>{"Reconnect Instagram to resume automation activity."}</UiText>
                     : profileSnapshot?.fetchedAt
@@ -147,7 +147,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
         </div>
         <div className="mb-3 flex ap3k-content-enter flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
+          <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
           {[
             ["24h", "Last 24h"],
             ["7d", "Last 7d"],
@@ -168,9 +168,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             </Link>
           ))}
           </div>
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
+          <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>
-        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 xl:grid-cols-5">
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}
@@ -216,19 +216,19 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 function AccountStatCard({ label, value, change, subtitle }: { label: string; value: string | number; change?: ChangeSummary; subtitle: React.ReactNode }) {
   const changeClass =
     change?.tone === "positive"
-      ? "text-emerald-600 dark:text-emerald-300"
+      ? "text-emerald-600 light:text-emerald-700 dark:text-emerald-300"
       : change?.tone === "negative"
         ? "text-red-500 dark:text-red-300"
-        : "text-slate-500 dark:text-slate-500";
+        : "text-slate-500 light:text-slate-600 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-b border-r border-slate-200 px-3 py-4 transition duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"><UiText>{label}</UiText></p>
+    <div className="min-w-0 border-b border-r border-slate-200 light:border-slate-300 px-3 py-4 transition duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{label}</UiText></p>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
         <p className="min-w-0 break-words text-xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-2xl"><MetricValue value={value} /></p>
         <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}><MetricValue value={change?.label ?? "—"} /></span>
       </div>
-      <p className="mt-2 text-[11px] leading-tight text-slate-500 dark:text-slate-400">{subtitle}</p>
+      <p className="mt-2 text-[11px] leading-tight text-slate-500 light:text-slate-600 dark:text-slate-400">{subtitle}</p>
     </div>
   );
 }

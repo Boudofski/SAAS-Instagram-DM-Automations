@@ -162,7 +162,7 @@ export default async function InstagramAccountPage({
           <div>
             <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Performance"}</UiText></h2>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
               <DashboardPeriodLabel period={period} start={periodRange.currentStart} end={periodRange.currentEnd} />
             </p>
           </div>
@@ -179,7 +179,7 @@ export default async function InstagramAccountPage({
               <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
             </>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 sm:col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
+            <p className="rounded-xl border border-dashed border-slate-200 light:border-slate-300 p-4 text-sm font-bold text-slate-500 light:text-slate-600 dark:border-white/10 dark:text-slate-400 sm:col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
           )}
         </div>
       </section>
@@ -192,19 +192,19 @@ export default async function InstagramAccountPage({
             </span>
             <div>
               <h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{" Connection settings "}</UiText></h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><UiText>{" Manage or remove this account "}</UiText></p>
+              <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Manage or remove this account "}</UiText></p>
             </div>
           </div>
-          <span className="text-sm text-slate-400 transition-transform group-open:rotate-180">
+          <span className="text-sm text-slate-400 light:text-slate-600 transition-transform group-open:rotate-180">
             ⌄
           </span>
         </summary>
-        <div className="border-t border-slate-200 p-4 dark:border-white/10">
-          <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>{" Removing this Instagram account permanently deletes only its automations, contacts, inbox, analytics, and AI knowledge. Your other accounts stay unchanged. "}</UiText></p>
+        <div className="border-t border-slate-200 light:border-slate-300 p-4 dark:border-white/10">
+          <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Removing this Instagram account permanently deletes only its automations, contacts, inbox, analytics, and AI knowledge. Your other accounts stay unchanged. "}</UiText></p>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Link
               href={`/dashboard/${params.slug}/integrations`}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 light:border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
             ><UiText>{"Manage connection"}</UiText><ExternalLink className="h-4 w-4" />
             </Link>
             {connected && <RemoveInstagramAccountButton integrationId={instagram!.id} />}
@@ -223,7 +223,7 @@ function PeriodSelector({ slug, active }: { slug: string; active: string }) {
     ["30d", "Last 30d"],
   ];
   return (
-    <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
       {items.map(([key, label]) => (
         <Link
           key={key}
@@ -250,9 +250,9 @@ function SettingsStatCard({
   stat: AccountStatValue;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-rf-pink/30 hover:bg-white dark:border-white/10 dark:bg-white/[0.025] dark:hover:bg-white/[0.04] sm:p-3.5">
+    <div className="min-w-0 rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50 p-3 hover:border-rf-pink/30 hover:bg-white dark:border-white/10 dark:bg-white/[0.025] dark:hover:bg-white/[0.04] sm:p-3.5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
+        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 light:text-slate-600 dark:text-slate-400">
           <UiText>{label}</UiText>
         </p>
         <p
@@ -260,7 +260,7 @@ function SettingsStatCard({
             "text-xl font-black tracking-tight",
             stat.enabled
               ? "text-slate-950 dark:text-white"
-              : "text-slate-500 dark:text-slate-400",
+              : "text-slate-500 light:text-slate-600 dark:text-slate-400",
           ].join(" ")}
         >
           {typeof stat.value === "number"
@@ -268,7 +268,7 @@ function SettingsStatCard({
             : stat.value}
         </p>
       </div>
-      <p className="mt-1 hidden truncate text-[11px] text-slate-500 dark:text-slate-400 sm:block">
+      <p className="mt-1 hidden truncate text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
         {stat.subtitle}
       </p>
     </div>

@@ -61,7 +61,7 @@ export default function ContactsClient({
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
             <UiText>{"Contacts"}</UiText>
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-slate-500 light:text-slate-600 dark:text-slate-400">
             <UiText>
               {
                 "People who have interacted with your AP3K automations or inbox."
@@ -78,7 +78,7 @@ export default function ContactsClient({
       </div>
 
       <label className="relative mb-4 block max-w-xl">
-        <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 light:text-slate-600" />
         <span className="sr-only">
           <UiText>{"Search contacts"}</UiText>
         </span>
@@ -90,8 +90,8 @@ export default function ContactsClient({
         />
       </label>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220]">
-        <div className="hidden grid-cols-[minmax(220px,1fr)_140px_140px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:border-white/10 dark:bg-white/[0.04] md:grid">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-sm dark:border-white/10 dark:bg-[#0d1220]">
+        <div className="hidden grid-cols-[minmax(220px,1fr)_140px_140px] gap-4 border-b border-slate-200 light:border-slate-300 bg-slate-50 px-5 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 light:text-slate-600 dark:border-white/10 dark:bg-white/[0.04] md:grid">
           <span>
             <UiText>{"Contact"}</UiText>
           </span>
@@ -113,7 +113,7 @@ export default function ContactsClient({
                   {query ? "No matching contacts" : "No contacts yet"}
                 </UiText>
               </p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500 light:text-slate-600 dark:text-slate-400">
                 <UiText>
                   {
                     "Contacts appear after an Instagram interaction reaches AP3K."
@@ -126,7 +126,7 @@ export default function ContactsClient({
           pagedContacts.map((contact) => (
             <article
               key={contact.id}
-              className="grid gap-3 border-b border-slate-100 p-4 last:border-b-0 dark:border-white/[0.07] md:grid-cols-[minmax(220px,1fr)_140px_140px] md:items-center md:gap-4 md:px-5"
+              className="grid gap-3 border-b border-slate-100 light:border-slate-200 p-4 last:border-b-0 dark:border-white/[0.07] md:grid-cols-[minmax(220px,1fr)_140px_140px] md:items-center md:gap-4 md:px-5"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <ContactAvatar
@@ -144,7 +144,7 @@ export default function ContactsClient({
                       {contact.email}
                     </p>
                   ) : (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
                       <UiText>{"Instagram contact"}</UiText>
                     </p>
                   )}
@@ -158,20 +158,20 @@ export default function ContactsClient({
                   )}
                 </div>
               </div>
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-pink-600 dark:text-pink-300">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-pink-600 light:text-pink-700 dark:text-pink-300">
                 <Instagram className="h-3 w-3" />{" "}
                 {contact.automation?.source ?? "Manual"}
               </span>
               {contact.conversationId ? (
                 <Link
                   href={`/dashboard/${slug}/inbox?conversation=${contact.conversationId}`}
-                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 transition hover:border-violet-300 hover:bg-rf-purple/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 light:border-slate-300 px-3 text-xs font-black text-slate-700 transition hover:border-violet-300 hover:bg-rf-purple/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   <UiText>{" Open chat"}</UiText>
                 </Link>
               ) : (
-                <span className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-400 dark:bg-white/[0.05]">
+                <span className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-400 light:text-slate-600 dark:bg-white/[0.05]">
                   <UiText>{"Lead captured"}</UiText>
                 </span>
               )}
@@ -183,7 +183,7 @@ export default function ContactsClient({
       {filtered.length > CONTACTS_PER_PAGE && (
         <nav
           aria-label="Contacts pagination"
-          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-white/10 dark:bg-[#0d1220]"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-2 shadow-sm dark:border-white/10 dark:bg-[#0d1220]"
         >
           <button
             type="button"
@@ -194,7 +194,7 @@ export default function ContactsClient({
             <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
             <UiText>{" Previous"}</UiText>
           </button>
-          <span className="text-center text-xs font-bold text-slate-500 dark:text-slate-400">
+          <span className="text-center text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400">
             <UiMessage
               source="Page {current} of {total}"
               values={{ current: currentPage, total: totalPages }}

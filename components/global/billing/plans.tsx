@@ -41,7 +41,7 @@ export default function BillingPlans({
   return (
     <section
       aria-labelledby="billing-plans-title"
-      className="border-t border-slate-200 pt-6 dark:border-white/10"
+      className="border-t border-slate-200 light:border-slate-300 pt-6 dark:border-white/10"
     >
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -51,14 +51,14 @@ export default function BillingPlans({
           >
             <UiText>Plans</UiText>
           </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
             <UiText>Choose the capacity you need.</UiText>
           </p>
         </div>
         <div
           role="group"
           aria-label="Billing interval"
-          className="flex w-fit rounded-xl border border-slate-200 bg-slate-100/70 p-1 dark:border-white/10 dark:bg-white/5"
+          className="flex w-fit rounded-xl border border-slate-200 light:border-slate-300 bg-slate-100/70 p-1 dark:border-white/10 dark:bg-white/5"
         >
           {(["month", "year"] as const).map((value) => (
             <button
@@ -66,7 +66,7 @@ export default function BillingPlans({
               type="button"
               aria-pressed={interval === value}
               onClick={() => setInterval(value)}
-              className={`min-h-10 rounded-lg px-4 text-xs font-semibold transition-colors ${interval === value ? "bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"}`}
+              className={`min-h-10 rounded-lg px-4 text-xs font-semibold transition-colors ${interval === value ? "bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 light:text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"}`}
             >
               <UiText>{value === "year" ? "Yearly" : "Monthly"}</UiText>
             </button>
@@ -86,7 +86,7 @@ export default function BillingPlans({
             <article
               key={plan.id}
               aria-label={`${plan.name} plan`}
-              className={`flex min-w-0 flex-col rounded-2xl border p-5 ${selected ? "border-violet-400 bg-violet-50/60 ring-1 ring-violet-400/20 dark:border-violet-400/50 dark:bg-violet-400/[0.07]" : "border-slate-200 bg-white dark:border-white/10 dark:bg-[#151b28]"}`}
+              className={`flex min-w-0 flex-col rounded-2xl border p-5 ${selected ? "border-violet-400 bg-violet-50/60 ring-1 ring-violet-400/20 dark:border-violet-400/50 dark:bg-violet-400/[0.07]" : "border-slate-200 light:border-slate-300 bg-white dark:border-white/10 dark:bg-[#151b28]"}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-base font-semibold text-slate-950 dark:text-white">
@@ -103,12 +103,12 @@ export default function BillingPlans({
                   {money(price)}
                 </span>
                 {!free && (
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
                     <UiText>/month</UiText>
                   </span>
                 )}
               </p>
-              <p className="mt-1 min-h-5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-1 min-h-5 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
                 {free ? (
                   <UiText>No recurring charge</UiText>
                 ) : interval === "year" ? (
@@ -145,7 +145,7 @@ export default function BillingPlans({
                     key={label}
                     className="flex items-start justify-between gap-3"
                   >
-                    <dt className="text-slate-500 dark:text-slate-400">
+                    <dt className="text-slate-500 light:text-slate-600 dark:text-slate-400">
                       <UiText>{label}</UiText>
                     </dt>
                     <dd className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
@@ -159,7 +159,7 @@ export default function BillingPlans({
                   <Check
                     size={14}
                     aria-hidden="true"
-                    className="mt-0.5 shrink-0 text-violet-500"
+                    className="mt-0.5 shrink-0 text-violet-500 light:text-violet-700"
                   />
                   <UiText>Lead capture, follow-ups and custom flows</UiText>
                 </p>
@@ -169,7 +169,7 @@ export default function BillingPlans({
                 !selected &&
                 !free &&
                 (disabled ? (
-                  <span className="mt-auto rounded-xl bg-slate-100 px-3 py-3 text-center text-xs text-slate-500 dark:bg-white/5">
+                  <span className="mt-auto rounded-xl bg-slate-100 px-3 py-3 text-center text-xs text-slate-500 light:text-slate-600 dark:bg-white/5">
                     <UiText>Billing unavailable</UiText>
                   </span>
                 ) : (
@@ -185,7 +185,7 @@ export default function BillingPlans({
           );
         })}
       </div>
-      <div className="mt-4 flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-2 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <p>
           <UiText>
             {existingPaid

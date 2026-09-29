@@ -61,7 +61,7 @@ export function ManageBillingButton({
         variant="outline"
         disabled={isPending}
         onClick={openBillingPortal}
-        className="h-11 rounded-xl border-slate-200 bg-white/80 px-4 font-bold text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:hover:bg-white/[0.10]"
+        className="h-11 rounded-xl border-slate-200 light:border-slate-300 bg-white/80 px-4 font-bold text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:hover:bg-white/[0.10]"
       >
         {isPending ? (
           <Loader2 aria-hidden="true" className="animate-spin" />

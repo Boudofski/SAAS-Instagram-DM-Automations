@@ -53,12 +53,12 @@ export default async function AutomationsPage({ params }: Props) {
           <div className="mt-1 flex items-baseline gap-2">
             <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Automations"}</UiText></h1>
             {automations.length > 0 ? (
-              <span className="text-xs font-bold text-slate-400 sm:hidden">
+              <span className="text-xs font-bold text-slate-400 light:text-slate-600 sm:hidden">
                 {automations.length}
               </span>
             ) : null}
           </div>
-          <p className="mt-1 hidden text-sm text-slate-500 dark:text-slate-400 sm:block">
+          <p className="mt-1 hidden text-sm text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
             {automations.length === 0
               ? "Build a comment, story, or DM flow that responds while the conversation is active."
               : `${automations.length} automation${automations.length !== 1 ? "s" : ""} · Comment, story, and DM flows live together here.`}

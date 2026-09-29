@@ -2,8 +2,8 @@
   --paper: #fff;
   --soft: #f5f5f7;
   --ink: #17151e;
-  --muted: #696573;
-  --line: #e8e6ec;
+  --muted: #4b5563;
+  --line: #cbd5e1;
   --accent: #7c3aed;
   min-height: 100vh;
   background: var(--paper);
@@ -45,7 +45,7 @@
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--accent);
 }
@@ -142,7 +142,7 @@
 }
 .stats span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .tableWrap {
   overflow-x: auto;
@@ -444,4 +444,31 @@
 }
 .articleHeader nav ol {
   justify-content: center;
+}
+
+/* Commercial pages use a clear reading surface and grouped content. */
+:global(html:not(.dark)) .commercialPage { background:#eef1f6; }
+.commercialArticle { width:min(1040px,calc(100% - 40px)); }
+:global(html:not(.dark)) .commercialArticle {
+  background:#fff; border:1px solid var(--line); border-radius:24px;
+  padding:clamp(20px,4vw,48px); box-shadow:0 8px 32px #0f172a06;
+}
+.contentSection { margin-block:28px; padding:24px; border:1px solid var(--line); border-radius:16px; background:var(--soft); }
+.contentSection > h2:first-child, .contentSection > h3:first-child { margin-top:0; }
+.contentSection > :last-child { margin-bottom:0; }
+.contentSection .two > section { min-width:0; }
+.commercialArticle .stats { gap:12px; border:0; }
+.commercialArticle .stats > div { padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--soft); }
+.commercialArticle .tableWrap { border:1px solid var(--line); background:var(--paper); }
+.commercialArticle .cta { border:1px solid var(--line); border-radius:18px; background:var(--soft); padding:32px 20px; }
+.workspacePreview { margin:32px 0; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--paper); }
+.workspacePreviewHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:16px 20px; font-size:14px; }
+.workspacePreviewHeader a { font-weight:600; }
+.workspaceScreenshot { width:100%; height:auto; }
+.workspacePreview figcaption { padding:14px 20px; color:var(--muted); font-size:12px; line-height:1.6; }
+@media(max-width:600px) {
+  .commercialArticle { width:calc(100% - 24px); }
+  .contentSection { padding:18px; }
+  .commercialArticle .stats > div { padding:12px; }
+  .workspacePreviewHeader { padding:14px; }
 }

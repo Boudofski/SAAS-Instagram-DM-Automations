@@ -90,7 +90,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
           <Diamond size={16} fill="currentColor" />
           Begin when…
         </div>
-        <p className="px-[14px] pb-4 text-[12px] leading-5 text-slate-500 dark:text-slate-400">
+        <p className="px-[14px] pb-4 text-[12px] leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
           A Trigger is an action that initiates your Flow. Click to add one.
         </p>
         <div className="space-y-2 px-[14px]">
@@ -105,7 +105,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
                 <strong className="block text-[12px] font-semibold">
                   {t.label}
                 </strong>
-                <span className="mt-1 block truncate text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="mt-1 block truncate text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">
                   {t.detail}
                 </span>
               </span>
@@ -145,7 +145,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
         <Icon size={18} />
         <div>
           {isMessage && (
-            <span className="block text-[10px] leading-4 text-slate-400">
+            <span className="block text-[10px] leading-4 text-slate-400 light:text-slate-600">
               Instagram
             </span>
           )}
@@ -168,7 +168,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
               {n.cards.map((c, i) => (
                 <div
                   key={i}
-                  className="w-40 shrink-0 rounded-lg border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-slate-800"
+                  className="w-40 shrink-0 rounded-lg border border-slate-200 light:border-slate-300 bg-white p-2 dark:border-white/10 dark:bg-slate-800"
                 >
                   {c.image && (
                     /* eslint-disable-next-line @next/next/no-img-element */ <img
@@ -178,7 +178,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
                     />
                   )}
                   {c.title || `Card ${i + 1}`}
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-400 light:text-slate-600">
                     {c.links.length} link buttons
                   </p>
                 </div>
@@ -188,7 +188,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
           {"text" in n && (
             <p dir="auto" className="whitespace-pre-wrap break-words">
               {n.text || (
-                <span className="text-slate-400">Enter your message…</span>
+                <span className="text-slate-400 light:text-slate-600">Enter your message…</span>
               )}
             </p>
           )}
@@ -218,7 +218,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
               </div>
             ))}
           {["email", "phone", "capture"].includes(n.kind) && (
-            <p className="text-[10px] text-violet-500">
+            <p className="text-[10px] text-violet-500 light:text-violet-700">
               Wait for {n.kind === "capture" ? "a reply" : `a valid ${n.kind}`}
             </p>
           )}
@@ -360,10 +360,10 @@ export default function FlowCanvas({
         type: "default",
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: resolvedTheme === "dark" ? "#69748b" : "#b3b3b3",
+          color: resolvedTheme === "dark" ? "#69748b" : "#64748b",
         },
         style: {
-          stroke: resolvedTheme === "dark" ? "#69748b" : "#b3b3b3",
+          stroke: resolvedTheme === "dark" ? "#69748b" : "#64748b",
           strokeWidth: 1.25,
         },
         interactionWidth: 20,
@@ -537,7 +537,7 @@ export default function FlowCanvas({
           variant={BackgroundVariant.Dots}
           gap={22}
           size={1.5}
-          color={resolvedTheme === "dark" ? "#263247" : "#e3e4e6"}
+          color={resolvedTheme === "dark" ? "#263247" : "#b8c4d4"}
         />
         <Controls showInteractive={false} position="bottom-left" fitViewOptions={{ padding: 0.15, maxZoom: 1 }} />
       </ReactFlow>
@@ -552,7 +552,7 @@ export default function FlowCanvas({
             void instance.current?.fitView({ padding: 0.15, maxZoom: 1, duration: 250 });
           });
         }}
-        className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm dark:border-white/10 dark:bg-[#192233]"
+        className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-slate-200 light:border-slate-300 bg-white px-3 py-2 text-xs shadow-sm dark:border-white/10 dark:bg-[#192233]"
       >
         <LayoutGrid size={15} /> Compact layout
       </button>
@@ -575,14 +575,14 @@ export default function FlowCanvas({
           role="dialog"
           aria-label={pending ? "Add a connected node" : "Add node"}
           style={pending ? { left: pending.menuPosition.x, top: pending.menuPosition.y, maxHeight: `calc(100% - ${pending.menuPosition.y + 12}px)` } : { left: 64, bottom: 12 }}
-          className="absolute z-30 max-h-[calc(100%_-_24px)] w-[240px] max-w-[calc(100%_-_24px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl outline-none dark:border-white/10 dark:bg-[#1b2334]"
+          className="absolute z-30 max-h-[calc(100%_-_24px)] w-[240px] max-w-[calc(100%_-_24px)] overflow-y-auto rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-2 shadow-xl outline-none dark:border-white/10 dark:bg-[#1b2334]"
         >
-          <button aria-label="Cancel adding node" onClick={closeMenu} className="float-right rounded p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5">
+          <button aria-label="Cancel adding node" onClick={closeMenu} className="float-right rounded p-2 text-slate-500 light:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5">
             <X size={14} />
           </button>
           {pending && <p className="px-3 pt-2 text-xs text-violet-600 dark:text-violet-300">Choose a node to connect here</p>}
-          {flow.nodes.length >= 50 && <p role="status" className="px-3 py-2 text-xs text-amber-600">This flow has reached the 50-node limit.</p>}
-          <p className="px-3 py-2 text-xs font-semibold text-slate-400">
+          {flow.nodes.length >= 50 && <p role="status" className="px-3 py-2 text-xs text-amber-600 light:text-amber-800">This flow has reached the 50-node limit.</p>}
+          <p className="px-3 py-2 text-xs font-semibold text-slate-400 light:text-slate-600">
             {subMenu === "message"
               ? "Message type"
               : subMenu === "action"
@@ -648,9 +648,9 @@ export default function FlowCanvas({
       {edit && node && (
         <aside
           aria-label="Step settings"
-          className="absolute inset-y-0 right-0 z-20 flex w-full max-w-[384px] flex-col border-l border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
+          className="absolute inset-y-0 right-0 z-20 flex w-full max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
         >
-          <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-slate-100 px-5 dark:border-white/5">
+          <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
             <h2 className="flex-1 text-sm font-semibold">
               {NODE_NAMES[node.kind]}
             </h2>
@@ -667,7 +667,7 @@ export default function FlowCanvas({
                 onChange({ ...flow, nodes: [...flow.nodes, copied] });
                 setSelected(copied.id);
               }}
-              className="p-2 text-slate-500"
+              className="p-2 text-slate-500 light:text-slate-600"
             >
               <Copy size={17} />
             </button>
