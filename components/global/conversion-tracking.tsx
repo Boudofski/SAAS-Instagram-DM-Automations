@@ -40,7 +40,17 @@ export default function ConversionTracking() {
       } catch { /* A failure in either vendor must not disable the other. */ }
     };
     document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    const onKitRequested = (event: Event) => {
+      const source = (event as CustomEvent).detail?.source;
+      if (!["launch-kit", "templates", "resources", "guide"].includes(source)) return;
+      const properties = { source, locale };
+      try { track("launch_kit_requested", properties); } catch { /* Optional analytics. */ }
+      try {
+        if (window.location.hostname === "ap3k.com") googleTag(window)("event", "launch_kit_requested", { ...properties, send_to: gaMeasurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) });
+      } catch { /* Optional analytics. */ }
+    };
+    window.addEventListener("ap3k:launch-kit-requested", onKitRequested);
+    return () => { document.removeEventListener("click", onClick); window.removeEventListener("ap3k:launch-kit-requested", onKitRequested); };
   }, [locale]);
   return null;
 }

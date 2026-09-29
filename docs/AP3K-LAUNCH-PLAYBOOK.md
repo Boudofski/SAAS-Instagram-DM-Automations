@@ -1,8 +1,10 @@
 # AP3K launch playbook
 
+Updated acquisition assets and the opt-in launch-kit implementation are documented in [the September 29 launch package](acquisition-launch-2026-09-29.md).
+
 ## First milestone: ten creators getting repeatable value
 
-Recruit ten consenting pilot customers who already receive Instagram comments. Start with French- and Arabic-speaking creators/coaches; include English users as a comparison. Avoid broad paid acquisition until these users can connect, publish, and get a real result without developer intervention. This is a proposed pilot, not a claim that participants or results already exist.
+Recruit ten consenting pilot customers who already receive Instagram comments. Start with French- and English-speaking creators/coaches. Avoid broad paid acquisition until these users can connect, publish, and get a real result without developer intervention. This is a proposed pilot, not a claim that participants or results already exist.
 
 Offer one concrete outcome: a commenter asks for a guide, price list, or booking link and receives it through the configured automation. Observe the first setup, record where help was needed, and ask whether the creator used the tool again after seven days. Never request Instagram passwords.
 
@@ -39,7 +41,7 @@ Weekly worksheet: new accounts, connected users, first-send users, returning pil
 - Confirm disconnection/token errors produce understandable guidance.
 - Complete a Stripe test checkout; verify upgrade, cancellation, and renewal handling using test-mode records.
 - On actual iPhone Safari and Android Chrome, open support, focus the input, type, send, close and reopen with the keyboard visible.
-- Review French and Arabic signup consent, pricing, templates and error states; retain user-edited campaign text when changing UI language.
+- Review supported-language signup consent, pricing, templates and error states; retain user-edited campaign text when changing UI language.
 - Check the onboarding progress for a brand-new profile and a second connected profile.
 
 Automated tests supplement these checks; this document does not assert that all live checks have been performed.

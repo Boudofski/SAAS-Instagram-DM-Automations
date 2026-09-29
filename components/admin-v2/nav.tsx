@@ -57,6 +57,7 @@ const groups = [
       { label: "Automations", href: "/admin/campaigns", icon: Workflow },
       { label: "Billing", href: "/admin/billing", icon: CreditCard },
       { label: "Email Center", href: "/admin/emails", icon: MailCheck },
+      { label: "Acquisition", href: "/admin/acquisition", icon: MailCheck },
     ],
   },
   {

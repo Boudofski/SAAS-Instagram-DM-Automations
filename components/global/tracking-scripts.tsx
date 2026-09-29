@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { gaMeasurementId, analyticsPage, analyticsReferrer, googleTag } from "@/lib/google-analytics";
+import { gaMeasurementId, analyticsPage, analyticsReferrer, analyticsCampaign, googleTag } from "@/lib/google-analytics";
 
 function validGoogleId(value?: string) {
   return value && /^(G|AW)-[A-Z0-9-]+$/.test(value) ? value : null;
@@ -34,6 +34,7 @@ export default function TrackingScripts() {
       page_referrer: previousPath.current ? `https://ap3k.com${previousPath.current}` : analyticsReferrer(document.referrer),
       page_title: page.privateArea ? `AP3K ${page.privateArea}` : document.title,
       content_group: page.group,
+      ...(!initialized.current ? analyticsCampaign(window.location.search) : {}),
     };
     if (!initialized.current) {
       tag("js", new Date());
