@@ -34,6 +34,6 @@ export default function LaunchKitForm({ source = "launch-kit" }: { source?: "lau
       {state === "error" ? <p role="alert" className="text-sm font-medium text-red-700 dark:text-red-300">{message}</p> : null}
       <button disabled={state === "sending"} type="submit" className="min-h-12 rounded-xl bg-violet-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-60">{state === "sending" ? "Requesting…" : "Email me the launch kit"}</button>
     </form>}
-    <Link href={LAUNCH_KIT_PATH} className="mt-5 inline-block text-sm font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Read the kit now — no email required →</Link>
+    <Link href={`${LAUNCH_KIT_PATH}#campaign-examples`} className="mt-5 inline-block text-sm font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Read the kit now — no email required →</Link>
   </section>;
 }

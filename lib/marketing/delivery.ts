@@ -10,7 +10,7 @@ const terminal = ["BOUNCED", "COMPLAINED", "SUPPRESSED"] as const;
 const accepted = ["SENT", "DELIVERED", "OPENED", "CLICKED"] as const;
 export function marketingReady() {
   return process.env.VERCEL_ENV === "production" && process.env.AP3K_MARKETING_ENABLED !== "false"
-    && Boolean(process.env.RESEND_API_KEY?.trim() && process.env.RESEND_WEBHOOK_SECRET?.trim() && process.env.CRON_SECRET?.trim());
+    && Boolean(process.env.RESEND_API_KEY?.trim() && process.env.RESEND_WEBHOOK_SECRET?.trim());
 }
 
 /** Atomic, database-backed caps; identifiers are hashed and never logged. */
