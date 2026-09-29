@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -13,6 +13,8 @@ import {
   type NodeProps,
   type Connection,
   type NodeChange,
+  type OnConnectEnd,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import {
@@ -21,6 +23,7 @@ import {
   Filter,
   Flag,
   GitBranch,
+  LayoutGrid,
   Hourglass,
   Instagram,
   Mail,
@@ -38,8 +41,10 @@ import {
   type Flow,
   type FlowNode,
 } from "@/lib/automation-flow/definition";
+import { appendFlowNode, connectFlow } from "@/lib/automation-flow/connections";
+import { clampCanvasPosition, moveCanvasNodes, syncCanvasNodes } from "@/lib/automation-flow/canvas-state";
+import { compactFlowCanvas } from "@/lib/automation-flow/layout";
 import FlowNodeEditor, {
-  connectFlow,
   newFlowNode,
   NODE_NAMES,
 } from "./flow-node-editor";
@@ -52,6 +57,12 @@ type GraphData = {
   onTrigger?: (id?: string) => void;
 };
 type GraphNode = Node<GraphData>;
+type PendingConnection = {
+  source: string;
+  slot: number;
+  position: { x: number; y: number };
+  menuPosition: { x: number; y: number };
+};
 const iconMap: Record<FlowNode["kind"], typeof Send> = {
   message: Send,
   question: Send,
@@ -110,7 +121,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
         </div>
         <div className="relative mt-2 flex justify-end p-[14px] text-xs">
           Then
-          <Handle type="source" position={Position.Right} id="out-0" />
+          <Handle className="flow-output-handle" aria-label="Drag Then to connect or add a node" type="source" position={Position.Right} id="out-0" />
         </div>
       </div>
     );
@@ -198,6 +209,8 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
               >
                 {o.label}
                 <Handle
+                  className="flow-output-handle"
+                  aria-label={`Drag ${o.label} to connect or add a node`}
                   type="source"
                   position={Position.Right}
                   id={`out-${i}`}
@@ -255,7 +268,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
               : n.kind === "condition" && i === 1
                 ? "Doesn’t match any"
                 : o.label}
-            <Handle type="source" position={Position.Right} id={`out-${i}`} />
+            <Handle className="flow-output-handle" aria-label="Drag to connect or add a node" type="source" position={Position.Right} id={`out-${i}`} />
           </div>
         ))}
     </div>
@@ -278,12 +291,25 @@ export default function FlowCanvas({
   const [edit, setEdit] = useState(false);
   const [menu, setMenu] = useState(false);
   const [subMenu, setSubMenu] = useState<"message" | "action" | null>(null);
+  const [pending, setPending] = useState<PendingConnection | null>(null);
+  const workspace = useRef<HTMLDivElement>(null);
+  const menuElement = useRef<HTMLDivElement>(null);
+  const instance = useRef<ReactFlowInstance<GraphNode> | null>(null);
+  const lastDrop = useRef(-Infinity);
+  const closeMenu = () => {
+    setMenu(false);
+    setSubMenu(null);
+    setPending(null);
+  };
+  useEffect(() => {
+    if (menu) menuElement.current?.focus();
+  }, [menu]);
   const graphNodes = useMemo<GraphNode[]>(
     () => [
       {
         id: "__trigger",
         type: "automation",
-        position: flow.triggerPosition ?? { x: 170, y: 250 },
+        position: flow.triggerPosition ?? { x: 80, y: 160 },
         data: { triggers, onTrigger: onEditTrigger },
         deletable: false,
       },
@@ -299,7 +325,7 @@ export default function FlowCanvas({
   const [nodes, setNodes] = useState<GraphNode[]>(graphNodes);
   useEffect(
     () =>
-      setNodes(graphNodes.map((n) => ({ ...n, selected: n.id === selected }))),
+      setNodes((current) => syncCanvasNodes(current, graphNodes, selected)),
     [graphNodes, selected],
   );
   const graphEdges = useMemo(
@@ -375,18 +401,56 @@ export default function FlowCanvas({
   const add = (kind: FlowNode["kind"]) => {
     if (flow.nodes.length >= 50) return;
     const n = newFlowNode(kind, flow.nodes.length);
-    while (
-      flow.nodes.some(
-        (old) => Math.abs(old.x - n.x) < 340 && Math.abs(old.y - n.y) < 280,
-      ) &&
-      n.y < 5600
-    )
-      n.y += 300;
-    onChange({ ...flow, entry: flow.entry || n.id, nodes: [...flow.nodes, n] });
+    const bounds = workspace.current?.getBoundingClientRect();
+    const position = pending?.position ?? (bounds && instance.current?.screenToFlowPosition({
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+    }));
+    if (position) Object.assign(n, clampCanvasPosition(position));
+    if (!pending) {
+      // Toolbar additions should be visible, without stacking on another card.
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const overlap = nodes.find((old) =>
+          n.x < old.position.x + (old.measured?.width ?? 320) + 24 &&
+          n.x + 320 + 24 > old.position.x &&
+          n.y < old.position.y + (old.measured?.height ?? 260) + 24 &&
+          n.y + 260 + 24 > old.position.y,
+        );
+        if (!overlap) break;
+        n.y = Math.min(6000, overlap.position.y + (overlap.measured?.height ?? 260) + 48);
+      }
+    }
+    const next = appendFlowNode(flow, n, pending);
+    if (next === flow) return;
+    onChange(next);
     setSelected(n.id);
     setEdit(true);
-    setMenu(false);
+    closeMenu();
+  };
+  const onConnectEnd: OnConnectEnd = (event, state) => {
+    if (state.isValid || !state.fromNode || state.fromHandle?.type !== "source") return;
+    const pointer = "changedTouches" in event ? event.changedTouches[0] : event;
+    if (!pointer || !instance.current || !workspace.current) return;
+    // A failed drop on a card, toolbar, or settings panel is not an empty-space drop.
+    const target = document.elementFromPoint(pointer.clientX, pointer.clientY);
+    if (!target?.classList.contains("react-flow__pane") || !workspace.current.contains(target)) return;
+    const bounds = workspace.current.getBoundingClientRect();
+    setPending({
+      source: state.fromNode.id,
+      slot: Number(state.fromHandle.id?.replace("out-", "") ?? 0),
+      position: clampCanvasPosition(instance.current.screenToFlowPosition({
+        x: pointer.clientX, y: pointer.clientY,
+      })),
+      menuPosition: {
+        x: Math.max(8, Math.min(pointer.clientX - bounds.left, bounds.width - 248)),
+        y: Math.max(8, Math.min(pointer.clientY - bounds.top, bounds.height - 420)),
+      },
+    });
+    lastDrop.current = performance.now();
+    setSelected(null);
+    setEdit(false);
     setSubMenu(null);
+    setMenu(true);
   };
   const onConnect = useCallback(
     (c: Connection) => {
@@ -406,35 +470,36 @@ export default function FlowCanvas({
   const onNodeChanges = (changes: NodeChange<GraphNode>[]) =>
     setNodes((current) => applyNodeChanges(changes, current));
   return (
-    <div className="flow-workspace relative h-full w-full">
-      <ReactFlow
+    <div
+      ref={workspace}
+      className="flow-workspace relative h-full w-full"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") closeMenu();
+      }}
+    >
+      <ReactFlow<GraphNode>
         nodes={nodes}
         edges={graphEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodeChanges}
         onConnect={onConnect}
+        onInit={(api) => { instance.current = api; }}
+        onConnectStart={closeMenu}
+        onConnectEnd={onConnectEnd}
+        onNodeDragStart={() => { setEdit(false); closeMenu(); }}
         onNodeClick={(_, n) => {
+          closeMenu();
           setSelected(n.id);
           if (n.id !== "__trigger") setEdit(true);
         }}
         onPaneClick={() => {
+          if (performance.now() - lastDrop.current < 250) return;
           setEdit(false);
-          setMenu(false);
+          closeMenu();
           setSelected(null);
         }}
-        onNodeDragStop={(_, n) => {
-          const pos = {
-            x: Math.max(0, Math.min(6000, n.position.x)),
-            y: Math.max(0, Math.min(6000, n.position.y)),
-          };
-          if (n.id === "__trigger") onChange({ ...flow, triggerPosition: pos });
-          else
-            onChange({
-              ...flow,
-              nodes: flow.nodes.map((x) =>
-                x.id === n.id ? { ...x, ...pos } : x,
-              ),
-            });
+        onNodeDragStop={(_, n, dragged) => {
+          onChange(moveCanvasNodes(flow, dragged.length ? dragged : [n]));
         }}
         onDelete={({ nodes: deletedNodes, edges: deletedEdges }) =>
           removeMany(
@@ -445,9 +510,16 @@ export default function FlowCanvas({
         colorMode={resolvedTheme === "dark" ? "dark" : "light"}
         minZoom={0.2}
         maxZoom={1.5}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        panOnDrag
+        panOnScroll
+        zoomOnScroll={false}
+        zoomOnPinch
         fitView
-        fitViewOptions={{ padding: 0.15, maxZoom: 0.8 }}
+        fitViewOptions={{ padding: 0.2, maxZoom: 1, nodes: [{ id: "__trigger" }, { id: flow.entry }] }}
         nodeExtent={[
           [0, 0],
           [6000, 6000],
@@ -467,11 +539,28 @@ export default function FlowCanvas({
           size={1.5}
           color={resolvedTheme === "dark" ? "#263247" : "#e3e4e6"}
         />
-        <Controls showInteractive position="bottom-left" />
+        <Controls showInteractive={false} position="bottom-left" fitViewOptions={{ padding: 0.15, maxZoom: 1 }} />
       </ReactFlow>
+      <button
+        aria-label="Compact flow spacing"
+        title="Compact flow spacing"
+        onClick={() => {
+          closeMenu();
+          setEdit(false);
+          onChange(compactFlowCanvas(flow, nodes));
+          requestAnimationFrame(() => {
+            void instance.current?.fitView({ padding: 0.15, maxZoom: 1, duration: 250 });
+          });
+        }}
+        className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm dark:border-white/10 dark:bg-[#192233]"
+      >
+        <LayoutGrid size={15} /> Compact layout
+      </button>
       <button
         aria-label="Add node"
         onClick={() => {
+          setPending(null);
+          setEdit(false);
           setMenu(!menu);
           setSubMenu(null);
         }}
@@ -480,7 +569,19 @@ export default function FlowCanvas({
         <Plus size={23} />
       </button>
       {menu && (
-        <div className="absolute bottom-[212px] left-3 z-20 w-[240px] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#1b2334]">
+        <div
+          ref={menuElement}
+          tabIndex={-1}
+          role="dialog"
+          aria-label={pending ? "Add a connected node" : "Add node"}
+          style={pending ? { left: pending.menuPosition.x, top: pending.menuPosition.y, maxHeight: `calc(100% - ${pending.menuPosition.y + 12}px)` } : { left: 64, bottom: 12 }}
+          className="absolute z-30 max-h-[calc(100%_-_24px)] w-[240px] max-w-[calc(100%_-_24px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl outline-none dark:border-white/10 dark:bg-[#1b2334]"
+        >
+          <button aria-label="Cancel adding node" onClick={closeMenu} className="float-right rounded p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5">
+            <X size={14} />
+          </button>
+          {pending && <p className="px-3 pt-2 text-xs text-violet-600 dark:text-violet-300">Choose a node to connect here</p>}
+          {flow.nodes.length >= 50 && <p role="status" className="px-3 py-2 text-xs text-amber-600">This flow has reached the 50-node limit.</p>}
           <p className="px-3 py-2 text-xs font-semibold text-slate-400">
             {subMenu === "message"
               ? "Message type"
@@ -504,6 +605,7 @@ export default function FlowCanvas({
           ).map((k) => (
             <button
               key={k}
+              disabled={flow.nodes.length >= 50}
               onClick={() => {
                 if (!subMenu && k === "message") setSubMenu("message");
                 else if (!subMenu && k === "tag") setSubMenu("action");

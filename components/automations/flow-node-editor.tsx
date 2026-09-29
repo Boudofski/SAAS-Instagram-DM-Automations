@@ -115,33 +115,8 @@ export function newFlowNode(kind: FlowNode["kind"], index: number): FlowNode {
       return { ...base, kind };
   }
 }
-export function connectFlow(
-  flow: Flow,
-  source: string,
-  slot: number,
-  target: string | null,
-): Flow {
-  if (source === "__trigger") return { ...flow, entry: target ?? "" };
-  return {
-    ...flow,
-    nodes: flow.nodes.map((n) => {
-      if (n.id !== source) return n;
-      if (n.kind === "question")
-        return {
-          ...n,
-          options: n.options.map((o, i) =>
-            i === slot ? { ...o, next: target } : o,
-          ),
-        };
-      if (n.kind === "condition" || n.kind === "random")
-        return { ...n, [slot === 0 ? "yes" : "no"]: target };
-      if (n.kind === "email" || n.kind === "phone" || n.kind === "capture")
-        return { ...n, [slot === 0 ? "next" : "skip"]: target };
-      if (n.kind === "end") return n;
-      return { ...n, next: target };
-    }),
-  };
-}
+import { connectFlow } from "@/lib/automation-flow/connections";
+export { connectFlow } from "@/lib/automation-flow/connections";
 const input =
   "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-500 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-100";
 export default function FlowNodeEditor({
