@@ -1,4 +1,5 @@
 import Breadcrumbs from "@/components/seo/breadcrumbs";
+import LaunchKitForm from "@/components/website/launch-kit-form";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { getSeoResource, SEO_RESOURCES } from "@/lib/seo-resources";
@@ -51,6 +52,7 @@ export default function ResourcePage({ params }: Props) {
       <p className="ap3k-kicker">{resource.eyebrow}</p>
       <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">{resource.title}</h1>
       <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{resource.description}</p>
+      {["instagram-comment-to-dm-launch-kit", "instagram-comment-to-dm-templates"].includes(resource.slug) ? <LaunchKitForm source={resource.slug.endsWith("launch-kit") ? "launch-kit" : "templates"} /> : null}
       <div className="mt-12 space-y-10">
         {resource.sections.map(section => <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
           <h2 className="text-2xl font-black tracking-tight">{section.title}</h2>
@@ -67,6 +69,7 @@ export default function ResourcePage({ params }: Props) {
         <h2 className="text-2xl font-black">Put the resource into practice.</h2>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80">Build one focused Instagram comment-to-DM automation, test it with a second account, and measure delivery separately from clicks and sales.</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Link href="/sign-up" className="rounded-full bg-white px-5 py-3 text-center text-sm font-black text-violet-700">Build my first campaign</Link>
           <Link href="/instagram-comment-to-dm" className="rounded-full bg-white px-5 py-3 text-center text-sm font-black text-violet-700">See comment-to-DM automation</Link>
           <Link href="/blog/instagram-comment-to-dm-automation" className="rounded-full border border-white/30 px-5 py-3 text-center text-sm font-black">Read the complete guide</Link>
         </div>

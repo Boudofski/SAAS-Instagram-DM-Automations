@@ -38,6 +38,38 @@ model User {
   automationImages   AutomationImage[]
 }
 
+// Prospects explicitly requesting the public launch-kit email series. Never import
+// customer Instagram contacts or infer marketing consent from account creation.
+model MarketingLead {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String    @unique
+  audience         String
+  source           String
+  consentVersion   String
+  confirmationHash String
+  expiresAt        DateTime
+  confirmedAt      DateTime?
+  unsubscribedAt   DateTime?
+  suppressedAt     DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([confirmedAt, completedAt])
+}
+
+// Separate retention from short-lived Meta webhook buckets so a daily marketing
+// cap cannot be cleared by the webhook worker's two-hour cleanup.
+model MarketingRateLimit {
+  key         String   @db.VarChar(64)
+  windowStart DateTime
+  count       Int      @default(1)
+  updatedAt   DateTime @updatedAt
+
+  @@id([key, windowStart])
+  @@index([updatedAt])
+}
+
 model EmailPreference {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId        String   @unique @db.Uuid

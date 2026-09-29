@@ -15,13 +15,14 @@ GA4 loads only after accepting analytics in the existing cookie controls, only o
 
 Enhanced Measurement is disabled on the stream. The application sends one manual `page_view` per pathname transition and disables the automatic initial view. Private areas collapse to a generic path (for example `/dashboard`); query strings, fragments and private referrer paths are excluded. Public language paths are retained. Google Signals and ad personalization signals are disabled for this GA4 destination.
 
-This deliberately does not retain UTM query parameters, so this initial setup is for organic/referral/page measurement, not complete paid-campaign attribution. Define an approved campaign vocabulary before adding campaign fields.
+As of September 29, 2026, the initial consented page view accepts only campaign labels enumerated in analyticsCampaign (including the launch-kit and initial search campaign). Arbitrary parameters and identifiers remain excluded. This supports published campaign links, not complete paid-campaign or cross-session revenue attribution.
 
 | Event | Meaning | Key event? |
 | --- | --- | --- |
 | page_view | Consented page visit, including client navigation | No |
 | signup_cta_clicked | Click on an internal signup link | No: not a completed signup |
 | checkout_cta_clicked | Click on an internal payment link | No: not a completed checkout |
+| launch_kit_requested | Accepted public form request | No: confirmation and subscription eligibility are not established by this event |
 
 CTA events include locale, content group, and only recognized plan/interval values. Failures in Vercel Analytics do not prevent Google event delivery or navigation. Early Google events queue while its script loads.
 

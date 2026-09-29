@@ -9,7 +9,9 @@ Set these public environment variables in the production deployment, then verify
 - `NEXT_PUBLIC_META_PIXEL_ID` — numeric Meta Pixel ID
 - `GOOGLE_SITE_VERIFICATION` — the Search Console HTML-tag token only, without the surrounding meta tag
 
-AP3K omits every tag when its value is blank or malformed. Never use a placeholder ID in production.
+AP3K uses its documented production GA4 stream ID by default; ad and pixel IDs remain optional. Never use a placeholder ID in production.
+
+For the current paused campaign copy, approved tracking labels, and launch requirements, see [the September 29 acquisition package](acquisition-launch-2026-09-29.md).
 
 Create conversion events for completed signup, connected Instagram account, and paid subscription. Do not optimize a new campaign toward page views once enough deeper events are available.
 

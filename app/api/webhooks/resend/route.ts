@@ -43,8 +43,16 @@ export async function POST(request: Request) {
     }
 
     const occurredAt = new Date(event.created_at);
+    const terminal = ["BOUNCED", "COMPLAINED", "SUPPRESSED"] as const;
+    const suppress = terminal.some(value => value === status);
+    // Signed recipient events can arrive before the send response persists its ID.
+    // Preserve opt-out state on the lead independently of delivery-event ordering.
+    if (suppress && "to" in event.data && Array.isArray(event.data.to)) {
+      const recipients = event.data.to.filter((value): value is string => typeof value === "string").map(value => value.trim().toLowerCase());
+      if (recipients.length) await client.marketingLead.updateMany({ where: { email: { in: recipients }, suppressedAt: null }, data: { suppressedAt: occurredAt } });
+    }
     await client.emailDelivery.updateMany({
-      where: { providerMessageId: event.data.email_id },
+      where: { providerMessageId: event.data.email_id, ...(!suppress ? { status: { notIn: [...terminal] } } : {}) },
       data: {
         status,
         ...(status === "DELIVERED" ? { deliveredAt: occurredAt } : {}),

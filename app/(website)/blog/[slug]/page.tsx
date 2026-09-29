@@ -1,4 +1,5 @@
 import BlogCover from "@/components/website/blog-cover";
+import LaunchKitForm from "@/components/website/launch-kit-form";
 import { getArticleImage, articleImageUrl } from "@/lib/blog-images";
 import s from "@/components/website/public-pages.module.css";
 import CommentDmLibrary from "@/components/website/comment-dm-library";
@@ -314,6 +315,7 @@ export default async function BlogPostPage({ params }: Props) {
               </Link>
             </section>
           </article>
+          {post.slug === "instagram-comment-to-dm-automation" && getServerLocale() === "en" ? <LaunchKitForm source="guide" /> : null}
           <section className={`${s.blog} pb-16`}>
             <h2>Related articles</h2>
             <div className={s.blogGrid}>

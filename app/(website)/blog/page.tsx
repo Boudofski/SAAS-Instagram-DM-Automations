@@ -27,7 +27,9 @@ const pageMetadata: Metadata = {
       "Practical guides for turning Instagram comments into conversations and leads.",
     url: "https://ap3k.com/blog",
     type: "website",
+    images: ["https://ap3k.com/opengraph-image"],
   },
+  twitter: { card: "summary_large_image", images: ["https://ap3k.com/opengraph-image"] },
 };
 type Props = {
   searchParams: { page?: string | string[]; q?: string | string[] };

@@ -15,6 +15,7 @@ export function generateMetadata(): Metadata { return localizedMetadata(pageMeta
 
 const sections = [
   { title: "Service Operator", body: COMPANY_COPY.en.privacyBody },
+  { title: "Optional Launch-Kit Emails", body: "When you request our launch-kit email series, we store your email address, selected audience, signup page, consent version, confirmation time, and subscription status. We use this information to send the requested kit and two follow-up lessons through Resend, including an invitation to try AP3K. We also retain delivery records and unsubscribe or suppression records to honor your choices. Confirming this series does not subscribe you to an ongoing newsletter. Every email includes an unsubscribe link requiring no login. Contact support@ap3k.com to request access or deletion. Rate-limit identifiers are hashed to help prevent abuse." },
   {
     title: "Instagram Data We Collect",
     body: "AP3K collects account and profile information only after you authorize an Instagram Business or Creator account. This may include the Instagram account ID, username, profile information made available by the Instagram API, media identifiers used for campaigns, comment identifiers used to match campaign triggers, and connection status.",
@@ -37,7 +38,7 @@ const sections = [
   },
   {
     title: "Service Providers",
-    body: "AP3K uses service providers including Meta for Instagram access, Clerk for authentication, Stripe for billing, Neon for database hosting, Vercel for application hosting, Resend for transactional email, and configured AI providers when AI features are enabled. Each provider processes only the information needed for its role.",
+    body: "AP3K uses service providers including Meta for Instagram access, Clerk for authentication, Stripe for billing, Neon for database hosting, Vercel for application hosting, Resend for service emails and requested marketing emails, and configured AI providers when AI features are enabled. Each provider processes only the information needed for its role.",
   },
   {
     title: "Cookies and Measurement",

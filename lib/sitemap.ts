@@ -58,7 +58,7 @@ export function buildSitemap(
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: companyUpdated,
+      lastModified: new Date("2026-09-29T00:00:00Z"),
       changeFrequency: "yearly",
       priority: 0.3,
     },
@@ -141,13 +141,13 @@ export function buildSitemap(
     },
     {
       url: `${baseUrl}/resources`,
-      lastModified: new Date("2026-09-22T00:00:00Z"),
+      lastModified: new Date("2026-09-29T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     ...SEO_RESOURCES.map((resource) => ({
       url: `${baseUrl}/resources/${resource.slug}`,
-      lastModified: new Date("2026-09-22T00:00:00Z"),
+      lastModified: new Date(`${resource.updatedAt || "2026-09-22"}T00:00:00Z`),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),

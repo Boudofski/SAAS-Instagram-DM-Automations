@@ -9,6 +9,7 @@ const englishArticles = new Set([
   ...englishArticleSlugs.map((slug) => `/blog/${slug}`),
   "/resources",
   "/resources/instagram-comment-to-dm-templates",
+  "/resources/instagram-comment-to-dm-launch-kit",
   "/resources/instagram-comment-automation-checklist",
   "/tools/instagram-comment-to-dm-calculator",
   "/blog/ap3k-workspace-visual-guide",

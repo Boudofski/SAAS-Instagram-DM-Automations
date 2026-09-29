@@ -1,3 +1,4 @@
+import { MARKETING_PRIVACY_COPY } from "./marketing-privacy-copy";
 import { ENGAGEMENT_COPY } from "./engagement-copy";
 import { PUBLIC_REDESIGN_COPY } from "./public-redesign-copy";
 import { AUTOMATION_COPY_CONTROLS } from "./automation-copy-controls";
@@ -37,6 +38,7 @@ const catalogs = Object.fromEntries(
       ...REMAINING_COPY[locale as Locale],
       ...GROWTH_COPY[locale as Locale],
       ...COMPANY_TRANSLATIONS[locale as Locale],
+      ...MARKETING_PRIVACY_COPY[locale as Locale],
       ...ACCOUNT_PLAN_COPY[locale as Locale],
       ...AUTOMATION_DEFAULT_COPY[locale as Locale],
       ...HELP_COPY[locale as Locale],
