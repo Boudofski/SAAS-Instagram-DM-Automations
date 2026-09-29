@@ -2,6 +2,19 @@ import { LOCALE_SOURCE_COLUMN, SUPPORTED_LOCALES, type Locale } from "./config";
 
 // Source copy stays intact; placeholders are interpolated only at explicit UI sites.
 export const DASHBOARD_ROWS: readonly (readonly [string, string, string, string, string])[] = [
+  ["Annual billing", "Facturation annuelle", "Facturación anual", "Jährliche Abrechnung", "Faturação anual"],
+  ["Monthly billing", "Facturation mensuelle", "Facturación mensual", "Monatliche Abrechnung", "Faturação mensal"],
+  ["Next renewal", "Prochain renouvellement", "Próxima renovación", "Nächste Verlängerung", "Próxima renovação"],
+  ["Access until", "Accès jusqu’au", "Acceso hasta", "Zugang bis", "Acesso até"],
+  ["Free plan", "Offre gratuite", "Plan gratuito", "Kostenloser Tarif", "Plano gratuito"],
+  ["Trial", "Essai", "Prueba", "Testphase", "Período de teste"],
+  ["Manage or cancel subscription", "Gérer ou résilier l’abonnement", "Gestionar o cancelar la suscripción", "Abonnement verwalten oder kündigen", "Gerir ou cancelar a subscrição"],
+  ["View invoices and billing history", "Voir les factures et l’historique de facturation", "Ver facturas e historial de facturación", "Rechnungen und Abrechnungsverlauf ansehen", "Ver faturas e histórico de faturação"],
+  ["Checking billing…", "Vérification de la facturation…", "Comprobando facturación…", "Abrechnung wird geprüft…", "A verificar a faturação…"],
+  ["Prices are in USD.", "Les prix sont en dollars américains.", "Los precios están en dólares estadounidenses.", "Alle Preise in US-Dollar.", "Os preços são em dólares americanos."],
+  ["Plan account limit reached", "Limite de comptes de l’offre atteinte", "Límite de cuentas del plan alcanzado", "Kontolimit des Tarifs erreicht", "Limite de contas do plano atingido"],
+  ["Limit reached", "Limite atteinte", "Límite alcanzado", "Limit erreicht", "Limite atingido"],
+
   ["Your plan, usage and payment details.", "Votre offre, votre utilisation et vos paiements.", "Tu plan, uso y datos de pago.", "Dein Tarif, deine Nutzung und Zahlungsdaten.", "O seu plano, utilização e dados de pagamento."],
   ["Your subscription needs attention. Open billing management to review your payment details.", "Votre abonnement nécessite une intervention. Ouvrez la gestion de facturation pour vérifier vos données de paiement.", "Tu suscripción requiere atención. Abre la gestión de facturación para revisar tus datos de pago.", "Dein Abonnement erfordert deine Aufmerksamkeit. Öffne die Abrechnungsverwaltung und prüfe deine Zahlungsdaten.", "A sua subscrição requer atenção. Abra a gestão de faturação para verificar os dados de pagamento."],
   ["Manage subscription", "Gérer l’abonnement", "Gestionar suscripción", "Abonnement verwalten", "Gerir subscrição"],
