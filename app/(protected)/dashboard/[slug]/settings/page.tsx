@@ -98,11 +98,11 @@ async function SettingsPage() {
       <section className="ap3k-content-enter rounded-2xl border border-red-200 bg-red-50/70 p-4 dark:border-red-500/25 dark:bg-red-500/[0.07] sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200 bg-white text-red-600 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-300">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200 bg-white text-red-600 light:text-red-700 dark:border-red-500/25 dark:bg-white/[0.04] dark:text-red-300">
               <ShieldAlert className="h-4.5 w-4.5" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600 dark:text-red-300">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600 light:text-red-700 dark:text-red-300">
                 <UiText>{"Danger zone"}</UiText>
               </p>
               <p className="mt-1 max-w-2xl text-xs leading-5 text-red-800 dark:text-red-200">
