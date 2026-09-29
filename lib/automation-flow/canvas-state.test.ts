@@ -5,7 +5,7 @@ import { appendFlowNode } from "./connections";
 import { compactFlowCanvas, prepareFlowCanvas } from "./layout";
 import { edges, type Flow, type FlowNode } from "./definition";
 
-const message = (id: string, x = 100, y = 160): FlowNode => ({
+const message = (id: string, x = 100, y = 160): Extract<FlowNode, { kind: "message" }> => ({
   id, kind: "message", label: id, text: "Hello", links: [], next: null, x, y,
 });
 const graph = (nodes: FlowNode[] = [message("first")]): Flow => ({

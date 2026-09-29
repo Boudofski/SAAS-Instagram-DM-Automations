@@ -477,7 +477,7 @@ export default function FlowCanvas({
         if (event.key === "Escape") closeMenu();
       }}
     >
-      <ReactFlow
+      <ReactFlow<GraphNode>
         nodes={nodes}
         edges={graphEdges}
         nodeTypes={nodeTypes}
