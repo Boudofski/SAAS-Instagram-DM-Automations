@@ -25,7 +25,6 @@ export default async function BillingPage() {
       <Billing
         current={currentPlan}
         usage={usage}
-        billingEmail={user?.email}
         billingState={billingLookup.state}
         billing={billingLookup.snapshot}
       />
