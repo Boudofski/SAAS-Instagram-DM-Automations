@@ -1,5 +1,5 @@
 import { getInstagramAccountMenu } from "@/actions/instagram-accounts";
-import NavBar from "@/components/global/navbar";
+import MobileNavigation from "@/components/dashboard/mobile-navigation";
 import Sidebar from "@/components/global/sidebar";
 import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { dashboardPath } from "@/lib/dashboard";
@@ -66,8 +66,8 @@ async function Layout({ children, params }: Props) {
       <ClerkCacheSyncer />
       <div className="ap3k-page overflow-x-hidden">
         <Sidebar slug={params.slug} />
+        <MobileNavigation slug={params.slug} />
         <div className="ap3k-app-shell [--app-sidebar-offset:0px] lg:[--app-sidebar-offset:76px] lg:peer-data-[expanded=true]:[--app-sidebar-offset:232px] relative z-10 flex min-w-0 flex-col px-3 py-3 transition-[margin] duration-base ease-ui-out lg:ml-[76px] lg:px-6 lg:py-5 lg:peer-data-[expanded=true]:ml-[232px]">
-          <NavBar slug={params.slug} />
           {children}
         </div>
       </div>

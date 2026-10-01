@@ -5,6 +5,7 @@ import {
   DEFAULT_FOLLOW_UP_MESSAGE,
   validateEngagementSettings,
 } from "@/lib/automation-engagement-settings";
+import { DEFAULT_COMMENT_ONLY_PROMPT, DEFAULT_COMMENT_PROMPT } from "@/lib/automation-copy";
 import { createCommentEditorPayload } from "@/lib/comment-editor-payload";
 import { validateProductCard } from "@/lib/product-card";
 import { useUi } from "@/components/i18n/use-ui";
@@ -55,7 +56,8 @@ export type WizardData = {
   messageVariations?: string[];
   commentReplies?: string[];
   publicReplyLimit?: number;
-  messageFormat?: "TEXT" | "LINK";
+  messageFormat?: "TEXT" | "LINK" | "ATTACHMENT";
+  attachment?: import("@/lib/message-attachment").MessageAttachment;
   phoneCaptureEnabled?: boolean;
   phoneCapturePrompt?: string;
   followUpCondition?: string;
@@ -143,6 +145,9 @@ export function useWizard(
   const [step, setStep] = useState<WizardStep>(1);
   const [data, setData] = useState<WizardData>(() => ({
     ...INITIAL,
+    // Existing automations are hydrated from their saved settings; new drafts start with AI.
+    aiReplyEnabled: !automationId,
+    aiReplyInstructions: automationId ? "" : tr(DEFAULT_COMMENT_ONLY_PROMPT),
     dmMessage: tr(INITIAL.dmMessage),
     publicReply: tr(INITIAL.publicReply),
     publicReply2: tr(INITIAL.publicReply2),
@@ -198,6 +203,11 @@ export function useWizard(
   const update = (partial: Partial<WizardData>) =>
     setData((prev) => {
       const next={...prev,...partial};
+      // Adapt untouched starter copy when DM delivery is enabled or disabled.
+      if (partial.sendPrivateDm !== undefined && partial.aiReplyInstructions === undefined &&
+        [tr(DEFAULT_COMMENT_ONLY_PROMPT), tr(DEFAULT_COMMENT_PROMPT)].includes(prev.aiReplyInstructions)) {
+        next.aiReplyInstructions = tr(partial.sendPrivateDm ? DEFAULT_COMMENT_PROMPT : DEFAULT_COMMENT_ONLY_PROMPT);
+      }
       if(integrationId && !automationId) try { sessionStorage.setItem(draftKey,JSON.stringify(next)); } catch { /* publishing still works */ }
       return next;
     });
@@ -251,10 +261,11 @@ export function useWizard(
           !data.followRequestButtonText.trim())
       )
         return false;
-      if (data.sendPrivateDm && !data.dmMessage.trim()) return false;
+      if (data.sendPrivateDm && data.messageFormat === "ATTACHMENT" && !data.attachment) return false;
+      if (data.sendPrivateDm && data.messageFormat !== "ATTACHMENT" && !data.dmMessage.trim()) return false;
       if (
         data.sendPrivateDm &&
-        (data.productCard || data.messageFormat !== "TEXT") &&
+        (data.productCard || (data.messageFormat ?? "LINK") === "LINK") &&
         !linkButtonsAreComplete(data.linkButtons)
       )
         return false;
@@ -268,7 +279,7 @@ export function useWizard(
     if (
       !data.post ||
       (data.sendPrivateDm &&
-        (!data.dmMessage.trim() ||
+        ((data.messageFormat === "ATTACHMENT" ? !data.attachment : !data.dmMessage.trim()) ||
           (data.openingDmEnabled &&
             (!data.openingDmText.trim() || !data.openingDmButtonText.trim()))))
     ) {
@@ -289,7 +300,7 @@ export function useWizard(
     }
     if (
       data.sendPrivateDm &&
-      (data.productCard || data.messageFormat !== "TEXT") &&
+      (data.productCard || (data.messageFormat ?? "LINK") === "LINK") &&
       !linkButtonsAreComplete(data.linkButtons)
     ) {
       setError("Complete every link label and add a valid destination URL.");

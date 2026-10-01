@@ -1,4 +1,6 @@
 "use client";
+import AttachmentPicker from "./attachment-picker";
+import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 
 import {
   QuickEngagementRows,
@@ -17,6 +19,7 @@ import {
   MoreVertical,
   Plus,
   RefreshCw,
+  Sparkles,
   Target,
   Text,
   UserRoundCheck,
@@ -88,6 +91,30 @@ export default function CommentEditor(p: CommentEditorProps) {
   const [dmSettings, setDmSettings] = useState(false);
   const [replyKind, setReplyKind] = useState(data.aiReplyEnabled ? "AI" : "SAVED");
   useEffect(() => { if (data.aiReplyEnabled) setReplyKind("AI"); }, [data.aiReplyEnabled]);
+  const [delayEnabled, setDelayEnabled] = useState((data.deliveryDelaySeconds ?? 0) > 0);
+  useEffect(() => {
+    if ((data.deliveryDelaySeconds ?? 0) > 0) setDelayEnabled(true);
+  }, [data.deliveryDelaySeconds]);
+  const [publishAttempted, setPublishAttempted] = useState(false);
+  const aiPublishError = data.aiReplyEnabled &&
+    ((publishAttempted && !p.paid) || p.error === "AI only available on paid plans.");
+  useEffect(() => {
+    if (p.error === "AI only available on paid plans.") {
+      setOpenMessage(null);
+      setOpenTrigger("reply");
+      setMode("comments");
+    }
+  }, [p.error]);
+  const save = (active: boolean) => {
+    if (active && data.aiReplyEnabled && !p.paid) {
+      setPublishAttempted(true);
+      setOpenMessage(null);
+      setOpenTrigger("reply");
+      setMode("comments");
+      return;
+    }
+    p.onSave(active);
+  };
   const [keyword, setKeyword] = useState("");
   const [postQuery, setPostQuery] = useState("");
   const toggleTrigger = (key: string) => {
@@ -128,7 +155,7 @@ export default function CommentEditor(p: CommentEditorProps) {
     hasButtons: data.messageFormat !== "TEXT",
   };
   const publicOn = data.publicReplyEnabled || data.aiReplyEnabled;
-  const format = data.productCard
+  const format = data.messageFormat === "ATTACHMENT" ? "ATTACHMENT" : data.productCard
     ? "PRODUCT_CARD"
     : data.messageFormat === "TEXT"
       ? "TEXT"
@@ -189,8 +216,8 @@ export default function CommentEditor(p: CommentEditorProps) {
       onNameChange={(campaignName) => update({ campaignName })}
       active={p.editingActive}
       saving={p.saving}
-      onSave={p.onSave}
-      error={p.error}
+      onSave={save}
+      error={aiPublishError ? null : p.error}
       accountName={p.username || undefined}
       preview={
         <EditorPreview
@@ -212,6 +239,16 @@ export default function CommentEditor(p: CommentEditorProps) {
           data.adAutomation
             ? "Ad automation"
             : "Setup Triggers and Public Reply"
+        }
+        action={
+          <div className={s.delayToggle}>
+            <Clock3 size={17} aria-hidden="true" className="text-sky-600 dark:text-sky-400" />
+            <span className="text-[11px] font-semibold uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">{tr("Enable delay")}</span>
+            <EditorSwitch label="Enable delay" checked={delayEnabled} onChange={(enabled) => {
+              setDelayEnabled(enabled);
+              if (!enabled) update({ deliveryDelaySeconds: 0 });
+            }} />
+          </div>
         }
       >
         {data.adAutomation && (
@@ -487,13 +524,13 @@ export default function CommentEditor(p: CommentEditorProps) {
             <div><EditorSwitch label="One DM per user" checked={Boolean(data.oneDmPerUser)} onChange={(oneDmPerUser) => update({oneDmPerUser})}/><div><strong>{tr("One DM per user")}</strong><p>{tr("Even if they comment several times, they get only one DM.")}</p></div></div>
           </div>
         </EditorRow>
-        <DelayControl seconds={data.deliveryDelaySeconds ?? 0} onChange={(deliveryDelaySeconds) => update({deliveryDelaySeconds})}/>
+        {delayEnabled && <DelayControl seconds={data.deliveryDelaySeconds ?? 0} onChange={(deliveryDelaySeconds) => update({deliveryDelaySeconds})}/>}
         <EditorRow
           title="Public comment reply"
           summary={
             publicOn
               ? data.aiReplyEnabled
-                ? tr(!p.paid ? "AI only available on paid plans." : "AI auto reply")
+                ? tr(aiPublishError ? "AI only available on paid plans." : "AI auto reply")
                 : `${replies.length} ${tr("replies")}`
               : undefined
           }
@@ -507,6 +544,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                 value={publicOn ? (data.aiReplyEnabled ? "AI" : "SAVED") : replyKind}
                 onChange={(value) => {
                   setReplyKind(value);
+                  setPublishAttempted(false);
                   update({
                     aiReplyEnabled: value === "AI",
                     publicReplyEnabled: value === "SAVED",
@@ -530,7 +568,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                   {
                     value: "AI",
                     label: "AI",
-
+                    icon: <Sparkles size={16} aria-hidden="true" className="shrink-0 text-violet-500 dark:text-violet-400" />,
                   },
                 ]}
               />
@@ -538,6 +576,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                 label="Public comment reply"
                 checked={publicOn}
                 onChange={(enabled) => {
+                  setPublishAttempted(false);
                   update({
                     publicReplyEnabled: enabled && replyKind === "SAVED",
                     aiReplyEnabled: enabled && replyKind === "AI",
@@ -569,7 +608,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                   update({ aiReplyInstructions })
                 }
                 context={{ ...context, available: true }}
-                publishLocked={!p.paid}
+                publishLocked={aiPublishError}
                 onPreview={setCommentPreview}
               />
               <div className={s.settingLine}>
@@ -602,16 +641,6 @@ export default function CommentEditor(p: CommentEditorProps) {
           ) : (
             <p className={s.hint}>
               {tr("Enable Public comment reply to add a response.")}
-            </p>
-          )}
-          {!p.paid && (
-            <p className={`${s.hint} mt-3`}>
-              <Link
-                href={`/dashboard/${p.slug}/billing`}
-                className={s.textAction}
-              >
-                {tr("Upgrade to Pro to publish AI replies")}
-              </Link>
             </p>
           )}
         </EditorRow>
@@ -715,7 +744,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                   onChange={(value) => {
                     update({
                       productCard: value === "PRODUCT_CARD",
-                      messageFormat: value === "TEXT" ? "TEXT" : "LINK",
+                      messageFormat: value === "ATTACHMENT" ? "ATTACHMENT" : value === "TEXT" ? "TEXT" : "LINK",
                       sendPrivateDm: true,
                     });
                     setOpenTrigger(null);
@@ -727,6 +756,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                     { value: "TEXT", label: "plain text" },
                     { value: "LINK", label: "text with button" },
                     { value: "PRODUCT_CARD", label: "image with button" },
+                    { value: "ATTACHMENT", label: "attachment" },
                   ]}
                 />
               }
@@ -739,7 +769,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                 >
                   {tr("Enable Send a DM")}
                 </button>
-              ) : format === "PRODUCT_CARD" ? (
+              ) : format === "ATTACHMENT" ? (<AttachmentPicker value={data.attachment} onChange={attachment=>update({attachment})}/>) : format === "PRODUCT_CARD" ? (
                 <ProductCardEditor
                   title={data.dmMessage}
                   subtitle={data.productSubtitle || ""}

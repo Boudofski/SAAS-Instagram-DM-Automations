@@ -7,6 +7,7 @@ import {
   type StripeWebhookDependencies,
   processStripeEvent,
   resolveStripeOwner,
+  referralInvoiceRevenue,
 } from "./stripe-webhook";
 
 const USER_A: StripeOwner = {
@@ -24,26 +25,37 @@ function dependencies(input: {
   clerkOwners?: Record<string, StripeOwner>;
   customerOwners?: Record<string, StripeOwner>;
 }) {
-  const subscriptions = new Map<string, { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }>();
+  const subscriptions = new Map<
+    string,
+    { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }
+  >();
   const warnStaleMetadata = vi.fn();
   const applyPendingRewards = vi.fn(async () => undefined);
   const qualifyPaidReferral = vi.fn(async () => undefined);
   const reversePaidReferral = vi.fn(async () => undefined);
   const syncSubscription = vi.fn(
-    async (userId: string, props: { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" }) => {
+    async (
+      userId: string,
+      props: { customerId?: string; plan?: "PRO" | "BUSINESS" | "FREE" },
+    ) => {
       subscriptions.set(userId, { ...subscriptions.get(userId), ...props });
-    }
+    },
   );
   const value: StripeWebhookDependencies = {
     findOwnerByClerkId: async (clerkId) => input.clerkOwners?.[clerkId] ?? null,
     findOwnerByCustomerId: async (customerId) =>
       input.customerOwners?.[customerId] ?? null,
     syncSubscription,
-    retrieveSubscription: vi.fn(async () => subscription({ customer: "cus_alpha" })),
-    retrieveCharge: vi.fn(async (chargeId) => ({
-      id: chargeId,
-      invoice: "in_disputed",
-    } as Stripe.Charge)),
+    retrieveSubscription: vi.fn(async () =>
+      subscription({ customer: "cus_alpha" }),
+    ),
+    retrieveCharge: vi.fn(
+      async (chargeId) =>
+        ({
+          id: chargeId,
+          invoice: "in_disputed",
+        }) as Stripe.Charge,
+    ),
     applyPendingRewards,
     qualifyPaidReferral,
     reversePaidReferral,
@@ -79,13 +91,20 @@ function subscription(input: {
   status?: Stripe.Subscription.Status;
   plan?: "PRO" | "BUSINESS";
 }) {
-  const lookupKey = input.plan === "BUSINESS" ? "ap3k_business_month" : "ap3k_pro_month";
+  const lookupKey =
+    input.plan === "BUSINESS" ? "ap3k_business_month" : "ap3k_pro_month";
   return {
     id: "sub_test",
     customer: input.customer ?? null,
     metadata: input.clerkId ? { clerkId: input.clerkId } : {},
     status: input.status ?? "active",
-    items: { data: [{ price: { id: `price_${input.plan ?? "PRO"}`, lookup_key: lookupKey } }] },
+    items: {
+      data: [
+        {
+          price: { id: `price_${input.plan ?? "PRO"}`, lookup_key: lookupKey },
+        },
+      ],
+    },
   } as unknown as Stripe.Subscription;
 }
 
@@ -103,9 +122,12 @@ describe("resolveStripeOwner", () => {
           customerId: "cus_alpha",
           allowInitialCustomerBinding: true,
         },
-        deps.value
-      )
-    ).resolves.toMatchObject({ owner: USER_A, source: "metadata-and-customer" });
+        deps.value,
+      ),
+    ).resolves.toMatchObject({
+      owner: USER_A,
+      source: "metadata-and-customer",
+    });
   });
 
   it("uses customer ownership when Clerk metadata is stale", async () => {
@@ -117,7 +139,7 @@ describe("resolveStripeOwner", () => {
         customerId: "cus_alpha",
         allowInitialCustomerBinding: false,
       },
-      deps.value
+      deps.value,
     );
     expect(result).toMatchObject({ owner: USER_A, source: "customer" });
     expect(deps.warnStaleMetadata).toHaveBeenCalledOnce();
@@ -139,8 +161,8 @@ describe("resolveStripeOwner", () => {
           customerId: "cus_beta",
           allowInitialCustomerBinding: true,
         },
-        deps.value
-      )
+        deps.value,
+      ),
     ).rejects.toMatchObject({ code: "STRIPE_OWNERSHIP_CONFLICT" });
   });
 
@@ -154,8 +176,8 @@ describe("resolveStripeOwner", () => {
           customerId: "cus_missing",
           allowInitialCustomerBinding: false,
         },
-        deps.value
-      )
+        deps.value,
+      ),
     ).rejects.toBeInstanceOf(StripeOwnershipError);
   });
 
@@ -170,8 +192,8 @@ describe("resolveStripeOwner", () => {
           customerId: "cus_first",
           allowInitialCustomerBinding: true,
         },
-        deps.value
-      )
+        deps.value,
+      ),
     ).resolves.toMatchObject({ source: "initial-metadata-binding" });
 
     await expect(
@@ -182,8 +204,8 @@ describe("resolveStripeOwner", () => {
           customerId: "cus_first",
           allowInitialCustomerBinding: false,
         },
-        deps.value
-      )
+        deps.value,
+      ),
     ).rejects.toMatchObject({ code: "STRIPE_CUSTOMER_BINDING_MISSING" });
   });
 
@@ -197,8 +219,8 @@ describe("resolveStripeOwner", () => {
           customerId: "cus_different",
           allowInitialCustomerBinding: true,
         },
-        deps.value
-      )
+        deps.value,
+      ),
     ).rejects.toMatchObject({ code: "STRIPE_CUSTOMER_BINDING_MISSING" });
     expect(deps.syncSubscription).not.toHaveBeenCalled();
   });
@@ -210,9 +232,9 @@ describe("processStripeEvent", () => {
     await processStripeEvent(
       event(
         "checkout.session.completed",
-        checkout({ clerkId: "user_dev_stale", customer: "cus_alpha" })
+        checkout({ clerkId: "user_dev_stale", customer: "cus_alpha" }),
       ),
-      deps.value
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -225,9 +247,9 @@ describe("processStripeEvent", () => {
     await processStripeEvent(
       event(
         "customer.subscription.updated",
-        subscription({ clerkId: "user_dev_stale", customer: "cus_alpha" })
+        subscription({ clerkId: "user_dev_stale", customer: "cus_alpha" }),
       ),
-      deps.value
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -239,8 +261,11 @@ describe("processStripeEvent", () => {
     for (const plan of ["PRO", "BUSINESS"] as const) {
       const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
       await processStripeEvent(
-        event("customer.subscription.created", subscription({ customer: "cus_alpha", plan })),
-        deps.value
+        event(
+          "customer.subscription.created",
+          subscription({ customer: "cus_alpha", plan }),
+        ),
+        deps.value,
       );
       expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
         customerId: "cus_alpha",
@@ -252,8 +277,11 @@ describe("processStripeEvent", () => {
   it("keeps access during past-due Smart Retries and revokes it when unpaid", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
     await processStripeEvent(
-      event("customer.subscription.updated", subscription({ customer: "cus_alpha", status: "past_due" })),
-      deps.value
+      event(
+        "customer.subscription.updated",
+        subscription({ customer: "cus_alpha", status: "past_due" }),
+      ),
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -261,8 +289,11 @@ describe("processStripeEvent", () => {
     });
 
     await processStripeEvent(
-      event("customer.subscription.updated", subscription({ customer: "cus_alpha", status: "unpaid" })),
-      deps.value
+      event(
+        "customer.subscription.updated",
+        subscription({ customer: "cus_alpha", status: "unpaid" }),
+      ),
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -273,7 +304,13 @@ describe("processStripeEvent", () => {
   it("processes successful renewals and failed renewal state from invoice events", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
     const retrieve = vi.mocked(deps.value.retrieveSubscription);
-    retrieve.mockResolvedValueOnce(subscription({ customer: "cus_alpha", plan: "BUSINESS", status: "active" }));
+    retrieve.mockResolvedValueOnce(
+      subscription({
+        customer: "cus_alpha",
+        plan: "BUSINESS",
+        status: "active",
+      }),
+    );
     await processStripeEvent(
       event("invoice.paid", {
         id: "in_paid",
@@ -282,25 +319,31 @@ describe("processStripeEvent", () => {
         status_transitions: { paid_at: 1_788_200_000 },
         parent: { subscription_details: { subscription: "sub_test" } },
       }),
-      deps.value
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
       plan: "BUSINESS",
     });
-    expect(deps.qualifyPaidReferral).toHaveBeenCalledWith({
-      referredUserId: USER_A.id,
-      invoiceId: "in_paid",
-      plan: "BUSINESS",
-      amountPaid: 2900,
-      currency: "usd",
-      paidAt: new Date(1_788_200_000 * 1000),
-    });
+    expect(deps.qualifyPaidReferral).toHaveBeenCalledWith(
+      expect.objectContaining({
+        referredUserId: USER_A.id,
+        invoiceId: "in_paid",
+        plan: "BUSINESS",
+        amountPaid: 2900,
+        currency: "usd",
+        paidAt: new Date(1_788_200_000 * 1000),
+      }),
+    );
 
-    retrieve.mockResolvedValueOnce(subscription({ customer: "cus_alpha", status: "past_due" }));
+    retrieve.mockResolvedValueOnce(
+      subscription({ customer: "cus_alpha", status: "past_due" }),
+    );
     await processStripeEvent(
-      event("invoice.payment_failed", { parent: { subscription_details: { subscription: "sub_test" } } }),
-      deps.value
+      event("invoice.payment_failed", {
+        parent: { subscription_details: { subscription: "sub_test" } },
+      }),
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -312,8 +355,11 @@ describe("processStripeEvent", () => {
   it("applies a paid-plan downgrade from the replacement price", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
     await processStripeEvent(
-      event("customer.subscription.updated", subscription({ customer: "cus_alpha", plan: "PRO" })),
-      deps.value
+      event(
+        "customer.subscription.updated",
+        subscription({ customer: "cus_alpha", plan: "PRO" }),
+      ),
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenLastCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -326,9 +372,9 @@ describe("processStripeEvent", () => {
     await processStripeEvent(
       event(
         "customer.subscription.deleted",
-        subscription({ clerkId: "user_dev_stale", customer: "cus_alpha" })
+        subscription({ clerkId: "user_dev_stale", customer: "cus_alpha" }),
       ),
-      deps.value
+      deps.value,
     );
     expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -342,38 +388,58 @@ describe("processStripeEvent", () => {
     deps.value.notifyCustomerEmail = notifyCustomerEmail;
 
     await processStripeEvent(
-      event("checkout.session.completed", checkout({ customer: "cus_alpha" }), "evt_checkout"),
-      deps.value
+      event(
+        "checkout.session.completed",
+        checkout({ customer: "cus_alpha" }),
+        "evt_checkout",
+      ),
+      deps.value,
     );
     await processStripeEvent(
       event(
         "invoice.payment_failed",
-        { id: "in_failed", parent: { subscription_details: { subscription: "sub_test" } } },
-        "evt_failed"
+        {
+          id: "in_failed",
+          parent: { subscription_details: { subscription: "sub_test" } },
+        },
+        "evt_failed",
       ),
-      deps.value
+      deps.value,
     );
     await processStripeEvent(
-      event("customer.subscription.deleted", subscription({ customer: "cus_alpha" }), "evt_deleted"),
-      deps.value
+      event(
+        "customer.subscription.deleted",
+        subscription({ customer: "cus_alpha" }),
+        "evt_deleted",
+      ),
+      deps.value,
     );
 
-    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      userId: USER_A.id,
-      templateId: "plan_activated",
-      stripeEventId: "evt_checkout",
-      planName: "PRO",
-    }));
-    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      userId: USER_A.id,
-      templateId: "payment_failed",
-      stripeEventId: "evt_failed",
-    }));
-    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(3, expect.objectContaining({
-      userId: USER_A.id,
-      templateId: "subscription_canceled",
-      stripeEventId: "evt_deleted",
-    }));
+    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        userId: USER_A.id,
+        templateId: "plan_activated",
+        stripeEventId: "evt_checkout",
+        planName: "PRO",
+      }),
+    );
+    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        userId: USER_A.id,
+        templateId: "payment_failed",
+        stripeEventId: "evt_failed",
+      }),
+    );
+    expect(notifyCustomerEmail).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        userId: USER_A.id,
+        templateId: "subscription_canceled",
+        stripeEventId: "evt_deleted",
+      }),
+    );
   });
 
   it("never rolls back billing when the customer email provider fails", async () => {
@@ -384,9 +450,13 @@ describe("processStripeEvent", () => {
 
     await expect(
       processStripeEvent(
-        event("customer.subscription.deleted", subscription({ customer: "cus_alpha" }), "evt_delete_email_failure"),
-        deps.value
-      )
+        event(
+          "customer.subscription.deleted",
+          subscription({ customer: "cus_alpha" }),
+          "evt_delete_email_failure",
+        ),
+        deps.value,
+      ),
     ).resolves.toMatchObject({ outcome: "processed" });
     expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, {
       customerId: "cus_alpha",
@@ -399,16 +469,24 @@ describe("processStripeEvent", () => {
 
     await processStripeEvent(
       event("charge.refunded", { id: "ch_refund", invoice: "in_refunded" }),
-      deps.value
+      deps.value,
     );
-    expect(deps.reversePaidReferral).toHaveBeenCalledWith("in_refunded", "refund");
+    expect(deps.reversePaidReferral).toHaveBeenCalledWith(
+      "in_refunded",
+      "refund",
+      undefined,
+      undefined,
+    );
 
     await processStripeEvent(
       event("charge.dispute.created", { id: "dp_test", charge: "ch_disputed" }),
-      deps.value
+      deps.value,
     );
     expect(deps.value.retrieveCharge).toHaveBeenCalledWith("ch_disputed");
-    expect(deps.reversePaidReferral).toHaveBeenCalledWith("in_disputed", "dispute");
+    expect(deps.reversePaidReferral).toHaveBeenCalledWith(
+      "in_disputed",
+      "dispute",
+    );
   });
 
   it("is idempotent when Stripe redelivers the same event", async () => {
@@ -416,7 +494,7 @@ describe("processStripeEvent", () => {
     const repeated = event(
       "customer.subscription.updated",
       subscription({ clerkId: USER_A.clerkId, customer: "cus_alpha" }),
-      "evt_repeated"
+      "evt_repeated",
     );
     await processStripeEvent(repeated, deps.value);
     await processStripeEvent(repeated, deps.value);
@@ -436,10 +514,10 @@ describe("processStripeEvent", () => {
       processStripeEvent(
         event(
           "checkout.session.completed",
-          checkout({ clerkId: USER_A.clerkId, customer: "cus_beta" })
+          checkout({ clerkId: USER_A.clerkId, customer: "cus_beta" }),
         ),
-        deps.value
-      )
+        deps.value,
+      ),
     ).rejects.toBeInstanceOf(StripeOwnershipError);
     expect(deps.syncSubscription).not.toHaveBeenCalled();
   });
@@ -450,10 +528,10 @@ describe("processStripeEvent", () => {
       processStripeEvent(
         event(
           "checkout.session.completed",
-          checkout({ clerkId: USER_A.clerkId, customer: null })
+          checkout({ clerkId: USER_A.clerkId, customer: null }),
         ),
-        deps.value
-      )
+        deps.value,
+      ),
     ).rejects.toBeInstanceOf(StripeWebhookInputError);
     expect(deps.syncSubscription).not.toHaveBeenCalled();
   });
@@ -461,57 +539,289 @@ describe("processStripeEvent", () => {
 
 describe("owner business alerts", () => {
   function liveEvent(type: string, object: unknown, id = "evt_live") {
-    return { id, type, created: 1790000000, livemode: true, data: { object } } as Stripe.Event;
+    return {
+      id,
+      type,
+      created: 1790000000,
+      livemode: true,
+      data: { object },
+    } as Stripe.Event;
   }
   it("uses a paid invoice, not checkout completion, as the payment signal", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
-    await processStripeEvent(liveEvent("checkout.session.completed", checkout({ customer: "cus_alpha" })), deps.value);
+    const notifyOwnerEmail = vi.fn();
+    deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(
+      liveEvent(
+        "checkout.session.completed",
+        checkout({ customer: "cus_alpha" }),
+      ),
+      deps.value,
+    );
     expect(notifyOwnerEmail).not.toHaveBeenCalled();
-    await processStripeEvent(liveEvent("invoice.paid", { id: "in_paid", subscription: "sub_test", amount_paid: 900, currency: "usd", billing_reason: "subscription_create" }), deps.value);
-    expect(notifyOwnerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "payment", key: "in_paid", userId: USER_A.id, amount: 900, currency: "usd" }));
+    await processStripeEvent(
+      liveEvent("invoice.paid", {
+        id: "in_paid",
+        subscription: "sub_test",
+        amount_paid: 900,
+        currency: "usd",
+        billing_reason: "subscription_create",
+      }),
+      deps.value,
+    );
+    expect(notifyOwnerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "payment",
+        key: "in_paid",
+        userId: USER_A.id,
+        amount: 900,
+        currency: "usd",
+      }),
+    );
   });
   it("ignores free invoices and test payments", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
-    await processStripeEvent(liveEvent("invoice.paid", { id: "in_free", subscription: "sub_test", amount_paid: 0, currency: "usd" }), deps.value);
-    await processStripeEvent({ ...liveEvent("invoice.paid", { id: "in_test", subscription: "sub_test", amount_paid: 900, currency: "usd" }), livemode: false }, deps.value);
+    const notifyOwnerEmail = vi.fn();
+    deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(
+      liveEvent("invoice.paid", {
+        id: "in_free",
+        subscription: "sub_test",
+        amount_paid: 0,
+        currency: "usd",
+      }),
+      deps.value,
+    );
+    await processStripeEvent(
+      {
+        ...liveEvent("invoice.paid", {
+          id: "in_test",
+          subscription: "sub_test",
+          amount_paid: 900,
+          currency: "usd",
+        }),
+        livemode: false,
+      },
+      deps.value,
+    );
     expect(notifyOwnerEmail).not.toHaveBeenCalled();
   });
   it("uses the invoice identity across repeated failure attempts", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
-    for (const id of ["evt_attempt1", "evt_attempt2"]) await processStripeEvent(liveEvent("invoice.payment_failed", { id: "in_failed", subscription: "sub_test", amount_due: 900, currency: "usd" }, id), deps.value);
-    expect(notifyOwnerEmail.mock.calls.map(([input]) => input.key)).toEqual(["in_failed", "in_failed"]);
+    const notifyOwnerEmail = vi.fn();
+    deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    for (const id of ["evt_attempt1", "evt_attempt2"])
+      await processStripeEvent(
+        liveEvent(
+          "invoice.payment_failed",
+          {
+            id: "in_failed",
+            subscription: "sub_test",
+            amount_due: 900,
+            currency: "usd",
+          },
+          id,
+        ),
+        deps.value,
+      );
+    expect(notifyOwnerEmail.mock.calls.map(([input]) => input.key)).toEqual([
+      "in_failed",
+      "in_failed",
+    ]);
   });
   it("retries the webhook when the durable queue is unavailable", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    deps.value.notifyOwnerEmail = vi.fn().mockRejectedValue(new Error("queue unavailable"));
-    await expect(processStripeEvent(liveEvent("invoice.paid", { id: "in_paid", subscription: "sub_test", amount_paid: 900, currency: "usd" }), deps.value)).rejects.toThrow("queue unavailable");
+    deps.value.notifyOwnerEmail = vi
+      .fn()
+      .mockRejectedValue(new Error("queue unavailable"));
+    await expect(
+      processStripeEvent(
+        liveEvent("invoice.paid", {
+          id: "in_paid",
+          subscription: "sub_test",
+          amount_paid: 900,
+          currency: "usd",
+        }),
+        deps.value,
+      ),
+    ).rejects.toThrow("queue unavailable");
   });
 });
 
 describe("owner alerts for revenue risks", () => {
-  function live(type: string, object: unknown) { return { id: "evt_risk", created: 1790000000, livemode: true, type, data: { object } } as Stripe.Event; }
+  function live(type: string, object: unknown) {
+    return {
+      id: "evt_risk",
+      created: 1790000000,
+      livemode: true,
+      type,
+      data: { object },
+    } as Stripe.Event;
+  }
   it("reports an ended subscription once by subscription identity", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
-    await processStripeEvent(live("customer.subscription.deleted", subscription({ customer: "cus_alpha", status: "canceled" })), deps.value);
-    expect(notifyOwnerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "cancellation", key: "sub_test", userId: USER_A.id }));
+    const notifyOwnerEmail = vi.fn();
+    deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(
+      live(
+        "customer.subscription.deleted",
+        subscription({ customer: "cus_alpha", status: "canceled" }),
+      ),
+      deps.value,
+    );
+    expect(notifyOwnerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "cancellation",
+        key: "sub_test",
+        userId: USER_A.id,
+      }),
+    );
   });
   it("reports refunds as cumulative amounts and keeps new refund increments distinct", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
-    for (const amount of [300, 900]) await processStripeEvent(live("charge.refunded", { id: "ch_paid", customer: "cus_alpha", invoice: "in_paid", amount_refunded: amount, currency: "usd" }), deps.value);
-    expect(notifyOwnerEmail.mock.calls.map(([input]) => input.key)).toEqual(["ch_paid:300", "ch_paid:900"]);
+    const notifyOwnerEmail = vi.fn();
+    deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    for (const amount of [300, 900])
+      await processStripeEvent(
+        live("charge.refunded", {
+          id: "ch_paid",
+          customer: "cus_alpha",
+          invoice: "in_paid",
+          amount_refunded: amount,
+          currency: "usd",
+        }),
+        deps.value,
+      );
+    expect(notifyOwnerEmail.mock.calls.map(([input]) => input.key)).toEqual([
+      "ch_paid:300",
+      "ch_paid:900",
+    ]);
   });
   it("includes the dispute deadline and ignores charges outside AP3K", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
-    const notifyOwnerEmail = vi.fn(); deps.value.notifyOwnerEmail = notifyOwnerEmail;
-    await processStripeEvent(live("charge.dispute.created", { id: "dp_1", charge: { id: "ch_1", customer: "cus_alpha", invoice: "in_paid" }, amount: 900, currency: "usd", evidence_details: { due_by: 1790000000 } }), deps.value);
-    expect(notifyOwnerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "dispute", key: "dp_1", detail: expect.stringContaining("Evidence is due") }));
+    const notifyOwnerEmail = vi.fn();
+    deps.value.notifyOwnerEmail = notifyOwnerEmail;
+    await processStripeEvent(
+      live("charge.dispute.created", {
+        id: "dp_1",
+        charge: { id: "ch_1", customer: "cus_alpha", invoice: "in_paid" },
+        amount: 900,
+        currency: "usd",
+        evidence_details: { due_by: 1790000000 },
+      }),
+      deps.value,
+    );
+    expect(notifyOwnerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "dispute",
+        key: "dp_1",
+        detail: expect.stringContaining("Evidence is due"),
+      }),
+    );
     notifyOwnerEmail.mockClear();
-    await processStripeEvent(live("charge.refunded", { id: "ch_other", customer: "cus_other", invoice: "in_other", amount_refunded: 900, currency: "usd" }), deps.value);
+    await processStripeEvent(
+      live("charge.refunded", {
+        id: "ch_other",
+        customer: "cus_other",
+        invoice: "in_other",
+        amount_refunded: 900,
+        currency: "usd",
+      }),
+      deps.value,
+    );
     expect(notifyOwnerEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("referral invoice revenue", () => {
+  const sub = {
+    start_date: 100,
+    billing_cycle_anchor: 200,
+  } as Stripe.Subscription;
+  it("excludes discounts and inclusive tax", () => {
+    const invoice = {
+      amount_paid: 648,
+      total_tax_amounts: [{ amount: 108 }],
+      lines: {
+        data: [
+          {
+            type: "subscription",
+            amount: 1080,
+            discount_amounts: [{ amount: 432 }],
+            tax_amounts: [{ amount: 108, inclusive: true }],
+            period: { start: 200, end: 300 },
+          },
+        ],
+      },
+    } as unknown as Stripe.Invoice;
+    expect(referralInvoiceRevenue(invoice, sub)).toMatchObject({
+      basisCents: 540,
+      subscriptionStart: new Date(200000),
+    });
+  });
+  it("accepts current Stripe tax shape", () => {
+    const invoice = {
+      amount_paid: 1080,
+      total_taxes: [{ amount: 180 }],
+      lines: {
+        data: [
+          {
+            parent: {
+              type: "subscription_item_details",
+              subscription_item_details: { proration: false },
+            },
+            amount: 1080,
+            taxes: [{ amount: 180, tax_behavior: "inclusive" }],
+            period: { start: 200, end: 300 },
+          },
+        ],
+      },
+    } as unknown as Stripe.Invoice;
+    expect(referralInvoiceRevenue(invoice, sub).basisCents).toBe(900);
+  });
+  it("ignores nested prorations", () => {
+    const invoice = {
+      amount_paid: 900,
+      lines: {
+        data: [
+          {
+            parent: {
+              type: "subscription_item_details",
+              subscription_item_details: { proration: true },
+            },
+            amount: 900,
+            period: { start: 200, end: 300 },
+          },
+        ],
+      },
+    } as unknown as Stripe.Invoice;
+    expect(referralInvoiceRevenue(invoice, sub).basisCents).toBe(0);
+  });
+  it("pays a delayed eligible invoice after subscription cancellation", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    vi.mocked(deps.value.retrieveSubscription).mockResolvedValue(
+      subscription({
+        customer: "cus_alpha",
+        status: "canceled",
+        plan: "BUSINESS",
+      }),
+    );
+    await processStripeEvent(
+      event("invoice.paid", {
+        id: "in_late",
+        subscription: "sub_test",
+        amount_paid: 2900,
+        currency: "usd",
+        status_transitions: { paid_at: 200 },
+      }),
+      deps.value,
+    );
+    expect(deps.qualifyPaidReferral).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: "BUSINESS", amountPaid: 2900 }),
+    );
+    expect(deps.syncSubscription).toHaveBeenCalledWith(
+      USER_A.id,
+      expect.objectContaining({ plan: "FREE" }),
+    );
   });
 });

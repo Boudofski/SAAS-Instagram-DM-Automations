@@ -1,4 +1,6 @@
 "use server";
+import {attachmentId} from "@/lib/message-attachment";
+import {attachmentScopeFilter} from "@/lib/attachment-scope";
 import { normalizeEngagementSettings } from "@/lib/automation-engagement-settings";
 import {
   normalizeCopyList,
@@ -487,7 +489,15 @@ export const duplicateAutomationQuery = async (
   clerkId: string,
 ) => {
   const automation = await findAutomationForUser(automationId, clerkId);
-  if (!automation?.listener) return null;
+  if (!automation?.listener || !automation.userId) return null;
+  if (automation.listener.responseFormat === "ATTACHMENT") {
+    const id = attachmentId(automation.listener.mediaUrl);
+    const file = id ? await client.automationAttachment.findFirst({
+      where: { id, userId: automation.userId, status: "READY", ...attachmentScopeFilter() },
+      select: { id: true },
+    }) : null;
+    if (!file) return null;
+  }
   const integrationId = await currentInstagramAccountId(clerkId);
   const duplicateName = await nextDuplicateAutomationName(
     automation.userId,
@@ -572,6 +582,7 @@ export const duplicateAutomationQuery = async (
       keywords: automation.keywords.map((keyword) => keyword.word),
       responseFormat:
         automation.listener.responseFormat === "LINK" ||
+        automation.listener.responseFormat === "ATTACHMENT" ||
         automation.listener.responseFormat === "MEDIA"
           ? automation.listener.responseFormat
           : "TEXT",
@@ -592,7 +603,7 @@ export const duplicateAutomationQuery = async (
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType:
-        automation.listener.mediaType === "VIDEO"
+        automation.listener.mediaType === "AUDIO" ? "AUDIO" : automation.listener.mediaType === "FILE" ? "FILE" : automation.listener.mediaType === "VIDEO"
           ? "VIDEO"
           : automation.listener.mediaType === "IMAGE"
             ? "IMAGE"
@@ -657,6 +668,7 @@ export const duplicateAutomationQuery = async (
       ctaButtonTitle: automation.listener.ctaButtonTitle ?? undefined,
       responseFormat:
         automation.listener.responseFormat === "LINK" ||
+        automation.listener.responseFormat === "ATTACHMENT" ||
         automation.listener.responseFormat === "MEDIA" ||
         automation.listener.responseFormat === "PRODUCT_CARD"
           ? automation.listener.responseFormat
@@ -681,7 +693,7 @@ export const duplicateAutomationQuery = async (
       followUpDelayMinutes: automation.listener.followUpDelayMinutes,
       mediaUrl: automation.listener.mediaUrl ?? undefined,
       mediaType:
-        automation.listener.mediaType === "VIDEO"
+        automation.listener.mediaType === "AUDIO" ? "AUDIO" : automation.listener.mediaType === "FILE" ? "FILE" : automation.listener.mediaType === "VIDEO"
           ? "VIDEO"
           : automation.listener.mediaType === "IMAGE"
             ? "IMAGE"

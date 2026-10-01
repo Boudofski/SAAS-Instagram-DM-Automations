@@ -6,7 +6,7 @@ export function createCommentEditorPayload(
   activeOverride?: boolean,
 ) {
   const withLinks =
-    data.sendPrivateDm && (data.productCard || data.messageFormat !== "TEXT");
+    data.sendPrivateDm && (data.productCard || (data.messageFormat ?? "LINK") === "LINK");
   const firstLink = withLinks ? data.linkButtons[0] : undefined;
   return {
     name: data.campaignName,
@@ -33,7 +33,7 @@ export function createCommentEditorPayload(
       followUpEnabled: data.sendPrivateDm && data.followUpEnabled,
       followUpMessage: data.followUpMessage,
       followUpDelayMinutes: data.followUpDelayMinutes,
-      prompt: data.dmMessage,
+      prompt: data.messageFormat === "ATTACHMENT" ? "" : data.dmMessage,
       messageVariations: data.messageVariations ?? [],
       commentReplies: data.publicReplyEnabled ? data.commentReplies : [],
       publicReplyLimit: data.publicReplyLimit ?? 0,
@@ -57,15 +57,16 @@ export function createCommentEditorPayload(
         ? firstLink?.label || undefined
         : undefined,
       responseFormat:
-        data.sendPrivateDm && data.productCard
+        data.sendPrivateDm && data.messageFormat === "ATTACHMENT" ? "ATTACHMENT" : data.sendPrivateDm && data.productCard
           ? "PRODUCT_CARD"
           : withLinks
             ? "LINK"
             : "TEXT",
       mediaUrl:
-        data.sendPrivateDm && data.productCard
+        data.sendPrivateDm && data.messageFormat === "ATTACHMENT" ? data.attachment?.url : data.sendPrivateDm && data.productCard
           ? data.productImageUrl
           : undefined,
+      mediaType: data.messageFormat === "ATTACHMENT" ? data.attachment?.mediaType : undefined,
       cardSubtitle:
         data.sendPrivateDm && data.productCard
           ? data.productSubtitle

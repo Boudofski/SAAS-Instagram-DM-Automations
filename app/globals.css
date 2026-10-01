@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The workspace has no global toolbar. Keep mobile navigation clear of content. */
+.ap3k-app-shell:has([data-automation-library]) { min-height:100dvh; background:#fff; }
+.dark .ap3k-app-shell:has([data-automation-library]) { background:#0e1019; }
+@media (max-width: 1023px) {
+  .ap3k-app-shell { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+  .ap3k-app-shell [data-automation-scroll-region] { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+
 @layer base {
   :root {
     --background: 220 30% 95%;

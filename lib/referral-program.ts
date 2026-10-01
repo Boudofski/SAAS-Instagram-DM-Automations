@@ -1,3 +1,9 @@
+import {
+  getRecurringDashboard,
+  qualifyRecurringCommission,
+  reverseRecurringCommission,
+  type RecurringPayment,
+} from "@/lib/referral-commissions";
 import { client } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import type { Prisma, SUBSCRIPTION_PLAN } from "@prisma/client";
@@ -20,34 +26,50 @@ function createReferralCode() {
 }
 
 function isPrismaCode(error: unknown, code: string) {
-  return Boolean(error && typeof error === "object" && "code" in error && error.code === code);
+  return Boolean(
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === code,
+  );
 }
 
 export async function createReferralAttribution(
   transaction: Prisma.TransactionClient,
   referredUserId: string,
-  rawCode?: string | null
+  rawCode?: string | null,
 ) {
-  const code = normalizeReferralCode(rawCode);
+  const promo = rawCode?.startsWith("PROMO:") ?? false;
+  const code = normalizeReferralCode(promo ? rawCode?.slice(6) : rawCode);
   if (!code) return null;
 
   const partner = await transaction.referralPartner.findUnique({
-    where: { code },
-    select: { id: true, userId: true },
+    where: promo ? { promoCode: code } : { code },
+    select: { id: true, userId: true, promoEnabled: true },
   });
-  if (!partner || partner.userId === referredUserId) return null;
+  if (
+    !partner ||
+    !partner.userId ||
+    (promo && !partner.promoEnabled) ||
+    partner.userId === referredUserId
+  )
+    return null;
 
   return transaction.referralAttribution.create({
     data: {
       partnerId: partner.id,
       referredUserId,
+      programVersion: 2,
+      source: promo ? "PROMO" : "LINK",
     },
     select: { id: true },
   });
 }
 
 export async function getOrCreateReferralPartner(userId: string) {
-  const existing = await client.referralPartner.findUnique({ where: { userId } });
+  const existing = await client.referralPartner.findUnique({
+    where: { userId },
+  });
   if (existing) return existing;
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -57,7 +79,9 @@ export async function getOrCreateReferralPartner(userId: string) {
       });
     } catch (error) {
       if (!isPrismaCode(error, "P2002")) throw error;
-      const raced = await client.referralPartner.findUnique({ where: { userId } });
+      const raced = await client.referralPartner.findUnique({
+        where: { userId },
+      });
       if (raced) return raced;
     }
   }
@@ -65,16 +89,30 @@ export async function getOrCreateReferralPartner(userId: string) {
   throw new Error("REFERRAL_CODE_CREATION_FAILED");
 }
 
-export async function activateConnectionBenefits(userId: string, now = new Date()) {
+export async function activateConnectionBenefits(
+  userId: string,
+  now = new Date(),
+) {
   const attribution = await client.referralAttribution.updateMany({
     where: { referredUserId: userId, connectedAt: null },
     data: { connectedAt: now, status: "CONNECTED" },
   });
 
+  // A real paid invoice may arrive before Instagram connection. Its commission
+  // remains reserved from availability until this prerequisite is satisfied.
+  await client.referralAttribution.updateMany({
+    where: {
+      referredUserId: userId,
+      programVersion: 2,
+      connectedAt: { not: null },
+      commissions: { some: {} },
+    },
+    data: { status: "QUALIFIED", qualifiedAt: now },
+  });
   return { referralConnected: attribution.count > 0 };
 }
 
-type QualifyingPayment = {
+type QualifyingPayment = RecurringPayment & {
   referredUserId: string;
   invoiceId: string;
   plan: SUBSCRIPTION_PLAN;
@@ -95,75 +133,89 @@ export async function qualifyReferralPayment(input: QualifyingPayment) {
 
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
-      return await client.$transaction(async (transaction) => {
-        const attribution = await transaction.referralAttribution.findUnique({
-          where: { referredUserId: input.referredUserId },
-          include: {
-            partner: {
-              select: { id: true, userId: true, founderRank: true },
+      return await client.$transaction(
+        async (transaction) => {
+          const attribution = await transaction.referralAttribution.findUnique({
+            where: { referredUserId: input.referredUserId },
+            include: {
+              partner: {
+                select: { id: true, userId: true, founderRank: true },
+              },
+              reward: { select: { id: true } },
             },
-            reward: { select: { id: true } },
-          },
-        });
-
-        if (!attribution?.connectedAt) return null;
-        if (attribution.reward) {
-          return {
-            rewardId: attribution.reward.id,
-            referrerUserId: attribution.partner.userId,
-            alreadyQualified: true,
-          };
-        }
-
-        let founderRank = attribution.partner.founderRank;
-        if (!founderRank) {
-          const founders = await transaction.referralPartner.count({
-            where: { founderRank: { not: null } },
           });
-          if (founders >= FOUNDING_PARTNER_LIMIT) {
-            await transaction.referralAttribution.update({
-              where: { id: attribution.id },
-              data: { status: "WAITLISTED", firstPaidInvoiceId: input.invoiceId },
-            });
+
+          if (
+            !attribution?.connectedAt ||
+            !attribution.partner.userId ||
+            attribution.programVersion === 2
+          )
             return null;
+          if (attribution.reward) {
+            return {
+              rewardId: attribution.reward.id,
+              referrerUserId: attribution.partner.userId,
+              alreadyQualified: true,
+            };
           }
 
-          founderRank = founders + 1;
-          await transaction.referralPartner.update({
-            where: { id: attribution.partner.id },
-            data: { founderRank, qualifiedAt: input.paidAt ?? new Date() },
+          let founderRank = attribution.partner.founderRank;
+          if (!founderRank) {
+            const founders = await transaction.referralPartner.count({
+              where: { founderRank: { not: null } },
+            });
+            if (founders >= FOUNDING_PARTNER_LIMIT) {
+              await transaction.referralAttribution.update({
+                where: { id: attribution.id },
+                data: {
+                  status: "WAITLISTED",
+                  firstPaidInvoiceId: input.invoiceId,
+                },
+              });
+              return null;
+            }
+
+            founderRank = founders + 1;
+            await transaction.referralPartner.update({
+              where: { id: attribution.partner.id },
+              data: { founderRank, qualifiedAt: input.paidAt ?? new Date() },
+            });
+          }
+
+          const qualifiedAt = input.paidAt ?? new Date();
+          const reward = await transaction.referralReward.create({
+            data: {
+              partnerId: attribution.partner.id,
+              attributionId: attribution.id,
+              qualifyingInvoiceId: input.invoiceId,
+              amountCents: REFERRAL_REWARD_CENTS,
+              currency: "usd",
+            },
+            select: { id: true },
           });
-        }
+          await transaction.referralAttribution.update({
+            where: { id: attribution.id },
+            data: {
+              status: "QUALIFIED",
+              qualifiedAt,
+              firstPaidInvoiceId: input.invoiceId,
+            },
+          });
 
-        const qualifiedAt = input.paidAt ?? new Date();
-        const reward = await transaction.referralReward.create({
-          data: {
-            partnerId: attribution.partner.id,
-            attributionId: attribution.id,
-            qualifyingInvoiceId: input.invoiceId,
-            amountCents: REFERRAL_REWARD_CENTS,
-            currency: "usd",
-          },
-          select: { id: true },
-        });
-        await transaction.referralAttribution.update({
-          where: { id: attribution.id },
-          data: {
-            status: "QUALIFIED",
-            qualifiedAt,
-            firstPaidInvoiceId: input.invoiceId,
-          },
-        });
-
-        return {
-          rewardId: reward.id,
-          referrerUserId: attribution.partner.userId,
-          founderRank,
-          alreadyQualified: false,
-        };
-      }, { isolationLevel: "Serializable" });
+          return {
+            rewardId: reward.id,
+            referrerUserId: attribution.partner.userId,
+            founderRank,
+            alreadyQualified: false,
+          };
+        },
+        { isolationLevel: "Serializable" },
+      );
     } catch (error) {
-      if ((isPrismaCode(error, "P2034") || isPrismaCode(error, "P2002")) && attempt < 3) {
+      if (
+        (isPrismaCode(error, "P2034") || isPrismaCode(error, "P2002")) &&
+        attempt < 3
+      ) {
         continue;
       }
       throw error;
@@ -173,7 +225,10 @@ export async function qualifyReferralPayment(input: QualifyingPayment) {
   return null;
 }
 
-export async function applyPendingReferralRewards(userId: string, customerId: string) {
+export async function applyPendingReferralRewards(
+  userId: string,
+  customerId: string,
+) {
   const rewards = await client.referralReward.findMany({
     where: {
       partner: { userId },
@@ -194,7 +249,7 @@ export async function applyPendingReferralRewards(userId: string, customerId: st
           description: "AP3K referral reward - one Pro month credit",
           metadata: { ap3k_referral_reward_id: reward.id },
         },
-        { idempotencyKey: `ap3k-referral-${reward.id}` }
+        { idempotencyKey: `ap3k-referral-${reward.id}` },
       );
 
       const updated = await client.referralReward.updateMany({
@@ -211,7 +266,10 @@ export async function applyPendingReferralRewards(userId: string, customerId: st
       await client.referralReward.updateMany({
         where: { id: reward.id, status: "PENDING" },
         data: {
-          failureReason: (error instanceof Error ? error.message : "Stripe credit failed").slice(0, 500),
+          failureReason: (error instanceof Error
+            ? error.message
+            : "Stripe credit failed"
+          ).slice(0, 500),
         },
       });
       console.error("[referral] Stripe credit application failed", {
@@ -270,6 +328,12 @@ export async function prepareReferralCreditForCheckout(input: {
 }
 
 export async function qualifyAndApplyReferralReward(input: QualifyingPayment) {
+  const attribution = await client.referralAttribution.findUnique({
+    where: { referredUserId: input.referredUserId },
+    select: { programVersion: true },
+  });
+  if (attribution?.programVersion === 2)
+    return qualifyRecurringCommission(input);
   const result = await qualifyReferralPayment(input);
   if (!result) return null;
 
@@ -278,16 +342,27 @@ export async function qualifyAndApplyReferralReward(input: QualifyingPayment) {
     select: { customerId: true },
   });
   if (subscription?.customerId) {
-    await applyPendingReferralRewards(result.referrerUserId, subscription.customerId);
+    await applyPendingReferralRewards(
+      result.referrerUserId,
+      subscription.customerId,
+    );
   }
   return result;
 }
 
 export async function reverseReferralRewardForInvoice(
   invoiceId: string,
-  reason: "refund" | "dispute"
+  reason: "refund" | "dispute",
+  refundedCents?: number,
+  chargedCents?: number,
 ) {
   if (!invoiceId) return null;
+  await reverseRecurringCommission(
+    invoiceId,
+    reason,
+    refundedCents,
+    chargedCents,
+  );
 
   const reward = await client.referralReward.findUnique({
     where: { qualifyingInvoiceId: invoiceId },
@@ -307,17 +382,26 @@ export async function reverseReferralRewardForInvoice(
         failureReason: `Reward reversed after qualifying payment ${reason}`,
       },
     });
-    return { rewardId: reward.id, reversed: reversed.count > 0, recoveredFromStripe: false };
+    return {
+      rewardId: reward.id,
+      reversed: reversed.count > 0,
+      recoveredFromStripe: false,
+    };
   }
 
+  if (!reward.partner.userId)
+    return { rewardId: reward.id, reversed: false, recoveredFromStripe: false };
   const subscription = await client.subscription.findUnique({
     where: { userId: reward.partner.userId },
     select: { customerId: true },
   });
   if (!subscription?.customerId) {
-    console.error("[referral] cannot reverse applied reward without Stripe customer", {
-      rewardId: reward.id,
-    });
+    console.error(
+      "[referral] cannot reverse applied reward without Stripe customer",
+      {
+        rewardId: reward.id,
+      },
+    );
     return { rewardId: reward.id, reversed: false, recoveredFromStripe: false };
   }
 
@@ -332,7 +416,7 @@ export async function reverseReferralRewardForInvoice(
         qualifying_invoice_id: invoiceId,
       },
     },
-    { idempotencyKey: `ap3k-referral-reversal-${reward.id}` }
+    { idempotencyKey: `ap3k-referral-reversal-${reward.id}` },
   );
 
   const reversed = await client.referralReward.updateMany({
@@ -343,61 +427,81 @@ export async function reverseReferralRewardForInvoice(
       failureReason: `Reward reversed after qualifying payment ${reason}`,
     },
   });
-  return { rewardId: reward.id, reversed: reversed.count > 0, recoveredFromStripe: true };
+  return {
+    rewardId: reward.id,
+    reversed: reversed.count > 0,
+    recoveredFromStripe: true,
+  };
 }
 
 export async function getReferralDashboard(userId: string) {
   const partner = await getOrCreateReferralPartner(userId);
-  const [foundersTaken, attributionCounts, rewards, recentReferrals] = await Promise.all([
-    client.referralPartner.count({ where: { founderRank: { not: null } } }),
-    client.referralAttribution.groupBy({
-      by: ["status"],
-      where: { partnerId: partner.id },
-      _count: { _all: true },
-    }),
-    client.referralReward.groupBy({
-      by: ["status"],
-      where: { partnerId: partner.id },
-      _count: { _all: true },
-      _sum: { amountCents: true },
-    }),
-    client.referralAttribution.findMany({
-      where: { partnerId: partner.id },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      select: {
-        id: true,
-        status: true,
-        createdAt: true,
-        connectedAt: true,
-        qualifiedAt: true,
-        reward: { select: { status: true } },
-        referredUser: { select: { firstname: true } },
-      },
-    }),
-  ]);
+  const [foundersTaken, attributionCounts, rewards, recentReferrals] =
+    await Promise.all([
+      client.referralPartner.count({ where: { founderRank: { not: null } } }),
+      client.referralAttribution.groupBy({
+        by: ["status"],
+        where: { partnerId: partner.id },
+        _count: { _all: true },
+      }),
+      client.referralReward.groupBy({
+        by: ["status"],
+        where: { partnerId: partner.id },
+        _count: { _all: true },
+        _sum: { amountCents: true },
+      }),
+      client.referralAttribution.findMany({
+        where: { partnerId: partner.id },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          connectedAt: true,
+          qualifiedAt: true,
+          reward: { select: { status: true } },
+          referredUser: { select: { firstname: true } },
+        },
+      }),
+    ]);
 
-  const counts = Object.fromEntries(attributionCounts.map((item) => [item.status, item._count._all]));
+  const counts = Object.fromEntries(
+    attributionCounts.map((item) => [item.status, item._count._all]),
+  );
   const rewardTotals = Object.fromEntries(
-    rewards.map((item) => [item.status, { count: item._count._all, cents: item._sum.amountCents ?? 0 }])
+    rewards.map((item) => [
+      item.status,
+      { count: item._count._all, cents: item._sum.amountCents ?? 0 },
+    ]),
   );
 
   return {
+    recurring: await getRecurringDashboard(userId, partner.id),
     code: partner.code,
     founderRank: partner.founderRank,
     foundersTaken,
     founderSlotsRemaining: Math.max(0, FOUNDING_PARTNER_LIMIT - foundersTaken),
     stats: {
-      invited: Object.values(counts).reduce((total, count) => total + Number(count), 0),
-      connected: Number(counts.CONNECTED ?? 0) + Number(counts.QUALIFIED ?? 0) + Number(counts.WAITLISTED ?? 0),
-      qualified: Number(rewardTotals.PENDING?.count ?? 0) + Number(rewardTotals.APPLIED?.count ?? 0),
-      creditEarnedCents: (rewardTotals.PENDING?.cents ?? 0) + (rewardTotals.APPLIED?.cents ?? 0),
+      invited: Object.values(counts).reduce(
+        (total, count) => total + Number(count),
+        0,
+      ),
+      connected:
+        Number(counts.CONNECTED ?? 0) +
+        Number(counts.QUALIFIED ?? 0) +
+        Number(counts.WAITLISTED ?? 0),
+      qualified:
+        Number(rewardTotals.PENDING?.count ?? 0) +
+        Number(rewardTotals.APPLIED?.count ?? 0),
+      creditEarnedCents:
+        (rewardTotals.PENDING?.cents ?? 0) + (rewardTotals.APPLIED?.cents ?? 0),
       creditPendingCents: rewardTotals.PENDING?.cents ?? 0,
       creditAppliedCents: rewardTotals.APPLIED?.cents ?? 0,
     },
     recentReferrals: recentReferrals.map((item) => ({
       id: item.id,
-      name: item.referredUser.firstname?.trim() || "Friend",
+      name: item.referredUser?.firstname?.trim() || "Friend",
       status: item.reward?.status === "REVERSED" ? "REVERSED" : item.status,
       createdAt: item.createdAt.toISOString(),
       connectedAt: item.connectedAt?.toISOString() ?? null,

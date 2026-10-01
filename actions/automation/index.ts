@@ -1,4 +1,6 @@
 "use server";
+import {attachmentScopeFilter} from "@/lib/attachment-scope";
+import {attachmentId} from "@/lib/message-attachment";
 
 import { waitUntil } from "@vercel/functions";
 
@@ -168,6 +170,12 @@ export const saveCampaign = async (
         };
     }
 
+    if (cleanPayload.listener.responseFormat === "ATTACHMENT") {
+      const id=attachmentId(cleanPayload.listener.mediaUrl);
+      const file=id?await client.automationAttachment.findFirst({where:{id,status:"READY",user:{clerkId:user.id},...attachmentScopeFilter()},select:{mediaType:true}}):null;
+      if(!file)return {status:400,data:"Choose a ready attachment from your own account."};
+      cleanPayload.listener.mediaType=file.mediaType as "IMAGE"|"VIDEO"|"AUDIO"|"FILE";
+    }
     if (cleanPayload.active) {
       saveStage = "activation-checks";
       const profile = await findUser(user.id);
@@ -301,6 +309,12 @@ export const saveMessageAutomation = async (
         status: 400,
         data: "Complete the AI conversation goal, context and tasks.",
       };
+    if (cleanPayload.responseFormat === "ATTACHMENT") {
+      const id=attachmentId(cleanPayload.mediaUrl);
+      const file=id?await client.automationAttachment.findFirst({where:{id,status:"READY",user:{clerkId:user.id},...attachmentScopeFilter()},select:{mediaType:true}}):null;
+      if(!file)return {status:400,data:"Choose a ready attachment from your own account."};
+      cleanPayload.mediaType=file.mediaType as "IMAGE"|"VIDEO"|"AUDIO"|"FILE";
+    }
     const validationError = validateMessageAutomationPayload(cleanPayload);
     if (validationError) return { status: 400, data: validationError };
 

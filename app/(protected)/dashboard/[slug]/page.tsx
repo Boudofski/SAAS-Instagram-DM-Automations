@@ -4,7 +4,7 @@ import { waitUntil } from "@vercel/functions";
 import { MetricValue, FollowerSubtitle, DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
-import EmptyState from "@/components/global/empty-state";
+import AutomationEmptyState from "@/components/dashboard/automation-empty-state";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import LocalTime from "@/components/global/local-time";
 import { getAllAutomation } from "@/actions/automation";
@@ -88,21 +88,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <UiText>{"See performance, manage automations, and keep Instagram conversations moving."}</UiText>
         </p>
       </div>
-
-      {isEmpty && (
-        <div className="ap3k-content-enter overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-6 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="ap3k-kicker"><UiText>{"Ready to launch"}</UiText></p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white"><UiText>{"Create your first Instagram automation"}</UiText></h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                <UiText>{"Start with a post comment, story interaction, or incoming DM, then choose the response and delivery rules."}</UiText>
-              </p>
-            </div>
-            <Link href={`/dashboard/${params.slug}/automation/new`} className="ap3k-gradient-button shrink-0 px-5 py-2.5 text-sm"><UiText>{"Create automation"}</UiText></Link>
-          </div>
-        </div>
-      )}
 
       {instagramConnected && instagram && (
         <div className={[
@@ -200,14 +185,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition hover:-translate-y-0.5 hover:bg-violet-100 dark:hover:bg-rf-pink/15"><UiText>{"View all"}</UiText></Link>
         </div>
 
-        {isEmpty ? (
-          <EmptyState
-            icon="📣"
-            title="No automations yet"
-            description="Choose a comment, story, or DM trigger, configure the response, and activate it."
-            ctaLabel="Create automation"
-            ctaHref={`/dashboard/${params.slug}/automation/new`}
-          />
+        {automationsResult.status !== 200 ? (
+          <p role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200"><UiText>Could not load your automations. Refresh the page to try again.</UiText></p>
+        ) : isEmpty ? (
+          <AutomationEmptyState slug={params.slug} />
         ) : (
           <AutomationTable slug={params.slug} automations={recentAutomations(automationsWithMetrics)} showControls={false} pageSize={5} />
         )}

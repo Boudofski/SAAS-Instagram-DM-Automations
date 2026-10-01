@@ -1,4 +1,6 @@
 "use client";
+import AttachmentPicker from "./attachment-picker";
+import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 import {
   QuickEngagementRows,
   QuickEngagementButtons,
@@ -67,7 +69,8 @@ type Draft = Partial<ReturnType<typeof normalizeEngagementSettings>> & {
   keywords: string[];
   message: string;
   messageVariations?: string[];
-  messageFormat: "TEXT" | "LINK";
+  messageFormat: "TEXT" | "LINK" | "ATTACHMENT";
+  attachment?: import("@/lib/message-attachment").MessageAttachment;
   linkButtons: LinkButton[];
   followGateRequired: boolean;
   followRequestDmText: string;
@@ -211,7 +214,8 @@ export default function MessageAutomationWizard({
       ...normalizeEngagementSettings(automation.listener || {}),
       name: automation.name ?? "",
       messageFormat:
-        automation.listener.responseFormat === "TEXT" ? "TEXT" : "LINK",
+        automation.listener.responseFormat === "ATTACHMENT" ? "ATTACHMENT" : automation.listener.responseFormat === "TEXT" ? "TEXT" : "LINK",
+      attachment: automation.listener.responseFormat === "ATTACHMENT" && attachmentId(automation.listener.mediaUrl) ? {id:attachmentId(automation.listener.mediaUrl)!,url:automation.listener.mediaUrl,name:"Attachment",mediaType:normalizeAttachmentType(automation.listener.mediaType)} : undefined,
       storyTriggerType:
         automation.storyTriggerType === "REACTION" ||
         automation.storyTriggerType === "REPLY"
@@ -289,7 +293,8 @@ export default function MessageAutomationWizard({
       ...draft,
       source,
       active,
-      responseFormat: withLinks ? "LINK" : "TEXT",
+      responseFormat: draft.messageFormat === "ATTACHMENT" && !draft.aiReplyEnabled ? "ATTACHMENT" : withLinks ? "LINK" : "TEXT",
+      mediaUrl:draft.attachment?.url,mediaType:draft.attachment?.mediaType,
       linkButtons: withLinks ? draft.linkButtons : undefined,
       ctaLink: firstLink?.url,
       ctaButtonTitle: firstLink?.label,
@@ -350,6 +355,7 @@ export default function MessageAutomationWizard({
     matchingMode: "CONTAINS",
     sendPrivateDm: true,
     dmMessage: messagePreview ?? draft.message,
+    messageFormat:draft.messageFormat,attachment:draft.attachment,
     linkButtons:
       draft.messageFormat === "LINK" && !draft.aiReplyEnabled
         ? draft.linkButtons
@@ -511,7 +517,7 @@ export default function MessageAutomationWizard({
                 setDraft((v) => ({
                   ...v,
                   aiReplyEnabled: value === "AI",
-                  messageFormat: value === "LINK" ? "LINK" : "TEXT",
+                  messageFormat: value === "ATTACHMENT" ? "ATTACHMENT" : value === "LINK" ? "LINK" : "TEXT",
                   ...(value === "AI"
                     ? {
                         followGateRequired: false,
@@ -526,6 +532,7 @@ export default function MessageAutomationWizard({
             >
               <option value="TEXT">{tr("plain text")}</option>
               <option value="LINK">{tr("text with button")}</option>
+              <option value="ATTACHMENT">{tr("attachment")}</option>
               <option
                 value="AI"
                 disabled={!aiAvailable && !draft.aiReplyEnabled}
@@ -555,7 +562,7 @@ export default function MessageAutomationWizard({
                 }
               />
             </label>
-          ) : (
+          ) : draft.messageFormat === "ATTACHMENT" ? (<AttachmentPicker value={draft.attachment} onChange={attachment=>setDraft(v=>({...v,attachment}))}/>) : (
             <>
               <MessageCopyComposer
                 message={draft.message}

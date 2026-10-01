@@ -1,3 +1,4 @@
+vi.mock("@/lib/attachment-cleanup",()=>({deleteOwnedAttachmentObjects:vi.fn().mockResolvedValue(undefined)}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const tx = vi.hoisted(() => ({
   automation: { findMany: vi.fn() }, integrations: { findMany: vi.fn() },

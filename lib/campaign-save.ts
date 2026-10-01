@@ -1,3 +1,4 @@
+import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 import {
   normalizeCopyList,
   readCommentReplies,
@@ -121,11 +122,11 @@ export type NormalizedCampaignPayload = {
     aiProtectionRules?: AiProtectionRules;
     ctaLink?: string;
     ctaButtonTitle?: string;
-    responseFormat?: "TEXT" | "LINK" | "MEDIA" | "PRODUCT_CARD";
+    responseFormat?: "TEXT" | "LINK" | "ATTACHMENT" | "MEDIA" | "PRODUCT_CARD";
     quickReplies?: Array<string | LinkButton>;
     cardSubtitle?: string;
     mediaUrl?: string;
-    mediaType?: "IMAGE" | "VIDEO";
+    mediaType?: "IMAGE" | "VIDEO" | "AUDIO" | "FILE";
     openingDmText?: string;
     openingDmButtonText?: string;
     openingDmEnabled?: boolean;
@@ -181,7 +182,9 @@ export function normalizeCampaignPayload(
   const openingDmEnabled =
     sendPrivateDm && payload.listener?.openingDmEnabled !== false;
   const responseFormat =
-    payload.listener?.responseFormat === "PRODUCT_CARD"
+    payload.listener?.responseFormat === "ATTACHMENT"
+      ? "ATTACHMENT"
+      : payload.listener?.responseFormat === "PRODUCT_CARD"
       ? "PRODUCT_CARD"
       : payload.listener?.responseFormat === "MEDIA"
         ? "MEDIA"
@@ -220,13 +223,13 @@ export function normalizeCampaignPayload(
     keywords: cleanKeywords(triggerMode, payload.keywords ?? []),
     listener: {
       listener: "MESSAGE",
-      prompt: payload.listener?.prompt?.trim() ?? "",
+      prompt: responseFormat === "ATTACHMENT" ? "" : payload.listener?.prompt?.trim() ?? "",
       commentReply: replies[0],
       commentReply2: replies[1],
       commentReply3: replies[2],
       commentReplies: replies,
       messageVariations:
-        sendPrivateDm && responseFormat !== "PRODUCT_CARD"
+        sendPrivateDm && responseFormat !== "ATTACHMENT" && responseFormat !== "PRODUCT_CARD"
           ? normalizeCopyList(
               payload.listener?.messageVariations,
               MAX_MESSAGE_VARIATIONS,
@@ -252,14 +255,14 @@ export function normalizeCampaignPayload(
           ? firstLink?.label
           : undefined,
       responseFormat,
-      quickReplies: sendPrivateDm
+      quickReplies: sendPrivateDm && responseFormat !== "ATTACHMENT"
         ? responseFormat === "LINK" || responseFormat === "PRODUCT_CARD"
           ? linkButtons
           : readLegacyQuickReplies(payload.listener?.quickReplies)
         : [],
       mediaUrl:
         sendPrivateDm &&
-        (responseFormat === "MEDIA" || responseFormat === "PRODUCT_CARD")
+        (responseFormat === "ATTACHMENT" || responseFormat === "MEDIA" || responseFormat === "PRODUCT_CARD")
           ? normalizeUrl(payload.listener?.mediaUrl)
           : undefined,
       cardSubtitle:
@@ -267,7 +270,7 @@ export function normalizeCampaignPayload(
           ? cleanOptional(payload.listener?.cardSubtitle)
           : undefined,
       mediaType:
-        sendPrivateDm &&
+        responseFormat === "ATTACHMENT" ? normalizeAttachmentType(payload.listener?.mediaType) : sendPrivateDm &&
         responseFormat === "MEDIA" &&
         payload.listener?.mediaType === "VIDEO"
           ? "VIDEO"
@@ -329,7 +332,7 @@ export function validateNormalizedCampaignPayload(
     return "Specific keyword automations need at least one keyword.";
   }
 
-  if (payload.sendPrivateDm && !payload.listener.prompt) {
+  if (payload.sendPrivateDm && payload.listener.responseFormat !== "ATTACHMENT" && !payload.listener.prompt) {
     return "This automation needs a DM message.";
   }
 
@@ -347,6 +350,8 @@ export function validateNormalizedCampaignPayload(
   ) {
     return "Complete every link label and add a valid destination URL.";
   }
+
+  if (payload.sendPrivateDm && payload.listener.responseFormat === "ATTACHMENT" && !attachmentId(payload.listener.mediaUrl)) return "Choose an uploaded attachment.";
 
   if (
     payload.sendPrivateDm &&

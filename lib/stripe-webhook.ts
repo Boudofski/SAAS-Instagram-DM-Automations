@@ -28,7 +28,7 @@ export type StripeWebhookDependencies = {
   findOwnerByCustomerId(customerId: string): Promise<StripeOwner | null>;
   syncSubscription(
     userId: string,
-    props: { customerId?: string; plan?: SUBSCRIPTION_PLAN }
+    props: { customerId?: string; plan?: SUBSCRIPTION_PLAN },
   ): Promise<unknown>;
   retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription>;
   retrieveCharge(chargeId: string): Promise<Stripe.Charge>;
@@ -40,8 +40,21 @@ export type StripeWebhookDependencies = {
     amountPaid: number;
     currency: string;
     paidAt?: Date;
+    subscriptionId?: string;
+    basisCents?: number;
+    periodStart?: Date;
+    periodEnd?: Date;
+    subscriptionStart?: Date;
+    billingReason?: string | null;
+    promoApplied?: boolean;
+    paidOutOfBand?: boolean;
   }): Promise<unknown>;
-  reversePaidReferral(invoiceId: string, reason: "refund" | "dispute"): Promise<unknown>;
+  reversePaidReferral(
+    invoiceId: string,
+    reason: "refund" | "dispute",
+    refundedCents?: number,
+    chargedCents?: number,
+  ): Promise<unknown>;
   warnStaleMetadata(details: {
     eventType: string;
     clerkIdFingerprint: string;
@@ -63,7 +76,7 @@ export class StripeOwnershipError extends Error {
     public readonly code:
       | "STRIPE_OWNER_UNRESOLVED"
       | "STRIPE_OWNERSHIP_CONFLICT"
-      | "STRIPE_CUSTOMER_BINDING_MISSING"
+      | "STRIPE_CUSTOMER_BINDING_MISSING",
   ) {
     super(code);
     this.name = "StripeOwnershipError";
@@ -99,7 +112,9 @@ const defaultDependencies: StripeWebhookDependencies = {
 
 async function notifyCustomerSafely(
   dependencies: StripeWebhookDependencies,
-  input: Parameters<NonNullable<StripeWebhookDependencies["notifyCustomerEmail"]>>[0]
+  input: Parameters<
+    NonNullable<StripeWebhookDependencies["notifyCustomerEmail"]>
+  >[0],
 ) {
   try {
     await dependencies.notifyCustomerEmail?.(input);
@@ -107,7 +122,8 @@ async function notifyCustomerSafely(
     console.warn("[stripe-webhook] non-blocking customer email failure", {
       templateId: input.templateId,
       stripeEventId: input.stripeEventId,
-      errorType: error instanceof Error ? error.constructor.name : "UnknownError",
+      errorType:
+        error instanceof Error ? error.constructor.name : "UnknownError",
     });
   }
 }
@@ -117,7 +133,7 @@ export function fingerprintExternalId(value: string) {
 }
 
 function stripeId(
-  value: string | { id: string } | null | undefined
+  value: string | { id: string } | null | undefined,
 ): string | null {
   if (typeof value === "string" && value.trim()) return value;
   if (
@@ -136,7 +152,9 @@ function metadataClerkId(metadata?: Stripe.Metadata | null) {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-function activePlanForSubscription(subscription: Stripe.Subscription): SUBSCRIPTION_PLAN {
+function activePlanForSubscription(
+  subscription: Stripe.Subscription,
+): SUBSCRIPTION_PLAN {
   // Keep access during Stripe's recovery window. Revoke only when Stripe moves
   // the subscription beyond a recoverable past_due state.
   if (!["active", "trialing", "past_due"].includes(subscription.status)) {
@@ -152,8 +170,9 @@ function activePlanForSubscription(subscription: Stripe.Subscription): SUBSCRIPT
 }
 
 function invoiceSubscriptionId(invoice: Stripe.Invoice) {
-  const value = (invoice as any).parent?.subscription_details?.subscription
-    ?? (invoice as any).subscription;
+  const value =
+    (invoice as any).parent?.subscription_details?.subscription ??
+    (invoice as any).subscription;
   return stripeId(value);
 }
 
@@ -161,7 +180,7 @@ async function syncStripeSubscription(
   eventType: string,
   subscription: Stripe.Subscription,
   allowInitialCustomerBinding: boolean,
-  dependencies: StripeWebhookDependencies
+  dependencies: StripeWebhookDependencies,
 ) {
   const customerId = stripeId(subscription.customer);
   if (!customerId) {
@@ -174,7 +193,7 @@ async function syncStripeSubscription(
       customerId,
       allowInitialCustomerBinding,
     },
-    dependencies
+    dependencies,
   );
   const plan = activePlanForSubscription(subscription);
   await dependencies.syncSubscription(resolution.owner.id, {
@@ -192,7 +211,7 @@ export async function resolveStripeOwner(
     customerId: string | null;
     allowInitialCustomerBinding: boolean;
   },
-  dependencies: StripeWebhookDependencies = defaultDependencies
+  dependencies: StripeWebhookDependencies = defaultDependencies,
 ) {
   const [metadataOwner, customerOwner] = await Promise.all([
     input.metadataClerkId
@@ -227,7 +246,10 @@ export async function resolveStripeOwner(
       input.customerId &&
       metadataOwner.customerId === null
     ) {
-      return { owner: metadataOwner, source: "initial-metadata-binding" as const };
+      return {
+        owner: metadataOwner,
+        source: "initial-metadata-binding" as const,
+      };
     }
     throw new StripeOwnershipError("STRIPE_CUSTOMER_BINDING_MISSING");
   }
@@ -237,7 +259,7 @@ export async function resolveStripeOwner(
 
 export async function processStripeEvent(
   event: Stripe.Event,
-  dependencies: StripeWebhookDependencies = defaultDependencies
+  dependencies: StripeWebhookDependencies = defaultDependencies,
 ) {
   switch (event.type) {
     case "checkout.session.completed": {
@@ -253,11 +275,12 @@ export async function processStripeEvent(
           customerId,
           allowInitialCustomerBinding: true,
         },
-        dependencies
+        dependencies,
       );
       const subscriptionId = stripeId(session.subscription);
       if (subscriptionId) {
-        const subscription = await dependencies.retrieveSubscription(subscriptionId);
+        const subscription =
+          await dependencies.retrieveSubscription(subscriptionId);
         const plan = activePlanForSubscription(subscription);
         await dependencies.syncSubscription(resolution.owner.id, {
           customerId,
@@ -269,12 +292,16 @@ export async function processStripeEvent(
           stripeEventId: event.id,
           planName: plan,
           periodEnd: (subscription as any).current_period_end
-            ? new Date((subscription as any).current_period_end * 1000).toLocaleDateString("en-US", { dateStyle: "medium" })
+            ? new Date(
+                (subscription as any).current_period_end * 1000,
+              ).toLocaleDateString("en-US", { dateStyle: "medium" })
             : null,
         });
       } else {
         // Bind ownership, but never grant paid access from Checkout metadata alone.
-        await dependencies.syncSubscription(resolution.owner.id, { customerId });
+        await dependencies.syncSubscription(resolution.owner.id, {
+          customerId,
+        });
       }
       await dependencies.applyPendingRewards(resolution.owner.id, customerId);
       return { outcome: "processed" as const, source: resolution.source };
@@ -285,7 +312,7 @@ export async function processStripeEvent(
         event.type,
         event.data.object as Stripe.Subscription,
         true,
-        dependencies
+        dependencies,
       );
       return { outcome: "processed" as const, source: resolution.source };
     }
@@ -295,7 +322,7 @@ export async function processStripeEvent(
         event.type,
         event.data.object as Stripe.Subscription,
         false,
-        dependencies
+        dependencies,
       );
       return { outcome: "processed" as const, source: resolution.source };
     }
@@ -306,7 +333,7 @@ export async function processStripeEvent(
         event.type,
         event.data.object as Stripe.Subscription,
         false,
-        dependencies
+        dependencies,
       );
       return { outcome: "processed" as const, source: resolution.source };
     }
@@ -316,38 +343,73 @@ export async function processStripeEvent(
       const invoice = event.data.object as Stripe.Invoice;
       const subscriptionId = invoiceSubscriptionId(invoice);
       if (!subscriptionId) {
-        return { outcome: "ignored" as const, source: "non-subscription-invoice" as const };
+        return {
+          outcome: "ignored" as const,
+          source: "non-subscription-invoice" as const,
+        };
       }
-      const subscription = await dependencies.retrieveSubscription(subscriptionId);
+      const subscription =
+        await dependencies.retrieveSubscription(subscriptionId);
       const resolution = await syncStripeSubscription(
         event.type,
         subscription,
         false,
-        dependencies
+        dependencies,
       );
-      if (event.livemode === true && ((event.type === "invoice.paid" && (invoice.amount_paid ?? 0) > 0) || (event.type === "invoice.payment_failed" && (invoice.amount_due ?? 0) > 0))) {
+      if (
+        event.livemode === true &&
+        ((event.type === "invoice.paid" && (invoice.amount_paid ?? 0) > 0) ||
+          (event.type === "invoice.payment_failed" &&
+            (invoice.amount_due ?? 0) > 0))
+      ) {
         await dependencies.notifyOwnerEmail?.({
-          live: true, kind: event.type === "invoice.paid" ? "payment" : "payment_failed",
-          key: invoice.id, userId: resolution.owner.id, plan: resolution.plan,
-          amount: event.type === "invoice.paid" ? invoice.amount_paid : invoice.amount_due,
-          currency: invoice.currency, reference: invoice.number || invoice.id,
+          live: true,
+          kind: event.type === "invoice.paid" ? "payment" : "payment_failed",
+          key: invoice.id,
+          userId: resolution.owner.id,
+          plan: resolution.plan,
+          amount:
+            event.type === "invoice.paid"
+              ? invoice.amount_paid
+              : invoice.amount_due,
+          currency: invoice.currency,
+          reference: invoice.number || invoice.id,
           occurredAt: new Date(event.created * 1000).toISOString(),
-          detail: event.type === "invoice.paid"
-            ? invoice.paid_out_of_band ? "This subscription invoice was marked paid outside Stripe. Check the payment record before counting it as a Stripe collection."
-              : invoice.billing_reason === "subscription_create" ? "A customer made their first subscription payment."
-              : invoice.billing_reason === "subscription_cycle" ? "A subscription renewal payment was received."
-              : "A subscription invoice was paid, including any plan-change adjustment."
-            : "A subscription payment failed. Stripe may retry it. You will receive only one failure alert for this invoice.",
+          detail:
+            event.type === "invoice.paid"
+              ? invoice.paid_out_of_band
+                ? "This subscription invoice was marked paid outside Stripe. Check the payment record before counting it as a Stripe collection."
+                : invoice.billing_reason === "subscription_create"
+                  ? "A customer made their first subscription payment."
+                  : invoice.billing_reason === "subscription_cycle"
+                    ? "A subscription renewal payment was received."
+                    : "A subscription invoice was paid, including any plan-change adjustment."
+              : "A subscription payment failed. Stripe may retry it. You will receive only one failure alert for this invoice.",
         });
       }
       if (event.type === "invoice.paid") {
         await dependencies.qualifyPaidReferral({
           referredUserId: resolution.owner.id,
           invoiceId: invoice.id,
-          plan: resolution.plan,
+          plan: inferActiveDatabasePlan({
+            metadataPlan: subscription.metadata?.plan,
+            lookupKey:
+              (invoice.lines?.data?.[0] as any)?.price?.lookup_key ??
+              subscription.items?.data?.[0]?.price?.lookup_key,
+            priceId:
+              (invoice.lines?.data?.[0] as any)?.price?.id ??
+              (invoice.lines?.data?.[0] as any)?.pricing?.price_details?.price,
+          }),
           amountPaid: invoice.amount_paid ?? 0,
           currency: invoice.currency ?? "",
-          paidAt: new Date((invoice.status_transitions?.paid_at ?? event.created) * 1000),
+          subscriptionId: subscription.id,
+          ...referralInvoiceRevenue(invoice, subscription),
+          billingReason: invoice.billing_reason,
+          promoApplied: Boolean(subscription.metadata?.ap3kReferralPromo),
+          paidOutOfBand: invoice.paid_out_of_band,
+          paidAt: new Date(
+            (invoice.status_transitions?.paid_at ?? event.created) * 1000,
+          ),
         });
       } else {
         await notifyCustomerSafely(dependencies, {
@@ -355,7 +417,8 @@ export async function processStripeEvent(
           templateId: "payment_failed",
           stripeEventId: event.id,
           planName: resolution.plan,
-          failureReason: "Stripe could not complete the latest subscription payment. Update the payment method or retry from Billing.",
+          failureReason:
+            "Stripe could not complete the latest subscription payment. Update the payment method or retry from Billing.",
         });
       }
       return { outcome: "processed" as const, source: resolution.source };
@@ -377,7 +440,7 @@ export async function processStripeEvent(
             customerId,
             allowInitialCustomerBinding: false,
           },
-          dependencies
+          dependencies,
         );
       } catch (error) {
         if (
@@ -397,8 +460,14 @@ export async function processStripeEvent(
         plan: "FREE",
       });
       if (event.livemode === true && subscription.status === "canceled") {
-        await dependencies.notifyOwnerEmail?.({ live: true, kind: "cancellation", key: subscription.id,
-          userId: resolution.owner.id, reference: subscription.id, occurredAt: new Date(event.created * 1000).toISOString() });
+        await dependencies.notifyOwnerEmail?.({
+          live: true,
+          kind: "cancellation",
+          key: subscription.id,
+          userId: resolution.owner.id,
+          reference: subscription.id,
+          occurredAt: new Date(event.created * 1000).toISOString(),
+        });
       }
       await notifyCustomerSafely(dependencies, {
         userId: resolution.owner.id,
@@ -413,47 +482,145 @@ export async function processStripeEvent(
       const charge = event.data.object as Stripe.Charge;
       const invoiceId = stripeId(charge.invoice);
       if (!invoiceId) {
-        return { outcome: "ignored" as const, source: "non-invoice-charge" as const };
+        return {
+          outcome: "ignored" as const,
+          source: "non-invoice-charge" as const,
+        };
       }
       if (event.livemode === true) {
         const customerId = stripeId(charge.customer);
-        const owner = customerId ? await dependencies.findOwnerByCustomerId(customerId) : null;
-        if (owner && charge.amount_refunded > 0) await dependencies.notifyOwnerEmail?.({ live: true, kind: "refund",
-          key: `${charge.id}:${charge.amount_refunded}`, userId: owner.id, amount: charge.amount_refunded,
-          currency: charge.currency, reference: charge.id, occurredAt: new Date(event.created * 1000).toISOString() });
+        const owner = customerId
+          ? await dependencies.findOwnerByCustomerId(customerId)
+          : null;
+        if (owner && charge.amount_refunded > 0)
+          await dependencies.notifyOwnerEmail?.({
+            live: true,
+            kind: "refund",
+            key: `${charge.id}:${charge.amount_refunded}`,
+            userId: owner.id,
+            amount: charge.amount_refunded,
+            currency: charge.currency,
+            reference: charge.id,
+            occurredAt: new Date(event.created * 1000).toISOString(),
+          });
       }
-      await dependencies.reversePaidReferral(invoiceId, "refund");
-      return { outcome: "processed" as const, source: "referral-reversal" as const };
+      await dependencies.reversePaidReferral(
+        invoiceId,
+        "refund",
+        charge.amount_refunded,
+        charge.amount,
+      );
+      return {
+        outcome: "processed" as const,
+        source: "referral-reversal" as const,
+      };
     }
 
     case "charge.dispute.created": {
       const dispute = event.data.object as Stripe.Dispute;
       const chargeId = stripeId(dispute.charge);
       if (!chargeId) {
-        return { outcome: "ignored" as const, source: "dispute-without-charge" as const };
+        return {
+          outcome: "ignored" as const,
+          source: "dispute-without-charge" as const,
+        };
       }
-      const charge = typeof dispute.charge === "object"
-        ? dispute.charge
-        : await dependencies.retrieveCharge(chargeId);
+      const charge =
+        typeof dispute.charge === "object"
+          ? dispute.charge
+          : await dependencies.retrieveCharge(chargeId);
       const invoiceId = stripeId(charge.invoice);
       if (!invoiceId) {
-        return { outcome: "ignored" as const, source: "non-invoice-dispute" as const };
+        return {
+          outcome: "ignored" as const,
+          source: "non-invoice-dispute" as const,
+        };
       }
       if (event.livemode === true) {
         const customerId = stripeId(charge.customer);
-        const owner = customerId ? await dependencies.findOwnerByCustomerId(customerId) : null;
-        if (owner) await dependencies.notifyOwnerEmail?.({ live: true, kind: "dispute", key: dispute.id,
-          userId: owner.id, amount: dispute.amount, currency: dispute.currency, reference: dispute.id,
-          occurredAt: new Date(event.created * 1000).toISOString(),
-          detail: dispute.evidence_details?.due_by
-            ? `A customer disputed a payment. Evidence is due by ${new Date(dispute.evidence_details.due_by * 1000).toISOString().slice(0, 10)}. Review it in Stripe.`
-            : undefined });
+        const owner = customerId
+          ? await dependencies.findOwnerByCustomerId(customerId)
+          : null;
+        if (owner)
+          await dependencies.notifyOwnerEmail?.({
+            live: true,
+            kind: "dispute",
+            key: dispute.id,
+            userId: owner.id,
+            amount: dispute.amount,
+            currency: dispute.currency,
+            reference: dispute.id,
+            occurredAt: new Date(event.created * 1000).toISOString(),
+            detail: dispute.evidence_details?.due_by
+              ? `A customer disputed a payment. Evidence is due by ${new Date(dispute.evidence_details.due_by * 1000).toISOString().slice(0, 10)}. Review it in Stripe.`
+              : undefined,
+          });
       }
       await dependencies.reversePaidReferral(invoiceId, "dispute");
-      return { outcome: "processed" as const, source: "referral-reversal" as const };
+      return {
+        outcome: "processed" as const,
+        source: "referral-reversal" as const,
+      };
     }
 
     default:
       return { outcome: "ignored" as const };
   }
+}
+
+// Ignore tax and unrelated invoice items. No proration commissions are issued.
+export function referralInvoiceRevenue(
+  invoice: Stripe.Invoice,
+  subscription: Stripe.Subscription,
+) {
+  const lines = invoice.lines?.data ?? [];
+  const recurring = lines.filter((line) => {
+    const value = line as any;
+    return (
+      !value.proration &&
+      !value.parent?.subscription_item_details?.proration &&
+      (value.type === "subscription" ||
+        value.parent?.type === "subscription_item_details" ||
+        value.subscription)
+    );
+  });
+  if (!recurring.length || invoice.lines?.has_more) return { basisCents: 0 };
+  const periodStart = Math.min(...recurring.map((line) => line.period.start));
+  const periodEnd = Math.max(...recurring.map((line) => line.period.end));
+  const revenue = recurring.reduce((sum, line) => {
+    const value = line as any;
+    const discounts = (value.discount_amounts ?? []).reduce(
+      (total: number, item: { amount: number }) => total + item.amount,
+      0,
+    );
+    const inclusiveTax = (value.tax_amounts ?? value.taxes ?? [])
+      .filter(
+        (item: { inclusive: boolean }) =>
+          item.inclusive || (item as any).tax_behavior === "inclusive",
+      )
+      .reduce(
+        (total: number, item: { amount: number }) => total + item.amount,
+        0,
+      );
+    return sum + Math.max(0, value.amount - discounts - inclusiveTax);
+  }, 0);
+  const invoiceTax =
+    (
+      (invoice as any).total_tax_amounts ?? (invoice as any).total_taxes
+    )?.reduce((sum: number, tax: { amount: number }) => sum + tax.amount, 0) ??
+    (invoice as any).tax ??
+    0;
+  const basisCents = Math.max(
+    0,
+    Math.min(revenue, (invoice.amount_paid ?? 0) - invoiceTax),
+  );
+  return {
+    basisCents,
+    periodStart: new Date(periodStart * 1000),
+    periodEnd: new Date(periodEnd * 1000),
+    subscriptionStart: new Date(
+      ((subscription as any).billing_cycle_anchor ??
+        (subscription as any).start_date) * 1000,
+    ),
+  };
 }

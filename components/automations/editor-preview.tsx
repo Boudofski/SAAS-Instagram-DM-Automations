@@ -1,4 +1,5 @@
 "use client";
+import {AttachmentPreview} from "./attachment-picker";
 
 import { personalizeUsername } from "@/lib/automation-copy";
 import { MentionText } from "./mention-text";
@@ -291,7 +292,7 @@ export default function EditorPreview({
                             />
                           </div>
                         )}
-                        {bubble(
+                        {data.messageFormat === "ATTACHMENT" ? (data.attachment ? <AttachmentPreview attachment={data.attachment}/> : bubble(tr("Attachment"))) : bubble(
                           data.dmMessage || tr("Enter your message here"),
                           aiDmReply
                             ? []

@@ -1,6 +1,8 @@
+import {deleteOwnedAttachmentObjects} from "@/lib/attachment-cleanup";
 import { client } from "@/lib/prisma";
 
 export async function deleteAp3kData(userId: string, email: string, retainAdminAudit = false) {
+  await deleteOwnedAttachmentObjects(userId);
   await client.$transaction(
     async (transaction) => {
       const [automations, integrations] = await Promise.all([

@@ -53,7 +53,7 @@ export default clerkMiddleware(async (auth, req) => {
   const browserPreference = browserLocale(req.headers.get("accept-language"));
   const firstVisit = !isEnglishOnlyArticle(pathname) && !isLocale(savedLocale) && !pathLocale
     && !/\.[^/]+$/.test(pathname)
-    && req.method === "GET" && !/^\/(api|callback|payment|r)(?:\/|$)/.test(pathname)
+    && req.method === "GET" && !/^\/(api|callback|payment|media|r)(?:\/|$)/.test(pathname)
     && !/bot|crawler|spider|slurp/i.test(req.headers.get("user-agent") || "")
     && !req.headers.has("next-router-prefetch") && req.headers.get("purpose") !== "prefetch";
   if (firstVisit && !isProtectedPath(pathname) && browserPreference !== "en") {

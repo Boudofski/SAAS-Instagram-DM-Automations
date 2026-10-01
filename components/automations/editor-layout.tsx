@@ -6,8 +6,6 @@ import { ArrowLeft, ChevronDown, Eye, Loader2, Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { Inter } from "next/font/google";
 import { useUi } from "@/components/i18n/use-ui";
-import ThemeToggle from "@/components/global/theme-toggle";
-import LanguageSwitcher from "@/components/global/language-switcher";
 import MobilePreviewDialog from "./mobile-preview-dialog";
 import styles from "./editor-layout.module.css";
 
@@ -29,7 +27,6 @@ export default function EditorLayout({ slug, name, onNameChange, active, saving,
         <span className={active ? styles.live : styles.draft}>{tr(active ? "Live" : "Draft")}</span>
       </div>
       <div className={styles.toolbarActions}>
-        <LanguageSwitcher compact textOnly /><ThemeToggle compact />
         <button type="button" className={styles.mobilePreview} onClick={() => setShowPreview(true)}><Eye size={17} />{tr("Preview")}</button>
 
         <button type="button" className={styles.publish} disabled={saving} onClick={() => onSave(true)}>{saving ? <Loader2 size={16} className="animate-spin" /> : null}{tr(active ? "Save changes" : "Publish")}</button>
