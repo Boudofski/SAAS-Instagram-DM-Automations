@@ -144,7 +144,7 @@ export default function InboxClient({ initialConversationId }: { initialConversa
   };
 
   return (
-    <div className="mt-3 flex h-[calc(100dvh-9.5rem)] min-h-[320px] flex-col overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-[#f5f6fa] text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#050816] dark:text-white sm:h-[calc(100dvh-7.5rem)] sm:min-h-[360px]">
+    <div className="mt-3 flex h-[calc(100dvh-6rem)] min-h-[320px] flex-col overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-[#f5f6fa] text-slate-950 shadow-sm dark:border-white/10 dark:bg-[#050816] dark:text-white lg:h-[calc(100dvh-3.5rem)] sm:min-h-[360px]">
       <header className={["shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 light:border-slate-300 bg-white/95 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-[#080c18]/95 sm:px-4 sm:py-3 lg:flex-nowrap lg:gap-3", selectedId ? "hidden md:flex" : "flex"].join(" ")}>
         <div className="min-w-0 flex-1 lg:min-w-32 lg:flex-none"><p className="text-xs font-black uppercase tracking-[0.2em] text-rf-purple sm:text-xs"><UiText>{"Instagram"}</UiText></p><h1 className="text-lg font-black tracking-tight sm:text-xl"><UiText>{"Inbox"}</UiText></h1></div>
         <label className="relative order-3 w-full lg:order-none lg:mx-auto lg:max-w-xl">

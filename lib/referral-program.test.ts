@@ -33,6 +33,8 @@ const mocks = vi.hoisted(() => {
   return { transaction, client, createBalanceTransaction };
 });
 
+vi.mock("@/lib/referral-commissions", () => ({ getRecurringDashboard: vi.fn().mockResolvedValue({}), reverseRecurringCommission: vi.fn(), qualifyRecurringCommission: vi.fn() }));
+
 vi.mock("@/lib/prisma", () => ({ client: mocks.client }));
 vi.mock("@/lib/stripe", () => ({
   stripe: {
@@ -74,7 +76,7 @@ describe("referral program", () => {
     await createReferralAttribution(mocks.transaction as any, "referred-1", "ap3k-ab12cd34");
 
     expect(mocks.transaction.referralAttribution.create).toHaveBeenCalledWith({
-      data: { partnerId: "partner-1", referredUserId: "referred-1" },
+      data: { partnerId: "partner-1", referredUserId: "referred-1", programVersion: 2, source: "LINK" },
       select: { id: true },
     });
 

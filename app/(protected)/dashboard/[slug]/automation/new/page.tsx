@@ -1,4 +1,5 @@
 "use client";
+import {attachmentId,normalizeAttachmentType} from "@/lib/message-attachment";
 import {
   normalizeCopyList,
   readCommentReplies,
@@ -243,7 +244,8 @@ function AutomationSetup({ params, searchParams }: Props) {
       followUpDelayMinutes: automation.listener?.followUpDelayMinutes ?? 30,
       productCard: automation.listener?.responseFormat === "PRODUCT_CARD",
       messageFormat:
-        automation.listener?.responseFormat === "TEXT" ? "TEXT" : "LINK",
+        automation.listener?.responseFormat === "ATTACHMENT" ? "ATTACHMENT" : automation.listener?.responseFormat === "TEXT" ? "TEXT" : "LINK",
+      attachment: automation.listener?.responseFormat === "ATTACHMENT" && attachmentId(automation.listener.mediaUrl) ? {id:attachmentId(automation.listener.mediaUrl)!,url:automation.listener.mediaUrl!,name:"Attachment",mediaType:normalizeAttachmentType(automation.listener.mediaType)} : undefined,
       productImageUrl: automation.listener?.mediaUrl ?? "",
       productSubtitle: automation.listener?.cardSubtitle ?? "",
       publicReply: automation.listener?.commentReply ?? "",

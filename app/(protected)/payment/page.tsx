@@ -8,8 +8,15 @@ import {
 } from "@/lib/stripe-config";
 import { resolveStripePriceId } from "@/lib/stripe-pricing";
 import { stripe } from "@/lib/stripe";
-import { checkoutIdempotencyKey, stripeCheckoutTaxOptions } from "@/lib/stripe-checkout";
-import { getBillingLookup, isManageableSubscriptionStatus } from "@/lib/billing-snapshot";
+import {
+  checkoutIdempotencyKey,
+  stripeCheckoutTaxOptions,
+} from "@/lib/stripe-checkout";
+import {
+  getBillingLookup,
+  isManageableSubscriptionStatus,
+} from "@/lib/billing-snapshot";
+import { referralCheckoutDiscount } from "@/lib/referral-commissions";
 import { prepareReferralCreditForCheckout } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -48,7 +55,9 @@ function StatusCard({
           {tone === "error" ? "!" : "↗"}
         </div>
         <h1 className="text-3xl font-black">{title}</h1>
-        <p className="max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-300">{body}</p>
+        <p className="max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-300">
+          {body}
+        </p>
       </div>
     </div>
   );
@@ -93,7 +102,9 @@ export default async function PaymentPage({ searchParams }: Props) {
     },
   });
   if (existing?.subscription?.customerId) {
-    const billingLookup = await getBillingLookup(existing.subscription.customerId);
+    const billingLookup = await getBillingLookup(
+      existing.subscription.customerId,
+    );
     if (billingLookup.state === "unavailable") {
       return (
         <StatusCard
@@ -147,36 +158,49 @@ export default async function PaymentPage({ searchParams }: Props) {
           email: existing.email,
         })
       : null;
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
-      client_reference_id: user.id,
-      metadata: {
-        clerkId: user.id,
-        plan: databasePlan,
-        interval: selectedInterval,
-      },
-      subscription_data: {
+    const referralPromo = existing
+      ? await referralCheckoutDiscount(existing.id, selectedInterval)
+      : null;
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: user.id,
         metadata: {
           clerkId: user.id,
           plan: databasePlan,
           interval: selectedInterval,
         },
+        subscription_data: {
+          metadata: {
+            clerkId: user.id,
+            plan: databasePlan,
+            interval: selectedInterval,
+            ...(referralPromo
+              ? { ap3kReferralPromo: referralPromo.partnerId }
+              : {}),
+          },
+        },
+        ...(customerId
+          ? { customer: customerId }
+          : { customer_email: user.emailAddresses[0]?.emailAddress }),
+        success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${hostUrl}/payment?cancel=true`,
+        ...(referralPromo
+          ? { discounts: [{ coupon: referralPromo.coupon }] }
+          : { allow_promotion_codes: true }),
+        ...stripeCheckoutTaxOptions(),
       },
-      ...(customerId
-        ? { customer: customerId }
-        : { customer_email: user.emailAddresses[0]?.emailAddress }),
-      success_url: `${hostUrl}/payment?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${hostUrl}/payment?cancel=true`,
-      allow_promotion_codes: true,
-      ...stripeCheckoutTaxOptions(),
-    }, {
-      idempotencyKey: checkoutIdempotencyKey({
-        clerkId: user.id,
-        plan: selectedPlan,
-        interval: selectedInterval,
-      }),
-    });
+      {
+        idempotencyKey:
+          (referralPromo ? `promo_${referralPromo.partnerId}_` : "") +
+          checkoutIdempotencyKey({
+            clerkId: user.id,
+            plan: selectedPlan,
+            interval: selectedInterval,
+          }),
+      },
+    );
 
     checkoutUrl = session.url;
   } catch (err) {

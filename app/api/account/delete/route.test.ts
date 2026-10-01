@@ -1,3 +1,4 @@
+vi.mock("@/lib/attachment-cleanup",()=>({deleteOwnedAttachmentObjects:vi.fn().mockResolvedValue(undefined)}));
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockCurrentUser = vi.fn();

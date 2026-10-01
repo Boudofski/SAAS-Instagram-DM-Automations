@@ -1,18 +1,14 @@
 import { UiText } from "@/components/i18n/localized-copy";
-import AutomationTable from "@/components/dashboard/automation-table";
-import EmptyState from "@/components/global/empty-state";
+import AutomationLibrary from "@/components/dashboard/automation-library";
 import { getAllAutomation } from "@/actions/automation";
 import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { getCampaignTableMetrics } from "@/lib/dashboard-metrics";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
-import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
-import Link from "next/link";
 
 type Props = { params: { slug: string } };
 
 export default async function AutomationsPage({ params }: Props) {
-  const appReviewMode = isAppReviewMode();
   const [result, userResult] = await Promise.all([
     getAllAutomation(),
     onUserInfo(),
@@ -46,61 +42,9 @@ export default async function AutomationsPage({ params }: Props) {
   }));
 
   return (
-    <div className="relative flex flex-col gap-3 px-1 py-3 text-slate-950 dark:text-slate-50 sm:gap-5 sm:p-6 lg:p-8">
-      <div className="ap3k-page-header">
-        <div>
-          <p className="ap3k-kicker hidden sm:block"><UiText>{"Instagram automation"}</UiText></p>
-          <div className="mt-1 flex items-baseline gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Automations"}</UiText></h1>
-            {automations.length > 0 ? (
-              <span className="text-xs font-bold text-slate-400 light:text-slate-600 sm:hidden">
-                {automations.length}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 hidden text-sm text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
-            {automations.length === 0
-              ? "Build a comment, story, or DM flow that responds while the conversation is active."
-              : `${automations.length} automation${automations.length !== 1 ? "s" : ""} · Comment, story, and DM flows live together here.`}
-          </p>
-        </div>
-        <Link
-          href={`/dashboard/${params.slug}/automation/new`}
-          className="ap3k-gradient-button inline-flex min-h-10 w-auto items-center justify-center self-start px-4 text-xs sm:min-h-11 sm:px-5 sm:text-sm"
-        >
-          <span className="sm:hidden"><UiText>{"+ New"}</UiText></span>
-          <span className="hidden sm:inline"><UiText>{"+ Create Automation"}</UiText></span>
-        </Link>
-      </div>
-
-      {automations.length === 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-orange-50 via-pink-50 to-indigo-50 p-8 shadow-sm dark:border-rf-pink/25 dark:bg-ap3k-gradient-soft">
-          <p className="ap3k-kicker"><UiText>{"AP3K Automations"}</UiText></p>
-          <h2 className="mt-3 text-2xl font-black text-slate-950 dark:text-white"><UiText>{" Turn interactions into conversations and leads "}</UiText></h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300"><UiText>{" Start from a post comment, a story interaction, or an incoming DM. Then craft the response and choose exactly how AP3K should deliver it. "}</UiText></p>
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row">
-            <Link
-              href={`/dashboard/${params.slug}/automation/new`}
-              className="ap3k-gradient-button inline-flex items-center justify-center px-6 py-3 text-sm"
-            ><UiText>{" Create your first automation → "}</UiText></Link>
-          </div>
-        </div>
-      ) : (
-        <AutomationTable
-          slug={params.slug}
-          automations={automationsWithMetrics as any[]}
-        />
-      )}
-
-      {automations.length === 0 && !appReviewMode && (
-        <EmptyState
-          icon="📣"
-          title="No automations yet"
-          description="Nothing is listening yet. Choose comments, stories, or DMs and build your first response flow."
-          ctaLabel="Launch first automation →"
-          ctaHref={`/dashboard/${params.slug}/automation/new`}
-        />
-      )}
+    <div className="relative flex min-w-0 flex-1 flex-col px-1 py-2 text-slate-950 dark:text-slate-50 sm:px-2">
+      <h1 className="sr-only">Automations</h1>
+      {result.status === 200 ? <AutomationLibrary slug={params.slug} automations={automationsWithMetrics as any[]} /> : <p role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200"><UiText>Could not load your automations. Refresh the page to try again.</UiText></p>}
     </div>
   );
 }

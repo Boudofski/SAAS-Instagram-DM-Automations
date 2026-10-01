@@ -57,7 +57,8 @@ describe("App Review-safe UX", () => {
     const source = readRepoFile(
       "app/(protected)/dashboard/[slug]/automation/page.tsx",
     );
-    expect(source).toContain("AutomationTable");
+    expect(source).toContain("AutomationLibrary");
+    expect(readFileSync("components/dashboard/automation-library.tsx", "utf8")).toContain("AutomationTable");
     expect(source).toContain("Automations");
     expect(source).not.toContain("External DM");
   });

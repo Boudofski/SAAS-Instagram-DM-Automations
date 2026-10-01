@@ -1,3 +1,4 @@
+import { resolveAttachmentMessage } from "@/lib/attachment-delivery";
 import { knownFollowStatus, withTrackedLinks } from "@/lib/automation-tracking";
 import axios from "axios";
 import { productImageDeliveryUrl } from "@/lib/product-card";
@@ -34,7 +35,7 @@ type InstagramMessagePayload =
     }
   | {
       attachment: {
-        type: "template" | "image" | "video";
+        type: "template" | "image" | "video" | "audio" | "file";
         payload: Record<string, unknown>;
       };
       quick_replies?: Array<{ content_type: "text"; title: string; payload: string }>;
@@ -307,7 +308,7 @@ export function buildCarouselPayload(cards: Array<{ title: string; subtitle: str
   })) } } };
 }
 
-function buildConfiguredPrivateReplyPayload(params: {
+async function buildConfiguredPrivateReplyPayload(params: {
   automationId: string;
   message: string;
   responseFormat?: string | null;
@@ -319,6 +320,7 @@ function buildConfiguredPrivateReplyPayload(params: {
   mediaUrl?: string | null;
   mediaType?: string | null;
 }) {
+  if (params.responseFormat === "ATTACHMENT") return {message: await resolveAttachmentMessage(params.mediaUrl),ctaMode: "none" as CtaMode};
   if (params.responseFormat === "PRODUCT_CARD" && params.mediaUrl) return {
     message: buildProductCardPayload(params), ctaMode: "product_card" as CtaMode,
   };
@@ -426,6 +428,10 @@ export async function sendInstagramDirectResponse(params: {
   const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
 
   try {
+    if (params.responseFormat === "ATTACHMENT" && !params.postbackButton && !params.followGatePrompt) {
+      const id=await postDirectPayload(params,await resolveAttachmentMessage(params.mediaUrl));
+      return {ok:true,messageIds:id?[id]:[]};
+    }
     if (params.typingIndicator) {
       await sendInstagramSenderAction(params.igBusinessAccountId, params.recipientId, "typing_on", params.token);
     }
@@ -682,7 +688,7 @@ export async function sendInstagramCommentPrivateReply(params: {
         message: params.preferQuickReplyForPostback ? followGatePayload.reliable : followGatePayload.preferred,
         ctaMode: "follow_gate_card" as CtaMode,
       }
-    : buildConfiguredPrivateReplyPayload({
+    : await buildConfiguredPrivateReplyPayload({
         automationId,
         message: params.message,
         responseFormat: params.responseFormat,

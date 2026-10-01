@@ -54,6 +54,7 @@
     "@react-email/render": "^2.1.0",
     "@reduxjs/toolkit": "^2.5.0",
     "@tanstack/react-query": "^5.62.7",
+    "@upstash/blob": "^0.0.8",
     "@vercel/analytics": "^2.0.1",
     "@vercel/functions": "^3.9.5",
     "@vercel/speed-insights": "^2.0.0",

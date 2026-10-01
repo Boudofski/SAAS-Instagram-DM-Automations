@@ -36,6 +36,7 @@ model User {
   emailDeliveries     EmailDelivery[]
   deletedReplyUsage   DeletedReplyUsage[]
   automationImages   AutomationImage[]
+  automationAttachments AutomationAttachment[]
 }
 
 // Prospects explicitly requesting the public launch-kit email series. Never import
@@ -130,14 +131,24 @@ model Subscription {
 }
 
 model ReferralPartner {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String    @unique @db.Uuid
-  user        User      @relation("ReferralPartnerOwner", fields: [userId], references: [id], onDelete: Cascade)
-  code        String    @unique @db.VarChar(24)
-  founderRank Int?      @unique
-  qualifiedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String?               @unique @db.Uuid
+  user                 User?                 @relation("ReferralPartnerOwner", fields: [userId], references: [id], onDelete: SetNull)
+  code                 String               @unique @db.VarChar(24)
+  founderRank          Int?                 @unique
+  promoCode            String?              @unique
+  stripeCouponId       String?              @unique
+  promoEnabled         Boolean              @default(false)
+  eligibilityCheckedAt DateTime?
+  followers            Int                  @default(0)
+  eligibleUsername     String?
+  commissions          ReferralCommission[]
+  withdrawals          ReferralWithdrawal[]
+  clicks               ReferralClick[]
+  invites              ReferralInvite[]
+  qualifiedAt          DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   attributions ReferralAttribution[]
   rewards      ReferralReward[]
@@ -149,14 +160,19 @@ model ReferralAttribution {
   id                 String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   partnerId          String                      @db.Uuid
   partner            ReferralPartner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  referredUserId     String                      @unique @db.Uuid
-  referredUser       User                        @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: Cascade)
+  referredUserId     String?                      @unique @db.Uuid
+  referredUser       User?                        @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: SetNull)
   status             REFERRAL_ATTRIBUTION_STATUS @default(SIGNED_UP)
   connectedAt        DateTime?
   qualifiedAt        DateTime?
   firstPaidInvoiceId String?                     @unique
   createdAt          DateTime                    @default(now())
   updatedAt          DateTime                    @updatedAt
+
+  programVersion   Int                  @default(2)
+  source           String               @default("LINK")
+  firstPeriodStart DateTime?
+  commissions      ReferralCommission[]
 
   reward ReferralReward?
 
@@ -926,4 +942,90 @@ model AutomationDeliveryJob {
   updatedAt DateTime @updatedAt
   @@unique([automationId,eventKey])
   @@index([status,dueAt])
+}
+
+model AutomationAttachment {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ storageKey String @unique
+ uploadId String? @unique
+ filename String
+ contentType String
+ mediaType String
+ size Int
+ status String @default("PENDING")
+ createdAt DateTime @default(now())
+ @@index([userId, status, createdAt])
+}
+
+// Recurring cash commissions are separate from previously earned invoice credits.
+model ReferralCommission {
+  id             String              @id @default(cuid())
+  partnerId      String              @db.Uuid
+  partner        ReferralPartner     @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  attributionId  String              @db.Uuid
+  attribution    ReferralAttribution @relation(fields: [attributionId], references: [id], onDelete: Restrict)
+  invoiceId      String              @unique
+  subscriptionId String
+  amountCents    Int
+  reversedCents  Int                 @default(0)
+  basisCents     Int
+  rateBps        Int
+  currency       String              @default("usd")
+  periodStart    DateTime
+  periodEnd      DateTime
+  reversalReason String?
+  createdAt      DateTime            @default(now())
+
+  @@index([partnerId, createdAt])
+}
+
+model ReferralWithdrawal {
+  id               String          @id @default(cuid())
+  partnerId        String          @db.Uuid
+  partner          ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  amountCents      Int
+  paypalEmail      String
+  status           String          @default("REQUESTED")
+  paymentReference String?         @unique
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  reviewNote       String?
+  createdAt        DateTime        @default(now())
+
+  @@index([partnerId, status])
+}
+
+model ReferralClick {
+  id             String          @id @default(cuid())
+  partnerId      String          @db.Uuid
+  partner        ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  visitorDayHash String
+  createdAt      DateTime        @default(now())
+
+  @@unique([partnerId, visitorDayHash])
+}
+
+model ReferralInvite {
+  id        String          @id @default(cuid())
+  partnerId String          @db.Uuid
+  partner   ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  recipient String
+  day       DateTime        @db.Date
+  status    String          @default("PENDING")
+  createdAt DateTime        @default(now())
+
+  @@unique([partnerId, recipient, day])
+  @@index([partnerId, createdAt])
+}
+
+// Cumulative adjustments survive refund events arriving before invoice.paid.
+model ReferralInvoiceAdjustment {
+  invoiceId String @id
+  refundedCents Int @default(0)
+  chargedCents Int @default(0)
+  disputed Boolean @default(false)
+  fullReversal Boolean @default(false)
+  updatedAt DateTime @updatedAt
 }

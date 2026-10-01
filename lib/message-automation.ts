@@ -1,3 +1,4 @@
+import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 import {
   normalizeEngagementSettings,
   validateEngagementSettings,
@@ -24,7 +25,7 @@ import {
 
 export type MessageAutomationSource = "STORY" | "DM";
 export type StoryTriggerType = "MENTION" | "REACTION" | "REPLY";
-export type MessageResponseFormat = "TEXT" | "LINK" | "MEDIA";
+export type MessageResponseFormat = "TEXT" | "LINK" | "ATTACHMENT" | "MEDIA";
 export type MessageTriggerMode = "SPECIFIC_KEYWORD" | "ANY_MESSAGE";
 export type DeliveryDelaySeconds = 0 | 3 | 5 | 10 | 30;
 
@@ -70,7 +71,7 @@ export type NormalizedMessageAutomationPayload = ReturnType<
   ctaLink?: string;
   ctaButtonTitle?: string;
   mediaUrl?: string;
-  mediaType?: "IMAGE" | "VIDEO";
+  mediaType?: "IMAGE" | "VIDEO" | "AUDIO" | "FILE";
   followGateRequired: boolean;
   typingIndicator: boolean;
   deliveryDelaySeconds: DeliveryDelaySeconds;
@@ -86,7 +87,7 @@ export function normalizeMessageAutomationPayload(
     payload.source === "DM" ? "DM" : "STORY";
   const responseFormat: MessageResponseFormat = payload.aiReplyEnabled
     ? "TEXT"
-    : payload.linkButtons || payload.responseFormat === "LINK"
+    : payload.responseFormat === "ATTACHMENT" ? "ATTACHMENT" : payload.linkButtons || payload.responseFormat === "LINK"
       ? "LINK"
       : payload.responseFormat === "MEDIA"
         ? "MEDIA"
@@ -126,11 +127,11 @@ export function normalizeMessageAutomationPayload(
           ).slice(0, 20)
         : [],
     responseFormat,
-    messageVariations: payload.aiReplyEnabled
+    messageVariations: responseFormat === "ATTACHMENT" || payload.aiReplyEnabled
       ? []
       : normalizeCopyList(payload.messageVariations, MAX_MESSAGE_VARIATIONS),
-    message: (payload.message ?? "").trim().slice(0, 1000),
-    quickReplies: payload.aiReplyEnabled
+    message: responseFormat === "ATTACHMENT" ? "" : (payload.message ?? "").trim().slice(0, 1000),
+    quickReplies: responseFormat === "ATTACHMENT" || payload.aiReplyEnabled
       ? []
       : responseFormat === "LINK"
         ? linkButtons
@@ -144,9 +145,9 @@ export function normalizeMessageAutomationPayload(
         ? firstLink?.label
         : undefined,
     mediaUrl:
-      responseFormat === "MEDIA" ? normalizeUrl(payload.mediaUrl) : undefined,
+      (responseFormat === "MEDIA" || responseFormat === "ATTACHMENT") ? normalizeUrl(payload.mediaUrl) : undefined,
     mediaType:
-      responseFormat === "MEDIA" && payload.mediaType === "VIDEO"
+      responseFormat === "ATTACHMENT" ? normalizeAttachmentType(payload.mediaType) : responseFormat === "MEDIA" && payload.mediaType === "VIDEO"
         ? "VIDEO"
         : responseFormat === "MEDIA"
           ? "IMAGE"
@@ -192,7 +193,8 @@ export function validateMessageAutomationPayload(
   ) {
     return "Add at least one DM keyword or choose any incoming message.";
   }
-  if (!payload.message) return "Write the DM that AP3K should send.";
+  if (payload.responseFormat === "ATTACHMENT" && !attachmentId(payload.mediaUrl)) return "Choose an uploaded attachment.";
+  if (payload.responseFormat !== "ATTACHMENT" && !payload.message) return "Write the DM that AP3K should send.";
   if (
     payload.responseFormat === "LINK" &&
     !linkButtonsAreComplete(

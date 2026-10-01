@@ -54,6 +54,7 @@ export default function AutomationAnalyticsView({ data, slug }: { data: Automati
   const dateLabel = (date: string, weekday = false) => new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", weekday ? { weekday: "short", timeZone: "UTC" } : { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   return (
     <main className="automation-analytics-page" aria-label="Automation analytics">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 pt-4 text-sm text-slate-600 dark:text-slate-300"><Link href={`/dashboard/${slug}/automation`} className="rounded-md px-1 py-2 hover:text-violet-600 dark:hover:text-violet-300">Automations</Link><span aria-hidden="true">/</span><span aria-current="page">Analytics</span></nav>
       <section className="aa-panel aa-summary">
         {a.postThumbnail ? <img src={a.postThumbnail} alt="Automation post" className="aa-thumbnail" /> : <span className="aa-thumbnail aa-placeholder"><BarChart3 size={25} /></span>}
         <div className="aa-summary-copy">

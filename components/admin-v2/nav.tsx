@@ -56,6 +56,7 @@ const groups = [
       { label: "Instagram accounts", href: "/admin/accounts", icon: Instagram },
       { label: "Automations", href: "/admin/campaigns", icon: Workflow },
       { label: "Billing", href: "/admin/billing", icon: CreditCard },
+      { label: "Referral withdrawals", href: "/admin/referrals", icon: CreditCard },
       { label: "Email Center", href: "/admin/emails", icon: MailCheck },
       { label: "Acquisition", href: "/admin/acquisition", icon: MailCheck },
     ],
