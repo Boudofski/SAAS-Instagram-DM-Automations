@@ -1040,7 +1040,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
     return redirect(`${dashboardPath(workspaceClerkId)}/integrations?integration_error=${integrationError}`);
   }
   if (selectedIntegrationId) return redirect(`/api/instagram/selected?integrationId=${encodeURIComponent(selectedIntegrationId)}`);
-  return redirect(`${dashboardPath(workspaceClerkId)}/integrations`);
+  return redirect(dashboardPath(workspaceClerkId));
 };
 
 export const getCurrentWebhookHealth = async () => {
