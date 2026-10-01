@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { dashboardDestinationPath } from "@/lib/dashboard";
 import { getAuthenticatedHomeRedirect } from "@/lib/authenticated-home-redirect";
 import {
   LOCALE_COOKIE,
@@ -88,6 +89,21 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isProtectedRoute(req)) await auth.protect();
+
+  // Resolve the entry URL from the verified session at the edge. Loading the
+  // provisioning page first cold-started a second server function on every login.
+  // The destination layout still checks ownership and sends missing workspaces
+  // through onboarding, where profile creation and welcome delivery belong.
+  if (pathname === "/dashboard" && req.method === "GET") {
+    const { userId } = await auth();
+    if (userId) {
+      const response = NextResponse.redirect(new URL(
+        dashboardDestinationPath(userId, req.nextUrl.searchParams.get("next")), req.url
+      ));
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
+    }
+  }
 
   const locale = resolveRequestLocale(requestedPath, firstVisit ? browserPreference : savedLocale);
   const requestHeaders = new Headers(req.headers);
