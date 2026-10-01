@@ -15,7 +15,7 @@ type Props = {
 };
 
 function integrationRedirect(slug?: string, error?: string) {
-  const target = slug ? `${dashboardPath(slug)}/integrations` : "/dashboard";
+  const target = error && slug ? `${dashboardPath(slug)}/integrations` : dashboardPath(slug);
   if (!error) return redirect(target);
 
   const separator = target.includes("?") ? "&" : "?";

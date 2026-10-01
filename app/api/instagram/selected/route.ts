@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { dashboardPath } from "@/lib/dashboard";
 import { client } from "@/lib/prisma";
 import { INSTAGRAM_ACCOUNT_COOKIE } from "@/lib/instagram-account-scope";
 
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     select: { id: true },
   });
   if (!integration) return NextResponse.redirect(new URL("/dashboard", request.url));
-  const response = NextResponse.redirect(new URL(`/dashboard/${auth.id}/account`, request.url));
+  const response = NextResponse.redirect(new URL(dashboardPath(auth.id), request.url));
   response.cookies.set(INSTAGRAM_ACCOUNT_COOKIE, integration.id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 31536000 });
   return response;
 }
