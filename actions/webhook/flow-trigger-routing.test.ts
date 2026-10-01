@@ -27,3 +27,8 @@ describe("published graph opening callback revision",()=>{
   expect(await isCurrentFlowOpening(flow as any,"recipient")).toBe(false);
  });
 });
+
+describe("comment post share routing",()=>{
+ it("matches the selected post with no keyword text and refuses unrelated or unidentified shares",async()=>{db.automation.findMany.mockResolvedValue([{...automation,triggerOnShares:true,sendPrivateDm:true,posts:[{postid:"post"}],listener:{}}]);expect((await findAutomationForDM("","page","r",true,"post"))?.matchedKeyword).toBe("shared post");expect(await findAutomationForDM("SHOP","page","r",true,"other")).toBeNull();expect(await findAutomationForDM("","page","r",true)).toBeNull();expect(db.automation.findMany.mock.calls[0][0].where.integration).toMatchObject({status:"CONNECTED",planLocked:false});});
+ it("does not run the share trigger when its switch is off",async()=>{db.automation.findMany.mockResolvedValue([{...automation,triggerOnShares:false,sendPrivateDm:true,posts:[{postid:"post"}],listener:{}}]);expect(await findAutomationForDM("","page","r",true,"post")).toBeNull();});
+});

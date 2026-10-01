@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Clock3,
   Mail,
@@ -40,6 +40,7 @@ export type QuickEngagementData = Partial<
   followRequestButtonText: string;
 };
 type Props = {
+  leading?: ReactNode;
   data: QuickEngagementData;
   update: (v: Partial<QuickEngagementData>) => void;
   paid: boolean;
@@ -204,6 +205,7 @@ export function QuickEngagementRows({
   );
 }
 export function QuickEngagementButtons({
+  leading,
   data,
   update,
   paid,
@@ -225,6 +227,7 @@ export function QuickEngagementButtons({
   return (
     <>
       <div className={s.addons}>
+        {leading}
         {!paid && (
           <>
             <button type="button" onClick={() => setUpgrade(true)}>
@@ -299,7 +302,7 @@ export function QuickEngagementButtons({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                disabled={paid && !followUpsReady}
+
                 onClick={(e) => {
                   if (!paid) {
                     e.preventDefault();
@@ -347,7 +350,7 @@ export function QuickEngagementButtons({
       </div>
       {paid && !followUpsReady && (
         <p className={s.hint}>
-          {tr("Scheduled reminders are temporarily unavailable.")}
+          {tr("You can configure your follow-up now. Publishing requires the delivery scheduler to be ready.")}
         </p>
       )}
       <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} />

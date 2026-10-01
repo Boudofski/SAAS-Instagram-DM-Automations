@@ -14,7 +14,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 text-slate-950 dark:bg-[#050816] dark:text-slate-50">
       <div className="pointer-events-none absolute inset-0 bg-ap3k-radial" />
-      <div className="relative z-10 w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-[#0f172a] dark:shadow-ap3k-card sm:p-8">
+      <div className="relative z-10 w-full mx-auto max-w-2xl has-[#choose-plan-title]:max-w-6xl rounded-3xl bg-white p-2 dark:bg-[#0f172a] sm:p-8">
         {profileReady ? (
           children
         ) : (

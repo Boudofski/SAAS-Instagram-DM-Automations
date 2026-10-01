@@ -29,7 +29,7 @@ export function matchFlowTrigger(triggers: FlowTrigger[], event: {source: FlowTr
   return candidates.find(t => !t.anyMessage && Boolean(t.keyword)) ?? candidates[0] ?? null;
 }
 export function isSharedPostAttachment(attachments: Array<{type?: string}>): boolean {
-  return attachments.some(a => a.type === "share" || a.type === "ig_reel" || a.type === "reel");
+  return attachments.some(a => a.type === "ig_post" || a.type === "share" || a.type === "ig_reel" || a.type === "reel");
 }
 // Drafts can be disconnected or empty. Bound payload size/depth and node identities;
 // publication still uses the complete discriminated node and graph validator.

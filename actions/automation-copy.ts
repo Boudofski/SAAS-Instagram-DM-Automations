@@ -14,15 +14,16 @@ export async function generateAutomationCopyAction(input: AutomationCopyInput) {
     const clerk = await onCurrentUser();
     const profile = await findUser(clerk.id);
     if (!profile?.id || (profile as { status?: string }).status === "SUSPENDED") return { ok: false as const, error: "Your account cannot generate AI copy." };
-    if (!["PRO", "BUSINESS"].includes(profile.subscription?.plan ?? "FREE")) return { ok: false as const, error: "AI generation is available on Pro and Business plans." };
+    const commentPreview = ["COMMENT_REPLIES", "COMMENT_PROMPT", "COMMENT_SAMPLES"].includes(input?.mode);
+    if (!commentPreview && !["PRO", "BUSINESS"].includes(profile.subscription?.plan ?? "FREE")) return { ok: false as const, error: "AI generation is available on Pro and Business plans." };
     if (!input || input.integrationId !== await currentInstagramAccountId(clerk.id)) return { ok: false as const, error: "Your Instagram account changed. Reload this page before generating." };
     if (!["COMMENT_REPLIES", "COMMENT_PROMPT", "COMMENT_SAMPLES", "MESSAGE", "MESSAGE_VARIATIONS"].includes(input.mode)) return { ok: false as const, error: "Choose a supported generation mode." };
     if (input.mode === "MESSAGE_VARIATIONS") {
       const error = variationGenerationError(input);
       if (error) return { ok: false as const, error };
     }
-    const quota = await reserveAiReplyQuota({ userId: profile.id, channel: "PLAYGROUND" });
-    if (!quota.ok) return { ok: false as const, error: "Your monthly AI limit has been reached." };
+    const quota = await reserveAiReplyQuota({ userId: profile.id, channel: "PLAYGROUND", allowFreePreview: commentPreview });
+    if (!quota.ok) return { ok: false as const, error: "Your monthly AI draft or reply limit has been reached." };
     reservationId = quota.reservationId;
     const items = await generateAutomationCopy(input);
     if (!items?.length) throw new Error("generation_unavailable");

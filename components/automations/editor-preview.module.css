@@ -70,3 +70,6 @@
 .sendReply:disabled { opacity:.35; }
 :global(.dark) .sendReply { color:#c4b5fd; }
 @media(max-width:767px) { .replyInput { font-size:16px; } .button { min-height:40px; } }
+.sampleAvatar { overflow:hidden; }
+.sampleAvatar img { width:100%; height:100%; object-fit:cover; }
+.comments { max-height:78%; overflow-y:auto; }

@@ -47,6 +47,8 @@ export type RawCampaignPayload = {
   followGateRequired?: boolean;
   typingIndicator?: boolean;
   deliveryDelaySeconds?: number;
+  triggerOnShares?: boolean;
+  oneDmPerUser?: boolean;
   aiMode?: boolean;
   listener?: {
     listener?: string;
@@ -94,7 +96,9 @@ export type NormalizedCampaignPayload = {
   sendPrivateDm: boolean;
   followGateRequired?: boolean;
   typingIndicator?: boolean;
-  deliveryDelaySeconds?: 0 | 3 | 5 | 10 | 30;
+  deliveryDelaySeconds?: number;
+  triggerOnShares?: boolean;
+  oneDmPerUser?: boolean;
   post: {
     postid: string;
     caption?: string;
@@ -155,6 +159,10 @@ export type CampaignPayloadSummary = {
   mediaType: CampaignMediaType;
 };
 
+export function normalizeDeliveryDelay(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(23 * 3600, Math.max(0, Math.floor(value))) : 0;
+}
+
 export function normalizeCampaignPayload(
   payload: RawCampaignPayload,
 ): NormalizedCampaignPayload {
@@ -200,7 +208,9 @@ export function normalizeCampaignPayload(
     sendPrivateDm,
     followGateRequired: openingDmEnabled && Boolean(payload.followGateRequired),
     typingIndicator: false,
-    deliveryDelaySeconds: 0,
+    deliveryDelaySeconds: normalizeDeliveryDelay(payload.deliveryDelaySeconds),
+    triggerOnShares: sendPrivateDm && payload.triggerOnShares === true,
+    oneDmPerUser: payload.oneDmPerUser === true,
     post: {
       postid,
       caption: cleanOptional(payload.post?.caption),

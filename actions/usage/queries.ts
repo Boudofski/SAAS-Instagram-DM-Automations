@@ -126,6 +126,7 @@ type AiReplyReservationInput = {
   userId: string;
   automationId?: string | null;
   channel?: "COMMENT" | "DM" | "PLAYGROUND";
+  allowFreePreview?: boolean;
   igUserId?: string | null;
   mediaId?: string | null;
   commentId?: string | null;
@@ -158,7 +159,7 @@ export async function reserveAiReplyQuota(input: AiReplyReservationInput) {
       select: { subscription: { select: { plan: true, usageResetAt: true } } },
     });
     const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
-    const limit = getPlanLimits(plan).aiRepliesPerMonth;
+    const limit = plan === "FREE" && input.channel === "PLAYGROUND" && input.allowFreePreview ? 20 : getPlanLimits(plan).aiRepliesPerMonth;
     const period = getCurrentUsagePeriod(date);
     const resetAt = user?.subscription?.usageResetAt;
     const effectiveStart = resetAt && resetAt > period.enforcementStart

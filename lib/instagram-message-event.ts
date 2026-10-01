@@ -10,7 +10,7 @@ export type ParsedMessagingData = {
   messageTimestamp?: number;
   postback?: { payload?: string; title?: string };
   quickReplyPayload?: string;
-  attachments: Array<{ type?: string; url?: string }>;
+  attachments: Array<{ type?: string; url?: string; mediaId?: string }>;
   replyToStory?: { id?: string; url?: string };
   storyMention: boolean;
   isEcho: boolean;
@@ -81,9 +81,10 @@ export function parseMessagingItem(item: unknown): MessagingParseResult {
   const quickReplyPayload = typeof m.message?.quick_reply?.payload === "string"
     ? m.message.quick_reply.payload
     : undefined;
-  const attachments: Array<{ type?: string; url?: string }> = Array.isArray(m.message?.attachments)
+  const attachments: Array<{ type?: string; url?: string; mediaId?: string }> = Array.isArray(m.message?.attachments)
     ? m.message.attachments.map((attachment: any) => ({
         type: typeof attachment?.type === "string" ? attachment.type : undefined,
+        mediaId: typeof attachment?.payload?.ig_post_media_id === "string" ? attachment.payload.ig_post_media_id : undefined,
         url: typeof attachment?.payload?.url === "string" ? attachment.payload.url : undefined,
       }))
     : [];

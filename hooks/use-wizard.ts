@@ -48,6 +48,9 @@ export type WizardData = {
   keywords: string[];
   matchingMode: "EXACT" | "CONTAINS";
   sendPrivateDm: boolean;
+  triggerOnShares?: boolean;
+  oneDmPerUser?: boolean;
+  deliveryDelaySeconds?: number;
   dmMessage: string;
   messageVariations?: string[];
   commentReplies?: string[];
@@ -103,7 +106,10 @@ const INITIAL: WizardData = {
   followUpMessage: DEFAULT_FOLLOW_UP_MESSAGE,
   followUpDelayMinutes: 30,
   triggerMode: "SPECIFIC_KEYWORD",
-  keywords: [],
+  keywords: ["send", "dm me"],
+  triggerOnShares: false,
+  oneDmPerUser: false,
+  deliveryDelaySeconds: 0,
   matchingMode: "CONTAINS",
   sendPrivateDm: false,
   dmMessage: DEFAULT_DM_MESSAGE,
@@ -150,6 +156,13 @@ export function useWizard(
       label: tr(button.label),
     })),
   }));
+  const draftKey = `ap3k:comment-draft:${slug}:${integrationId}:${automationId || "new"}`;
+  const restoredKey = useRef("");
+  useEffect(() => {
+    if (!integrationId || automationId || restoredKey.current === draftKey) return;
+    restoredKey.current = draftKey;
+    try { const raw=sessionStorage.getItem(draftKey); if(raw) setData(prev=>({...prev,...JSON.parse(raw)})); } catch { /* browser storage may be unavailable */ }
+  },[draftKey,integrationId,automationId]);
   const previousTr = useRef(tr);
   useEffect(() => {
     const before = previousTr.current;
@@ -183,7 +196,11 @@ export function useWizard(
   const [error, setError] = useState<string | null>(null);
 
   const update = (partial: Partial<WizardData>) =>
-    setData((prev) => ({ ...prev, ...partial }));
+    setData((prev) => {
+      const next={...prev,...partial};
+      if(integrationId && !automationId) try { sessionStorage.setItem(draftKey,JSON.stringify(next)); } catch { /* publishing still works */ }
+      return next;
+    });
 
   const next = () => setStep((s) => Math.min(4, s + 1) as WizardStep);
   const back = () => setStep((s) => Math.max(1, s - 1) as WizardStep);
@@ -355,6 +372,7 @@ export function useWizard(
         );
       }
 
+      try { sessionStorage.removeItem(draftKey); } catch {}
       await refreshSavedAutomation(queryClient, campaignId);
       router.push(`/dashboard/${slug}/automation`);
       router.refresh();

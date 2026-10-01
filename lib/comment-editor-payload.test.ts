@@ -31,3 +31,5 @@ describe("accordion editor delivery payload",()=>{
     expect(validateNormalizedCampaignPayload(badLink)).not.toBeNull();
   });
 });
+
+it("preserves share, one-DM and delay settings through normalization",()=>{expect(normalizeCampaignPayload(createCommentEditorPayload({...draft,triggerOnShares:true,oneDmPerUser:true,deliveryDelaySeconds:3600}))).toMatchObject({triggerOnShares:true,oneDmPerUser:true,deliveryDelaySeconds:3600});expect(normalizeCampaignPayload(createCommentEditorPayload({...draft,sendPrivateDm:false,triggerOnShares:true,deliveryDelaySeconds:-1}))).toMatchObject({triggerOnShares:false,deliveryDelaySeconds:0});});
