@@ -93,12 +93,25 @@ describe("owned attachment authorization", () => {
   it("lists only this owner's READY uploads", async () => {
     m.many.mockResolvedValue([]);
     m.updateMany.mockResolvedValue({ count: 1 });
-    expect((await GET()).status).toBe(200);
+    expect((await GET(new Request("https://ap3k.com/api/attachments"))).status).toBe(200);
     expect(m.many.mock.calls[0][0].where).toMatchObject({
       userId: "owner",
       status: "READY",
     });
     expect(m.many.mock.calls[0][0].select).not.toHaveProperty("storageKey");
+  });
+  it("reloads original filename and size only for the owner's requested READY attachment", async () => {
+    m.many.mockResolvedValue([item]);
+    const response = await GET(new Request(`https://ap3k.com/api/attachments?id=${item.id}`));
+    expect(response.status).toBe(200);
+    expect(m.many.mock.calls[0][0].where).toMatchObject({ userId: owner.id, id: item.id, status: "READY", storageKey: { startsWith: attachmentScopePrefix() + "attachments/" } });
+    expect((await response.json()).files[0]).toMatchObject({ id: item.id, name: item.filename, size: item.size });
+    m.many.mockResolvedValue([]);
+    expect((await (await GET(new Request(`https://ap3k.com/api/attachments?id=${item.id}`))).json()).files).toEqual([]);
+  });
+  it("rejects invalid metadata IDs before querying stored files", async () => {
+    expect((await GET(new Request("https://ap3k.com/api/attachments?id=bad"))).status).toBe(400);
+    expect(m.many).not.toHaveBeenCalled();
   });
   it("refuses cross-tenant completion before reading any stored bytes", async () => {
     m.find.mockResolvedValue(null);
