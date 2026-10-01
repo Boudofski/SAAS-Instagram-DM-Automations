@@ -179,7 +179,7 @@ export default async function InstagramAccountPage({
               <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
             </>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 light:border-slate-300 p-4 text-sm font-bold text-slate-500 light:text-slate-600 dark:border-white/10 dark:text-slate-400 sm:col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
+            <p className="rounded-xl border border-dashed border-slate-200 light:border-slate-300 p-4 text-sm font-bold text-slate-500 light:text-slate-600 dark:border-white/10 dark:text-slate-400 col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
           )}
         </div>
       </section>

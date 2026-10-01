@@ -51,7 +51,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         getUserMonthlyUsage(userResult.data.id),
         getUserFacingStats(userResult.data.id, period, new Date(), instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
         getCampaignTableMetrics(userResult.data.id, instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
-        getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period, new Date(), waitUntil),
+        instagramConnected ? getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period, new Date(), waitUntil) : Promise.resolve({ comparison: null, refresh: null }),
       ])
     : [await automationsPromise, null, null, {} as Record<string, any>, { comparison: null, refresh: null }];
 
