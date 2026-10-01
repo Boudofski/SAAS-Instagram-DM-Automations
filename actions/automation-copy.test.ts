@@ -20,3 +20,5 @@ describe("automation AI generation",()=>{
   it("enforces plan and monthly quota",async()=>{m.profile.mockResolvedValue({id:"user",subscription:{plan:"FREE"}});expect((await generateAutomationCopyAction(input)).ok).toBe(false);expect(m.generate).not.toHaveBeenCalled();m.profile.mockResolvedValue({id:"user",subscription:{plan:"PRO"}});m.reserve.mockResolvedValue({ok:false});expect((await generateAutomationCopyAction(input)).ok).toBe(false);expect(m.generate).not.toHaveBeenCalled();});
   it("releases quota on provider failure",async()=>{m.generate.mockRejectedValue(new Error("provider"));expect((await generateAutomationCopyAction(input)).ok).toBe(false);expect(m.release).toHaveBeenCalledWith("quota");});
 });
+
+it("lets free users draft public AI replies with a bounded preview quota",async()=>{m.profile.mockResolvedValue({id:"user",subscription:{plan:"FREE"}});expect((await generateAutomationCopyAction({...input,mode:"COMMENT_SAMPLES"})).ok).toBe(true);expect(m.reserve).toHaveBeenCalledWith({userId:"user",channel:"PLAYGROUND",allowFreePreview:true});});

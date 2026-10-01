@@ -118,13 +118,13 @@ export const saveCampaign = async (
           data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
         };
     }
-    if (cleanPayload.listener.aiReplyEnabled) {
+    if (cleanPayload.active && cleanPayload.listener.aiReplyEnabled) {
       const aiProfile = await findUser(user.id);
       const aiPlan = aiProfile?.subscription?.plan ?? "FREE";
       if (aiPlan !== "PRO" && aiPlan !== "BUSINESS") {
         return {
           status: 403,
-          data: "AI replies are available on Pro and Business plans.",
+          data: "AI only available on paid plans.",
         };
       }
     }
@@ -513,6 +513,9 @@ export const updateAutomationName = async (
 
   try {
     if (data.active === true) {
+      const saved = await client.automation.findFirst({where:{id:automationId,User:{clerkId:user.id},integrationId:await currentInstagramAccountId(user.id)},select:{listener:{select:{aiReplyEnabled:true,aiDmReplyEnabled:true}}}});
+      const plan = (await findUser(user.id))?.subscription?.plan ?? "FREE";
+      if ((saved?.listener?.aiReplyEnabled || saved?.listener?.aiDmReplyEnabled) && !["PRO", "BUSINESS"].includes(plan)) return {status:403,data:"AI only available on paid plans."};
       const profile = await findUser(user.id);
       if ((profile as any)?.status === "SUSPENDED") {
         return {
@@ -731,6 +734,8 @@ export const activateAutomation = async (id: string, status: boolean) => {
           reviewReason: true,
           listener: {
             select: {
+              aiReplyEnabled: true,
+              aiDmReplyEnabled: true,
               phoneCaptureEnabled: true,
               emailCaptureEnabled: true,
               followUpEnabled: true,
@@ -742,6 +747,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
           },
         },
       });
+      if ((existing?.listener?.aiReplyEnabled || existing?.listener?.aiDmReplyEnabled) && !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")) return {status:403,data:"AI only available on paid plans."};
       if (
         existing &&
         hasProEngagement({

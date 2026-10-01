@@ -31,7 +31,7 @@ export default function EditorLayout({ slug, name, onNameChange, active, saving,
       <div className={styles.toolbarActions}>
         <LanguageSwitcher compact textOnly /><ThemeToggle compact />
         <button type="button" className={styles.mobilePreview} onClick={() => setShowPreview(true)}><Eye size={17} />{tr("Preview")}</button>
-        <button type="button" className={styles.saveDraft} disabled={saving} onClick={() => onSave(false)}>{tr("Save as draft")}</button>
+
         <button type="button" className={styles.publish} disabled={saving} onClick={() => onSave(true)}>{saving ? <Loader2 size={16} className="animate-spin" /> : null}{tr(active ? "Save changes" : "Publish")}</button>
       </div>
     </header>
@@ -60,8 +60,8 @@ export function EditorRow({ title, summary, icon, open, onOpen, controls, childr
   return <div className={styles.row}>
     <span className={styles.rowIcon} aria-hidden="true">{icon}</span>
     <div className={styles.rowCard}>
-      <div className={styles.rowHeader}>
-        <button type="button" className={styles.rowTrigger} aria-expanded={open} aria-controls={id} onClick={onOpen}><ChevronDown size={16} className={open ? styles.chevronOpen : styles.chevron} /><h3>{tr(title)}</h3>{summary && <span className={styles.summary}>{summary}</span>}</button>
+      <div className={`${styles.rowHeader} ${open ? styles.rowHeaderOpen : ""}`}>
+        <button type="button" className={styles.rowTrigger} aria-expanded={open} aria-controls={id} onClick={onOpen}><ChevronDown size={16} className={open ? styles.chevronOpen : styles.chevron} /><h3>{tr(title)}</h3>{summary && <span className={`${styles.summary} ${summary === tr("AI only available on paid plans.") ? styles.publishRestriction : ""}`}>{summary}</span>}</button>
         <div className={styles.rowControls}>{controls}{onRemove && <button type="button" className={styles.remove} aria-label={`${tr("Remove")} ${tr(title)}`} onClick={onRemove}><X size={16} /></button>}</div>
       </div>
       <AnimatePresence initial={false}>{open && <motion.div id={id} className={styles.rowContent} initial={reduced ? false : { height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduced ? 0 : .2 }}><div className={styles.rowBody}>{children}</div></motion.div>}</AnimatePresence>

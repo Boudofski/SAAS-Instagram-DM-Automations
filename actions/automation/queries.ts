@@ -99,6 +99,7 @@ export const createCompleteAutomation = async (
           followGateRequired: payload.followGateRequired,
           typingIndicator: payload.typingIndicator,
           deliveryDelaySeconds: payload.deliveryDelaySeconds,
+          ...("triggerOnShares" in payload ? { triggerOnShares: payload.triggerOnShares, oneDmPerUser: payload.oneDmPerUser } : {}),
           posts: {
             create: payload.post,
           },
@@ -425,6 +426,7 @@ export const updateCompleteAutomation = async (
         followGateRequired: payload.followGateRequired,
         typingIndicator: payload.typingIndicator,
         deliveryDelaySeconds: payload.deliveryDelaySeconds,
+          ...("triggerOnShares" in payload ? { triggerOnShares: payload.triggerOnShares, oneDmPerUser: payload.oneDmPerUser } : {}),
         posts: { create: payload.post },
         ...(payload.keywords.length > 0 && {
           keywords: {
@@ -623,7 +625,9 @@ export const duplicateAutomationQuery = async (
     sendPrivateDm: automation.sendPrivateDm,
     followGateRequired: automation.followGateRequired,
     typingIndicator: false,
-    deliveryDelaySeconds: 0,
+    deliveryDelaySeconds: automation.deliveryDelaySeconds,
+      triggerOnShares: automation.triggerOnShares,
+      oneDmPerUser: automation.oneDmPerUser,
     post: {
       postid: automation.posts[0].postid,
       caption: automation.posts[0].caption ?? undefined,

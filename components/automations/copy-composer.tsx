@@ -8,6 +8,8 @@ import { useI18n } from "@/providers/i18n-provider";
 import { generateAutomationCopyAction } from "@/actions/automation-copy";
 import { DEFAULT_COMMENT_PROMPT, DEFAULT_COMMENT_ONLY_PROMPT, MAX_COMMENT_REPLIES, MAX_MESSAGE_VARIATIONS, normalizeCopyList, personalizeUsername, variationGenerationError, type AutomationCopyInput, type AutomationCopyMode } from "@/lib/automation-copy";
 import type { LinkButton } from "@/lib/link-buttons";
+import UsernameField from "./username-field";
+import { MentionText } from "./mention-text";
 import { editorStyles as s } from "./editor-layout";
 
 type Context = Omit<AutomationCopyInput, "mode" | "text" | "existing" | "instructions" | "locale"> & { available: boolean };
@@ -35,23 +37,11 @@ function useCopyGeneration(context: Context) {
 }
 
 export function CopyField({ label, value, onChange, maxLength = 1000, rows = 4, disabled = false, compact = false }: { label: string; value: string; onChange: (value: string) => void; maxLength?: number; rows?: number; disabled?: boolean; compact?: boolean }) {
-  const tr = useUi();
-  const ref = useRef<HTMLTextAreaElement>(null);
-  function insertUsername() {
-    const start = ref.current?.selectionStart ?? value.length;
-    const end = ref.current?.selectionEnd ?? start;
-    const token = "{{username}}";
-    if (value.length - (end - start) + token.length > maxLength) return;
-    onChange(value.slice(0, start) + token + value.slice(end));
-    requestAnimationFrame(() => { ref.current?.focus(); ref.current?.setSelectionRange(start + token.length, start + token.length); });
-  }
-  return <div className={`${s.copyField} ${compact ? s.copyCompact : ""}`}>
-    <textarea ref={ref} aria-label={tr(label)} value={value} onChange={e => onChange(e.target.value)} rows={rows} maxLength={maxLength} dir="auto" disabled={disabled} placeholder={tr("Enter your message here")} />
-    <div className={s.copyFooter}><span>{value.length}/{maxLength}</span><button type="button" title={tr("Insert username")} aria-label={tr("Insert username")} onClick={insertUsername} disabled={disabled}>{"{}"}</button></div>
-  </div>;
+  return <div className={`${s.copyField} ${compact ? s.copyCompact : ""}`}><UsernameField {...{label,value,onChange,maxLength,rows,disabled}} /></div>;
 }
 
-export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPromptChange, context, onPreview }: {
+export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPromptChange, context, onPreview, publishLocked = false }: {
+  publishLocked?: boolean;
   replies: string[]; onRepliesChange: (value: string[]) => void; ai: boolean; prompt: string; onPromptChange: (value: string) => void; context: Context; onPreview: (reply: string) => void;
 }) {
   const tr = useUi(); const generation = useCopyGeneration(context);
@@ -83,9 +73,10 @@ export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPr
   return <div className={s.copySection}>
     {ai ? <>
       <div className={s.copyHeading}><strong>{tr("Prompt")}</strong><button type="button" className={s.textAction} disabled={generation.busy || !context.available} onClick={() => void regeneratePrompt()}>{generation.busy ? <Loader2 className="animate-spin"/> : <Sparkles/>}{tr("Regenerate prompt")}</button></div>
+      {publishLocked && <p className={s.publishRestriction}>{tr("AI only available on paid plans.")}</p>}
       <CopyField label="AI comment prompt" value={prompt} onChange={onPromptChange} maxLength={1600} rows={4}/>
       <button type="button" className={s.outlineAction} disabled={generation.busy} onClick={() => showSamples ? setShowSamples(false) : void preview()}>{showSamples ? <EyeOff/> : <Eye/>}{tr(showSamples ? "Hide preview" : "Preview replies")}</button>
-      {showSamples && <><div className={s.copyHeading}><strong>{tr("Sample replies")}</strong><button type="button" className={s.textAction} disabled={generation.busy || !context.available} onClick={() => void preview()}><RefreshCw className={generation.busy ? "animate-spin" : ""}/>{tr("New samples")}</button></div><div className={s.replyList}>{samples.length ? samples.map((reply, index) => <button type="button" key={index} className={s.sampleReply} onClick={() => onPreview(reply)} dir="auto">{reply.replace(/\{\{username\}\}|\bUsername\b/g, "@username")}</button>) : <p className={s.hint}>{tr(generation.busy ? "Generating replies…" : "Generate samples to preview your prompt.")}</p>}</div><p className={s.hint}>{tr("Samples show the AI style. Live replies are written for each matching comment.")}</p></>}
+      {showSamples && <><div className={s.copyHeading}><strong>{tr("Sample replies")}</strong><button type="button" className={s.textAction} disabled={generation.busy || !context.available} onClick={() => void preview()}><RefreshCw className={generation.busy ? "animate-spin" : ""}/>{tr("New samples")}</button></div><div className={s.replyList}>{samples.length ? samples.map((reply, index) => <button type="button" key={index} className={s.sampleReply} onClick={() => onPreview(reply)} dir="auto"><MentionText text={reply}/></button>) : <p className={s.hint}>{tr(generation.busy ? "Generating replies…" : "Generate samples to preview your prompt.")}</p>}</div><p className={s.hint}>{tr("Samples show the AI style. Live replies are written for each matching comment.")}</p></>}
     </> : <>
       <div className={s.copyHeading}><strong>{tr("Your replies")} · {replies.length}</strong><span className={s.hint}>{tr("Rotate randomly per comment")}</span></div>
       <div className={s.replyList}>{replies.map((reply, index) => <div className={s.replyLine} key={index}><textarea aria-label={`${tr("Reply")} ${index + 1}`} dir="auto" rows={1} maxLength={1000} value={reply} onFocus={() => onPreview(reply)} onChange={e => { onRepliesChange(replies.map((x, i) => i === index ? e.target.value : x)); onPreview(e.target.value); }}/><button type="button" className={s.remove} aria-label={`${tr("Delete reply")} ${index + 1}`} onClick={() => onRepliesChange(replies.filter((_, i) => i !== index))}><Trash2 size={15}/></button></div>)}</div>
@@ -137,7 +128,7 @@ export function MessageCopyComposer({ message, onMessageChange, variations, onVa
     {readiness && <p className={s.hint}>{tr(readiness)}</p>}
     {variations.length > 0 && <div className={s.variationTabs}>{[message, ...variations].map((_, index) => <button type="button" key={index} aria-pressed={selected === index} onClick={() => { setSelected(index); onPreview?.(index ? variations[index - 1] : message); }}>{index === 0 ? tr("Original") : `${tr("Variation")} ${index}`}</button>)}</div>}
     <div className={s.messageGrid}>
-      <div className={s.miniPreview} aria-label={tr("Message preview")}><span className={s.miniCaption}>{tr("Preview")}</span><div className={s.miniCard}><p dir="auto">{personalizeUsername(shown || tr("Enter your message here"), "username")}</p>{previewButtons.map((button, index) => <span key={index} dir="auto">{button.label || tr("Get the Link")}</span>)}</div></div>
+      <div className={s.miniPreview} aria-label={tr("Message preview")}><span className={s.miniCaption}>{tr("Preview")}</span><div className={s.miniCard}><p dir="auto"><MentionText text={shown || tr("Enter your message here")}/></p>{previewButtons.map((button, index) => <span key={index} dir="auto">{button.label || tr("Get the Link")}</span>)}</div></div>
       <div className={s.messageFields}><div className={s.copyHeading}><strong>{tr("Message")}</strong></div>
         <CopyField label="DM message text" value={shown} maxLength={maxLength} onChange={value => { if (selected > 0 && variations[selected - 1] !== undefined) onVariationsChange(variations.map((x, i) => i === selected - 1 ? value : x)); else onMessageChange(value); onPreview?.(value); }}/>
         {children}

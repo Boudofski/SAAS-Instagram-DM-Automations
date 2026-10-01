@@ -191,3 +191,25 @@
 
 .editor :is(input,textarea)::placeholder { color:var(--editor-muted); opacity:1; }
 :global(html:not(.dark)) .postActions button { color:#6d28d9; }
+/* Reference editor: clear active section, inset trigger options and inline variables. */
+.rowHeaderOpen { outline:2px solid #1672e6; outline-offset:-2px; border-radius:13px; }
+.chips { border:0; padding:0; gap:12px; }
+.chips>span { border-radius:999px; padding:9px 14px; font-weight:600; }
+.chips input { flex:0 1 230px; border:1px dashed var(--editor-line); border-radius:999px; background:var(--editor-soft); padding:10px 14px; }
+.triggerOptions { border:1px solid var(--editor-line); border-radius:14px; margin-top:22px; overflow:hidden; }
+.triggerOptions>div { display:flex; gap:12px; align-items:flex-start; padding:17px; }
+.triggerOptions>div+div { border-top:1px solid var(--editor-line); }
+.triggerOptions strong { display:block; font-size:14px; font-weight:600; }
+.triggerOptions p { color:var(--editor-muted); font-size:12px; line-height:1.6; margin-top:4px; }
+.triggerOptions .switch { margin-top:2px; }
+.delayRow { position:relative; display:flex; align-items:center; gap:8px; margin:10px 0 18px; }
+.delayRow .rowIcon { top:-5px; background:var(--editor-bg); color:#1672e6; }
+.delayPill { border:1px solid #1672e6; color:#0966c9; border-radius:999px; padding:3px 12px; font-size:12px; background:var(--editor-card); }
+:global(.dark) .delayPill { color:#77b4ff; }
+.tokenInput { width:100%; padding:15px; white-space:pre-wrap; overflow-wrap:anywhere; font-size:14px; line-height:1.65; outline:none; }
+.usernameToken { color:#1762ef; background:#eff4ff; border-radius:6px; padding:2px 5px; font-weight:600; box-decoration-break:clone; }
+:global(.dark) .usernameToken { color:#91baff; background:#233453; }
+.publishRestriction { color:#dc2626; font-size:13px; }
+:global(.dark) .publishRestriction { color:#fda4af; }
+.sampleReply { text-align:start; width:100%; border-radius:0!important; background:var(--editor-soft)!important; color:var(--editor-text)!important; }
+.sampleReply+.sampleReply { border-top:1px solid var(--editor-line); }

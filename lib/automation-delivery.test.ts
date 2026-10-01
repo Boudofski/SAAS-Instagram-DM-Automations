@@ -1,0 +1,17 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const db=vi.hoisted(()=>({messageLog:{findFirst:vi.fn()},automationDmRecipient:{createMany:vi.fn()},automationDeliveryJob:{findMany:vi.fn(),updateMany:vi.fn(),update:vi.fn(),upsert:vi.fn()}}));
+const resume=vi.hoisted(()=>vi.fn());
+vi.mock("@/lib/prisma",()=>({client:db}));vi.mock("@/lib/meta-webhook-handler",()=>({resumeAutomationDelivery:resume}));
+import {claimDmRecipient,deferAutomationDelivery,processAutomationDeliveries} from "./automation-delivery";
+beforeEach(()=>{vi.clearAllMocks();db.messageLog.findFirst.mockResolvedValue(null);db.automationDeliveryJob.updateMany.mockResolvedValue({count:1});db.automationDeliveryJob.update.mockResolvedValue({});resume.mockResolvedValue(undefined);});
+describe("one DM per recipient",()=>{
+ it("atomically allows only one of concurrent triggers",async()=>{const claimed=new Set<string>();db.automationDmRecipient.createMany.mockImplementation(async ({data})=>{const key=data[0].automationId+data[0].recipientIgId;if(claimed.has(key))return {count:0};claimed.add(key);return {count:1};});expect(await Promise.all([claimDmRecipient("a","r"),claimDmRecipient("a","r")])).toEqual([true,false]);expect(await claimDmRecipient("b","r")).toBe(true);});
+ it("honors already delivered messages when enabled later",async()=>{db.messageLog.findFirst.mockResolvedValue({id:"sent"});expect(await claimDmRecipient("a","r")).toBe(false);expect(db.automationDmRecipient.createMany).not.toHaveBeenCalled();});
+});
+const now=new Date("2026-10-01T10:00:00Z");const job={id:"j",automationId:"a",payload:{entry:{id:"ig"},object:"instagram"},createdAt:new Date(now.getTime()-60000),automation:{active:true,archivedAt:null}};
+describe("durable delays",()=>{
+ it("stores one job per event without extending its deadline on replay",async()=>{await deferAutomationDelivery({automationId:"a",eventKey:"comment:1",seconds:3600,entry:{id:"ig"},object:"instagram"});expect(db.automationDeliveryJob.upsert.mock.calls[0][0]).toMatchObject({where:{automationId_eventKey:{automationId:"a",eventKey:"comment:1"}},update:{}});});
+ it("claims due work before resuming it and clears retained payload",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([job]);await processAutomationDeliveries(now);expect(resume).toHaveBeenCalledWith("a",{id:"ig"},"instagram");expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"COMPLETED",payload:{}}});});
+ it("never runs a paused campaign, expired message, or work claimed elsewhere",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{active:false}},{...job,id:"expired",createdAt:new Date(now.getTime()-86400001)}]);await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();db.automationDeliveryJob.findMany.mockResolvedValue([job]);db.automationDeliveryJob.updateMany.mockResolvedValue({count:0});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();});
+ it("does not replay a delivery with an ambiguous failure",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([job]);resume.mockRejectedValue(new Error("timeout"));await processAutomationDeliveries(now);expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"FAILED",payload:{}}});});
+});

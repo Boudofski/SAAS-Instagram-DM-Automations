@@ -532,20 +532,25 @@ export const findAutomationForDM = async (
   dmText: string,
   pageId: string,
   recipientIgId?: string,
-  sharedPost = false
+  sharedPost = false,
+  sharedMediaId?: string
 ): Promise<{ automation: AutomationWithRelations; matchedKeyword: string } | null> => {
   const automations = await client.automation.findMany({
     where: {
       active: true,
       archivedAt: null,
       integration: { ...webhookAccountFilter(pageId), status: "CONNECTED", reconnectRequired: false, planLocked: false },
-      trigger: { some: { type: "DM" } },
+      OR: [
+        { trigger: { some: { type: "DM" } } },
+        ...(sharedPost && sharedMediaId ? [{source:"COMMENT",triggerOnShares:true,sendPrivateDm:true,posts:{some:{postid:{in:[sharedMediaId,"ANY"]}}}}] : []),
+      ],
       User: {
         status: { not: "SUSPENDED" },
         integrations: { some: { ...webhookAccountFilter(pageId), status: { not: "DISCONNECTED" }, reconnectRequired: false, planLocked: false } },
       },
     },
     include: {
+      posts: true,
       keywords: true,
       listener: true,
       User: {
@@ -597,6 +602,10 @@ export const findAutomationForDM = async (
   // Explicit keyword flows take precedence over catch-all flows.
   const ordered = [...automations.filter((item) => item.triggerMode !== "ANY_MESSAGE"), ...automations.filter((item) => item.triggerMode === "ANY_MESSAGE")];
   for (const automation of ordered) {
+    if (automation.source === "COMMENT" && automation.listener?.flowTriggers == null) {
+      if (sharedPost && sharedMediaId && automation.triggerOnShares && automation.sendPrivateDm && automation.posts?.some(post=>post.postid===sharedMediaId || post.postid==="ANY")) return {automation,matchedKeyword:"shared post"};
+      continue;
+    }
     if (stopped && readAiConversation(automation.listener?.aiConversation)) continue;
     const flowTrigger = flowTriggerForEvent(automation,{source:"DM",text:dmText,sharedPost});
     if (flowTrigger !== undefined) {

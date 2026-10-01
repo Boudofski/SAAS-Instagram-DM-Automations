@@ -276,6 +276,8 @@ model Automation {
   followGateRequired   Boolean           @default(false)
   typingIndicator      Boolean           @default(false)
   deliveryDelaySeconds Int               @default(0)
+  triggerOnShares      Boolean           @default(false)
+  oneDmPerUser         Boolean           @default(false)
   needsReview          Boolean           @default(false)
   reviewReason         String?
   archivedAt           DateTime?
@@ -291,6 +293,8 @@ model Automation {
   leads                Lead[]
   events               AutomationEvent[]
   messageLogs          MessageLog[]
+  deliveryJobs         AutomationDeliveryJob[]
+  dmRecipients         AutomationDmRecipient[]
   publicReplySlots     PublicReplySlot[]
   webhookEvents        WebhookEvent[]
   conversations        Conversation[]
@@ -901,4 +905,25 @@ model ConversationStarterReceipt {
   createdAt DateTime @default(now())
   @@unique([integrationId, recipientIgId, eventId])
   @@index([integrationId, status, createdAt])
+}
+
+model AutomationDmRecipient {
+  automationId String @db.Uuid
+  recipientIgId String
+  createdAt DateTime @default(now())
+  automation Automation @relation(fields:[automationId],references:[id],onDelete:Cascade)
+  @@id([automationId,recipientIgId])
+}
+model AutomationDeliveryJob {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  automationId String @db.Uuid
+  automation Automation @relation(fields:[automationId],references:[id],onDelete:Cascade)
+  eventKey String
+  payload Json
+  status String @default("PENDING")
+  dueAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([automationId,eventKey])
+  @@index([status,dueAt])
 }

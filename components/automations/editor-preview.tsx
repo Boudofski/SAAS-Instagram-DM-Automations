@@ -1,10 +1,12 @@
 "use client";
 
 import { personalizeUsername } from "@/lib/automation-copy";
+import { MentionText } from "./mention-text";
 import Image from "next/image";
 import type { ReactNode, Ref } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  BadgeCheck,
   Bookmark,
   Camera,
   ChevronLeft,
@@ -88,7 +90,7 @@ export default function EditorPreview({
     <div className={outbound ? styles.outboundRow : styles.messageRow}>
       {!outbound && <span className={styles.messageAvatar}>{avatarNode}</span>}
       <div className={outbound ? styles.outbound : styles.message}>
-        <p dir="auto">{personalizeUsername(message, "username")}</p>
+        <p dir="auto"><MentionText text={message} username="ola_nordman"/></p>
         {buttons.map((label, index) => (
           <span key={index} dir="auto" className={styles.button}>
             {links && <Link2 size={12} />}
@@ -149,7 +151,7 @@ export default function EditorPreview({
               {mode === "dm" && <ChevronLeft size={18} />} {avatarNode}
               <div>
                 <strong>
-                  <bdi>{handle}</bdi>
+                  <bdi>{handle}</bdi><BadgeCheck size={13} className="inline-block ml-1 fill-[#1684f8] text-white"/>
                 </strong>
                 <small>
                   {tr(mode === "dm" ? "Active now" : "Original audio")}
@@ -207,47 +209,10 @@ export default function EditorPreview({
                 {mode === "comments" && (
                   <div className={styles.comments}>
                     <h4>{tr("Comments")}</h4>
-                    <div className={styles.comment}>
-                      <span className={styles.sampleAvatar}>U</span>
-                      <div>
-                        <strong>username</strong>
-                        <p dir="auto">
-                          {data.triggerMode === "ANY_COMMENT"
-                            ? tr("This looks amazing!")
-                            : data.keywords?.[0] || tr("your keyword")}
-                        </p>
-                        <small>2h · {tr("Reply")}</small>
-                      </div>
-                      <Heart size={13} />
-                    </div>
-                    {(data.publicReplyEnabled || data.aiReplyEnabled) && (
-                      <div className={`${styles.comment} ${styles.reply}`}>
-                        {avatarNode}
-                        <div>
-                          <strong>{handle}</strong>
-                          <p dir="auto">
-                            {personalizeUsername(
-                              commentPreview ||
-                                (data.aiReplyEnabled
-                                  ? tr(
-                                      "Generate samples to preview your prompt.",
-                                    )
-                                  : (
-                                      data.commentReplies ?? [
-                                        data.publicReply,
-                                        data.publicReply2,
-                                        data.publicReply3,
-                                      ]
-                                    ).find((x) => x?.trim()) || ""),
-                              "username",
-                            )}
-                          </p>
-                          {data.aiReplyEnabled && (
-                            <small>{tr("AI reply preview")}</small>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    {["ola_nordman", "richard_roe"].map((sample, index) => <div key={sample}>
+                      <div className={styles.comment}><span className={styles.sampleAvatar}><Image src={`/images/preview/${sample}.jpg`} alt="" width={32} height={32}/></span><div><strong>{sample}</strong><p dir="auto">{data.triggerMode === "ANY_COMMENT" ? tr("This looks amazing!") : data.keywords?.[index === 0 ? 1 : 0] || data.keywords?.[0] || tr("your keyword")}</p><small>2h · 1 {tr("like")} · {tr("Reply")}</small></div><Heart size={13}/></div>
+                      {(data.publicReplyEnabled || data.aiReplyEnabled) && <div className={`${styles.comment} ${styles.reply}`}>{avatarNode}<div><strong>{handle}<BadgeCheck size={12} className="ml-1 inline-block fill-[#1684f8] text-white"/></strong><p dir="auto"><MentionText username={sample} text={commentPreview || (data.aiReplyEnabled ? tr("Thanks {{username}}! Check your DMs for the next step.") : (data.commentReplies ?? [data.publicReply, data.publicReply2, data.publicReply3]).filter(Boolean)[index] || data.publicReply || "")}/></p><small>1s · {tr("Reply")}</small></div></div>}
+                    </div>)}
                     <div className={styles.emojis}>❤️ 🙌 🔥 👏 😢 😍 😮 😂</div>
                     <div className={styles.input}>{tr("Add a comment…")}</div>
                   </div>

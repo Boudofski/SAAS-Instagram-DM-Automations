@@ -4,7 +4,7 @@ import {
   QuickEngagementRows,
   QuickEngagementButtons,
 } from "./quick-engagement";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -40,6 +40,7 @@ import EditorLayout, {
   EditorSwitch,
   editorStyles as s,
 } from "./editor-layout";
+import DelayControl from "./delay-control";
 import EditorPreview, { type EditorPreviewMode } from "./editor-preview";
 
 export type EditorPost = {
@@ -85,18 +86,23 @@ export default function CommentEditor(p: CommentEditorProps) {
   const [commentPreview, setCommentPreview] = useState("");
   const [messagePreview, setMessagePreview] = useState<string | null>(null);
   const [dmSettings, setDmSettings] = useState(false);
+  const [replyKind, setReplyKind] = useState(data.aiReplyEnabled ? "AI" : "SAVED");
+  useEffect(() => { if (data.aiReplyEnabled) setReplyKind("AI"); }, [data.aiReplyEnabled]);
   const [keyword, setKeyword] = useState("");
   const [postQuery, setPostQuery] = useState("");
   const toggleTrigger = (key: string) => {
+    setOpenMessage(null);
     setOpenTrigger((v) => (v === key ? null : key));
     setMode(key === "post" ? "post" : "comments");
   };
   const toggleMessage = (key: string) => {
+    setOpenTrigger(null);
     setOpenMessage((v) => (v === key ? null : key));
     setMode("dm");
   };
   const add = (key: string, values: Partial<WizardData>) => {
     update({ sendPrivateDm: true, ...values });
+    setOpenTrigger(null);
     setOpenMessage(key);
     setMode("dm");
   };
@@ -245,6 +251,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                         }
                       : null,
                 });
+                setOpenMessage(null);
                 setOpenTrigger("post");
                 setMode("post");
               }}
@@ -400,6 +407,7 @@ export default function CommentEditor(p: CommentEditorProps) {
               value={data.triggerMode}
               onChange={(value) => {
                 update({ triggerMode: value as WizardData["triggerMode"] });
+                setOpenMessage(null);
                 setOpenTrigger("trigger");
                 setMode("comments");
               }}
@@ -472,13 +480,18 @@ export default function CommentEditor(p: CommentEditorProps) {
               {tr("Reply to any eligible comment on the selected posts.")}
             </p>
           )}
+          <div className={s.triggerOptions}>
+            <div><EditorSwitch label="Also trigger on shares" checked={Boolean(data.triggerOnShares)} onChange={(triggerOnShares) => update({triggerOnShares, ...(triggerOnShares ? {sendPrivateDm:true} : {})})}/><div><strong>{tr("Also trigger on shares")}</strong><p>{tr("Runs when someone shares this post to your DMs.")}</p></div></div>
+            <div><EditorSwitch label="One DM per user" checked={Boolean(data.oneDmPerUser)} onChange={(oneDmPerUser) => update({oneDmPerUser})}/><div><strong>{tr("One DM per user")}</strong><p>{tr("Even if they comment several times, they get only one DM.")}</p></div></div>
+          </div>
         </EditorRow>
+        <DelayControl seconds={data.deliveryDelaySeconds ?? 0} onChange={(deliveryDelaySeconds) => update({deliveryDelaySeconds})}/>
         <EditorRow
           title="Public comment reply"
           summary={
             publicOn
               ? data.aiReplyEnabled
-                ? tr("AI auto reply")
+                ? tr(!p.paid ? "AI only available on paid plans." : "AI auto reply")
                 : `${replies.length} ${tr("replies")}`
               : undefined
           }
@@ -489,8 +502,9 @@ export default function CommentEditor(p: CommentEditorProps) {
             <>
               <EditorSelect
                 label="Public reply type"
-                value={data.aiReplyEnabled ? "AI" : "SAVED"}
+                value={publicOn ? (data.aiReplyEnabled ? "AI" : "SAVED") : replyKind}
                 onChange={(value) => {
+                  setReplyKind(value);
                   update({
                     aiReplyEnabled: value === "AI",
                     publicReplyEnabled: value === "SAVED",
@@ -505,6 +519,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                       : {}),
                   });
                   setCommentPreview("");
+                  setOpenMessage(null);
                   setOpenTrigger("reply");
                   setMode("comments");
                 }}
@@ -513,7 +528,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                   {
                     value: "AI",
                     label: "AI",
-                    disabled: !p.aiAvailable && !data.aiReplyEnabled,
+
                   },
                 ]}
               />
@@ -522,9 +537,10 @@ export default function CommentEditor(p: CommentEditorProps) {
                 checked={publicOn}
                 onChange={(enabled) => {
                   update({
-                    publicReplyEnabled: enabled,
-                    aiReplyEnabled: false,
+                    publicReplyEnabled: enabled && replyKind === "SAVED",
+                    aiReplyEnabled: enabled && replyKind === "AI",
                   });
+                  setOpenMessage(null);
                   setOpenTrigger(enabled ? "reply" : null);
                   setMode("comments");
                 }}
@@ -550,7 +566,8 @@ export default function CommentEditor(p: CommentEditorProps) {
                 onPromptChange={(aiReplyInstructions) =>
                   update({ aiReplyInstructions })
                 }
-                context={context}
+                context={{ ...context, available: true }}
+                publishLocked={!p.paid}
                 onPreview={setCommentPreview}
               />
               <div className={s.settingLine}>
@@ -591,7 +608,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                 href={`/dashboard/${p.slug}/billing`}
                 className={s.textAction}
               >
-                {tr("Upgrade to Pro for AI generation")}
+                {tr("Upgrade to Pro to publish AI replies")}
               </Link>
             </p>
           )}
@@ -676,6 +693,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                 update={update}
                 open={openMessage}
                 setOpen={(v) => {
+                  setOpenTrigger(null);
                   setOpenMessage(v);
                   setMode("dm");
                 }}
@@ -698,6 +716,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                       messageFormat: value === "TEXT" ? "TEXT" : "LINK",
                       sendPrivateDm: true,
                     });
+                    setOpenTrigger(null);
                     setOpenMessage("message");
                     setMessagePreview(null);
                     setMode("dm");
@@ -780,24 +799,15 @@ export default function CommentEditor(p: CommentEditorProps) {
                 update={update}
                 open={openMessage}
                 setOpen={(v) => {
+                  setOpenTrigger(null);
                   setOpenMessage(v);
                   setMode("dm");
                 }}
                 part="after"
               />
             )}
-            {!data.openingDmEnabled && (
-              <div className={s.addons}>
-                <button
-                  type="button"
-                  onClick={() => add("opening", { openingDmEnabled: true })}
-                >
-                  <Mail />
-                  {tr("Opener message")}
-                </button>
-              </div>
-            )}
             <QuickEngagementButtons
+              leading={!data.openingDmEnabled && <button type="button" onClick={() => add("opening", { openingDmEnabled: true })}><Mail />{tr("Opener message")}</button>}
               data={data}
               update={(v) =>
                 update({ ...v, sendPrivateDm: true, openingDmEnabled: true })
@@ -806,7 +816,8 @@ export default function CommentEditor(p: CommentEditorProps) {
               followUpsReady={p.followUpsReady}
               open={openMessage}
               setOpen={(v) => {
-                setOpenMessage(v);
+                setOpenTrigger(null);
+                  setOpenMessage(v);
                 setMode("dm");
               }}
             />

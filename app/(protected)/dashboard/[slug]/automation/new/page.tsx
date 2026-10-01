@@ -219,6 +219,9 @@ function AutomationSetup({ params, searchParams }: Props) {
     update({
       campaignName: automation.name ?? "",
       active: Boolean(automation.active),
+      triggerOnShares: Boolean(automation.triggerOnShares),
+      oneDmPerUser: Boolean(automation.oneDmPerUser),
+      deliveryDelaySeconds: automation.deliveryDelaySeconds ?? 0,
       keywords: Array.isArray(automation.keywords)
         ? automation.keywords
             .map((keyword: any) => keyword.word)
