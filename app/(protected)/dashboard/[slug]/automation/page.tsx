@@ -2,7 +2,7 @@ import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
 import EmptyState from "@/components/global/empty-state";
 import { getAllAutomation } from "@/actions/automation";
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { getCampaignTableMetrics } from "@/lib/dashboard-metrics";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import { isAppReviewMode } from "@/lib/app-review-mode";

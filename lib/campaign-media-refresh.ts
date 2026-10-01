@@ -83,6 +83,7 @@ async function fetchMediaCollection(
     const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${connection.token}` },
       cache: "no-store",
+      signal: AbortSignal.timeout(8_000),
     });
     const payload = await response.json().catch(() => null);
 
@@ -121,6 +122,7 @@ async function fetchMediaDirect(
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${connection.token}` },
     cache: "no-store",
+      signal: AbortSignal.timeout(8_000),
   });
   const payload = await response.json().catch(() => null) as MetaMedia | null;
 

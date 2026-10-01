@@ -1,5 +1,5 @@
 import { UiText } from "@/components/i18n/localized-copy";
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import LanguageSwitcher from "@/components/global/language-switcher";
 import ThemeToggle from "@/components/global/theme-toggle";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";

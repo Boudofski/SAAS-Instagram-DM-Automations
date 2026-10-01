@@ -1,7 +1,7 @@
 import { UiText } from "@/components/i18n/localized-copy";
 import { INTEGRATION_CARDS } from "@/constants/integrations";
 import { getCurrentInstagramPermissionHealth } from "@/actions/integration/permission-health";
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { isInstagramLoginEnabled } from "@/lib/instagram-login";

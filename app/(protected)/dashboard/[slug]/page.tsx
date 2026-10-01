@@ -8,7 +8,7 @@ import EmptyState from "@/components/global/empty-state";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import LocalTime from "@/components/global/local-time";
 import { getAllAutomation } from "@/actions/automation";
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import {
   type ChangeSummary,
@@ -29,7 +29,8 @@ type Props = { params: { slug: string }; searchParams?: { period?: string } };
 const onboardingSkippedCookie = (clerkId: string) => `ap3k_onboarding_skipped_${clerkId}`;
 
 export default async function DashboardPage({ params, searchParams }: Props) {
-  const [userResult, automationsResult] = await Promise.all([onUserInfo(), getAllAutomation()]);
+  const automationsPromise = getAllAutomation();
+  const userResult = await onUserInfo();
 
   const onboardingSkipped =
     userResult.status === 200 &&
@@ -39,25 +40,27 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const instagram = getCanonicalInstagramIntegration(userResult.status === 200 ? userResult.data?.integrations : null);
   if (userResult.status === 200 && !instagram && !onboardingSkipped) redirect("/onboarding");
 
+  const instagramConnected = isCanonicalInstagramConnected(instagram);
+  const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
+  const displayName = getDashboardGreeting(userResult.data ?? {});
+  const period = parseDashboardPeriod(searchParams?.period);
+
+  const [automationsResult, usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
+    ? await Promise.all([
+        automationsPromise,
+        getUserMonthlyUsage(userResult.data.id),
+        getUserFacingStats(userResult.data.id, period, new Date(), instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
+        getCampaignTableMetrics(userResult.data.id, instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
+        getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period, new Date(), waitUntil),
+      ])
+    : [await automationsPromise, null, null, {} as Record<string, any>, { comparison: null, refresh: null }];
+
   const automations =
     automationsResult.status === 200 && Array.isArray(automationsResult.data)
       ? (automationsResult.data as any[])
       : [];
 
   const isEmpty = automations.length === 0;
-  const instagramConnected = isCanonicalInstagramConnected(instagram);
-  const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
-  const displayName = getDashboardGreeting(userResult.data ?? {});
-  const period = parseDashboardPeriod(searchParams?.period);
-
-  const [usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
-    ? await Promise.all([
-        getUserMonthlyUsage(userResult.data.id),
-        getUserFacingStats(userResult.data.id, period, new Date(), instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
-        getCampaignTableMetrics(userResult.data.id, instagram?.id ?? "00000000-0000-0000-0000-000000000000"),
-        getInstagramSnapshotComparisonWithRefresh(userResult.data.clerkId, userResult.data.id, instagram?.id, period, new Date(), waitUntil),
-      ])
-    : [null, null, {} as Record<string, any>, { comparison: null, refresh: null }];
 
   const snapshotComparison = snapshotState.comparison;
   const profileSnapshot = snapshotComparison?.current;

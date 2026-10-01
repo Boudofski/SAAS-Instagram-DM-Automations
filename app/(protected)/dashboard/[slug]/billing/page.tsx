@@ -1,4 +1,4 @@
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { getUserMonthlyUsage } from "@/actions/usage/queries";
 import Billing from "@/components/global/billing";
 import { getBillingLookup } from "@/lib/billing-snapshot";
