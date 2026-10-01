@@ -14,7 +14,9 @@
 - 175 imported articles in source order; 4 featured slots; 20 listing pages.
 - 175 distinct cover hashes; 585 optimized local images.
 - 116 duplicate inline heroes removed; three source 404 images omitted with surrounding text retained.
-- Internal article links resolve, including cross-article fragments. Scripts, active embedded content and event handlers removed from supplied HTML.
+- Internal article links resolve, including cross-article fragments. Scripts, unapproved embedded content and event handlers removed from supplied HTML.
 - TypeScript passes; full suite passes (1,628 tests). Production build passes and includes all 175 HTML bodies in its output trace.
 - Source layout checked in live browser; exact source fonts and hero aspect ratios implemented. Preview browser review pending.
 - Source text, author credits and reference screenshots retain vendor identities. AP3K owns the page shell, navigation, colors and main signup CTA. This is not a claim that all source products' features or certifications belong to AP3K.
+
+Preserves 11 source YouTube videos using validated youtube-nocookie.com embed URLs, lazy loading, and responsive players.

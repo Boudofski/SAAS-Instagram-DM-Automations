@@ -25,7 +25,10 @@ describe('supplied blog archive migration', () => {
     for (const post of imported) {
       const html = readFileSync(`lib/content/imported-blog/${post.slug}.html`, 'utf8');
       expect(post.wordCount, post.slug).toBeGreaterThan(150);
-      expect(html).not.toMatch(/<(script|iframe|form|object|embed)\b|\son\w+=|javascript:/i);
+      expect(html).not.toMatch(/<(script|form|object|embed)\b|\son\w+=|javascript:/i);
+      for (const [, src] of Array.from(html.matchAll(/<iframe[^>]+src="([^"]+)"/g))) {
+        expect(src).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}$/);
+      }
       for (const [, src] of Array.from(html.matchAll(/<img[^>]+src="([^"]+)"/g))) {
         expect(src).toMatch(/^\/images\/blog\/imported\/[a-f0-9]+\.webp$/);
         expect(existsSync(`public${src}`), `${post.slug}: ${src}`).toBe(true);

@@ -32,10 +32,14 @@ for f in sorted((source/'listings').glob('*.html')):
  order.extend(items)
 order=list(dict.fromkeys(order))
 posts=[];covers={};counts={}
-allowed={'p','div','span','section','aside','h2','h3','h4','h5','h6','ul','ol','li','strong','b','em','i','u','s','a','img','figure','figcaption','blockquote','pre','code','br','hr','table','thead','tbody','tfoot','tr','th','td','details','summary','sup','sub'}
+allowed={'p','div','span','section','aside','h2','h3','h4','h5','h6','ul','ol','li','strong','b','em','i','u','s','a','img','figure','figcaption','blockquote','pre','code','br','hr','table','thead','tbody','tfoot','tr','th','td','details','summary','sup','sub','iframe'}
 for a in manifest:
  slug=a['slug'];full=BeautifulSoup((source/a['file']).read_text(),'html.parser');soup=BeautifulSoup(a['content_html'],'html.parser')
- for tag in soup.select('script,style,iframe,object,embed,form,input,button,.summarize,.toc-inline'):tag.decompose()
+ for tag in soup.select('script,style,object,embed,form,input,button,.summarize,.toc-inline'):tag.decompose()
+ for frame in soup.find_all('iframe'):
+  match=re.fullmatch(r'https://(?:www\.)?youtube(?:-nocookie)?\.com/embed/([A-Za-z0-9_-]{11})',frame.get('src',''))
+  if not match:frame.decompose()
+  else:frame.attrs={'src':'https://www.youtube-nocookie.com/embed/'+match.group(1),'title':'Video: '+a['title']}
  for comment in soup.find_all(string=lambda t:isinstance(t,Comment)):comment.extract()
  main=soup.find('main') or soup
  first_image=main.find('img')
@@ -62,6 +66,8 @@ for a in manifest:
    elif href.rstrip('/') in {'https://linktodm.com/blogs','/blogs'}:tag['href']='/blog'
    elif not re.match(r'^(https?://|mailto:|/|#)',href):tag.unwrap();continue
    if tag.get('href','').startswith('http'):tag['rel']='noopener noreferrer'
+  if tag.name=='iframe':
+   tag['loading']='lazy';tag['allow']='encrypted-media; fullscreen; picture-in-picture';tag['allowfullscreen']='';tag['referrerpolicy']='strict-origin-when-cross-origin'
   if tag.name=='img':
    src=local_image(tag.get('src',''))
    if not src:

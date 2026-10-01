@@ -99,3 +99,5 @@
 .contentsRail > div { position:sticky; top:120px; max-height:calc(100dvh - 140px); overflow-y:auto; padding-left:18px; border-left:1px solid var(--line); }
 @media(max-width:1280px) { .contentsRail { display:none; } }
 @media(max-width:768px) { .readingLayout { padding:0; } }
+
+.importedBody iframe { display:block; width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:12px; margin:28px 0; }
