@@ -825,8 +825,8 @@ async function processEntry(
       }
 
       if (resumedAutomationId && resumedAutomationId !== automation.id) continue;
-      if (!resumedAutomationId && !envelope.dryRun && automation.deliveryDelaySeconds > 0) {
-        await deferAutomationDelivery({automationId:automation.id,eventKey:`comment:${commentId}`,seconds:automation.deliveryDelaySeconds,entry:{id:entry.id,changes:[changeItem]},object:envelope.object});
+      if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && automation.deliveryDelaySeconds > 0) {
+        await deferAutomationDelivery({automationId:automation.id,eventKey:`comment:${commentId}`,recipientIgId:commenterId,seconds:automation.deliveryDelaySeconds,entry:{id:entry.id,changes:[changeItem]},object:envelope.object});
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSING",errorMessage:"delivery_scheduled"});
         continue;
       }
@@ -2330,8 +2330,8 @@ async function processEntry(
 
       const { automation, matchedKeyword } = result;
       if (resumedAutomationId && resumedAutomationId !== automation.id) continue;
-      if (!resumedAutomationId && automation.source === "COMMENT" && automation.deliveryDelaySeconds > 0) {
-        await deferAutomationDelivery({automationId:automation.id,eventKey:`share:${parsed.ok ? parsed.data.messageMid : webhookEvent.id}`,seconds:automation.deliveryDelaySeconds,entry:{id:entry.id,messaging:[messagingItem]},object:envelope.object});
+      if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && automation.source === "COMMENT" && automation.deliveryDelaySeconds > 0) {
+        await deferAutomationDelivery({automationId:automation.id,eventKey:`share:${parsed.ok ? parsed.data.messageMid : webhookEvent.id}`,recipientIgId:senderId,seconds:automation.deliveryDelaySeconds,entry:{id:entry.id,messaging:[messagingItem]},object:envelope.object});
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSING",errorMessage:"delivery_scheduled"});
         continue;
       }

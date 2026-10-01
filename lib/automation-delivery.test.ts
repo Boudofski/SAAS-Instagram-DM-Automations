@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const db=vi.hoisted(()=>({messageLog:{findFirst:vi.fn()},automationDmRecipient:{createMany:vi.fn()},automationDeliveryJob:{findMany:vi.fn(),updateMany:vi.fn(),update:vi.fn(),upsert:vi.fn()}}));
+const db=vi.hoisted(()=>({messageLog:{findFirst:vi.fn()},inboxMessage:{findFirst:vi.fn()},automationDmRecipient:{createMany:vi.fn()},automationDeliveryJob:{findMany:vi.fn(),updateMany:vi.fn(),update:vi.fn(),upsert:vi.fn()}}));
 const resume=vi.hoisted(()=>vi.fn());
 vi.mock("@/lib/prisma",()=>({client:db}));vi.mock("@/lib/meta-webhook-handler",()=>({resumeAutomationDelivery:resume}));
 import {claimDmRecipient,deferAutomationDelivery,processAutomationDeliveries} from "./automation-delivery";
@@ -15,3 +15,5 @@ describe("durable delays",()=>{
  it("never runs a paused campaign, expired message, or work claimed elsewhere",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{active:false}},{...job,id:"expired",createdAt:new Date(now.getTime()-86400001)}]);await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();db.automationDeliveryJob.findMany.mockResolvedValue([job]);db.automationDeliveryJob.updateMany.mockResolvedValue({count:0});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();});
  it("does not replay a delivery with an ambiguous failure",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([job]);resume.mockRejectedValue(new Error("timeout"));await processAutomationDeliveries(now);expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"FAILED",payload:{}}});});
 });
+
+it("cancels a delayed response when the conversation has moved on",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,recipientIgId:"recipient"}}]);db.inboxMessage.findFirst.mockResolvedValue({id:"later-message"});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();expect(db.inboxMessage.findFirst.mock.calls[0][0].where.conversation).toEqual({integrationId:"account",recipientIgId:"recipient"});expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"CANCELLED",payload:{}}});});

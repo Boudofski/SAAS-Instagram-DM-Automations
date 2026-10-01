@@ -213,3 +213,8 @@
 :global(.dark) .publishRestriction { color:#fda4af; }
 .sampleReply { text-align:start; width:100%; border-radius:0!important; background:var(--editor-soft)!important; color:var(--editor-text)!important; }
 .sampleReply+.sampleReply { border-top:1px solid var(--editor-line); }
+.summary.publishRestriction { display:inline; max-width:none; overflow:visible; white-space:normal; color:#dc2626; font-size:12px; }
+:global(.dark) .summary.publishRestriction { color:#fda4af; }
+@media(max-width:600px) { .rowTrigger:has(.publishRestriction) { flex-wrap:wrap; } .summary.publishRestriction { flex-basis:100%; padding-inline-start:26px; text-align:start; font-size:11px; } }
+
+.lockedCopy .copyField { border-color:#ef4444; }

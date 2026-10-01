@@ -230,3 +230,8 @@ describe("error reason constants", () => {
     expect(INBOUND_MESSAGE_NO_AUTOMATION).not.toBe("no_keyword_match");
   });
 });
+
+it("preserves Meta's ig_post identity for post-scoped share automations",()=>{
+ const result=parseMessagingItem(validTextItem({message:{mid:MESSAGE_MID,attachments:[{type:"ig_post",payload:{ig_post_media_id:"18139494541428835",url:"https://www.instagram.com/p/example/"}}]}}));
+ expect(result.ok).toBe(true);if(result.ok)expect(result.data.attachments[0]).toEqual({type:"ig_post",mediaId:"18139494541428835",url:"https://www.instagram.com/p/example/"});
+});

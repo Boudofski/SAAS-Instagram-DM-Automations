@@ -7,9 +7,9 @@ export async function claimDmRecipient(automationId:string,recipientIgId:string)
   const result=await client.automationDmRecipient.createMany({data:[{automationId,recipientIgId}],skipDuplicates:true});
   return result.count===1;
 }
-export async function deferAutomationDelivery(input:{automationId:string;eventKey:string;seconds:number;entry:unknown;object:string}) {
+export async function deferAutomationDelivery(input:{automationId:string;eventKey:string;recipientIgId?:string;seconds:number;entry:unknown;object:string}) {
   const seconds=Math.min(82800,Math.max(1,Math.floor(input.seconds)));
-  await client.automationDeliveryJob.upsert({where:{automationId_eventKey:{automationId:input.automationId,eventKey:input.eventKey}},create:{automationId:input.automationId,eventKey:input.eventKey,dueAt:new Date(Date.now()+seconds*1000),payload:{entry:input.entry,object:input.object} as Prisma.InputJsonValue},update:{}});
+  await client.automationDeliveryJob.upsert({where:{automationId_eventKey:{automationId:input.automationId,eventKey:input.eventKey}},create:{automationId:input.automationId,eventKey:input.eventKey,dueAt:new Date(Date.now()+seconds*1000),payload:{entry:input.entry,object:input.object,recipientIgId:input.recipientIgId ?? null} as Prisma.InputJsonValue},update:{}});
   // Short waits run inside the acknowledged webhook's background lifetime.
   // A durable row remains available to cron if that worker is interrupted.
   if(seconds<=15) {
@@ -19,14 +19,16 @@ export async function deferAutomationDelivery(input:{automationId:string;eventKe
 }
 export async function processAutomationDeliveries(now=new Date(), only?:{automationId:string;eventKey:string}) {
   const started=Date.now();
-  const jobs=await client.automationDeliveryJob.findMany({where:{status:"PENDING",dueAt:{lte:now},...only},orderBy:{dueAt:"asc"},take:20,include:{automation:{select:{active:true,archivedAt:true}}}});
+  const jobs=await client.automationDeliveryJob.findMany({where:{status:"PENDING",dueAt:{lte:now},...only},orderBy:{dueAt:"asc"},take:20,include:{automation:{select:{active:true,archivedAt:true,integrationId:true}}}});
   let processed=0;
   for(const job of jobs){
     if(Date.now()-started>35000)break;
     const claimed=await client.automationDeliveryJob.updateMany({where:{id:job.id,status:"PENDING"},data:{status:"PROCESSING"}});
     if(!claimed.count)continue;
-    const payload=job.payload as {entry:unknown;object:string};
-    if(!job.automation.active || job.automation.archivedAt || now.getTime()-job.createdAt.getTime()>=86400000){await client.automationDeliveryJob.update({where:{id:job.id},data:{status:"CANCELLED",payload:{}}});continue;}
+    const payload=job.payload as {entry:unknown;object:string;recipientIgId?:string};
+    // Cancel if the person has since replied, opted out, or received another response.
+    const conversationMovedOn = payload.recipientIgId && job.automation.integrationId ? await client.inboxMessage.findFirst({where:{conversation:{integrationId:job.automation.integrationId,recipientIgId:payload.recipientIgId},createdAt:{gt:job.createdAt},direction:{in:["INBOUND","OUTBOUND"]}},select:{id:true}}) : null;
+    if(conversationMovedOn || !job.automation.active || job.automation.archivedAt || now.getTime()-job.createdAt.getTime()>=86400000){await client.automationDeliveryJob.update({where:{id:job.id},data:{status:"CANCELLED",payload:{}}});continue;}
     try {
       const {resumeAutomationDelivery}=await import("@/lib/meta-webhook-handler");
       await resumeAutomationDelivery(job.automationId,payload.entry,payload.object);
