@@ -280,15 +280,20 @@ export default function FlowCanvas({
   onChange,
   triggers = [],
   onEditTrigger,
+  triggerPanelOpen = false,
+  onOpenStep,
 }: {
   flow: Flow;
   onChange: (f: Flow) => void;
   triggers?: GraphData["triggers"];
   onEditTrigger?: (id?: string) => void;
+  triggerPanelOpen?: boolean;
+  onOpenStep?: () => void;
 }) {
   const { resolvedTheme } = useTheme();
   const [selected, setSelected] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
+  useEffect(() => { if (triggerPanelOpen) setEdit(false); }, [triggerPanelOpen]);
   const [menu, setMenu] = useState(false);
   const [subMenu, setSubMenu] = useState<"message" | "action" | null>(null);
   const [pending, setPending] = useState<PendingConnection | null>(null);
@@ -474,7 +479,7 @@ export default function FlowCanvas({
       ref={workspace}
       className="flow-workspace relative h-full w-full"
       onKeyDown={(event) => {
-        if (event.key === "Escape") closeMenu();
+        if (event.key === "Escape") { closeMenu(); setEdit(false); }
       }}
     >
       <ReactFlow<GraphNode>
@@ -490,7 +495,7 @@ export default function FlowCanvas({
         onNodeClick={(_, n) => {
           closeMenu();
           setSelected(n.id);
-          if (n.id !== "__trigger") setEdit(true);
+          if (n.id !== "__trigger") { onOpenStep?.(); setEdit(true); }
         }}
         onPaneClick={() => {
           if (performance.now() - lastDrop.current < 250) return;
@@ -648,7 +653,7 @@ export default function FlowCanvas({
       {edit && node && (
         <aside
           aria-label="Step settings"
-          className="absolute inset-y-0 right-0 z-20 flex w-full max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
+          className="absolute inset-y-0 right-0 z-20 flex w-full max-w-none sm:max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
         >
           <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
             <h2 className="flex-1 text-sm font-semibold">
@@ -686,8 +691,8 @@ export default function FlowCanvas({
               <X size={18} />
             </button>
           </header>
-          <div className="min-h-0 overflow-y-auto overscroll-contain">
-            <FlowNodeEditor node={node} flow={flow} onChange={onChange} />
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+            <FlowNodeEditor key={node.id} node={node} flow={flow} onChange={onChange} />
           </div>
         </aside>
       )}

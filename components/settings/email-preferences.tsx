@@ -1,3 +1,8 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { UiText } from "@/components/i18n/localized-copy";
 import { updateEmailPreferencesAction } from "@/actions/email-preferences";
 
@@ -16,8 +21,21 @@ const options = [
 ] as const;
 
 export function EmailPreferences({ preferences }: Props) {
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"saved" | "error" | null>(null);
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving) return;
+    const data = new FormData(event.currentTarget);
+    setSaving(true);
+    setStatus(null);
+    try { await updateEmailPreferencesAction(data); setStatus("saved"); }
+    catch { setStatus("error"); }
+    finally { setSaving(false); }
+  }
   return (
-    <form id="email-preferences" action={updateEmailPreferencesAction} className="scroll-mt-6 space-y-4">
+    <form id="email-preferences" onSubmit={save} onChange={() => setStatus(null)} aria-busy={saving} className="scroll-mt-6 space-y-4">
+      <fieldset disabled={saving} className="space-y-4">
       <div className="space-y-2">
         {options.map((option) => (
           <label key={option.name} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50/70 p-3 transition hover:border-violet-300 dark:border-white/[0.07] dark:bg-white/[0.025] dark:hover:border-violet-400/30">
@@ -35,7 +53,14 @@ export function EmailPreferences({ preferences }: Props) {
         ))}
       </div>
       <p className="text-[11px] leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Security, account connection, automation failure, usage-limit, support, and billing emails cannot be disabled because they protect the service you asked AP3K to run."}</UiText></p>
-      <button type="submit" className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-violet-600/15 transition hover:-translate-y-0.5 hover:shadow-violet-600/25"><UiText>{"Save email preferences"}</UiText></button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button type="submit" disabled={saving} className="w-full rounded-xl bg-violet-600 text-white shadow-sm hover:bg-violet-700 sm:w-auto">
+          {saving ? <Loader2 className="animate-spin" /> : status === "saved" ? <Check /> : null}
+          <UiText>{saving ? "Saving…" : status === "saved" ? "Preferences saved" : "Save email preferences"}</UiText>
+        </Button>
+        {status && <p role={status === "error" ? "alert" : "status"} className={`text-xs ${status === "error" ? "text-red-700 dark:text-red-300" : "text-emerald-700 dark:text-emerald-300"}`}><UiText>{status === "error" ? "Could not save your preferences. Please try again." : "Your email preferences have been saved."}</UiText></p>}
+      </div>
+      </fieldset>
     </form>
   );
 }

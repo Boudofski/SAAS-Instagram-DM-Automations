@@ -86,7 +86,7 @@ export default function ThemeToggle({ compact = false, className }: Props) {
             aria-pressed={active}
             onClick={() => setTheme(item.value)}
             className={cn(
-              "inline-flex min-w-0 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-all duration-200",
+              "inline-flex min-w-0 items-center justify-center gap-2 min-h-11 rounded-full px-3 py-2 text-sm font-bold transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 motion-reduce:transition-none",
               active
                 ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 dark:bg-violet-500/15 dark:text-white dark:ring-violet-400/25"
                 : "text-slate-500 light:text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"

@@ -1,5 +1,6 @@
 "use client";
-import { Instagram, ArrowLeft, Trash2, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { Instagram, Trash2, RefreshCw, Check } from "lucide-react";
 import type { FlowTrigger } from "@/lib/automation-flow/triggers";
 const choices = [
   {
@@ -141,9 +142,9 @@ export default function FlowTriggerEditor({
                 <button
                   onClick={refreshPosts}
                   disabled={postsLoading}
-                  className="flex items-center gap-1 text-violet-600 dark:text-violet-300"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-violet-700 hover:bg-violet-50 disabled:opacity-50 dark:text-violet-300 dark:hover:bg-violet-500/10"
                 >
-                  <RefreshCw size={12} />
+                  <RefreshCw size={14} className={postsLoading ? "animate-spin" : ""} />
                   Refresh
                 </button>
               </div>
@@ -152,10 +153,11 @@ export default function FlowTriggerEditor({
                   {postsError}
                 </p>
               )}
-              <div className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto">
+              <div className="flow-post-scroll max-h-72 overflow-y-auto overscroll-contain rounded-xl p-1" role="group" aria-label="Instagram posts">
+              <div className="grid grid-cols-3 content-start items-start gap-2">
                 {posts.map((p) => {
                   const id = String(p.id ?? p.postid);
-                  const src = p.thumbnail_url ?? p.media_url ?? p.media;
+                  const src = p.thumbnail_url || p.media_url || p.media;
                   return (
                     <button
                       key={id}
@@ -169,21 +171,17 @@ export default function FlowTriggerEditor({
                           },
                         })
                       }
+                      type="button"
+                      aria-pressed={trigger.post?.postid === id}
                       aria-label={`Select post ${p.caption?.slice(0, 45) || id}`}
-                      className={`relative aspect-square overflow-hidden rounded-lg border-2 ${trigger.post?.postid === id ? "border-violet-500" : "border-transparent"}`}
+                      className={`flow-post-tile relative block w-full aspect-square overflow-hidden rounded-xl border-2 ${trigger.post?.postid === id ? "border-violet-500" : "border-transparent"}`}
                     >
-                      {src ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */ <img
-                          src={src}
-                          alt={p.caption?.slice(0, 70) || "Instagram post"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs">Post</span>
-                      )}
+                      <PostThumbnail src={src} caption={p.caption} />
+                      {trigger.post?.postid === id && <span className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-violet-600 text-white shadow-sm"><Check size={14} /></span>}
                     </button>
                   );
                 })}
+              </div>
               </div>
               {postsLoading && (
                 <p className="py-5 text-center text-xs">Loading posts…</p>
@@ -254,4 +252,12 @@ export default function FlowTriggerEditor({
       )}
     </div>
   );
+}
+
+function PostThumbnail({ src, caption }: { src?: string; caption?: string }) {
+  const [failedSrc, setFailedSrc] = useState<string>();
+  if (!src || failedSrc === src || /\.(mp4|mov)(?:[?#]|$)/i.test(src)) return <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-300"><Instagram size={22} /><span className="text-[10px]">Instagram post</span></span>;
+  // Expired Instagram images should leave a selectable tile, never a broken icon.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={caption?.slice(0, 70) || "Instagram post"} loading="lazy" decoding="async" onError={() => setFailedSrc(src)} className="absolute inset-0 h-full w-full object-cover" />;
 }
