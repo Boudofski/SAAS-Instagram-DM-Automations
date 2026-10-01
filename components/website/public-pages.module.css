@@ -472,3 +472,9 @@
   .commercialArticle .stats > div { padding:12px; }
   .workspacePreviewHeader { padding:14px; }
 }
+
+/* Editorial reading layout is scoped to blog posts. */
+.blogArticle { width:min(1120px,calc(100% - 40px)); }
+.blogArticle .articleHeader { max-width:900px; margin-inline:auto; }
+.blogArticle .articleHeader h1 { font-family:inherit; font-size:clamp(30px,4.4vw,52px); line-height:1.15; }
+.blogArticle > div:has(> figure) { max-width:1000px; margin:32px auto 48px; }

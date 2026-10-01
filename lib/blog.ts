@@ -1,3 +1,4 @@
+import { OCTOBER_EDITORIAL } from "./content/editorial-october";
 import { EXPANSION_POSTS } from "./content/expansion";
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
 import { COMMENT_DM_POSTS } from "./content/comment-dm";
@@ -37,6 +38,7 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
   COMMENT_DM_POSTS[0],
+  ...OCTOBER_EDITORIAL,
   ...EXPANSION_POSTS,
   ...COMMENT_DM_POSTS.slice(1),
   ...ILLUSTRATED_POSTS,

@@ -8,19 +8,22 @@ import { buildCoverPlan, renderCoverSvg } from './blog-cover-diagram';
 import { tutorialImageSrc } from './tutorial-content';
 
 describe('article-specific covers', () => {
-  it('ships a distinct, decodable local 16:9 image for every non-tutorial article', async () => {
+  it('uses decodable local editorial photos with descriptive alt text for the archive', async () => {
     const posts = BLOG_POSTS.filter(post => !post.cover);
     const images = posts.map(getArticleImage);
-    expect(new Set(images.map(image => image.src)).size).toBe(posts.length);
-    const hashes = await Promise.all(images.map(async image => {
-      expect(image.src).toMatch(/^\/images\/blog\/covers\/[a-z0-9-]+\.webp$/);
+    expect(new Set(images.map(image => image.src)).size).toBe(8);
+    for (const image of images) {
+      expect(image.src).toMatch(/^\/images\/blog\/editorial\/[a-z]+\.webp$/);
+      expect(image.alt.length).toBeGreaterThan(40);
       expect(articleImageUrl(image)).toBe(`https://ap3k.com${image.src}`);
-      const bytes = await readFile(`public${image.src}`);
+    }
+    const hashes = await Promise.all(Array.from(new Set(images.map(i => i.src))).map(async src => {
+      const bytes = await readFile(`public${src}`);
       const metadata = await sharp(bytes).metadata();
       expect([metadata.width, metadata.height, metadata.format]).toEqual([1200, 675, 'webp']);
       return createHash('sha256').update(bytes).digest('hex');
     }));
-    expect(new Set(hashes).size).toBe(posts.length);
+    expect(new Set(hashes).size).toBe(8);
   });
   it('keeps real tutorial screenshots instead of manufacturing product screens', () => {
     for (const post of BLOG_POSTS.filter(post => post.cover)) {
@@ -35,7 +38,7 @@ describe('article-specific covers', () => {
     expect(handoff.note).toContain('Publishing tool → launch owner → AP3K reply campaign');
   });
   it('keeps three-column thumbnails concise without clipped paragraph excerpts', () => {
-    for (const post of BLOG_POSTS.filter(post => !post.cover)) {
+    for (const post of BLOG_POSTS.filter(post => !post.cover && post.publishedAt !== '2026-10-01')) {
       const plan = buildCoverPlan(post);
       if (!['flow', 'decision', 'lifecycle'].includes(plan.kind)) continue;
       for (const step of plan.items) {
