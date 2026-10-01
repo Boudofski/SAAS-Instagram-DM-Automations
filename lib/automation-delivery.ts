@@ -1,4 +1,5 @@
 import { client } from "@/lib/prisma";
+import { scheduleDeliveryWake } from "@/lib/qstash-delivery-wake";
 import type { Prisma } from "@prisma/client";
 /** A unique database claim prevents simultaneous comments/shares sending twice.
  * Ambiguous send failures retain the claim: retrying may duplicate a delivered DM. */
@@ -9,11 +10,15 @@ export async function claimDmRecipient(automationId:string,recipientIgId:string)
 }
 export async function deferAutomationDelivery(input:{automationId:string;eventKey:string;recipientIgId?:string;seconds:number;entry:unknown;object:string}) {
   const seconds=Math.min(82800,Math.max(1,Math.floor(input.seconds)));
-  await client.automationDeliveryJob.upsert({where:{automationId_eventKey:{automationId:input.automationId,eventKey:input.eventKey}},create:{automationId:input.automationId,eventKey:input.eventKey,dueAt:new Date(Date.now()+seconds*1000),payload:{entry:input.entry,object:input.object,recipientIgId:input.recipientIgId ?? null} as Prisma.InputJsonValue},update:{}});
+  const job = await client.automationDeliveryJob.upsert({where:{automationId_eventKey:{automationId:input.automationId,eventKey:input.eventKey}},create:{automationId:input.automationId,eventKey:input.eventKey,dueAt:new Date(Date.now()+seconds*1000),payload:{entry:input.entry,object:input.object,recipientIgId:input.recipientIgId ?? null} as Prisma.InputJsonValue},update:{}});
+  if (job.status !== "PENDING") return;
+  // Use the original deadline on webhook retries, never extend the wait.
+  if (await scheduleDeliveryWake(job)) return;
   // Short waits run inside the acknowledged webhook's background lifetime.
   // A durable row remains available to cron if that worker is interrupted.
-  if(seconds<=15) {
-    await new Promise(resolve=>setTimeout(resolve,seconds*1000));
+  const remainingMs = Math.max(0, job.dueAt.getTime() - Date.now());
+  if(remainingMs<=15000) {
+    await new Promise(resolve=>setTimeout(resolve,remainingMs));
     await processAutomationDeliveries(new Date(),{automationId:input.automationId,eventKey:input.eventKey});
   }
 }
