@@ -1,5 +1,5 @@
-import {attachmentId,normalizeAttachmentType} from "@/lib/message-attachment";
 "use client";
+import {attachmentId,normalizeAttachmentType} from "@/lib/message-attachment";
 import {
   normalizeCopyList,
   readCommentReplies,
