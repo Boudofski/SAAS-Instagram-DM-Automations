@@ -1,6 +1,6 @@
 # QStash automation scheduler
 
-QStash wakes AP3K's existing follow-up, delayed-message, and flow queues without Vercel Pro. This integration adds a signed POST handler; the existing authenticated GET handler and GitHub fallback remain available during cutover.
+QStash wakes AP3K's existing follow-up, delayed-message, and flow queues without Vercel Pro. The signed POST handler is the recurring scheduler. The existing authenticated GET handler and GitHub `workflow_dispatch` remain available for manual recovery.
 
 ## Configuration
 
@@ -20,16 +20,16 @@ The token is used only for build-time setup. Runtime verifies signatures with th
 
 At five-minute intervals this creates 288 initial requests/day, up to 576 attempts/day if every request retries once. Keep other QStash traffic within the account's shared 1,000/day free allowance. Normal Vercel function and Neon database usage still applies.
 
-## Verify before retiring the old schedule
+## Verify scheduler health
 
 Confirm a signed request succeeds, then observe at least two automatic executions approximately five minutes apart. Responses must be HTTP 200 with `ok: true`; inspect `flowFailed` and worker logs as well. Confirm a fresh `AutomationSchedulerHeartbeat` and that the editor no longer reports an unavailable scheduler. Any actual DM delivery test must use controlled test accounts.
 
 Workers retain database claims, messaging-window enforcement, plan/account checks, and cancellation when a conversation moves on. QStash can redeliver a request, so those claims remain essential. Five minutes is a polling interval, not a strict delivery guarantee. Ambiguous provider failures are not automatically replayed.
 
-After cadence is verified, remove the `schedule` event from `.github/workflows/automation-follow-ups.yml` while keeping `workflow_dispatch` as manual recovery. Until then, leave the fallback enabled.
+The recurring GitHub schedule has been retired. Use `.github/workflows/automation-follow-ups.yml` with `workflow_dispatch` for manual recovery if needed.
 
 ## Rollback
 
-Pause the QStash schedule; retain the GitHub fallback. If rolling back to code without POST support, pause QStash first to avoid repeated 405 errors. When rotating signing keys, update both production values and deploy before retiring the old key.
+Pause the QStash schedule and use the GitHub manual recovery workflow. If needed, restore the previous GitHub `schedule` event, accounting for GitHub's potentially delayed execution. If rolling back to code without POST support, pause QStash first to avoid repeated 405 errors. When rotating signing keys, update both production values and deploy before retiring the old key.
 
 Official references: https://upstash.com/docs/qstash/howto/signature, https://upstash.com/docs/qstash/features/security, https://upstash.com/docs/qstash/features/schedules, and https://upstash.com/pricing/qstash.

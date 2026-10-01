@@ -1,7 +1,6 @@
 name: Automation follow-ups
 on:
-  schedule:
-    - cron: '3-58/5 * * * *'
+  # QStash handles recurring wake-ups; keep GitHub as manual recovery.
   workflow_dispatch:
 permissions:
   id-token: write
