@@ -35,7 +35,7 @@ describe("comment-to-DM editorial library", () => {
     }
   });
   it("keeps translated guides first for readers using another language", () => {
-    expect(getBlogPostsForLocale("en")[0].slug).toBe("instagram-comment-to-dm-automation");
+    expect(getBlogPostsForLocale("en")[0].slug).toBe("10-types-instagram-dm-automation");
     for (const locale of SUPPORTED_LOCALES.filter(locale => locale !== "en")) {
       const posts = getBlogPostsForLocale(locale);
       expect(posts.slice(0, 12).every(post => !post.contentLocale)).toBe(true);

@@ -1,3 +1,4 @@
+import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import BlogCover from "@/components/website/blog-cover";
 import s from "@/components/website/public-pages.module.css";
@@ -121,7 +122,7 @@ export default async function BlogPage({ searchParams }: Props) {
         prefetch={false}
       >
         <BlogCover post={post} priority={index < 2} />
-        <span className={e.category}>{post.category}</span>
+
         <h3>{post.title}</h3>
       </Link>
       <div className={s.byline}>
@@ -130,7 +131,7 @@ export default async function BlogPage({ searchParams }: Props) {
           markClassName="h-6 w-6 rounded-full shadow-none"
         />
         <span>
-          AP3K ·{" "}
+          {post.author || "AP3K"} ·{" "}
           <time dateTime={post.publishedAt}>
             {new Intl.DateTimeFormat(locale, {
               month: "long",
@@ -146,7 +147,7 @@ export default async function BlogPage({ searchParams }: Props) {
   );
   return (
     <LocalizedCopy>
-      <div className={s.page}>
+      <div className={`${s.page} ${blogSans.className} ${blogSans.variable} ${blogSerif.variable}`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -156,17 +157,17 @@ export default async function BlogPage({ searchParams }: Props) {
         <WebsiteNav current="blog" />
         <main className={e.archive}>
           <header className={e.hero}>
+            <AP3KLogo showText={false} markClassName="h-[63px] w-[63px] mx-auto mb-8" />
             <h1>Welcome to AP3K Blogs</h1>
             <p>
-              Fresh ideas for Instagram growth, useful conversations, and a business
-              that keeps moving when you step away.
+              Your go to place for insights, updates, and strategies on Instagram automation, DM marketing, and social media growth with AP3K.
             </p>
           </header>
           {!query && pagination.page === 1 && featured.length > 0 && (
             <section>
-              <h2>Featured posts</h2>
+              <h2>Featured Posts</h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                A few good places to start.
+                Read from our top picks
               </p>
               <div className={e.featuredGrid}>{featured.map(card)}</div>
             </section>
@@ -178,7 +179,7 @@ export default async function BlogPage({ searchParams }: Props) {
           >
             <Search aria-hidden="true" size={20} />
             <label htmlFor="blog-search" className="sr-only">
-              Search articles
+              Search blogs
             </label>
             <input
               id="blog-search"
@@ -186,7 +187,7 @@ export default async function BlogPage({ searchParams }: Props) {
               name="q"
               defaultValue={query}
               maxLength={120}
-              placeholder="Search articles"
+              placeholder="Search blogs"
               className={e.searchInput}
             />
             <button type="submit" className={s.button}>
@@ -194,7 +195,7 @@ export default async function BlogPage({ searchParams }: Props) {
             </button>
           </form>
           <section>
-            <h2>
+            <h2 className={!query ? "sr-only" : undefined}>
               {query
                 ? `Results for “${query}”`
                 : pagination.page === 1
@@ -219,23 +220,6 @@ export default async function BlogPage({ searchParams }: Props) {
               : <Link key={page} href={pageHref(page)} prefetch={false} aria-label={`Page ${page}`} aria-current={page === pagination.page ? "page" : undefined}>{page}</Link>)}
             {pagination.page < pagination.pages && <Link href={pageHref(pagination.page + 1)} aria-label="Next page"><span>Next</span><ArrowRight size={16} /></Link>}
           </nav>}
-          <section className={s.cta}>
-            <h2>Put your next idea into practice.</h2>
-            <p className="my-4 text-sm text-slate-500 dark:text-slate-400">
-              Build a useful Instagram conversation with AP3K.
-            </p>
-            <Link href="/sign-up" className={s.button}>
-              Join for free
-            </Link>
-          </section>
-          <div className={s.related}>
-            <Link href="/resources/instagram-growth-library">
-              Browse the reference library →
-            </Link>
-            <Link href="/help">
-              Need setup help? Visit the Help Center →
-            </Link>
-          </div>
         </main>
         <WebsiteFooter />
       </div>

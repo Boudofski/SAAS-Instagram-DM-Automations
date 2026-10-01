@@ -5,9 +5,9 @@ import { buildSitemap } from "./sitemap";
 import { getBlogPage } from "./blog-pagination";
 
 describe("editorial archive", () => {
-  it("keeps published articles reachable exactly once across featured and all pages", () => {
+  it("keeps every imported article reachable exactly once across archive pages", () => {
     const { featured, posts } = getEditorialArchive(BLOG_POSTS);
-    const seen = [...featured.map(p => p.slug)];
+    const seen: string[] = [];
     const pages = getBlogPage(undefined, posts.length)!.pages;
     for (let page = 1; page <= pages; page++) {
       const range = getBlogPage(String(page), posts.length)!;
@@ -18,7 +18,7 @@ describe("editorial archive", () => {
     expect(new Set(seen).size).toBe(seen.length);
     expect(seen).not.toContain("ap3k-workspace-visual-guide");
     expect(BLOG_POSTS.some(p => p.slug === "ap3k-workspace-visual-guide")).toBe(true);
-    expect(seen.length).toBe(BLOG_POSTS.length - REFERENCE_GUIDE_SLUGS.size);
+    expect(seen.length).toBe(175);
   });
   it("only puts valid editorial archive pages in the sitemap", () => {
     const total = getEditorialArchive(BLOG_POSTS).posts.length;

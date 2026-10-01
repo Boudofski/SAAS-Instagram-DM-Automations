@@ -290,7 +290,7 @@ export function EditorialEditor({
                 </>
               )}
             </div>
-            {post.sections.map((s, i) => (
+            {post.importedArchive ? <p className="rounded-xl border p-4 text-sm">This imported article preserves its original HTML and images. Metadata can be edited here. <Link href={`/blog/${post.slug}`} className="underline" target="_blank">Open the full article</Link> to review its content.</p> : post.sections.map((s, i) => (
               <section key={i} className="admin-panel space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-sm font-semibold">Section {i + 1}</h2>
@@ -488,6 +488,7 @@ export function EditorialEditor({
               </section>
             ))}
             <Button
+              disabled={post.importedArchive}
               variant="outline"
               onClick={() =>
                 change({

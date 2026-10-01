@@ -1,3 +1,6 @@
+import { LEGACY_BLOG_POSTS } from "./blog";
+import importedSlugs from "./content/imported-blog/slugs.json";
+import FEATURED_BLOG_SLUGS from "./content/imported-blog/featured.json";
 import type { BlogPost } from "./blog";
 import { EXPANSION_POSTS } from "./content/expansion";
 import { filterBlogPosts } from "./blog-search";
@@ -8,23 +11,22 @@ export const REFERENCE_GUIDE_SLUGS = new Set([
   "ap3k-workspace-visual-guide", "create-ap3k-automation-visual-guide",
   "set-up-ap3k-ai-visual-guide", "connect-instagram-to-ap3k",
 ]);
-export const FEATURED_BLOG_SLUGS = [
-  "instagram-comment-to-dm-automation",
-  "instagram-dm-campaigns-that-match-customer-intent",
-  "sell-products-through-instagram-conversations",
-  "troubleshoot-instagram-comment-dm-automation",
-];
+export { default as FEATURED_BLOG_SLUGS } from "./content/imported-blog/featured.json";
 export function getEditorialArchive(posts: BlogPost[], query = "") {
-  const editorial = posts.filter(p => !REFERENCE_GUIDE_SLUGS.has(p.slug));
+  const legacy = new Set(LEGACY_BLOG_POSTS.map(p => p.slug));
+  const editorial = posts.filter(p => p.importedArchive || !legacy.has(p.slug)).sort((a,b) => {
+    const ai = importedSlugs.indexOf(a.slug), bi = importedSlugs.indexOf(b.slug);
+    return (ai < 0 ? -1 : ai) - (bi < 0 ? -1 : bi);
+  });
   const selected = FEATURED_BLOG_SLUGS.flatMap(slug => {
     const post = editorial.find(p => p.slug === slug);
     return post ? [post] : [];
   });
   const featured = [...selected, ...editorial.filter(p => !selected.includes(p))].slice(0, 4);
-  // Search includes featured posts; otherwise remove featured before pagination.
+  // Source lists featured articles again in the chronological archive.
   return {
     featured: query ? [] : featured,
-    posts: query ? filterBlogPosts(editorial, query) : editorial.filter(p => !featured.includes(p)),
+    posts: query ? filterBlogPosts(editorial, query) : editorial,
   };
 }
 export function blogPaginationItems(page: number, pages: number): (number | "gap")[] {

@@ -1,0 +1,22 @@
+{
+  "articles": 175,
+  "images": 585,
+  "missing_inline_images": [
+    {
+      "slug": "how-to-set-up-auto-dm-on-instagram",
+      "source": "https://public-files.linktodm.com/how-to-setup-auto-dm-on-instagram/Firefly%2020260124104839%201.png"
+    },
+    {
+      "slug": "how-to-set-up-auto-dm-on-instagram",
+      "source": "https://public-files.linktodm.com/how-to-setup-auto-dm-on-instagram/linktodm%201.png"
+    },
+    {
+      "slug": "how-to-set-up-auto-dm-on-instagram",
+      "source": "https://public-files.linktodm.com/how-to-setup-auto-dm-on-instagram/Frame%2042002.png"
+    }
+  ],
+  "source_order_count": 175,
+  "min_word_count": 208,
+  "preserved_source_authors": true,
+  "product_claims": "Original vendor references retained; AP3K credentials and capabilities are not inferred from the source."
+}

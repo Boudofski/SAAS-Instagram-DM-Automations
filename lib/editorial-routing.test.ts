@@ -1,3 +1,5 @@
+vi.mock("@/components/website/blog-fonts", () => ({ blogSans: {className:"",variable:""}, blogSerif: {variable:""} }));
+vi.mock("@/lib/imported-blog-server", () => ({ getImportedArticleHtml: async () => "<p>Imported article</p>" }));
 vi.mock("next/font/google", () => ({ Inter: () => ({className:"font-inter"}) }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BLOG_POSTS } from "@/lib/blog";
