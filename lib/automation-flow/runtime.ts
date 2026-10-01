@@ -445,13 +445,7 @@ export async function processAutomationFlow(
       }
       const text =
         resolveFlowText(node.text, values) +
-        (node.kind === "email"
-          ? "\n\nReply SKIP to continue without an email, or STOP to cancel."
-          : node.kind === "phone"
-            ? "\n\nReply SKIP to continue without a phone number, or STOP to cancel."
-          : node.kind === "capture"
-            ? "\n\nReply SKIP to continue without an answer, or STOP to cancel."
-          : node.kind === "question"
+        (node.kind === "question"
             ? "\n\nReply with one of the options below, or STOP to cancel."
             : "");
       if (!messagingWindowOpen(input.inboundAt)) { await persist("CANCELLED", nodeId, values); return true; }

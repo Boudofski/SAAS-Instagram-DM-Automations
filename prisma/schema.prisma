@@ -484,6 +484,9 @@ model Conversation {
   automation        Automation?    @relation(fields: [automationId], references: [id], onDelete: SetNull)
   recipientIgId     String
   recipientUsername String?
+  email             String?
+  emailCollectedAt  DateTime?
+  phone             String?
   profilePictureUrl String?
   lastMessageAt     DateTime       @default(now())
   lastInboundAt     DateTime?

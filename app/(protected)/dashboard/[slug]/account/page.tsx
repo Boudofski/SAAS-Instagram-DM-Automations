@@ -39,7 +39,7 @@ export default async function InstagramAccountPage({
   const period = parseDashboardPeriod(searchParams?.period);
   const periodRange = getPeriodRange(period);
 
-  const [snapshotState, stats] = user?.id
+  const [snapshotState, stats] = user?.id && connected
     ? await Promise.all([
         getInstagramSnapshotComparisonWithRefresh(
           user.clerkId,
@@ -89,7 +89,7 @@ export default async function InstagramAccountPage({
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="truncate text-lg font-black tracking-tight text-white sm:text-2xl">
+                  <h2 className="break-words text-lg font-black tracking-tight text-white sm:text-2xl">
                     {connected && displayUsername
                       ? <bdi dir="ltr">@{displayUsername}</bdi>
                       : "No Instagram account connected"}
@@ -141,7 +141,7 @@ export default async function InstagramAccountPage({
                   >
                     <UiText>{connectionReady ? "DMs ready" : "Actions paused"}</UiText>
                   </span>
-                  {profileSnapshotDisplay.label !== "Missing" ? (
+                  {connected && profileSnapshotDisplay.label !== "Missing" ? (
                     <span className="ap3k-badge border-white/15 bg-white/[0.08] text-slate-200">
                       <UiText>{profileSnapshotDisplay.label}</UiText>
                     </span>
@@ -163,10 +163,10 @@ export default async function InstagramAccountPage({
             <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Performance"}</UiText></h2>
             <p className="mt-0.5 text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
-              <DashboardPeriodLabel period={period} start={periodRange.currentStart} end={periodRange.currentEnd} />
+              {connected ? <DashboardPeriodLabel period={period} start={periodRange.currentStart} end={periodRange.currentEnd} /> : "Connect Instagram to see your followers, posts, comments and leads."}
             </p>
           </div>
-          <PeriodSelector slug={params.slug} active={period} />
+          {connected && <PeriodSelector slug={params.slug} active={period} />}
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
           {stats ? (
@@ -179,12 +179,12 @@ export default async function InstagramAccountPage({
               <SettingsStatCard label="Reply rate" stat={stats.replyRate} />
             </>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 light:border-slate-300 p-4 text-sm font-bold text-slate-500 light:text-slate-600 dark:border-white/10 dark:text-slate-400 sm:col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
+            <p className="rounded-xl border border-dashed border-slate-200 light:border-slate-300 p-4 text-sm font-bold text-slate-500 light:text-slate-600 dark:border-white/10 dark:text-slate-400 col-span-2 lg:col-span-3"><UiText>{" Connect Instagram to enable account stats. "}</UiText></p>
           )}
         </div>
       </section>
 
-      <details className="group ap3k-card ap3k-content-enter rounded-2xl">
+      {connected && <details className="group ap3k-card ap3k-content-enter rounded-2xl">
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
@@ -210,7 +210,7 @@ export default async function InstagramAccountPage({
             {connected && <RemoveInstagramAccountButton integrationId={instagram!.id} />}
           </div>
         </div>
-      </details>
+      </details>}
     </div>
   );
 }
@@ -257,7 +257,7 @@ function SettingsStatCard({
         </p>
         <p
           className={[
-            "text-xl font-black tracking-tight",
+            "break-words text-xl font-black tracking-tight",
             stat.enabled
               ? "text-slate-950 dark:text-white"
               : "text-slate-500 light:text-slate-600 dark:text-slate-400",
@@ -268,7 +268,7 @@ function SettingsStatCard({
             : stat.value}
         </p>
       </div>
-      <p className="mt-1 hidden truncate text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
+      <p className="mt-1 text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
         {stat.subtitle}
       </p>
     </div>

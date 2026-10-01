@@ -72,19 +72,19 @@ export async function getInstagramContacts() {
       email: contacts.get(lead.igUserId)?.email || lead.email,
       emailCollectedAt:
         contacts.get(lead.igUserId)?.emailCollectedAt || lead.emailCollectedAt,
-      recipientUsername: lead.igUsername,
+      recipientUsername: contacts.get(lead.igUserId)?.recipientUsername || lead.igUsername,
       profilePictureUrl: null,
-      lastMessageAt: lead.createdAt,
+      lastMessageAt: contacts.get(lead.igUserId)?.lastMessageAt || lead.createdAt,
       automation: lead.automation,
     });
   }
   for (const conversation of conversations) {
     contacts.set(conversation.recipientIgId, {
       ...conversation,
-      phone: contacts.get(conversation.recipientIgId)?.phone,
-      email: contacts.get(conversation.recipientIgId)?.email,
-      emailCollectedAt: contacts.get(conversation.recipientIgId)
-        ?.emailCollectedAt,
+      phone: conversation.phone || contacts.get(conversation.recipientIgId)?.phone,
+      email: conversation.email || contacts.get(conversation.recipientIgId)?.email,
+      emailCollectedAt: conversation.emailCollectedAt || contacts.get(conversation.recipientIgId)?.emailCollectedAt,
+      recipientUsername: conversation.recipientUsername || contacts.get(conversation.recipientIgId)?.recipientUsername,
       conversationId: conversation.id,
     });
   }

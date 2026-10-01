@@ -1081,7 +1081,7 @@ describe("Meta webhook route security", () => {
             ctaUrl: undefined,
             mediaUrl: undefined,
             linkButtons: [],
-            message: expect.stringContaining("SKIP"),
+            message: "Reply with your email",
           }),
         );
         expect(mockFinishEngagementJob).toHaveBeenCalledWith(

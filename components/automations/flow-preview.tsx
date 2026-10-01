@@ -79,22 +79,11 @@ export function advanceFlowPreview(
       waiting = node;
       break;
     }
-    const responseHint =
-      node.kind === "email"
-        ? "email"
-        : node.kind === "phone"
-          ? "phone number"
-          : node.kind === "capture"
-            ? "answer"
-            : null;
     messages.push({
       text:
         resolveFlowText(node.text, values) +
         (node.kind === "product" && node.subtitle
           ? `\n${resolveFlowText(node.subtitle, values)}`
-          : "") +
-        (responseHint
-          ? `\n\nReply SKIP to continue without sharing your ${responseHint}, or STOP to cancel.`
           : ""),
       image: node.kind === "product" ? node.image : undefined,
       links: "links" in node ? node.links : undefined,

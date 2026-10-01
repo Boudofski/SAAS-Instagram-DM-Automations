@@ -25,6 +25,21 @@ describe("incoming Instagram events cannot cross account boundaries", () => {
     expect(db.conversation.upsert.mock.calls[1][0].where).toEqual({ integrationId_recipientIgId: { integrationId: "account-b", recipientIgId: "person" } });
     expect(db.conversation.upsert.mock.calls[1][0].create.integrationId).toBe("account-b");
   });
+  it.each([
+    ["Person@Example.com", { email: "person@example.com" }],
+    ["+1 (415) 555-0123", { phone: "+14155550123" }],
+  ])("saves %s to the exact sender on the receiving account", async (content, fields) => {
+    await upsertInboundInboxMessage({ userId: "owner", integrationId: "account-b", senderIgId: "sender-b", content: content as string });
+    const write = db.conversation.upsert.mock.calls[0][0];
+    expect(write.where).toEqual({ integrationId_recipientIgId: { integrationId: "account-b", recipientIgId: "sender-b" } });
+    expect(write.create).toMatchObject(fields);
+    expect(write.update).toMatchObject(fields);
+  });
+  it.each(["STOP", "SKIP", "Email someone@example.com for help", "hello", "123"])("does not turn incidental text or %s into contact details", async content => {
+    await upsertInboundInboxMessage({ userId: "owner", integrationId: "account-a", senderIgId: "person", content });
+    expect(db.conversation.upsert.mock.calls[0][0].update).not.toHaveProperty("email");
+    expect(db.conversation.upsert.mock.calls[0][0].update).not.toHaveProperty("phone");
+  });
   it("records outbound messages in the automation's account", async () => {
     await recordOutboundInboxMessage({ userId: "owner", integrationId: "account-b", recipientIgId: "person", automationId: "automation-b", content: "B reply" });
     expect(db.conversation.upsert.mock.calls[0][0].where.integrationId_recipientIgId.integrationId).toBe("account-b");

@@ -271,7 +271,7 @@ export default function EditorPreview({
                         {data.phoneCaptureEnabled && (
                           <>
                             {bubble(
-                              `${data.phoneCapturePrompt || tr("What’s your phone number, including country code?")}\n\n${tr("Reply SKIP to continue or STOP to cancel.")}`,
+                              data.phoneCapturePrompt || tr("What’s your phone number, including country code?"),
                             )}
                             {bubble("+1 415 555 0123", [], true)}
                           </>

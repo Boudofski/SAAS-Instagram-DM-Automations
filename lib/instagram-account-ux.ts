@@ -108,6 +108,7 @@ export function getDashboardProfileStats(input: {
   snapshotComparison: SnapshotComparisonLike;
   metrics: DashboardMetricsLike | null;
   usage: UsageSummary | null;
+  connected?: boolean;
 }) {
   const snapshot = input.snapshotComparison?.current;
   const neutralChange: ChangeSummary = { label: "—", tone: "neutral", value: null };
@@ -152,7 +153,6 @@ export function getDashboardProfileStats(input: {
     },
   ];
 
-  return messagingReviewMode
-    ? stats.filter((stat) => stat.label !== "Reply Rate")
-    : stats;
+  const visible = messagingReviewMode ? stats.filter((stat) => stat.label !== "Reply Rate") : stats;
+  return input.connected === false ? visible.map(stat => ({ ...stat, value: "—", change: neutralChange, subtitle: "Connect Instagram" })) : visible;
 }

@@ -21,7 +21,7 @@ describe("account recreation hotfix contracts", () => {
     const dashboardLayout = source("app/(protected)/dashboard/[slug]/layout.tsx");
 
     expect(dashboardLayout).toContain("if (userResult.status === 404)");
-    expect(dashboardLayout).toContain('redirect("/onboarding/connect")');
+    expect(dashboardLayout).toContain('redirect("/onboarding")');
   });
 
   it("uses an explicit dark onboarding surface with readable inherited text", () => {

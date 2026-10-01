@@ -67,7 +67,7 @@ export default function ReviewInstagramAccountProfile({
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Connect an Instagram Business or Creator account to get started. "}</UiText></p>
-            <Link href="/onboarding/connect" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm"><UiText>{"Connect Instagram"}</UiText></Link>
+            <Link href="/onboarding" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm"><UiText>{"Connect Instagram"}</UiText></Link>
           </div>
         )}
       </div>

@@ -105,3 +105,8 @@ describe("instagram account UX helpers", () => {
     ]);
   });
 });
+
+it("does not show refresh requests, activity or usage for an unconnected account", () => {
+  const stats = getDashboardProfileStats({ connected: false, snapshotComparison: null, metrics: null, usage: null });
+  expect(stats.every(stat => stat.value === "—" && stat.subtitle === "Connect Instagram")).toBe(true);
+});

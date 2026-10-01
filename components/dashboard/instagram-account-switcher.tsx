@@ -77,7 +77,7 @@ export default function InstagramAccountSwitcher({ slug, expanded = true }: { sl
           </DropdownMenuItem>)}
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/account`} className="gap-2"><Settings className="h-4 w-4" />{copy.manage}</Link></DropdownMenuItem>
+        {selected?.status === "CONNECTED" && <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/account`} className="gap-2"><Settings className="h-4 w-4" />{copy.manage}</Link></DropdownMenuItem>}
         {data?.additionsEnabled && (atLimit ? <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/${data.plan === "BUSINESS" ? "account" : "billing"}`} className="gap-2 text-violet-600"><Plus className="h-4 w-4 shrink-0" />{data.plan === "BUSINESS" ? copy.manage : copy.upgrade}</Link></DropdownMenuItem> : <DropdownMenuItem disabled={busy || !data} onSelect={() => void connect()} className="gap-2 text-violet-600"><Plus className="h-4 w-4" />{copy.add}</DropdownMenuItem>)}
       </DropdownMenuContent>
     </DropdownMenu>

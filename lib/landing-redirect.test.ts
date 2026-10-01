@@ -25,7 +25,7 @@ describe("authenticated landing redirect", () => {
           automations: [{ id: "automation-1" }],
         }
       )
-    ).toBe("/onboarding/connect");
+    ).toBe("/onboarding");
   });
 
   it("allows onboarding complete only for a valid Instagram connection with no campaign yet", () => {
@@ -46,6 +46,6 @@ describe("authenticated landing redirect", () => {
   });
 
   it("sends authenticated users without a workspace to onboarding connect", () => {
-    expect(getAuthenticatedLandingRedirect({ id: "clerk-a" }, null)).toBe("/onboarding/connect");
+    expect(getAuthenticatedLandingRedirect({ id: "clerk-a" }, null)).toBe("/onboarding");
   });
 });

@@ -49,8 +49,8 @@ describe("AP3K email catalog", () => {
 
   it("routes every default CTA to the action promised by its label", () => {
     const expectedPrimaryUrls = {
-      welcome: "/onboarding/connect",
-      connect_instagram: "/onboarding/connect",
+      welcome: "/onboarding",
+      connect_instagram: "/onboarding",
       instagram_connected: "/dashboard?next=%2Fautomation%2Fnew",
       automation_activated: "/dashboard?next=%2Fautomation",
       automation_needs_attention: "/dashboard?next=%2Fautomation",
