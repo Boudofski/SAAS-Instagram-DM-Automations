@@ -85,7 +85,7 @@
 .aa-activity-list { margin-top: 20px; }
 .aa-activity { padding: 12px 0; display: flex; align-items: center; gap: 12px; font-size: 12px; border-top: 1px solid var(--aa-border); }
 .aa-contact-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--aa-icon-bg); color: var(--aa-icon); flex-shrink: 0; }
-.aa-activity strong { font-weight: 500; }
+.aa-activity strong { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
 .aa-activity-kind, .aa-activity time { color: var(--aa-muted); }
 .aa-activity time { margin-left: auto; font-size: 11px; }
 .automation-analytics-page .aa-tracking-note { color: var(--aa-muted); font-size: 12px; line-height: 19px; padding: 0 4px; }

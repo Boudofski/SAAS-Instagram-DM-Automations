@@ -98,7 +98,7 @@ describe("persistent flow delivery", () => {
   it("starts email collection without delivering the resource early", async () => {
     expect(await processAutomationFlow(input)).toBe(true);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send.mock.calls[0][0].message).toContain("SKIP");
+    expect(send.mock.calls[0][0].message).not.toContain("Reply SKIP");
     expect(db.automationFlowSession.updateMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: "WAITING", nodeId: "email" }),

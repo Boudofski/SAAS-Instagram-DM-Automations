@@ -1,3 +1,4 @@
+import { emailRequestMessage } from "./automation-engagement-settings";
 import { describe, expect, it } from "vitest";
 import {
   followUpEligible,
@@ -176,4 +177,8 @@ describe("phone capture and conditional follow-ups", () => {
       }),
     ).toBe(true);
   });
+});
+
+it("sends only the configured contact prompt", () => {
+  expect(emailRequestMessage("  Where should we send your guide?  ")).toBe("Where should we send your guide?");
 });

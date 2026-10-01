@@ -114,7 +114,7 @@ export default function AutomationAnalyticsView({ data, slug }: { data: Automati
         </header>
         <div role="tabpanel" id="automation-activity-panel" aria-labelledby={`automation-activity-${tab}`} tabIndex={0}>
           {!data.recent[tab].length ? <p className="aa-empty">No data available</p> : <div className="aa-activity-list">{data.recent[tab].map(row => <div className="aa-activity" key={row.id}>
-            <span className="aa-contact-icon"><UsersRound size={17} /></span><strong>Contact {row.recipient}</strong><span className="aa-activity-kind">{tab === "hits" ? `${row.source === "COMMENT" ? "Comment" : row.source === "STORY" ? "Story" : "Message"} trigger` : tab === "follows" ? "New follower" : countryName(row.country ?? null)}</span><time dateTime={row.createdAt}>{new Date(row.createdAt).toLocaleString()}</time>
+            <span className="aa-contact-icon"><UsersRound size={17} /></span><strong><bdi dir="ltr">{row.recipient}</bdi></strong><span className="aa-activity-kind">{tab === "hits" ? `${row.source === "COMMENT" ? "Comment" : row.source === "STORY" ? "Story" : "Message"} trigger` : tab === "follows" ? "New follower" : countryName(row.country ?? null)}</span><time dateTime={row.createdAt}>{new Date(row.createdAt).toLocaleString()}</time>
           </div>)}</div>}
         </div>
       </section>

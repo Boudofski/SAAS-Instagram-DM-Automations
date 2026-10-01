@@ -1,3 +1,4 @@
+import { parseEmailReply, parsePhoneReply } from "@/lib/automation-engagement-settings";
 import { readFlowTriggers, matchFlowTrigger, type FlowTrigger } from "@/lib/automation-flow/triggers";
 import { resolveInstagramMediaConnection } from "@/lib/instagram-media";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
@@ -744,9 +745,20 @@ export const upsertInboundInboxMessage = async (data: {
     });
     if (existing) return existing.conversationId;
   }
+  // Only explicit, whole-message contact values are captured. The account and
+  // sender form the contact key; display names are never used for identity.
+  const emailReply = parseEmailReply(data.content);
+  const phoneReply = parsePhoneReply(data.content);
+  const contactFields = !data.messageType || data.messageType === "TEXT"
+    ? {
+        ...(emailReply.kind === "email" ? { email: emailReply.email, emailCollectedAt: occurredAt } : {}),
+        ...(phoneReply.kind === "phone" ? { phone: phoneReply.phone } : {}),
+      }
+    : {};
   const conversation = await client.conversation.upsert({
     where: { integrationId_recipientIgId: { integrationId: data.integrationId, recipientIgId: data.senderIgId } },
     create: {
+      ...contactFields,
       userId: data.userId,
       integrationId: data.integrationId,
       recipientIgId: data.senderIgId,
@@ -758,6 +770,7 @@ export const upsertInboundInboxMessage = async (data: {
       unreadCount: 1,
     },
     update: {
+      ...contactFields,
       automationId: data.automationId,
       recipientUsername: data.username,
       profilePictureUrl: data.profilePictureUrl,

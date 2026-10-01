@@ -11,7 +11,7 @@ export default async function OnboardingCompletePage() {
   const instagram = getCanonicalInstagramIntegration(user.status === 200 ? user.data?.integrations : null);
 
   if (!instagram) {
-    redirect("/onboarding/connect");
+    redirect("/onboarding");
   }
 
   return <ChoosePlan slug={slug} paid={["PRO", "BUSINESS"].includes(user.data?.subscription?.plan ?? "FREE")} />;

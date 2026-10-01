@@ -131,7 +131,7 @@ export async function notifyWelcomeEmail(input: {
     user,
     idempotencyKey: `welcome:${input.id}`,
     context: {
-      actionUrl: `${getApplicationUrl()}/onboarding/connect`,
+      actionUrl: `${getApplicationUrl()}/onboarding`,
       secondaryUrl: workspaceUrl(input.clerkId),
     },
   });

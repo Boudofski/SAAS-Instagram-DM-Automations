@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ automation: vi.fn(), query: vi.fn(), hits: vi.fn(), follows: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({ client: { automation: { findFirst: mocks.automation }, $queryRaw: mocks.query, automationHit: { findMany: mocks.hits }, automationFollowerState: { findMany: mocks.follows } } }));
+const mocks = vi.hoisted(() => ({ automation: vi.fn(), query: vi.fn(), hits: vi.fn(), follows: vi.fn(), contacts: vi.fn(), conversations: vi.fn() }));
+vi.mock("@/lib/prisma", () => ({ client: { lead: { findMany: mocks.contacts }, conversation: { findMany: mocks.conversations }, automation: { findFirst: mocks.automation }, $queryRaw: mocks.query, automationHit: { findMany: mocks.hits }, automationFollowerState: { findMany: mocks.follows } } }));
 import { getAutomationAnalytics } from "./automation-analytics";
 const automationId = "00000000-0000-0000-0000-000000000001";
 const integrationId = "00000000-0000-0000-0000-000000000002";
@@ -9,6 +9,8 @@ const createdAt = new Date("2026-09-26T09:00:00Z");
 function sqlText(call: any[]) { return call[0].join("?"); }
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.contacts.mockResolvedValue([{ igUserId: "1234567890", igUsername: "actual.creator" }]);
+  mocks.conversations.mockResolvedValue([]);
   mocks.automation.mockResolvedValue({ id: automationId, name: "Guide", active: true, createdAt, source: "COMMENT", followGateRequired: true, posts: [{ media: "https://example.com/post.jpg" }], listener: { dmCount: 2, commentCount: 3 } });
   mocks.query.mockImplementation(async (parts: TemplateStringsArray) => {
     const sql = parts.join("?");
@@ -62,11 +64,24 @@ describe("account-scoped automation analytics", () => {
     expect(sqlText(mocks.query.mock.calls[2])).toContain("LIMIT 10");
     expect(mocks.query.mock.calls[3]).toContain(50);
   });
-  it("exposes only masked recipient identifiers", async () => {
+  it("shows the saved username without exposing raw recipient identifiers", async () => {
     const result = await getAutomationAnalytics(automationId, "owner", integrationId, now);
-    expect(result?.recent.hits[0].recipient).toBe("••••7890");
+    expect(result?.recent.hits[0].recipient).toBe("@actual.creator");
     expect(JSON.stringify(result)).not.toContain("1234567890");
     expect(JSON.stringify(result)).not.toContain("recipientIgId");
+  });
+  it("uses the latest inbox username within the authenticated account", async () => {
+    mocks.conversations.mockResolvedValue([{ recipientIgId: "1234567890", recipientUsername: "@renamed.creator" }]);
+    const result = await getAutomationAnalytics(automationId, "owner", integrationId, now);
+    expect(result?.recent.clicks[0].recipient).toBe("@renamed.creator");
+    expect(result?.recent.follows[0].recipient).toBe("@renamed.creator");
+    expect(mocks.contacts.mock.calls[0][0].where.automation).toEqual({ integrationId, User: { clerkId: "owner" } });
+    expect(mocks.conversations.mock.calls[0][0].where).toMatchObject({ integrationId, user: { clerkId: "owner" }, recipientIgId: { in: ["1234567890"] } });
+  });
+  it("never invents a username when Meta has not supplied one", async () => {
+    mocks.contacts.mockResolvedValue([]);
+    const result = await getAutomationAnalytics(automationId, "owner", integrationId, now);
+    expect(result?.recent.hits[0].recipient).toBe("Instagram user");
   });
   it("returns real zeros and no invented tracking start for an empty automation", async () => {
     mocks.query.mockImplementation(async (parts: TemplateStringsArray) => parts.join("").includes('AS "uniqueHitRecipients"') ? [{ hits: BigInt(0), uniqueHitRecipients: BigInt(0), clicks: BigInt(0), eligibleNonFollowers: BigInt(0), newFollowers: BigInt(0), trackingStartedAt: null }] : []);

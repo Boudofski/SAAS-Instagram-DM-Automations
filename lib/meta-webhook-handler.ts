@@ -2702,7 +2702,7 @@ async function processConfiguredMessageAutomation(params: {
       )
     : needsEmailRequest
       ? captureKind === "PHONE"
-        ? `${automation.listener.phoneCapturePrompt || "What’s your phone number, including country code?"}\n\nReply SKIP to continue without sharing your phone number, or STOP to cancel.`
+        ? (automation.listener.phoneCapturePrompt || "What’s your phone number, including country code?").trim()
         : emailRequestMessage(
             automation.listener.emailCapturePrompt ||
               "What’s your email address?",

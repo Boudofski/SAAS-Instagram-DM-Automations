@@ -16,7 +16,7 @@ export type AutomationAnalytics = {
 type Count = number | bigint;
 type Totals = { hits: Count; uniqueHitRecipients: Count; clicks: Count; eligibleNonFollowers: Count; newFollowers: Count; trackingStartedAt: Date | null };
 type ActivityRow = { id: string; recipientIgId: string; createdAt: Date; source?: string; country?: string | null };
-const activity = ({ recipientIgId, createdAt, ...row }: ActivityRow): AutomationActivity => ({ ...row, recipient: `••••${recipientIgId.slice(-4)}`, createdAt: createdAt.toISOString() });
+
 const percent = (numerator: number, denominator: number) => denominator ? Math.round(numerator / denominator * 1000) / 10 : 0;
 
 /** Owner and selected account are checked before any analytics query is issued. */
@@ -63,6 +63,24 @@ export async function getAutomationAnalytics(automationId: string, clerkId: stri
         ORDER BY c."createdAt" DESC, c.id DESC LIMIT ${ANALYTICS_RECENT_LIMIT}`,
     client.automationFollowerState.findMany({ where: { automationId, integrationId, firstFollowing: false, followedAt: { not: null } }, orderBy: [{ followedAt: "desc" }, { id: "desc" }], take: ANALYTICS_RECENT_LIMIT, select: { id: true, recipientIgId: true, followedAt: true } }),
   ]);
+  const recipients = Array.from(new Set([...hits, ...clicks, ...follows].map(row => row.recipientIgId)));
+  const [contacts, conversations] = recipients.length ? await Promise.all([
+    client.lead.findMany({
+      where: { igUserId: { in: recipients }, igUsername: { not: null }, automation: { integrationId, User: { clerkId } } },
+      distinct: ["igUserId"], orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { igUserId: true, igUsername: true },
+    }),
+    client.conversation.findMany({
+      where: { integrationId, user: { clerkId }, recipientIgId: { in: recipients }, recipientUsername: { not: null } },
+      select: { recipientIgId: true, recipientUsername: true },
+    }),
+  ]) : [[], []];
+  const usernames = new Map(contacts.map(contact => [contact.igUserId, contact.igUsername]));
+  for (const conversation of conversations) usernames.set(conversation.recipientIgId, conversation.recipientUsername);
+  const activity = ({ recipientIgId, createdAt, ...row }: ActivityRow): AutomationActivity => {
+    const username = usernames.get(recipientIgId)?.trim().replace(/^@+/, "");
+    return { ...row, recipient: username ? `@${username}` : "Instagram user", createdAt: createdAt.toISOString() };
+  };
   const raw = totalsRows[0];
   const totals = { hits: Number(raw.hits), uniqueHitRecipients: Number(raw.uniqueHitRecipients), clicks: Number(raw.clicks), eligibleNonFollowers: Number(raw.eligibleNonFollowers), newFollowers: Number(raw.newFollowers) };
   const dayMap = new Map(dailyRows.map(day => [day.date, day]));

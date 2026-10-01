@@ -183,7 +183,7 @@ export function QuickEngagementRows({
         >
           {field("Email request", "emailCapturePrompt")}
           <p className={s.hint}>
-            {tr("Saved to Contacts. Reply SKIP to continue or STOP to cancel.")}
+            {tr("Saved to the sender’s contact in Contacts.")}
           </p>
         </EditorRow>
       )}
@@ -197,7 +197,7 @@ export function QuickEngagementRows({
         >
           {field("Phone request", "phoneCapturePrompt")}
           <p className={s.hint}>
-            {tr("Saved to Contacts. Reply SKIP to continue or STOP to cancel.")}
+            {tr("Saved to the sender’s contact in Contacts.")}
           </p>
         </EditorRow>
       )}

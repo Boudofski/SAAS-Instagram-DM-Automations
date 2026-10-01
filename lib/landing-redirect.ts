@@ -19,9 +19,9 @@ export function getAuthenticatedLandingRedirect(
   if (!user) return null;
   if (profile?.clerkId) {
     const instagram = getCanonicalInstagramIntegration(profile.integrations);
-    if (!instagram) return options.onboardingPath ?? "/onboarding/connect";
+    if (!instagram) return options.onboardingPath ?? "/onboarding";
     if (!profile.automations?.length) return "/onboarding/complete";
     return dashboardPath(profile.clerkId);
   }
-  return options.onboardingPath ?? "/onboarding/connect";
+  return options.onboardingPath ?? "/onboarding";
 }

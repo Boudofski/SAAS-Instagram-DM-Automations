@@ -77,7 +77,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     currentAccountLabel: displayInstagramUsername ? `@${displayInstagramUsername}` : "Current account",
   }));
 
-  const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage });
+  const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage, connected: instagramConnected });
 
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
@@ -134,7 +134,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
           <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
         </div>
-        <div className="mb-3 flex ap3k-content-enter flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {instagramConnected && <div className="mb-3 flex ap3k-content-enter flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
           {[
             ["24h", "Last 24h"],
@@ -157,14 +157,15 @@ export default async function DashboardPage({ params, searchParams }: Props) {
           ))}
           </div>
           <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
-        </div>
-        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 xl:grid-cols-5">
+        </div>}
+        {!instagramConnected && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300">Connect Instagram to see your account performance and start collecting leads.</p><Link href={`/dashboard/${params.slug}/integrations`} className="ap3k-gradient-button shrink-0 px-4 py-2.5 text-center text-sm">Add Instagram account</Link></div>}
+        <div className={`grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 ${dashboardProfileStats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}
               label={stat.label}
               value={stat.value}
-              change={
+              change={!instagramConnected ? undefined :
                 stat.label === "Comments" ? changes?.commentsReceived :
                 stat.label === "Leads" ? changes?.leadsCaptured :
                 stat.label === "Replies" ? changes?.staticRepliesUsed :

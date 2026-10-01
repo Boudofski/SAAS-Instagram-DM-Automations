@@ -124,7 +124,7 @@ export function followUpEligible(
 }
 
 export function emailRequestMessage(prompt: string) {
-  return `${prompt.trim()}\n\nReply SKIP to receive the link without sharing your email, or STOP to cancel.`;
+  return prompt.trim();
 }
 
 export function parsePhoneReply(
