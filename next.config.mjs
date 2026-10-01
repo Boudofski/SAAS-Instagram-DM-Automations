@@ -61,7 +61,9 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "geolocation=(), microphone=(), browsing-topics=()",
+            // Same-origin recording still requires the browser's microphone permission.
+            // Keep this on the document: client-side navigation retains its policy.
+            value: "geolocation=(), microphone=(self), browsing-topics=()",
           },
           { key: "X-DNS-Prefetch-Control", value: "off" },
         ],
