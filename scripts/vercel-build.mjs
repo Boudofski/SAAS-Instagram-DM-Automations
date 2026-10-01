@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { migrationUrl } from "./migration-url.mjs";
+import { ensureQStashSchedule } from "./qstash-schedule.mjs";
 
 function run(command, args, env = process.env) {
   const result = spawnSync(command, args, { env, shell: false, stdio: "inherit" });
@@ -42,3 +43,10 @@ if (process.env.VERCEL_ENV === "production") {
 }
 
 runOrExit(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"]);
+
+try {
+  console.log(`QStash scheduler: ${await ensureQStashSchedule()}`);
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
