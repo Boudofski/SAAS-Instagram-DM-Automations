@@ -411,12 +411,13 @@ export default function FlowBuilder({
           : `Keyword is ${t.keyword || "…"}`,
   }));
   const headerButton =
-    "grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 light:text-slate-600 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
+    "grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate-500 light:text-slate-600 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
   if (!mounted) return null;
   return createPortal(
     <div
-      className="font-sans fixed inset-0 z-40 flex flex-col bg-[#f5f5f5] text-slate-950 dark:bg-[#0d1421] dark:text-slate-100"
+      className="flow-editor-shell font-sans fixed inset-x-0 top-0 h-[100dvh] z-40 flex flex-col bg-[#f5f5f5] text-slate-950 dark:bg-[#0d1421] dark:text-slate-100"
       onKeyDown={(e) => {
+        if (e.key === "Escape") setTriggerPanel(false);
         if (
           (e.metaKey || e.ctrlKey) &&
           e.key === "z" &&
@@ -467,7 +468,7 @@ export default function FlowBuilder({
               value={doc.name}
               maxLength={120}
               onChange={(e) => patch({ name: e.target.value })}
-              className="min-w-0 max-w-[340px] flex-1 bg-transparent text-sm font-semibold outline-none focus:rounded focus:ring-2 focus:ring-violet-400"
+              className="min-w-0 max-w-[340px] flex-1 bg-transparent text-base sm:text-sm font-semibold outline-none focus:rounded focus:ring-2 focus:ring-violet-400"
             />
             <Pencil
               size={13}
@@ -523,16 +524,17 @@ export default function FlowBuilder({
           </button>
           <button
             aria-label="Save draft"
+            aria-busy={busy}
             disabled={busy}
             onClick={() => void save(false)}
             className={headerButton}
           >
-            <Save size={17} />
+            {busy ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
           </button>
           <button
             onClick={() => void save(true)}
             disabled={busy || generating}
-            className="h-9 shrink-0 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 px-3 text-xs font-medium text-white disabled:opacity-50 sm:px-4"
+            className="flow-primary-button h-11 shrink-0 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 sm:px-4"
           >
             {busy ? "Saving…" : "Publish"}
           </button>
@@ -740,6 +742,8 @@ export default function FlowBuilder({
             <FlowCanvas
               flow={doc.flow}
               onChange={changeFlow}
+              triggerPanelOpen={triggerPanel}
+              onOpenStep={() => setTriggerPanel(false)}
               triggers={triggerSummary}
               onEditTrigger={(id) => {
                 setEditingTrigger(id);
@@ -787,9 +791,9 @@ export default function FlowBuilder({
           {triggerPanel && (
             <aside
               aria-label="Trigger settings"
-              className="absolute inset-y-0 right-0 z-30 flex w-full max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
+              className="absolute inset-y-0 right-0 z-30 flex w-full max-w-none sm:max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
             >
-              <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
+              <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
                 <Diamond size={17} />
                 <h2 className="flex-1 text-sm font-semibold">Begin when…</h2>
                 <button
@@ -800,7 +804,7 @@ export default function FlowBuilder({
                   <X size={18} />
                 </button>
               </header>
-              <div className="min-h-0 overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
                 <FlowTriggerEditor
                   trigger={doc.triggers.find((t) => t.id === editingTrigger)}
                   posts={posts}
@@ -889,8 +893,8 @@ export default function FlowBuilder({
           )}
         </main>
         <Dialog open={assistant} onOpenChange={setAssistant}>
-          <DialogContent className="font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
-            <header className="flex min-h-16 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 pe-14 dark:border-white/5">
+          <DialogContent className="flow-editor-dialog font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
+            <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 pe-14 dark:border-white/5">
               <Sparkles size={20} className="text-violet-500 light:text-violet-700" />
               <DialogTitle className="text-sm font-semibold">
                 Flow Assistant
@@ -989,7 +993,7 @@ export default function FlowBuilder({
           </DialogContent>
         </Dialog>
         <Dialog open={preview} onOpenChange={setPreview}>
-          <DialogContent className="max-w-[400px] bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
+          <DialogContent className="flow-editor-dialog max-h-[calc(100dvh-2rem)] max-w-[400px] overflow-y-auto bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
             <DialogTitle>Preview your flow</DialogTitle>
             <DialogDescription>
               This simulation does not send messages to Instagram.

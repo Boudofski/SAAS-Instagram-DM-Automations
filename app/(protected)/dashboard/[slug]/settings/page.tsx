@@ -7,7 +7,7 @@ import { ManageSignInSettings } from "@/components/settings/manage-sign-in-setti
 import { EmailPreferences } from "@/components/settings/email-preferences";
 import { getEmailPreferences } from "@/lib/email/delivery";
 import { getEmailSettingsState } from "@/lib/settings-safety";
-import { LockKeyhole, Mail, Palette, ShieldAlert } from "lucide-react";
+import { LockKeyhole, Mail, Palette, ShieldAlert, Languages } from "lucide-react";
 import type { ReactNode } from "react";
 
 async function SettingsPage() {
@@ -28,16 +28,16 @@ async function SettingsPage() {
           <UiText>{"Settings"}</UiText>
         </h1>
         <p className="mt-1 text-sm text-slate-500 light:text-slate-600 dark:text-slate-400">
-          <UiText>{"Appearance, sign-in, and account controls."}</UiText>
+          <UiText>{"Appearance, language, notifications, and account controls."}</UiText>
         </p>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[0.78fr_1.22fr]">
+      <div className="grid items-stretch gap-4 sm:grid-cols-2">
         <SettingsSection
           icon={<Palette className="h-4.5 w-4.5" />}
           label="Appearance"
         >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-start">
+          <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-sm font-black text-slate-950 dark:text-white">
                 <UiText>{"Theme"}</UiText>
@@ -46,12 +46,18 @@ async function SettingsPage() {
                 <UiText>{"Switch AP3K between light and dark mode."}</UiText>
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <ThemeToggle />
-              <LanguageSwitcher />
+            <div className="w-full">
+              <ThemeToggle className="!w-full" />
             </div>
           </div>
         </SettingsSection>
+
+        <SettingsSection icon={<Languages className="h-4.5 w-4.5" />} label="Language">
+          <h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>Display language</UiText></h2>
+          <p className="mb-4 mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400"><UiText>Choose the language you use in AP3K.</UiText></p>
+          <LanguageSwitcher className="!h-12 !w-full !max-w-none !justify-between !rounded-xl !px-4" />
+        </SettingsSection>
+      </div>
 
         <SettingsSection
           icon={<LockKeyhole className="h-4.5 w-4.5" />}
@@ -76,7 +82,6 @@ async function SettingsPage() {
             <ManageSignInSettings />
           </div>
         </SettingsSection>
-      </div>
 
       <SettingsSection
         icon={<Mail className="h-4.5 w-4.5" />}
