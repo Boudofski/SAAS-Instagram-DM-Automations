@@ -1,4 +1,5 @@
 "use client";
+import { MentionText } from "./mention-text";
 
 import { emailRequestMessage } from "@/lib/automation-engagement-settings";
 import { useUi } from "@/components/i18n/use-ui";
@@ -222,7 +223,7 @@ function IncomingBubble({ avatar, text, buttons = [] }: { avatar: React.ReactNod
     <div className="flex items-end gap-2">
       {avatar}
       <div className="max-w-[82%] overflow-hidden rounded-2xl rounded-bl-sm bg-[#262628] text-[11px] leading-[1.45]">
-        <p dir="auto" className="whitespace-pre-wrap break-words px-3 py-2.5">{text}</p>
+        <p dir="auto" className="whitespace-pre-wrap break-words px-3 py-2.5"><MentionText text={text}/></p>
         {buttons.map((button, index) => (
           <div key={`${button.label}-${index}`} dir="auto" className="border-t border-white/10 px-3 py-2 text-center font-black text-white">
             {button.label || tr("Link {number}").replace("{number}", String(index + 1))}
@@ -234,14 +235,14 @@ function IncomingBubble({ avatar, text, buttons = [] }: { avatar: React.ReactNod
 }
 
 function OutgoingBubble({ text }: { text: string }) {
-  return <p dir="auto" className="ms-auto w-fit max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4">{text}</p>;
+  return <p dir="auto" className="ms-auto w-fit max-w-[74%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7047ff] to-[#bb28ec] px-3 py-2 text-[11px] leading-4"><MentionText text={text}/></p>;
 }
 
 function Comment({ avatar, username, text, profilePictureUrl }: { avatar: string; username: string; text: string; profilePictureUrl?: string | null }) {
   return (
     <div className="flex items-start gap-3">
       <Avatar src={profilePictureUrl} name={avatar} size="sm" />
-      <div className="min-w-0 flex-1 text-[11px] leading-4"><p><strong><bdi dir="ltr">{username}</bdi></strong> <span className="text-white/45"><UiText>{"Now"}</UiText></span></p><p dir="auto" className="break-words">{text}</p><p className="mt-1 text-white/35"><UiText>{"Reply"}</UiText></p></div>
+      <div className="min-w-0 flex-1 text-[11px] leading-4"><p><strong><bdi dir="ltr">{username}</bdi></strong> <span className="text-white/45"><UiText>{"Now"}</UiText></span></p><p dir="auto" className="break-words"><MentionText text={text}/></p><p className="mt-1 text-white/35"><UiText>{"Reply"}</UiText></p></div>
       <Heart className="mt-2 h-4 w-4 text-white/45" />
     </div>
   );

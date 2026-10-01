@@ -4,7 +4,7 @@ import { linkButtonsAreComplete, type LinkButton } from "./link-buttons";
 export const MAX_COMMENT_REPLIES = 20;
 export const MAX_MESSAGE_VARIATIONS = 10;
 export const PUBLIC_REPLY_LIMITS = [0, 100, 200] as const;
-export const DEFAULT_COMMENT_PROMPT = "Thank Username for commenting, use a friendly, brief tone and a happy emoji. Invite them to check their DMs or message requests for the next step. Always include Username in every reply.";
+export const DEFAULT_COMMENT_PROMPT = "Thanks Username for commenting! Check your DMs for a special link just for you.";
 export const DEFAULT_COMMENT_ONLY_PROMPT = "Thank Username for commenting. Reply briefly and warmly using the post context and a happy emoji. Always include Username in every reply. Do not mention DMs.";
 
 export function normalizeCopyList(value: unknown, maxItems = MAX_COMMENT_REPLIES, maxLength = 1000): string[] {

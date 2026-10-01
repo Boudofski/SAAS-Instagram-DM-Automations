@@ -1,4 +1,5 @@
 "use client";
+import { MentionText } from "./mention-text";
 import type { ReactNode } from "react";
 import { Link2 } from "lucide-react";
 import styles from "./editor-preview.module.css";
@@ -76,7 +77,7 @@ export default function InstagramPreviewMessage({
             alt="Product preview"
           />
         )}
-        {text && <p dir="auto">{text}</p>}
+        {text && <p dir="auto"><MentionText text={text}/></p>}
         {cards && (
           <div className={styles.carousel} aria-label="Preview carousel cards">
             {cards.map((card, index) => (

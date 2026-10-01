@@ -528,6 +528,21 @@ function maskId(value?: string | null) {
  * Finds the first active automation with a DM trigger that has a keyword
  * matching the DM text, for the given Instagram account.
  */
+async function sharedPostBelongsToAccount(automation: AutomationWithRelations, mediaId: string) {
+  const integration = automation.User?.integrations.find(i => i.id === automation.integrationId);
+  const connection = resolveInstagramMediaConnection(integration ? [integration] : []);
+  const token = resolveIntegrationSendToken(integration);
+  if (!integration?.instagramId || !connection.ok || !token.ok) return false;
+  try {
+    const url = new URL(`${connection.apiBaseUrl}/${encodeURIComponent(mediaId)}`);
+    url.searchParams.set("fields", "id,owner");
+    const response = await fetch(url, {headers:{Authorization:`Bearer ${token.token}`},signal:AbortSignal.timeout(4000),cache:"no-store"});
+    if (!response.ok) return false;
+    const media = await response.json() as {id?:string;owner?:{id?:string}};
+    return media.id === mediaId && media.owner?.id === integration.instagramId;
+  } catch { return false; }
+}
+
 export const findAutomationForDM = async (
   dmText: string,
   pageId: string,
@@ -603,7 +618,11 @@ export const findAutomationForDM = async (
   const ordered = [...automations.filter((item) => item.triggerMode !== "ANY_MESSAGE"), ...automations.filter((item) => item.triggerMode === "ANY_MESSAGE")];
   for (const automation of ordered) {
     if (automation.source === "COMMENT" && automation.listener?.flowTriggers == null) {
-      if (sharedPost && sharedMediaId && automation.triggerOnShares && automation.sendPrivateDm && automation.posts?.some(post=>post.postid===sharedMediaId || post.postid==="ANY")) return {automation,matchedKeyword:"shared post"};
+      if (sharedPost && sharedMediaId && automation.triggerOnShares && automation.sendPrivateDm) {
+        const specific = automation.posts?.some(post=>post.postid===sharedMediaId);
+        const anyOwned = automation.posts?.some(post=>post.postid==="ANY") && await sharedPostBelongsToAccount(automation,sharedMediaId);
+        if (specific || anyOwned) return {automation,matchedKeyword:"shared post"};
+      }
       continue;
     }
     if (stopped && readAiConversation(automation.listener?.aiConversation)) continue;
