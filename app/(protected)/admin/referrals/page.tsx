@@ -25,7 +25,7 @@ export default async function AdminReferralsPage() {
     <div className="mx-auto max-w-5xl space-y-5 p-5 text-slate-900 dark:text-slate-100">
       <h1 className="text-2xl font-bold">Referral withdrawals</h1>
       <p className="text-sm text-slate-500">
-        Requests reserve the partner's available commission. Review refunds and
+        Requests reserve the partner&apos;s available commission. Review refunds and
         payment details before paying externally. Marking paid records a
         completed transfer; it does not send money.
       </p>
