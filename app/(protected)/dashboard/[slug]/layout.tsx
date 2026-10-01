@@ -1,7 +1,7 @@
 import { getInstagramAccountMenu } from "@/actions/instagram-accounts";
 import NavBar from "@/components/global/navbar";
 import Sidebar from "@/components/global/sidebar";
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import { dashboardPath } from "@/lib/dashboard";
 import { ClerkCacheSyncer } from "@/providers/clerk-cache-syncer";
 import { TimeZoneProvider } from "@/providers/time-zone-provider";

@@ -1,4 +1,4 @@
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import ReferralDashboard from "@/components/referrals/referral-dashboard";
 import { getApplicationUrl } from "@/lib/app-url";
 import { FOUNDING_PARTNER_LIMIT, getReferralDashboard } from "@/lib/referral-program";

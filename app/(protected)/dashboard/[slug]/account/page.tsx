@@ -4,7 +4,7 @@ import AccountConnectionActions from "@/components/dashboard/account-connection-
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import RemoveInstagramAccountButton from "@/components/dashboard/remove-instagram-account-button";
 import LocalTime from "@/components/global/local-time";
-import { onUserInfo } from "@/actions/user";
+import { getDashboardUser as onUserInfo } from "@/lib/dashboard-data";
 import {
   getInstagramAccountSettingsStats,
   type AccountStatValue,

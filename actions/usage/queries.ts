@@ -38,7 +38,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
   const effectiveEnd = period.monthEnd;
 
-  const [publicReplyLogs, dmLogs, aiReplies, activeCampaigns, connectedAccounts, starterReplies] = await Promise.all([
+  const [publicReplyLogs, dmLogs, aiReplies, activeCampaigns, connectedAccounts, starterReplies, deletedReplies] = await Promise.all([
     client.messageLog.count({
       where: {
         status: "SENT",
@@ -64,6 +64,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
     client.automation.count({ where: { userId, active: true, archivedAt: null, OR: [{ integration: { planLocked: false } }, { integrationId: null }] } }),
     client.integrations.count({ where: { userId, status: { not: "DISCONNECTED" } } }),
     client.conversationStarterReceipt.count({ where: { status: "SENT", integration: { userId }, createdAt: { gte: effectiveStart, lt: effectiveEnd } } }),
+    client.deletedReplyUsage.count({ where: { userId, createdAt: { gte: effectiveStart, lt: effectiveEnd } } }),
   ]);
 
   const [publicReplyEventFallback, dmEventFallback] = await Promise.all([
@@ -87,7 +88,6 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         }),
   ]);
 
-  const deletedReplies = await client.deletedReplyUsage.count({ where: { userId, createdAt: { gte: effectiveStart, lt: effectiveEnd } } });
   const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback + deletedReplies + starterReplies;
 
   return {

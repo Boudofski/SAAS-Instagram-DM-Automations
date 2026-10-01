@@ -1,5 +1,7 @@
 "use server";
 
+import { waitUntil } from "@vercel/functions";
+
 import { hasProEngagement } from "@/lib/automation-engagement-settings";
 import { validateFlow } from "@/lib/automation-flow/definition";
 import { readFlowTriggers } from "@/lib/automation-flow/triggers";
@@ -432,13 +434,13 @@ export const getAllAutomation = async () => {
 
     if (getAll) {
       const automations = getAll.automations || [];
-      try {
-        await refreshExpiredCampaignMediaListForClerkUser(user.id, automations);
-      } catch (error) {
+      // Meta can be slow or a post can have been deleted. Navigation must not
+      // wait for thumbnail repair. Clone because the refresher mutates posts.
+      waitUntil(refreshExpiredCampaignMediaListForClerkUser(user.id, structuredClone(automations)).catch((error) => {
         console.warn("[campaign-media] automatic list refresh skipped", {
           message: error instanceof Error ? error.message : String(error),
         });
-      }
+      }));
       return { status: 200, data: automations };
     }
 
