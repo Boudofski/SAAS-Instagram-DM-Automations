@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const db=vi.hoisted(()=>({messageLog:{findFirst:vi.fn()},inboxMessage:{findFirst:vi.fn()},automationDmRecipient:{createMany:vi.fn()},automationDeliveryJob:{findMany:vi.fn(),updateMany:vi.fn(),update:vi.fn(),upsert:vi.fn()}}));
 const resume=vi.hoisted(()=>vi.fn());
+const wake=vi.hoisted(()=>vi.fn());
+vi.mock("@/lib/qstash-delivery-wake",()=>({scheduleDeliveryWake:wake}));
 vi.mock("@/lib/prisma",()=>({client:db}));vi.mock("@/lib/meta-webhook-handler",()=>({resumeAutomationDelivery:resume}));
 import {claimDmRecipient,deferAutomationDelivery,processAutomationDeliveries} from "./automation-delivery";
-beforeEach(()=>{vi.clearAllMocks();db.messageLog.findFirst.mockResolvedValue(null);db.automationDeliveryJob.updateMany.mockResolvedValue({count:1});db.automationDeliveryJob.update.mockResolvedValue({});resume.mockResolvedValue(undefined);});
+beforeEach(()=>{vi.clearAllMocks();wake.mockResolvedValue(false);db.automationDeliveryJob.upsert.mockImplementation(async ({create})=>({...create,id:"job",status:"PENDING"}));db.messageLog.findFirst.mockResolvedValue(null);db.automationDeliveryJob.updateMany.mockResolvedValue({count:1});db.automationDeliveryJob.update.mockResolvedValue({});resume.mockResolvedValue(undefined);});
 describe("one DM per recipient",()=>{
  it("atomically allows only one of concurrent triggers",async()=>{const claimed=new Set<string>();db.automationDmRecipient.createMany.mockImplementation(async ({data})=>{const key=data[0].automationId+data[0].recipientIgId;if(claimed.has(key))return {count:0};claimed.add(key);return {count:1};});expect(await Promise.all([claimDmRecipient("a","r"),claimDmRecipient("a","r")])).toEqual([true,false]);expect(await claimDmRecipient("b","r")).toBe(true);});
  it("honors already delivered messages when enabled later",async()=>{db.messageLog.findFirst.mockResolvedValue({id:"sent"});expect(await claimDmRecipient("a","r")).toBe(false);expect(db.automationDmRecipient.createMany).not.toHaveBeenCalled();});
@@ -17,3 +19,20 @@ describe("durable delays",()=>{
 });
 
 it("cancels a delayed response when the conversation has moved on",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,recipientIgId:"recipient"}}]);db.inboxMessage.findFirst.mockResolvedValue({id:"later-message"});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();expect(db.inboxMessage.findFirst.mock.calls[0][0].where.conversation).toEqual({integrationId:"account",recipientIgId:"recipient"});expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"CANCELLED",payload:{}}});});
+
+it("schedules a precise wake for a 30-second delay without waiting for the cron sweep", async()=>{
+ wake.mockResolvedValue(true);
+ await deferAutomationDelivery({automationId:"a",eventKey:"comment:30",seconds:30,entry:{id:"ig"},object:"instagram"});
+ const stored=db.automationDeliveryJob.upsert.mock.calls[0][0].create;
+ expect(wake).toHaveBeenCalledWith(expect.objectContaining({id:"job",dueAt:stored.dueAt,status:"PENDING"}));
+ expect(db.automationDeliveryJob.findMany).not.toHaveBeenCalled();
+});
+it("keeps the original deadline on redelivery and does not wake completed jobs",async()=>{
+ const dueAt=new Date(Date.now()+60000);
+ db.automationDeliveryJob.upsert.mockResolvedValue({id:"same-job",status:"PENDING",dueAt});wake.mockResolvedValue(true);
+ await deferAutomationDelivery({automationId:"a",eventKey:"comment:1",seconds:3600,entry:{id:"ig"},object:"instagram"});
+ expect(wake).toHaveBeenCalledWith({id:"same-job",status:"PENDING",dueAt});
+ wake.mockClear();db.automationDeliveryJob.upsert.mockResolvedValue({id:"same-job",status:"COMPLETED",dueAt});
+ await deferAutomationDelivery({automationId:"a",eventKey:"comment:1",seconds:3600,entry:{id:"ig"},object:"instagram"});
+ expect(wake).not.toHaveBeenCalled();
+});
