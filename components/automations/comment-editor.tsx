@@ -437,6 +437,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                     </button>
                   </span>
                 ))}
+                <div className={s.keywordEntry}>
                 <input
                   aria-label={tr("Add keyword")}
                   placeholder={tr("Add keyword")}
@@ -456,6 +457,7 @@ export default function CommentEditor(p: CommentEditorProps) {
                 >
                   <Plus size={16} />
                 </button>
+                </div>
               </div>
               <p className={`${s.hint} mt-2`}>
                 {tr("Press Enter to add keyword")}

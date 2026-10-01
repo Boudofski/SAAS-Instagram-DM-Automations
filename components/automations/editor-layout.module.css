@@ -218,3 +218,6 @@
 @media(max-width:600px) { .rowTrigger:has(.publishRestriction) { flex-wrap:wrap; } .summary.publishRestriction { flex-basis:100%; padding-inline-start:26px; text-align:start; font-size:11px; } }
 
 .lockedCopy .copyField { border-color:#ef4444; }
+
+.keywordEntry { display:flex; align-items:center; gap:8px; width:100%; margin-top:6px; }
+.keywordEntry input { flex:0 1 230px; max-width:calc(100% - 32px); }
