@@ -8,7 +8,7 @@ export const INSTAGRAM_GRAPH_VERSION =
   process.env.INSTAGRAM_GRAPH_VERSION ?? process.env.META_GRAPH_VERSION ?? "v25.0";
 export const INSTAGRAM_GRAPH_API_BASE_URL = `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_VERSION}`;
 export const INSTAGRAM_OAUTH_URL =
-  process.env.INSTAGRAM_OAUTH_URL ?? "https://www.instagram.com/oauth/authorize";
+  process.env.INSTAGRAM_OAUTH_URL ?? "https://api.instagram.com/oauth/authorize";
 export const INSTAGRAM_OAUTH_TOKEN_URL =
   process.env.INSTAGRAM_OAUTH_TOKEN_URL ?? "https://api.instagram.com/oauth/access_token";
 
@@ -103,6 +103,12 @@ export function getInstagramLoginOAuthUrl(state?: string) {
   const { clientId, redirectUri } = getInstagramLoginOAuthConfig();
   const scopes = getInstagramBusinessOAuthScopes();
   const url = new URL(INSTAGRAM_OAUTH_URL);
+  // Use Meta's OAuth API entry point rather than a www.instagram.com app link.
+  // Normalize existing deployments that still configure the old web URL.
+  // Phone-level link preferences can still affect Meta's subsequent navigation.
+  if (url.protocol === "https:" && ["www.instagram.com", "instagram.com"].includes(url.hostname) && /^\/oauth\/authorize\/?$/.test(url.pathname)) {
+    url.hostname = "api.instagram.com";
+  }
 
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
