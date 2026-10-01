@@ -49,7 +49,8 @@ function Sheet({
       >
         {trigger}
       </SheetTrigger>
-      <SheetContent
+      {/* Navigation must release its modal layer as soon as it closes. */}
+      {(!closeOnNavigation || open) && <SheetContent
         side={side}
         aria-describedby={undefined}
         className={cn("overflow-x-hidden p-0", contentClassName)}
@@ -65,7 +66,7 @@ function Sheet({
       >
         <SheetTitle className="sr-only">{triggerLabel}</SheetTitle>
         {children}
-      </SheetContent>
+      </SheetContent>}
     </ShadcnSheet>
   );
 }

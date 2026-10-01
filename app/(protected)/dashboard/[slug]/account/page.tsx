@@ -1,3 +1,4 @@
+import ConnectionSettings from "@/components/dashboard/connection-settings";
 import { DashboardPeriodLabel } from "@/components/i18n/dashboard-values";
 import { UiText } from "@/components/i18n/localized-copy";
 import AccountConnectionActions from "@/components/dashboard/account-connection-actions";
@@ -18,7 +19,7 @@ import {
   getCanonicalInstagramIntegration,
   isCanonicalInstagramConnected,
 } from "@/lib/instagram-integration-status";
-import { ExternalLink, Settings2 } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 type Props = { params: { slug: string }; searchParams?: { period?: string } };
@@ -184,21 +185,7 @@ export default async function InstagramAccountPage({
         </div>
       </section>
 
-      {connected && <details className="group ap3k-card ap3k-content-enter rounded-2xl">
-        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-slate-300">
-              <Settings2 className="h-4 w-4" />
-            </span>
-            <div>
-              <h2 className="text-sm font-black text-slate-950 dark:text-white"><UiText>{" Connection settings "}</UiText></h2>
-              <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Manage or remove this account "}</UiText></p>
-            </div>
-          </div>
-          <span className="text-sm text-slate-400 light:text-slate-600 transition-transform group-open:rotate-180">
-            ⌄
-          </span>
-        </summary>
+      {connected && <ConnectionSettings>
         <div className="border-t border-slate-200 light:border-slate-300 p-4 dark:border-white/10">
           <p className="mb-3 max-w-2xl text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Removing this Instagram account permanently deletes only its automations, contacts, inbox, analytics, and AI knowledge. Your other accounts stay unchanged. "}</UiText></p>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -210,7 +197,7 @@ export default async function InstagramAccountPage({
             {connected && <RemoveInstagramAccountButton integrationId={instagram!.id} />}
           </div>
         </div>
-      </details>}
+      </ConnectionSettings>}
     </div>
   );
 }
