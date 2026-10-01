@@ -1,4 +1,4 @@
-export const BLOG_PAGE_SIZE = 12;
+export const BLOG_PAGE_SIZE = 9;
 export function blogPagePath(page: number): string {
   return page === 1 ? "/blog" : `/blog?page=${page}`;
 }

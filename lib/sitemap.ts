@@ -1,3 +1,4 @@
+import { getEditorialArchive } from "@/lib/blog-archive";
 import { COMPARISONS, comparisonPath } from "@/lib/comparisons";
 import { SOLUTIONS } from "@/lib/solutions";
 import { COMPANY } from "@/lib/company";
@@ -103,7 +104,7 @@ export function buildSitemap(
   // Listing pages 2+ closes the crawl gap reported by Ahrefs and gives every
   // article a sitemap-backed route without pretending query variants are duplicates.
   const blogArchivePages: MetadataRoute.Sitemap = Array.from(
-    { length: Math.max(0, Math.ceil(posts.length / BLOG_PAGE_SIZE) - 1) },
+    { length: Math.max(0, Math.ceil(getEditorialArchive(posts).posts.length / BLOG_PAGE_SIZE) - 1) },
     (_, index) => ({
       url: `${baseUrl}${blogPagePath(index + 2)}`,
       lastModified: new Date("2026-09-24T00:00:00Z"),

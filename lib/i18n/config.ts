@@ -1,8 +1,10 @@
+import editorialSlugs from "../content/editorial-october-slugs.json";
 import expansionSlugs from "../content/expansion/slugs.json";
 import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
+  ...editorialSlugs.map((slug) => `/blog/${slug}`),
   ...expansionSlugs.map((slug) => `/blog/${slug}`),
   ...commercialSlugs.map((slug) => `/${slug}`),
   "/resources/instagram-growth-library",

@@ -1,9 +1,10 @@
+import { REFERENCE_GUIDE_SLUGS } from "@/lib/blog-archive";
+import AP3KLogo from "@/components/global/ap3k-logo";
+import e from "@/components/website/blog-editorial.module.css";
 import BlogCover from "@/components/website/blog-cover";
 import LaunchKitForm from "@/components/website/launch-kit-form";
 import { getArticleImage, articleImageUrl } from "@/lib/blog-images";
 import s from "@/components/website/public-pages.module.css";
-import CommentDmLibrary from "@/components/website/comment-dm-library";
-import { COMMENT_DM_HUB } from "@/lib/content/comment-dm";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
@@ -15,7 +16,7 @@ import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import TutorialScreenshot from "@/components/website/tutorial-screenshot";
 import TutorialGuides from "@/components/website/tutorial-guides";
-import GrowthGuideExtras, {
+import {
   GrowthSectionSources,
 } from "@/components/website/growth-guide-extras";
 import { BLOG_POSTS } from "@/lib/blog";
@@ -111,7 +112,7 @@ export default async function BlogPostPage({ params }: Props) {
     /^\/(fr|es|de|pt)\//.test(headers().get("x-ap3k-request-path") || "")
   )
     permanentRedirect(`/blog/${post.slug}`);
-  const publicPosts = await getPublishedPosts();
+  const publicPosts = (await getPublishedPosts()).filter(p => !REFERENCE_GUIDE_SLUGS.has(p.slug));
 
   const related = post.related
     ? publicPosts.filter((item) => post.related?.includes(item.slug))
@@ -200,7 +201,7 @@ export default async function BlogPostPage({ params }: Props) {
               />
               <span className={s.badge}>{post.category}</span>
               <h1>{post.title}</h1>
-              <p>{post.intro}</p>
+              <p>{post.description}</p>
               <div className={s.byline}>
                 <span>
                   By <Link href="/contact">AP3K</Link>
@@ -214,8 +215,8 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="mt-7">
               <BlogCover post={post} priority credit />
             </div>
-            <nav className={s.contents} aria-label="Article contents">
-              <strong>In this guide</strong>
+            <details className={e.mobileContents}>
+              <summary>On this page <span aria-hidden="true" className="ml-auto">⌄</span></summary>
               <ol>
                 {post.sections.map((section, index) => (
                   <li key={section.heading}>
@@ -225,7 +226,11 @@ export default async function BlogPostPage({ params }: Props) {
                   </li>
                 ))}
               </ol>
-            </nav>
+            </details>
+            <div className={e.readingLayout}>
+            <div className={e.articleBody}>
+            <p className="mb-8">{post.intro}</p>
+
             {post.sections.map((section, index) => (
               <section
                 id={`section-${index + 1}`}
@@ -269,12 +274,6 @@ export default async function BlogPostPage({ params }: Props) {
                 )}
               </section>
             ))}
-            {post.contentLocale && (
-              <CommentDmLibrary
-                expanded={`/blog/${post.slug}` === COMMENT_DM_HUB}
-              />
-            )}
-            <GrowthGuideExtras slug={post.slug} />
             {post.cover && <TutorialGuides />}
             <div className="mt-10 border-t border-slate-200 pt-5 dark:border-white/10">
               <span className={s.credit}>
@@ -310,18 +309,36 @@ export default async function BlogPostPage({ params }: Props) {
                   ))}
                 </p>
               )}
-              <Link href="/sign-up" className={s.button}>
-                Join for free
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-5">
+                <Link href="/sign-up" className={s.button}>Join for free</Link>
+                <Link href={localizePublicPath("/pricing", locale)}>Compare plans</Link>
+              </div>
             </section>
+            <div className={e.author}>
+              <AP3KLogo showText={false} markClassName="h-12 w-12 shrink-0 rounded-xl" />
+              <div><strong>AP3K Editorial</strong><p>Practical ideas for creators and businesses building better Instagram conversations.</p></div>
+            </div>
+            </div>
+            <nav className={e.contentsRail} aria-label="On this page"><strong>On this page</strong>
+              <ol>
+                {post.sections.map((section, index) => (
+                  <li key={section.heading}>
+                    <a href={`#section-${index + 1}`}>
+                      {section.heading.replace(/^\d+\.\s*/, "")}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+            </div>
           </article>
           {post.slug === "instagram-comment-to-dm-automation" && getServerLocale() === "en" ? <LaunchKitForm source="guide" /> : null}
-          <section className={`${s.blog} pb-16`}>
+          <section className={`${e.archive} pb-16`}>
             <h2>Related articles</h2>
-            <div className={s.blogGrid}>
+            <div className={e.grid}>
               {related.slice(0, 4).map((item) => (
                 <article
-                  className={s.blogCard}
+                  className={e.card}
                   key={item.slug}
                   lang={item.contentLocale}
                   translate={item.contentLocale ? "no" : undefined}

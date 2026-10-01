@@ -1,3 +1,5 @@
+import editorialSlugs from "./content/editorial-october-slugs.json";
+import { getEditorialPhoto } from "./blog-photography";
 import type { BlogPost } from './blog';
 import { TUTORIAL_SCREENSHOTS, tutorialImageSrc } from './tutorial-content';
 import covers from './content/blog-cover-manifest.json';
@@ -25,7 +27,7 @@ export function getArticleImage(
   const cover = Object.prototype.hasOwnProperty.call(covers, post.slug)
     ? (covers as Record<string, { src: string; alt: string }>)[post.slug]
     : undefined;
-  if (cover) return { ...cover, width: 1200, height: 675 };
+  if (cover || editorialSlugs.includes(post.slug)) return getEditorialPhoto(post);
   // Newly published CMS articles get their own safe title cover until an editor
   // adds the article to the reviewed diagram catalogue. No unrelated stock photo.
   return {

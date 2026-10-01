@@ -24,6 +24,9 @@ export default function BlogCover({
           className={post.cover ? "!object-contain" : undefined}
         />
       </div>
+      {credit && image.src.startsWith("/images/blog/editorial/") && (
+        <figcaption className={s.credit}>Original AP3K editorial illustration</figcaption>
+      )}
       {credit && image.credit && (
         <figcaption className={s.credit}>
           Photo by{" "}

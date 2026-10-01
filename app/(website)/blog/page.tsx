@@ -2,7 +2,9 @@ import AP3KLogo from "@/components/global/ap3k-logo";
 import BlogCover from "@/components/website/blog-cover";
 import s from "@/components/website/public-pages.module.css";
 import { notFound, redirect } from "next/navigation";
-import { filterBlogPosts } from "@/lib/blog-search";
+import { getEditorialArchive, blogPaginationItems } from "@/lib/blog-archive";
+import e from "@/components/website/blog-editorial.module.css";
+import { Search, ArrowLeft, ArrowRight } from "lucide-react";
 import { blogPagePath, getBlogPage } from "@/lib/blog-pagination";
 import { getServerLocale } from "@/lib/i18n/server";
 import { localizePublicPath } from "@/lib/i18n/config";
@@ -17,7 +19,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 const pageMetadata: Metadata = {
-  title: "AP3K Blog — Instagram Comment & DM Automation Guides",
+  title: "AP3K Blog — Instagram Growth & DM Marketing",
   description:
     "Practical guides for Instagram comment automation, DMs, creator lead generation, triggers and campaign strategy.",
   alternates: { canonical: "/blog" },
@@ -48,7 +50,7 @@ export async function generateMetadata({
     };
   const pagination = getBlogPage(
     searchParams.page,
-    (await getPublishedPosts()).length,
+    getEditorialArchive(await getPublishedPosts()).posts.length,
   );
   if (!pagination) return { robots: { index: false, follow: true } };
   return localizedMetadata(
@@ -68,7 +70,7 @@ export default async function BlogPage({ searchParams }: Props) {
     typeof searchParams.q === "string"
       ? searchParams.q.trim().slice(0, 120)
       : "";
-  const allPosts = filterBlogPosts(await getPublishedPosts(), query);
+  const { posts: allPosts, featured } = getEditorialArchive(await getPublishedPosts(), query);
   const pagination = getBlogPage(searchParams.page, allPosts.length);
   if (!pagination) notFound();
   if (searchParams.page === "1")
@@ -87,22 +89,6 @@ export default async function BlogPage({ searchParams }: Props) {
           ...allPosts.filter((p) => p.contentLocale),
         ]
   ).slice(pagination.start, pagination.end);
-  const featuredSlugs = [
-    "instagram-comment-to-dm-automation",
-    "compare-instagram-dm-automation-tools",
-    "connect-instagram-to-ap3k",
-    "instagram-post-scheduler-vs-instagram-automation",
-  ];
-  const featured = featuredSlugs.flatMap((slug) => {
-    const post = allPosts.find((item) => item.slug === slug);
-    return post ? [post] : [];
-  });
-  const visiblePosts =
-    !query && pagination.page === 1
-      ? posts.filter(
-          (post) => !featured.some((item) => item.slug === post.slug),
-        )
-      : posts;
   const collection = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -110,20 +96,22 @@ export default async function BlogPage({ searchParams }: Props) {
     url: `https://ap3k.com${localizePublicPath(blogPagePath(pagination.page), locale)}`,
     mainEntity: {
       "@type": "ItemList",
-      itemListElement: posts.map((post, index) => ({
+      itemListElement: [...(!query && pagination.page === 1 ? featured : []), ...posts].map((post, index) => ({
         "@type": "ListItem",
-        position: pagination.start + index + 1,
+        position: index + 1,
         url: `https://ap3k.com${localizePublicPath(`/blog/${post.slug}`, locale)}`,
       })),
     },
   };
 
+  const pageHref = (page: number) => localizePublicPath(
+    `${blogPagePath(page)}${query ? `${page === 1 ? "?" : "&"}q=${encodeURIComponent(query)}` : ""}`, locale);
   const card = (post: (typeof posts)[number], index: number) => (
     <article
       key={post.slug}
       lang={post.contentLocale}
       translate={post.contentLocale ? "no" : undefined}
-      className={s.blogCard}
+      className={e.card}
     >
       <Link
         href={localizePublicPath(
@@ -133,6 +121,7 @@ export default async function BlogPage({ searchParams }: Props) {
         prefetch={false}
       >
         <BlogCover post={post} priority={index < 2} />
+        <span className={e.category}>{post.category}</span>
         <h3>{post.title}</h3>
       </Link>
       <div className={s.byline}>
@@ -152,7 +141,7 @@ export default async function BlogPage({ searchParams }: Props) {
           </time>
         </span>
       </div>
-      <p>{post.description}</p>
+
     </article>
   );
   return (
@@ -165,34 +154,29 @@ export default async function BlogPage({ searchParams }: Props) {
           }}
         />
         <WebsiteNav current="blog" />
-        <main className={s.blog}>
-          <header className={s.blogHero}>
-            <div className="flex justify-center">
-              <AP3KLogo
-                showText={false}
-                markClassName="h-16 w-16 rounded-2xl shadow-none"
-              />
-            </div>
-            <h1>Welcome to AP3K Blog</h1>
+        <main className={e.archive}>
+          <header className={e.hero}>
+            <h1>Welcome to AP3K Blogs</h1>
             <p>
-              Insights, practical guides and ideas for Instagram automation, DM
-              marketing and growing your audience with AP3K.
+              Fresh ideas for Instagram growth, useful conversations, and a business
+              that keeps moving when you step away.
             </p>
           </header>
           {!query && pagination.page === 1 && featured.length > 0 && (
             <section>
               <h2>Featured posts</h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Start with our practical guides.
+                A few good places to start.
               </p>
-              <div className={s.blogGrid}>{featured.map(card)}</div>
+              <div className={e.featuredGrid}>{featured.map(card)}</div>
             </section>
           )}
           <form
             action={localizePublicPath("/blog", locale)}
             method="get"
-            className="mb-8 flex gap-2"
+            className={e.search}
           >
+            <Search aria-hidden="true" size={20} />
             <label htmlFor="blog-search" className="sr-only">
               Search articles
             </label>
@@ -203,7 +187,7 @@ export default async function BlogPage({ searchParams }: Props) {
               defaultValue={query}
               maxLength={120}
               placeholder="Search articles"
-              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-transparent px-5 py-3 text-sm dark:border-white/15"
+              className={e.searchInput}
             />
             <button type="submit" className={s.button}>
               Search
@@ -226,26 +210,15 @@ export default async function BlogPage({ searchParams }: Props) {
                 .
               </p>
             )}
-            <div className={s.blogGrid}>{visiblePosts.map(card)}</div>
+            <div className={e.grid}>{posts.map(card)}</div>
           </section>
-          <nav className={s.pagination} aria-label="Pagination">
-            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(
-              (page) => (
-                <Link
-                  href={localizePublicPath(
-                    `${blogPagePath(page)}${query ? `${page === 1 ? "?" : "&"}q=${encodeURIComponent(query)}` : ""}`,
-                    locale,
-                  )}
-                  prefetch={false}
-                  key={page}
-                  aria-label={`Page ${page}`}
-                  aria-current={page === pagination.page ? "page" : undefined}
-                >
-                  {page}
-                </Link>
-              ),
-            )}
-          </nav>
+          {pagination.pages > 1 && <nav className={e.pagination} aria-label="Blog pagination">
+            {pagination.page > 1 && <Link href={pageHref(pagination.page - 1)} aria-label="Previous page"><ArrowLeft size={16} /><span>Previous</span></Link>}
+            {blogPaginationItems(pagination.page, pagination.pages).map((page, index) => page === "gap"
+              ? <span key={`gap-${index}`} aria-hidden="true">…</span>
+              : <Link key={page} href={pageHref(page)} prefetch={false} aria-label={`Page ${page}`} aria-current={page === pagination.page ? "page" : undefined}>{page}</Link>)}
+            {pagination.page < pagination.pages && <Link href={pageHref(pagination.page + 1)} aria-label="Next page"><span>Next</span><ArrowRight size={16} /></Link>}
+          </nav>}
           <section className={s.cta}>
             <h2>Put your next idea into practice.</h2>
             <p className="my-4 text-sm text-slate-500 dark:text-slate-400">
@@ -257,10 +230,10 @@ export default async function BlogPage({ searchParams }: Props) {
           </section>
           <div className={s.related}>
             <Link href="/resources/instagram-growth-library">
-              Growth and automation library →
+              Browse the reference library →
             </Link>
-            <Link href="/resources/instagram-comment-to-dm-templates">
-              Comment-to-DM templates →
+            <Link href="/help">
+              Need setup help? Visit the Help Center →
             </Link>
           </div>
         </main>
