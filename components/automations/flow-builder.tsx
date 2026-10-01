@@ -893,7 +893,7 @@ export default function FlowBuilder({
           )}
         </main>
         <Dialog open={assistant} onOpenChange={setAssistant}>
-          <DialogContent className="font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
+          <DialogContent className="flow-editor-dialog font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
             <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 pe-14 dark:border-white/5">
               <Sparkles size={20} className="text-violet-500 light:text-violet-700" />
               <DialogTitle className="text-sm font-semibold">
@@ -993,7 +993,7 @@ export default function FlowBuilder({
           </DialogContent>
         </Dialog>
         <Dialog open={preview} onOpenChange={setPreview}>
-          <DialogContent className="max-w-[400px] bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
+          <DialogContent className="flow-editor-dialog max-h-[calc(100dvh-2rem)] max-w-[400px] overflow-y-auto bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
             <DialogTitle>Preview your flow</DialogTitle>
             <DialogDescription>
               This simulation does not send messages to Instagram.
