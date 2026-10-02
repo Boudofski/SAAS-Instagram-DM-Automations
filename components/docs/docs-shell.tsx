@@ -17,7 +17,7 @@ export default function DocsShell({entries,children}:{entries:DocsSearchEntry[];
  const current=entries.find(a=>pathname===`/docs/${a.slug}`);
  const [search,setSearch]=useState(false); const [menu,setMenu]=useState(false); const [query,setQuery]=useState('');
  const input=useRef<HTMLInputElement>(null);
- useEffect(()=>{setMenu(false);setSearch(false)},[pathname]);
+ useEffect(()=>{setMenu(false);setSearch(false);if(!window.location.hash)window.scrollTo({top:0,behavior:'auto'})},[pathname]);
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearch(v=>!v)}}; window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[]);
  const results=useMemo(()=>{const terms=query.toLowerCase().trim().split(/\s+/).filter(Boolean); if(!terms.length)return [];
  return entries.map(a=>({...a,score:terms.reduce((sum,t)=>sum+(a.title.toLowerCase().includes(t)?10:0),0)})).filter(a=>terms.every(t=>`${a.title} ${a.description} ${a.text}`.toLowerCase().includes(t))).sort((a,b)=>b.score-a.score)},[entries,query]);

@@ -28,7 +28,7 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export function articleWithScreenshots(slug:string,html:string){
  const shots=DOCS_SCREENSHOTS[slug]||[];
  // Place screenshots beside the relevant instructions without inserting into a list/table.
- for(let i=shots.length-1;i>=0;i--){const shot=shots[i];const figure=`<figure tabindex="0" role="button" aria-label="Enlarge: ${escape(shot.caption)}"><img src="/images/docs/${shot.file}.webp" alt="${escape(shot.caption)}" width="1363" height="935" loading="lazy" decoding="async"/><figcaption>${escape(shot.caption)} Click to enlarge.</figcaption></figure>`;
+ for(let i=0;i<shots.length;i++){const shot=shots[i];const figure=`<figure tabindex="0" role="button" aria-label="Enlarge: ${escape(shot.caption)}"><img src="/images/docs/${shot.file}.webp" alt="${escape(shot.caption)}" width="1363" height="935" loading="lazy" decoding="async"/><figcaption>${escape(shot.caption)} Click to enlarge.</figcaption></figure>`;
  const headings=Array.from(html.matchAll(/<h2\b[^>]*>/g)); const section=shot.after?html.indexOf(`id="${shot.after}"`):-1; const target=section>=0?headings.find(h=>(h.index??0)>section):headings[1];
  if(target?.index!==undefined)html=html.slice(0,target.index)+figure+html.slice(target.index);else html+=figure;
  }

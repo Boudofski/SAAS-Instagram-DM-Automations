@@ -136,3 +136,4 @@
 .brand>span {position:absolute;left:36px;top:22px;font-size:12px;line-height:1;border:0;padding:0}
 .signIn {border-radius:30px}
 @media(max-width:799px){.headerSearch,.header::before{display:none}.brand{width:140px}.headerActions{gap:10px}}
+.brand>div {align-items:flex-start}
