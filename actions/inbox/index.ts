@@ -107,7 +107,7 @@ export async function getInboxMessages(conversationId: string) {
       userId: profile.id,
       integrationId: profile.integrationId,
     },
-    select: { id: true },
+    select: { id: true, unreadCount: true, lastMessageAt: true },
   });
   if (!conversation) return { status: 404, data: [] };
   const messages = await client.inboxMessage.findMany({
@@ -115,10 +115,20 @@ export async function getInboxMessages(conversationId: string) {
     orderBy: { createdAt: "asc" },
     take: 300,
   });
-  await client.conversation.update({
-    where: { id: conversation.id },
-    data: { unreadCount: 0 },
-  });
+  // Repeated five-second polls of a read conversation must not create writes.
+  // Preserve unread messages arriving after this conversation snapshot.
+  if (conversation.unreadCount > 0) {
+    await client.conversation.updateMany({
+      where: {
+        id: conversation.id,
+        userId: profile.id,
+        integrationId: profile.integrationId,
+        unreadCount: conversation.unreadCount,
+        lastMessageAt: conversation.lastMessageAt,
+      },
+      data: { unreadCount: 0 },
+    });
+  }
   return { status: 200, data: messages };
 }
 

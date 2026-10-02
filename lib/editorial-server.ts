@@ -12,7 +12,9 @@ export const getPublishedPosts = unstable_cache(
     return mergeEditorialPosts(BLOG_POSTS, rows).map(post => ({ ...post, author: "AP3K" }));
   },
   ["editorial-published-v2"],
-  { revalidate: 60, tags: ["editorial"] },
+  // Publishing and hiding articles invalidate this tag immediately. The TTL is
+  // a fallback for out-of-band changes, not a reason to query Neon every minute.
+  { revalidate: 3600, tags: ["editorial"] },
 );
 
 export async function getPublishedPost(slug: string) {
