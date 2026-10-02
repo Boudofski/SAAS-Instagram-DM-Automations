@@ -5,11 +5,18 @@ export const QSTASH_SCHEDULER_URL = "https://ap3k.com/api/cron/automation-follow
 
 /** QStash sends a signed, empty POST to wake the existing database queues. */
 export async function authorizeQStashScheduler(request: Request) {
-  if (process.env.VERCEL_ENV !== "production" || request.method !== "POST" || request.url !== QSTASH_SCHEDULER_URL) return false;
+  const reject = (reason: string) => {
+    console.warn("[qstash-auth] rejected", { reason });
+    return false;
+  };
+  if (process.env.VERCEL_ENV !== "production") return reject("environment");
+  if (request.method !== "POST") return reject("method");
+  if (request.url !== QSTASH_SCHEDULER_URL) return reject("destination");
   const signature = request.headers.get("upstash-signature");
   const keys = [process.env.QSTASH_CURRENT_SIGNING_KEY, process.env.QSTASH_NEXT_SIGNING_KEY]
     .map((key) => key?.trim()).filter((key): key is string => Boolean(key));
-  if (!signature || signature.length > 16_384 || !keys.length) return false;
+  if (!signature || signature.length > 16_384) return reject("signature-header");
+  if (!keys.length) return reject("missing-signing-keys");
 
   // Bound the raw body before verifying its signed SHA-256 digest. No payload
   // from QStash controls recipients, campaign IDs, or worker parameters.
@@ -30,6 +37,7 @@ export async function authorizeQStashScheduler(request: Request) {
   finally { reader?.releaseLock(); }
   const digest = Buffer.from(hash.digest("base64url"));
 
+  let verificationFailure = "signature-verification";
   for (const key of keys) {
     try {
       const { payload } = await jwtVerify(signature, new TextEncoder().encode(key), {
@@ -40,7 +48,12 @@ export async function authorizeQStashScheduler(request: Request) {
       if (typeof payload.body !== "string" || !/^[A-Za-z0-9_-]{43}=?$/.test(payload.body)) return false;
       const supplied = Buffer.from(payload.body.replace(/=+$/, ""));
       return supplied.length === digest.length && timingSafeEqual(supplied, digest);
-    } catch { /* The next signing key supports Upstash key rotation. */ }
+    } catch (error) {
+      // Log only a bounded library error code, never tokens, keys or payloads.
+      const code = (error as { code?: string }).code;
+      if (code === "ERR_JWT_EXPIRED" || code === "ERR_JWT_CLAIM_VALIDATION_FAILED") verificationFailure = code;
+      /* The next signing key supports Upstash key rotation. */
+    }
   }
-  return false;
+  return reject(verificationFailure);
 }
