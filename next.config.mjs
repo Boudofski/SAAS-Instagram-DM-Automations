@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: { outputFileTracingIncludes: { "/blog/[slug]": ["./lib/content/imported-blog/*.html"] } },
   images: {
     remotePatterns: [
       {

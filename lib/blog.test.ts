@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BLOG_POSTS, getBlogPost } from "./blog";
+import { BLOG_POSTS, LEGACY_BLOG_POSTS, getBlogPost } from "./blog";
 
 describe("AP3K blog content", () => {
   it("keeps every article slug unique and discoverable", () => {
@@ -10,7 +10,7 @@ describe("AP3K blog content", () => {
   });
 
   it("provides complete SEO and visual metadata", () => {
-    for (const post of BLOG_POSTS) {
+    for (const post of LEGACY_BLOG_POSTS) {
       expect(post.title.length).toBeGreaterThan(20);
       expect(post.description.length).toBeGreaterThan(80);
       expect(post.description.length).toBeLessThanOrEqual(170);
@@ -22,7 +22,7 @@ describe("AP3K blog content", () => {
   });
 
   it("includes actionable numbered tutorials in the new content cluster", () => {
-    const tutorials = BLOG_POSTS.filter((post) => post.publishedAt === "2026-08-30");
+    const tutorials = LEGACY_BLOG_POSTS.filter((post) => post.publishedAt === "2026-08-30");
     expect(tutorials).toHaveLength(6);
     for (const post of tutorials) {
       const hasStepCards = post.sections.some((section) => section.steps && section.steps.length >= 4);

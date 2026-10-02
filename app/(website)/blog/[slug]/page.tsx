@@ -1,3 +1,6 @@
+import { ArticleSummary, ArticleShare } from "@/components/website/article-tools";
+import { blogSans, blogSerif } from "@/components/website/blog-fonts";
+import { getImportedArticleHtml } from "@/lib/imported-blog-server";
 import { REFERENCE_GUIDE_SLUGS } from "@/lib/blog-archive";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import e from "@/components/website/blog-editorial.module.css";
@@ -112,7 +115,8 @@ export default async function BlogPostPage({ params }: Props) {
     /^\/(fr|es|de|pt)\//.test(headers().get("x-ap3k-request-path") || "")
   )
     permanentRedirect(`/blog/${post.slug}`);
-  const publicPosts = (await getPublishedPosts()).filter(p => !REFERENCE_GUIDE_SLUGS.has(p.slug));
+  const publicPosts = (await getPublishedPosts()).filter(p => p.importedArchive || !REFERENCE_GUIDE_SLUGS.has(p.slug));
+  const importedHtml = post.importedArchive ? await getImportedArticleHtml(post.slug) : null;
 
   const related = post.related
     ? publicPosts.filter((item) => post.related?.includes(item.slug))
@@ -149,9 +153,9 @@ export default async function BlogPostPage({ params }: Props) {
     dateModified: post.updatedAt,
     mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
     author: {
-      "@type": "Organization",
-      "@id": `${SITE_URL}/#organization`,
-      name: "AP3K",
+      "@type": post.author ? "Person" : "Organization",
+      "@id": post.author ? undefined : `${SITE_URL}/#organization`,
+      name: post.author || "AP3K",
       url: SITE_URL,
     },
     publisher: {
@@ -177,7 +181,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <LocalizedCopy>
-      <div className={s.page}>
+      <div className={`${s.page} ${blogSans.className} ${blogSans.variable} ${blogSerif.variable}`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -199,12 +203,12 @@ export default async function BlogPostPage({ params }: Props) {
                   { name: post.title, path: `/blog/${post.slug}` },
                 ]}
               />
-              <span className={s.badge}>{post.category}</span>
+              {!post.importedArchive && <span className={s.badge}>{post.category}</span>}
               <h1>{post.title}</h1>
-              <p>{post.description}</p>
+              <p>{post.subtitle || post.description}</p>
               <div className={s.byline}>
                 <span>
-                  By <Link href="/contact">AP3K</Link>
+                  By <span>{post.author || "AP3K"}</span>
                 </span>
                 <time dateTime={post.publishedAt}>
                   {formatDate(post.publishedAt)}
@@ -215,8 +219,9 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="mt-7">
               <BlogCover post={post} priority credit />
             </div>
-            <details className={e.mobileContents}>
-              <summary>On this page <span aria-hidden="true" className="ml-auto">⌄</span></summary>
+            {post.importedArchive && <ArticleSummary slug={post.slug} />}
+            <details className={e.mobileContents} open={post.importedArchive || undefined}>
+              <summary>Table of contents <span aria-hidden="true" className="ml-auto">⌄</span></summary>
               <ol>
                 {post.sections.map((section, index) => (
                   <li key={section.heading}>
@@ -229,6 +234,7 @@ export default async function BlogPostPage({ params }: Props) {
             </details>
             <div className={e.readingLayout}>
             <div className={e.articleBody}>
+            {importedHtml ? <div className={e.importedBody} dangerouslySetInnerHTML={{ __html: importedHtml }} /> : <>
             <p className="mb-8">{post.intro}</p>
 
             {post.sections.map((section, index) => (
@@ -275,6 +281,7 @@ export default async function BlogPostPage({ params }: Props) {
               </section>
             ))}
             {post.cover && <TutorialGuides />}
+            </>}
             <div className="mt-10 border-t border-slate-200 pt-5 dark:border-white/10">
               <span className={s.credit}>
                 Updated{" "}
@@ -314,12 +321,13 @@ export default async function BlogPostPage({ params }: Props) {
                 <Link href={localizePublicPath("/pricing", locale)}>Compare plans</Link>
               </div>
             </section>
+            <ArticleShare slug={post.slug} title={post.title} />
             <div className={e.author}>
               <AP3KLogo showText={false} markClassName="h-12 w-12 shrink-0 rounded-xl" />
-              <div><strong>AP3K Editorial</strong><p>Practical ideas for creators and businesses building better Instagram conversations.</p></div>
+              <div><strong>{post.author || "AP3K Editorial"}</strong><p>{post.importedArchive ? "Republished in the AP3K blog. Product names and reference screenshots identify the tools discussed in the original article." : "Practical ideas for creators and businesses building better Instagram conversations."}</p></div>
             </div>
             </div>
-            <nav className={e.contentsRail} aria-label="On this page"><strong>On this page</strong>
+            <nav className={e.contentsRail} aria-label="On this page"><div><strong>On this page</strong>
               <ol>
                 {post.sections.map((section, index) => (
                   <li key={section.heading}>
@@ -329,7 +337,7 @@ export default async function BlogPostPage({ params }: Props) {
                   </li>
                 ))}
               </ol>
-            </nav>
+            </div></nav>
             </div>
           </article>
           {post.slug === "instagram-comment-to-dm-automation" && getServerLocale() === "en" ? <LaunchKitForm source="guide" /> : null}

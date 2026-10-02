@@ -1,3 +1,4 @@
+import importedPosts from "./content/imported-blog/index.json";
 import { OCTOBER_EDITORIAL } from "./content/editorial-october";
 import { EXPANSION_POSTS } from "./content/expansion";
 import type { BlogVisualVariant } from "@/components/website/blog-visual";
@@ -15,6 +16,9 @@ export type BlogSection = {
 };
 
 export type BlogPost = {
+  importedArchive?: boolean;
+  author?: string;
+  subtitle?: string;
   seoTitle?: string;
   noIndex?: boolean;
   contentLocale?: "en";
@@ -36,7 +40,7 @@ export type BlogPost = {
   sections: BlogSection[];
 };
 
-export const BLOG_POSTS: BlogPost[] = [
+export const LEGACY_BLOG_POSTS: BlogPost[] = [
   COMMENT_DM_POSTS[0],
   ...OCTOBER_EDITORIAL,
   ...EXPANSION_POSTS,
@@ -616,6 +620,9 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
   },
 ];
+
+const importedSlugs = new Set(importedPosts.map(post => post.slug));
+export const BLOG_POSTS: BlogPost[] = [...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug))];
 
 export function getBlogPost(slug: string) {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;

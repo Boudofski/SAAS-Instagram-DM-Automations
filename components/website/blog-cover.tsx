@@ -14,7 +14,7 @@ export default function BlogCover({
   const image = getArticleImage(post);
   return (
     <figure>
-      <div className={s.cover}>
+      <div className={s.cover} style={credit ? { aspectRatio: `${image.width} / ${image.height}`, borderRadius: 26 } : undefined}>
         <Image
           src={image.src}
           alt={image.alt}

@@ -10,6 +10,9 @@ const screenshot = z
     "Choose an existing screenshot.",
   );
 export const editorialSchema = z.object({
+  importedArchive: z.boolean().optional(),
+  author: text(160).optional(),
+  subtitle: text(2000).optional(),
   slug: z
     .string()
     .min(3)
@@ -103,8 +106,8 @@ export function normalizeEditorial(value: unknown, now = new Date()): BlogPost {
   return {
     ...post,
     updatedAt: now.toISOString().slice(0, 10),
-    wordCount: words,
-    readingTime: `${Math.max(1, Math.ceil(words / 220))} min read`,
+    wordCount: post.importedArchive ? post.wordCount : words,
+    readingTime: post.importedArchive ? post.readingTime : `${Math.max(1, Math.ceil(words / 220))} min read`,
   } as BlogPost;
 }
 

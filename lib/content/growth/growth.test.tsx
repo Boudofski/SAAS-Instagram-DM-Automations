@@ -1,3 +1,5 @@
+vi.mock("@/components/website/blog-fonts", () => ({ blogSans: {className:"",variable:""}, blogSerif: {variable:""} }));
+vi.mock("@/lib/imported-blog-server", () => ({ getImportedArticleHtml: async () => "<p>Imported article</p>" }));
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
