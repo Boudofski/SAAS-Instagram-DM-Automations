@@ -3,11 +3,24 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import imported from './content/imported-blog/index.json';
 import covers from './content/imported-blog/covers.json';
+import redirects from './content/imported-blog/redirects.json';
 import { BLOG_POSTS } from './blog';
 import { getEditorialArchive } from './blog-archive';
 import { getBlogPage } from './blog-pagination';
 
 describe('supplied blog archive migration', () => {
+  it('uses AP3K authorship and branding throughout published article content', () => {
+    for (const post of imported) {
+      expect(post.author).toBe('AP3K');
+      expect(JSON.stringify(post)).not.toMatch(/link\s*to\s*dm/i);
+      const html = readFileSync(`lib/content/imported-blog/${post.slug}.html`, 'utf8');
+      expect(html).not.toMatch(/link\s*to\s*dm|salesmorph/i);
+      expect(html).not.toMatch(/AP3K is (?:a )?(?:verified )?Meta Business Partner/i);
+    }
+    for (const destination of Object.values(redirects)) {
+      expect(imported.some(post => post.slug === destination)).toBe(true);
+    }
+  });
   it('publishes all 175 unique articles in the source order across 20 archive pages', () => {
     const archive = getEditorialArchive(BLOG_POSTS);
     expect(archive.posts.map(p => p.slug)).toEqual(imported.map(p => p.slug));

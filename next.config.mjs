@@ -14,6 +14,12 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {"source": "/blog/get-started-with-linktodm", "destination": "/blog/get-started-with-ap3k", "permanent": true},
+      {"source": "/blog/how-to-schedule-automations-with-linktodm", "destination": "/blog/how-to-schedule-automations-with-ap3k", "permanent": true},
+      {"source": "/blog/linktodm-is-officially-a-meta-business-partner", "destination": "/blog/how-ap3k-connects-through-instagram-api", "permanent": true},
+      {"source": "/blog/10-ways-linktodm-helps-you-automate-and-scale-instagram-marketing", "destination": "/blog/10-ways-ap3k-helps-you-automate-and-scale-instagram-marketing", "permanent": true},
+      {"source": "/blog/how-to-set-up-facebook-dm-automation-using-linktodm", "destination": "/blog/how-to-set-up-instagram-dm-automation-using-ap3k", "permanent": true},
+
       {
         source: "/ap3k-admin",
         destination: "/admin/overview",

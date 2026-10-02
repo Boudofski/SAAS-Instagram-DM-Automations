@@ -622,7 +622,7 @@ export const LEGACY_BLOG_POSTS: BlogPost[] = [
 ];
 
 const importedSlugs = new Set(importedPosts.map(post => post.slug));
-export const BLOG_POSTS: BlogPost[] = [...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug))];
+export const BLOG_POSTS: BlogPost[] = [...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug))].map(post => ({ ...post, author: "AP3K" }));
 
 export function getBlogPost(slug: string) {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;
