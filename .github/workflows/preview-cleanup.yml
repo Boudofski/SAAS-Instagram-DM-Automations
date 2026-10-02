@@ -56,7 +56,7 @@ jobs:
             throw new Error('Only merged, same-repository PRs targeting main may be cleaned up');
           }
           const head = pr.head.ref;
-          if (!/^(codex|fix|feature|test|preview|brand)\//.test(head)) {
+          if (!/^(codex|fix|feat|feature|perf|test|preview|brand)\//.test(head)) {
             throw new Error('Branch is outside the disposable development prefixes');
           }
           const open = await gh(prefix + '/pulls?state=open&head=' + encodeURIComponent(repo.split('/')[0] + ':' + head));
