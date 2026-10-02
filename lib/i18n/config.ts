@@ -32,7 +32,7 @@ export function isEnglishOnlyArticle(pathname: string): boolean {
     "",
   );
   return (
-    /^\/(compare|solutions)(\/|$)/.test(path) ||
+    /^\/(compare|solutions|docs)(\/|$)/.test(path) ||
     path === "/manychat-alternative" ||
     englishArticles.has(path)
   );

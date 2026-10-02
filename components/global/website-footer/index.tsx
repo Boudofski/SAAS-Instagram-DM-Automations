@@ -85,7 +85,7 @@ export default function WebsiteFooter() {
                 title: "Resources",
                 links: [
                   ["Blog", "/blog"],
-                  ["Support center", "/help"],
+                  ["Documentation", "/docs"],
                   [
                     "Message templates",
                     "/resources/instagram-comment-to-dm-templates",

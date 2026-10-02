@@ -5,7 +5,6 @@ import { REFERENCE_GUIDE_SLUGS } from "@/lib/blog-archive";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import e from "@/components/website/blog-editorial.module.css";
 import BlogCover from "@/components/website/blog-cover";
-import LaunchKitForm from "@/components/website/launch-kit-form";
 import { getArticleImage, articleImageUrl } from "@/lib/blog-images";
 import s from "@/components/website/public-pages.module.css";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
@@ -340,7 +339,6 @@ export default async function BlogPostPage({ params }: Props) {
             </div></nav>
             </div>
           </article>
-          {post.slug === "instagram-comment-to-dm-automation" && getServerLocale() === "en" ? <LaunchKitForm source="guide" /> : null}
           <section className={`${e.archive} pb-16`}>
             <h2>Related articles</h2>
             <div className={e.grid}>
