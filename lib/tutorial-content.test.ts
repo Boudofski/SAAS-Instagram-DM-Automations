@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import sharp from "sharp";
 import { readFileSync } from "node:fs";
 import { BLOG_POSTS } from "./blog";
 import { AP3K_HELP_ARTICLES } from "./ap3k-help";
@@ -6,9 +7,9 @@ import { HELP_TUTORIALS, ILLUSTRATED_POSTS, INSTAGRAM_CONNECTION_SECTIONS, TUTOR
 import { translateUi } from "./i18n/translate";
 
 describe("illustrated tutorials", () => {
-  it("uses all seventeen supplied screenshots in blog sections and matching help entries", () => {
+  it("uses all current product screenshots in blog sections and matching help entries", () => {
     const ids = Object.keys(TUTORIAL_SCREENSHOTS).sort();
-    expect(ids).toHaveLength(17);
+    expect(ids).toHaveLength(14);
     expect(Array.from(new Set(BLOG_POSTS.flatMap(post => post.sections.flatMap(section => section.screenshot ?? [])))).sort()).toEqual(ids);
     expect(Array.from(new Set(Object.values(HELP_TUTORIALS).flatMap(entry => entry.screenshots))).sort()).toEqual(ids);
     for (const [slug, entry] of Object.entries(HELP_TUTORIALS)) {
@@ -17,11 +18,12 @@ describe("illustrated tutorials", () => {
     }
   });
 
-  it("preserves the real image dimensions to prevent layout shifts or cropping", () => {
+  it("preserves the real image dimensions to prevent layout shifts or cropping", async () => {
     for (const [id, shot] of Object.entries(TUTORIAL_SCREENSHOTS)) {
-      const png = readFileSync(`public${tutorialImageSrc(id as keyof typeof TUTORIAL_SCREENSHOTS)}`);
-      expect(png.readUInt32BE(16)).toBe(shot.width);
-      expect(png.readUInt32BE(20)).toBe(shot.height);
+      const data = readFileSync(`public${tutorialImageSrc(id as keyof typeof TUTORIAL_SCREENSHOTS)}`);
+      const image = await sharp(data).metadata();
+      expect(image.width).toBe(shot.width);
+      expect(image.height).toBe(shot.height);
     }
   });
 

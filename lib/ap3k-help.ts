@@ -11,13 +11,13 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
   {
     contentLocale: "en",
     slug: "workspace-tour", category: "Getting started", title: "Home dashboard",
-    summary: "Home shows the connected account, date filters, performance totals, and active automations.",
+    summary: "Explore the connected account, automation shortcuts, performance, contacts, Inbox, billing and settings.",
     steps: ["Use the account selector in the sidebar when you manage more than one Instagram profile.", "Manage account opens the connection controls. View all opens the full automation list."],
   },
   {
     contentLocale: "en",
     slug: "automation-types", category: "Automations", title: "Choose an automation type",
-    summary: "Choose Comment automation, Story automation, or DM automation according to where the interaction starts.",
+    summary: "Choose Post automation, Story automation, Chat automation or Flow automation according to where the interaction starts.",
     steps: ["Comment automation: a comment on a post or Reel can trigger a public reply, a DM, or both.", "Story automation: choose the supported story interaction, such as a mention, emoji reaction, or text reply.", "DM automation: respond to a new incoming message containing a keyword, or to any eligible message."],
   },
   {
@@ -25,7 +25,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Getting started",
     title: "Connect Instagram",
     summary: "Connect one Instagram Business or Creator account through Meta's official authorization flow.",
-    steps: ["Open Instagram Account from the workspace menu.", "Choose Connect Instagram and approve the requested Meta permissions.", "Return to AP3K and confirm that Profile & media, Comments, and DMs all show Granted.", "Personal Instagram accounts must first be changed to a professional Business or Creator account."],
+    steps: ["Open Instagram Account from the workspace menu.", "Choose Connect Instagram and approve the requested Meta permissions.", "After authorization, return to the dashboard. Open Manage account and check the connected username, Comments ready and DMs ready badges.", "Personal Instagram accounts must first be changed to a professional Business or Creator account."],
   },
   {
     slug: "reconnect-instagram",
@@ -60,7 +60,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "AP3K AI",
     title: "Set up AP3K AI",
     summary: "AP3K AI is available on Pro and Business and can be enabled independently for comments and DMs.",
-    steps: ["Open AP3K AI and add focused, accurate knowledge notes.", "Set the role, brand voice, tone, guardrails, and comment-protection choices.", "Test answers in Playground, then explicitly save useful business facts to Knowledge.", "Enable AI Replies or AI Comments at workspace level and separately in each automation.", "AI replies count toward the plan's monthly AI allowance."],
+    steps: ["Open AP3K AI and add focused, accurate knowledge notes.", "Set the role, brand voice, tone, guardrails, and comment-protection choices.", "Test answers in Playground, then explicitly save useful business facts to Knowledge.", "Choose AI in each eligible automation. Business knowledge and behavior customize its responses; no workspace master switch is required.", "AI replies count toward the plan's monthly AI allowance."],
   },
   {
     slug: "ai-safety",
@@ -107,9 +107,9 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
   {
     slug: "refer-earn",
     category: "Billing",
-    title: "Refer friends and earn AP3K credit",
+    title: "Refer friends and earn commissions",
     summary: "Share the tracked referral link shown in Refer & earn and follow qualification progress there.",
-    steps: ["Copy your personal link from Refer & earn.", "Your friend must create a new AP3K account through that link, connect Instagram, and complete an eligible paid invoice.", "Eligible Founding 10 rewards add a $9 AP3K credit to a future Stripe invoice.", "Self-referrals, duplicates, refunds, disputes, fraud, and accounts without a connected Instagram profile do not qualify."],
+    steps: ["Copy your personal link from Refer & earn.", "Your friend must create a new AP3K account through that link, connect Instagram, and complete an eligible paid invoice.", "Referral links offer 30% for up to 11 qualifying paid months. Personalized discount codes have separate plan and follower requirements; review the current program terms.", "Self-referrals, duplicates, refunds, disputes, fraud, and accounts without a connected Instagram profile do not qualify."],
   },
   {
     slug: "privacy-delete",

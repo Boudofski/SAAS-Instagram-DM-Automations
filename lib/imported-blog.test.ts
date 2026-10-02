@@ -23,8 +23,8 @@ describe('supplied blog archive migration', () => {
   });
   it('publishes all 175 unique articles in the source order across 20 archive pages', () => {
     const archive = getEditorialArchive(BLOG_POSTS);
-    expect(archive.posts.map(p => p.slug)).toEqual(imported.map(p => p.slug));
-    expect(new Set(archive.posts.map(p => p.slug)).size).toBe(175);
+    expect(archive.posts.filter(p => p.importedArchive).map(p => p.slug)).toEqual(imported.map(p => p.slug));
+    expect(new Set(archive.posts.map(p => p.slug)).size).toBe(176);
     expect(getBlogPage(undefined, archive.posts.length)?.pages).toBe(20);
     expect(archive.featured).toHaveLength(4);
   });
@@ -43,7 +43,7 @@ describe('supplied blog archive migration', () => {
         expect(src).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}$/);
       }
       for (const [, src] of Array.from(html.matchAll(/<img[^>]+src="([^"]+)"/g))) {
-        expect(src).toMatch(/^\/images\/blog\/imported\/[a-f0-9]+\.webp$/);
+        expect(src).toMatch(/^\/images\/(blog\/imported\/[a-f0-9]+|docs\/[a-z-]+)\.webp$/);
         expect(existsSync(`public${src}`), `${post.slug}: ${src}`).toBe(true);
       }
       for (const [, slug] of Array.from(html.matchAll(/href="\/blog\/([^"#?]+)/g))) {

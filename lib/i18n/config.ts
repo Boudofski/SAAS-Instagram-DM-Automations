@@ -5,6 +5,7 @@ import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
+  "/blog/manychat-vs-ap3k-pricing-for-instagram",
   ...importedArticleSlugs.map(slug => `/blog/${slug}`),
   ...editorialSlugs.map((slug) => `/blog/${slug}`),
   ...expansionSlugs.map((slug) => `/blog/${slug}`),
@@ -32,7 +33,7 @@ export function isEnglishOnlyArticle(pathname: string): boolean {
     "",
   );
   return (
-    /^\/(compare|solutions|docs)(\/|$)/.test(path) ||
+    /^\/(compare|solutions|docs|tutorials)(\/|$)/.test(path) ||
     path === "/manychat-alternative" ||
     englishArticles.has(path)
   );

@@ -35,7 +35,7 @@ export default function ComparisonPage({ page }: { page: Comparison }) {
     headline: `AP3K vs ${page.name}: which fits your Instagram workflow?`,
     description: page.description,
     datePublished: "2026-09-27",
-    dateModified: "2026-09-27",
+    dateModified: "2026-10-02",
     author: { "@type": "Organization", name: "AP3K", url: "https://ap3k.com" },
     mainEntityOfPage: `https://ap3k.com${path}`,
     image: "https://ap3k.com/opengraph-image",
@@ -62,31 +62,33 @@ export default function ComparisonPage({ page }: { page: Comparison }) {
         />
         <div className={s.byline}>
           <AP3KLogo markClassName="h-6 w-6" />
-          <span>September 27, 2026 · AP3K editorial team</span>
+          <span>Updated October 2, 2026 · AP3K</span>
         </div>
         <h1>
-          {page.name} alternative: AP3K vs {page.name}
+          {page.name} alternative{page.slug === "manychat" ? " for Instagram" : ""}: AP3K vs {page.name}
         </h1>
         <p>{page.description}</p>
+        <p><Link href="/sign-up">Try AP3K free →</Link> · <Link href="/tutorials/instagram-comment-to-dm">Watch the setup tutorial</Link></p>
         <div className={s.note}>
           <p>
             <strong>At a glance.</strong> {page.decision}
           </p>
         </div>
-        <div className={s.stats}>
-          {[
-            ["$0", "Free plan"],
-            ["$9", "Pro / month"],
-            ["500", "Free actions / month"],
-            ["10", "Accounts on Business"],
-          ].map(([value, label]) => (
-            <div key={label}>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
         <WorkspacePreview />
+        {page.slug === "manychat" && <section className={s.contentSection}>
+          <h2>Is AP3K the right ManyChat alternative for Instagram?</h2>
+          <p>If your main campaign is “comment GUIDE and receive a link,” start by comparing that exact journey. AP3K supports post and Reel comment triggers, story interactions and incoming DMs. Use the basic editor for a direct response or the Flow builder when replies need different paths.</p>
+          <p>ManyChat deserves a place on your shortlist when WhatsApp, Messenger and a broader team inbox are central to your work. AP3K is focused on Instagram; it does not replace every channel or integration in a multi-channel workspace.</p>
+          <h3>Can you use AP3K as a free ManyChat alternative?</h3>
+          <p>Yes, for supported basic Instagram automations within the Free allowance. Free includes one account, five active automations and 500 successful actions per month. An automated public reply plus a DM uses two actions. Publishing AI replies, collecting contact information and custom flows requires an eligible paid plan.</p>
+          <h3>Compare cost using your actual conversation</h3>
+          <p>For example, 200 people each receiving one public reply and one DM use 400 AP3K actions. Adding another automated DM for each person brings the same campaign to 600 actions. This is an illustration, not a forecast. ManyChat’s active-contact model counts people differently, so a contact limit and an action limit are not interchangeable.</p>
+          <h3>Move one campaign before moving everything</h3>
+          <ol><li>Record the post, keyword, public reply, DM, buttons and optional steps in your existing campaign.</li><li>Rebuild it as an unpublished AP3K automation. Check links and collected fields.</li><li>Turn off the overlapping campaign in your previous tool, then activate and test the replacement with a fresh interaction from a second account.</li><li>Review delivery and contact information before migrating the next campaign.</li></ol>
+          <p><Link href="/docs/migrating-from-manychat/rebuild-your-automations">Follow the ManyChat migration guide →</Link></p>
+          <p><Link href="/blog/manychat-vs-ap3k-pricing-for-instagram">Compare active contacts and automated actions →</Link></p>
+          <p><Link href="/tutorials/instagram-comment-to-dm">Watch a complete AP3K comment-to-DM setup →</Link></p>
+        </section>}
         <section className={s.contentSection}>
           <h2>What is {page.name}?</h2>
           <p>{page.overview}</p>

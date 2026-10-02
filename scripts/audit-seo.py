@@ -10,6 +10,8 @@ from urllib.parse import urlsplit
 from html.parser import HTMLParser
 
 ORIGIN = (sys.argv[1] if len(sys.argv) > 1 else 'https://ap3k.com').rstrip('/')
+SITEMAP_URLS = set()
+LANGUAGE_SETS = ({'en', 'x-default'}, {'en', 'fr', 'es', 'de', 'pt', 'x-default'})
 
 class Page(HTMLParser):
     def __init__(self):
@@ -62,7 +64,9 @@ def check(entry):
         path = urlsplit(url).path.split('/')
         locale = path[1] if len(path) > 1 and path[1] in ('fr','es','de','pt') else 'en'
         if page.lang != locale: errors.append('HTML language mismatch')
-        if normalize_alternates(page.alternates) != normalize_alternates(expected_alternates): errors.append('HTML/sitemap language alternates disagree')
+        if expected_alternates and normalize_alternates(page.alternates) != normalize_alternates(expected_alternates): errors.append('HTML/sitemap language alternates disagree')
+        if set(page.alternates) not in LANGUAGE_SETS: errors.append('Unsupported HTML language set')
+        if any(target.rstrip('/') not in SITEMAP_URLS for target in page.alternates.values()): errors.append('HTML alternate target missing from sitemap')
         if page.alternates.get(locale, '').rstrip('/') != url.rstrip('/'): errors.append('Missing self language alternate')
         return {'url': url, 'title': page.title, 'errors': errors}
     except Exception as exc:
@@ -75,8 +79,10 @@ if __name__ == '__main__':
     }) for node in root.findall('{*}url')]
     urls = [url for url, _ in entries]
     if not urls or len(set(urls)) != len(urls): raise ValueError('Empty sitemap or duplicate URLs')
+    SITEMAP_URLS = {url.rstrip('/') for url in urls}
     for url, alternates in entries:
-        if set(alternates) not in ({'en', 'x-default'}, {'en', 'fr', 'es', 'de', 'pt', 'x-default'}):
+        # Hreflang may be supplied exclusively in HTML. Validate it on every page.
+        if alternates and set(alternates) not in LANGUAGE_SETS:
             raise ValueError(f'Unsupported sitemap language set: {url}')
         if any(target not in urls for target in alternates.values()):
             raise ValueError(f'Sitemap alternate target missing: {url}')

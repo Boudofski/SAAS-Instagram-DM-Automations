@@ -78,7 +78,7 @@ export function generateMetadata({ params }: Props): Metadata {
     const comparison = getComparison("manychat")!;
     return localizedMetadata(
       {
-        title: "ManyChat Alternative: AP3K vs ManyChat",
+        title: "ManyChat Alternative for Instagram | AP3K vs ManyChat",
         description: comparison.description,
         openGraph: { images: ["https://ap3k.com/opengraph-image"] },
       },

@@ -8,7 +8,7 @@ const ai = ILLUSTRATED_POSTS.find(post => post.slug === "set-up-ap3k-ai-visual-g
 // Reuse the reviewed instructions next to the exact screen they describe.
 // The automation list is identified as a review screen, never as the DM editor.
 const sections: Record<string, BlogSection[]> = {
-  "workspace-tour": [workspace[0]],
+  "workspace-tour": workspace,
   "connect-instagram": INSTAGRAM_CONNECTION_SECTIONS.slice(0, 4),
   "reconnect-instagram": INSTAGRAM_CONNECTION_SECTIONS.slice(3),
   "automation-types": [automation[0]],

@@ -1,3 +1,4 @@
+import { TutorialVideo } from "@/components/docs/tutorial-video";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translateUi } from "@/lib/i18n/translate";
@@ -86,21 +87,9 @@ export default function CommercialLandingPage({
           <h2>See the conversation</h2>
           <p>
             Choose a clear trigger and deliver what your post promises. This
-            example shows the interaction from your audience’s perspective.
+            tutorial shows how to build and publish the campaign in AP3K.
           </p>
-          <figure className={styles.demo}>
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster={page.media}
-              preload="none"
-              aria-label={page.mediaAlt}
-            >
-              <source src={page.video} type="video/mp4" />
-            </video>
-          </figure>
+          <TutorialVideo />
           <h2>Before you activate</h2>
           <ul>
             {page.limitations.map((limit) => (
@@ -128,7 +117,7 @@ export default function CommercialLandingPage({
                 {tutorial.title} →
               </Link>
             ))}
-            <Link href="/resources/instagram-comment-to-dm-templates">
+            <Link href="/docs/post-automation/post-automation-templates">
               Comment-to-DM message templates →
             </Link>
             <Link href="/compare">Compare Instagram automation tools →</Link>

@@ -33,7 +33,7 @@ export const EXPANSION_POSTS: BlogPost[] = EXPANSION_CLUSTERS.flatMap(cluster =>
     { heading: "What to avoid", paragraphs: [topic.pitfall] },
     { heading: "Where AP3K fits", paragraphs: [cluster.context], links: [{ label: "Explore the relevant AP3K workflow", href: cluster.product }, { label: "Current plans and allowances", href: "/pricing" }] },
     { heading: "How to judge the result", paragraphs: [topic.measure], bullets: cluster.checklist },
-    { heading: "Continue with a related guide", paragraphs: ["Use the next guide for a related decision, or browse the topic library to choose a different workflow."], links: [{ label: cluster.posts[(index + 1) % cluster.posts.length].title, href: `/blog/${cluster.posts[(index + 1) % cluster.posts.length].slug}` }, { label: "Browse all growth and operations guides", href: "/resources/instagram-growth-library" }] },
+    { heading: "Continue with a related guide", paragraphs: ["Use the next guide for a related decision, or browse the topic library to choose a different workflow."], links: [{ label: cluster.posts[(index + 1) % cluster.posts.length].title, href: `/blog/${cluster.posts[(index + 1) % cluster.posts.length].slug}` }, { label: "Browse all growth and operations guides", href: "/blog" }] },
   ];
   const wordCount = [topic.intro, ...sections.flatMap(s => [s.heading, ...s.paragraphs, ...(s.bullets ?? []), ...(s.steps ?? []).flatMap(step => [step.title, step.body])])].join(" ").split(/\s+/).length;
   return {

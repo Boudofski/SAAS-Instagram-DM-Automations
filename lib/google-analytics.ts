@@ -56,3 +56,9 @@ export function googleTag(win: GoogleWindow) {
   win.gtag = win.gtag || function () { win.dataLayer!.push(arguments); };
   return win.gtag;
 }
+
+/** Authentication/checkout returns must not overwrite the acquisition source. */
+export function isServiceReturn(referrer: string) {
+  try { return ["accounts.google.com", "checkout.stripe.com", "billing.stripe.com"].includes(new URL(referrer).hostname); }
+  catch { return false; }
+}

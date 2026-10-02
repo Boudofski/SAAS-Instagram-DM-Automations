@@ -24,53 +24,6 @@ export const SEO_RESOURCES: SeoResource[] = [
     ],
   },
   {
-    slug: "instagram-comment-to-dm-templates",
-    updatedAt: "2026-09-29",
-    eyebrow: "Free template library",
-    title: "Instagram Comment-to-DM Templates",
-    description: "Copy free Instagram comment-to-DM templates: caption calls to action, public replies, private messages and link-button labels for your next campaign.",
-    sections: [
-      {
-        title: "Caption calls to action",
-        intro: "Replace the bracketed text before publishing. Promise one specific result and use the same keyword in AP3K.",
-        items: [
-          "Comment GUIDE and I’ll send you the complete [topic] checklist by DM.",
-          "Want the exact [resource]? Comment LINK and I’ll send it directly.",
-          "Comment PRICE for the current plans and what each option includes.",
-          "Need help choosing? Comment HELP and I’ll send the short decision guide.",
-          "Comment BOOK and I’ll send the available appointment page.",
-          "Comment MENU and I’ll send today’s menu with prices.",
-        ],
-      },
-      {
-        title: "Public reply templates",
-        items: [
-          "Sent — check your DMs.",
-          "It’s on the way. Check your message requests too.",
-          "Done. I sent the guide privately.",
-          "Thanks — the link is in your DMs.",
-          "Sent. Tell me if the link gives you any trouble.",
-          "You’ve got it. Open your Instagram inbox.",
-        ],
-      },
-      {
-        title: "Final DM templates",
-        items: [
-          "Here’s the [resource] from the post. Tap the button below to open it.",
-          "Thanks for commenting [keyword]. This link opens the exact [product or guide] you requested.",
-          "Here are the current [plans or prices]. Review the options, then reply here if you have a question.",
-          "Here’s the booking page. Choose any available time that works for you.",
-          "Here’s today’s menu. Availability may change, so confirm your order through the contact option on the page.",
-          "Here’s the checklist. Save it somewhere easy to find before you start.",
-        ],
-      },
-      {
-        title: "Button labels",
-        items: ["Get the guide", "View pricing", "Book a time", "Open the menu", "View product", "Download checklist"],
-      },
-    ],
-  },
-  {
     slug: "instagram-comment-automation-checklist",
     eyebrow: "Launch checklist",
     title: "Instagram Comment Automation Checklist",

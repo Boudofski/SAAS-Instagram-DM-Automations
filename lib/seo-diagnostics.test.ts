@@ -58,5 +58,5 @@ it("allows product-card image retrieval without publishing private route names",
   expect(canFetch('/api/automation-images/11111111-1111-4111-8111-111111111111')).toBe(true);
   expect(blocked).toEqual([]);
   expect(allowed).toEqual(['/']);
-  expect(robots().sitemap).toBe('https://ap3k.com/sitemap.xml');
+  expect(robots().sitemap).toEqual(['https://ap3k.com/sitemap.xml', 'https://ap3k.com/video-sitemap.xml']);
 });

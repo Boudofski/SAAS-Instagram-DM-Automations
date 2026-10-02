@@ -33,7 +33,7 @@ export default function HelpCenter() {
 
   return <div className="mx-auto max-w-6xl">
     <header className="mx-auto max-w-2xl text-center">
-      <p className="ap3k-kicker">{tr("AP3K Knowledge Base")}</p>
+      <p className="ap3k-kicker">{tr("AP3K Documentation")}</p>
       <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{tr("How can we help?")}</h1>
       <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-400">{tr("Find an answer, follow the steps, and get back to your work.")}</p>
       <div role="search" className="mt-7 flex items-center gap-3 rounded-2xl border border-slate-300 bg-white p-2 ps-4 shadow-lg shadow-violet-950/5 focus-within:ring-2 focus-within:ring-violet-500 dark:border-white/15 dark:bg-[#101827]">

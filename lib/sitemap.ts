@@ -54,7 +54,7 @@ export function buildSitemap(
     },
     {
       url: `${baseUrl}/docs`,
-      lastModified: new Date("2026-09-20T00:00:00Z"),
+      lastModified: new Date("2026-10-02T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.7,
     },
@@ -128,7 +128,7 @@ export function buildSitemap(
   const helpPages: MetadataRoute.Sitemap = AP3K_HELP_ARTICLES.map(
     (article) => ({
       url: `${baseUrl}/help/${article.slug}`,
-      lastModified: new Date("2026-09-20T00:00:00Z"),
+      lastModified: new Date("2026-10-02T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.7,
     }),
@@ -136,18 +136,12 @@ export function buildSitemap(
 
   const resourcePages: MetadataRoute.Sitemap = [
     {
-      url: `${baseUrl}/resources/instagram-growth-library`,
-      lastModified: new Date("2026-09-24T00:00:00Z"),
-      changeFrequency: "weekly",
-      priority: 0.85,
-    },
-    {
       url: `${baseUrl}/resources`,
       lastModified: new Date("2026-09-29T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
-    ...SEO_RESOURCES.map((resource) => ({
+    ...SEO_RESOURCES.filter(resource => resource.slug !== "instagram-comment-to-dm-templates").map((resource) => ({
       url: `${baseUrl}/resources/${resource.slug}`,
       lastModified: new Date(`${resource.updatedAt || "2026-09-22"}T00:00:00Z`),
       changeFrequency: "monthly" as const,
@@ -163,6 +157,7 @@ export function buildSitemap(
 
   return [
     ...staticPages,
+    {url: `${baseUrl}/tutorials/instagram-comment-to-dm`, lastModified: new Date("2026-10-02T00:00:00Z"), changeFrequency: "monthly" as const, priority: 0.8},
     ...[
       "/compare",
       "/solutions",

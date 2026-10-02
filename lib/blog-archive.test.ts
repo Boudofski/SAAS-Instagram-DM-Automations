@@ -18,7 +18,7 @@ describe("editorial archive", () => {
     expect(new Set(seen).size).toBe(seen.length);
     expect(seen).not.toContain("ap3k-workspace-visual-guide");
     expect(BLOG_POSTS.some(p => p.slug === "ap3k-workspace-visual-guide")).toBe(true);
-    expect(seen.length).toBe(175);
+    expect(seen.length).toBe(176);
   });
   it("only puts valid editorial archive pages in the sitemap", () => {
     const total = getEditorialArchive(BLOG_POSTS).posts.length;

@@ -1,5 +1,9 @@
 import { LOCALE_SOURCE_COLUMN, SUPPORTED_LOCALES, type Locale } from "./config";
 export const REMAINING_ROWS = [
+["After authorization, return to the dashboard. Open Manage account and check the connected username, Comments ready and DMs ready badges.", "Après autorisation, revenez au tableau de bord. Ouvrez Gérer le compte et vérifiez le nom connecté ainsi que les badges de disponibilité des commentaires et des DM.", "Tras autorizar, vuelve al panel. Abre Gestionar cuenta y comprueba el usuario conectado y los indicadores de comentarios y DM disponibles.", "Kehre nach der Autorisierung zum Dashboard zurück. Öffne Konto verwalten und prüfe den verbundenen Nutzernamen sowie die Bereitschaft für Kommentare und DMs.", "Após a autorização, volte ao painel. Abra Gerir conta e confirme o nome ligado e os indicadores de disponibilidade dos comentários e das DMs."],
+["Choose AI in each eligible automation. Business knowledge and behavior customize its responses; no workspace master switch is required.", "Choisissez l’IA dans chaque automatisation éligible. Les connaissances et le comportement personnalisent ses réponses ; aucun interrupteur général n’est nécessaire.", "Elige IA en cada automatización compatible. Los conocimientos y el comportamiento personalizan sus respuestas; no hace falta un interruptor general.", "Wähle KI in jeder geeigneten Automatisierung. Wissen und Verhalten passen die Antworten an; ein zentraler Schalter ist nicht erforderlich.", "Escolha IA em cada automação compatível. O conhecimento e o comportamento personalizam as respostas; não é necessário um interruptor geral."],
+["Refer friends and earn commissions", "Parrainez des amis et gagnez des commissions", "Invita a amigos y gana comisiones", "Freunde empfehlen und Provisionen verdienen", "Indique amigos e ganhe comissões"],
+["Referral links offer 30% for up to 11 qualifying paid months. Personalized discount codes have separate plan and follower requirements; review the current program terms.", "Les liens de parrainage offrent 30 % pendant au maximum 11 mois payés éligibles. Les codes personnalisés ont des conditions distinctes de forfait et d’abonnés ; consultez les conditions actuelles.", "Los enlaces de referido ofrecen un 30 % durante un máximo de 11 meses pagados válidos. Los códigos personalizados tienen requisitos distintos de plan y seguidores; revisa las condiciones actuales.", "Empfehlungslinks bieten 30 % für bis zu 11 berechtigte bezahlte Monate. Personalisierte Rabattcodes haben eigene Tarif- und Follower-Anforderungen; prüfe die aktuellen Bedingungen.", "Os links de indicação oferecem 30% por até 11 meses pagos elegíveis. Os códigos personalizados têm requisitos próprios de plano e seguidores; consulte os termos atuais."],
   [
     "Intelligence center", "Centre d’intelligence artificielle",
     "Centro de inteligencia artificial",
@@ -457,7 +461,7 @@ export const REMAINING_ROWS = [
     "Centro de ajuda do AP3K"
   ],
   [
-    "AP3K Knowledge Base", "Base de connaissances AP3K",
+    "AP3K Documentation", "Base de connaissances AP3K",
     "Base de conocimientos de AP3K",
     "AP3K-Wissensdatenbank",
     "Base de conhecimento do AP3K"

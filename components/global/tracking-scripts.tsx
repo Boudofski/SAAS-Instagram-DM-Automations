@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { gaMeasurementId, analyticsPage, analyticsReferrer, analyticsCampaign, googleTag } from "@/lib/google-analytics";
+import { gaMeasurementId, analyticsPage, analyticsReferrer, analyticsCampaign, isServiceReturn, googleTag } from "@/lib/google-analytics";
 
 function validGoogleId(value?: string) {
   return value && /^(G|AW)-[A-Z0-9-]+$/.test(value) ? value : null;
@@ -38,7 +38,7 @@ export default function TrackingScripts() {
     };
     if (!initialized.current) {
       tag("js", new Date());
-      tag("config", gaId, { ...properties, send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false });
+      tag("config", gaId, { ...properties, send_page_view: false, ignore_referrer: isServiceReturn(document.referrer), allow_google_signals: false, allow_ad_personalization_signals: false });
       if (adsId && adsId !== gaId) tag("config", adsId);
       initialized.current = true;
       setProduction(true);
