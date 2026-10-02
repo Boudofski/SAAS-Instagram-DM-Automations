@@ -3,6 +3,7 @@ import { COMPARISONS, comparisonPath } from "@/lib/comparisons";
 import { SOLUTIONS } from "@/lib/solutions";
 import { COMPANY } from "@/lib/company";
 import { AP3K_HELP_ARTICLES } from "@/lib/ap3k-help";
+import { DOCS_ARTICLES } from "@/lib/docs";
 import { BLOG_POSTS } from "@/lib/blog";
 import type { BlogPost } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
@@ -52,7 +53,7 @@ export function buildSitemap(
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/help`,
+      url: `${baseUrl}/docs`,
       lastModified: new Date("2026-09-20T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.7,
@@ -179,6 +180,7 @@ export function buildSitemap(
     ...blogArchivePages,
     ...blogPages,
     ...helpPages,
+    ...DOCS_ARTICLES.map(article => ({ url: `${baseUrl}/docs/${article.slug}`, lastModified: new Date(`${article.updated}T00:00:00Z`), changeFrequency: "monthly" as const, priority: 0.7 })),
     ...resourcePages,
   ].flatMap((page) => {
     const parsed = new URL(page.url);

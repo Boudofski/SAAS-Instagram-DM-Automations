@@ -1,0 +1,10 @@
+import core from './content/core-content.json';
+import flow from './content/flow-content.json';
+import accounts from './content/account-content.json';
+import type { DocsArticle } from './types';
+import { DOCS_GROUPS } from './groups';
+export { DOCS_GROUPS } from './groups';
+export const DOCS_ARTICLES = ([...core,...flow,...accounts] as DocsArticle[]).sort((a,b)=>DOCS_GROUPS.findIndex(g=>g.id===a.group)-DOCS_GROUPS.findIndex(g=>g.id===b.group));
+export const docsPath=(slug:string)=>`/docs/${slug}`;
+export const getDocsArticle=(slug:string)=>DOCS_ARTICLES.find(a=>a.slug===slug);
+export const DOCS_SEARCH = DOCS_ARTICLES.map(({slug,group,title,description,html,headings})=>({slug,group,title,description,headings,text:html.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ')}));

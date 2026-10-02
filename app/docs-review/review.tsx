@@ -1,0 +1,3 @@
+'use client';
+import {useState} from 'react';
+export default function Review(){const [width,setWidth]=useState(390);const [article,setArticle]=useState(false);return <main style={{padding:16,background:'#ddd',minHeight:'100vh',color:'#111'}}><div style={{display:'flex',gap:20,marginBottom:16}}>{[390,768,1280].map(w=><button key={w} onClick={()=>setWidth(w)}>{w}px</button>)}<button onClick={()=>setArticle(v=>!v)}>{article?'Show home':'Show article'}</button></div><iframe title="Documentation responsive review" src={article?'/docs/post-automation/create-instagram-comment-to-dm-automation':'/docs'} style={{width,maxWidth:'100%',height:820,border:0}}/></main>}

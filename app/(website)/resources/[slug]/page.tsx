@@ -1,5 +1,4 @@
 import Breadcrumbs from "@/components/seo/breadcrumbs";
-import LaunchKitForm from "@/components/website/launch-kit-form";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import { getSeoResource, SEO_RESOURCES } from "@/lib/seo-resources";
@@ -52,7 +51,6 @@ export default function ResourcePage({ params }: Props) {
       <p className="ap3k-kicker">{resource.eyebrow}</p>
       <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">{resource.title}</h1>
       <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{resource.description}</p>
-      {["instagram-comment-to-dm-launch-kit", "instagram-comment-to-dm-templates"].includes(resource.slug) ? <LaunchKitForm source={resource.slug.endsWith("launch-kit") ? "launch-kit" : "templates"} /> : null}
       <div id="campaign-examples" className="mt-12 scroll-mt-28 space-y-10">
         {resource.sections.map(section => <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
           <h2 className="text-2xl font-black tracking-tight">{section.title}</h2>
