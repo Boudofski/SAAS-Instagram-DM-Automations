@@ -26,7 +26,7 @@ describe("growth content release", () => {
       const values=EXPANSION_CLUSTERS.flatMap(c=>c.posts.map(p=>p[field]));
       expect(new Set(values).size).toBe(100);
     }
-    const destinations=new Set(["/pricing","/resources/instagram-growth-library",...BLOG_POSTS.map(p=>`/blog/${p.slug}`),...COMMERCIAL_PAGES.map(p=>`/${p.slug}`)]);
+    const destinations=new Set(["/pricing","/blog",...BLOG_POSTS.map(p=>`/blog/${p.slug}`),...COMMERCIAL_PAGES.map(p=>`/${p.slug}`)]);
     for (const p of EXPANSION_POSTS) {
       expect(p.wordCount).toBeGreaterThan(250);
       expect(p.sections.some(s=>s.steps?.length===3)).toBe(true);
@@ -38,7 +38,7 @@ describe("growth content release", () => {
   });
   it("keeps all new pages English-canonical, discoverable and free of invented language alternates", () => {
     const entries=buildSitemap();
-    const paths=[...EXPANSION_POSTS.map(p=>`/blog/${p.slug}`),...EXPANSION_COMMERCIAL_PAGES.map(p=>`/${p.slug}`),"/resources/instagram-growth-library"];
+    const paths=[...EXPANSION_POSTS.map(p=>`/blog/${p.slug}`),...EXPANSION_COMMERCIAL_PAGES.map(p=>`/${p.slug}`)];
     for(const path of paths) {
       for(const locale of SUPPORTED_LOCALES) {
         expect(localizePublicPath(path,locale)).toBe(path);
@@ -54,12 +54,7 @@ describe("growth content release", () => {
       expect(metadata.openGraph).toMatchObject({locale:"en_US"});
     }
   });
-  it("respects editorial unpublishing and current titles in the new library", async () => {
-    state.hidden=EXPANSION_POSTS[0].slug;state.title="An owner-edited published title";
-    const html=renderToStaticMarkup(await GrowthLibrary());
-    expect(html).not.toContain(`/blog/${state.hidden}`);
-    expect(html).toContain(state.title);
-    expect(html).toContain("99 practical guides");
-    state.hidden="";state.title="";
+  it("retires the old library in favor of the blog", () => {
+    expect(buildSitemap().some(e => e.url.includes('/resources/instagram-growth-library'))).toBe(false);
   });
 });

@@ -11,15 +11,15 @@ export default function WorkspacePreview() {
         <Link href="/help/workspace-tour">Explore the workspace →</Link>
       </div>
       <Image
-        src="/images/tutorials/automations.png"
-        width={2048}
-        height={980}
-        alt="AP3K automation workspace with campaign triggers, activity and status controls"
+        src="/images/docs/dashboard.webp"
+        width={1353}
+        height={929}
+        alt="AP3K dashboard with the connected @ap3kautomation Instagram profile"
         sizes="(max-width: 767px) 92vw, 1000px"
         className={s.workspaceScreenshot}
       />
       <figcaption>
-        Automation workspace example. Account activity and available features
+        The connected @ap3kautomation workspace. Account activity and available features
         vary.
       </figcaption>
     </figure>

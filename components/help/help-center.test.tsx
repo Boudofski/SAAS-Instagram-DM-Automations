@@ -50,7 +50,7 @@ describe("help center navigation", () => {
       state.locale = locale;
       const html = renderToStaticMarkup(<HelpArticleView article={article} sections={helpArticleSections(article.slug)} />);
       expect(html).toContain(renderToStaticMarkup(<>{translateUi(article.summary, locale)}</>));
-      expect(html).toContain('data-tutorial-screenshot="instagram-permissions"');
+      expect(html).toContain('data-tutorial-screenshot="instagram-ready"');
       expect(html).toContain(`href="${localizePublicPath("/help/create-automation", locale)}"`);
       expect(html).not.toContain("opacity:0");
     }

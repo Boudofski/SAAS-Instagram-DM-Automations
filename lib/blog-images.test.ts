@@ -13,7 +13,7 @@ describe('article-specific covers', () => {
     const images = posts.map(getArticleImage);
     expect(new Set(images.map(image => image.src)).size).toBe(175);
     for (const image of images) {
-      expect(image.src).toMatch(/^\/images\/blog\/imported\/[a-f0-9]+\.webp$/);
+      expect(image.src).toMatch(/^\/images\/(blog\/imported\/[a-f0-9]+|docs\/[a-z-]+)\.webp$/);
       expect(image.alt.length).toBeGreaterThan(20);
       expect(articleImageUrl(image)).toBe(`https://ap3k.com${image.src}`);
     }

@@ -16,7 +16,7 @@ export const COMPARISONS: Comparison[] = [
     name: "ManyChat",
     focus: "Multi-channel conversations",
     description:
-      "Compare AP3K and ManyChat for Instagram automation: channels, billing, AI replies and the workflow that fits your business.",
+      "Looking for a ManyChat alternative for Instagram? Compare AP3K’s free plan, comment-to-DM automation, AI replies and migration steps with ManyChat.",
     overview:
       "ManyChat combines chat marketing across several messaging channels. Its plans now use monthly active contacts, with channel and team access varying by plan. That makes the channel mix and contact definition important when comparing a quote with AP3K’s successful-action allowance.",
     strength:

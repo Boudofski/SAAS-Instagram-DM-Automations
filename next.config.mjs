@@ -14,6 +14,8 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/resources/instagram-comment-to-dm-templates", destination: "/docs/post-automation/post-automation-templates", permanent: true },
+      { source: "/resources/instagram-growth-library", destination: "/blog", permanent: true },
       {"source": "/blog/get-started-with-linktodm", "destination": "/blog/get-started-with-ap3k", "permanent": true},
       {"source": "/blog/how-to-schedule-automations-with-linktodm", "destination": "/blog/how-to-schedule-automations-with-ap3k", "permanent": true},
       {"source": "/blog/linktodm-is-officially-a-meta-business-partner", "destination": "/blog/how-ap3k-connects-through-instagram-api", "permanent": true},

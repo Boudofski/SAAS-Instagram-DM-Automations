@@ -43,7 +43,7 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-violet-500"><Sparkles className="h-4 w-4" /></span>
               <span><span className="block text-sm font-black"><UiText>{"Get help"}</UiText></span><span className="block text-xs text-slate-500 light:text-slate-600"><UiText>{"Ask AP3K Support Assistant"}</UiText></span></span>
             </button>
-            <HelpLink href="/help" icon={BookOpen} title="Knowledge base" detail="Guides for every AP3K feature" />
+            <HelpLink href="/docs" icon={BookOpen} title="Documentation" detail="Guides for every AP3K feature" />
             <HelpLink href={`/dashboard/${slug}/account`} icon={RefreshCw} title="Fix Instagram permissions" detail="Reconnect your professional account" />
             <HelpLink href="/contact" icon={Mail} title="Email support" detail="Contact support@ap3k.com" />
             <div className="my-2 border-t border-slate-200 dark:border-white/10" />

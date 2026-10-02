@@ -68,7 +68,7 @@ const en = {
   refunds: "Refunds",
   dataDeletion: "Data deletion",
   cookiePreferences: "Cookie preferences",
-  knowledgeBase: "Knowledge base",
+  knowledgeBase: "Documentation",
   contactSupport: "Contact support",
   footerDescription: "Instagram automation for Business and Creator accounts. Reply to comments, stories, and DMs, then manage conversations and leads in one place.",
   footerCopyright: "© 2026 AP3K LLC. Instagram automation for professional accounts.",

@@ -1328,7 +1328,7 @@ export const SETUP_ROWS: readonly (readonly [string, string, string, string, str
     "Atingiu o limite diário do assistente. Envie um email para support@ap3k.com para obter mais ajuda."
   ],
   [
-    "The support assistant is unavailable. Please use the Knowledge base or email support@ap3k.com.", "L’assistant est indisponible. Consultez la base de connaissances ou écrivez à support@ap3k.com.",
+    "The support assistant is unavailable. Please use the Documentation or email support@ap3k.com.", "L’assistant est indisponible. Consultez la base de connaissances ou écrivez à support@ap3k.com.",
     "El asistente no está disponible. Consulta la base de conocimientos o escribe a support@ap3k.com.",
     "Der Supportassistent ist nicht verfügbar. Nutze die Wissensdatenbank oder schreibe an support@ap3k.com.",
     "O assistente está indisponível. Consulte a base de conhecimento ou envie um email para support@ap3k.com."

@@ -11,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: "https://ap3k.com/sitemap.xml",
+    sitemap: ["https://ap3k.com/sitemap.xml", "https://ap3k.com/video-sitemap.xml"],
   };
 }

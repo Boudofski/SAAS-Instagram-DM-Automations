@@ -1,3 +1,4 @@
+import { SEO_COMPARISON_POSTS } from "./content/seo-comparisons";
 import importedPosts from "./content/imported-blog/index.json";
 import { OCTOBER_EDITORIAL } from "./content/editorial-october";
 import { EXPANSION_POSTS } from "./content/expansion";
@@ -298,7 +299,7 @@ export const LEGACY_BLOG_POSTS: BlogPost[] = [
   {
     slug: "connect-instagram-to-ap3k",
     contentLocale: "en",
-    cover: "instagram-connect",
+    cover: "instagram-account",
     title: "How to Connect Instagram to AP3K",
     description: "A step-by-step guide to connecting an Instagram Business or Creator account to AP3K and preparing it for comment and DM automation.",
     publishedAt: "2026-08-30",
@@ -622,7 +623,7 @@ export const LEGACY_BLOG_POSTS: BlogPost[] = [
 ];
 
 const importedSlugs = new Set(importedPosts.map(post => post.slug));
-export const BLOG_POSTS: BlogPost[] = [...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug))].map(post => ({ ...post, author: "AP3K" }));
+export const BLOG_POSTS: BlogPost[] = [...SEO_COMPARISON_POSTS, ...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug))].map(post => ({ ...post, author: "AP3K" }));
 
 export function getBlogPost(slug: string) {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;

@@ -34,7 +34,7 @@ describe("commercial landing pages", () => {
       expect(page.useCases.length).toBeGreaterThanOrEqual(3);
       expect(page.limitations.length).toBeGreaterThanOrEqual(4);
       expect(page.faqs.length).toBeGreaterThanOrEqual(3);
-      expect(page.media).toMatch(/^\/media\/ap3k-.+\.jpg$/);
+      expect(page.media).toMatch(/^\/images\/docs\/[a-z-]+\.webp$/);
       expect(page.tutorials.every((tutorial) => blogSlugs.has(tutorial.slug))).toBe(true);
     }
   });

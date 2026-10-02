@@ -86,11 +86,6 @@ export default function WebsiteFooter() {
                 links: [
                   ["Blog", "/blog"],
                   ["Documentation", "/docs"],
-                  [
-                    "Message templates",
-                    "/resources/instagram-comment-to-dm-templates",
-                  ],
-                  ["Growth library", "/resources/instagram-growth-library"],
                 ],
               },
               {

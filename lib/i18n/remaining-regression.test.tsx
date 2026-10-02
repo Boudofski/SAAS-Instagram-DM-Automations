@@ -192,7 +192,7 @@ describe("complete public localization and search metadata", () => {
         );
         const expectedTitle =
           page.slug === "manychat-alternative"
-            ? "ManyChat Alternative: AP3K vs ManyChat"
+            ? "ManyChat Alternative for Instagram | AP3K vs ManyChat"
             : (page.seoTitle ??
               (locale === "en" && page.slug === "instagram-comment-to-dm"
                 ? "Instagram Comment-to-DM Automation | AP3K"
