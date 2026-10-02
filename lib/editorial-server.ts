@@ -9,9 +9,9 @@ export const getPublishedPosts = unstable_cache(
     const rows = await client.editorialPost.findMany({
       select: { slug: true, published: true, hidden: true },
     });
-    return mergeEditorialPosts(BLOG_POSTS, rows);
+    return mergeEditorialPosts(BLOG_POSTS, rows).map(post => ({ ...post, author: "AP3K" }));
   },
-  ["editorial-published-v1"],
+  ["editorial-published-v2"],
   { revalidate: 60, tags: ["editorial"] },
 );
 

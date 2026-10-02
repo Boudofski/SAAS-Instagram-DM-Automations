@@ -131,7 +131,7 @@ export default async function BlogPage({ searchParams }: Props) {
           markClassName="h-6 w-6 rounded-full shadow-none"
         />
         <span>
-          {post.author || "AP3K"} ·{" "}
+          AP3K ·{" "}
           <time dateTime={post.publishedAt}>
             {new Intl.DateTimeFormat(locale, {
               month: "long",

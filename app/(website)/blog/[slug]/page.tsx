@@ -153,9 +153,9 @@ export default async function BlogPostPage({ params }: Props) {
     dateModified: post.updatedAt,
     mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
     author: {
-      "@type": post.author ? "Person" : "Organization",
-      "@id": post.author ? undefined : `${SITE_URL}/#organization`,
-      name: post.author || "AP3K",
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "AP3K",
       url: SITE_URL,
     },
     publisher: {
@@ -208,7 +208,7 @@ export default async function BlogPostPage({ params }: Props) {
               <p>{post.subtitle || post.description}</p>
               <div className={s.byline}>
                 <span>
-                  By <span>{post.author || "AP3K"}</span>
+                  By <span>AP3K</span>
                 </span>
                 <time dateTime={post.publishedAt}>
                   {formatDate(post.publishedAt)}
@@ -324,7 +324,7 @@ export default async function BlogPostPage({ params }: Props) {
             <ArticleShare slug={post.slug} title={post.title} />
             <div className={e.author}>
               <AP3KLogo showText={false} markClassName="h-12 w-12 shrink-0 rounded-xl" />
-              <div><strong>{post.author || "AP3K Editorial"}</strong><p>{post.importedArchive ? "Republished in the AP3K blog. Product names and reference screenshots identify the tools discussed in the original article." : "Practical ideas for creators and businesses building better Instagram conversations."}</p></div>
+              <div><strong>AP3K</strong><p>Practical ideas for creators and businesses building better Instagram conversations.</p></div>
             </div>
             </div>
             <nav className={e.contentsRail} aria-label="On this page"><div><strong>On this page</strong>

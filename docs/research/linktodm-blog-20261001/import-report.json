@@ -1,6 +1,6 @@
 {
   "articles": 175,
-  "images": 585,
+  "images": 556,
   "missing_inline_images": [
     {
       "slug": "how-to-set-up-auto-dm-on-instagram",
@@ -17,6 +17,10 @@
   ],
   "source_order_count": 175,
   "min_word_count": 208,
-  "preserved_source_authors": true,
-  "product_claims": "Original vendor references retained; AP3K credentials and capabilities are not inferred from the source."
+  "preserved_source_authors": false,
+  "product_claims": "Adapted AP3K pricing, limits, connection instructions, and unsupported source features. Replaced source certification and Facebook setup articles with Instagram API and Instagram setup guides.",
+  "author": "AP3K",
+  "branding_updated": "2026-10-02",
+  "actual_product_screenshots": 10,
+  "logo_edited_images": 11
 }
