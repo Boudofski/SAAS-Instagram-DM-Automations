@@ -1,3 +1,4 @@
+import { ArticleSummary, ArticleShare } from "@/components/website/article-tools";
 import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import { getImportedArticleHtml } from "@/lib/imported-blog-server";
 import { REFERENCE_GUIDE_SLUGS } from "@/lib/blog-archive";
@@ -218,6 +219,7 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="mt-7">
               <BlogCover post={post} priority credit />
             </div>
+            {post.importedArchive && <ArticleSummary slug={post.slug} />}
             <details className={e.mobileContents} open={post.importedArchive || undefined}>
               <summary>Table of contents <span aria-hidden="true" className="ml-auto">⌄</span></summary>
               <ol>
@@ -319,6 +321,7 @@ export default async function BlogPostPage({ params }: Props) {
                 <Link href={localizePublicPath("/pricing", locale)}>Compare plans</Link>
               </div>
             </section>
+            <ArticleShare slug={post.slug} title={post.title} />
             <div className={e.author}>
               <AP3KLogo showText={false} markClassName="h-12 w-12 shrink-0 rounded-xl" />
               <div><strong>{post.author || "AP3K Editorial"}</strong><p>{post.importedArchive ? "Republished in the AP3K blog. Product names and reference screenshots identify the tools discussed in the original article." : "Practical ideas for creators and businesses building better Instagram conversations."}</p></div>

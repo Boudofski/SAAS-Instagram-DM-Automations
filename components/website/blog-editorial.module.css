@@ -101,3 +101,14 @@
 @media(max-width:768px) { .readingLayout { padding:0; } }
 
 .importedBody iframe { display:block; width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:12px; margin:28px 0; }
+
+.summaryTools { max-width:760px; margin:24px auto; font-size:13px; color:var(--muted); }
+.summaryTools > div { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.summaryTools a { display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid var(--line); border-radius:8px; color:var(--ink); text-decoration:none; min-height:40px; }
+.summaryTools svg { width:16px; height:16px; }
+.summaryTools a:hover,.shareTools a:hover { border-color:var(--accent); color:var(--accent); }
+.summaryTools a:focus-visible,.shareTools a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.shareTools { margin:42px 0 0; }
+.shareTools p { font-size:12px; font-weight:500; color:var(--muted); }
+.shareTools > div { display:flex; gap:12px; }
+.shareTools a { display:inline-flex; width:44px; height:44px; justify-content:center; align-items:center; border:1px solid transparent; border-radius:8px; color:var(--ink); text-decoration:none; font-size:22px; }
