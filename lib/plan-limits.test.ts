@@ -37,7 +37,7 @@ describe("plan limits", () => {
       label: "Business",
       staticRepliesPerMonth: 20000,
       aiRepliesPerMonth: 2000,
-      connectedInstagramAccounts: 10,
+      connectedInstagramAccounts: 6,
     });
   });
 

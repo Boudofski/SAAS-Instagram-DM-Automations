@@ -161,7 +161,7 @@ export default function PublicPricing({
         <div className={s.billing}>
           <BillingToggle interval={interval} onChange={setInterval} />
           <p>
-            <strong>Save up to 27%</strong> <span>with yearly billing</span>
+            <strong>Save up to 33%</strong> <span>with yearly billing</span>
           </p>
         </div>
         <div className={s.cards}>

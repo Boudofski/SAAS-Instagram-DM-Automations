@@ -12,9 +12,9 @@ function expectedPrice(plan: StripePlan, interval: StripeBillingInterval) {
   return interval === "year" ? AP3K_PRICING.PRO_ANNUAL : AP3K_PRICING.PRO_MONTHLY;
 }
 
-function assertConfiguredPrice(price: { active: boolean; currency: string; unit_amount: number | null; recurring?: { interval: string } | null }, plan: StripePlan, interval: StripeBillingInterval) {
+function assertConfiguredPrice(price: { active: boolean; currency: string; unit_amount: number | null; recurring?: { interval: string; interval_count?: number } | null }, plan: StripePlan, interval: StripeBillingInterval) {
   const expectedAmount = expectedPrice(plan, interval) * 100;
-  if (!price.active || price.currency.toLowerCase() !== "usd" || price.unit_amount !== expectedAmount || price.recurring?.interval !== interval) {
+  if (!price.active || price.currency.toLowerCase() !== "usd" || price.unit_amount !== expectedAmount || price.recurring?.interval !== interval || (price.recurring.interval_count ?? 1) !== 1) {
     throw new Error(`Stripe ${plan.toLowerCase()} ${interval} price does not match the published AP3K catalog.`);
   }
 }
@@ -48,7 +48,7 @@ export async function resolveStripePriceId(
 
   // Prefer stable lookup keys over legacy Creator/Agency environment variables.
   // This prevents old production price IDs from silently overriding the new
-  // $9/$79 Pro and $29/$279 Business catalog.
+  // $15/$120 Pro and $25/$216 Business catalog.
   const lookupKey = getStripePriceLookupKey(plan, interval);
   const prices = await stripe.prices.list({
     active: true,

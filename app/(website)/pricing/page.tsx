@@ -75,7 +75,7 @@ const FAQ = [
   },
   {
     q: "How many Instagram accounts can I connect?",
-    a: "Free includes 1 Instagram account, Pro includes 3, and Business includes 10. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.",
+    a: "Free includes 1 Instagram account, Pro includes 3, and Business includes 6. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.",
   },
   {
     q: "How many automations can I create?",

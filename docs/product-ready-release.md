@@ -14,8 +14,8 @@ Meta/API/database field names remain unchanged internally where compatibility re
 ## Plans
 
 - Free — $0, 500 automated actions/month, 1 Instagram account, and 5 active automations.
-- Pro — $9/month or $79/year, 5,000 automated replies/month.
-- Business — $29/month or $279/year, 20,000 automated replies/month.
+- Pro — $15/month or $120/year, 5,000 automated replies/month.
+- Business — $25/month or $216/year, 20,000 automated replies/month.
 
 One successfully sent Comment reply counts as one automated reply. One successfully sent DM counts as one automated reply. When both send for one matched comment, two automated replies are used. Failed/skipped sends do not count. Annual subscriptions still receive monthly usage resets.
 

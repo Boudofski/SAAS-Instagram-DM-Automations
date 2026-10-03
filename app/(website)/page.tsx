@@ -1,3 +1,4 @@
+import { AP3K_PRICING } from "@/lib/billing-plans";
 import HomeSetup from "@/components/website/home-setup";
 import HomeShowcase from "@/components/website/home-showcase";
 import HomeHero from "@/components/website/home-hero";
@@ -33,18 +34,18 @@ const softwareSchema = {
     "Instagram comment and DM automation for Business and Creator accounts.",
   offers: [
     { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
-    { "@type": "Offer", name: "Pro Monthly", price: "9", priceCurrency: "USD" },
-    { "@type": "Offer", name: "Pro Annual", price: "79", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Pro Monthly", price: String(AP3K_PRICING.PRO_MONTHLY), priceCurrency: "USD" },
+    { "@type": "Offer", name: "Pro Annual", price: String(AP3K_PRICING.PRO_ANNUAL), priceCurrency: "USD" },
     {
       "@type": "Offer",
       name: "Business Monthly",
-      price: "29",
+      price: String(AP3K_PRICING.BUSINESS_MONTHLY),
       priceCurrency: "USD",
     },
     {
       "@type": "Offer",
       name: "Business Annual",
-      price: "279",
+      price: String(AP3K_PRICING.BUSINESS_ANNUAL),
       priceCurrency: "USD",
     },
   ],

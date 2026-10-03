@@ -158,10 +158,10 @@ export default function ComparisonPage({ page }: { page: Comparison }) {
           <h2>Pricing: compare the same workload</h2>
           <p>
             AP3K Free includes 500 monthly actions, one Instagram account and
-            five active automations. Pro is $9 monthly or $79 yearly, with 5,000
-            monthly actions, 500 AI replies and three accounts. Business is $29
-            monthly or $279 yearly, with 20,000 monthly actions, 2,000 AI
-            replies and ten accounts. Paid plans include unlimited active
+            five active automations. Pro is $15 monthly or $120 yearly, with 5,000
+            monthly actions, 500 AI replies and three accounts. Business is $25
+            monthly or $216 yearly, with 20,000 monthly actions, 2,000 AI
+            replies and six accounts. Paid plans include unlimited active
             automations; usage allowances still apply.
           </p>
           <p>
