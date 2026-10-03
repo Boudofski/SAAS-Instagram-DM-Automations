@@ -484,11 +484,11 @@ function referenceTemplateFlow(id?: string): Flow | null {
   ]);
   if (id === "comment-leads" || id === "dm-leads") {
     const nodes: FlowNode[] = [
-      { id: "email", kind: "email", label: "Collect email", text: "What’s your email address? I’ll save it with your contact details and share the resource here.", next: "phone", skip: null, x: 100, y: 180 },
+      { id: "email", kind: "email", label: "Collect email", text: id === "dm-leads" ? "What email address can our team use to contact you about your request?" : "What’s your email address? I’ll save it with your contact details and share the resource here.", next: "phone", skip: null, x: 100, y: 180 },
       { id: "phone", kind: "phone", label: "Collect phone", text: "What’s your contact number?", next: id === "dm-leads" ? "name" : "delivery", skip: null, x: 480, y: 180 },
     ];
     if (id === "dm-leads") nodes.push({ id: "name", kind: "capture", label: "Collect name", text: "What’s your name?", field: "name", next: "delivery", skip: null, x: 860, y: 180 });
-    nodes.push(message("delivery", id === "dm-leads" ? "Confirm details" : "Send your content", id === "dm-leads" ? "Thank you for providing contact details, We will connect soon." : "Thanks! Here is the content you requested.", id === "dm-leads" ? 1240 : 860, 180));
+    nodes.push(message("delivery", id === "dm-leads" ? "Confirm details" : "Send your content", id === "dm-leads" ? "Thanks! Your contact details have been saved. Is there anything else you’d like us to know?" : "Thanks! Here is the content you requested.", id === "dm-leads" ? 1240 : 860, 180));
     if (id === "comment-leads") {
       const delivery = nodes[nodes.length - 1];
       if (delivery.kind === "message") delivery.links = [{ label: "Get the content", url: "" }];

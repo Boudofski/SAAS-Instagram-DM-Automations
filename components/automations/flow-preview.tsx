@@ -460,10 +460,7 @@ export default function FlowPreview({
           </select>
         </label>
       )}
-      <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-        Interactive preview · nothing is sent to Instagram. Buttons and contact
-        values only affect this simulation.
-      </p>
+      <p className="sr-only">Preview only; nothing is sent to Instagram.</p>
     </section>
   );
 }

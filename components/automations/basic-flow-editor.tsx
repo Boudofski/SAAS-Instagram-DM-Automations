@@ -40,7 +40,7 @@ export default function BasicFlowEditor({ doc, patch, slug, username, avatar, bu
         <label className={s.field}>Opening message<textarea rows={3} maxLength={800} value={doc.opening} onChange={e => patch({ opening: e.target.value })} /></label>
         <label className={s.field}>Button label<input maxLength={20} value={doc.openingButton} onChange={e => patch({ openingButton: e.target.value })} /></label>
       </EditorRow>}
-      {doc.flow.nodes.filter(n => n.kind !== "end").map(n => <EditorRow key={n.id} title={n.label || NODE_NAMES[n.kind]} summary={NODE_NAMES[n.kind]} icon={<Text />} open={expanded === n.id} onOpen={() => toggle(n.id)}
+      {doc.flow.nodes.filter(n => n.kind !== "end").map(n => <EditorRow key={n.id} title={n.label || NODE_NAMES[n.kind]} summary={n.label === NODE_NAMES[n.kind] ? undefined : NODE_NAMES[n.kind]} icon={<Text />} open={expanded === n.id} onOpen={() => toggle(n.id)}
         controls={n.kind === "message" ? <EditorSelect label="Message format" value={n.links.length ? "LINK" : "TEXT"} options={[{ value: "TEXT", label: "text" }, { value: "LINK", label: "text with button" }]} onChange={value => patch({ flow: { ...doc.flow, nodes: doc.flow.nodes.map(node => node.id === n.id ? { ...n, links: value === "LINK" ? [{ label: "Get the Link", url: "" }] : [] } : node) } })} /> : undefined}>
         {n.kind === "message" ? <>
           <CopyField label="DM message text" value={n.text} onChange={text => patch({ flow: { ...doc.flow, nodes: doc.flow.nodes.map(node => node.id === n.id ? { ...n, text } : node) } })} maxLength={1000} rows={4} />
