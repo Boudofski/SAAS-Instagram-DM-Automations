@@ -23,7 +23,7 @@ const ConversationStarters = dynamic(
 const FlowBuilder = dynamic(
   () => import("@/components/automations/flow-builder"),
 );
-import { templateById } from "@/lib/automation-flow/templates";
+import { templateEditorType } from "@/lib/automation-flow/templates";
 const AiConversationBuilder = dynamic(
   () => import("@/components/automations/ai-conversation-builder"),
 );
@@ -63,7 +63,7 @@ export default function WizardPage(props: Props) {
   const params = props.searchParams;
   if (!params?.edit && !params?.type)
     return <AutomationTypePicker slug={props.params.slug} />;
-  return <AutomationSetup {...props} />;
+  return <AutomationSetup key={`${params?.edit ?? "new"}:${params?.template ?? params?.type ?? "comment"}`} {...props} />;
 }
 
 function AutomationSetup({ params, searchParams }: Props) {
@@ -98,6 +98,7 @@ function AutomationSetup({ params, searchParams }: Props) {
     slug,
     editId,
     user?.data?.integrations?.[0]?.id ?? "",
+    searchParams?.template,
   );
   useEffect(() => {
     if (!editId && searchParams?.ad === "1") update({ adAutomation: true });
@@ -141,31 +142,6 @@ function AutomationSetup({ params, searchParams }: Props) {
       productImageUrl: "",
     });
   }, [editId, searchParams?.type, tr, update]);
-  const initializedTemplate = useRef(false);
-  useEffect(() => {
-    const template = templateById(searchParams?.template);
-    if (
-      editId ||
-      !template ||
-      initializedTemplate.current ||
-      !["comment", "affiliate"].includes(template.type)
-    )
-      return;
-    initializedTemplate.current = true;
-    update({
-      campaignName: template.name,
-      keywords: template.keyword ? [template.keyword] : [],
-      sendPrivateDm: true,
-      openingDmEnabled: true,
-      followGateRequired: ["followers", "follow-freebie"].includes(template.id),
-      ...(template.id === "youtube"
-        ? {
-            dmMessage: "Here is the video you asked for!",
-            linkButtons: [{ label: "Watch the video", url: "" }],
-          }
-        : {}),
-    });
-  }, [editId, searchParams?.template, update]);
   const initializedMessagingReviewDraft = useRef(false);
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);
@@ -316,7 +292,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const requestedType = searchParams?.type?.toLowerCase();
   const editingSource = (editing as any)?.data?.source;
   const selectedType =
-    requestedType ||
+    (!editId && searchParams?.template ? templateEditorType(searchParams.template) : requestedType) ||
     (editingSource === "STORY"
       ? "story"
       : editingSource === "DM"

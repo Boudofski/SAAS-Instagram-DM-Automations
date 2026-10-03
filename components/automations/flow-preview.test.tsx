@@ -230,15 +230,13 @@ describe("flow preview simulation", () => {
       "60 steps",
     );
   });
-  it("labels contact values as simulated and explicitly states nothing is sent", () => {
+  it("removes the unused contact simulator and states nothing is sent", () => {
     const html = renderToStaticMarkup(
       <FlowPreview flow={flow([message("send", "Hello")])} />,
     );
-    expect(html).toContain("Simulated contact");
+    expect(html).not.toContain("Simulated contact");
     expect(html).toContain("nothing is sent");
-    expect(html).toContain("Follower count");
-    expect(html).toContain("User clicked a flow link");
-    expect(html).toContain("Unknown / unavailable");
+    expect(html).not.toContain("Follower count");
     expect(html).not.toContain("<a ");
   });
 });

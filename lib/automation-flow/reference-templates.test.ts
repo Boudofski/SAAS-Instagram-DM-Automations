@@ -16,16 +16,16 @@ function configured(id: string): Flow {
 }
 
 describe("observed automation templates", () => {
-  it("exposes exactly sixteen unique cards in the observed order and groups", () => {
+  it("exposes nineteen unique cards including three practical new flows", () => {
     expect(TEMPLATES.map((template) => template.id)).toEqual([
       "comment-links", "all-dms", "followers", "all-posts", "next-post",
       "comment-leads", "shared-post", "story-mentions", "dm-leads", "dm-sales",
       "follow-up", "comment-opener", "product-carousel", "comment-delay",
-      "ask-to-follow", "dm-qualifier",
+      "ask-to-follow", "dm-qualifier", "consultation-flow", "story-feedback-flow", "resource-flow",
     ]);
-    expect(new Set(TEMPLATES.map((template) => template.id)).size).toBe(16);
+    expect(new Set(TEMPLATES.map((template) => template.id)).size).toBe(19);
     expect(TEMPLATES.filter((template) => template.popular).map((template) => template.id)).toEqual(["comment-links", "all-dms", "followers"]);
-    expect(TEMPLATES.filter((template) => template.group === "flow").map((template) => template.id)).toEqual(["comment-delay", "ask-to-follow", "dm-qualifier"]);
+    expect(TEMPLATES.filter((template) => template.group === "flow").map((template) => template.id)).toEqual(["comment-delay", "ask-to-follow", "dm-qualifier", "consultation-flow", "story-feedback-flow", "resource-flow"]);
   });
 
   it("distinguishes catalog grouping from the multi-step execution engine", () => {
@@ -50,7 +50,7 @@ describe("observed automation templates", () => {
   });
 
   it("applies the actual trigger, scope, keyword and follow settings", () => {
-    expect(templatePreset("all-dms")).toMatchObject({ source: "DM", keyword: "Hello", anyMessage: false });
+    expect(templatePreset("all-dms")).toMatchObject({ source: "DM", keyword: "", anyMessage: true });
     expect(templatePreset("all-posts")).toMatchObject({ source: "COMMENT", postScope: "all", anyMessage: true });
     expect(templatePreset("next-post")).toMatchObject({ source: "COMMENT", postScope: "next", anyMessage: true });
     expect(templatePreset("shared-post")).toMatchObject({ source: "DM", sharedPost: true });
@@ -74,7 +74,7 @@ describe("observed automation templates", () => {
   it("reproduces the comment-to-DM reply boundary before the ten-second delay", () => {
     const flow = templateFlow("comment-delay");
     expect(flow.entry).toBe("opener");
-    expect(flow.nodes[0]).toMatchObject({ kind: "question", text: "Thanks for your comment .Want the details?" });
+    expect(flow.nodes[0]).toMatchObject({ kind: "question", text: "Thanks for your comment! Tap below and I’ll send the details." });
     expect(responseTarget(flow.nodes[0], "Get info")).toMatchObject({ next: "delay" });
     expect(responseTarget(flow.nodes[0], "anything else")).toBeNull();
     expect(flow.nodes.find((node) => node.id === "delay")).toMatchObject({ kind: "delay", seconds: 10, next: "details" });
@@ -128,6 +128,6 @@ describe("observed automation templates", () => {
     expect(templateFlow("dm-qualifier").nodes[0].label).toBe("Creator or brand");
     const preset = templatePreset("all-dms");
     preset.keyword = "changed";
-    expect(templatePreset("all-dms").keyword).toBe("Hello");
+    expect(templatePreset("all-dms").keyword).toBe("");
   });
 });

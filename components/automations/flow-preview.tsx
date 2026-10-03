@@ -123,12 +123,6 @@ function formatDelay(seconds: number) {
     return `${seconds / 60} minute${seconds === 60 ? "" : "s"}`;
   return `${seconds} second${seconds === 1 ? "" : "s"}`;
 }
-const SIMULATED_FIELDS = [
-  ["_followsBusiness", "User follows you"],
-  ["_businessFollows", "You follow the user"],
-  ["_verified", "Verified on Instagram"],
-  ["_linkClicked", "User clicked a flow link"],
-] as const;
 /** Match publishing: comments require an opener; a single-choice entry supplies its own. */
 export function needsSeparateFlowOpening(
   flow: Flow,
@@ -148,6 +142,7 @@ export default function FlowPreview({
   openingButton = "Continue",
   username,
   avatar,
+  embedded = false,
 }: {
   flow: Flow;
   triggers?: FlowTrigger[];
@@ -156,6 +151,7 @@ export default function FlowPreview({
   openingButton?: string;
   username?: string | null;
   avatar?: string | null;
+  embedded?: boolean;
 }) {
   const [triggerId, setTriggerId] = useState(triggers[0]?.id ?? "");
   const trigger = triggers.find((t) => t.id === triggerId) ?? triggers[0];
@@ -210,10 +206,7 @@ export default function FlowPreview({
   }, [messages, mode]);
   function advance(start: string | null, data: FlowValues, history: Bubble[]) {
     const vars = { ...data };
-    for (const key of [
-      ...SIMULATED_FIELDS.map(([field]) => field),
-      "_followerCount",
-    ]) {
+    for (const key of Object.keys(simulated)) {
       delete vars[key];
       if (simulated[key] !== "" && simulated[key] !== undefined)
         vars[key] = simulated[key];
@@ -281,7 +274,7 @@ export default function FlowPreview({
             ? `Sent “${trigger.keyword}”`
             : "Sent you a message";
   return (
-    <section className="mx-auto w-full min-w-0 max-w-[300px]">
+    <section className={`mx-auto w-full min-w-0 max-w-[300px] ${embedded ? "flex h-full min-h-0 flex-col" : ""}`}>
       {triggers.length > 1 && (
         <label className="mb-3 block text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
           Preview trigger
@@ -320,7 +313,7 @@ export default function FlowPreview({
             ? "Your next published post or Reel"
             : undefined
         }
-        className={styles.interactivePreview}
+        className={embedded ? styles.embeddedPreview : styles.interactivePreview}
         username={username}
         avatar={avatar}
         source={source}
@@ -452,47 +445,6 @@ export default function FlowPreview({
           </form>
         }
       />
-      <details className="mt-4 rounded-xl border border-slate-200 light:border-slate-300 p-3 dark:border-white/10">
-        <summary className="cursor-pointer text-sm font-medium">
-          Simulated contact
-        </summary>
-        <p className="mt-2 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-          These values only affect this preview. Change them before continuing
-          to test each condition.
-        </p>
-        <div className="mt-3 space-y-3">
-          {SIMULATED_FIELDS.map(([field, label]) => (
-            <label key={field} className="block text-xs font-medium">
-              {label}
-              <select
-                value={simulated[field]}
-                onChange={(e) =>
-                  setSimulated((v) => ({ ...v, [field]: e.target.value }))
-                }
-                className="ap3k-input mt-1 min-h-11 w-full rounded-lg p-2 text-sm"
-              >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-                <option value="">Unknown / unavailable</option>
-              </select>
-            </label>
-          ))}
-          <label className="block text-xs font-medium">
-            Follower count
-            <input
-              type="number"
-              min={0}
-              step={1}
-              value={simulated._followerCount}
-              onChange={(e) =>
-                setSimulated((v) => ({ ...v, _followerCount: e.target.value }))
-              }
-              placeholder="Unknown"
-              className="ap3k-input mt-1 min-h-11 w-full rounded-lg p-2 text-sm"
-            />
-          </label>
-        </div>
-      </details>
       {flow.nodes.some((n) => n.kind === "random") && (
         <label className="mt-4 block text-sm">
           Test a random path
@@ -508,10 +460,7 @@ export default function FlowPreview({
           </select>
         </label>
       )}
-      <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-        Interactive preview · nothing is sent to Instagram. Buttons and contact
-        values only affect this simulation.
-      </p>
+      <p className="sr-only">Preview only; nothing is sent to Instagram.</p>
     </section>
   );
 }

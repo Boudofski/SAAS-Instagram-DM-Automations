@@ -73,3 +73,5 @@
 .sampleAvatar { overflow:hidden; }
 .sampleAvatar img { width:100%; height:100%; object-fit:cover; }
 .comments { max-height:78%; overflow-y:auto; }
+
+.embeddedPreview { flex:1; min-height:0; }
