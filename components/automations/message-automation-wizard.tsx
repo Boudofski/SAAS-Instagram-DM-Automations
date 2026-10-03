@@ -9,6 +9,7 @@ import {
   normalizeEngagementSettings,
   type EngagementSettings,
 } from "@/lib/automation-engagement-settings";
+import { messageTemplateDefaults } from "@/lib/automation-flow/basic-presets";
 import { templateById } from "@/lib/automation-flow/templates";
 
 import EditorLayout, {
@@ -184,18 +185,7 @@ export default function MessageAutomationWizard({
     initializedTemplate.current = true;
     setDraft((value) => ({
       ...value,
-      name: template.name,
-      storyTriggerType: "REPLY",
-      triggerMode: template.keyword ? "SPECIFIC_KEYWORD" : "ANY_MESSAGE",
-      keywords: template.keyword ? [template.keyword] : [],
-      message:
-        template.id === "coupons"
-          ? "Here is your discount! Use the link below to shop."
-          : template.id === "whatsapp"
-            ? "Want to continue on WhatsApp? Tap below to start a conversation."
-            : template.id === "sms"
-              ? "You can sign up for text updates here. Check the signup page for details and consent."
-              : value.message,
+      ...messageTemplateDefaults(template.id),
     }));
   }, [automationId, templateId]);
   const [keywordDraft, setKeywordDraft] = useState("");

@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { TEMPLATES } from "@/lib/automation-flow/templates";
+import { TEMPLATES, templateEditorType } from "@/lib/automation-flow/templates";
 import { UiText } from "@/components/i18n/localized-copy";
 
 const quick = [
@@ -102,7 +102,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                 />
                 <input
                   aria-label="Search templates"
-                  placeholder="Search 16 templates…"
+                  placeholder={`Search ${TEMPLATES.length} templates…`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="min-w-0 flex-1 bg-transparent text-base outline-none md:text-[13px]"
@@ -142,7 +142,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                       key={t.id}
                       onClick={() =>
                         go(
-                          "flow",
+                          templateEditorType(t.id),
                           `&template=${t.id}${t.group === "basic" ? "&editor=basic" : ""}`,
                         )
                       }
@@ -182,7 +182,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
               )}
             </div>
             <footer className="flex shrink-0 justify-between border-t border-black/5 px-[22px] py-4 text-xs text-slate-500 light:text-slate-600 dark:border-white/5 dark:text-slate-400">
-              <span>Showing {matches.length} of 16 templates</span>
+              <span>Showing {matches.length} of {TEMPLATES.length} templates</span>
               <span>Scroll for more</span>
             </footer>
           </>

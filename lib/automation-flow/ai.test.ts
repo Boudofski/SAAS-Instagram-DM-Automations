@@ -153,6 +153,21 @@ describe("flow assistant proposals", () => {
       expect(() => parseFlowAssistantDraft(JSON.stringify(actionResponse({ kind: "webhook", url: "https://hooks.example.com/capture", body })), input)).toThrow();
     }
   });
+  it("passes current trigger semantics to the provider and makes one validated repair attempt", async () => {
+    const triggers = [{ id: "primary", source: "STORY" as const, storyTrigger: "MENTION" as const, anyMessage: true, keyword: "" }];
+    const normalized = normalizeFlowAssistantInput({ ...input, currentTriggers: triggers });
+    mocks.completion.mockResolvedValueOnce({ choices: [{ finish_reason: "stop", message: { content: "invalid json" } }] });
+    const result = await generateFlowAssistantDraft(normalized);
+    expect(result.flow.nodes.length).toBeGreaterThan(0);
+    expect(mocks.completion).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(mocks.completion.mock.calls[0][0].messages[1].content).currentTriggers).toEqual(triggers);
+    expect(mocks.completion.mock.calls[1][0].messages.at(-1).content).toContain("Repair this draft");
+  });
+  it("stops after one unsuccessful repair and never returns an invalid graph", async () => {
+    mocks.completion.mockResolvedValue({ choices: [{ finish_reason: "stop", message: { content: "invalid json" } }] });
+    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("valid flow JSON");
+    expect(mocks.completion).toHaveBeenCalledTimes(2);
+  });
   it("surfaces unavailable providers and truncation without manufacturing a draft", async () => {
     mocks.config.mockResolvedValueOnce(null);
     await expect(generateFlowAssistantDraft(input)).rejects.toThrow("disabled");

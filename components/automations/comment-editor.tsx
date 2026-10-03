@@ -90,7 +90,7 @@ export default function CommentEditor(p: CommentEditorProps) {
   const [messagePreview, setMessagePreview] = useState<string | null>(null);
   const [dmSettings, setDmSettings] = useState(false);
   const [replyKind, setReplyKind] = useState(data.aiReplyEnabled ? "AI" : "SAVED");
-  useEffect(() => { if (data.aiReplyEnabled) setReplyKind("AI"); }, [data.aiReplyEnabled]);
+  useEffect(() => { setReplyKind(data.aiReplyEnabled ? "AI" : "SAVED"); }, [data.aiReplyEnabled]);
   const [delayEnabled, setDelayEnabled] = useState((data.deliveryDelaySeconds ?? 0) > 0);
   useEffect(() => {
     if ((data.deliveryDelaySeconds ?? 0) > 0) setDelayEnabled(true);

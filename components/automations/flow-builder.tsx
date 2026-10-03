@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import BasicFlowEditor from "./basic-flow-editor";
 import UpgradeDialog from "./upgrade-dialog";
 import Sidebar from "@/components/global/sidebar";
 import {
@@ -77,9 +78,9 @@ type Document = {
   openingEnabled: boolean;
 };
 const suggestions = [
-  "Collect email from anyone who sends 'FREEBIE' in post comment, then send message to 'check email'",
-  "DM anyone who comments on my post with my link, after a 10 second delay",
-  "Reply to comments, wait 30 seconds, send a DM, then a follow-up card with image and buttons a day later",
+  "When someone comments GUIDE, collect their email and deliver my guide in the DM. Ask me to add the guide link.",
+  "When someone messages CONSULT, ask about their goal, collect their email, and tag them as a consultation lead.",
+  "Reply to story mentions with a thank-you message, then ask whether they want product advice or help with an order.",
 ];
 export default function FlowBuilder({
   slug,
@@ -94,10 +95,14 @@ export default function FlowBuilder({
   username,
   avatar,
 }: Props) {
+  const search = useSearchParams();
+  const [basic, setBasic] = useState(search.get("editor") === "basic");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
+    if (basic) return;
     // Escape the dashboard shell's stacking context for the fullscreen editor.
     const shell = document.querySelector<HTMLElement>(".ap3k-page");
     const wasInert = shell?.inert ?? false;
@@ -109,8 +114,7 @@ export default function FlowBuilder({
       if (shell) shell.inert = wasInert;
       document.body.style.overflow = previousOverflow;
     };
-  }, []);
-  const search = useSearchParams();
+  }, [basic]);
   const queryClient = useQueryClient();
   const template = templateById(templateId);
   const preset = templatePreset(templateId);
@@ -168,14 +172,13 @@ export default function FlowBuilder({
         preset.openingButton ??
         "Continue",
       publicReply:
-        saved?.publicReply ?? automation?.listener?.commentReply ?? "",
+        saved?.publicReply ?? automation?.listener?.commentReply ?? (preset.source === "COMMENT" ? "{{username}} Thanks! Check your DMs for the next step. ✨" : ""),
       openingEnabled:
         saved?.openingEnabled ??
         automation?.listener?.openingDmEnabled ??
         Boolean(preset.opening),
     };
   });
-  const [basic, setBasic] = useState(search.get("editor") === "basic");
   const [expanded, setExpanded] = useState<string | null>("trigger");
   const [id, setId] = useState<string | undefined>(automation?.id);
   const idRef = useRef(id);
@@ -201,6 +204,12 @@ export default function FlowBuilder({
   const [aiMessages, setAiMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([]);
+  const aiBusy = useRef(false);
+  const chatScroll = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = chatScroll.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, [aiMessages, generating, assistant]);
   const [aiWarning, setAiWarning] = useState("");
   const [preview, setPreview] = useState(false);
   const change = (next: Document, history = true) => {
@@ -320,7 +329,10 @@ export default function FlowBuilder({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
   async function ask(text = prompt) {
-    if (!text.trim() || generating) return;
+    if (!text.trim() || aiBusy.current) return;
+    if (!["PRO", "BUSINESS"].includes(plan)) { setUpgradeOpen(true); return; }
+    aiBusy.current = true;
+    const requestedRevision = edits.current;
     setAssistant(true);
     setGenerating(true);
     setPrompt("");
@@ -335,6 +347,7 @@ export default function FlowBuilder({
         prompt: text,
         currentFlow: doc.flow.nodes.length ? doc.flow : undefined,
         history,
+        currentTriggers: doc.triggers,
       });
       if (result.status !== 200 || !result.flow) {
         setAiMessages((m) => [
@@ -347,6 +360,10 @@ export default function FlowBuilder({
         ]);
         return;
       }
+      if (edits.current !== requestedRevision) {
+        setAiMessages(m => [...m, { role: "assistant", content: "You edited the flow while I was working, so I kept your latest changes. Send your request again to apply it to the updated flow." }]);
+        return;
+      }
       const triggers = result.trigger
         ? [
             {
@@ -355,8 +372,9 @@ export default function FlowBuilder({
               storyTrigger: result.trigger.storyTrigger ?? "REPLY",
               keyword: result.trigger.keyword,
               anyMessage: result.trigger.anyMessage,
-              post: doc.triggers[0]?.post ?? null,
-              postScope: doc.triggers[0]?.postScope ?? "specific",
+              post: result.trigger.source === doc.triggers[0]?.source ? doc.triggers[0]?.post ?? null : null,
+              postScope: result.trigger.postScope ?? (result.trigger.source === doc.triggers[0]?.source ? doc.triggers[0]?.postScope : "specific"),
+              sharedPost: result.trigger.sharedPost ?? (result.trigger.source === "DM" && doc.triggers[0]?.source === "DM" ? doc.triggers[0]?.sharedPost : false),
             } as FlowTrigger,
             ...doc.triggers.slice(1),
           ]
@@ -387,6 +405,7 @@ export default function FlowBuilder({
         },
       ]);
     } finally {
+      aiBusy.current = false;
       setGenerating(false);
     }
   }
@@ -412,6 +431,14 @@ export default function FlowBuilder({
   }));
   const headerButton =
     "grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate-500 light:text-slate-600 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
+  if (basic) return <>
+    <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+    <BasicFlowEditor doc={doc} patch={patch} slug={slug} username={username} avatar={avatar}
+      busy={busy || generating} live={live} error={error} save={active => void save(active)}
+      expanded={expanded} setExpanded={setExpanded} posts={posts} postsLoading={postsLoading}
+      postsError={postsError} refreshPosts={refreshPosts} updateTrigger={updateTrigger}
+      addTrigger={addTrigger} openFlow={() => setBasic(false)} />
+  </>;
   if (!mounted) return null;
   return createPortal(
     <div
@@ -576,169 +603,6 @@ export default function FlowBuilder({
               </button>
             </div>
           )}
-          {basic ? (
-            <div className="h-full overflow-y-auto">
-              <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
-                <div className="space-y-3">
-                  <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600 dark:text-slate-400">
-                    {doc.triggers.some((t) => t.source === "COMMENT")
-                      ? "Setup triggers and public reply"
-                      : "Setup triggers"}
-                  </h2>
-                  <section className="overflow-hidden rounded-2xl bg-white dark:bg-[#192233]">
-                    <button
-                      className="flex min-h-14 w-full items-center justify-between px-5 text-sm font-semibold"
-                      onClick={() =>
-                        setExpanded(expanded === "trigger" ? null : "trigger")
-                      }
-                    >
-                      Trigger ·{" "}
-                      {doc.triggers[0]
-                        ? triggerLabel(doc.triggers[0])
-                        : "Choose a trigger"}
-                      <ChevronDown size={17} />
-                    </button>
-                    {expanded === "trigger" && (
-                      <FlowTriggerEditor
-                        trigger={doc.triggers[0]}
-                        posts={posts}
-                        postsLoading={postsLoading}
-                        postsError={postsError}
-                        refreshPosts={refreshPosts}
-                        onChange={updateTrigger}
-                        onAdd={addTrigger}
-                      />
-                    )}
-                  </section>
-                  {doc.triggers.some((t) => t.source === "COMMENT") && (
-                    <label className="block rounded-2xl bg-white p-5 text-sm font-medium dark:bg-[#192233]">
-                      Public comment reply
-                      <textarea
-                        value={doc.publicReply}
-                        maxLength={300}
-                        placeholder="Thanks! Check your DMs."
-                        onChange={(e) => patch({ publicReply: e.target.value })}
-                        className="flow-editor-input"
-                        rows={2}
-                      />
-                    </label>
-                  )}
-                  <h2 className="pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600 dark:text-slate-400">
-                    Setup direct message
-                  </h2>
-                  {doc.triggers.some((t) =>
-                    needsSeparateFlowOpening(doc.flow, t.source),
-                  ) && (
-                    <section className="rounded-2xl bg-white p-5 dark:bg-[#192233]">
-                      <h3 className="text-sm font-semibold">Opening DM</h3>
-                      <div className="mt-4 space-y-3">
-                        <label className="block text-xs font-medium">
-                          Opening message
-                          <textarea
-                            className="flow-editor-input"
-                            rows={3}
-                            maxLength={800}
-                            value={doc.opening}
-                            onChange={(e) => patch({ opening: e.target.value })}
-                          />
-                        </label>
-                        <label className="block text-xs font-medium">
-                          Opening button
-                          <input
-                            className="flow-editor-input"
-                            maxLength={20}
-                            value={doc.openingButton}
-                            onChange={(e) =>
-                              patch({ openingButton: e.target.value })
-                            }
-                          />
-                        </label>
-                      </div>
-                    </section>
-                  )}
-                  {doc.flow.nodes.map((n) => (
-                    <section
-                      key={n.id}
-                      className="overflow-hidden rounded-2xl bg-white dark:bg-[#192233]"
-                    >
-                      <button
-                        className="flex min-h-14 w-full items-center justify-between px-5 text-left text-sm font-semibold"
-                        onClick={() =>
-                          setExpanded(expanded === n.id ? null : n.id)
-                        }
-                      >
-                        {n.label || NODE_NAMES[n.kind]}
-                        <ChevronDown size={17} />
-                      </button>
-                      {expanded === n.id && (
-                        <FlowNodeEditor
-                          node={n}
-                          flow={doc.flow}
-                          onChange={changeFlow}
-                        />
-                      )}
-                    </section>
-                  ))}
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {(
-                      [
-                        "message",
-                        "question",
-                        "email",
-                        "phone",
-                        "delay",
-                        "carousel",
-                      ] as const
-                    ).map((kind) => (
-                      <button
-                        key={kind}
-                        onClick={() => {
-                          const n = newFlowNode(kind, doc.flow.nodes.length);
-                          let flow = {
-                            ...doc.flow,
-                            entry: doc.flow.entry || n.id,
-                            nodes: [...doc.flow.nodes, n],
-                          };
-                          const prev =
-                            doc.flow.nodes[doc.flow.nodes.length - 1];
-                          if (prev && "next" in prev)
-                            flow = {
-                              ...flow,
-                              nodes: flow.nodes.map((x) =>
-                                x.id === prev.id ? { ...x, next: n.id } : x,
-                              ),
-                            };
-                          changeFlow(flow);
-                          setExpanded(n.id);
-                        }}
-                        className="rounded-full border border-slate-200 light:border-slate-300 bg-white px-3 py-2 text-xs dark:border-white/10 dark:bg-[#192233]"
-                      >
-                        + {NODE_NAMES[kind]}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setBasic(false)}
-                    className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-violet-600 dark:text-violet-300"
-                  >
-                    <GitBranch size={15} />
-                    Open in flow builder
-                  </button>
-                </div>
-                <div className="sticky top-0 hidden max-h-[calc(100dvh-110px)] self-start overflow-y-auto rounded-2xl bg-[#f0eef8] p-5 dark:bg-[#1d1b2e] lg:block">
-                  <FlowPreview
-                    flow={doc.flow}
-                    triggers={doc.triggers}
-                    publicReply={doc.publicReply}
-                    opening={doc.opening}
-                    openingButton={doc.openingButton}
-                    username={username}
-                    avatar={avatar}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
             <FlowCanvas
               flow={doc.flow}
               onChange={changeFlow}
@@ -750,7 +614,6 @@ export default function FlowBuilder({
                 setTriggerPanel(true);
               }}
             />
-          )}
           {!basic && (
             <form
               onSubmit={(e) => {
@@ -904,7 +767,7 @@ export default function FlowBuilder({
                 draft on your canvas.
               </DialogDescription>
             </header>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5">
+            <div ref={chatScroll} role="log" aria-live="polite" aria-relevant="additions" className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-5">
               {!aiMessages.length ? (
                 <>
                   <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
@@ -940,7 +803,7 @@ export default function FlowBuilder({
                   {aiMessages.map((m, i) => (
                     <div
                       key={i}
-                      className={`whitespace-pre-wrap rounded-2xl p-3 text-sm leading-6 ${m.role === "user" ? "ms-8 bg-violet-600 text-white" : "me-4 bg-slate-100 dark:bg-white/5"}`}
+                      className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl p-3 text-sm leading-6 ${m.role === "user" ? "ms-8 bg-violet-600 text-white" : "me-4 bg-slate-100 dark:bg-white/5"}`}
                     >
                       {m.content}
                     </div>
@@ -967,16 +830,17 @@ export default function FlowBuilder({
                 e.preventDefault();
                 void ask();
               }}
-              className="flex shrink-0 items-end gap-2 border-t border-slate-100 light:border-slate-200 p-4 dark:border-white/5"
+              className="flex shrink-0 items-end gap-2 border-t border-slate-100 light:border-slate-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-white/5"
             >
               <textarea
                 aria-label="Message to Flow Assistant"
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(min-width: 768px)").matches) { e.preventDefault(); void ask(); } }}
                 rows={2}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 maxLength={4000}
                 placeholder="Describe the flow you want to build…"
-                className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 light:border-slate-300 bg-transparent p-3 text-sm outline-none focus:border-violet-400 dark:border-white/10"
+                className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 light:border-slate-300 bg-transparent p-3 text-base md:text-sm outline-none focus:border-violet-400 dark:border-white/10"
               />
               <button
                 aria-label="Generate flow"

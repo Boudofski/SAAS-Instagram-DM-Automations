@@ -23,7 +23,8 @@ const ConversationStarters = dynamic(
 const FlowBuilder = dynamic(
   () => import("@/components/automations/flow-builder"),
 );
-import { templateById } from "@/lib/automation-flow/templates";
+import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
+import { templateById, templateEditorType } from "@/lib/automation-flow/templates";
 const AiConversationBuilder = dynamic(
   () => import("@/components/automations/ai-conversation-builder"),
 );
@@ -148,23 +149,11 @@ function AutomationSetup({ params, searchParams }: Props) {
       editId ||
       !template ||
       initializedTemplate.current ||
-      !["comment", "affiliate"].includes(template.type)
+      !["comment", "affiliate"].includes(templateEditorType(template.id))
     )
       return;
     initializedTemplate.current = true;
-    update({
-      campaignName: template.name,
-      keywords: template.keyword ? [template.keyword] : [],
-      sendPrivateDm: true,
-      openingDmEnabled: true,
-      followGateRequired: ["followers", "follow-freebie"].includes(template.id),
-      ...(template.id === "youtube"
-        ? {
-            dmMessage: "Here is the video you asked for!",
-            linkButtons: [{ label: "Watch the video", url: "" }],
-          }
-        : {}),
-    });
+    update(commentTemplateDefaults(template.id));
   }, [editId, searchParams?.template, update]);
   const initializedMessagingReviewDraft = useRef(false);
 
@@ -316,7 +305,7 @@ function AutomationSetup({ params, searchParams }: Props) {
   const requestedType = searchParams?.type?.toLowerCase();
   const editingSource = (editing as any)?.data?.source;
   const selectedType =
-    requestedType ||
+    (!editId && searchParams?.template ? templateEditorType(searchParams.template) : requestedType) ||
     (editingSource === "STORY"
       ? "story"
       : editingSource === "DM"
