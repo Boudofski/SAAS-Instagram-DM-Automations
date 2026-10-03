@@ -32,6 +32,8 @@ export type StripeWebhookDependencies = {
   ): Promise<unknown>;
   retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription>;
   retrieveCharge(chargeId: string): Promise<Stripe.Charge>;
+  invoiceIdsForPaymentIntent?(paymentIntentId: string): Promise<string[]>;
+  paidOffStripe?(invoiceId: string): Promise<number>;
   applyPendingRewards(userId: string, customerId: string): Promise<unknown>;
   qualifyPaidReferral(input: {
     referredUserId: string;
@@ -99,6 +101,21 @@ const defaultDependencies: StripeWebhookDependencies = {
   },
   retrieveCharge(chargeId) {
     return stripe.charges.retrieve(chargeId);
+  },
+  async invoiceIdsForPaymentIntent(paymentIntentId) {
+    const ids = new Set<string>();
+    for await (const payment of stripe.invoicePayments.list({
+      payment: { type: "payment_intent", payment_intent: paymentIntentId },
+      status: "paid", limit: 100,
+    })) {
+      const id = stripeId(payment.invoice);
+      if (id) ids.add(id);
+    }
+    return Array.from(ids);
+  },
+  async paidOffStripe(invoiceId) {
+    const invoice = await stripe.invoices.retrieve(invoiceId, { expand: ["amount_paid_off_stripe"] });
+    return invoice.amount_paid_off_stripe ?? 0;
   },
   applyPendingRewards: applyPendingReferralRewards,
   qualifyPaidReferral: qualifyAndApplyReferralReward,
@@ -257,13 +274,25 @@ export async function resolveStripeOwner(
   throw new StripeOwnershipError("STRIPE_OWNER_UNRESOLVED");
 }
 
+async function chargeInvoiceIds(charge: Stripe.Charge, dependencies: StripeWebhookDependencies) {
+  const legacy = stripeId((charge as Stripe.Charge & { invoice?: string | null }).invoice);
+  if (legacy) return [legacy];
+  const intent = stripeId(charge.payment_intent);
+  return intent && dependencies.invoiceIdsForPaymentIntent
+    ? dependencies.invoiceIdsForPaymentIntent(intent) : [];
+}
+
 export async function processStripeEvent(
   event: Stripe.Event,
   dependencies: StripeWebhookDependencies = defaultDependencies,
 ) {
   switch (event.type) {
+    case "checkout.session.async_payment_succeeded":
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.payment_status && !["paid", "no_payment_required"].includes(session.payment_status)) {
+        return { outcome: "ignored" as const, source: "payment-pending" as const };
+      }
       const customerId = stripeId(session.customer);
       if (!customerId) {
         throw new StripeWebhookInputError("STRIPE_CUSTOMER_ID_MISSING");
@@ -291,9 +320,9 @@ export async function processStripeEvent(
           templateId: "plan_activated",
           stripeEventId: event.id,
           planName: plan,
-          periodEnd: (subscription as any).current_period_end
+          periodEnd: (subscription.items.data[0]?.current_period_end ?? (subscription as any).current_period_end)
             ? new Date(
-                (subscription as any).current_period_end * 1000,
+                (subscription.items.data[0]?.current_period_end ?? (subscription as any).current_period_end) * 1000,
               ).toLocaleDateString("en-US", { dateStyle: "medium" })
             : null,
         });
@@ -348,6 +377,8 @@ export async function processStripeEvent(
           source: "non-subscription-invoice" as const,
         };
       }
+      const paidOutOfBand = Boolean((invoice as Stripe.Invoice & { paid_out_of_band?: boolean }).paid_out_of_band) ||
+        (event.type === "invoice.paid" && (dependencies.paidOffStripe ? await dependencies.paidOffStripe(invoice.id) : invoice.amount_paid_off_stripe ?? 0) > 0);
       const subscription =
         await dependencies.retrieveSubscription(subscriptionId);
       const resolution = await syncStripeSubscription(
@@ -377,7 +408,7 @@ export async function processStripeEvent(
           occurredAt: new Date(event.created * 1000).toISOString(),
           detail:
             event.type === "invoice.paid"
-              ? invoice.paid_out_of_band
+              ? paidOutOfBand
                 ? "This subscription invoice was marked paid outside Stripe. Check the payment record before counting it as a Stripe collection."
                 : invoice.billing_reason === "subscription_create"
                   ? "A customer made their first subscription payment."
@@ -406,7 +437,7 @@ export async function processStripeEvent(
           ...referralInvoiceRevenue(invoice, subscription),
           billingReason: invoice.billing_reason,
           promoApplied: Boolean(subscription.metadata?.ap3kReferralPromo),
-          paidOutOfBand: invoice.paid_out_of_band,
+          paidOutOfBand: paidOutOfBand,
           paidAt: new Date(
             (invoice.status_transitions?.paid_at ?? event.created) * 1000,
           ),
@@ -480,8 +511,8 @@ export async function processStripeEvent(
 
     case "charge.refunded": {
       const charge = event.data.object as Stripe.Charge;
-      const invoiceId = stripeId(charge.invoice);
-      if (!invoiceId) {
+      const invoiceIds = await chargeInvoiceIds(charge, dependencies);
+      if (!invoiceIds.length) {
         return {
           outcome: "ignored" as const,
           source: "non-invoice-charge" as const,
@@ -504,12 +535,9 @@ export async function processStripeEvent(
             occurredAt: new Date(event.created * 1000).toISOString(),
           });
       }
-      await dependencies.reversePaidReferral(
-        invoiceId,
-        "refund",
-        charge.amount_refunded,
-        charge.amount,
-      );
+      for (const invoiceId of invoiceIds) {
+        await dependencies.reversePaidReferral(invoiceId, "refund", charge.amount_refunded, charge.amount);
+      }
       return {
         outcome: "processed" as const,
         source: "referral-reversal" as const,
@@ -529,8 +557,8 @@ export async function processStripeEvent(
         typeof dispute.charge === "object"
           ? dispute.charge
           : await dependencies.retrieveCharge(chargeId);
-      const invoiceId = stripeId(charge.invoice);
-      if (!invoiceId) {
+      const invoiceIds = await chargeInvoiceIds(charge, dependencies);
+      if (!invoiceIds.length) {
         return {
           outcome: "ignored" as const,
           source: "non-invoice-dispute" as const,
@@ -556,7 +584,7 @@ export async function processStripeEvent(
               : undefined,
           });
       }
-      await dependencies.reversePaidReferral(invoiceId, "dispute");
+      for (const invoiceId of invoiceIds) await dependencies.reversePaidReferral(invoiceId, "dispute");
       return {
         outcome: "processed" as const,
         source: "referral-reversal" as const,

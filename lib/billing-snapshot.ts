@@ -34,7 +34,7 @@ export async function getBillingLookup(
 
     const price = subscription.items.data[0]?.price;
     const interval = price?.recurring?.interval;
-    const periodEnd = (subscription as any).current_period_end;
+    const periodEnd = subscription.items.data[0]?.current_period_end ?? (subscription as any).current_period_end;
 
     return {
       state: "subscription",

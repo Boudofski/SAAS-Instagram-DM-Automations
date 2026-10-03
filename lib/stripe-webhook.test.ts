@@ -54,7 +54,7 @@ function dependencies(input: {
         ({
           id: chargeId,
           invoice: "in_disputed",
-        }) as Stripe.Charge,
+        }) as unknown as Stripe.Charge,
     ),
     applyPendingRewards,
     qualifyPaidReferral,
@@ -823,5 +823,33 @@ describe("referral invoice revenue", () => {
       USER_A.id,
       expect.objectContaining({ plan: "FREE" }),
     );
+  });
+});
+
+describe("current Stripe account webhook compatibility", () => {
+  it("does not grant access while an asynchronous Checkout payment is pending", async () => {
+    const deps = dependencies({ clerkOwners: { [USER_A.clerkId]: USER_A }, customerOwners: { cus_alpha: USER_A } });
+    const result = await processStripeEvent(event("checkout.session.completed", { ...checkout({ clerkId: USER_A.clerkId, customer: "cus_alpha" }), payment_status: "unpaid" }), deps.value);
+    expect(result.outcome).toBe("ignored");
+    expect(deps.syncSubscription).not.toHaveBeenCalled();
+  });
+  it("fulfills a successful asynchronous Checkout payment", async () => {
+    const deps = dependencies({ clerkOwners: { [USER_A.clerkId]: USER_A }, customerOwners: { cus_alpha: USER_A } });
+    await processStripeEvent(event("checkout.session.async_payment_succeeded", { ...checkout({ clerkId: USER_A.clerkId, customer: "cus_alpha" }), payment_status: "paid" }), deps.value);
+    expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, { customerId: "cus_alpha", plan: "PRO" });
+  });
+  it("resolves refund invoices through PaymentIntent invoice payments", async () => {
+    const deps = dependencies({});
+    deps.value.invoiceIdsForPaymentIntent = vi.fn(async () => ["in_one", "in_two"]);
+    await processStripeEvent(event("charge.refunded", { id: "ch_current", payment_intent: "pi_current", amount: 2500, amount_refunded: 500 }), deps.value);
+    expect(deps.value.invoiceIdsForPaymentIntent).toHaveBeenCalledWith("pi_current");
+    expect(deps.reversePaidReferral).toHaveBeenCalledWith("in_one", "refund", 500, 2500);
+    expect(deps.reversePaidReferral).toHaveBeenCalledWith("in_two", "refund", 500, 2500);
+  });
+  it("excludes externally paid invoices from referral qualification", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    deps.value.paidOffStripe = vi.fn(async () => 1500);
+    await processStripeEvent(event("invoice.paid", { id: "in_external", parent: { subscription_details: { subscription: "sub_test" } }, amount_paid: 1500, currency: "usd" }), deps.value);
+    expect(deps.qualifyPaidReferral).toHaveBeenCalledWith(expect.objectContaining({ paidOutOfBand: true }));
   });
 });

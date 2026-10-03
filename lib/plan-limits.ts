@@ -44,7 +44,7 @@ const BUSINESS_LIMITS: PlanLimits = {
   activeCampaigns: "unlimited",
   staticRepliesPerMonth: 20_000,
   aiRepliesPerMonth: 2_000,
-  connectedInstagramAccounts: 10,
+  connectedInstagramAccounts: 6,
   publicReplyFallback: true,
   exportLeads: true,
   teamAccess: false,

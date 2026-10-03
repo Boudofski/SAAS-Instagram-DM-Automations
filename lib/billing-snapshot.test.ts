@@ -74,3 +74,10 @@ describe("billing subscription lookup", () => {
     expect(isManageableSubscriptionStatus("canceled")).toBe(false);
   });
 });
+
+describe("current Stripe API renewal dates", () => {
+  it("reads the billing period from subscription items", async () => {
+    mockSubscriptionList.mockResolvedValue({ data: [{ status: "active", cancel_at_period_end: false, items: { data: [{ current_period_end: 1_800_000_000, price: { recurring: { interval: "year" }, lookup_key: "ap3k_pro_year" } }] } }] });
+    expect((await getBillingLookup("cus_current")).snapshot?.renewsAt).toBe(new Date(1_800_000_000_000).toISOString());
+  });
+});

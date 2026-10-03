@@ -32,7 +32,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Instagram",
     title: "Reconnect or add an Instagram account",
     summary: "Reconnect to restore an existing connection. Use Add Instagram account to connect a different profile.",
-    steps: ["Open Instagram Account and select Reconnect Instagram.", "Sign in to the intended Meta account and approve every required permission.", "Free includes 1 Instagram account, Pro includes 3, and Business includes 10. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.", "Reconnecting restores the same account. Use the account menu to add another account; existing accounts and automations stay unchanged."],
+    steps: ["Open Instagram Account and select Reconnect Instagram.", "Sign in to the intended Meta account and approve every required permission.", "Free includes 1 Instagram account, Pro includes 3, and Business includes 6. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.", "Reconnecting restores the same account. Use the account menu to add another account; existing accounts and automations stay unchanged."],
   },
   {
     slug: "create-automation",

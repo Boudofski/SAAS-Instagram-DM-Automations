@@ -33,7 +33,7 @@ const ERROR_COPY: Record<string, string> = {
   duplicate_instagram_account:
     "This Instagram account is already connected to another AP3K workspace. Remove it there first or contact support.",
   plan_limit_reached:
-    "Free includes 1 Instagram account, Pro includes 3, and Business includes 10. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.",
+    "Free includes 1 Instagram account, Pro includes 3, and Business includes 6. Each account has separate automations, contacts, inbox, analytics, and AI knowledge. Monthly reply and AI allowances are shared across your subscription.",
   missing_local_profile:
     "Your AP3K workspace could not be found. Sign in again and retry.",
   profile_fetch_failed:

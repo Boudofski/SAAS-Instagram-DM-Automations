@@ -355,7 +355,7 @@ describe("shared multi-account usage", () => {
     mockUserFindUnique.mockResolvedValue({ subscription: { plan: "BUSINESS" } });
     mockIntegrationCount.mockResolvedValue(7);
     const usage = await getUserMonthlyUsage("user-1");
-    expect(usage.connectedAccounts).toMatchObject({ used: 7, limit: 10, remaining: 3 });
+    expect(usage.connectedAccounts).toMatchObject({ used: 7, limit: 6, remaining: 0, blocked: true });
     expect(usage.staticReplies.limit).toBe(20000);
   });
   it("does not refund already consumed replies when an account or campaign is deleted", async () => {

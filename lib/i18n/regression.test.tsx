@@ -43,7 +43,7 @@ describe("language-switching regressions", () => {
     for (const locale of SUPPORTED_LOCALES.filter(l => l !== "en")) {
       for (const source of strings) expect(translateUi(source, locale), `${locale}: ${source}`).not.toBe(source);
     }
-    expect(PLAN_CARDS.map(p => [p.monthlyPrice, p.annualPrice])).toEqual([[0, 0], [9, 79], [29, 279]]);
+    expect(PLAN_CARDS.map(p => [p.monthlyPrice, p.annualPrice])).toEqual([[0, 0], [15, 120], [25, 216]]);
   });
   it("has complete nonempty public translation rows with no duplicate keys", () => {
     const keys = PUBLIC_COPY_ROWS.map(row => row[0]);

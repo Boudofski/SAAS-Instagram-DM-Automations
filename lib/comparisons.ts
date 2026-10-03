@@ -443,7 +443,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         feature: "AP3K capacity",
-        ap3k: "1, 3 or 10 connected accounts by plan",
+        ap3k: "1, 3 or 6 connected accounts by plan",
         other: "Review current plan allowances",
       },
       {

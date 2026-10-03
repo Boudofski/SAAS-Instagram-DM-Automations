@@ -164,6 +164,7 @@ export default async function PaymentPage({ searchParams }: Props) {
     const session = await stripe.checkout.sessions.create(
       {
         mode: "subscription",
+        integration_identifier: "ap3k_checkout_kmqrzvtx",
         line_items: [{ price: priceId, quantity: 1 }],
         client_reference_id: user.id,
         metadata: {

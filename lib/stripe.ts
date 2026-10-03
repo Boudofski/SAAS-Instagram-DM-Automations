@@ -7,7 +7,7 @@ function getInstance(): Stripe {
   if (!_instance) {
     const key = getStripeSecretKey();
     if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-    _instance = new Stripe(key);
+    _instance = new Stripe(key, { apiVersion: "2026-08-26.dahlia" });
   }
   return _instance;
 }

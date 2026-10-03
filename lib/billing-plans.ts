@@ -15,10 +15,10 @@ export type PlanCard = {
 };
 
 export const AP3K_PRICING = {
-  PRO_MONTHLY: 9,
-  PRO_ANNUAL: 79,
-  BUSINESS_MONTHLY: 29,
-  BUSINESS_ANNUAL: 279,
+  PRO_MONTHLY: 15,
+  PRO_ANNUAL: 120,
+  BUSINESS_MONTHLY: 25,
+  BUSINESS_ANNUAL: 216,
 } as const;
 
 export const PLAN_CARDS: PlanCard[] = [
@@ -46,7 +46,7 @@ export const PLAN_CARDS: PlanCard[] = [
     description: "For creators running serious comment-to-DM automation.",
     monthlyPrice: AP3K_PRICING.PRO_MONTHLY,
     annualPrice: AP3K_PRICING.PRO_ANNUAL,
-    annualSavingsPercent: 27,
+    annualSavingsPercent: 33,
     replyLimit: 5_000,
     featured: true,
     features: [
@@ -65,11 +65,11 @@ export const PLAN_CARDS: PlanCard[] = [
       "For high-volume creators and brands running heavier automation.",
     monthlyPrice: AP3K_PRICING.BUSINESS_MONTHLY,
     annualPrice: AP3K_PRICING.BUSINESS_ANNUAL,
-    annualSavingsPercent: 20,
+    annualSavingsPercent: 28,
     replyLimit: 20_000,
     features: [
       "Everything in Pro",
-      "Up to 10 Instagram accounts",
+      "Up to 6 Instagram accounts",
       "20,000 automated actions/month",
       "2,000 AI replies/month",
       "High-volume comment and DM automation",
@@ -79,18 +79,18 @@ export const PLAN_CARDS: PlanCard[] = [
 ];
 
 export const PLAN_COMPARISON = [
-  { feature: "Monthly price", free: "$0", pro: "$9", business: "$29" },
+  { feature: "Monthly price", free: "$0", pro: "$15", business: "$25" },
   {
     feature: "Annual price",
     free: "$0",
-    pro: "$79/year",
-    business: "$279/year",
+    pro: "$120/year",
+    business: "$216/year",
   },
   {
     feature: "Annual savings",
     free: "\u2014",
-    pro: "Save 27%",
-    business: "Save 20%",
+    pro: "Save 33%",
+    business: "Save 28%",
   },
   {
     feature: "Automated actions / month",
@@ -99,7 +99,7 @@ export const PLAN_COMPARISON = [
     business: "20,000",
   },
   { feature: "AI replies / month", free: "0", pro: "500", business: "2,000" },
-  { feature: "Instagram accounts", free: "1", pro: "3", business: "10" },
+  { feature: "Instagram accounts", free: "1", pro: "3", business: "6" },
   {
     feature: "Automations",
     free: "Up to 5 active automations",

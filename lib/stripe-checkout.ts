@@ -1,3 +1,4 @@
+import { AP3K_PRICING } from "@/lib/billing-plans";
 import { createHash } from "crypto";
 import type { StripeBillingInterval, StripePlan } from "@/lib/stripe-config";
 
@@ -22,7 +23,7 @@ export function checkoutIdempotencyKey(input: {
 }) {
   const tenMinuteWindow = Math.floor((input.now ?? new Date()).getTime() / 600_000);
   const digest = createHash("sha256")
-    .update(`${input.clerkId}:${input.plan}:${input.interval}:${tenMinuteWindow}`)
+    .update(`${input.clerkId}:${input.plan}:${input.interval}:${JSON.stringify(AP3K_PRICING)}:${tenMinuteWindow}`)
     .digest("hex")
     .slice(0, 32);
   return `ap3k_checkout_${digest}`;
