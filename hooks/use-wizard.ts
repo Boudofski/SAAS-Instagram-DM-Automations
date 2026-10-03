@@ -1,4 +1,5 @@
 "use client";
+import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
 
 import {
   DEFAULT_EMAIL_CAPTURE_PROMPT,
@@ -138,6 +139,7 @@ export function useWizard(
   slug: string,
   automationId?: string,
   integrationId = "",
+  templateId?: string,
 ) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -160,8 +162,9 @@ export function useWizard(
       ...button,
       label: tr(button.label),
     })),
+    ...(!automationId && templateId ? commentTemplateDefaults(templateId) : {}),
   }));
-  const draftKey = `ap3k:comment-draft:${slug}:${integrationId}:${automationId || "new"}`;
+  const draftKey = `ap3k:comment-draft:${slug}:${integrationId}:${automationId || templateId || "new"}`;
   const restoredKey = useRef("");
   useEffect(() => {
     if (!integrationId || automationId || restoredKey.current === draftKey) return;

@@ -510,7 +510,7 @@ function referenceTemplateFlow(id?: string): Flow | null {
     message("reminder", "Follow-up message", "Did you get a chance to check the link? Let us know if you need any help.", 1240, 390),
   ]);
   if (id === "product-carousel") return flow("products", [
-    { id: "products", kind: "carousel", label: "Your product carousel", text: "Explore our products below.", cards: [{ title: "Your product title", subtitle: "Add a short product description", image: "", links: [{ label: "View product", url: "" }] }], next: null, x: 100, y: 180 },
+    { id: "products", kind: "carousel", label: "Your product carousel", text: "Explore our products below.", cards: [{ title: "Starter guide", subtitle: "A practical resource to help you take the first step.", image: "", links: [{ label: "Explore the guide", url: "" }] }, { title: "Personal consultation", subtitle: "Get advice tailored to your goals and questions.", image: "", links: [{ label: "See availability", url: "" }] }, { title: "Complete toolkit", subtitle: "Explore the resources included in the full collection.", image: "", links: [{ label: "View the toolkit", url: "" }] }], next: null, x: 100, y: 180 },
   ]);
   if (id === "all-dms") return flow("welcome", [message("welcome", "Welcome message", "Thanks for reaching out! What can we help you with today?", 100, 180)]);
   if (id === "story-mentions") return flow("thanks", [message("thanks", "Thank you message", "Thanks for mentioning us in your story!", 100, 180)]);

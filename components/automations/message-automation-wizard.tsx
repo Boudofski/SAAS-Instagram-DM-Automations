@@ -238,13 +238,14 @@ export default function MessageAutomationWizard({
   }, [automation]);
 
   useEffect(() => {
+    if (!integrationId) return;
     void getAiWorkspace()
       .then((result) => {
         const paid = result.plan === "PRO" || result.plan === "BUSINESS";
         setAiAvailable(paid);
       })
       .catch(() => setAiAvailable(false));
-  }, []);
+  }, [integrationId]);
 
   const summarySource =
     source === "STORY"

@@ -13,9 +13,9 @@ vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: "en" }) 
 vi.mock("@/actions/automation", () => ({ saveCampaign: vi.fn() }));
 vi.mock("@/actions/automation-copy", () => ({ generateAutomationCopyAction: vi.fn() }));
 
-function initialDraft(automationId?: string) {
+function initialDraft(automationId?: string, templateId?: string) {
   let draft: WizardData | undefined;
-  function Probe() { draft = useWizard("owner", automationId, "instagram").data; return null; }
+  function Probe() { draft = useWizard("owner", automationId, "instagram", templateId).data; return null; }
   renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><Probe /></QueryClientProvider>);
   return draft!;
 }
@@ -34,6 +34,11 @@ describe("comment editor initial state and publication errors", () => {
     expect(initialDraft()).toMatchObject({ aiReplyEnabled: true, publicReplyEnabled: false });
     expect(initialDraft().aiReplyInstructions).toContain("Username");
     expect(initialDraft("saved-automation")).toMatchObject({ aiReplyEnabled: false, publicReplyEnabled: false, aiReplyInstructions: "" });
+  });
+  it("initializes templates before the editor renders, without inheriting generic draft settings", () => {
+    expect(initialDraft(undefined, "comment-leads")).toMatchObject({ campaignName: "Collect email/phone from comments", emailCaptureEnabled: true, phoneCaptureEnabled: true, openingDmEnabled: true, aiReplyEnabled: false });
+    expect(initialDraft(undefined, "all-posts")).toMatchObject({ post: { postid: "ANY" }, triggerMode: "ANY_COMMENT" });
+    expect(initialDraft("existing", "comment-leads").emailCaptureEnabled).toBe(false);
   });
   it("does not expose a delay control until enabled, but restores configured delays", () => {
     const fresh = editor();

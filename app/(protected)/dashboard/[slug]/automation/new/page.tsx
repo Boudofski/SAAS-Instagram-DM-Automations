@@ -23,8 +23,7 @@ const ConversationStarters = dynamic(
 const FlowBuilder = dynamic(
   () => import("@/components/automations/flow-builder"),
 );
-import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
-import { templateById, templateEditorType } from "@/lib/automation-flow/templates";
+import { templateEditorType } from "@/lib/automation-flow/templates";
 const AiConversationBuilder = dynamic(
   () => import("@/components/automations/ai-conversation-builder"),
 );
@@ -64,7 +63,7 @@ export default function WizardPage(props: Props) {
   const params = props.searchParams;
   if (!params?.edit && !params?.type)
     return <AutomationTypePicker slug={props.params.slug} />;
-  return <AutomationSetup {...props} />;
+  return <AutomationSetup key={`${params?.edit ?? "new"}:${params?.template ?? params?.type ?? "comment"}`} {...props} />;
 }
 
 function AutomationSetup({ params, searchParams }: Props) {
@@ -99,6 +98,7 @@ function AutomationSetup({ params, searchParams }: Props) {
     slug,
     editId,
     user?.data?.integrations?.[0]?.id ?? "",
+    searchParams?.template,
   );
   useEffect(() => {
     if (!editId && searchParams?.ad === "1") update({ adAutomation: true });
@@ -142,19 +142,6 @@ function AutomationSetup({ params, searchParams }: Props) {
       productImageUrl: "",
     });
   }, [editId, searchParams?.type, tr, update]);
-  const initializedTemplate = useRef(false);
-  useEffect(() => {
-    const template = templateById(searchParams?.template);
-    if (
-      editId ||
-      !template ||
-      initializedTemplate.current ||
-      !["comment", "affiliate"].includes(templateEditorType(template.id))
-    )
-      return;
-    initializedTemplate.current = true;
-    update(commentTemplateDefaults(template.id));
-  }, [editId, searchParams?.template, update]);
   const initializedMessagingReviewDraft = useRef(false);
 
   const instagram = getCanonicalInstagramIntegration(user?.data?.integrations);

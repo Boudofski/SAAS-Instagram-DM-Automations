@@ -1,13 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TEMPLATES, templateEditorType, templateFlow, templatePreset } from "@/lib/automation-flow/templates";
 import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
 import { useWizard } from "@/hooks/use-wizard";
 import CommentEditor from "@/components/automations/comment-editor";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import BasicFlowEditor, { type BasicFlowDocument } from "@/components/automations/basic-flow-editor";
-import FlowBuilder from "@/components/automations/flow-builder";
 export default function Review({ frame, templateId, dark }: { frame: boolean; templateId: string; dark: boolean }) {
+  useEffect(() => { if (frame) { document.documentElement.classList.toggle("dark", dark); document.documentElement.classList.toggle("light", !dark); } }, [frame, dark]);
   const [width, setWidth] = useState(390);
   const [chosen, setChosen] = useState(templateId);
   const [night, setNight] = useState(dark);
@@ -30,6 +30,5 @@ function TemplateFrame({ templateId }: { templateId: string }) {
   const identity = { slug: "preview", username: "ap3kautomation", avatar: "/brand/ap3k-social-avatar.png" };
   if (type === "comment") return <CommentEditor {...identity} data={data} update={patch => setData(v => ({ ...v, ...patch }))} onSave={() => setError("Preview only. No automation was published.")} saving={false} error={error} editingActive={false} posts={[]} postsLoading={false} postsFetching={false} refreshPosts={() => {}} connected accountLoading={false} accountError={false} retryAccount={() => {}} followUpsReady paid aiAvailable={false} commentOnly={false} />;
   if (type === "story" || type === "dm") return <MessageAutomationWizard {...identity} source={type === "story" ? "STORY" : "DM"} templateId={templateId} paid followUpsReady />;
-  if (template?.group === "flow") return <FlowBuilder {...identity} integrationId="" templateId={templateId} refreshPosts={() => {}} plan="BUSINESS" />;
   return <BasicFlowEditor {...identity} doc={doc} patch={patch => setDoc(v => ({ ...v, ...patch }))} busy={false} live={false} error={error} save={() => setError("Preview only. No automation was published.")} expanded={expanded} setExpanded={setExpanded} posts={[]} refreshPosts={() => {}} updateTrigger={trigger => setDoc(v => ({ ...v, triggers: [trigger] }))} addTrigger={trigger => setDoc(v => ({ ...v, triggers: [...v.triggers, trigger] }))} openFlow={() => setError("Use the Flow tab to review the canvas.")} />;
 }
