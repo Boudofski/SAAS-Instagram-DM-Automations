@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import { TEMPLATES, templateEditorType, templateFlow, templatePreset } from "@/lib/automation-flow/templates";
 import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
 import { useWizard } from "@/hooks/use-wizard";
@@ -7,7 +8,8 @@ import CommentEditor from "@/components/automations/comment-editor";
 import MessageAutomationWizard from "@/components/automations/message-automation-wizard";
 import BasicFlowEditor, { type BasicFlowDocument } from "@/components/automations/basic-flow-editor";
 export default function Review({ frame, templateId, dark }: { frame: boolean; templateId: string; dark: boolean }) {
-  useEffect(() => { if (frame) { document.documentElement.classList.toggle("dark", dark); document.documentElement.classList.toggle("light", !dark); } }, [frame, dark]);
+  const { setTheme } = useTheme();
+  useEffect(() => { if (frame) setTheme(dark ? "dark" : "light"); }, [frame, dark, setTheme]);
   const [width, setWidth] = useState(390);
   const [chosen, setChosen] = useState(templateId);
   const [night, setNight] = useState(dark);
