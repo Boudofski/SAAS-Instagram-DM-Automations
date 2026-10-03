@@ -277,7 +277,7 @@ export default function AutomationTypePicker({ slug }: { slug: string }) {
                 {
                   Icon: LayoutGrid,
                   title: "Browse templates",
-                  sub: "16 ready-made automations",
+                  sub: `${TEMPLATES.length} ready-made automations`,
                   run: () => setTemplates(true),
                 },
               ].map(({ Icon, title, sub, run }) => (
