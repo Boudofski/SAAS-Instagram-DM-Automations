@@ -19,3 +19,31 @@ describe("owned backtrack actions",()=>{
  it("skips already processed comments and does not bypass paid AI restrictions",async()=>{mock.processed.mockResolvedValue(true);expect(await startBacktrack(id)).toMatchObject({queued:0,skipped:1});mock.find.mockResolvedValue({...automation,listener:{...automation.listener,aiReplyEnabled:true}});expect((await startBacktrack(id)).ok).toBe(false);expect(mock.create).not.toHaveBeenCalled();});
  it("continues using signed cursors without fetching arbitrary paging URLs",async()=>{mock.fetch.mockImplementation(async(url:URL)=>({ok:true,json:async()=>url.pathname.endsWith("/comments")?{data:[],paging:{next:"https://evil.example/secret",cursors:{after:"opaque-cursor"}}}:{id:"123",owner:{id:"owner"}}}));const first=await startBacktrack(id);expect(first).toMatchObject({ok:true,done:false});if(!first.ok)throw Error();await startBacktrack(id,first.cursor);expect(mock.fetch.mock.calls.every(([url])=>url.hostname==="graph.instagram.com")).toBe(true);expect(mock.fetch.mock.calls.some(([url])=>url.searchParams.get("after")==="opaque-cursor")).toBe(true);});
 });
+
+describe("Instagram media ownership scopes",()=>{
+ it.each([undefined,{id:"scoped-owner"}])("accepts omitted/scoped owner only when selected account media edge contains the post: %j",async(owner)=>{
+  mock.fetch.mockImplementation(async(url:URL)=>({ok:true,json:async()=>url.pathname.endsWith("/media")?{data:[{id:"123",owner,permalink:"https://www.instagram.com/p/verified/"}]}:{id:"123",owner}}));
+  expect(await getBacktrackInfo(id)).toMatchObject({ok:true,media:[{id:"123",permalink:"https://www.instagram.com/p/verified/"}]});
+  expect(mock.fetch.mock.calls.some(([url])=>url.pathname==="/v25.0/owner/media")).toBe(true);
+  expect(mock.create).not.toHaveBeenCalled();
+ });
+ it("rejects a readable foreign media object absent from the selected account's edge",async()=>{
+  mock.fetch.mockImplementation(async(url:URL)=>({ok:true,json:async()=>url.pathname.endsWith("/media")?{data:[{id:"999"}]}:{id:"123",owner:{id:"other"}}}));
+  expect(await startBacktrack(id)).toMatchObject({ok:false,error:"This post does not belong to the selected Instagram account."});expect(mock.create).not.toHaveBeenCalled();
+ });
+ it("verifies media on later account pages without following the returned URL",async()=>{
+  mock.fetch.mockImplementation(async(url:URL)=>({ok:true,json:async()=>!url.pathname.endsWith("/media")?{id:"123"}:url.searchParams.has("after")?{data:[{id:"123"}]}:{data:[{id:"456"}],paging:{next:"https://evil.example/leak",cursors:{after:"page-two"}}}}));
+  expect(await getBacktrackInfo(id)).toMatchObject({ok:true});
+  expect(mock.fetch.mock.calls.every(([url])=>url.hostname==="graph.instagram.com")).toBe(true);
+  expect(mock.fetch.mock.calls.some(([url])=>url.pathname==="/v25.0/owner/media" && url.searchParams.get("after")==="page-two")).toBe(true);
+ });
+ it("fails closed when media verification pagination repeats",async()=>{
+  mock.fetch.mockImplementation(async(url:URL)=>({ok:true,json:async()=>url.pathname.endsWith("/media")?{data:[],paging:{next:"https://graph.instagram.com/next",cursors:{after:"repeat"}}}:{id:"123"}}));
+  expect((await startBacktrack(id)).ok).toBe(false);expect(mock.create).not.toHaveBeenCalled();expect(mock.fetch).toHaveBeenCalledTimes(3);
+ });
+ it("skips own comments using verified owner scope and the connected Instagram ID",async()=>{
+  mock.find.mockResolvedValue({...automation,integration:{...automation.integration,webhookAccountId:"webhook-owner",metaAppScopedUserId:"app-owner"}});
+  mock.fetch.mockImplementation(async(url:URL)=>({ok:true,json:async()=>url.pathname.endsWith("/comments")?{data:["scoped-owner","owner"].map((fromId,index)=>({...comment,id:String(789+index),from:{id:fromId}}))}:url.pathname.endsWith("/media")?{data:[{id:"123",owner:{id:"scoped-owner"}}]}:{id:"123",owner:{id:"scoped-owner"}}}));
+  expect(await startBacktrack(id)).toMatchObject({ok:true,queued:0,skipped:2});expect(mock.create).not.toHaveBeenCalled();
+ });
+});
