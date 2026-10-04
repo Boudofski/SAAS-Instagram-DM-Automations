@@ -8,17 +8,23 @@ permissions:
 jobs:
   workspace:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Package source for isolated review
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Package dependencies for isolated tests
         run: |
           mkdir -p /tmp/ap3k-story-review
-          git ls-files -z | python3 -c 'import sys,tarfile; paths=sys.stdin.buffer.read().decode().split("\0"); t=tarfile.open("/tmp/ap3k-story-review/source.tar.gz","w:gz"); [t.add(p,recursive=False) for p in paths if p and not p.startswith(("public/", ".env", ".github/"))]; t.close()'
+          tar -czf /tmp/ap3k-story-review/node_modules.tar.gz node_modules
       - uses: actions/upload-artifact@v4
         with:
-          name: ap3k-story-review-source
-          path: /tmp/ap3k-story-review/source.tar.gz
+          name: ap3k-story-review-dependencies
+          path: /tmp/ap3k-story-review/node_modules.tar.gz
+          compression-level: 0
           retention-days: 1
