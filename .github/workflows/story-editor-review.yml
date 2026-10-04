@@ -1,0 +1,24 @@
+name: Story editor review
+on:
+  push:
+    branches: [fix/story-automation-parity-20261004]
+    paths: [.github/workflows/story-editor-review.yml]
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package source for isolated review
+        run: |
+          mkdir -p /tmp/ap3k-story-review
+          git ls-files -z | python3 -c 'import sys,tarfile; paths=sys.stdin.buffer.read().decode().split("\0"); t=tarfile.open("/tmp/ap3k-story-review/source.tar.gz","w:gz"); [t.add(p,recursive=False) for p in paths if p and not p.startswith(("public/", ".env", ".github/"))]; t.close()'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ap3k-story-review-source
+          path: /tmp/ap3k-story-review/source.tar.gz
+          retention-days: 1
