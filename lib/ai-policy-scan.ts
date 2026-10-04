@@ -21,7 +21,7 @@ export function parsePolicyScanResult(raw: string, input: PolicyScanInput): Poli
     seen.add(key);
     // Reject unsafe rewrites while retaining an otherwise useful advisory finding.
     const editable = ["reply", "opening", "message", "aiReplyInstructions", "emailCapturePrompt", "phoneCapturePrompt", "followUpMessage", "followRequestDmText", "productSubtitle"].includes(finding.sectionId) || /^node:.+:(text|subtitle)$/.test(finding.sectionId);
-    const replacement = editable && finding.replacement && policyReplacementPreservesTokens(source, finding.replacement) ? finding.replacement : undefined;
+    const replacement = editable && finding.replacement && finding.replacement.length <= (finding.sectionId === "reply" ? 220 : finding.sectionId === "aiReplyInstructions" ? 1600 : finding.sectionId === "productSubtitle" || finding.sectionId.endsWith(":subtitle") || section?.detail === "product" ? 80 : ["opening", "emailCapturePrompt", "phoneCapturePrompt", "followUpMessage", "followRequestDmText"].includes(finding.sectionId) || ["email", "phone", "capture", "question"].includes(section?.detail || "") ? 800 : 1000) && policyReplacementPreservesTokens(source, finding.replacement) ? finding.replacement : undefined;
     return { ...finding, quote: source, replacement };
   });
 }

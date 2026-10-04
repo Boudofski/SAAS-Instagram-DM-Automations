@@ -22,6 +22,10 @@ describe("policy scan output", () => {
       expect(parsePolicyScanResult(JSON.stringify({ findings: [{ ...finding, sectionId }] }), structural)[0].replacement).toBeUndefined();
     }
   });
+  it("does not offer a rewrite that exceeds the editor field limit", () => {
+    const draft = {...input,sections:[{id:"reply",label:"Auto Reply",texts:["Hello Username"]}]};
+    expect(parsePolicyScanResult(JSON.stringify({findings:[{...finding,sectionId:"reply",quote:"Hello",replacement:"x".repeat(221)+" Username"}]}),draft)[0].replacement).toBeUndefined();
+  });
   it("accepts no findings without fabricating approval", () => expect(parsePolicyScanResult('{"findings":[]}', input)).toEqual([]));
   it.each([{ textIndex: 9 }, { sectionId: "invented" }, { quote: "not in draft" }, { quote: "" }])("rejects unsupported references %j", override => expect(() => parsePolicyScanResult(JSON.stringify({ findings: [{ ...finding, ...override }] }), input)).toThrow());
   it("removes rewrites that change URLs or template tokens", () => {
