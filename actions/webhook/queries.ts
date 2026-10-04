@@ -1,3 +1,6 @@
+import { readStoryConfig, storyScopeMatches } from "@/lib/story-automation";
+import { bindNextStoryAutomation } from "@/lib/story-automation-runtime";
+import { storyIntentMatches } from "@/lib/story-intent";
 import { parseEmailReply, parsePhoneReply } from "@/lib/automation-engagement-settings";
 import { readFlowTriggers, matchFlowTrigger, type FlowTrigger } from "@/lib/automation-flow/triggers";
 import { resolveInstagramMediaConnection } from "@/lib/instagram-media";
@@ -649,7 +652,9 @@ export const findAutomationForDM = async (
 export const findAutomationForStory = async (
   interaction: "MENTION" | "REACTION" | "REPLY",
   accountId: string,
-  text = ""
+  text = "",
+  storyId?: string,
+  occurredAt?: number
 ): Promise<AutomationWithRelations | null> => {
   const automations = await client.automation.findMany({
     where: {
@@ -689,7 +694,30 @@ export const findAutomationForStory = async (
     },
     orderBy: { createdAt: "desc" },
   });
-  return automations.find(automation=> {const trigger = flowTriggerForEvent(automation,{source:"STORY",text,storyTrigger:interaction});return trigger === undefined ? automation.source === "STORY" && automation.storyTriggerType === interaction : Boolean(trigger);}) ?? null;
+  // Specific media/keyword rules win over broad catch-alls, consistently.
+  const specificity=(item:AutomationWithRelations)=>{const config=readStoryConfig(item.storyConfig);return (config?.scope === "SPECIFIC" || config?.scope === "NEXT" ? 0 : 10)+(item.triggerMode === "ANY_MESSAGE" ? 1:0);};
+  for (const automation of [...automations].sort((a,b)=>specificity(a)-specificity(b))) {
+    const flowTrigger=flowTriggerForEvent(automation,{source:"STORY",text,storyTrigger:interaction});
+    if (flowTrigger !== undefined) {if(flowTrigger)return automation;continue;}
+    if(automation.source !== "STORY")continue;
+    let config=readStoryConfig(automation.storyConfig);
+    if(config) {
+      if(config.scope === "NEXT" && !["PRO","BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE"))continue;
+      if(config.scope === "NEXT" && !config.boundStoryId) {
+        const integration=automation.User?.integrations.find(item=>item.id===automation.integrationId);
+        if(!integration)continue;
+        config=await bindNextStoryAutomation(automation,integration);
+        if(!config)continue;
+      }
+      if(!storyScopeMatches(config,interaction,storyId,occurredAt))continue;
+    } else if(automation.storyTriggerType !== interaction) continue;
+    if(interaction !== "MENTION" && automation.triggerMode === "SPECIFIC_KEYWORD" && !matchKeywordWithMode(text,automation.keywords,automation.matchingMode))continue;
+    if(interaction !== "MENTION" && automation.triggerMode === "INTENT_MATCH") {
+      if(!automation.userId || !["PRO","BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE") || !await storyIntentMatches(config?.intentPrompt||"",text,{userId:automation.userId,automationId:automation.id}))continue;
+    }
+    return automation;
+  }
+  return null;
 };
 
 function webhookAccountFilter(accountId: string) {
@@ -887,7 +915,7 @@ export const findPendingCommentDmActionForText = async (
         active: true,
         archivedAt: null,
         integration: { ...webhookAccountFilter(pageId), status: "CONNECTED", reconnectRequired: false, planLocked: false },
-        source: "COMMENT",
+        source: {in:["COMMENT","STORY"]},
         User: {
           status: { not: "SUSPENDED" },
           integrations: {

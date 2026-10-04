@@ -1,4 +1,5 @@
 "use server";
+import { prepareStoryPublication } from "@/lib/story-automation-runtime";
 import {attachmentScopeFilter} from "@/lib/attachment-scope";
 import {attachmentId} from "@/lib/message-attachment";
 
@@ -371,6 +372,23 @@ export const saveMessageAutomation = async (
           status: 403,
           data: "Your plan's active automation limit has been reached. Pause one or upgrade.",
         };
+      }
+    }
+
+    if (cleanPayload.source === "STORY" && cleanPayload.storyConfig) {
+      const paid = ["PRO","BUSINESS"].includes(profile?.subscription?.plan ?? "FREE");
+      if (cleanPayload.active && !paid && (cleanPayload.storyConfig.scope === "NEXT" || cleanPayload.triggerMode === "INTENT_MATCH")) return {status:403,data:"Next story and intent matching require Pro or Business."};
+      const previous = automationId ? await client.automation.findFirst({where:{id:automationId,User:{clerkId:user.id},integrationId:await currentInstagramAccountId(user.id),archivedAt:null},select:{id:true,storyConfig:true,active:true}}) : null;
+      if (automationId && !previous) return {status:404,data:"Automation not found"};
+      const integration = getCanonicalInstagramIntegration((profile as any)?.integrations);
+      if (cleanPayload.active && !integration) return {status:403,data:"Reconnect Instagram before publishing a story automation."};
+      const prepared = await prepareStoryPublication(cleanPayload,previous,integration ?? {});
+      if (!prepared.ok) return {status:400,data:prepared.error};
+      cleanPayload.storyConfig = prepared.config;
+      // Card upload IDs are tenant-scoped just like post automation images.
+      for (const card of cleanPayload.storyConfig.cards) {
+        const id=productImageId(card.image);
+        if (id && !(await client.automationImage.findFirst({where:{id,user:{clerkId:user.id}},select:{id:true}}))) return {status:400,data:"Choose a card image from your own account."};
       }
     }
 

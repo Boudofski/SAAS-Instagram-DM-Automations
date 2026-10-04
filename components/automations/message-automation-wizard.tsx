@@ -1,4 +1,5 @@
 "use client";
+import StoryAutomationWizard from "./story-automation-wizard";
 import PolicyScanDialog from "./policy-scan-dialog";
 import { mapMessagePolicy, applyMessagePolicy } from "@/lib/automation-policy-input";
 import type { PolicyScanInput } from "@/lib/automation-policy";
@@ -118,7 +119,7 @@ const INITIAL: Draft = {
   aiReplyEnabled: false,
 };
 
-export default function MessageAutomationWizard({
+function LegacyMessageAutomationWizard({
   integrationId = "",
   slug,
   source,
@@ -621,4 +622,8 @@ export default function MessageAutomationWizard({
     </EditorLayout>
     </>
   );
+}
+
+export default function MessageAutomationWizard(props: Parameters<typeof LegacyMessageAutomationWizard>[0]) {
+  return props.source === "STORY" ? <StoryAutomationWizard key={`${props.integrationId}:${props.automationId || props.templateId || "new"}`} {...props}/> : <LegacyMessageAutomationWizard {...props}/>;
 }

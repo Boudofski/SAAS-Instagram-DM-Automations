@@ -27,11 +27,14 @@ export function mapCommentPolicy(data: WizardData, integrationId: string): Polic
   }
   return {integrationId,sections};
 }
-export type MessagePolicyDraft = Engagement & { triggerMode:string; keywords:string[]; message:string; messageVariations?:string[]; messageFormat:string; linkButtons:{label:string;url:string}[]; aiReplyEnabled:boolean; storyTriggerType?:string };
+export type MessagePolicyDraft = Engagement & { triggerMode:string; keywords:string[]; message:string; messageVariations?:string[]; messageFormat:string; linkButtons:{label:string;url:string}[]; aiReplyEnabled:boolean; storyTriggerType?:string; openingDmEnabled?:boolean; openingDmText?:string; storyConfig?:{scope?:string;intentPrompt?:string;cards?:{title:string;subtitle:string;links:{label:string;url:string}[]}[] } };
 export function mapMessagePolicy(data: MessagePolicyDraft, integrationId:string, source:string): PolicyScanInput {
   const sections: PolicySection[] = [{id:"trigger",label:"Trigger",detail:source === "STORY" ? `Story ${data.storyTriggerType?.toLowerCase() || "reply"}` : "Incoming DM",texts:[data.triggerMode === "SPECIFIC_KEYWORD" ? `Message matches: ${data.keywords.join(", ")}` : "Any eligible incoming interaction"]}];
   if (data.messageFormat !== "ATTACHMENT" || data.aiReplyEnabled) add(sections,"message",data.aiReplyEnabled ? "AI Message instructions" : "Direct Message",[data.message,...strings(data.messageVariations)]);
   if (data.messageFormat === "LINK" && !data.aiReplyEnabled) add(sections,"links","Link buttons",data.linkButtons.map(b=>`${b.label}: ${b.url}`));
+  if(data.openingDmEnabled) add(sections,"opening","Opener Message",[data.openingDmText||""]);
+  if(data.triggerMode === "INTENT_MATCH") add(sections,"intent","Trigger intent",[data.storyConfig?.intentPrompt||""]);
+  if(["PRODUCT_CARD","CAROUSEL"].includes(data.messageFormat)) for(const [i,card] of Array.from((data.storyConfig?.cards||[]).entries())) add(sections,`card:${i}`,`Card ${i+1}`,[card.title,card.subtitle,...card.links.map(b=>`${b.label}: ${b.url}`)].filter(Boolean));
   engagement(sections,data);
   return {integrationId,sections};
 }
@@ -68,6 +71,7 @@ export function applyCommentPolicy(data:WizardData,findings:PolicyFinding[]): Pa
 }
 export function applyMessagePolicy<T extends MessagePolicyDraft>(data:T,findings:PolicyFinding[]):T {
   const next={...data,message:replacement(findings,"message",0,data.message),messageVariations:strings(data.messageVariations).map((text,i)=>replacement(findings,"message",i+1,text))};
+  if(data.openingDmText) next.openingDmText=replacement(findings,"opening",0,data.openingDmText,640);
   for(const field of ["emailCapturePrompt","phoneCapturePrompt","followUpMessage","followRequestDmText"] as const) if(data[field]) next[field]=replacement(findings,field,0,data[field]!,800);
   return next;
 }
@@ -87,6 +91,6 @@ export function mapSavedAutomationPolicy(automation:any):PolicyScanInput {
   if(flow) return mapFlowPolicy({flow,triggers:readFlowTriggers(draft?.triggers || l.flowTriggers)||[],opening:draft?.opening ?? l.openingDmText ?? "",openingEnabled:draft?.openingEnabled ?? l.openingDmEnabled,publicReply:draft?.publicReply ?? l.commentReply ?? ""},integrationId);
   const common={...l,followGateRequired:automation.followGateRequired,keywords:(automation.keywords||[]).map((k:any)=>k.word),triggerMode:automation.triggerMode,message:l.prompt||"",messageFormat:l.responseFormat,linkButtons:strings([])};
   const links=readLinkButtons(l.quickReplies,l.ctaButtonTitle,l.ctaLink);
-  if(automation.source!=="COMMENT") return mapMessagePolicy({...common,linkButtons:links,aiReplyEnabled:l.aiDmReplyEnabled,storyTriggerType:automation.storyTriggerType},integrationId,automation.source);
+  if(automation.source!=="COMMENT") return mapMessagePolicy({...common,linkButtons:links,aiReplyEnabled:l.aiDmReplyEnabled,storyTriggerType:automation.storyTriggerType,storyConfig:automation.storyConfig},integrationId,automation.source);
   return mapCommentPolicy({...common,linkButtons:links,sendPrivateDm:automation.sendPrivateDm,matchingMode:automation.matchingMode,dmMessage:l.prompt||"",publicReplyEnabled:Boolean(l.commentReply || strings(l.commentReplies).length),publicReply:l.commentReply||"",publicReply2:l.commentReply2||"",publicReply3:l.commentReply3||"",aiReplyInstructions:l.aiReplyInstructions||"",openingDmText:l.openingDmText||"",productCard:l.responseFormat==="PRODUCT_CARD",productSubtitle:l.cardSubtitle} as WizardData,integrationId);
 }

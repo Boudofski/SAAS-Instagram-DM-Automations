@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeMessageAutomationPayload, validateMessageAutomationPayload } from "./message-automation";
 
 describe("message automation payloads", () => {
-  it("normalizes a story reply and disables retired delivery simulations", () => {
+  it("normalizes a story reply, preserves a real queue delay and disables simulated typing", () => {
     const payload = normalizeMessageAutomationPayload({
       source: "STORY",
       storyTriggerType: "REPLY",
@@ -15,7 +15,7 @@ describe("message automation payloads", () => {
     expect(payload.name).toBe("Story leads");
     expect(payload.storyTriggerType).toBe("REPLY");
     expect(payload.quickReplies).toHaveLength(4);
-    expect(payload.deliveryDelaySeconds).toBe(0);
+    expect(payload.deliveryDelaySeconds).toBe(10);
     expect(payload.typingIndicator).toBe(false);
     expect(payload.followRequestButtonText).toBe("Following");
     expect(validateMessageAutomationPayload(payload)).toBeNull();

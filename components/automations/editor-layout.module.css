@@ -224,3 +224,6 @@
 
 .delayToggle { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-inline-start:auto; flex-shrink:0; }
 @media(max-width:600px) { .groupTitle { row-gap:12px; } .delayToggle { max-width:100%; flex-wrap:wrap; } }
+
+.saveDraft { min-height:36px; padding:8px 12px; border:1px solid var(--editor-line); border-radius:9px; background:var(--editor-card); color:var(--editor-text); font-size:12px; white-space:nowrap; }
+@media(max-width:767px) { .saveDraft {font-size:11px;padding:7px 9px;} }

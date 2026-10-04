@@ -1,4 +1,5 @@
 "use server";
+import { normalizeStoryConfig, readStoryConfig } from "@/lib/story-automation";
 import {attachmentId} from "@/lib/message-attachment";
 import {attachmentScopeFilter} from "@/lib/attachment-scope";
 import { normalizeEngagementSettings } from "@/lib/automation-engagement-settings";
@@ -19,7 +20,7 @@ import {
   resolveFollowRequestDmText,
 } from "@/lib/comment-dm-flow";
 import { readLegacyQuickReplies, readLinkButtons } from "@/lib/link-buttons";
-import type { MATCHING_MODE } from "@prisma/client";
+import { Prisma, type MATCHING_MODE } from "@prisma/client";
 import {
   normalizeAiProtectionRules,
   normalizeAiReplyTone,
@@ -132,10 +133,9 @@ export const createCompleteAutomation = async (
   });
 };
 
-function messageTriggerType(payload: NormalizedMessageAutomationPayload) {
-  return payload.source === "STORY"
-    ? `STORY_${payload.storyTriggerType}`
-    : "DM";
+function messageTriggers(payload: NormalizedMessageAutomationPayload) {
+  if (payload.source === "DM") return [{type:"DM"}];
+  return payload.storyConfig && payload.storyConfig.scope !== "MENTION" ? [{type:"STORY_REPLY"},{type:"STORY_REACTION"}] : [{type:`STORY_${payload.storyTriggerType}`}];
 }
 
 export const createCompleteMessageAutomation = async (
@@ -156,6 +156,8 @@ export const createCompleteMessageAutomation = async (
       active: payload.active,
       source: payload.source,
       storyTriggerType: payload.storyTriggerType,
+      storyConfig: payload.storyConfig ? payload.storyConfig as unknown as Prisma.InputJsonValue : Prisma.DbNull,
+      oneDmPerUser: payload.oneDmPerUser ?? false,
       triggerMode: payload.triggerMode,
       matchingMode: "CONTAINS",
       sendPrivateDm: true,
@@ -172,12 +174,16 @@ export const createCompleteMessageAutomation = async (
           },
         },
       }),
-      trigger: { create: { type: messageTriggerType(payload) } },
+      trigger: { create: messageTriggers(payload) },
       listener: {
         create: {
           listener: "MESSAGE",
           ...normalizeEngagementSettings(payload),
           prompt: payload.message,
+          openingDmEnabled: payload.openingDmEnabled ?? false,
+          openingDmText: payload.openingDmText,
+          openingDmButtonText: payload.openingDmButtonText,
+          cardSubtitle: payload.storyConfig?.cards[0]?.subtitle,
           messageVariations: payload.messageVariations ?? [],
           responseFormat: payload.responseFormat,
           quickReplies: payload.quickReplies,
@@ -224,6 +230,8 @@ export const updateCompleteMessageAutomation = async (
         active: payload.active,
         source: payload.source,
         storyTriggerType: payload.storyTriggerType,
+      storyConfig: payload.storyConfig ? payload.storyConfig as unknown as Prisma.InputJsonValue : Prisma.DbNull,
+      oneDmPerUser: payload.oneDmPerUser ?? false,
         triggerMode: payload.triggerMode,
         matchingMode: "CONTAINS",
         sendPrivateDm: true,
@@ -240,12 +248,16 @@ export const updateCompleteMessageAutomation = async (
             },
           },
         }),
-        trigger: { create: { type: messageTriggerType(payload) } },
+        trigger: { create: messageTriggers(payload) },
         listener: {
           create: {
             listener: "MESSAGE",
             ...normalizeEngagementSettings(payload),
             prompt: payload.message,
+          openingDmEnabled: payload.openingDmEnabled ?? false,
+          openingDmText: payload.openingDmText,
+          openingDmButtonText: payload.openingDmButtonText,
+          cardSubtitle: payload.storyConfig?.cards[0]?.subtitle,
             messageVariations: payload.messageVariations ?? [],
             responseFormat: payload.responseFormat,
             quickReplies: payload.quickReplies,
@@ -568,6 +580,11 @@ export const duplicateAutomationQuery = async (
       name: duplicateName,
       active: false,
       source: automation.source,
+      storyConfig: automation.source === "STORY" && readStoryConfig(automation.storyConfig) ? {...normalizeStoryConfig(automation.storyConfig),armedAt:undefined,baselineIds:undefined,boundStoryId:undefined} : undefined,
+      oneDmPerUser: automation.oneDmPerUser,
+      openingDmEnabled: automation.listener.openingDmEnabled && Boolean(automation.listener.openingDmText),
+      openingDmText: automation.listener.openingDmText ?? undefined,
+      openingDmButtonText: automation.listener.openingDmButtonText ?? undefined,
       storyTriggerType:
         automation.storyTriggerType === "REACTION" ||
         automation.storyTriggerType === "REPLY"
@@ -576,11 +593,13 @@ export const duplicateAutomationQuery = async (
             ? "MENTION"
             : null,
       triggerMode:
-        automation.triggerMode === "SPECIFIC_KEYWORD"
+        automation.triggerMode === "INTENT_MATCH" ? "INTENT_MATCH" : automation.triggerMode === "SPECIFIC_KEYWORD"
           ? "SPECIFIC_KEYWORD"
           : "ANY_MESSAGE",
       keywords: automation.keywords.map((keyword) => keyword.word),
       responseFormat:
+        automation.listener.responseFormat === "PRODUCT_CARD" ||
+        automation.listener.responseFormat === "CAROUSEL" ||
         automation.listener.responseFormat === "LINK" ||
         automation.listener.responseFormat === "ATTACHMENT" ||
         automation.listener.responseFormat === "MEDIA"
@@ -610,7 +629,7 @@ export const duplicateAutomationQuery = async (
             : undefined,
       followGateRequired: automation.followGateRequired,
       typingIndicator: false,
-      deliveryDelaySeconds: 0,
+      deliveryDelaySeconds: automation.deliveryDelaySeconds,
       followRequestDmText: resolveFollowRequestDmText(
         automation.listener.followRequestDmText,
       ),

@@ -75,3 +75,13 @@
 .comments { max-height:78%; overflow-y:auto; }
 
 .embeddedPreview { flex:1; min-height:0; }
+
+.phonePreview { max-width:280px; max-height:620px; }
+.phoneFrame { border:7px solid #c7c7cc; border-radius:38px; padding-top:24px; padding-bottom:15px; }
+:global(.dark) .phoneFrame { border-color:#4a4b53; }
+.phoneFrame .screen { overflow:hidden; border-radius:0 0 24px 24px; }
+.phoneFrame::after { content:""; position:absolute; bottom:5px; width:35%; height:4px; border-radius:4px; left:32.5%; background:var(--pv-text); }
+.phoneStatus { position:absolute; top:5px; left:18px; right:18px; display:flex; justify-content:space-between; font-size:9px; font-weight:700; color:var(--pv-text); }
+.quickReplies { display:flex; flex-wrap:wrap; gap:5px; justify-content:flex-end; }
+.quickReplies span { font-size:11px; padding:6px 9px; border:1px solid #1684f8; color:#1684f8; border-radius:18px; }
+.phonePreview .carouselCard>.button { margin:6px; }

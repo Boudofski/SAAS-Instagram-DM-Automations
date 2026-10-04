@@ -290,6 +290,7 @@ model Automation {
   sendPrivateDm        Boolean           @default(true)
   source               String            @default("COMMENT")
   storyTriggerType     String?
+  storyConfig          Json?
   followGateRequired   Boolean           @default(false)
   typingIndicator      Boolean           @default(false)
   deliveryDelaySeconds Int               @default(0)
