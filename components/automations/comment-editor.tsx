@@ -1,4 +1,9 @@
 "use client";
+import PolicyScanDialog from "./policy-scan-dialog";
+import { mapCommentPolicy, applyCommentPolicy } from "@/lib/automation-policy-input";
+import type { PolicyScanInput } from "@/lib/automation-policy";
+import { createCommentEditorPayload } from "@/lib/comment-editor-payload";
+import { normalizeCampaignPayload, validateNormalizedCampaignPayload } from "@/lib/campaign-save";
 import AttachmentPicker from "./attachment-picker";
 import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 
@@ -95,6 +100,8 @@ export default function CommentEditor(p: CommentEditorProps) {
   useEffect(() => {
     if ((data.deliveryDelaySeconds ?? 0) > 0) setDelayEnabled(true);
   }, [data.deliveryDelaySeconds]);
+  const [scanInput, setScanInput] = useState<PolicyScanInput | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [publishAttempted, setPublishAttempted] = useState(false);
   const aiPublishError = data.aiReplyEnabled &&
     ((publishAttempted && !p.paid) || p.error === "AI only available on paid plans.");
@@ -111,6 +118,13 @@ export default function CommentEditor(p: CommentEditorProps) {
       setOpenMessage(null);
       setOpenTrigger("reply");
       setMode("comments");
+      return;
+    }
+    setValidationError(null);
+    if (active) {
+      const issue = !data.post ? "Select a post before publishing." : validateNormalizedCampaignPayload(normalizeCampaignPayload(createCommentEditorPayload({...data, post:data.post}, true)));
+      if (issue) { setValidationError(issue); return; }
+      setScanInput(mapCommentPolicy(data, p.integrationId || ""));
       return;
     }
     p.onSave(active);
@@ -210,6 +224,8 @@ export default function CommentEditor(p: CommentEditorProps) {
   );
 
   return (
+    <>
+    {scanInput && <PolicyScanDialog open onOpenChange={open => { if (!open) setScanInput(null); }} input={scanInput} slug={p.slug} onPublish={() => { setScanInput(null); p.onSave(true); }} onApply={findings => { update(applyCommentPolicy(data, findings)); setScanInput(null); }} />}
     <EditorLayout
       slug={p.slug}
       name={data.campaignName}
@@ -217,7 +233,7 @@ export default function CommentEditor(p: CommentEditorProps) {
       active={p.editingActive}
       saving={p.saving}
       onSave={save}
-      error={aiPublishError ? null : p.error}
+      error={aiPublishError ? null : validationError || p.error}
       accountName={p.username || undefined}
       preview={
         <EditorPreview
@@ -857,5 +873,6 @@ export default function CommentEditor(p: CommentEditorProps) {
         )}
       </EditorGroup>
     </EditorLayout>
+    </>
   );
 }

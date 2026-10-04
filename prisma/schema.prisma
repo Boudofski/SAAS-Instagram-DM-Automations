@@ -37,6 +37,7 @@ model User {
   deletedReplyUsage   DeletedReplyUsage[]
   automationImages   AutomationImage[]
   automationAttachments AutomationAttachment[]
+  policyScans AutomationPolicyScan[]
 }
 
 // Prospects explicitly requesting the public launch-kit email series. Never import
@@ -1031,4 +1032,15 @@ model ReferralInvoiceAdjustment {
   disputed Boolean @default(false)
   fullReversal Boolean @default(false)
   updatedAt DateTime @updatedAt
+}
+
+// Separate lifetime policy-scan allowance; never consumes AI delivery credits.
+model AutomationPolicyScan {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status String @default("PENDING")
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  @@index([userId, status, createdAt])
 }

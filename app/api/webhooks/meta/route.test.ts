@@ -1,3 +1,4 @@
+vi.mock("@/lib/automation-delivery",()=>({claimImmediateComment:vi.fn().mockResolvedValue(true),claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

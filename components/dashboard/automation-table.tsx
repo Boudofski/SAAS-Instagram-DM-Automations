@@ -21,7 +21,9 @@ import { isAppReviewMode } from "@/lib/app-review-mode";
 import { getCampaignModeLabel } from "@/lib/campaign-mode-label";
 import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
 import { toast } from "sonner";
-import { MoreHorizontal } from "lucide-react";
+import { getBacktrackInfo } from "@/actions/automation-tools";
+import SavedAutomationTools, { showPublishedTools, type AutomationTool } from "@/components/automations/saved-automation-tools";
+import { MoreHorizontal, History, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,6 +54,15 @@ export default function AutomationTable({
   const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [publishedId,setPublishedId]=useState<string|null>(null);
+  useEffect(()=>{
+    const url=new URL(window.location.href);
+    const id=url.searchParams.get("published");
+    if(!id || !automations.some(a=>a.id===id))return;
+    url.searchParams.delete("published");
+    window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+    if(showPublishedTools(slug))setPublishedId(id);
+  },[automations,slug]);
   const appReviewMode = isAppReviewMode();
   const messagingReviewMode = isMessagingReviewMode();
 
@@ -123,6 +134,8 @@ export default function AutomationTable({
   }
 
   return (
+    <>
+    {publishedId && <SavedAutomationTools automationId={publishedId} slug={slug} tool="published" onClose={()=>setPublishedId(null)}/>}
     <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-sm transition-colors duration-fast dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-2xl">
       {showControls && (
         <div className="flex flex-col gap-2 border-b border-slate-200 light:border-slate-300 p-3 dark:border-white/10 sm:gap-3 sm:p-4 xl:flex-row xl:items-center">
@@ -221,6 +234,7 @@ export default function AutomationTable({
         />
       )}
     </div>
+    </>
   );
 }
 
@@ -539,7 +553,20 @@ function AutomationActionsMenu({
   compact?: boolean;
 }) {
   const { locale } = useI18n();
+  const [tool,setTool]=useState<AutomationTool|null>(null);
+  const viewMedia=async()=>{
+    const tab=window.open("about:blank","_blank");
+    if(tab)tab.opener=null;
+    try {
+      const info=await getBacktrackInfo(automation.id);
+      if(info.ok && info.media.length===1 && info.media[0].permalink && tab) { tab.location.replace(info.media[0].permalink); return; }
+    } catch { /* The dialog provides a retryable error state. */ }
+    tab?.close(); setTool("media");
+  };
+  const commentSource=automation.source === "COMMENT" || (automation.listener?.flowTriggers||[]).some((t:any)=>t.source==="COMMENT");
   return (
+    <>
+    {tool && <SavedAutomationTools key={`${automation.id}:${tool}`} automationId={automation.id} slug={slug} tool={tool} onClose={()=>setTool(null)}/>}
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -554,6 +581,10 @@ function AutomationActionsMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={7} className="w-48 rounded-xl p-1.5">
+        {commentSource && <DropdownMenuItem disabled={!automation.active} onSelect={()=>setTool("backtrack")}><History className="mr-2 h-4 w-4"/>Backtrack comments</DropdownMenuItem>}
+        {commentSource && <DropdownMenuItem onSelect={()=>void viewMedia()}><ImageIcon className="mr-2 h-4 w-4"/>View Media</DropdownMenuItem>}
+        <DropdownMenuItem onSelect={()=>setTool("scan")}><ShieldCheck className="mr-2 h-4 w-4"/>Run safety check</DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href={automationEditHref(slug, automation)}>
             <UiText>{automation.needsReview || automation.stalePost ? "Review setup" : "Edit automation"}</UiText>
@@ -580,6 +611,7 @@ function AutomationActionsMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 }
 
