@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ qstash: vi.fn(), legacy: vi.fn(), followUps: vi.fn(), flows: vi.fn(), delayed: vi.fn() }));
+const mocks = vi.hoisted(() => ({ qstash: vi.fn(), legacy: vi.fn(), followUps: vi.fn(), flows: vi.fn(), delayed: vi.fn(), stories: vi.fn() }));
 vi.mock("@/lib/qstash-scheduler-auth", () => ({ authorizeQStashScheduler: mocks.qstash }));
 vi.mock("@/lib/automation-scheduler-auth", () => ({ authorizeAutomationScheduler: mocks.legacy }));
 vi.mock("@/lib/automation-engagement", () => ({ processAutomationFollowUps: mocks.followUps }));
 vi.mock("@/lib/automation-flow/scheduler", () => ({ processScheduledAutomationFlows: mocks.flows }));
 vi.mock("@/lib/automation-delivery", () => ({ processAutomationDeliveries: mocks.delayed }));
+vi.mock("@/lib/story-automation-runtime",()=>({bindPendingNextStories:mocks.stories}));
 import { GET, POST } from "./route";
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.followUps.mockResolvedValue({ checked: 0, sent: 0 });
   mocks.flows.mockResolvedValue({ flowProcessed: 0, flowFailed: 0 });
+  mocks.stories.mockResolvedValue({storiesBound:0});
   mocks.delayed.mockResolvedValue({ delayedProcessed: 0 });
 });
 describe("automation scheduler transport", () => {
@@ -24,8 +26,8 @@ describe("automation scheduler transport", () => {
     mocks.qstash.mockResolvedValue(true);
     const response = await POST(new Request("https://ap3k.com/api/cron/automation-follow-ups", { method: "POST" }));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, checked: 0, sent: 0, flowProcessed: 0, flowFailed: 0, delayedProcessed: 0 });
-    for (const worker of [mocks.followUps, mocks.flows, mocks.delayed]) expect(worker).toHaveBeenCalledWith();
+    expect(await response.json()).toEqual({ ok: true, checked: 0, sent: 0, flowProcessed: 0, flowFailed: 0, delayedProcessed: 0, storiesBound:0 });
+    for (const worker of [mocks.followUps, mocks.flows, mocks.delayed,mocks.stories]) expect(worker).toHaveBeenCalledWith();
   });
   it("preserves the authenticated GET fallback", async () => {
     const request = new Request("https://ap3k.com/api/cron/automation-follow-ups");

@@ -1,4 +1,5 @@
-vi.mock("@/lib/automation-delivery",()=>({claimImmediateComment:vi.fn().mockResolvedValue(true),claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
+vi.mock("@/lib/automation-delivery",()=>({claimImmediateStory:vi.fn().mockResolvedValue(true),claimImmediateComment:vi.fn().mockResolvedValue(true),claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
+import {claimImmediateStory,deferAutomationDelivery} from "@/lib/automation-delivery";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +12,7 @@ const mockUpdateWebhookEvent = vi.fn();
 const mockVerifyMetaSignature = vi.fn();
 const mockFindAutomationById = vi.fn();
 const mockFindAutomationForDM = vi.fn();
+const mockFindAutomationForStory = vi.fn();
 const mockFindPendingCommentDmActionForText = vi.fn();
 const mockFindIntegrationForWebhookAccount = vi.fn();
 const mockIsDuplicate = vi.fn();
@@ -46,7 +48,7 @@ vi.mock("@/actions/webhook/queries", () => ({
   isCurrentFlowOpening: vi.fn().mockReturnValue(true),
   findAutomationForCommentWithReason: vi.fn(),
   findAutomationForDM: (...args: unknown[]) => mockFindAutomationForDM(...args),
-  findAutomationForStory: vi.fn(),
+  findAutomationForStory: (...args:unknown[])=>mockFindAutomationForStory(...args),
   findPendingCommentDmActionForText: (...args: unknown[]) =>
     mockFindPendingCommentDmActionForText(...args),
   findAutomationById: (...args: unknown[]) => mockFindAutomationById(...args),
@@ -158,6 +160,7 @@ describe("Meta webhook route security", () => {
     mockVerifyMetaSignature.mockReturnValue(signatureResult(false));
     mockFindAutomationById.mockResolvedValue(null);
     mockFindAutomationForDM.mockResolvedValue(null);
+    mockFindAutomationForStory.mockResolvedValue(null);
     mockFindPendingCommentDmActionForText.mockResolvedValue(null);
     mockFindIntegrationForWebhookAccount.mockResolvedValue(null);
     mockIsDuplicate.mockResolvedValue(false);
@@ -1114,4 +1117,28 @@ describe("Meta webhook route security", () => {
       }
     },
   );
+  describe("new Story editor delivery contracts",()=>{
+    function setupStory(extra:any={}) {
+      mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+      const integration={id:"integration-1",userId:"user-1",instagramId:"ig-business-1",webhookAccountId:"ig-business-1",instagramUsername:"brand",token:"test-token",status:"CONNECTED",reconnectRequired:false,planLocked:false};
+      const automation={id:"story-automation",userId:"user-1",integrationId:integration.id,source:"STORY",active:true,storyConfig:{version:1,scope:"ALL",stories:[],cards:[],intentPrompt:""},oneDmPerUser:false,deliveryDelaySeconds:0,followGateRequired:false,listener:{prompt:"Your guide",responseFormat:"TEXT",quickReplies:[],openingDmEnabled:false},User:{integrations:[integration],subscription:{plan:"PRO"}},...extra};
+      mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+      mockFindAutomationForStory.mockResolvedValue(automation);
+      mockResolveIntegrationSendToken.mockReturnValue({ok:true,token:"test-token"});
+      vi.mocked(claimImmediateStory).mockResolvedValue(true);
+      return automation;
+    }
+    async function reply(options:any={}) {
+      const body=JSON.stringify({object:"instagram",entry:[{id:"ig-business-1",messaging:[{sender:{id:"recipient-1"},recipient:{id:"ig-business-1"},timestamp:options.at??Date.now(),message:{mid:"story-mid",text:options.text??"guide",reply_to:{story:{id:"selected-story",url:"https://cdn.test/story.jpg"}},...options.message}}]}]});
+      return POST(new NextRequest("https://ap3k.test/api/webhooks/meta",{method:"POST",headers:{"x-hub-signature-256":"sha256=good"},body}));
+    }
+    it("forwards the selected story ID and original timestamp to matching",async()=>{setupStory();const at=Date.now();await reply({at});expect(mockFindAutomationForStory).toHaveBeenCalledWith("REPLY","ig-business-1","guide","selected-story",at);expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({message:"Your guide",recipientId:"recipient-1"}));});
+    it("does not leak nonmatching story replies into a generic DM catch-all",async()=>{setupStory();mockFindAutomationForStory.mockResolvedValue(null);await reply();expect(mockFindAutomationForDM).not.toHaveBeenCalled();expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
+    it("schedules a real delay instead of sending immediately",async()=>{setupStory({deliveryDelaySeconds:300});await reply();expect(deferAutomationDelivery).toHaveBeenCalledWith(expect.objectContaining({automationId:"story-automation",eventKey:"story:story-mid",seconds:300,recipientIgId:"recipient-1"}));expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
+    it("blocks a repeated webhook even when one-DM-per-user is off",async()=>{setupStory();vi.mocked(claimImmediateStory).mockResolvedValue(false);await reply();expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
+    it("sends the opener with a real continue callback before the final message",async()=>{setupStory({listener:{prompt:"Your guide",responseFormat:"TEXT",quickReplies:[],openingDmEnabled:true,openingDmText:"Ready?",openingDmButtonText:"Continue"}});await reply();expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({message:"Ready?",responseFormat:"TEXT",postbackButton:{title:"Continue",payload:"AP3K_OPENING_CONTINUE:story-automation:story-mid"}}));expect(mockScheduleFollowUp).not.toHaveBeenCalled();});
+    it("does not send beyond the original 24-hour conversation window",async()=>{setupStory();await reply({at:Date.now()-86400001});expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
+    it("passes native carousel cards to delivery, not just a text preview",async()=>{const cards=[{title:"Offer",subtitle:"Today",image:"https://cdn.test/card.jpg",links:[{label:"Shop",url:"https://shop.test/"}]}];setupStory({storyConfig:{version:1,scope:"ALL",cards,stories:[],intentPrompt:""},listener:{prompt:"Offer",responseFormat:"CAROUSEL",quickReplies:[]}});await reply();expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({responseFormat:"CAROUSEL",carouselCards:cards}));});
+  });
+
 });

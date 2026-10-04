@@ -49,6 +49,10 @@ export default function EditorPreview({
   messagesRef,
   className = "",
   postPlaceholder,
+  phoneFrame = false,
+  incomingMessage,
+  carouselCards,
+  quickReplyLabels,
 }: {
   commentPreview?: string;
   data: Partial<WizardData>;
@@ -65,6 +69,10 @@ export default function EditorPreview({
   messagesRef?: Ref<HTMLDivElement>;
   className?: string;
   postPlaceholder?: string;
+  phoneFrame?: boolean;
+  incomingMessage?: string;
+  carouselCards?: import("@/lib/story-automation").StoryCard[];
+  quickReplyLabels?: string[];
 }) {
   const tr = useUi();
   const reduced = useReducedMotion();
@@ -103,7 +111,7 @@ export default function EditorPreview({
   );
   return (
     <section
-      className={`${styles.preview} ${className}`}
+      className={`${styles.preview} ${phoneFrame ? styles.phonePreview : ""} ${className}`}
       aria-label={tr("Instagram live preview")}
     >
       <header className={styles.heading}>
@@ -138,7 +146,8 @@ export default function EditorPreview({
           ))}
         </div>
       </header>
-      <div className={styles.card}>
+      <div className={`${styles.card} ${phoneFrame ? styles.phoneFrame : ""}`}>
+        {phoneFrame && <div className={styles.phoneStatus}><span>9:41</span><span>▮▮▮ ▰</span></div>}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             className={styles.screen}
@@ -226,6 +235,7 @@ export default function EditorPreview({
                   {interaction && (
                     <p className={styles.interaction}>{tr(interaction)}</p>
                   )}
+                  {incomingMessage && bubble(incomingMessage, [], true)}
                   {conversation ??
                     (!data.sendPrivateDm ? (
                       <p className={styles.interaction}>
@@ -292,7 +302,7 @@ export default function EditorPreview({
                             />
                           </div>
                         )}
-                        {data.messageFormat === "ATTACHMENT" ? (data.attachment ? <AttachmentPreview attachment={data.attachment}/> : bubble(tr("Attachment"))) : bubble(
+                        {carouselCards?.length ? <div className={styles.carousel}>{carouselCards.map((card,index)=><div className={styles.carouselCard} key={index}>{card.image && <Image src={card.image} alt={card.title || tr("Product image")} width={250} height={180} unoptimized/>}<strong dir="auto">{card.title}</strong><small dir="auto">{card.subtitle}</small>{card.links.map((link,i)=><span key={i} className={styles.button}>{link.label}</span>)}</div>)}</div> : data.messageFormat === "ATTACHMENT" ? (data.attachment ? <AttachmentPreview attachment={data.attachment}/> : bubble(tr("Attachment"))) : bubble(
                           data.dmMessage || tr("Enter your message here"),
                           aiDmReply
                             ? []
@@ -302,6 +312,7 @@ export default function EditorPreview({
                           false,
                           true,
                         )}
+                        {quickReplyLabels?.length ? <div className={styles.quickReplies}>{quickReplyLabels.map((label,index)=><span key={index}>{label}</span>)}</div> : null}
                         {data.productCard && data.productSubtitle && (
                           <p className={styles.interaction}>
                             {data.productSubtitle}

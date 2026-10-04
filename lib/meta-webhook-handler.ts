@@ -1,5 +1,6 @@
+import { readStoryConfig } from "@/lib/story-automation";
 import { deliveryCandidates, eligibleCommentTimestamp } from "@/lib/automation-backtrack";
-import { claimDmRecipient, claimImmediateComment } from "@/lib/automation-delivery";
+import { claimDmRecipient, claimImmediateComment, claimImmediateStory } from "@/lib/automation-delivery";
 import { deferAutomationDelivery } from "@/lib/automation-delivery";
 import { handleConversationStarter } from "@/lib/conversation-starters-runtime";
 import {
@@ -2230,7 +2231,7 @@ async function processEntry(
         });
       }
       const storyAutomation = storyInteraction
-        ? await findAutomationForStory(storyInteraction, pageId, dmText)
+        ? await findAutomationForStory(storyInteraction, pageId, dmText, parsed.ok ? parsed.data.replyToStory?.id : undefined, parsed.ok ? parsed.data.messageTimestamp : undefined)
         : null;
       const currentFlowOpening =
         dmFlowAction?.type === "OPENING_CONTINUE" && callbackAutomation
@@ -2250,6 +2251,7 @@ async function processEntry(
         callbackAutomation?.integrationId === callbackIntegration.id &&
         (dmFlowAction?.type !== "OPENING_CONTINUE" ||
           callbackAutomation.source === "COMMENT" ||
+          (callbackAutomation.source === "STORY" && callbackAutomation.listener?.openingDmEnabled === true) ||
           readFlowTriggers(callbackAutomation.listener?.flowTriggers)?.some(
             (t) => t.source === "COMMENT",
           )),
@@ -2276,6 +2278,12 @@ async function processEntry(
         : storyAutomation;
 
       if (directAutomation?.listener) {
+        if (resumedAutomationId && resumedAutomationId !== directAutomation.id) continue;
+        if (!resumedAutomationId && !dmFlowAction && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && directAutomation.deliveryDelaySeconds > 0) {
+          await deferAutomationDelivery({automationId:directAutomation.id,eventKey:`story:${parsed.ok ? parsed.data.messageMid : webhookEvent.id}`,recipientIgId:senderId,seconds:directAutomation.deliveryDelaySeconds,entry:{id:entry.id,messaging:[messagingItem]},object:envelope.object});
+          await updateWebhookEvent(webhookEvent.id,{automationId:directAutomation.id,status:"PROCESSING",errorMessage:"delivery_scheduled"});
+          continue;
+        }
         await updateWebhookEvent(webhookEvent.id, {
           automationId: directAutomation.id,
           status: "PROCESSING",
@@ -2304,6 +2312,10 @@ async function processEntry(
           });
           continue;
         }
+        if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && readStoryConfig(directAutomation.storyConfig) && parsed.ok && parsed.data.messageMid && !await claimImmediateStory(directAutomation.id,parsed.data.messageMid)) {
+          await updateWebhookEvent(webhookEvent.id,{automationId:directAutomation.id,status:"PROCESSED",errorMessage:"duplicate_story_webhook",processedAt:new Date()});
+          continue;
+        }
         await processConfiguredMessageAutomation({
           automation: directAutomation,
           pageId,
@@ -2318,6 +2330,12 @@ async function processEntry(
           inboundAt,
           dmFlowAction: callbackRequested ? dmFlowAction : null,
         });
+        continue;
+      }
+
+      if (storyInteraction) {
+        // A story with a nonmatching keyword must not leak into a catch-all inbox DM rule.
+        await updateWebhookEvent(webhookEvent.id,{status:"PROCESSED",errorMessage:"no_matching_story_automation",processedAt:new Date()});
         continue;
       }
 
@@ -2468,6 +2486,11 @@ async function processConfiguredMessageAutomation(params: {
     return;
   }
 
+  if (automation.source === "STORY" && readStoryConfig(automation.storyConfig) && (!params.inboundAt || !messagingWindowOpen(params.inboundAt))) {
+    await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"IGNORED",errorMessage:"messaging_window_closed",processedAt:new Date()});
+    return;
+  }
+
   if (!dmFlowAction && !params.emailCompletionId) {
     await recordAutomationHit({
       automationId: automation.id,
@@ -2567,12 +2590,12 @@ async function processConfiguredMessageAutomation(params: {
     (automation.followGateRequired
       ? await getInstagramRecipientProfile({ token, recipientId: senderId })
       : null);
-  const needsFollowRequest =
-    automation.followGateRequired && profile?.followsBusiness !== true;
+  const needsOpening = automation.source === "STORY" && automation.listener.openingDmEnabled === true && Boolean(automation.listener.openingDmText) && !dmFlowAction && !params.emailCompletionId;
+  const needsFollowRequest = !needsOpening && automation.followGateRequired && profile?.followsBusiness !== true;
   const flowId = dmFlowAction?.flowId ?? messageMid ?? webhookEventId;
   let emailRequestId: string | undefined;
   let captureKind: "EMAIL" | "PHONE" = "EMAIL";
-  if (!needsFollowRequest) {
+  if (!needsOpening && !needsFollowRequest) {
     // Complete the claimed reply before moving to the next field. Replays cannot
     // consume it again; SKIP also marks only this field complete for this journey.
     if (params.emailCompletionId)
@@ -2601,7 +2624,7 @@ async function processConfiguredMessageAutomation(params: {
     }
   }
   const needsEmailRequest = Boolean(emailRequestId);
-  const intermediateStep = needsFollowRequest || needsEmailRequest;
+  const intermediateStep = needsOpening || needsFollowRequest || needsEmailRequest;
   const quickReplies = Array.isArray(automation.listener.quickReplies)
     ? automation.listener.quickReplies.filter(
         (item: unknown): item is string => typeof item === "string",
@@ -2707,7 +2730,7 @@ async function processConfiguredMessageAutomation(params: {
       });
     }
   }
-  const resolvedMessage = needsFollowRequest
+  const resolvedMessage = needsOpening ? personalizeUsername(resolveOpeningDmText(automation.listener.openingDmText),profile?.username) : needsFollowRequest
     ? resolveTemplate(
         resolveFollowRequestDmText(automation.listener.followRequestDmText),
         {
@@ -2734,7 +2757,7 @@ async function processConfiguredMessageAutomation(params: {
   const followVerificationButtonTitle = resolveFollowRequestButtonText(
     automation.listener.followRequestButtonText,
   );
-  const fullWidthCallbacksReady = needsFollowRequest
+  const fullWidthCallbacksReady = needsOpening || needsFollowRequest
     ? await ensureInstagramButtonCallbacks(integration?.id, token)
     : false;
 
@@ -2743,7 +2766,7 @@ async function processConfiguredMessageAutomation(params: {
     return;
   }
   const result = await sendInstagramDirectResponse({
-    preferQuickReplyForPostback: needsFollowRequest && !fullWidthCallbacksReady,
+    preferQuickReplyForPostback: (needsOpening || needsFollowRequest) && !fullWidthCallbacksReady,
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,
@@ -2756,6 +2779,7 @@ async function processConfiguredMessageAutomation(params: {
           ? "LINK"
           : "TEXT"
         : automation.listener.responseFormat,
+    carouselCards: !intermediateStep && !aiGenerated && automation.listener.responseFormat === "CAROUSEL" ? readStoryConfig(automation.storyConfig)?.cards : undefined,
     quickReplies:
       intermediateStep || aiGenerated
         ? []
@@ -2792,11 +2816,13 @@ async function processConfiguredMessageAutomation(params: {
           verificationButtonTitle: followVerificationButtonTitle,
           verificationPayload: followRequestActionPayload(
             automation.id,
-            dmFlowAction?.flowId,
+            automation.source === "STORY" && readStoryConfig(automation.storyConfig)
+              ? flowId
+              : dmFlowAction?.flowId,
           ),
         }
       : undefined,
-    postbackButton: undefined,
+    postbackButton: needsOpening ? {title:resolveOpeningDmButtonText(automation.listener.openingDmButtonText),payload:openingDmActionPayload(automation.id,flowId)} : undefined,
   });
 
   const sent = result.ok;
@@ -2811,7 +2837,7 @@ async function processConfiguredMessageAutomation(params: {
         automationId: automation.id,
       }),
     );
-  const sentMarker = needsFollowRequest
+  const sentMarker = needsOpening ? "opening_dm_sent" : needsFollowRequest
     ? "follow_request_dm_sent"
     : needsEmailRequest
       ? "email_request_dm_sent"
@@ -2827,7 +2853,7 @@ async function processConfiguredMessageAutomation(params: {
   console.log("[webhook] configured DM delivery completed", {
     automationId: automation.id,
     callbackAction: dmFlowAction?.type,
-    step: needsFollowRequest
+    step: needsOpening ? "OPENING" : needsFollowRequest
       ? "FOLLOW_REQUEST"
       : needsEmailRequest
         ? "EMAIL_REQUEST"
@@ -2850,7 +2876,7 @@ async function processConfiguredMessageAutomation(params: {
     igUserId: senderId,
     keyword: matchedKeyword,
     meta: {
-      responseFormat: needsFollowRequest
+      responseFormat: needsOpening ? "OPENING" : needsFollowRequest
         ? "FOLLOW_REQUEST"
         : needsEmailRequest
           ? "EMAIL_REQUEST"

@@ -1,3 +1,4 @@
+import { bindPendingNextStories } from "@/lib/story-automation-runtime";
 import { processAutomationDeliveries } from "@/lib/automation-delivery";
 import { authorizeAutomationScheduler } from "@/lib/automation-scheduler-auth";
 import { authorizeQStashScheduler } from "@/lib/qstash-scheduler-auth";
@@ -17,8 +18,8 @@ export async function POST(request: Request) {
 }
 async function processQueues() {
   try {
-    const [followUps, flows, delayed] = await Promise.all([processAutomationFollowUps(), processScheduledAutomationFlows(), processAutomationDeliveries()]);
-    return NextResponse.json({ ok: true, ...followUps, ...flows, ...delayed });
+    const [followUps, flows, delayed, stories] = await Promise.all([processAutomationFollowUps(), processScheduledAutomationFlows(), processAutomationDeliveries(), bindPendingNextStories().catch(()=>({storyMonitorUnavailable:true}))]);
+    return NextResponse.json({ ok: true, ...followUps, ...flows, ...delayed, ...stories });
   }
   catch { return NextResponse.json({ error: "Follow-up queue unavailable" }, { status: 503 }); }
 }

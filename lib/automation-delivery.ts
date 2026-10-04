@@ -66,3 +66,9 @@ export async function claimImmediateComment(automationId:string,commentId:string
   const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:`comment:${commentId}`,status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});
   return result.count===1;
 }
+
+/** Reserve a Story webhook once even with one-DM-per-user switched off. */
+export async function claimImmediateStory(automationId:string,messageId:string) {
+  const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:`story:${messageId}`,status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});
+  return result.count===1;
+}
