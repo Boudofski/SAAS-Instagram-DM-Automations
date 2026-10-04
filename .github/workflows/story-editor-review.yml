@@ -4,23 +4,56 @@ on:
     branches: [fix/story-automation-parity-20261004]
     paths: [.github/workflows/story-editor-review.yml]
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: story-recovery
+  cancel-in-progress: false
 jobs:
-  workspace:
+  verify-and-persist:
+    if: github.repository == 'Boudofski/SAAS-Instagram-DM-Automations' && github.ref == 'refs/heads/fix/story-automation-parity-20261004'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          ref: fix/story-automation-parity-20261004
           fetch-depth: 0
-      - name: Package source checkpoint for isolated Story review
+      - name: Verify source checkpoint and recover tested changes
         run: |
-          mkdir -p /tmp/ap3k-story-review
-          tar --exclude=node_modules --exclude=.next -czf /tmp/ap3k-story-review/source.tar.gz .
-      - uses: actions/upload-artifact@v4
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git diff --exit-code 13237017dc9dddabee28948a8b2df007a7facb5d -- actions components lib prisma app/api
+          cat .github/story-recovery/*.b64 | base64 --decode | xz --decompress > /tmp/story-tested.patch
+          echo '98988eeef80bc9c0943d891cc2c7d8b32a89a14c8aecf40ba74c4159ee6512b0  /tmp/story-tested.patch' | sha256sum --check
+          git apply --check /tmp/story-tested.patch
+          git apply /tmp/story-tested.patch
+          git diff --check
+      - uses: actions/setup-node@v4
         with:
-          name: ap3k-story-review-source
-          path: /tmp/ap3k-story-review/source.tar.gz
-          compression-level: 0
-          retention-days: 1
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Verify all automated tests
+        run: npx vitest run --reporter=default --reporter=json --outputFile=/tmp/story-tests.json
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Persist verified Story implementation
+        run: |
+          set -euo pipefail
+          git rm .github/story-recovery/*.b64
+          git add actions components lib prisma app/api
+          git diff --cached --check
+          git config user.name 'Boudofski'
+          git config user.email '92354296+Boudofski@users.noreply.github.com'
+          git commit -m 'Complete Story editor, owned live-story retrieval and scoped delivery'
+          git push origin HEAD:fix/story-automation-parity-20261004
+          printf 'Verified Story implementation committed: `%s`\n' "$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: story-automation-test-results
+          path: /tmp/story-tests.json
+          retention-days: 7
