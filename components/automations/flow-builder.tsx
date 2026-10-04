@@ -1,5 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import PolicyScanDialog from "./policy-scan-dialog";
+import SavedAutomationTools, { showPublishedTools } from "./saved-automation-tools";
+import { mapFlowPolicy, applyFlowPolicy } from "@/lib/automation-policy-input";
+import type { PolicyScanInput } from "@/lib/automation-policy";
 import BasicFlowEditor from "./basic-flow-editor";
 import UpgradeDialog from "./upgrade-dialog";
 import Sidebar from "@/components/global/sidebar";
@@ -191,6 +195,8 @@ export default function FlowBuilder({
   const edits = useRef(0);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const [scanInput,setScanInput]=useState<PolicyScanInput|null>(null);
+  const [publishedId,setPublishedId]=useState<string|null>(null);
   const [savedAt, setSavedAt] = useState("");
   const [error, setError] = useState("");
   const [live, setLive] = useState(Boolean(automation?.active));
@@ -240,7 +246,7 @@ export default function FlowBuilder({
     edits.current++;
     setDirty(true);
   };
-  async function save(publish: boolean) {
+  async function save(publish: boolean, skipScan = false) {
     if (publish && !["PRO", "BUSINESS"].includes(plan)) {
       setUpgradeOpen(true);
       return;
@@ -254,6 +260,7 @@ export default function FlowBuilder({
         return;
       }
     }
+    if(publish && !skipScan) { setScanInput(mapFlowPolicy(doc,integrationId)); return; }
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -304,7 +311,7 @@ export default function FlowBuilder({
           minute: "2-digit",
         }),
       );
-      if (publish) setLive(true);
+      if (publish) { setLive(true); if(showPublishedTools(slug))setPublishedId(result.id); }
       await refreshSavedAutomation(queryClient, result.id);
     } catch {
       setError("Could not save your changes. Please try again.");
@@ -431,7 +438,12 @@ export default function FlowBuilder({
   }));
   const headerButton =
     "grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate-500 light:text-slate-600 transition hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/5";
+  const toolDialogs=<>
+    {scanInput && <PolicyScanDialog open onOpenChange={open=>{if(!open)setScanInput(null);}} input={scanInput} slug={slug} onPublish={()=>{setScanInput(null);void save(true,true);}} onApply={findings=>{change(applyFlowPolicy(doc,findings));setScanInput(null);}}/>}
+    {publishedId && <SavedAutomationTools automationId={publishedId} slug={slug} tool="published" onClose={()=>setPublishedId(null)}/>}
+  </>;
   if (basic) return <>
+    {toolDialogs}
     <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     <BasicFlowEditor doc={doc} patch={patch} slug={slug} username={username} avatar={avatar}
       busy={busy || generating} live={live} error={error} save={active => void save(active)}
@@ -441,6 +453,8 @@ export default function FlowBuilder({
   </>;
   if (!mounted) return null;
   return createPortal(
+    <>
+    {toolDialogs}
     <div
       className="flow-editor-shell font-sans fixed inset-x-0 top-0 h-[100dvh] z-40 flex flex-col bg-[#f5f5f5] text-slate-950 dark:bg-[#0d1421] dark:text-slate-100"
       onKeyDown={(e) => {
@@ -874,7 +888,8 @@ export default function FlowBuilder({
           </DialogContent>
         </Dialog>
       </div>
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 }

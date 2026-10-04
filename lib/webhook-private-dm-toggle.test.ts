@@ -1,3 +1,5 @@
+const mockClaimComment = vi.hoisted(()=>vi.fn().mockResolvedValue(true));
+vi.mock("@/lib/automation-delivery",()=>({claimImmediateComment:mockClaimComment,claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFindAutomationForCommentWithReason = vi.fn();
@@ -178,7 +180,7 @@ beforeEach(() => {
     mockPublicSlot.mockResolvedValue({ok:true,id:"slot"});
     ai.decision.mockResolvedValue({action:"REPLY",category:"SAFE",reply:"Hi @tester! Check your DMs 😊"});
     ai.reserve.mockResolvedValue({ok:true,reservationId:"quota"});
-  vi.clearAllMocks();
+  vi.clearAllMocks();mockClaimComment.mockResolvedValue(true);
   mockCreateWebhookEvent.mockResolvedValue({ id: "webhook-event-1" });
   mockUpdateWebhookEvent.mockResolvedValue({});
   mockMergeWebhookEventPayload.mockResolvedValue({});
@@ -938,4 +940,12 @@ describe("loop guard threshold behavior", () => {
     // No auto-pause in review mode
     expect(mockPauseAutomationForLoopGuard).not.toHaveBeenCalled();
   });
+});
+
+it("leaves a pending shared comment claim for its worker without sending twice",async()=>{
+ mockFindAutomationForCommentWithReason.mockResolvedValue({automation:automation(true,{commentReply:"Here you go"}),failureReason:null});
+ mockClaimComment.mockResolvedValue(false);
+ await POST(commentRequest());
+ expect(mockSendCommentReply).not.toHaveBeenCalled();expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+ expect(mockUpdateWebhookEvent).toHaveBeenCalledWith(expect.any(String),expect.objectContaining({status:"PROCESSING",errorMessage:"comment_delivery_already_claimed"}));
 });

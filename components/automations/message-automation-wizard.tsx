@@ -1,4 +1,7 @@
 "use client";
+import PolicyScanDialog from "./policy-scan-dialog";
+import { mapMessagePolicy, applyMessagePolicy } from "@/lib/automation-policy-input";
+import type { PolicyScanInput } from "@/lib/automation-policy";
 import AttachmentPicker from "./attachment-picker";
 import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 import {
@@ -190,6 +193,7 @@ export default function MessageAutomationWizard({
   }, [automationId, templateId]);
   const [keywordDraft, setKeywordDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [scanInput, setScanInput] = useState<PolicyScanInput | null>(null);
   const [saving, setSaving] = useState(false);
   const [aiAvailable, setAiAvailable] = useState(false);
 
@@ -276,7 +280,7 @@ export default function MessageAutomationWizard({
     setKeywordDraft("");
   };
 
-  const save = async (active: boolean) => {
+  const save = async (active: boolean, skipScan = false) => {
     if (submitting.current) return;
     const withLinks = !draft.aiReplyEnabled && draft.messageFormat === "LINK";
     const firstLink = withLinks ? draft.linkButtons[0] : undefined;
@@ -306,6 +310,8 @@ export default function MessageAutomationWizard({
       setError("Add the follow request message and verification button.");
       return;
     }
+    if (active && draft.aiReplyEnabled && !paid) { setError("AI only available on paid plans."); return; }
+    if (active && !skipScan) { setScanInput(mapMessagePolicy(draft, integrationId, source)); return; }
     submitting.current = true;
     setSaving(true);
     setError(null);
@@ -321,7 +327,7 @@ export default function MessageAutomationWizard({
         result.data?.id
       ) {
         await refreshSavedAutomation(queryClient, result.data.id);
-        router.push(`/dashboard/${slug}/automation`);
+        router.push(`/dashboard/${slug}/automation${active ? `?published=${encodeURIComponent(result.data.id)}` : ""}`);
         router.refresh();
         return;
       }
@@ -373,6 +379,8 @@ export default function MessageAutomationWizard({
           ?.description
       : "When someone sends you a DM";
   return (
+    <>
+    {scanInput && <PolicyScanDialog open onOpenChange={open => { if (!open) setScanInput(null); }} input={scanInput} slug={slug} onPublish={() => { setScanInput(null); void save(true, true); }} onApply={findings => { setDraft(current => applyMessagePolicy(current, findings)); setScanInput(null); }} />}
     <EditorLayout
       slug={slug}
       name={draft.name}
@@ -611,5 +619,6 @@ export default function MessageAutomationWizard({
         )}
       </EditorGroup>
     </EditorLayout>
+    </>
   );
 }

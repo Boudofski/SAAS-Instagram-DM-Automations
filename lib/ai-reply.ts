@@ -35,7 +35,7 @@ type ProviderInput = {
   apiKey: string;
 };
 
-function createProvider(input: ProviderInput) {
+export function createProvider(input: ProviderInput) {
   return new OpenAI({
     apiKey: input.apiKey,
     baseURL: input.baseUrl.replace(/\/+$/, ""),
@@ -159,7 +159,7 @@ export async function getAiWorkspaceRuntimeConfig(userId: string, integrationId?
   return normalizeAiWorkspace(integrationId ? await client.instagramAiConfig.findFirst({ where: { userId, integrationId } }) : null);
 }
 
-async function loadEnabledProvider(): Promise<ProviderInput> {
+export async function loadEnabledProvider(): Promise<ProviderInput> {
   const config = await client.aiProviderConfig.findFirst({
     where: { enabled: true, id: { in: [...AI_PROVIDER_IDS] } },
     orderBy: { updatedAt: "desc" },

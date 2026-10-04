@@ -388,7 +388,7 @@ export function useWizard(
 
       try { sessionStorage.removeItem(draftKey); } catch {}
       await refreshSavedAutomation(queryClient, campaignId);
-      router.push(`/dashboard/${slug}/automation`);
+      router.push(`/dashboard/${slug}/automation${payload.active ? `?published=${encodeURIComponent(campaignId)}` : ""}`);
       router.refresh();
     } catch (err) {
       console.error("[campaign-wizard] save failed", err);

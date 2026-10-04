@@ -1,4 +1,5 @@
-import { claimDmRecipient } from "@/lib/automation-delivery";
+import { deliveryCandidates, eligibleCommentTimestamp } from "@/lib/automation-backtrack";
+import { claimDmRecipient, claimImmediateComment } from "@/lib/automation-delivery";
 import { deferAutomationDelivery } from "@/lib/automation-delivery";
 import { handleConversationStarter } from "@/lib/conversation-starters-runtime";
 import {
@@ -586,11 +587,11 @@ async function processEntry(
         igAccountId: valueIgAccountId,
         commentText,
       });
-      const candidateAutomations = match.automations?.length
+      const candidateAutomations = deliveryCandidates(match.automations?.length
         ? match.automations
         : match.automation
           ? [match.automation]
-          : [];
+          : [], resumedAutomationId);
       const triggerDecisions = candidateAutomations.map((candidate) => {
         const flowTrigger = flowTriggerForEvent(candidate, {
           source: "COMMENT",
@@ -828,6 +829,10 @@ async function processEntry(
       if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && automation.deliveryDelaySeconds > 0) {
         await deferAutomationDelivery({automationId:automation.id,eventKey:`comment:${commentId}`,recipientIgId:commenterId,seconds:automation.deliveryDelaySeconds,entry:{id:entry.id,changes:[changeItem]},object:envelope.object});
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSING",errorMessage:"delivery_scheduled"});
+        continue;
+      }
+      if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && !(await claimImmediateComment(automation.id, commentId))) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSING",errorMessage:"comment_delivery_already_claimed"});
         continue;
       }
       if (
@@ -1238,6 +1243,10 @@ async function processEntry(
         continue;
       }
 
+      if (resumedAutomationId && entry.ap3kBacktrack && !eligibleCommentTimestamp(change.timestamp)) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"backtrack_comment_expired",processedAt:new Date()});
+        continue;
+      }
       const templateVars = {
         username: commenterUsername ?? "",
         first_name: commenterUsername ?? "",
@@ -1397,6 +1406,10 @@ async function processEntry(
         }
       }
 
+      if (resumedAutomationId && entry.ap3kBacktrack && !eligibleCommentTimestamp(change.timestamp)) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"backtrack_comment_expired",processedAt:new Date()});
+        continue;
+      }
       let publicSlot: Awaited<
         ReturnType<typeof reservePublicReplySlot>
       > | null = null;
@@ -1707,6 +1720,10 @@ async function processEntry(
           recipientIgId: commenterId,
           followsBusiness: baseline?.followsBusiness,
         });
+      }
+      if (resumedAutomationId && entry.ap3kBacktrack && !eligibleCommentTimestamp(change.timestamp)) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"backtrack_comment_expired",processedAt:new Date()});
+        continue;
       }
       if (automation.oneDmPerUser && !(await claimDmRecipient(automation.id, commenterId))) {
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSED",errorMessage:"one_dm_per_user"});
