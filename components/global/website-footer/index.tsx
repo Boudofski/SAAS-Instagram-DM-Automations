@@ -77,6 +77,8 @@ export default function WebsiteFooter() {
                 links: [
                   ["Pricing", "/pricing"],
                   ["Instagram automation", "/instagram-dm-automation"],
+                  ["Comment to DM", "/instagram-comment-to-dm"],
+                  ["Comment automation", "/instagram-comment-automation"],
                   ["Login", "/sign-in"],
                   ["Join for free", "/sign-up"],
                 ],
@@ -86,6 +88,7 @@ export default function WebsiteFooter() {
                 links: [
                   ["Blog", "/blog"],
                   ["Documentation", "/docs"],
+                  ["Video tutorial", "/tutorials/instagram-comment-to-dm"],
                 ],
               },
               {
@@ -116,6 +119,7 @@ export default function WebsiteFooter() {
               {
                 title: "AP3K",
                 links: [
+                  ["About AP3K", "/about"],
                   ["Contact us", "/contact"],
                   ["Privacy", "/privacy"],
                   ["Terms of service", "/terms"],
@@ -174,3 +178,4 @@ export default function WebsiteFooter() {
     </footer>
   );
 }
+

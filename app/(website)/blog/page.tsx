@@ -1,3 +1,4 @@
+import { blogArchiveCopy } from "@/lib/blog-archive-metadata";
 import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import BlogCover from "@/components/website/blog-cover";
@@ -40,13 +41,14 @@ type Props = {
 export async function generateMetadata({
   searchParams,
 }: Props): Promise<Metadata> {
+  const copy = blogArchiveCopy(getServerLocale());
   const query =
     typeof searchParams.q === "string"
       ? searchParams.q.trim().slice(0, 120)
       : "";
   if (query)
     return {
-      ...localizedMetadata(pageMetadata, "/blog"),
+      ...localizedMetadata({ ...pageMetadata, title: copy.title, description: copy.description }, "/blog"),
       robots: { index: false, follow: true },
     };
   const pagination = getBlogPage(
@@ -54,13 +56,13 @@ export async function generateMetadata({
     getEditorialArchive(await getPublishedPosts()).posts.length,
   );
   if (!pagination) return { robots: { index: false, follow: true } };
+  const pageCopy = blogArchiveCopy(getServerLocale(), pagination.page);
   return localizedMetadata(
     {
       ...pageMetadata,
-      title:
-        pagination.page === 1
-          ? pageMetadata.title
-          : `AP3K Blog — Page ${pagination.page} | Instagram Automation Guides`,
+      title: pageCopy.title,
+      description: pageCopy.description,
+      openGraph: { ...pageMetadata.openGraph, title: pageCopy.title, description: pageCopy.description },
     },
     blogPagePath(pagination.page),
   );
@@ -82,6 +84,7 @@ export default async function BlogPage({ searchParams }: Props) {
       ),
     );
   const locale = getServerLocale();
+  const copy = blogArchiveCopy(locale, pagination.page);
   const posts = (
     locale === "en"
       ? allPosts
@@ -93,7 +96,8 @@ export default async function BlogPage({ searchParams }: Props) {
   const collection = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "AP3K Blog",
+    name: copy.heading,
+    inLanguage: locale,
     url: `https://ap3k.com${localizePublicPath(blogPagePath(pagination.page), locale)}`,
     mainEntity: {
       "@type": "ItemList",
@@ -158,9 +162,9 @@ export default async function BlogPage({ searchParams }: Props) {
         <main className={e.archive}>
           <header className={e.hero}>
             <AP3KLogo showText={false} markClassName="h-[63px] w-[63px] mx-auto mb-8" />
-            <h1>Welcome to AP3K Blogs</h1>
+            <h1>{copy.heading}</h1>
             <p>
-              Your go to place for insights, updates, and strategies on Instagram automation, DM marketing, and social media growth with AP3K.
+              {copy.intro}
             </p>
           </header>
           {!query && pagination.page === 1 && featured.length > 0 && (
