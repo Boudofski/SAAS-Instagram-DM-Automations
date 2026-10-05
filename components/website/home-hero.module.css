@@ -29,6 +29,8 @@
 .content { position: relative; z-index: auto; max-width: 885px; margin: auto; }
 .keywordAnimation { display: flex; justify-content: flex-start; padding: 12px 0 20px; }
 .keywordMedia { position: relative; width: min(100%, 378.3px); height: 90px; }
+/* The video blends with the page background, so its poster must not remain underneath. */
+.posterLayer[data-hidden="true"] { visibility: hidden; }
 .motionLayer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .motionLayer[data-ready="true"] { opacity: 1; }
 .keywordVideo { display: block; width: auto; max-width: 100%; height: 90px; object-fit: contain; object-position: left center; mix-blend-mode: multiply; filter: hue-rotate(43deg); }

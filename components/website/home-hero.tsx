@@ -37,6 +37,7 @@ export default function HomeHero() {
   const [pageVisible, setPageVisible] = useState(true);
   const [motionReady, setMotionReady] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
+  const showVideo = videoReady && motionReady && reducedMotion === false;
   const playing = motionReady && reducedMotion === false && inView && pageVisible;
 
   useEffect(() => {
@@ -101,12 +102,14 @@ export default function HomeHero() {
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
           <div className={styles.keywordMedia}>
-            <Image className={styles.keywordVideo} src="/media/hero/comment-water-drop-poster.webp"
+            <Image className={`${styles.keywordVideo} ${styles.posterLayer}`} data-hidden={showVideo} src="/media/hero/comment-water-drop-poster.webp"
               alt="" width={1530} height={364} priority unoptimized />
             <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
               width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
               src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
-              onPlaying={() => setVideoReady(true)} data-ready={videoReady} />
+              onPlaying={() => setVideoReady(true)}
+              onEmptied={() => setVideoReady(false)}
+              onError={() => setVideoReady(false)} data-ready={showVideo} />
           </div>
         </div>
         <h1 id="home-hero-title" className={styles.title}>
