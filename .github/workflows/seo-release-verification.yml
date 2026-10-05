@@ -1,0 +1,58 @@
+name: SEO release verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [seo/production-verification-20261005]
+    paths:
+      - .github/workflows/seo-release-verification.yml
+      - scripts/seo-release-audit.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seo-release-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Crawl public production pages
+        run: |
+          mkdir -p seo-artifacts
+          if test -f scripts/seo-release-audit.py; then
+            python3 scripts/seo-release-audit.py --output seo-artifacts/crawl.json
+          else
+            curl --fail --retry 2 https://ap3k.com/robots.txt -o seo-artifacts/robots.txt
+            curl --fail --retry 2 https://ap3k.com/sitemap.xml -o seo-artifacts/sitemap.xml
+          fi
+      - name: Measure production Lighthouse
+        run: |
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium || true)"
+          test -n "$CHROME_PATH"
+          npm install --prefix /tmp/ap3k-seo-tools --no-audit --no-fund lighthouse@12.8.2
+          for mode in mobile desktop; do
+            extra=""
+            if [ "$mode" = desktop ]; then extra="--preset=desktop"; fi
+            /tmp/ap3k-seo-tools/node_modules/.bin/lighthouse https://ap3k.com/ --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,accessibility,best-practices,seo --output=json --output-path="seo-artifacts/lighthouse-$mode.json" $extra
+          done
+          node <<'NODE'
+          const fs = require('fs');
+          for (const mode of ['mobile', 'desktop']) {
+            const r = JSON.parse(fs.readFileSync(`seo-artifacts/lighthouse-${mode}.json`, 'utf8'));
+            console.log(JSON.stringify({mode, version:r.lighthouseVersion, time:r.fetchTime, url:r.finalDisplayedUrl, categories:Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round(v.score*100)])), metrics:Object.fromEntries(['largest-contentful-paint','first-contentful-paint','cumulative-layout-shift','total-blocking-time','speed-index'].map(k=>[k,r.audits[k]?.numericValue])), failures:Object.values(r.audits).filter(a=>a.score!==null&&a.score<1).map(a=>({id:a.id,title:a.title,score:a.score,displayValue:a.displayValue,details:a.details?.items?.slice(0,8)}))}));
+          }
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ap3k-seo-release-verification
+          path: seo-artifacts/
+          retention-days: 14
