@@ -1,0 +1,106 @@
+name: SEO release verification
+on:
+  push:
+    branches: [audit/seo-release-verification-20261005]
+    paths: [.github/workflows/seo-release-verification.yml]
+permissions:
+  contents: read
+jobs:
+  public-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Prepare public browser checks
+        run: |
+          mkdir -p /tmp/seo-release
+          git ls-tree -r HEAD app components lib > /tmp/seo-release/source-manifest.txt
+          cd /tmp/seo-release
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund lighthouse@12.8.2 playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Wait for the reviewed release and check public pages
+        run: |
+          cd /tmp/seo-release
+          node <<'JS'
+          const fs=require('fs');const {chromium}=require('playwright');
+          const base='https://ap3k.com';
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            let ready=false;
+            for(let i=0;i<40;i++){
+              const r=await fetch(base+'/about',{signal:AbortSignal.timeout(30000)});
+              const text=await r.text();
+              if(r.status===200&&text.includes('About AP3K')&&text.includes('What AP3K does not promise')){ready=true;break;}
+              console.log('Waiting for reviewed production content',i+1,r.status);await sleep(15000);
+            }
+            if(!ready)throw Error('The reviewed production release was not observed within ten minutes');
+            const browser=await chromium.launch({headless:true});const rows=[];
+            const paths=['/','/instagram-comment-to-dm','/blog','/blog/instagram-comment-to-dm-automation','/about','/solutions'];
+            for(const theme of ['light','dark'])for(const width of [390,1440]){
+              const context=await browser.newContext({viewport:{width,height:900},colorScheme:theme});
+              await context.addInitScript(value=>localStorage.setItem('theme',value),theme);
+              const page=await context.newPage();
+              for(const path of paths){
+                const errors=[];const handler=e=>errors.push(e.message);page.on('pageerror',handler);
+                const response=await page.goto(base+path,{waitUntil:'networkidle',timeout:45000});
+                const data=await page.evaluate(()=>({title:document.title,h1:[...document.querySelectorAll('h1')].map(x=>x.textContent),canonical:document.querySelector('link[rel=canonical]')?.href,overflow:document.documentElement.scrollWidth>innerWidth,theme:document.documentElement.classList.contains('dark')?'dark':'light',mainWords:(document.querySelector('main')?.innerText||'').split(/\s+/).length,ld:[...document.querySelectorAll('script[type="application/ld+json"]')].map(x=>JSON.parse(x.textContent))}));
+                if(response.status()!==200||data.h1.length!==1||data.overflow||data.theme!==theme||errors.length)throw Error(JSON.stringify({path,theme,width,status:response.status(),errors,data}));
+                if(data.canonical!==base+path)throw Error('Unexpected canonical: '+path+' '+data.canonical);
+                if(path==='/'&&width===390){
+                  data.hero=await page.evaluate(()=>{const v=document.querySelector('video[src*="comment-water-drop"],video[width="1530"]');const p=document.querySelector('img[src*="comment-water-drop-poster"]');return {src:v?.getAttribute('src'),posterLoaded:!!(p&&p.complete&&p.naturalWidth)};});
+                  if(data.hero.src||!data.hero.posterLoaded)throw Error('Mobile poster/video loading regression');
+                }
+                rows.push({path,theme,width,status:response.status(),errors,...data});
+                if(path==='/'||path==='/instagram-comment-to-dm'||(theme==='light'&&width===390))await page.screenshot({path:(path==='/'?'home':path.slice(1).replaceAll('/','_'))+'-'+width+'-'+theme+'.png',fullPage:true});
+                page.off('pageerror',handler);
+              }
+              await context.close();
+            }
+            const context=await browser.newContext({viewport:{width:390,height:900}});const page=await context.newPage();
+            const meta=[];
+            for(const path of ['/blog','/fr/blog','/es/blog','/de/blog','/pt/blog','/blog?page=2','/fr/blog?page=2','/sign-in','/sign-up']){
+              const response=await page.goto(base+path,{waitUntil:'networkidle',timeout:45000});
+              meta.push({path,status:response.status(),...await page.evaluate(()=>({title:document.title,description:document.querySelector('meta[name=description]')?.content,canonical:document.querySelector('link[rel=canonical]')?.href,robots:document.querySelector('meta[name=robots]')?.content,alternates:[...document.querySelectorAll('link[hreflang]')].map(x=>({lang:x.hreflang,href:x.href}))}))});
+            }
+            if(new Set(meta.slice(0,5).map(x=>x.title)).size!==5)throw Error('Archive titles are not unique');
+            for(const row of meta.filter(x=>x.path.includes('blog')))if(row.status!==200||row.canonical!==base+row.path)throw Error('Archive status/canonical regression');
+            for(const row of meta.filter(x=>x.path.startsWith('/sign-')))if(!row.robots?.includes('noindex'))throw Error('Authentication indexing regression');
+            await page.goto(base,{waitUntil:'networkidle'});await page.mouse.click(20,200);await page.waitForTimeout(1000);
+            const interactionVideo=await page.evaluate(()=>document.querySelector('video[width="1530"]')?.getAttribute('src'));
+            if(!interactionVideo?.includes('comment-water-drop.webm'))throw Error('Mobile animation did not activate after interaction');
+            await context.close();
+            const reducedContext=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'reduce'});const reduced=await reducedContext.newPage();await reduced.goto(base,{waitUntil:'networkidle'});
+            const reducedVideo=await reduced.evaluate(()=>document.querySelector('video[width="1530"]')?.getAttribute('src'));
+            if(reducedVideo)throw Error('Reduced-motion video regression');await reducedContext.close();
+            fs.writeFileSync('browser.json',JSON.stringify({capturedAt:new Date().toISOString(),pages:rows,metadata:meta,mobileAnimationAfterInteraction:true,reducedMotionVideoDeferred:true},null,2));
+            const robots=await (await fetch(base+'/robots.txt')).text();fs.writeFileSync('robots.txt',robots);
+            const sitemap=await (await fetch(base+'/sitemap.xml')).text();fs.writeFileSync('sitemap.xml',sitemap);
+            if(!sitemap.includes(base+'/about'))throw Error('About page missing from sitemap');
+            await browser.close();console.log('Passed',rows.length,'responsive/theme page checks and',meta.length,'metadata checks');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+      - name: Measure production with the baseline Lighthouse version
+        run: |
+          cd /tmp/seo-release
+          export CHROME_PATH=$(node -e 'console.log(require("playwright").chromium.executablePath())')
+          for sample in 1 2 3; do
+            npx lighthouse https://ap3k.com/ --chrome-flags='--headless --no-sandbox' --only-categories=performance,accessibility,seo,best-practices --output=json --output-path="home-mobile-$sample.json" --quiet
+          done
+          npx lighthouse https://ap3k.com/ --preset=desktop --chrome-flags='--headless --no-sandbox' --only-categories=performance,accessibility,seo,best-practices --output=json --output-path=home-desktop.json --quiet
+          npx lighthouse https://ap3k.com/instagram-comment-to-dm --chrome-flags='--headless --no-sandbox' --only-categories=performance,accessibility,seo,best-practices --output=json --output-path=comment-to-dm-mobile.json --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ap3k-seo-release-verification
+          path: |
+            /tmp/seo-release/*.json
+            /tmp/seo-release/*.png
+            /tmp/seo-release/*.txt
+            /tmp/seo-release/*.xml
+          retention-days: 7
