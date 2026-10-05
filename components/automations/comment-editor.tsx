@@ -1,4 +1,6 @@
 "use client";
+import { editorStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
+import OpenerMessage from "./opener-message";
 import PolicyScanDialog from "./policy-scan-dialog";
 import { mapCommentPolicy, applyCommentPolicy } from "@/lib/automation-policy-input";
 import type { PolicyScanInput } from "@/lib/automation-policy";
@@ -96,10 +98,12 @@ export default function CommentEditor(p: CommentEditorProps) {
   const [dmSettings, setDmSettings] = useState(false);
   const [replyKind, setReplyKind] = useState(data.aiReplyEnabled ? "AI" : "SAVED");
   useEffect(() => { setReplyKind(data.aiReplyEnabled ? "AI" : "SAVED"); }, [data.aiReplyEnabled]);
-  const [delayEnabled, setDelayEnabled] = useState((data.deliveryDelaySeconds ?? 0) > 0);
-  useEffect(() => {
-    if ((data.deliveryDelaySeconds ?? 0) > 0) setDelayEnabled(true);
-  }, [data.deliveryDelaySeconds]);
+  const [delayEnabled, setDelayEnabled] = useState(Object.values(editorStepDelays(data)).some(n=>n>0));
+  const delays = editorStepDelays(data);
+  const changeDelay = (step:AutomationStep,seconds:number) => update({stepDelays:{...delays,[step]:seconds},deliveryDelaySeconds:0});
+  const delayBefore = (step:AutomationStep,label:string) => delayEnabled ? <DelayControl label={label} seconds={delays[step] || 0} onChange={seconds=>changeDelay(step,seconds)}/> : null;
+  const hasSavedDelay = Object.values(editorStepDelays(data)).some(n=>n>0);
+  useEffect(() => { if (hasSavedDelay) setDelayEnabled(true); }, [hasSavedDelay]);
   const [scanInput, setScanInput] = useState<PolicyScanInput | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [publishAttempted, setPublishAttempted] = useState(false);
@@ -262,7 +266,7 @@ export default function CommentEditor(p: CommentEditorProps) {
             <span className="text-[11px] font-semibold uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">{tr("Enable delay")}</span>
             <EditorSwitch label="Enable delay" checked={delayEnabled} onChange={(enabled) => {
               setDelayEnabled(enabled);
-              if (!enabled) update({ deliveryDelaySeconds: 0 });
+              update({deliveryDelaySeconds:0,stepDelays:enabled ? delays : {}});
             }} />
           </div>
         }
@@ -540,7 +544,7 @@ export default function CommentEditor(p: CommentEditorProps) {
             <div><EditorSwitch label="One DM per user" checked={Boolean(data.oneDmPerUser)} onChange={(oneDmPerUser) => update({oneDmPerUser})}/><div><strong>{tr("One DM per user")}</strong><p>{tr("Even if they comment several times, they get only one DM.")}</p></div></div>
           </div>
         </EditorRow>
-        {delayEnabled && <DelayControl seconds={data.deliveryDelaySeconds ?? 0} onChange={(deliveryDelaySeconds) => update({deliveryDelaySeconds})}/>}
+        {publicOn && delayBefore("PUBLIC_REPLY","Public comment reply")}
         <EditorRow
           title="Public comment reply"
           summary={
@@ -713,26 +717,9 @@ export default function CommentEditor(p: CommentEditorProps) {
           </p>
         ) : (
           <>
+            {data.sendPrivateDm && data.openingDmEnabled && delayBefore("OPENING","Opener message")}
             {data.sendPrivateDm && data.openingDmEnabled && (
-              <EditorRow
-                title="Opener message"
-                summary={tr("text with button")}
-                icon={<Mail />}
-                open={openMessage === "opening"}
-                onOpen={() => toggleMessage("opening")}
-                onRemove={() =>
-                  update({
-                    openingDmEnabled: false,
-                    followGateRequired: false,
-                    emailCaptureEnabled: false,
-                    phoneCaptureEnabled: false,
-                    followUpEnabled: false,
-                  })
-                }
-              >
-                {field("Opening message", "openingDmText")}
-                {buttonField("Continue quick reply", "openingDmButtonText")}
-              </EditorRow>
+              <OpenerMessage data={data} update={update} open={openMessage === "opening"} onOpen={() => toggleMessage("opening")} onRemove={() => update({openingDmEnabled:false,followGateRequired:false,emailCaptureEnabled:false,phoneCaptureEnabled:false,followUpEnabled:false})}/>
             )}
             {data.sendPrivateDm && (
               <QuickEngagementRows
@@ -744,9 +731,10 @@ export default function CommentEditor(p: CommentEditorProps) {
                   setOpenMessage(v);
                   setMode("dm");
                 }}
-                part="before"
+                part="before" delayEnabled={delayEnabled} stepDelays={delays} onDelayChange={changeDelay}
               />
             )}
+            {data.sendPrivateDm && delayBefore("MESSAGE","Message")}
             <EditorRow
               title="Message"
               summary={!data.sendPrivateDm ? tr("Off") : undefined}

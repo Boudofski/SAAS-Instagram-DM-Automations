@@ -1,4 +1,5 @@
 "use server";
+import { normalizeStepDelays } from "@/lib/automation-step-delays";
 import { normalizeStoryConfig, readStoryConfig } from "@/lib/story-automation";
 import {attachmentId} from "@/lib/message-attachment";
 import {attachmentScopeFilter} from "@/lib/attachment-scope";
@@ -102,6 +103,7 @@ export const createCompleteAutomation = async (
           followGateRequired: payload.followGateRequired,
           typingIndicator: payload.typingIndicator,
           deliveryDelaySeconds: payload.deliveryDelaySeconds,
+          stepDelays: payload.stepDelays ?? Prisma.DbNull,
           ...("triggerOnShares" in payload ? { triggerOnShares: payload.triggerOnShares, oneDmPerUser: payload.oneDmPerUser } : {}),
           posts: {
             create: payload.post,
@@ -164,6 +166,7 @@ export const createCompleteMessageAutomation = async (
       followGateRequired: payload.followGateRequired,
       typingIndicator: payload.typingIndicator,
       deliveryDelaySeconds: payload.deliveryDelaySeconds,
+          stepDelays: payload.stepDelays ?? Prisma.DbNull,
       needsReview: false,
       reviewReason: null,
       ...(payload.keywords.length > 0 && {
@@ -180,6 +183,7 @@ export const createCompleteMessageAutomation = async (
           listener: "MESSAGE",
           ...normalizeEngagementSettings(payload),
           prompt: payload.message,
+          openingDmFormat: payload.openingDmFormat || "BUTTON",
           openingDmEnabled: payload.openingDmEnabled ?? false,
           openingDmText: payload.openingDmText,
           openingDmButtonText: payload.openingDmButtonText,
@@ -238,6 +242,7 @@ export const updateCompleteMessageAutomation = async (
         followGateRequired: payload.followGateRequired,
         typingIndicator: payload.typingIndicator,
         deliveryDelaySeconds: payload.deliveryDelaySeconds,
+          stepDelays: payload.stepDelays ?? Prisma.DbNull,
         needsReview: false,
         reviewReason: null,
         ...(payload.keywords.length > 0 && {
@@ -254,6 +259,7 @@ export const updateCompleteMessageAutomation = async (
             listener: "MESSAGE",
             ...normalizeEngagementSettings(payload),
             prompt: payload.message,
+          openingDmFormat: payload.openingDmFormat || "BUTTON",
           openingDmEnabled: payload.openingDmEnabled ?? false,
           openingDmText: payload.openingDmText,
           openingDmButtonText: payload.openingDmButtonText,
@@ -440,6 +446,7 @@ export const updateCompleteAutomation = async (
         followGateRequired: payload.followGateRequired,
         typingIndicator: payload.typingIndicator,
         deliveryDelaySeconds: payload.deliveryDelaySeconds,
+          stepDelays: payload.stepDelays ?? Prisma.DbNull,
           ...("triggerOnShares" in payload ? { triggerOnShares: payload.triggerOnShares, oneDmPerUser: payload.oneDmPerUser } : {}),
         posts: { create: payload.post },
         ...(payload.keywords.length > 0 && {
@@ -582,6 +589,7 @@ export const duplicateAutomationQuery = async (
       source: automation.source,
       storyConfig: automation.source === "STORY" && readStoryConfig(automation.storyConfig) ? {...normalizeStoryConfig(automation.storyConfig),armedAt:undefined,baselineIds:undefined,boundStoryId:undefined} : undefined,
       oneDmPerUser: automation.oneDmPerUser,
+      openingDmFormat: automation.listener.openingDmFormat === "QUICK_REPLY" ? "QUICK_REPLY" : "BUTTON",
       openingDmEnabled: automation.listener.openingDmEnabled && Boolean(automation.listener.openingDmText),
       openingDmText: automation.listener.openingDmText ?? undefined,
       openingDmButtonText: automation.listener.openingDmButtonText ?? undefined,
@@ -630,6 +638,7 @@ export const duplicateAutomationQuery = async (
       followGateRequired: automation.followGateRequired,
       typingIndicator: false,
       deliveryDelaySeconds: automation.deliveryDelaySeconds,
+      stepDelays: normalizeStepDelays(automation.stepDelays),
       followRequestDmText: resolveFollowRequestDmText(
         automation.listener.followRequestDmText,
       ),
@@ -656,6 +665,7 @@ export const duplicateAutomationQuery = async (
     followGateRequired: automation.followGateRequired,
     typingIndicator: false,
     deliveryDelaySeconds: automation.deliveryDelaySeconds,
+      stepDelays: normalizeStepDelays(automation.stepDelays),
       triggerOnShares: automation.triggerOnShares,
       oneDmPerUser: automation.oneDmPerUser,
     post: {
@@ -719,6 +729,7 @@ export const duplicateAutomationQuery = async (
             : undefined,
       openingDmText: automation.listener.openingDmText ?? undefined,
       openingDmButtonText: automation.listener.openingDmButtonText ?? undefined,
+      openingDmFormat: automation.listener.openingDmFormat === "QUICK_REPLY" ? "QUICK_REPLY" : "BUTTON",
       openingDmEnabled: automation.listener.openingDmEnabled,
       followRequestDmText: automation.listener.followRequestDmText ?? undefined,
       followRequestButtonText:

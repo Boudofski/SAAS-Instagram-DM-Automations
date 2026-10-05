@@ -1,4 +1,6 @@
 "use client";
+import { editorStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
+import OpenerMessage from "./opener-message";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -74,6 +76,12 @@ export default function StoryAutomationWizard({integrationId="",slug,automationI
   useEffect(()=>{void refresh();return()=>{request.current++;};},[refresh]);
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),60000);return()=>clearInterval(timer);},[]);
   const live=stories.filter(story=>storyIsLive(story,now));
+  const [delayEnabled,setDelayEnabled]=useState(()=>Object.values(editorStepDelays(draft)).some(n=>n>0));
+  const delays=editorStepDelays(draft);
+  const hasSavedDelay=Object.values(editorStepDelays(draft)).some(n=>n>0);
+  useEffect(()=>{if(hasSavedDelay)setDelayEnabled(true);},[hasSavedDelay]);
+  const changeDelay=(step:AutomationStep,seconds:number)=>update({stepDelays:{...delays,[step]:seconds},deliveryDelaySeconds:0});
+  const delayBefore=(step:AutomationStep,label:string)=>delayEnabled?<DelayControl label={label} seconds={delays[step]||0} onChange={seconds=>changeDelay(step,seconds)}/>:null;
   const config=draft.storyConfig;const scope=scopes.find(item=>item.value===config.scope)!;
   const selected=config.stories;
   const previewStory=live.find(story=>story.id===(previewId||selected[0]?.id)) || selected.find(story=>story.id===previewId) || selected[0] || (config.scope==="ALL" ? live[0]:undefined);
@@ -125,8 +133,8 @@ export default function StoryAutomationWizard({integrationId="",slug,automationI
   const cardMode=draft.responseFormat==="PRODUCT_CARD"||draft.responseFormat==="CAROUSEL";
   return <>
     <EditorLayout slug={slug} name={draft.name} onNameChange={name=>update({name})} active={Boolean(automation?.active)} saving={saving} onSave={active=>void save(active)} error={error} accountName={username || undefined} className={css.storyEditor} showSaveDraft preview={<StoryPhonePreview draft={draft} story={previewStory} username={username} avatar={avatar} mode={mode} onModeChange={setMode} messagePreview={messagePreview}/> }>
-      <EditorGroup title="Setup Triggers" action={<div className={css.delay}><Clock3 size={14}/><span>{tr("Enable delay")}</span><EditorSwitch label="Enable delay" checked={draft.deliveryDelaySeconds>0} onChange={enabled=>update({deliveryDelaySeconds:enabled?10:0})}/></div>}>
-        {draft.deliveryDelaySeconds>0&&<DelayControl seconds={draft.deliveryDelaySeconds} onChange={deliveryDelaySeconds=>update({deliveryDelaySeconds})}/>}
+      <EditorGroup title="Setup Triggers" action={<div className={css.delay}><Clock3 size={14}/><span>{tr("Enable delay")}</span><EditorSwitch label="Enable delay" checked={delayEnabled} onChange={enabled=>{setDelayEnabled(enabled);update({stepDelays:enabled?delays:{},deliveryDelaySeconds:0});}}/></div>}>
+
         <EditorRow title="Story" summary={storySummary} icon={<Grid2X2/>} open={openStory} onOpen={()=>{setOpenStory(!openStory);setMode("story");}} controls={<DropdownMenu><DropdownMenuTrigger asChild><button type="button" className={css.scopeButton} aria-label={tr("Story scope")}><scope.icon size={14}/><span>{tr(scope.label)}</span><ChevronDown size={13}/></button></DropdownMenuTrigger><DropdownMenuContent align="end" className={css.scopeMenu}>{scopes.map(item=><DropdownMenuItem key={item.value} className={css.scopeItem} onSelect={()=>setScope(item.value)}><item.icon size={16}/><span>{tr(item.label)}</span>{item.value==="NEXT"&&<ProBadge/>}{config.scope===item.value&&<Check size={15}/>}</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>}>
           {config.scope==="SPECIFIC"?<>
             {loading&&!loaded?<div className={css.empty} role="status"><Loader2 className="animate-spin"/><strong>{tr("Loading your active stories…")}</strong></div>:live.length?<div className={css.storyGrid}>{live.map((story,index)=>{const checked=selected.some(item=>item.id===story.id);return <button type="button" key={story.id} className={`${css.storyTile} ${checked?css.selected:""}`} aria-label={`${tr("Select story")} ${index+1}`} aria-pressed={checked} onClick={()=>toggleStory(story)}>{story.thumbnailUrl||story.mediaType==="IMAGE"&&story.mediaUrl?<Image src={story.thumbnailUrl||story.mediaUrl} alt={tr("Active Instagram story")} width={144} height={208} unoptimized/>:story.mediaUrl?<video src={story.mediaUrl} muted playsInline preload="metadata"/>:<ImageIcon/>}{checked&&<span className={css.selectionCheck}><Check size={16}/></span>}{story.mediaType==="VIDEO"&&<span className={css.videoBadge}><Video size={13}/></span>}</button>;})}</div>:!storyError&&<div className={css.empty}><ImageIcon size={30}/><strong>{tr("No active stories found")}</strong><span>{tr("Publish an Instagram story on this account, then refresh. Stories are available for 24 hours.")}</span></div>}
@@ -141,8 +149,10 @@ export default function StoryAutomationWizard({integrationId="",slug,automationI
         </EditorRow>}
       </EditorGroup>
       <EditorGroup title="Setup Direct Message">
-        {draft.openingDmEnabled&&!draft.aiReplyEnabled&&<EditorRow title="Opener message" icon={<Mail/>} open={openOpener} onOpen={()=>{setOpenOpener(!openOpener);setMode("dm");}} onRemove={()=>update({openingDmEnabled:false})}><label className={s.field}>{tr("Opener message")}<textarea aria-label={tr("Opener message")} rows={3} value={draft.openingDmText} maxLength={640} onChange={e=>update({openingDmText:e.target.value})}/></label><label className={s.field}>{tr("Continue button")}<input aria-label={tr("Continue button")} value={draft.openingDmButtonText} maxLength={20} onChange={e=>update({openingDmButtonText:e.target.value})}/></label><p className={s.hint}>{tr("The next step is sent only after they tap this button.")}</p></EditorRow>}
-        {!draft.aiReplyEnabled&&<QuickEngagementRows part="before" data={draft} update={update} open={openMessage} setOpen={setOpenMessage}/>}
+        {draft.openingDmEnabled&&!draft.aiReplyEnabled&&delayBefore("OPENING","Opener message")}
+        {draft.openingDmEnabled&&!draft.aiReplyEnabled&&<OpenerMessage data={draft} update={update} open={openOpener} onOpen={()=>{setOpenOpener(!openOpener);setMode("dm");}} onRemove={()=>update({openingDmEnabled:false})}/>}
+        {!draft.aiReplyEnabled&&<QuickEngagementRows delayEnabled={delayEnabled} stepDelays={delays} onDelayChange={changeDelay} part="before" data={draft} update={update} open={openMessage} setOpen={setOpenMessage}/>}
+        {delayBefore("MESSAGE","Message")}
         <EditorRow title="Message" icon={<Text/>} open={openMessage==="message"} onOpen={()=>{setOpenMessage(openMessage==="message"?null:"message");setMode("dm");}} controls={<EditorSelect label="Message format" value={draft.aiReplyEnabled?"AI":draft.responseFormat} options={draft.responseFormat==="MEDIA"?[...formats,{value:"MEDIA",label:"image or video"}]:formats} onChange={chooseFormat}/> }>
           {draft.aiReplyEnabled?<><label className={s.field}>{tr("AI reply instructions")}<textarea rows={5} maxLength={900} value={draft.message} onChange={e=>update({message:e.target.value})}/></label>{!paid&&<p className={s.hint}>{tr("You can prepare your instructions now. Publishing AI replies requires Pro or Business.")}</p>}</>:draft.responseFormat==="ATTACHMENT"?<AttachmentPicker value={attachment} onChange={value=>update({mediaUrl:value?.url||"",mediaType:value?.mediaType||"FILE"})}/>:cardMode?<>
             {config.cards.map((card,index)=><section className={css.cardEditor} key={index}><div className={css.cardHeading}><strong>{tr("Card")} {index+1}</strong>{config.cards.length>1&&<button type="button" aria-label={`${tr("Remove card")} ${index+1}`} onClick={()=>update({storyConfig:{...config,cards:config.cards.filter((_,i)=>i!==index)}})}><X size={15}/></button>}</div><ProductCardEditor title={card.title} subtitle={card.subtitle} imageUrl={card.image} linkButtons={card.links} onChange={next=>update({storyConfig:{...config,cards:config.cards.map((old,i)=>i===index?{...old,...(next.title!==undefined?{title:next.title}:{}),...(next.subtitle!==undefined?{subtitle:next.subtitle}:{}),...(next.imageUrl!==undefined?{image:next.imageUrl}:{}),...(next.linkButtons?{links:next.linkButtons}: {})}:old)}})}/></section>)}

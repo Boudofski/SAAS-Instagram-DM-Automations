@@ -198,6 +198,7 @@ function AutomationSetup({ params, searchParams }: Props) {
       active: Boolean(automation.active),
       triggerOnShares: Boolean(automation.triggerOnShares),
       oneDmPerUser: Boolean(automation.oneDmPerUser),
+      stepDelays: automation.stepDelays as import("@/lib/automation-step-delays").StepDelays | undefined,
       deliveryDelaySeconds: automation.deliveryDelaySeconds ?? 0,
       keywords: Array.isArray(automation.keywords)
         ? automation.keywords
@@ -251,6 +252,7 @@ function AutomationSetup({ params, searchParams }: Props) {
       openingDmButtonText: resolveOpeningDmButtonText(
         automation.listener?.openingDmButtonText,
       ),
+      openingDmFormat: automation.listener?.openingDmFormat === "QUICK_REPLY" ? "QUICK_REPLY" : "BUTTON",
       openingDmEnabled: automation.listener?.openingDmEnabled !== false,
       followRequestDmText: resolveFollowRequestDmText(
         automation.listener?.followRequestDmText,

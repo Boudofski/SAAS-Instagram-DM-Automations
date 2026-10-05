@@ -45,7 +45,8 @@ export async function processAutomationDeliveries(now=new Date(), only?:{automat
       }
     }
     // Cancel if the person has since replied, opted out, or received another response.
-    const conversationMovedOn = payload.recipientIgId && job.automation.integrationId ? await client.inboxMessage.findFirst({where:{conversation:{integrationId:job.automation.integrationId,recipientIgId:payload.recipientIgId},createdAt:{gt:job.createdAt},direction:{in:["INBOUND","OUTBOUND"]}},select:{id:true}}) : null;
+    const publicOnly = (payload.entry as {ap3kDeliveryStep?:string})?.ap3kDeliveryStep === "PUBLIC_REPLY";
+    const conversationMovedOn = payload.recipientIgId && job.automation.integrationId ? await client.inboxMessage.findFirst({where:{conversation:{integrationId:job.automation.integrationId,recipientIgId:payload.recipientIgId},createdAt:{gt:job.createdAt},direction:{in:publicOnly ? ["INBOUND"] : ["INBOUND","OUTBOUND"]}},select:{id:true}}) : null;
     if(conversationMovedOn || !job.automation.active || job.automation.archivedAt || now.getTime()-job.createdAt.getTime()>=86400000){await client.automationDeliveryJob.update({where:{id:job.id},data:{status:"CANCELLED",payload:{}}});continue;}
     try {
       const {resumeAutomationDelivery}=await import("@/lib/meta-webhook-handler");

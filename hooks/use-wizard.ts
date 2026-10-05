@@ -53,6 +53,7 @@ export type WizardData = {
   triggerOnShares?: boolean;
   oneDmPerUser?: boolean;
   deliveryDelaySeconds?: number;
+  stepDelays?: import("@/lib/automation-step-delays").StepDelays;
   dmMessage: string;
   messageVariations?: string[];
   commentReplies?: string[];
@@ -75,6 +76,7 @@ export type WizardData = {
   openingDmText: string;
   openingDmButtonText: string;
   openingDmEnabled: boolean;
+  openingDmFormat?: "BUTTON" | "QUICK_REPLY";
   followRequestDmText: string;
   followRequestButtonText: string;
   publicReply: string;

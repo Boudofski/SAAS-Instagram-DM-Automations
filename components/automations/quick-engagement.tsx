@@ -1,4 +1,11 @@
 "use client";
+import DelayControl from "./delay-control";
+import type { StepDelays, AutomationStep } from "@/lib/automation-step-delays";
+import UsernameField from "./username-field";
+import { MentionText } from "./mention-text";
+import { EditorSelect } from "./editor-select";
+import css from "./engagement-step.module.css";
+import { followUpDelayLabel, followUpConditionLabel } from "@/lib/automation-engagement-settings";
 import { useState, type ReactNode } from "react";
 import {
   Clock3,
@@ -63,13 +70,14 @@ export function QuickEngagementRows({
   update,
   open,
   setOpen,
-  part,
+  part, delayEnabled, stepDelays, onDelayChange,
 }: {
   data: QuickEngagementData;
   update: Props["update"];
   open: string | null;
   setOpen: Props["setOpen"];
   part: "before" | "after";
+  delayEnabled?:boolean;stepDelays?:StepDelays;onDelayChange?:(step:AutomationStep,seconds:number)=>void;
 }) {
   const tr = useUi();
   const field = (
@@ -95,61 +103,15 @@ export function QuickEngagementRows({
     open: open === key,
     onOpen: () => setOpen(open === key ? null : key),
   });
-  if (part === "after")
-    return data.followUpEnabled ? (
-      <EditorRow
-        title="Follow up message"
-        icon={<Clock3 />}
-        {...row("followup")}
-        onRemove={() => update({ followUpEnabled: false })}
-      >
-        <label className={s.field}>
-          {tr("Send when")}
-          <select
-            value={data.followUpCondition || "ALWAYS"}
-            onChange={(e) => update({ followUpCondition: e.target.value })}
-          >
-            {FOLLOW_UP_CONDITIONS.map((c) => (
-              <option key={c.value} value={c.value}>
-                {tr(c.label)}
-              </option>
-            ))}
-          </select>
-        </label>
-        {field("Follow-up message", "followUpMessage")}
-        <label className={s.field}>
-          {tr("Minimum wait before sending")}
-          <select
-            value={data.followUpDelayMinutes ?? 30}
-            onChange={(e) =>
-              update({ followUpDelayMinutes: Number(e.target.value) })
-            }
-          >
-            {FOLLOW_UP_DELAYS.map((m) => (
-              <option key={m} value={m}>
-                {m < 60
-                  ? `${m} ${tr("minutes")}`
-                  : `${m / 60} ${tr(m === 60 ? "hour" : "hours")}`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className={s.hint}>
-          {tr(
-            "Includes your link buttons. Timing is approximate. Cancels when they reply or someone takes over the conversation. Sends only within Instagram’s 24-hour messaging window.",
-          )}
-        </p>
-        {data.followUpCondition && data.followUpCondition !== "ALWAYS" && (
-          <p className={s.hint}>
-            {tr(
-              "The condition is checked after the delay. Follow changes require a confirmed before-and-after status. Message views and reactions depend on Instagram receipts.",
-            )}
-          </p>
-        )}
-      </EditorRow>
-    ) : null;
+  if (part === "after") return data.followUpEnabled ? (
+    <EditorRow title="Follow up message" controls={<EditorSelect label="Follow-up condition" value={data.followUpCondition || "ALWAYS"} onChange={followUpCondition=>update({followUpCondition})} selectedLabel={followUpConditionLabel(data.followUpCondition)} options={FOLLOW_UP_CONDITIONS.map(c=>({value:c.value,label:c.label,group:c.group}))}/>} icon={<MessageCircle/>} {...row("followup")} onRemove={()=>update({followUpEnabled:false})}>
+      <div className={css.layout}><div className={css.previewColumn}><h4>{tr("Preview")}</h4><div className={css.miniPreview}><p className={css.lastMessage}>{tr("Last message")}</p><div className={css.wait}><Clock3 size={11}/>{tr(followUpDelayLabel(data.followUpDelayMinutes ?? 1))} {tr("later")}</div><p><MentionText text={data.followUpMessage || tr("Enter a message")} username="username"/></p></div></div>
+      <div className={css.fields}><label className={css.label}>{tr("Timing")}</label><div className={css.timing}><EditorSelect caption="Check after" label="Check after" value={String(data.followUpDelayMinutes ?? 1)} onChange={value=>update({followUpDelayMinutes:Number(value)})} options={[...FOLLOW_UP_DELAYS.filter(m=>![15,720].includes(m)||data.followUpDelayMinutes===m).map(m=>({value:String(m),label:followUpDelayLabel(m),icon:<Clock3 size={16}/>})),{value:"1440",label:"1 day — outside Instagram’s messaging window",disabled:true}]}/></div><label className={css.label}>{tr("Follow-up message")}</label><div className={css.composer}><UsernameField label="Follow-up message" value={data.followUpMessage || ""} onChange={followUpMessage=>update({followUpMessage})} maxLength={900} rows={4} disabled={false}/></div></div></div>
+    </EditorRow>
+  ) : null;
   return (
     <>
+      {data.followGateRequired && delayEnabled && onDelayChange && <DelayControl label="Ask to follow" seconds={stepDelays?.FOLLOW || 0} onChange={seconds=>onDelayChange("FOLLOW",seconds)}/>}
       {data.followGateRequired && (
         <EditorRow
           title="Ask to follow"
@@ -173,6 +135,7 @@ export function QuickEngagementRows({
           </p>
         </EditorRow>
       )}
+      {data.emailCaptureEnabled && delayEnabled && onDelayChange && <DelayControl label="Collect email" seconds={stepDelays?.EMAIL || 0} onChange={seconds=>onDelayChange("EMAIL",seconds)}/>}
       {data.emailCaptureEnabled && (
         <EditorRow
           title="Collect info"
@@ -187,6 +150,7 @@ export function QuickEngagementRows({
           </p>
         </EditorRow>
       )}
+      {data.phoneCaptureEnabled && delayEnabled && onDelayChange && <DelayControl label="Collect phone" seconds={stepDelays?.PHONE || 0} onChange={seconds=>onDelayChange("PHONE",seconds)}/>}
       {data.phoneCaptureEnabled && (
         <EditorRow
           title="Collect info"
@@ -335,6 +299,7 @@ export function QuickEngagementButtons({
                         add("followup", {
                           followUpEnabled: true,
                           followUpCondition: c.value,
+                          followUpDelayMinutes: 1,
                         })
                       }
                     >

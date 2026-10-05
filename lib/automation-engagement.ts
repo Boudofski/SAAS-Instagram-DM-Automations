@@ -1,3 +1,4 @@
+import { scheduleDeliveryWake } from "@/lib/qstash-delivery-wake";
 import { observeAutomationFollow } from "./automation-tracking";
 import { client } from "@/lib/prisma";
 import { canSendStaticReply } from "@/actions/usage/queries";
@@ -11,7 +12,7 @@ import {
   getInstagramRecipientProfile,
   sendInstagramDirectResponse,
 } from "@/lib/instagram-dm";
-import { readLinkButtons } from "@/lib/link-buttons";
+import { personalizeUsername } from "@/lib/automation-copy";
 import {
   followUpEligible,
   MESSAGING_WINDOW_MS,
@@ -233,7 +234,7 @@ export async function beginEmailRequest(
 
 export async function finishEngagementJob(
   id: string,
-  status: "WAITING" | "COMPLETED" | "FAILED",
+  status: "WAITING" | "COMPLETED" | "FAILED" | "CANCELLED",
 ) {
   await client.automationEngagementJob.updateMany({
     where: { id, status: { in: ["PENDING", "PROCESSING"] } },
@@ -258,7 +259,7 @@ export async function scheduleFollowUp(
   const dueAt = new Date(Date.now() + delayMinutes * 60_000);
   const expiresAt = new Date(inboundAt.getTime() + MESSAGING_WINDOW_MS);
   if (dueAt >= expiresAt) return;
-  await client.automationEngagementJob.upsert({
+  const scheduledJob = await client.automationEngagementJob.upsert({
     where: {
       automationId_recipientIgId_flowId_kind: {
         automationId,
@@ -281,6 +282,7 @@ export async function scheduleFollowUp(
     },
     update: {},
   });
+  if (scheduledJob?.status === "PENDING") await scheduleDeliveryWake(scheduledJob);
 }
 
 export async function processAutomationFollowUps(now = new Date()) {
@@ -400,7 +402,7 @@ export async function processAutomationFollowUps(now = new Date()) {
         continue;
       }
       const condition = job.condition || "ALWAYS";
-      const profile = ["FOLLOWED", "UNFOLLOWED"].includes(condition)
+      const profile = (["FOLLOWED", "UNFOLLOWED"].includes(condition) || /\{\{username\}\}|\bUsername\b/i.test(listener.followUpMessage || ""))
         ? await getInstagramRecipientProfile({
             token: token.token,
             recipientId: job.recipientIgId,
@@ -442,18 +444,14 @@ export async function processAutomationFollowUps(now = new Date()) {
         !messagingWindowOpen(job.inboundAt)
       )
         continue;
+      const message = personalizeUsername(listener.followUpMessage!, profile?.username);
       const result = await sendInstagramDirectResponse({
         token: token.token,
         igBusinessAccountId: integration.instagramId,
         recipientId: job.recipientIgId,
         automationId: automation.id,
-        message: listener.followUpMessage!,
-        responseFormat: "LINK",
-        linkButtons: readLinkButtons(
-          listener.quickReplies,
-          listener.ctaButtonTitle,
-          listener.ctaLink,
-        ),
+        message,
+        responseFormat: "TEXT",
       });
       // Persist terminal state before secondary bookkeeping.
       await finishEngagementJob(job.id, result.ok ? "COMPLETED" : "FAILED");
@@ -473,7 +471,7 @@ export async function processAutomationFollowUps(now = new Date()) {
           integrationId: integration.id,
           recipientIgId: job.recipientIgId,
           automationId: automation.id,
-          content: listener.followUpMessage!,
+          content: message,
           metaMessageId: result.messageIds[0],
         });
       }

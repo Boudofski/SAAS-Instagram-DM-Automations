@@ -1,4 +1,5 @@
 vi.mock("@/lib/automation-delivery",()=>({claimImmediateStory:vi.fn().mockResolvedValue(true),claimImmediateComment:vi.fn().mockResolvedValue(true),claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
+import { resumeAutomationDelivery } from "@/lib/meta-webhook-handler";
 import {claimImmediateStory,deferAutomationDelivery} from "@/lib/automation-delivery";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -1137,6 +1138,23 @@ describe("Meta webhook route security", () => {
     it("schedules a real delay instead of sending immediately",async()=>{setupStory({deliveryDelaySeconds:300});await reply();expect(deferAutomationDelivery).toHaveBeenCalledWith(expect.objectContaining({automationId:"story-automation",eventKey:"story:story-mid",seconds:300,recipientIgId:"recipient-1"}));expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
     it("blocks a repeated webhook even when one-DM-per-user is off",async()=>{setupStory();vi.mocked(claimImmediateStory).mockResolvedValue(false);await reply();expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
     it("sends the opener with a real continue callback before the final message",async()=>{setupStory({listener:{prompt:"Your guide",responseFormat:"TEXT",quickReplies:[],openingDmEnabled:true,openingDmText:"Ready?",openingDmButtonText:"Continue"}});await reply();expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({message:"Ready?",responseFormat:"TEXT",postbackButton:{title:"Continue",payload:"AP3K_OPENING_CONTINUE:story-automation:story-mid"}}));expect(mockScheduleFollowUp).not.toHaveBeenCalled();});
+    it.each(["OPENING","MESSAGE","EMAIL","PHONE","FOLLOW"])("delays and resumes only the configured %s step",async(step)=>{
+      const listener={prompt:"Your guide",responseFormat:"TEXT",quickReplies:[],openingDmEnabled:step==="OPENING",openingDmText:"Ready?",openingDmButtonText:"Continue",emailCaptureEnabled:step==="EMAIL",emailCapturePrompt:"Email?",phoneCaptureEnabled:step==="PHONE",phoneCapturePrompt:"Phone?"};
+      const automation=setupStory({stepDelays:{[step]:30,PUBLIC_REPLY:300},listener,followGateRequired:step==="FOLLOW"});
+      mockBeginEmailRequest.mockResolvedValue({kind:"request",jobId:"capture"});
+      await reply();expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();
+      const scheduled=vi.mocked(deferAutomationDelivery).mock.calls.at(-1)?.[0];
+      expect(scheduled).toMatchObject({seconds:30,entry:{ap3kConfiguredMessage:{delayedStep:step}}});
+      mockFindAutomationById.mockResolvedValue(automation);
+      await resumeAutomationDelivery(automation.id,scheduled!.entry,"instagram");
+      expect(mockSendInstagramDirectResponse).toHaveBeenCalledOnce();
+      expect(deferAutomationDelivery).toHaveBeenCalledOnce();
+      if(step==="EMAIL"||step==="PHONE")expect(mockBeginEmailRequest).toHaveBeenCalledOnce();
+    });
+    it("sends the opener quick reply with the same continuation payload",async()=>{
+      setupStory({listener:{prompt:"Your guide",responseFormat:"TEXT",quickReplies:[],openingDmEnabled:true,openingDmFormat:"QUICK_REPLY",openingDmText:"Ready?",openingDmButtonText:"Continue"}});
+      await reply();expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({preferQuickReplyForPostback:true,postbackButton:{title:"Continue",payload:"AP3K_OPENING_CONTINUE:story-automation:story-mid"}}));
+    });
     it("does not send beyond the original 24-hour conversation window",async()=>{setupStory();await reply({at:Date.now()-86400001});expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();});
     it("passes native carousel cards to delivery, not just a text preview",async()=>{const cards=[{title:"Offer",subtitle:"Today",image:"https://cdn.test/card.jpg",links:[{label:"Shop",url:"https://shop.test/"}]}];setupStory({storyConfig:{version:1,scope:"ALL",cards,stories:[],intentPrompt:""},listener:{prompt:"Offer",responseFormat:"CAROUSEL",quickReplies:[]}});await reply();expect(mockSendInstagramDirectResponse).toHaveBeenCalledWith(expect.objectContaining({responseFormat:"CAROUSEL",carouselCards:cards}));});
   });

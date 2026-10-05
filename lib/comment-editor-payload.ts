@@ -17,6 +17,7 @@ export function createCommentEditorPayload(
     sendPrivateDm: data.sendPrivateDm,
     followGateRequired: data.followGateRequired,
     typingIndicator: false,
+    stepDelays: data.stepDelays,
     deliveryDelaySeconds: data.deliveryDelaySeconds ?? 0,
     triggerOnShares: data.triggerOnShares === true,
     oneDmPerUser: data.oneDmPerUser === true,
@@ -76,6 +77,7 @@ export function createCommentEditorPayload(
       openingDmButtonText: data.sendPrivateDm
         ? data.openingDmButtonText
         : undefined,
+      openingDmFormat: data.openingDmFormat || "BUTTON",
       openingDmEnabled: data.sendPrivateDm ? data.openingDmEnabled : false,
       followRequestDmText: data.sendPrivateDm
         ? data.followRequestDmText

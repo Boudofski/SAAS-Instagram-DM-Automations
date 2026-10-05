@@ -62,3 +62,10 @@ it("rechecks account, owner and paid automation eligibility when scheduled work 
   await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();
  }
 });
+
+it("a DM sent while a public reply waits does not cancel that independent public reply",async()=>{
+ db.inboxMessage.findFirst.mockImplementation(async({where})=>where.direction.in.includes("OUTBOUND")?{id:"sent-dm"}:null);
+ db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,entry:{id:"ig",ap3kDeliveryStep:"PUBLIC_REPLY"},recipientIgId:"recipient"}}]);
+ await processAutomationDeliveries(now);
+ expect(resume).toHaveBeenCalledWith("a",{id:"ig",ap3kDeliveryStep:"PUBLIC_REPLY"},"instagram");
+});

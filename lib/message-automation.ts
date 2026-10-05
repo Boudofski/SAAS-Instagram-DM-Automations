@@ -1,3 +1,4 @@
+import { normalizeStepDelays, stepDelay } from "@/lib/automation-step-delays";
 import { normalizeStoryConfig, validateStoryCards, type StoryConfig } from "@/lib/story-automation";
 import { normalizeDeliveryDelay } from "@/lib/campaign-save";
 import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
@@ -40,6 +41,7 @@ export type RawMessageAutomationPayload = EngagementSettings & {
   storyConfig?: unknown;
   oneDmPerUser?: boolean;
   openingDmEnabled?: boolean;
+  openingDmFormat?: "BUTTON" | "QUICK_REPLY";
   openingDmText?: string | null;
   openingDmButtonText?: string | null;
   triggerMode?: string;
@@ -56,6 +58,7 @@ export type RawMessageAutomationPayload = EngagementSettings & {
   followGateRequired?: boolean;
   typingIndicator?: boolean;
   deliveryDelaySeconds?: number;
+  stepDelays?: import("@/lib/automation-step-delays").StepDelays;
   followRequestDmText?: string | null;
   followRequestButtonText?: string | null;
   aiReplyEnabled?: boolean;
@@ -72,6 +75,7 @@ export type NormalizedMessageAutomationPayload = ReturnType<
   storyConfig?: StoryConfig;
   oneDmPerUser?: boolean;
   openingDmEnabled?: boolean;
+  openingDmFormat?: "BUTTON" | "QUICK_REPLY";
   openingDmText?: string;
   openingDmButtonText?: string;
   triggerMode: MessageTriggerMode;
@@ -87,6 +91,7 @@ export type NormalizedMessageAutomationPayload = ReturnType<
   followGateRequired: boolean;
   typingIndicator: boolean;
   deliveryDelaySeconds: DeliveryDelaySeconds;
+  stepDelays?: import("@/lib/automation-step-delays").StepDelays;
   followRequestDmText: string;
   followRequestButtonText: string;
   aiReplyEnabled: boolean;
@@ -126,6 +131,7 @@ export function normalizeMessageAutomationPayload(
     storyTriggerType: source === "STORY" ? storyConfig ? storyConfig.scope === "MENTION" ? "MENTION" : "REPLY" : normalizeStoryTrigger(payload.storyTriggerType) : null,
     storyConfig,
     oneDmPerUser: payload.oneDmPerUser === true,
+    openingDmFormat: payload.openingDmFormat === "QUICK_REPLY" ? "QUICK_REPLY" : "BUTTON",
     openingDmEnabled: !payload.aiReplyEnabled && payload.openingDmEnabled === true,
     openingDmText: cleanOptional(payload.openingDmText)?.slice(0,640) || "Hey! Ready for the link?",
     openingDmButtonText: cleanOptional(payload.openingDmButtonText)?.slice(0,20) || "Get the Link",
@@ -173,7 +179,8 @@ export function normalizeMessageAutomationPayload(
       ? false
       : Boolean(payload.followGateRequired),
     typingIndicator: false,
-    deliveryDelaySeconds: normalizeDeliveryDelay(payload.deliveryDelaySeconds),
+    deliveryDelaySeconds: payload.stepDelays ? 0 : normalizeDeliveryDelay(payload.deliveryDelaySeconds),
+    stepDelays: normalizeStepDelays(payload.stepDelays),
     followRequestDmText: resolveFollowRequestDmText(
       payload.followRequestDmText,
     ),
@@ -209,7 +216,7 @@ export function validateMessageAutomationPayload(
   if (payload.active && payload.source === "STORY" && payload.storyConfig?.scope === "SPECIFIC" && !payload.storyConfig.stories.length) return "Choose at least one active story.";
   if (payload.triggerMode === "INTENT_MATCH" && !payload.storyConfig?.intentPrompt) return "Describe the intent that should trigger your story reply.";
   if (payload.openingDmEnabled && (!payload.openingDmText?.trim() || !payload.openingDmButtonText?.trim())) return "Add the opener message and its continue button.";
-  if (payload.followUpEnabled && payload.deliveryDelaySeconds + (payload.followUpDelayMinutes || 0) * 60 >= 86400) return "Shorten the delay or follow-up so both fit inside Instagram’s 24-hour messaging window.";
+  if (payload.followUpEnabled && (payload.deliveryDelaySeconds + stepDelay(payload,"MESSAGE")) + (payload.followUpDelayMinutes || 0) * 60 >= 86400) return "Shorten the delay or follow-up so both fit inside Instagram’s 24-hour messaging window.";
   if (payload.responseFormat === "PRODUCT_CARD" || payload.responseFormat === "CAROUSEL") {
     const error = validateStoryCards(payload.storyConfig?.cards || [], payload.responseFormat === "CAROUSEL");
     if (error) return error;

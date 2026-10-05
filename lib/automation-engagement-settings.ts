@@ -13,8 +13,8 @@ export const FOLLOW_UP_CONDITIONS = [
 export const DEFAULT_EMAIL_CAPTURE_PROMPT =
   "What’s your email address? Reply with it and I’ll send your link here.";
 export const DEFAULT_FOLLOW_UP_MESSAGE =
-  "Still interested? Here’s the link you asked for 👇";
-export const FOLLOW_UP_DELAYS = [15, 30, 60, 180, 720] as const;
+  "Hey 👋 Just checking in to make sure you saw my last message, let me know what you think!";
+export const FOLLOW_UP_DELAYS = [0.5, 1, 5, 10, 15, 30, 60, 180, 360, 720] as const;
 export const MESSAGING_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export type EngagementSettings = {
@@ -61,9 +61,9 @@ export function validateEngagementSettings(
     return "Choose a supported follow-up condition.";
   if (
     settings.followUpEnabled &&
-    (!settings.followUpMessage?.trim() || settings.followUpMessage.length > 640)
+    (!settings.followUpMessage?.trim() || settings.followUpMessage.length > 900)
   )
-    return "Add a follow-up message between 1 and 640 characters.";
+    return "Add a follow-up message between 1 and 900 characters.";
   if (
     settings.followUpEnabled &&
     !FOLLOW_UP_DELAYS.includes(
@@ -193,4 +193,14 @@ export function normalizeEngagementSettings(settings: EngagementSettings) {
     followUpDelayMinutes: settings.followUpDelayMinutes ?? 30,
     followUpCondition: settings.followUpCondition || "ALWAYS",
   };
+}
+
+export function followUpDelayLabel(minutes: number) {
+  if (minutes < 1) return `${minutes * 60} seconds`;
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  if (minutes === 1440) return "1 day";
+  return `${minutes / 60} ${minutes === 60 ? "hour" : "hours"}`;
+}
+export function followUpConditionLabel(condition = "ALWAYS") {
+  return ({ALWAYS:"Always", SEEN:"if seen message", NOT_SEEN:"if not seen message", REACTED:"if reacted with emoji", CLICKED:"if clicked link", NOT_CLICKED:"if not clicked link", FOLLOWED:"if followed you", UNFOLLOWED:"if unfollowed you"} as Record<string,string>)[condition] || "Always";
 }

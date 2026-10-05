@@ -1,3 +1,4 @@
+import { normalizeStepDelays, stepDelay } from "@/lib/automation-step-delays";
 import { attachmentId, normalizeAttachmentType } from "@/lib/message-attachment";
 import {
   normalizeCopyList,
@@ -48,6 +49,7 @@ export type RawCampaignPayload = {
   followGateRequired?: boolean;
   typingIndicator?: boolean;
   deliveryDelaySeconds?: number;
+  stepDelays?: import("@/lib/automation-step-delays").StepDelays;
   triggerOnShares?: boolean;
   oneDmPerUser?: boolean;
   aiMode?: boolean;
@@ -75,6 +77,7 @@ export type RawCampaignPayload = {
     openingDmText?: string | null;
     openingDmButtonText?: string | null;
     openingDmEnabled?: boolean;
+  openingDmFormat?: "BUTTON" | "QUICK_REPLY";
     followRequestDmText?: string | null;
     followRequestButtonText?: string | null;
     phoneCaptureEnabled?: boolean;
@@ -98,6 +101,7 @@ export type NormalizedCampaignPayload = {
   followGateRequired?: boolean;
   typingIndicator?: boolean;
   deliveryDelaySeconds?: number;
+  stepDelays?: import("@/lib/automation-step-delays").StepDelays;
   triggerOnShares?: boolean;
   oneDmPerUser?: boolean;
   post: {
@@ -130,6 +134,7 @@ export type NormalizedCampaignPayload = {
     openingDmText?: string;
     openingDmButtonText?: string;
     openingDmEnabled?: boolean;
+  openingDmFormat?: "BUTTON" | "QUICK_REPLY";
     followRequestDmText?: string;
     followRequestButtonText?: string;
     phoneCaptureEnabled?: boolean;
@@ -211,7 +216,8 @@ export function normalizeCampaignPayload(
     sendPrivateDm,
     followGateRequired: openingDmEnabled && Boolean(payload.followGateRequired),
     typingIndicator: false,
-    deliveryDelaySeconds: normalizeDeliveryDelay(payload.deliveryDelaySeconds),
+    deliveryDelaySeconds: payload.stepDelays ? 0 : normalizeDeliveryDelay(payload.deliveryDelaySeconds),
+    stepDelays: normalizeStepDelays(payload.stepDelays),
     triggerOnShares: sendPrivateDm && payload.triggerOnShares === true,
     oneDmPerUser: payload.oneDmPerUser === true,
     post: {
@@ -284,6 +290,7 @@ export function normalizeCampaignPayload(
         ? resolveOpeningDmButtonText(payload.listener?.openingDmButtonText)
         : undefined,
       openingDmEnabled,
+      openingDmFormat: payload.listener?.openingDmFormat === "QUICK_REPLY" ? "QUICK_REPLY" : "BUTTON",
       phoneCaptureEnabled:
         sendPrivateDm && payload.listener?.phoneCaptureEnabled === true,
       phoneCapturePrompt: cleanOptional(payload.listener?.phoneCapturePrompt),
@@ -316,6 +323,7 @@ export function validateNormalizedCampaignPayload(
     payload.listener.openingDmEnabled === true,
   );
   if (engagementError) return engagementError;
+  if (payload.sendPrivateDm && payload.listener.followUpEnabled && stepDelay(payload,"MESSAGE") + (payload.listener.followUpDelayMinutes || 0) * 60 >= 86400) return "Shorten the message delay or follow-up so both fit inside Instagram’s 24-hour messaging window.";
   if (
     payload.adAutomation &&
     (!payload.post.postid || payload.post.postid === "ANY")
