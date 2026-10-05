@@ -1,5 +1,4 @@
 "use client";
-import { LocalizedButton } from "@/components/i18n/localized-controls";
 
 
 import { LOCALE_COOKIE, LOCALE_DETAILS, SUPPORTED_LOCALES, isEnglishOnlyArticle, isProtectedPath, localizePublicPath, type Locale } from "@/lib/i18n/config";
@@ -37,11 +36,11 @@ export default function LanguageSwitcher({ compact = false, textOnly = false, cl
   return (
     <DropdownMenu dir={LOCALE_DETAILS[locale].direction} modal={false}>
       <DropdownMenuTrigger asChild>
-        <LocalizedButton type="button" aria-label={`${t("language")}: ${textOnly || compact ? locale.toUpperCase() : LOCALE_DETAILS[locale].nativeName}`} aria-busy={isPending}
+        <button type="button" aria-label={`${t("language")}: ${textOnly || compact ? locale.toUpperCase() : LOCALE_DETAILS[locale].nativeName}`} aria-busy={isPending}
           className={textOnly ? "inline-flex h-10 shrink-0 items-center justify-center gap-1 rounded-full px-1 text-sm font-medium text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300" : `inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 ${compact ? "w-11 px-0" : "max-w-44"} ${className}`}>
           {textOnly || compact ? <span>{locale.toUpperCase()}</span> : <span className="truncate">{LOCALE_DETAILS[locale].nativeName}</span>}
           {(textOnly || !compact) && (isPending ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" /> : <ChevronDown aria-hidden="true" className="h-3 w-3" />)}
-        </LocalizedButton>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="z-[100] w-52 rounded-2xl p-1.5 shadow-xl">
         {SUPPORTED_LOCALES.map((option) => (

@@ -1,4 +1,5 @@
 import { expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 vi.mock("next/font/local", () => ({ default: () => ({ className: "" }) }));
 vi.mock("next/font/google", () => ({ Inter: () => ({ className: "" }) }));
 vi.mock("@/lib/i18n/server", () => ({ getServerLocale: () => "en" }));

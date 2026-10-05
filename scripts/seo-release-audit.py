@@ -97,9 +97,9 @@ def clean_url(value, base=BASE):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', default='seo-artifacts/crawl.json')
-    parser.add_argument('--max-pages', type=int, default=500)
+    parser.add_argument('--max-pages', type=int, default=1000)
     args = parser.parse_args()
-    maximum = max(1, min(args.max_pages, 500))
+    maximum = max(1, min(args.max_pages, 1000))
     status, _, headers, robots = fetch(BASE + '/robots.txt')
     if status != 200:
         raise SystemExit('robots.txt was not available; crawl stopped rather than assuming permission')
@@ -158,7 +158,7 @@ def main():
         for row in pool.map(inspect, todo):
             rows.append(row)
             all_links.update(row['links'])
-    by_url = {row['url']: row for row in rows}
+    by_url = {clean_url(row['url']): row for row in rows}
     titles = collections.defaultdict(list)
     descriptions = collections.defaultdict(list)
     for row in rows:
@@ -169,8 +169,8 @@ def main():
     hreflang_issues = []
     for row in rows:
         for language, target in row['alternates'].items():
-            target_row = by_url.get(target)
-            if target_row and row['url'] not in target_row['alternates'].values():
+            target_row = by_url.get(clean_url(target))
+            if target_row and clean_url(row['url']) not in {clean_url(value) for value in target_row['alternates'].values()}:
                 hreflang_issues.append({'source': row['url'], 'language': language, 'target': target, 'issue': 'missing_return_link'})
     issue_counts = collections.Counter(issue for row in rows for issue in row['issues'])
     errors = [row for row in rows if row['issues']]
