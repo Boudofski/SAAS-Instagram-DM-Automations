@@ -1,4 +1,4 @@
-name: SEO review
+name: SEO source checkpoint
 on:
   push:
     branches: [seo/claude-audit-20261005]
@@ -6,60 +6,22 @@ on:
 permissions:
   contents: read
 jobs:
-  evidence:
+  checkpoint:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - name: Install isolated crawl dependencies
+      - name: Export source changes for local verification
         run: |
-          python -m venv /tmp/seo-crawl-venv
-          /tmp/seo-crawl-venv/bin/pip -q install requests==2.32.3 beautifulsoup4==4.13.4
-      - name: Crawl public pages
-        run: |
-          /tmp/seo-crawl-venv/bin/python -m py_compile .github/seo-crawl.py
-          /tmp/seo-crawl-venv/bin/python .github/seo-crawl.py
+          mkdir -p /tmp/seo-checkpoint
+          git diff --binary 3ff7f2879d31931df3a68f3ae66d69bccc841e2c HEAD -- app actions components constants lib hooks providers prisma scripts next.config.mjs next.config.js package.json package-lock.json public > /tmp/seo-checkpoint/source.patch
+          git rev-parse HEAD > /tmp/seo-checkpoint/head.txt
+          git diff --stat 047052a6796fea966495ac53267bcc02d6d315ea HEAD > /tmp/seo-checkpoint/changes.txt
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: ap3k-seo-crawl
-          path: /tmp/ap3k-seo-evidence
-          retention-days: 7
-  browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Measure public pages
-        run: |
-          mkdir -p /tmp/ap3k-browser
-          cd /tmp/ap3k-browser
-          npm init -y >/dev/null
-          npm install --no-audit --no-fund lighthouse@12.8.2 playwright@1.55.1
-          npx playwright install --with-deps chromium
-          export CHROME_PATH=$(node -e 'console.log(require("playwright").chromium.executablePath())')
-          for page in home comment-to-dm; do
-            url=https://ap3k.com/
-            test "$page" = home || url=https://ap3k.com/instagram-comment-to-dm
-            npx lighthouse "$url" --chrome-flags='--headless --no-sandbox' --only-categories=performance,accessibility,seo,best-practices --output=json --output-path="$page-mobile.json" --quiet
-          done
-          npx lighthouse https://ap3k.com/ --preset=desktop --chrome-flags='--headless --no-sandbox' --only-categories=performance,accessibility,seo,best-practices --output=json --output-path=home-desktop.json --quiet
-          node <<'JS'
-          const {chromium}=require('playwright');const fs=require('fs');
-          (async()=>{const browser=await chromium.launch({headless:true});const rows=[];
-          for(const width of [390,1440]){const page=await browser.newPage({viewport:{width,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
-          for(const [name,path] of [['home','/'],['comment-to-dm','/instagram-comment-to-dm'],['blog','/blog'],['solutions','/solutions']]){await page.goto('https://ap3k.com'+path,{waitUntil:'networkidle',timeout:45000});await page.screenshot({path:`${name}-${width}.png`,fullPage:true});rows.push({name,width,errors:[...errors],...await page.evaluate(()=>({title:document.title,h1:[...document.querySelectorAll('h1')].map(x=>x.textContent),overflow:document.documentElement.scrollWidth>innerWidth,mainWords:(document.querySelector('main')?.innerText||'').split(/\s+/).length,canonical:document.querySelector('link[rel=canonical]')?.href}))});}await page.close();}
-          fs.writeFileSync('browser.json',JSON.stringify(rows,null,2));await browser.close();})();
-          JS
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ap3k-seo-browser
-          path: |
-            /tmp/ap3k-browser/*.json
-            /tmp/ap3k-browser/*.png
+          name: ap3k-seo-checkpoint
+          path: /tmp/seo-checkpoint
           retention-days: 7

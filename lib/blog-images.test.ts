@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { BLOG_POSTS } from './blog';
+import { SEO_REVISED_SLUGS } from './content/seo-revisions';
 import { articleImageUrl, getArticleImage } from './blog-images';
 import { buildCoverPlan, renderCoverSvg } from './blog-cover-diagram';
 import { tutorialImageSrc } from './tutorial-content';
@@ -11,7 +12,9 @@ describe('article-specific covers', () => {
   it('uses decodable local editorial photos with descriptive alt text for the archive', async () => {
     const posts = BLOG_POSTS.filter(post => !post.cover && post.importedArchive);
     const images = posts.map(getArticleImage);
-    expect(new Set(images.map(image => image.src)).size).toBe(175);
+    // A revised original guide uses a real AP3K screenshot instead of archive art.
+    expect(posts.length).toBe(175 - SEO_REVISED_SLUGS.size);
+    expect(new Set(images.map(image => image.src)).size).toBe(posts.length);
     for (const image of images) {
       expect(image.src).toMatch(/^\/images\/(blog\/imported\/[a-f0-9]+|docs\/[a-z-]+)\.webp$/);
       expect(image.alt.length).toBeGreaterThan(20);
@@ -24,7 +27,7 @@ describe('article-specific covers', () => {
       expect(metadata.width).toBeGreaterThan(100);
       return createHash('sha256').update(bytes).digest('hex');
     }));
-    expect(new Set(hashes).size).toBe(175);
+    expect(new Set(hashes).size).toBe(posts.length);
   });
   it('keeps real tutorial screenshots instead of manufacturing product screens', () => {
     for (const post of BLOG_POSTS.filter(post => post.cover)) {

@@ -1,3 +1,4 @@
+import { SEO_REVISED_SLUGS } from "./content/seo-revisions";
 import { LEGACY_BLOG_POSTS } from "./blog";
 import importedSlugs from "./content/imported-blog/slugs.json";
 import FEATURED_BLOG_SLUGS from "./content/imported-blog/featured.json";
@@ -14,7 +15,7 @@ export const REFERENCE_GUIDE_SLUGS = new Set([
 export { default as FEATURED_BLOG_SLUGS } from "./content/imported-blog/featured.json";
 export function getEditorialArchive(posts: BlogPost[], query = "") {
   const legacy = new Set(LEGACY_BLOG_POSTS.map(p => p.slug));
-  const editorial = posts.filter(p => p.importedArchive || !legacy.has(p.slug)).sort((a,b) => {
+  const editorial = posts.filter(p => p.importedArchive || SEO_REVISED_SLUGS.has(p.slug) || !legacy.has(p.slug)).sort((a,b) => {
     const ai = importedSlugs.indexOf(a.slug), bi = importedSlugs.indexOf(b.slug);
     return (ai < 0 ? -1 : ai) - (bi < 0 ? -1 : bi);
   });
