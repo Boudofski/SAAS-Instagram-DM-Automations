@@ -35,7 +35,29 @@ export default function HomeHero() {
   const inView = useInView(section, { amount: 0.15 });
   const reducedMotion = useReducedMotion();
   const [pageVisible, setPageVisible] = useState(true);
-  const playing = reducedMotion === false && inView && pageVisible;
+  const [motionReady, setMotionReady] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const playing = motionReady && reducedMotion === false && inView && pageVisible;
+
+  useEffect(() => {
+    // Keep the identical, eagerly loaded poster on small screens until the
+    // visitor interacts. Decorative video must not delay the first useful paint.
+    const media = window.matchMedia("(min-width: 768px)");
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    const enable = () => setMotionReady(true);
+    const update = () => { if (media.matches && !connection?.saveData) enable(); };
+    update();
+    media.addEventListener("change", update);
+    window.addEventListener("pointerdown", enable, { once: true, passive: true });
+    window.addEventListener("keydown", enable, { once: true });
+    window.addEventListener("scroll", enable, { once: true, passive: true });
+    return () => {
+      media.removeEventListener("change", update);
+      window.removeEventListener("pointerdown", enable);
+      window.removeEventListener("keydown", enable);
+      window.removeEventListener("scroll", enable);
+    };
+  }, []);
 
   useEffect(() => {
     const update = () => setPageVisible(document.visibilityState === "visible");
@@ -78,13 +100,17 @@ export default function HomeHero() {
       </div>
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
-          <video ref={video} className={styles.keywordVideo} width={1530} height={364} muted loop playsInline
-            preload="none" poster="/media/hero/comment-water-drop-poster.webp" tabIndex={-1}>
-            <source src="/media/hero/comment-water-drop.webm" type="video/webm" />
-          </video>
+          <div className={styles.keywordMedia}>
+            <Image className={styles.keywordVideo} src="/media/hero/comment-water-drop-poster.webp"
+              alt="" width={1530} height={364} priority unoptimized />
+            <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
+              width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
+              src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
+              onPlaying={() => setVideoReady(true)} data-ready={videoReady} />
+          </div>
         </div>
         <h1 id="home-hero-title" className={styles.title}>
-          <span>{copy.titleTop}</span>
+          <span>{copy.titleTop}{" "}</span>
           <strong>{copy.titleBottom}</strong>
         </h1>
         <p className={styles.description}>{copy.description}</p>
@@ -93,7 +119,7 @@ export default function HomeHero() {
         </div>
         <div className={styles.trust}>
           <p>{copy.audience}</p>
-          <Image src="/media/hero/creator-portraits.webp" alt="" width={208} height={36} className={styles.portraits} />
+          <Image src="/media/hero/creator-portraits.webp" alt="" width={123} height={36} sizes="123px" className={styles.portraits} />
         </div>
         <div className={styles.api}>
           <Image className={styles.lightArt} src="/media/hero/meta-business-partner-light.svg" alt="Meta Business Partner" width={108} height={43} unoptimized />

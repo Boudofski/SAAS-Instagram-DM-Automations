@@ -25,9 +25,16 @@ export function buildSitemap(
   const updated = new Date("2026-09-27T00:00:00Z");
   // Significant public-copy and navigation updates shipped on this date.
   // Keep this fixed to the release date; never stamp every crawl with today.
-  const publicContentUpdated = new Date("2026-09-27T00:00:00Z");
+  const publicContentUpdated = new Date("2026-10-05T00:00:00Z");
+  const archiveUpdated = new Date(Math.max(
+    new Date("2026-10-05T00:00:00Z").getTime(),
+    ...getEditorialArchive(posts).posts.filter(post => !post.noIndex)
+      .map(post => new Date(`${post.updatedAt}T00:00:00Z`).getTime())
+      .filter(Number.isFinite),
+  ));
   const companyUpdated = new Date(`${COMPANY.detailsUpdated}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/about`, lastModified: publicContentUpdated, changeFrequency: "monthly", priority: 0.6 },
     {
       url: baseUrl,
       lastModified: publicContentUpdated,
@@ -42,7 +49,7 @@ export function buildSitemap(
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: new Date("2026-09-24T00:00:00Z"),
+      lastModified: archiveUpdated,
       changeFrequency: "weekly",
       priority: 0.9,
     },
@@ -108,7 +115,7 @@ export function buildSitemap(
     { length: Math.max(0, Math.ceil(getEditorialArchive(posts).posts.length / BLOG_PAGE_SIZE) - 1) },
     (_, index) => ({
       url: `${baseUrl}${blogPagePath(index + 2)}`,
-      lastModified: new Date("2026-09-24T00:00:00Z"),
+      lastModified: archiveUpdated,
       changeFrequency: "weekly" as const,
       priority: 0.65,
     }),
@@ -167,7 +174,7 @@ export function buildSitemap(
       ...SOLUTIONS.map((page) => `/solutions/${page.slug}`),
     ].map((path) => ({
       url: `${baseUrl}${path}`,
-      lastModified: publicContentUpdated,
+      lastModified: path === "/solutions" ? publicContentUpdated : new Date("2026-09-27T00:00:00Z"),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),

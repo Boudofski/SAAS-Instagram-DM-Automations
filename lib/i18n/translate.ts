@@ -1,3 +1,4 @@
+import { SEO_PUBLIC_COPY } from "./seo-public-copy";
 import { MARKETING_PRIVACY_COPY } from "./marketing-privacy-copy";
 import { ENGAGEMENT_COPY } from "./engagement-copy";
 import { PUBLIC_REDESIGN_COPY } from "./public-redesign-copy";
@@ -24,6 +25,7 @@ const catalogs = Object.fromEntries(
     locale,
     {
       ...EXTENDED_COPY[locale as Locale],
+      ...SEO_PUBLIC_COPY[locale as Locale],
       ...Object.fromEntries(
         Object.entries(MESSAGES.en).map(([key, source]) => [
           source,

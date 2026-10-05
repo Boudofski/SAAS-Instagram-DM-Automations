@@ -16,8 +16,6 @@ export type ArticleImage = {
 export function getArticleImage(
   post: Pick<BlogPost, 'slug' | 'title' | 'visual' | 'cover'>,
 ): ArticleImage {
-  const imported = (importedCovers as Record<string, ArticleImage>)[post.slug];
-  if (Object.prototype.hasOwnProperty.call(importedCovers, post.slug)) return imported;
   if (post.cover) {
     const image = TUTORIAL_SCREENSHOTS[post.cover];
     return {
@@ -27,6 +25,8 @@ export function getArticleImage(
       height: image.height,
     };
   }
+  const imported = (importedCovers as Record<string, ArticleImage>)[post.slug];
+  if (Object.prototype.hasOwnProperty.call(importedCovers, post.slug)) return imported;
   const cover = Object.prototype.hasOwnProperty.call(covers, post.slug)
     ? (covers as Record<string, { src: string; alt: string }>)[post.slug]
     : undefined;

@@ -28,6 +28,9 @@
 :global(.dark) .glow { background: radial-gradient(ellipse at 50% 25%, rgba(124,58,237,.16), transparent 62%), radial-gradient(ellipse at 90% 90%, rgba(236,72,153,.065), transparent 38%); }
 .content { position: relative; z-index: auto; max-width: 885px; margin: auto; }
 .keywordAnimation { display: flex; justify-content: flex-start; padding: 12px 0 20px; }
+.keywordMedia { position: relative; width: min(100%, 378.3px); height: 90px; }
+.motionLayer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.motionLayer[data-ready="true"] { opacity: 1; }
 .keywordVideo { display: block; width: auto; max-width: 100%; height: 90px; object-fit: contain; object-position: left center; mix-blend-mode: multiply; filter: hue-rotate(43deg); }
 :global(.dark) .keywordVideo { mix-blend-mode: screen; filter: invert(1) hue-rotate(223deg); }
 .title { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: normal; }

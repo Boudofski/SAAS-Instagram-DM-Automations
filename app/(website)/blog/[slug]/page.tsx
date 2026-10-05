@@ -207,11 +207,12 @@ export default async function BlogPostPage({ params }: Props) {
               <p>{post.subtitle || post.description}</p>
               <div className={s.byline}>
                 <span>
-                  By <span>AP3K</span>
+                  By <Link href="/about">AP3K</Link>
                 </span>
                 <time dateTime={post.publishedAt}>
                   {formatDate(post.publishedAt)}
                 </time>
+                {post.updatedAt !== post.publishedAt && <span>Updated <time dateTime={post.updatedAt}>{formatDate(post.updatedAt)}</time></span>}
                 <span>{post.readingTime}</span>
               </div>
             </header>

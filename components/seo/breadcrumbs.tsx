@@ -22,7 +22,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
   };
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
-    <nav aria-label={label} className="mb-6 text-xs leading-6 opacity-80">
+    <nav aria-label={label} className="mb-6 text-xs leading-6">
       <ol className="flex flex-wrap items-center gap-x-2">
         {trail.map((item, index) => <li key={item.href} className="inline-flex items-center gap-2">
           {index > 0 && <span aria-hidden="true">/</span>}

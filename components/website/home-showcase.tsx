@@ -65,7 +65,7 @@ export default function HomeShowcase() {
     </motion.div>
   </AnimatePresence>;
 
-  return <section ref={section} className={`${styles.section} ${inter.className}`} aria-labelledby="automatic-heading" lang={locale}>
+  return <section ref={section} className={`${styles.section} ${inter.className}`} aria-labelledby={desktop ? "automatic-heading" : "automatic-heading-mobile"} lang={locale}>
     <div className={styles.desktop} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
       <motion.div aria-hidden="true" className={`${styles.wing} ${styles.left}`} style={reduced ? { rotate: -12 } : { x: leftX, rotate: leftRotate, opacity }}>{art("l")}</motion.div>
       <div className={styles.panel}>
@@ -79,7 +79,7 @@ export default function HomeShowcase() {
       <motion.div aria-hidden="true" className={`${styles.wing} ${styles.right}`} style={reduced ? { rotate: 12 } : { x: rightX, rotate: rightRotate, opacity }}>{art("r")}</motion.div>
     </div>
     <div className={styles.mobile}>
-      <h2>{copy.automatically}</h2>
+      <h2 id="automatic-heading-mobile">{copy.automatically}</h2>
       <div className={styles.track} tabIndex={0} aria-label={copy.automatically}>
         {ART.map((name, index) => <figure key={name} className={styles.slide}>
           <figcaption>{copy.labels[index]}</figcaption>
