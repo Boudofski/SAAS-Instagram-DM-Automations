@@ -5,10 +5,12 @@
 .heading h2 { margin-top: 4px; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -.5px; }
 .questions { margin-top: 8px; }
 .item { border: 0; }
-.trigger { min-height: 52px; padding: 16px 0; gap: 24px; color: inherit; font-size: 16px; line-height: 24px; font-weight: 500; text-decoration: none; }
+.trigger { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; min-height: 52px; padding: 16px 0; gap: 24px; color: inherit; font-size: 16px; line-height: 24px; font-weight: 500; text-decoration: none; }
+.trigger::-webkit-details-marker { display: none; }
 .trigger:hover { text-decoration: none; color: #6128c8; }
 .trigger:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 4px; border-radius: 4px; }
-.trigger > svg { color: currentColor; }
+.trigger > svg { color: currentColor; flex-shrink: 0; width: 16px; height: 16px; transition: transform .2s ease; }
+.item[open] > .trigger > svg { transform: rotate(180deg); }
 .answer { padding: 12px 24px 20px 0; color: #4e4949; font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
 .trust { display: flex; align-items: center; gap: 17px; max-width: 492px; margin: 40px auto 0; padding: 18px 20px; border-radius: 18px; background: #f4f6f8; }
 .badge { display: block; flex-shrink: 0; width: 88px; }
@@ -24,4 +26,4 @@
 :global(.dark) .darkLogo { display: block; }
 @media (max-width: 767px) { .section { padding: 40px 20px; } .heading p { font-size: 16px; } .heading h2 { font-size: 24px; line-height: 32px; } .trigger { gap: 16px; } }
 @media (max-width: 359px) { .trust { flex-direction: column; align-items: flex-start; gap: 12px; } }
-@media (prefers-reduced-motion: reduce) { .questions [data-state], .trigger > svg { animation: none !important; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .trigger > svg { transition: none; } }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Inter } from "next/font/google";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ChevronDown } from "lucide-react";
 import { useI18n } from "@/providers/i18n-provider";
 import { HOME_FAQ } from "@/lib/i18n/home-faq";
 import styles from "./home-faq.module.css";
@@ -18,12 +18,13 @@ export default function HomeFaq() {
         <p>{copy.eyebrow}</p>
         <h2 id="home-faq-title">{copy.title}</h2>
       </header>
-      <Accordion type="multiple" className={styles.questions}>
-        {copy.items.map(([question, answer], index) => <AccordionItem key={index} value={`faq-${index}`} className={styles.item}>
-          <AccordionTrigger className={styles.trigger}>{question}</AccordionTrigger>
-          <AccordionContent className={styles.answer}>{answer}</AccordionContent>
-        </AccordionItem>)}
-      </Accordion>
+      {/* Native disclosure keeps every answer in the initial HTML and works without hydration. */}
+      <div className={styles.questions}>
+        {copy.items.map(([question, answer], index) => <details key={index} className={styles.item}>
+          <summary className={styles.trigger}><span>{question}</span><ChevronDown aria-hidden="true" /></summary>
+          <div className={styles.answer}>{answer}</div>
+        </details>)}
+      </div>
       <div className={styles.trust}>
         <span className={styles.badge}>
           <Image className={styles.lightLogo} src="/media/hero/meta-business-partner-light.svg" alt="Meta Business Partner" width={88} height={35} unoptimized />

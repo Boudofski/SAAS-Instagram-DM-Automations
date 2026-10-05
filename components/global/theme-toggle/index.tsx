@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/providers/i18n-provider";
-import { translateUi } from "@/lib/i18n/translate";
+import { translatePublicShell as translateUi } from "@/lib/i18n/public-shell";
 import { cn } from "@/lib/utils";
 import { nextThemeMode } from "@/lib/theme-mode";
 import { Moon, Sun } from "lucide-react";

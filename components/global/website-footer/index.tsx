@@ -1,5 +1,5 @@
 "use client";
-import { UiText } from "@/components/i18n/localized-copy";
+import { usePublicUi } from "@/components/i18n/use-public-ui";
 
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
@@ -33,6 +33,7 @@ const SOCIAL_LINKS = [
 
 export default function WebsiteFooter() {
   const { locale, t } = useI18n();
+  const tr = usePublicUi();
   const href = (path: string) => localizePublicPath(path, locale);
   const linkClass =
     "max-w-full [overflow-wrap:anywhere] text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white";
@@ -132,11 +133,11 @@ export default function WebsiteFooter() {
                 className="flex min-w-0 flex-col items-start gap-3"
               >
                 <p className="mb-1 font-bold text-slate-900 dark:text-white">
-                  <UiText>{group.title}</UiText>
+                  {tr(group.title)}
                 </p>
                 {group.links.map(([label, path]) => (
                   <Link key={path} href={href(path)} className={linkClass}>
-                    <UiText>{label}</UiText>
+                    {tr(label)}
                   </Link>
                 ))}
                 {group.title === "AP3K" && (

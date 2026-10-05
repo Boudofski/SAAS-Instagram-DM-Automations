@@ -69,7 +69,7 @@ export default function HomeFeatures() {
               {PREVIEW_ONLY.has(art) && <span className={styles.preview}>{copy.unavailable}</span>}
             </div>
             <Image className={styles.illustration} src={`/media/features/${art}.avif`} alt="" width={1176} height={654}
-              sizes="(min-width: 1024px) 423px, (min-width: 933px) 885px, calc(100vw - 48px)" unoptimized />
+              sizes="(min-width: 1024px) 423px, (min-width: 933px) 885px, calc(100vw - 48px)" />
           </article>];
         })}
       </div>

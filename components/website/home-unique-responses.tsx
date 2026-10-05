@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 import { Link2 } from "lucide-react";
 import { Inter } from "next/font/google";
-import { useUi } from "@/components/i18n/use-ui";
+import { usePublicUi as useUi } from "@/components/i18n/use-public-ui";
 import styles from "./home-unique-responses.module.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });

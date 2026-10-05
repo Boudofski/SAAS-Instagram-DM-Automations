@@ -61,7 +61,7 @@ export default function HomeShowcase() {
   const select = (index: number) => { setActive(index); elapsed.current = 0; setProgress(0); };
   const art = (side: "l" | "r") => <AnimatePresence initial={false}>
     <motion.div key={active} className={styles.art} initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -8 }} transition={{ duration: reduced ? 0 : .3 }}>
-      <Image src={`/media/showcase/${ART[active]}_${side}.webp`} alt="" fill sizes="(min-width: 1280px) 256px, 236px" unoptimized />
+      <Image src={`/media/showcase/${ART[active]}_${side}.webp`} alt="" fill sizes="(min-width: 1280px) 256px, 236px" />
     </motion.div>
   </AnimatePresence>;
 
@@ -83,7 +83,7 @@ export default function HomeShowcase() {
       <div className={styles.track} tabIndex={0} aria-label={copy.automatically}>
         {ART.map((name, index) => <figure key={name} className={styles.slide}>
           <figcaption>{copy.labels[index]}</figcaption>
-          <div className={styles.mobileArt}><Image src={`/media/showcase/${name}_l.webp`} alt={copy.labels[index]} fill sizes="280px" unoptimized /></div>
+          <div className={styles.mobileArt}><Image src={`/media/showcase/${name}_l.webp`} alt={copy.labels[index]} fill sizes="280px" /></div>
         </figure>)}
       </div>
     </div>
