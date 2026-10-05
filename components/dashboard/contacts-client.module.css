@@ -48,6 +48,7 @@
 :global(.dark) .table td { border-color:#2c3241; color:#bec8da; }
 :global(.dark) .filterPanel select,:global(.dark) .filterPanel input,:global(.dark) .mobileSort select { background:#1c2130; color:#e2e8f4; border-color:#3b4455; color-scheme:dark; }
 :global(.dark) .filterPanel fieldset { border-color:#3b4455; }
+:global(.dark) .filterHeading button { color:#8dbaff; }
 :global(.dark) .dateRange label,:global(.dark) .clear,:global(.dark) .chat { color:#aebbd0; }
 :global(.dark) .chat:hover { background:#26334b; }
 @media(max-width:1023px) { .header { align-items:flex-start; flex-direction:column; gap:16px; } .headerActions { width:100%; } .search { flex:1; } .search input { width:100%; } .table th,.table td { padding:12px 10px; } }
