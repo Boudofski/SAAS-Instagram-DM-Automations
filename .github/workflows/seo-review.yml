@@ -1,0 +1,115 @@
+name: SEO review
+on:
+  push:
+    branches: [seo/claude-audit-20261005]
+    paths: [.github/workflows/seo-review.yml]
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Export source checkpoint
+        run: |
+          mkdir -p /tmp/ap3k-seo-evidence
+          git diff --binary 13237017dc9dddabee28948a8b2df007a7facb5d 047052a6796fea966495ac53267bcc02d6d315ea > /tmp/ap3k-seo-evidence/source-update.patch
+          git rev-parse HEAD > /tmp/ap3k-seo-evidence/source-head.txt
+          git archive HEAD | gzip > /tmp/ap3k-seo-evidence/source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ap3k-seo-source
+          path: |
+            /tmp/ap3k-seo-evidence/source-update.patch
+            /tmp/ap3k-seo-evidence/source-head.txt
+          retention-days: 3
+      - name: Install isolated crawl dependencies
+        run: |
+          python -m venv /tmp/seo-crawl-venv
+          /tmp/seo-crawl-venv/bin/pip -q install requests==2.32.3 beautifulsoup4==4.13.4
+      - name: Crawl public pages with robots protection
+        run: |
+          /tmp/seo-crawl-venv/bin/python - <<'PY'
+          import requests, json, time, hashlib, re, os
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin, urlsplit, urldefrag
+          from urllib.robotparser import RobotFileParser
+          from xml.etree import ElementTree as ET
+          from concurrent.futures import ThreadPoolExecutor
+          from collections import Counter
+          BASE='https://ap3k.com'
+          OUT='/tmp/ap3k-seo-evidence'
+          os.makedirs(OUT+'/pages',exist_ok=True)
+          UA='AP3K-SEO-Audit/1.0 (+https://ap3k.com)'
+          def get(url):
+            return requests.get(url,headers={'User-Agent':UA},timeout=30)
+          robots=get(BASE+'/robots.txt')
+          open(OUT+'/robots.txt','w').write(robots.text)
+          rp=RobotFileParser();rp.parse(robots.text.splitlines())
+          sitemap=get(BASE+'/sitemap.xml')
+          open(OUT+'/sitemap.xml','w').write(sitemap.text)
+          roots=[ET.fromstring(sitemap.content)]
+          if roots[0].tag.endswith('sitemapindex'):
+            roots=[ET.fromstring(get(n.text).content) for n in roots[0].findall('{*}sitemap/{*}loc')]
+          sm=[n.text for root in roots for n in root.findall('{*}url/{*}loc')]
+          priority=['/','/pricing','/instagram-comment-to-dm','/instagram-dm-automation','/instagram-comment-automation','/manychat-alternative','/docs','/help','/blog','/about','/contact','/tutorials/instagram-comment-to-dm','/blog/manychat-vs-ap3k-pricing-for-instagram','/fr','/de','/es','/ar','/llms.txt','/video-sitemap.xml']
+          queue=list(dict.fromkeys([BASE+p for p in priority]+sorted(sm,key=lambda u:(bool(re.match(r'^/(fr|de|es|ar)(/|$)',urlsplit(u).path)),len(urlsplit(u).path.split('/')),u)))))
+          seen=set(); results=[]; max_pages=500
+          def crawl(u):
+            if not rp.can_fetch(UA,u): return {'url':u,'blocked_by_robots':True}
+            started=time.time()
+            try:
+              r=get(u)
+              if r.status_code==429:
+                time.sleep(min(30,int(r.headers.get('Retry-After','10')) if r.headers.get('Retry-After','10').isdigit() else 10));r=get(u)
+              key=hashlib.sha256(u.encode()).hexdigest()[:16]
+              raw=r.text;open(OUT+'/pages/'+key+'.html','w').write(raw)
+              s=BeautifulSoup(raw,'html.parser')
+              meta=lambda n: next((x.get('content','') for x in s.find_all('meta') if x.get('name')==n or x.get('property')==n),'')
+              can=s.find('link',rel='canonical')
+              main=s.find('main') or s.body or s
+              clean=BeautifulSoup(str(main),'html.parser')
+              for t in clean(['script','style','nav','header','footer']):t.decompose()
+              text=clean.get_text(' ',strip=True)
+              links=[]
+              for a in s.find_all('a',href=True):
+                v=urldefrag(urljoin(r.url,a['href']))[0]
+                if urlsplit(v).netloc==urlsplit(BASE).netloc and urlsplit(v).scheme=='https':links.append({'url':v,'anchor':a.get_text(' ',strip=True)})
+              ld=[]
+              for x in s.find_all('script',type='application/ld+json'):
+                try:ld.append(json.loads(x.string or x.get_text()))
+                except Exception as e:ld.append({'parse_error':str(e)})
+              return {'url':u,'final_url':r.url,'status':r.status_code,'redirects':[{'url':x.url,'status':x.status_code} for x in r.history],'elapsed_ms':round((time.time()-started)*1000),'bytes':len(r.content),'html_file':'pages/'+key+'.html','title':s.title.get_text(' ',strip=True) if s.title else '', 'description':meta('description'),'robots':meta('robots'),'x_robots_tag':r.headers.get('x-robots-tag'),'canonical':can.get('href') if can else None,'lang':s.html.get('lang') if s.html else None,'h1':[x.get_text(' ',strip=True) for x in s.find_all('h1')],'headings':[{'tag':x.name,'text':x.get_text(' ',strip=True)} for x in s.find_all(re.compile('^h[1-6]$'))],'hreflang':[{'lang':x.get('hreflang'),'url':x.get('href')} for x in s.find_all('link',hreflang=True)],'words':len(text.split()),'text':text,'text_hash':hashlib.sha256(text.encode()).hexdigest(),'links':links,'json_ld':ld,'images':[{'src':x.get('src'),'alt':x.get('alt'),'width':x.get('width'),'height':x.get('height'),'loading':x.get('loading'),'fetchpriority':x.get('fetchpriority')} for x in s.find_all('img')],'headers':{k:v for k,v in r.headers.items() if k.lower() in ['content-type','cache-control','strict-transport-security','x-frame-options','x-content-type-options','content-security-policy','x-vercel-cache']}}
+            except Exception as e: return {'url':u,'error':str(e)}
+          while queue and len(results)<max_pages:
+            batch=[]
+            while queue and len(batch)<5 and len(results)+len(batch)<max_pages:
+              u=queue.pop(0)
+              if u in seen:continue
+              seen.add(u);batch.append(u)
+            if not batch:continue
+            with ThreadPoolExecutor(max_workers=5) as pool:rows=list(pool.map(crawl,batch))
+            results.extend(rows)
+            for row in rows:
+              for a in row.get('links',[]):
+                p=urlsplit(a['url'])
+                if a['url'] not in seen and not p.query and not re.search(r'\.(png|jpg|jpeg|webp|svg|pdf|mp4)$',p.path):queue.append(a['url'])
+            open(OUT+'/crawl.json','w').write(json.dumps({'captured_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'base':BASE,'sitemap_count':len(sm),'sitemap_urls':sm,'max_pages':max_pages,'pages':results,'remaining_queue':len(set(queue)-seen)},ensure_ascii=False))
+            print(len(results),dict(Counter(str(x.get('status',x.get('error','robots'))) for x in results)),flush=True)
+            if any(x.get('status')==429 for x in rows): time.sleep(10)
+            else: time.sleep(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ap3k-seo-crawl
+          path: |
+            /tmp/ap3k-seo-evidence/crawl.json
+            /tmp/ap3k-seo-evidence/robots.txt
+            /tmp/ap3k-seo-evidence/sitemap.xml
+            /tmp/ap3k-seo-evidence/pages
+          retention-days: 7
