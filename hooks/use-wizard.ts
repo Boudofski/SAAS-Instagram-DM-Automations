@@ -62,9 +62,11 @@ export type WizardData = {
   attachment?: import("@/lib/message-attachment").MessageAttachment;
   phoneCaptureEnabled?: boolean;
   phoneCapturePrompt?: string;
+    phoneCaptureRetryMessage?: string;
   followUpCondition?: string;
   emailCaptureEnabled?: boolean;
   emailCapturePrompt?: string;
+    emailCaptureRetryMessage?: string;
   followUpEnabled?: boolean;
   followUpMessage?: string;
   followUpDelayMinutes?: number;
@@ -103,7 +105,7 @@ const INITIAL: WizardData = {
   post: null,
   campaignName: "",
   phoneCaptureEnabled: false,
-  phoneCapturePrompt: "What’s your phone number, including country code?",
+  phoneCapturePrompt: "Enter your phone number",
   followUpCondition: "ALWAYS",
   emailCaptureEnabled: false,
   emailCapturePrompt: DEFAULT_EMAIL_CAPTURE_PROMPT,

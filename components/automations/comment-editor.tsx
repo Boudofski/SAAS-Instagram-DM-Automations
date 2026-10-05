@@ -719,7 +719,7 @@ export default function CommentEditor(p: CommentEditorProps) {
           <>
             {data.sendPrivateDm && data.openingDmEnabled && delayBefore("OPENING","Opener message")}
             {data.sendPrivateDm && data.openingDmEnabled && (
-              <OpenerMessage data={data} update={update} open={openMessage === "opening"} onOpen={() => toggleMessage("opening")} onRemove={() => update({openingDmEnabled:false,followGateRequired:false,emailCaptureEnabled:false,phoneCaptureEnabled:false,followUpEnabled:false})}/>
+              <OpenerMessage data={data} update={update} open={openMessage === "opening"} onOpen={() => toggleMessage("opening")} onRemove={() => update({openingDmEnabled:false,followGateRequired:false,followUpEnabled:false})}/>
             )}
             {data.sendPrivateDm && (
               <QuickEngagementRows
@@ -846,7 +846,7 @@ export default function CommentEditor(p: CommentEditorProps) {
               leading={!data.openingDmEnabled && <button type="button" onClick={() => add("opening", { openingDmEnabled: true })}><Mail />{tr("Opener message")}</button>}
               data={data}
               update={(v) =>
-                update({ ...v, sendPrivateDm: true, openingDmEnabled: true })
+                update({ ...v, sendPrivateDm: true, ...(v.followGateRequired || v.followUpEnabled ? {openingDmEnabled:true}: {}) })
               }
               paid={p.paid}
               followUpsReady={p.followUpsReady}

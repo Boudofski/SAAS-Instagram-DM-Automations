@@ -1,5 +1,6 @@
 "use server";
 
+import { mergeContacts, filterContacts, contactsCsv, type ContactFilters } from "@/lib/contacts";
 import { onCurrentUser } from "@/actions/user";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 import { sendInstagramDirectResponse } from "@/lib/instagram-dm";
@@ -14,6 +15,7 @@ async function currentProfile() {
     where: { clerkId: clerk.id },
     select: {
       id: true,
+      subscription: { select: { plan: true } },
       integrations: { where: { id: integrationId } },
     },
   });
@@ -35,67 +37,34 @@ export async function getInboxConversations() {
   return { status: 200, data: conversations };
 }
 
-export async function getInstagramContacts() {
-  const profile = await currentProfile();
-  if (!profile) return { status: 404, data: [] };
+async function readContacts(profile: NonNullable<Awaited<ReturnType<typeof currentProfile>>>) {
   const [conversations, leads] = await Promise.all([
     client.conversation.findMany({
       where: { userId: profile.id, integrationId: profile.integrationId },
       orderBy: { lastMessageAt: "desc" },
-      take: 500,
-      include: {
-        automation: { select: { id: true, name: true, source: true } },
-      },
+      select: { id:true, recipientIgId:true, recipientUsername:true, profilePictureUrl:true, email:true, phone:true, createdAt:true, lastInboundAt:true, lastMessageAt:true },
     }),
     client.lead.findMany({
-      where: {
-        automation: {
-          userId: profile.id,
-          integrationId: profile.integrationId,
-        },
-      },
+      where: { automation: { userId: profile.id, integrationId: profile.integrationId } },
       orderBy: { createdAt: "desc" },
-      take: 500,
-      include: {
-        automation: { select: { id: true, name: true, source: true } },
-      },
+      select: { id:true, igUserId:true, igUsername:true, email:true, phone:true, createdAt:true },
     }),
   ]);
+  return mergeContacts(conversations, leads);
+}
 
-  const contacts = new Map<string, any>();
-  for (const lead of leads) {
-    contacts.set(lead.igUserId, {
-      id: `lead:${lead.id}`,
-      conversationId: null,
-      recipientIgId: lead.igUserId,
-      phone: contacts.get(lead.igUserId)?.phone || lead.phone,
-      email: contacts.get(lead.igUserId)?.email || lead.email,
-      emailCollectedAt:
-        contacts.get(lead.igUserId)?.emailCollectedAt || lead.emailCollectedAt,
-      recipientUsername: contacts.get(lead.igUserId)?.recipientUsername || lead.igUsername,
-      profilePictureUrl: null,
-      lastMessageAt: contacts.get(lead.igUserId)?.lastMessageAt || lead.createdAt,
-      automation: lead.automation,
-    });
-  }
-  for (const conversation of conversations) {
-    contacts.set(conversation.recipientIgId, {
-      ...conversation,
-      phone: conversation.phone || contacts.get(conversation.recipientIgId)?.phone,
-      email: conversation.email || contacts.get(conversation.recipientIgId)?.email,
-      emailCollectedAt: conversation.emailCollectedAt || contacts.get(conversation.recipientIgId)?.emailCollectedAt,
-      recipientUsername: conversation.recipientUsername || contacts.get(conversation.recipientIgId)?.recipientUsername,
-      conversationId: conversation.id,
-    });
-  }
-  return {
-    status: 200,
-    data: Array.from(contacts.values()).sort(
-      (a, b) =>
-        new Date(b.lastMessageAt).getTime() -
-        new Date(a.lastMessageAt).getTime(),
-    ),
-  };
+export async function getInstagramContacts() {
+  const profile = await currentProfile();
+  if (!profile) return { status: 404, data: [], canExport: false };
+  return { status:200, data:filterContacts(await readContacts(profile)), canExport:["PRO","BUSINESS"].includes(profile.subscription?.plan ?? "FREE") };
+}
+
+export async function exportInstagramContacts(filters: ContactFilters = {}) {
+  const profile = await currentProfile();
+  if (!profile) return { status:404, error:"Account not found." };
+  if (!["PRO","BUSINESS"].includes(profile.subscription?.plan ?? "FREE")) return { status:403, error:"Download CSV requires Pro or Business." };
+  const contacts=filterContacts(await readContacts(profile),filters && typeof filters === "object" ? filters : {});
+  return { status:200, csv:contactsCsv(contacts), filename:`ap3k-contacts-${new Date().toISOString().slice(0,10)}.csv` };
 }
 
 export async function getInboxMessages(conversationId: string) {

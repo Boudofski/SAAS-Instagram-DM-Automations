@@ -8,10 +8,12 @@ const strings = (value: unknown): string[] => Array.isArray(value) ? value.filte
 function add(sections: PolicySection[], id: string, label: string, texts: string[], detail?: string) {
   if (texts.length) sections.push({ id, label, texts, ...(detail ? { detail } : {}) });
 }
-type Engagement = { emailCaptureEnabled?: boolean; emailCapturePrompt?: string; phoneCaptureEnabled?: boolean; phoneCapturePrompt?: string; followUpEnabled?: boolean; followUpMessage?: string; followGateRequired?: boolean; followRequestDmText?: string };
+type Engagement = { emailCaptureEnabled?: boolean; emailCapturePrompt?: string; emailCaptureRetryMessage?: string; phoneCaptureEnabled?: boolean; phoneCapturePrompt?: string; phoneCaptureRetryMessage?: string; followUpEnabled?: boolean; followUpMessage?: string; followGateRequired?: boolean; followRequestDmText?: string };
 function engagement(sections: PolicySection[], data: Engagement) {
   for (const [enabled, field, title] of [["emailCaptureEnabled","emailCapturePrompt","Collect email"],["phoneCaptureEnabled","phoneCapturePrompt","Collect phone"],["followUpEnabled","followUpMessage","Follow-up Message"],["followGateRequired","followRequestDmText","Ask to follow"]] as const) {
     if (data[enabled]) add(sections, field, title, [data[field] || ""]);
+    if (enabled === "emailCaptureEnabled" && data[enabled] && data.emailCaptureRetryMessage) add(sections,"emailCaptureRetryMessage","Email retry message",[data.emailCaptureRetryMessage]);
+    if (enabled === "phoneCaptureEnabled" && data[enabled] && data.phoneCaptureRetryMessage) add(sections,"phoneCaptureRetryMessage","Phone retry message",[data.phoneCaptureRetryMessage]);
   }
 }
 export function mapCommentPolicy(data: WizardData, integrationId: string): PolicyScanInput {
@@ -66,13 +68,13 @@ export function applyCommentPolicy(data:WizardData,findings:PolicyFinding[]): Pa
   next.messageVariations=strings(data.messageVariations).map((text,i)=>replacement(findings,"message",i+1,text));
   next.openingDmText=replacement(findings,"opening",0,data.openingDmText,800);
   next.aiReplyInstructions=replacement(findings,"aiReplyInstructions",0,data.aiReplyInstructions,1600);
-  for(const field of ["emailCapturePrompt","phoneCapturePrompt","followUpMessage","followRequestDmText","productSubtitle"] as const) if(data[field]) next[field]=replacement(findings,field,0,data[field]!,field==="productSubtitle"?80:800);
+  for(const field of ["emailCapturePrompt","phoneCapturePrompt","emailCaptureRetryMessage","phoneCaptureRetryMessage","followUpMessage","followRequestDmText","productSubtitle"] as const) if(data[field]) next[field]=replacement(findings,field,0,data[field]!,field==="productSubtitle"?80:800);
   return next;
 }
 export function applyMessagePolicy<T extends MessagePolicyDraft>(data:T,findings:PolicyFinding[]):T {
   const next={...data,message:replacement(findings,"message",0,data.message),messageVariations:strings(data.messageVariations).map((text,i)=>replacement(findings,"message",i+1,text))};
   if(data.openingDmText) next.openingDmText=replacement(findings,"opening",0,data.openingDmText,640);
-  for(const field of ["emailCapturePrompt","phoneCapturePrompt","followUpMessage","followRequestDmText"] as const) if(data[field]) next[field]=replacement(findings,field,0,data[field]!,800);
+  for(const field of ["emailCapturePrompt","phoneCapturePrompt","emailCaptureRetryMessage","phoneCaptureRetryMessage","followUpMessage","followRequestDmText"] as const) if(data[field]) next[field]=replacement(findings,field,0,data[field]!,800);
   return next;
 }
 export function applyFlowPolicy<T extends FlowPolicyDocument>(doc:T,findings:PolicyFinding[]):T {

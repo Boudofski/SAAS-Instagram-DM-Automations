@@ -109,6 +109,7 @@ vi.mock("@/lib/instagram-postback-subscription", () => ({
 import { deferAutomationDelivery } from "@/lib/automation-delivery";
 import { resumeAutomationDelivery } from "@/lib/meta-webhook-handler";
 import { POST } from "@/app/api/webhooks/meta/route";
+import { client } from "@/lib/prisma";
 
 function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {}) {
   const commentReply = Object.prototype.hasOwnProperty.call(overrides, "commentReply")
@@ -974,5 +975,38 @@ describe("independent comment delivery steps",()=>{
   const campaign=automation(true);Object.assign(campaign.listener,{openingDmFormat:"QUICK_REPLY"});
   mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true}});
   await POST(commentRequest());expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledWith(expect.objectContaining({preferQuickReplyForPostback:true,postbackButton:expect.objectContaining({payload:`AP3K_OPENING_CONTINUE:${campaign.id}:comment-1`})}));
+ });
+});
+
+const captureMock=vi.hoisted(()=>({begin:vi.fn(),finish:vi.fn()}));
+vi.mock('@/lib/automation-engagement',async importOriginal=>({...await importOriginal<any>(),beginEmailRequest:captureMock.begin,finishEngagementJob:captureMock.finish}));
+describe('collect contact details as the first private reply',()=>{
+ it.each([
+  {email:null,phone:null,seconds:15},
+  {email:'known@example.com',phone:null,seconds:30},
+  {email:'known@example.com',phone:'+19496537130',seconds:60},
+ ])('delays the next uncaptured step by $seconds seconds',async ({email,phone,seconds})=>{
+  const lookup=vi.spyOn(client.lead,'findUnique').mockResolvedValue({email,phone} as any);
+  try {
+   const campaign:any=automation(true);campaign.User.subscription.plan='PRO';campaign.listener.openingDmEnabled=false;campaign.listener.emailCaptureEnabled=true;campaign.listener.phoneCaptureEnabled=true;campaign.stepDelays={EMAIL:15,PHONE:30,MESSAGE:60};
+   mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+   await POST(commentRequest());
+   expect(deferAutomationDelivery).toHaveBeenCalledWith(expect.objectContaining({eventKey:'comment:comment-1:dm',seconds}));
+   expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+  } finally { lookup.mockRestore(); }
+ });
+ it.each(['EMAIL','PHONE'])('sends only the %s ask and keeps the final payload for after a valid reply',async kind=>{
+  const campaign:any=automation(true);campaign.User.subscription.plan='PRO';campaign.listener.openingDmEnabled=false;campaign.listener.emailCaptureEnabled=kind==='EMAIL';campaign.listener.phoneCaptureEnabled=kind==='PHONE';campaign.listener.emailCapturePrompt='Your email, {{username}}?';campaign.listener.phoneCapturePrompt='Your phone, {{username}}?';campaign.listener.ctaLink='https://example.com/private';
+  mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+  captureMock.begin.mockResolvedValue({kind:'request',jobId:'capture-job'});
+  await POST(commentRequest());expect(captureMock.begin).toHaveBeenCalledWith(campaign.id,'commenter-1','comment-1',expect.any(Date),kind);
+  expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledWith(expect.objectContaining({message:kind==='EMAIL'?'Your email, @tester?':'Your phone, @tester?',responseFormat:'TEXT',linkButtons:[],ctaUrl:undefined,postbackButton:undefined}));
+  expect(captureMock.finish).toHaveBeenCalledWith('capture-job','WAITING');
+  expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({errorMessage:'email_request_dm_sent'}));
+ });
+ it('blocks capture after a downgrade before requesting or sending contact details',async()=>{
+  const campaign:any=automation(true);campaign.listener.emailCaptureEnabled=true;campaign.listener.openingDmEnabled=false;
+  mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+  await POST(commentRequest());expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();expect(captureMock.begin).not.toHaveBeenCalled();
  });
 });

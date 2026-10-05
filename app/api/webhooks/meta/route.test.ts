@@ -1017,7 +1017,7 @@ describe("Meta webhook route security", () => {
           followUpEnabled: stage === "reminder",
           followUpDelayMinutes: 30,
         },
-        User: { integrations: [integration] },
+        User: { integrations: [integration], subscription: { plan: "PRO" } },
       };
       mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
       mockFindAutomationById.mockResolvedValue(automation);

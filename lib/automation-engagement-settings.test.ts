@@ -13,7 +13,7 @@ import {
 } from "./campaign-save";
 
 describe("engagement settings", () => {
-  it("keeps existing campaigns off and rejects continuation without an opening DM", () => {
+  it("keeps existing campaigns off and supports capture without an opening DM", () => {
     expect(normalizeCampaignPayload({}).listener.emailCaptureEnabled).toBe(
       false,
     );
@@ -23,7 +23,7 @@ describe("engagement settings", () => {
         true,
         false,
       ),
-    ).toContain("Opening DM");
+    ).toBeNull();
     expect(
       validateEngagementSettings(
         {
@@ -50,7 +50,7 @@ describe("engagement settings", () => {
       sendPrivateDm: true,
       listener: { emailCaptureEnabled: true, openingDmEnabled: false },
     });
-    expect(validateNormalizedCampaignPayload(payload)).toContain("Opening DM");
+    expect(validateNormalizedCampaignPayload(payload)).not.toContain("Opening DM");
   });
   it.each([
     "@example.com",

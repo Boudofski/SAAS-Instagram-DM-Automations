@@ -82,9 +82,11 @@ export type RawCampaignPayload = {
     followRequestButtonText?: string | null;
     phoneCaptureEnabled?: boolean;
     phoneCapturePrompt?: string;
+    phoneCaptureRetryMessage?: string;
     followUpCondition?: string;
     emailCaptureEnabled?: boolean;
     emailCapturePrompt?: string;
+    emailCaptureRetryMessage?: string;
     followUpEnabled?: boolean;
     followUpMessage?: string;
     followUpDelayMinutes?: number;
@@ -139,9 +141,11 @@ export type NormalizedCampaignPayload = {
     followRequestButtonText?: string;
     phoneCaptureEnabled?: boolean;
     phoneCapturePrompt?: string;
+    phoneCaptureRetryMessage?: string;
     followUpCondition?: string;
     emailCaptureEnabled?: boolean;
     emailCapturePrompt?: string;
+    emailCaptureRetryMessage?: string;
     followUpEnabled?: boolean;
     followUpMessage?: string;
     followUpDelayMinutes?: number;
@@ -294,10 +298,12 @@ export function normalizeCampaignPayload(
       phoneCaptureEnabled:
         sendPrivateDm && payload.listener?.phoneCaptureEnabled === true,
       phoneCapturePrompt: cleanOptional(payload.listener?.phoneCapturePrompt),
+      phoneCaptureRetryMessage: payload.listener?.phoneCaptureRetryMessage?.trim(),
       followUpCondition: payload.listener?.followUpCondition || "ALWAYS",
       emailCaptureEnabled:
         sendPrivateDm && payload.listener?.emailCaptureEnabled === true,
       emailCapturePrompt: cleanOptional(payload.listener?.emailCapturePrompt),
+      emailCaptureRetryMessage: payload.listener?.emailCaptureRetryMessage?.trim(),
       followUpEnabled:
         sendPrivateDm && payload.listener?.followUpEnabled === true,
       followUpMessage: cleanOptional(payload.listener?.followUpMessage),

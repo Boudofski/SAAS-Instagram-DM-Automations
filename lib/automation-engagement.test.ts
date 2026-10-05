@@ -334,3 +334,19 @@ it("personalizes the follow-up that actually gets delivered",async()=>{
  await processAutomationFollowUps(now);
  expect(send).toHaveBeenCalledWith(expect.objectContaining({message:"Hey @creator, did you see my message?",responseFormat:"TEXT"}));
 });
+
+describe('capture retry messages',()=>{
+ async function prepare(kind:'EMAIL'|'PHONE',plan='PRO') {
+  db.automationEngagementJob.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({...job,kind});
+  const a=await db.automation.findUnique();db.automation.findUnique.mockResolvedValue({...a,User:{status:'ACTIVE',subscription:{plan}},listener:{emailCaptureEnabled:true,phoneCaptureEnabled:true,emailCaptureRetryMessage:'{{username}}, please enter a valid email.',phoneCaptureRetryMessage:'Please include your country code.'}});
+  db.conversation.findUnique.mockResolvedValue({recipientUsername:'creator'});
+ }
+ it.each(['EMAIL','PHONE'] as const)('sends the configured %s retry exactly once for an invalid inbound and keeps waiting',async kind=>{
+  await prepare(kind);expect(await takeEmailReply('i1','r1','not valid',now,'invalid-1')).toEqual({kind:'waiting'});
+  expect(send).toHaveBeenCalledOnce();expect(send).toHaveBeenCalledWith(expect.objectContaining({message:kind==='EMAIL'?'@creator, please enter a valid email.':'Please include your country code.',responseFormat:'TEXT'}));
+  expect(db.lead.upsert).not.toHaveBeenCalled();expect(db.automationEngagementJob.updateMany).toHaveBeenCalledWith(expect.objectContaining({data:{replyMessageId:'invalid-1'}}));
+  db.automationEngagementJob.findFirst.mockResolvedValue({id:job.id});await takeEmailReply('i1','r1','not valid',now,'invalid-1');expect(send).toHaveBeenCalledOnce();
+ });
+ it('does not send retries after a paid account downgrades',async()=>{await prepare('EMAIL','FREE');await takeEmailReply('i1','r1','not valid',now,'invalid-1');expect(send).not.toHaveBeenCalled();});
+ it('does not send a retry when another webhook already claimed the inbound',async()=>{await prepare('EMAIL');db.automationEngagementJob.updateMany.mockResolvedValue({count:0});await takeEmailReply('i1','r1','bad',now,'invalid-1');expect(send).not.toHaveBeenCalled();});
+});

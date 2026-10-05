@@ -46,6 +46,7 @@ import {
   parseEmailReply,
 } from "@/lib/automation-engagement-settings";
 import type { Integrations } from "@prisma/client";
+import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createHash } from "crypto";
@@ -833,7 +834,13 @@ async function processEntry(
       if (resumedAutomationId && resumedAutomationId !== automation.id) continue;
       if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && normalizeStepDelays(automation.stepDelays)) {
         const publicDelay = stepDelay(automation,"PUBLIC_REPLY");
-        const dmDelay = automation.sendPrivateDm === false ? 0 : stepDelay(automation,automation.listener?.openingDmEnabled !== false ? "OPENING":"MESSAGE");
+        let firstDmStep: AutomationStep = automation.listener?.openingDmEnabled !== false ? "OPENING" : "MESSAGE";
+        if (firstDmStep === "MESSAGE" && (automation.listener?.emailCaptureEnabled || automation.listener?.phoneCaptureEnabled)) {
+          const captured = await client.lead.findUnique({where:{automationId_igUserId:{automationId:automation.id,igUserId:commenterId}},select:{email:true,phone:true}});
+          if (automation.listener.emailCaptureEnabled && !captured?.email) firstDmStep = "EMAIL";
+          else if (automation.listener.phoneCaptureEnabled && !captured?.phone) firstDmStep = "PHONE";
+        }
+        const dmDelay = automation.sendPrivateDm === false ? 0 : stepDelay(automation,firstDmStep);
         if (publicDelay || dmDelay) {
           const base = {automationId:automation.id,recipientIgId:commenterId,object:envelope.object};
           await Promise.all([
@@ -1697,7 +1704,7 @@ async function processEntry(
       // 6. Send either the optional opening DM or the final configured payload
       // immediately. Existing automations retain the opening step by default.
       const openingDmEnabled = listener.openingDmEnabled !== false;
-      const dmMessageText = resolveTemplate(
+      let dmMessageText = resolveTemplate(
         personalizeUsername(
           openingDmEnabled
             ? resolveOpeningDmText(listener.openingDmText)
@@ -1710,7 +1717,31 @@ async function processEntry(
         ),
         templateVars,
       );
-      const directLinkButtons = openingDmEnabled
+      const captureFirst = !openingDmEnabled && (listener.emailCaptureEnabled || listener.phoneCaptureEnabled);
+      if ((listener.emailCaptureEnabled || listener.phoneCaptureEnabled) && !["PRO","BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE")) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"capture_requires_paid_plan",processedAt:new Date()});
+        continue;
+      }
+      if (automation.oneDmPerUser && !(await claimDmRecipient(automation.id, commenterId))) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSED",errorMessage:"one_dm_per_user"});
+        continue;
+      }
+      let firstCaptureJob: string | undefined;
+      if (captureFirst) {
+        for (const kind of ["EMAIL","PHONE"] as const) {
+          if (!(kind === "EMAIL" ? listener.emailCaptureEnabled : listener.phoneCaptureEnabled)) continue;
+          const step = await beginEmailRequest(automation.id,commenterId,commentId,new Date(),kind);
+          if (step.kind === "waiting") { firstCaptureJob = "waiting"; break; }
+          if (step.kind === "request") {
+            firstCaptureJob = step.jobId;
+            dmMessageText=personalizeUsername(kind === "EMAIL" ? listener.emailCapturePrompt || "Enter your email" : listener.phoneCapturePrompt || "Enter your phone number",commenterUsername);
+            break;
+          }
+        }
+        if (firstCaptureJob === "waiting") continue;
+      }
+      const intermediateDm = openingDmEnabled || Boolean(firstCaptureJob);
+      const directLinkButtons = intermediateDm
         ? []
         : readLinkButtons(
             listener.quickReplies,
@@ -1743,10 +1774,6 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"backtrack_comment_expired",processedAt:new Date()});
         continue;
       }
-      if (automation.oneDmPerUser && !(await claimDmRecipient(automation.id, commenterId))) {
-        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSED",errorMessage:"one_dm_per_user"});
-        continue;
-      }
       const dmResult = await sendInstagramCommentPrivateReply({
         // Use the full-width postback only after both subscription layers are
         // confirmed. Otherwise retain the native quick-reply fallback.
@@ -1758,18 +1785,18 @@ async function processEntry(
         commenterId,
         message: dmMessageText,
         automationId: automation.id,
-        responseFormat: openingDmEnabled ? "TEXT" : listener.responseFormat,
-        quickReplies: openingDmEnabled
+        responseFormat: intermediateDm ? "TEXT" : listener.responseFormat,
+        quickReplies: intermediateDm
           ? []
           : readLegacyQuickReplies(
               Array.isArray(listener.quickReplies) ? listener.quickReplies : [],
             ),
         linkButtons: directLinkButtons,
-        ctaTitle: openingDmEnabled ? undefined : listener.ctaButtonTitle,
-        ctaUrl: openingDmEnabled ? undefined : listener.ctaLink,
-        cardSubtitle: openingDmEnabled ? undefined : listener.cardSubtitle,
-        mediaUrl: openingDmEnabled ? undefined : listener.mediaUrl,
-        mediaType: openingDmEnabled ? undefined : listener.mediaType,
+        ctaTitle: intermediateDm ? undefined : listener.ctaButtonTitle,
+        ctaUrl: intermediateDm ? undefined : listener.ctaLink,
+        cardSubtitle: intermediateDm ? undefined : listener.cardSubtitle,
+        mediaUrl: intermediateDm ? undefined : listener.mediaUrl,
+        mediaType: intermediateDm ? undefined : listener.mediaType,
         postbackButton: openingDmEnabled
           ? {
               title: resolveOpeningDmButtonText(listener.openingDmButtonText),
@@ -1778,6 +1805,7 @@ async function processEntry(
           : undefined,
       });
 
+      if (firstCaptureJob) await finishEngagementJob(firstCaptureJob,dmResult.ok ? "WAITING":"FAILED");
       if (dmResult.ok) {
         console.log(
           `[webhook] DM_SENT recipientId=${commenterId} automationId=${automation.id} endpoint=${dmResult.endpoint} ctaMode=${dmResult.ctaMode}`,
@@ -1791,7 +1819,7 @@ async function processEntry(
           status: "SENT",
           errorMessage: openingDmEnabled
             ? "opening_dm_sent"
-            : "final_dm_payload_sent",
+            : firstCaptureJob ? "email_request_dm_sent" : "final_dm_payload_sent",
         });
         await createAutomationEvent({
           automationId: automation.id,
@@ -1803,7 +1831,7 @@ async function processEntry(
           meta: {
             endpoint: dmResult.endpoint,
             ctaMode: dmResult.ctaMode,
-            dmFlowStep: openingDmEnabled ? "OPENING" : "FINAL",
+            dmFlowStep: openingDmEnabled ? "OPENING" : firstCaptureJob ? "CAPTURE" : "FINAL",
             ...(listener.flowDefinition
               ? { flowRevision: listener.flowRevision }
               : {}),
@@ -1815,7 +1843,7 @@ async function processEntry(
           status: "PROCESSED",
           errorMessage: openingDmEnabled
             ? "opening_dm_sent"
-            : "final_dm_payload_sent",
+            : firstCaptureJob ? "email_request_dm_sent" : "final_dm_payload_sent",
           processedAt: new Date(),
         });
       } else {
@@ -2506,6 +2534,11 @@ async function processConfiguredMessageAutomation(params: {
     return;
   }
 
+  if ((automation.listener.emailCaptureEnabled || automation.listener.phoneCaptureEnabled) && !["PRO","BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE")) {
+    await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"IGNORED",errorMessage:"capture_requires_paid_plan",processedAt:new Date()});
+    return;
+  }
+
   if (automation.source === "STORY" && readStoryConfig(automation.storyConfig) && (!params.inboundAt || !messagingWindowOpen(params.inboundAt))) {
     await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"IGNORED",errorMessage:"messaging_window_closed",processedAt:new Date()});
     return;
@@ -2776,11 +2809,11 @@ async function processConfiguredMessageAutomation(params: {
       )
     : needsEmailRequest
       ? captureKind === "PHONE"
-        ? (automation.listener.phoneCapturePrompt || "What’s your phone number, including country code?").trim()
-        : emailRequestMessage(
+        ? personalizeUsername((automation.listener.phoneCapturePrompt || "Enter your phone number").trim(),profile?.username)
+        : personalizeUsername(emailRequestMessage(
             automation.listener.emailCapturePrompt ||
-              "What’s your email address?",
-          )
+              "Enter your email",
+          ),profile?.username)
       : payloadMessage;
   const followPromptState =
     dmFlowAction?.type === "FOLLOW_CHECK"

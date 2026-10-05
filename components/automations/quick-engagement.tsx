@@ -1,5 +1,6 @@
 "use client";
 import DelayControl from "./delay-control";
+import ContactCaptureStep from "./contact-capture-step";
 import type { StepDelays, AutomationStep } from "@/lib/automation-step-delays";
 import UsernameField from "./username-field";
 import { MentionText } from "./mention-text";
@@ -138,31 +139,23 @@ export function QuickEngagementRows({
       {data.emailCaptureEnabled && delayEnabled && onDelayChange && <DelayControl label="Collect email" seconds={stepDelays?.EMAIL || 0} onChange={seconds=>onDelayChange("EMAIL",seconds)}/>}
       {data.emailCaptureEnabled && (
         <EditorRow
-          title="Collect info"
-          summary={tr("Email")}
+          title="Collect email"
           icon={<Mail />}
           {...row("email")}
           onRemove={() => update({ emailCaptureEnabled: false })}
         >
-          {field("Email request", "emailCapturePrompt")}
-          <p className={s.hint}>
-            {tr("Saved to the sender’s contact in Contacts.")}
-          </p>
+          <ContactCaptureStep kind="email" prompt={data.emailCapturePrompt} retry={data.emailCaptureRetryMessage} onPrompt={emailCapturePrompt=>update({emailCapturePrompt})} onRetry={emailCaptureRetryMessage=>update({emailCaptureRetryMessage})}/>
         </EditorRow>
       )}
       {data.phoneCaptureEnabled && delayEnabled && onDelayChange && <DelayControl label="Collect phone" seconds={stepDelays?.PHONE || 0} onChange={seconds=>onDelayChange("PHONE",seconds)}/>}
       {data.phoneCaptureEnabled && (
         <EditorRow
-          title="Collect info"
-          summary={tr("Phone")}
+          title="Collect phone"
           icon={<Phone />}
           {...row("phone")}
           onRemove={() => update({ phoneCaptureEnabled: false })}
         >
-          {field("Phone request", "phoneCapturePrompt")}
-          <p className={s.hint}>
-            {tr("Saved to the sender’s contact in Contacts.")}
-          </p>
+          <ContactCaptureStep kind="phone" prompt={data.phoneCapturePrompt} retry={data.phoneCaptureRetryMessage} onPrompt={phoneCapturePrompt=>update({phoneCapturePrompt})} onRetry={phoneCaptureRetryMessage=>update({phoneCaptureRetryMessage})}/>
         </EditorRow>
       )}
     </>

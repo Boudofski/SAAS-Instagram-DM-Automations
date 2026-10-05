@@ -5,6 +5,18 @@
 .button { display:block; margin-top:6px; background:white; border:1px solid #e5e7eb; padding:8px; border-radius:10px; text-align:center; font-weight:600; }
 .quickReply { display:inline-block; margin-top:7px; color:#3563fa; border:1px solid #adbdff; padding:5px 10px; border-radius:999px; }
 .fields { min-width:0; }
+.captureAnswer { margin:10px 0 0 auto; width:fit-content; max-width:100%; padding:10px 12px; border-radius:14px 14px 4px 14px; background:#2563eb; color:white; }
+.retryCondition { display:flex; align-items:center; gap:10px; margin:4px 0 16px; color:#945400; font-size:13px; }
+.retryCondition::before,.retryCondition::after { content:""; height:1px; flex:1; background:#e4e7ec; }
+.retryCondition span { display:flex; align-items:center; gap:8px; padding:9px 14px; border:1px solid #ffdfb5; background:#fff8ec; border-radius:999px; }
+.retryCondition svg,.contactsNote svg { flex-shrink:0; }
+.contactsNote { display:flex; align-items:center; gap:10px; margin-top:-12px; padding:12px 14px; border-radius:12px; background:#f7f8fa; color:#667085; font-size:13px; line-height:1.5; }
+.contactsNote a { color:#2563eb; font-weight:500; }
+.contactsNote a:focus-visible { outline:2px solid #2563eb; outline-offset:3px; }
+:global(.dark) .contactsNote { background:#1b1d2b; color:#b7c0d3; }
+:global(.dark) .contactsNote a { color:#92b4ff; }
+:global(.dark) .retryCondition span { background:#302518; border-color:#694b21; color:#f3c681; }
+:global(.dark) .retryCondition::before,:global(.dark) .retryCondition::after { background:#393d50; }
 .label { display:block; margin-bottom:9px; color:#374151; font-size:15px; font-weight:600; }
 .composer { border:1px solid #dfe3e9; border-radius:16px; margin-bottom:20px; overflow:hidden; background:white; }
 .composer [role="textbox"] { border:0; border-radius:0; padding:16px; font-size:15px; line-height:1.6; }
