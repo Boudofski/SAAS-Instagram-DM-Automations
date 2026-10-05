@@ -31,6 +31,12 @@ describe("dashboard entry routing", () => {
     await expect(run(auth,request("/dashboard"))).rejects.toThrow("unauthenticated");
     expect(auth).not.toHaveBeenCalled();
   });
+  it("routes the homepage Flow Builder CTA to the current user's flow editor", async () => {
+    const target = encodeURIComponent("/automation/new?type=flow");
+    expect((await run(session(), request(`/dashboard?next=${target}`))).headers.get("location")).toBe("https://ap3k.com/dashboard/user_123/automation/new?type=flow");
+    const unsupported = encodeURIComponent("/automation/new?type=flow&redirect=https://evil.example");
+    expect((await run(session(), request(`/dashboard?next=${unsupported}`))).headers.get("location")).toBe("https://ap3k.com/dashboard/user_123");
+  });
   it("leaves canonical pages and server-action POST requests to their normal handlers", async () => {
     for (const req of [request("/dashboard/user_123"),request("/dashboard","POST")]) {
       expect((await run(session(),req)).headers.get("location")).toBeNull();
