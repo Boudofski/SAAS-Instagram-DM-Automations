@@ -1,4 +1,5 @@
 "use client";
+import { editorStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
 import {AttachmentPreview} from "./attachment-picker";
 
 import { personalizeUsername } from "@/lib/automation-copy";
@@ -28,6 +29,7 @@ import { useUi } from "@/components/i18n/use-ui";
 import type { WizardData } from "@/hooks/use-wizard";
 import {
   FOLLOW_UP_CONDITIONS,
+  followUpDelayLabel, followUpConditionLabel,
   emailRequestMessage,
 } from "@/lib/automation-engagement-settings";
 import styles from "./editor-preview.module.css";
@@ -95,13 +97,14 @@ export default function EditorPreview({
     buttons: string[] = [],
     outbound = false,
     links = false,
+    quick = false,
   ) => (
     <div className={outbound ? styles.outboundRow : styles.messageRow}>
       {!outbound && <span className={styles.messageAvatar}>{avatarNode}</span>}
       <div className={outbound ? styles.outbound : styles.message}>
         <p dir="auto"><MentionText text={message} username="ola_nordman"/></p>
         {buttons.map((label, index) => (
-          <span key={index} dir="auto" className={styles.button}>
+          <span key={index} dir="auto" className={quick ? styles.quickReply : styles.button}>
             {links && <Link2 size={12} />}
             <bdi>{label}</bdi>
           </span>
@@ -109,6 +112,8 @@ export default function EditorPreview({
       </div>
     </div>
   );
+  const waits = editorStepDelays(data);
+  const waitBefore = (step: AutomationStep) => waits[step] ? <p className={styles.wait}>{tr("Waits")} {tr(followUpDelayLabel(waits[step]! / 60))}</p> : null;
   return (
     <section
       className={`${styles.preview} ${phoneFrame ? styles.phonePreview : ""} ${className}`}
@@ -219,6 +224,7 @@ export default function EditorPreview({
                 {mode === "comments" && (
                   <div className={styles.comments}>
                     <h4>{tr("Comments")}</h4>
+                    {waitBefore("PUBLIC_REPLY")}
                     {["ola_nordman", "richard_roe"].map((sample, index) => <div key={sample}>
                       <div className={styles.comment}><span className={styles.sampleAvatar}><Image src={`/images/preview/${sample}.jpg`} alt="" width={32} height={32}/></span><div><strong>{sample}</strong><p dir="auto">{data.triggerMode === "ANY_COMMENT" ? tr("This looks amazing!") : data.keywords?.[index === 0 ? 1 : 0] || data.keywords?.[0] || tr("your keyword")}</p><small>2h · 1 {tr("like")} · {tr("Reply")}</small></div><Heart size={13}/></div>
                       {(data.publicReplyEnabled || data.aiReplyEnabled) && <div className={`${styles.comment} ${styles.reply}`}>{avatarNode}<div><strong>{handle}<BadgeCheck size={12} className="ml-1 inline-block fill-[#1684f8] text-white"/></strong><p dir="auto"><MentionText username={sample} text={commentPreview || (data.aiReplyEnabled ? tr("Thanks {{username}}! Check your DMs for the next step.") : (data.commentReplies ?? [data.publicReply, data.publicReply2, data.publicReply3]).filter(Boolean)[index] || data.publicReply || "")}/></p><small>1s · {tr("Reply")}</small></div></div>}
@@ -245,9 +251,10 @@ export default function EditorPreview({
                       <>
                         {data.openingDmEnabled && (
                           <>
+                            {waitBefore("OPENING")}
                             {bubble(data.openingDmText || "", [
                               data.openingDmButtonText || tr("Continue"),
-                            ])}
+                            ], false, false, data.openingDmFormat === "QUICK_REPLY")}
                             {bubble(
                               data.openingDmButtonText || tr("Continue"),
                               [],
@@ -257,6 +264,7 @@ export default function EditorPreview({
                         )}
                         {data.followGateRequired && (
                           <>
+                            {waitBefore("FOLLOW")}
                             {bubble(data.followRequestDmText || "", [
                               tr("Follow"),
                               data.followRequestButtonText || tr("I followed"),
@@ -270,6 +278,7 @@ export default function EditorPreview({
                         )}
                         {data.emailCaptureEnabled && (
                           <>
+                            {waitBefore("EMAIL")}
                             {bubble(
                               emailRequestMessage(
                                 data.emailCapturePrompt || "",
@@ -280,12 +289,14 @@ export default function EditorPreview({
                         )}
                         {data.phoneCaptureEnabled && (
                           <>
+                            {waitBefore("PHONE")}
                             {bubble(
                               data.phoneCapturePrompt || tr("What’s your phone number, including country code?"),
                             )}
                             {bubble("+1 415 555 0123", [], true)}
                           </>
                         )}
+                        {waitBefore("MESSAGE")}
                         {aiDmReply && (
                           <p className={styles.interaction}>
                             {tr("AI response enabled")}
@@ -320,19 +331,9 @@ export default function EditorPreview({
                         )}
                         {data.followUpEnabled && (
                           <>
-                            <p className={styles.interaction}>
-                              {data.followUpDelayMinutes}{" "}
-                              {tr("minutes without a reply")} ·{" "}
-                              {tr(
-                                FOLLOW_UP_CONDITIONS.find(
-                                  (c) => c.value === data.followUpCondition,
-                                )?.label || "Always",
-                              )}
-                            </p>
-                            {bubble(
-                              data.followUpMessage || "",
-                              (data.linkButtons ?? []).map((b) => b.label),
-                            )}
+                            <p className={styles.wait}>{tr("Waits")} {tr(followUpDelayLabel(data.followUpDelayMinutes ?? 1))}</p>
+                            <span className={styles.condition}>{tr(followUpConditionLabel(data.followUpCondition))}</span>
+                            {bubble(data.followUpMessage || "") }
                           </>
                         )}
                       </>

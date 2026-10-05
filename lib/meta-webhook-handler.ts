@@ -1,3 +1,4 @@
+import { stepDelay, normalizeStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
 import { readStoryConfig } from "@/lib/story-automation";
 import { deliveryCandidates, eligibleCommentTimestamp } from "@/lib/automation-backtrack";
 import { claimDmRecipient, claimImmediateComment, claimImmediateStory } from "@/lib/automation-delivery";
@@ -617,8 +618,11 @@ async function processEntry(
       const selectedDecision = triggerDecisions.find((decision) =>
         Boolean(decision.matchedKeyword),
       );
-      const automation =
+      let automation =
         selectedDecision?.automation ?? candidateAutomations[0] ?? null;
+      const delayedCommentStep = resumedAutomationId ? entry.ap3kDeliveryStep : undefined;
+      if (automation && delayedCommentStep === "PUBLIC_REPLY") automation = {...automation, sendPrivateDm:false};
+      if (automation?.listener && delayedCommentStep === "PRIVATE_DM") automation = {...automation, listener:{...automation.listener, aiReplyEnabled:false, commentReply:null, commentReply2:null, commentReply3:null, commentReplies:[]}};
       const matchedKeyword = selectedDecision?.matchedKeyword ?? null;
       const triggerDiagnostics = {
         ...commentDiagnostics,
@@ -827,6 +831,19 @@ async function processEntry(
       }
 
       if (resumedAutomationId && resumedAutomationId !== automation.id) continue;
+      if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && normalizeStepDelays(automation.stepDelays)) {
+        const publicDelay = stepDelay(automation,"PUBLIC_REPLY");
+        const dmDelay = automation.sendPrivateDm === false ? 0 : stepDelay(automation,automation.listener?.openingDmEnabled !== false ? "OPENING":"MESSAGE");
+        if (publicDelay || dmDelay) {
+          const base = {automationId:automation.id,recipientIgId:commenterId,object:envelope.object};
+          await Promise.all([
+            deferAutomationDelivery({...base,eventKey:`comment:${commentId}:public`,seconds:publicDelay || 1,entry:{id:entry.id,changes:[changeItem],ap3kDeliveryStep:"PUBLIC_REPLY"}}),
+            ...(automation.sendPrivateDm !== false ? [deferAutomationDelivery({...base,eventKey:`comment:${commentId}:dm`,seconds:dmDelay || 1,entry:{id:entry.id,changes:[changeItem],ap3kDeliveryStep:"PRIVATE_DM"}})] : []),
+          ]);
+          await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSING",errorMessage:"steps_scheduled"});
+          continue;
+        }
+      }
       if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && automation.deliveryDelaySeconds > 0) {
         await deferAutomationDelivery({automationId:automation.id,eventKey:`comment:${commentId}`,recipientIgId:commenterId,seconds:automation.deliveryDelaySeconds,entry:{id:entry.id,changes:[changeItem]},object:envelope.object});
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSING",errorMessage:"delivery_scheduled"});
@@ -837,7 +854,7 @@ async function processEntry(
         continue;
       }
       if (
-        await hasProcessedCommentWebhook(
+        !delayedCommentStep && await hasProcessedCommentWebhook(
           automation.id,
           commentId,
           webhookEvent.id,
@@ -959,8 +976,8 @@ async function processEntry(
         },
       });
 
-      // 3. Log comment received
-      await createAutomationEvent({
+      // Count the public and private jobs as a single triggering comment.
+      if (delayedCommentStep !== "PRIVATE_DM") await createAutomationEvent({
         automationId: automation.id,
         eventType: "COMMENT_RECEIVED",
         igUserId: commenterId,
@@ -990,10 +1007,10 @@ async function processEntry(
         recipientIgId: commenterId,
         source: "COMMENT",
       });
-      await trackResponse(automation.id, "COMMENT");
+      if (delayedCommentStep !== "PRIVATE_DM") await trackResponse(automation.id, "COMMENT");
 
       // 4. Duplicate check — skip if we already DM'd this person for this automation
-      if (await isDuplicate(automation.id, commenterId, mediaId, commentId)) {
+      if (delayedCommentStep !== "PUBLIC_REPLY" && await isDuplicate(automation.id, commenterId, mediaId, commentId)) {
         await createAutomationEvent({
           automationId: automation.id,
           eventType: "DUPLICATE_SKIPPED",
@@ -1734,7 +1751,7 @@ async function processEntry(
         // Use the full-width postback only after both subscription layers are
         // confirmed. Otherwise retain the native quick-reply fallback.
         preferQuickReplyForPostback:
-          openingDmEnabled && !fullWidthCallbacksReady,
+          openingDmEnabled && (listener.openingDmFormat === "QUICK_REPLY" || !fullWidthCallbacksReady),
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -2443,6 +2460,9 @@ async function processConfiguredMessageAutomation(params: {
   inboundAt?: Date | null;
   emailCompletionId?: string;
   dmFlowAction?: CommentDmAction | null;
+  delayedStep?: AutomationStep;
+  pendingCaptureId?: string;
+  pendingCaptureKind?: "EMAIL" | "PHONE";
 }) {
   const {
     automation,
@@ -2593,9 +2613,13 @@ async function processConfiguredMessageAutomation(params: {
   const needsOpening = automation.source === "STORY" && automation.listener.openingDmEnabled === true && Boolean(automation.listener.openingDmText) && !dmFlowAction && !params.emailCompletionId;
   const needsFollowRequest = !needsOpening && automation.followGateRequired && profile?.followsBusiness !== true;
   const flowId = dmFlowAction?.flowId ?? messageMid ?? webhookEventId;
-  let emailRequestId: string | undefined;
-  let captureKind: "EMAIL" | "PHONE" = "EMAIL";
-  if (!needsOpening && !needsFollowRequest) {
+  let emailRequestId: string | undefined = params.pendingCaptureId;
+  let captureKind: "EMAIL" | "PHONE" = params.pendingCaptureKind || "EMAIL";
+  if (emailRequestId && !(captureKind === "EMAIL" ? automation.listener.emailCaptureEnabled : automation.listener.phoneCaptureEnabled)) {
+    await finishEngagementJob(emailRequestId, "CANCELLED");
+    return;
+  }
+  if (!needsOpening && !needsFollowRequest && !emailRequestId) {
     // Complete the claimed reply before moving to the next field. Replays cannot
     // consume it again; SKIP also marks only this field complete for this journey.
     if (params.emailCompletionId)
@@ -2625,6 +2649,16 @@ async function processConfiguredMessageAutomation(params: {
   }
   const needsEmailRequest = Boolean(emailRequestId);
   const intermediateStep = needsOpening || needsFollowRequest || needsEmailRequest;
+  const currentStep: AutomationStep = needsOpening ? "OPENING" : needsFollowRequest ? "FOLLOW" : needsEmailRequest ? captureKind : "MESSAGE";
+  if (params.delayedStep && (params.delayedStep !== currentStep || !params.inboundAt || !messagingWindowOpen(params.inboundAt))) return;
+  const pause = stepDelay(automation,currentStep);
+  if (!params.delayedStep && pause > 0) {
+    if (!params.inboundAt || Date.now()+pause*1000 >= params.inboundAt.getTime()+86400000) return;
+    await deferAutomationDelivery({automationId:automation.id,recipientIgId:senderId,eventKey:`step:${flowId}:${currentStep}:${messageMid || dmFlowAction?.type || "initial"}`,seconds:pause,object:"instagram",entry:{ap3kConfiguredMessage:{pageId,senderId,webhookEventId,messageMid,matchedKeyword,inboundText,inboundAt:params.inboundAt.toISOString(),dmFlowAction,emailCompletionId:params.emailCompletionId,pendingCaptureId:emailRequestId,pendingCaptureKind:captureKind,delayedStep:currentStep}}});
+    await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"PROCESSING",errorMessage:"step_scheduled"});
+    return;
+  }
+
   const quickReplies = Array.isArray(automation.listener.quickReplies)
     ? automation.listener.quickReplies.filter(
         (item: unknown): item is string => typeof item === "string",
@@ -2766,7 +2800,7 @@ async function processConfiguredMessageAutomation(params: {
     return;
   }
   const result = await sendInstagramDirectResponse({
-    preferQuickReplyForPostback: (needsOpening || needsFollowRequest) && !fullWidthCallbacksReady,
+    preferQuickReplyForPostback: (needsOpening && automation.listener.openingDmFormat === "QUICK_REPLY") || ((needsOpening || needsFollowRequest) && !fullWidthCallbacksReady),
     token,
     igBusinessAccountId: instagramBusinessAccountId,
     recipientId: senderId,
@@ -3318,5 +3352,13 @@ async function withRetry<T>(
 
 /** Only called with server-persisted entries by the authenticated scheduler. */
 export async function resumeAutomationDelivery(automationId:string, entry:unknown, object:string) {
+  const configured = (entry as {ap3kConfiguredMessage?:any})?.ap3kConfiguredMessage;
+  if (configured) {
+    const automation = await findAutomationById(automationId,configured.pageId);
+    if (!automation?.active || automation.sendPrivateDm === false) return;
+    await processConfiguredMessageAutomation({...configured,automation,senderProfile:null,inboundAt:new Date(configured.inboundAt)});
+    return;
+  }
+
   await processEntry(entry,{object},true,{} as ReturnType<typeof getRequestMetadata>,automationId);
 }

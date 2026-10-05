@@ -106,6 +106,8 @@ vi.mock("@/lib/instagram-postback-subscription", () => ({
   ensureInstagramButtonCallbacks: vi.fn().mockResolvedValue(true),
 }));
 
+import { deferAutomationDelivery } from "@/lib/automation-delivery";
+import { resumeAutomationDelivery } from "@/lib/meta-webhook-handler";
 import { POST } from "@/app/api/webhooks/meta/route";
 
 function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {}) {
@@ -948,4 +950,29 @@ it("leaves a pending shared comment claim for its worker without sending twice",
  await POST(commentRequest());
  expect(mockSendCommentReply).not.toHaveBeenCalled();expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
  expect(mockUpdateWebhookEvent).toHaveBeenCalledWith(expect.any(String),expect.objectContaining({status:"PROCESSING",errorMessage:"comment_delivery_already_claimed"}));
+});
+
+describe("independent comment delivery steps",()=>{
+ function configure(){const campaign={...automation(true),stepDelays:{PUBLIC_REPLY:300,OPENING:5,MESSAGE:60}};mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});return campaign;}
+ it("queues the public reply and opener with different deadlines",async()=>{
+  configure();await POST(commentRequest());
+  expect(deferAutomationDelivery).toHaveBeenCalledWith(expect.objectContaining({eventKey:"comment:comment-1:public",seconds:300,entry:expect.objectContaining({ap3kDeliveryStep:"PUBLIC_REPLY"})}));
+  expect(deferAutomationDelivery).toHaveBeenCalledWith(expect.objectContaining({eventKey:"comment:comment-1:dm",seconds:5,entry:expect.objectContaining({ap3kDeliveryStep:"PRIVATE_DM"})}));
+  expect(mockSendCommentReply).not.toHaveBeenCalled();expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+ });
+ it("resumes each step once without resending the other or suppressing the public reply after the DM",async()=>{
+  const campaign=configure();const body=await commentRequest().json();const entry=body.entry[0];
+  await resumeAutomationDelivery(campaign.id,{...entry,ap3kDeliveryStep:"PRIVATE_DM"},"instagram");
+  expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();expect(mockSendCommentReply).not.toHaveBeenCalled();
+  mockIsDuplicate.mockResolvedValue(true);mockHasProcessedCommentWebhook.mockResolvedValue(true);
+  await resumeAutomationDelivery(campaign.id,{...entry,ap3kDeliveryStep:"PUBLIC_REPLY"},"instagram");
+  expect(mockSendCommentReply).toHaveBeenCalledOnce();expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+  expect(mockTrackResponse.mock.calls.filter(call=>call[1]==="COMMENT")).toHaveLength(1);
+  expect(mockCreateAutomationEvent.mock.calls.filter(call=>call[0].eventType==="COMMENT_RECEIVED")).toHaveLength(1);
+ });
+ it("uses a native quick reply for the selected opener format",async()=>{
+  const campaign=automation(true);Object.assign(campaign.listener,{openingDmFormat:"QUICK_REPLY"});
+  mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true}});
+  await POST(commentRequest());expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledWith(expect.objectContaining({preferQuickReplyForPostback:true,postbackButton:expect.objectContaining({payload:`AP3K_OPENING_CONTINUE:${campaign.id}:comment-1`})}));
+ });
 });

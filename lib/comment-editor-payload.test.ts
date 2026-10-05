@@ -33,3 +33,11 @@ describe("accordion editor delivery payload",()=>{
 });
 
 it("preserves share, one-DM and delay settings through normalization",()=>{expect(normalizeCampaignPayload(createCommentEditorPayload({...draft,triggerOnShares:true,oneDmPerUser:true,deliveryDelaySeconds:3600}))).toMatchObject({triggerOnShares:true,oneDmPerUser:true,deliveryDelaySeconds:3600});expect(normalizeCampaignPayload(createCommentEditorPayload({...draft,sendPrivateDm:false,triggerOnShares:true,deliveryDelaySeconds:-1}))).toMatchObject({triggerOnShares:false,deliveryDelaySeconds:0});});
+
+it("round-trips independent delays, quick-reply openers and a 30-second follow-up",()=>{
+ const payload=normalizeCampaignPayload(createCommentEditorPayload({...draft,openingDmEnabled:true,openingDmFormat:"QUICK_REPLY",deliveryDelaySeconds:300,stepDelays:{PUBLIC_REPLY:120,OPENING:5,MESSAGE:30},followUpEnabled:true,followUpMessage:"Hi {{username}}",followUpDelayMinutes:0.5}));
+ expect(payload).toMatchObject({deliveryDelaySeconds:0,stepDelays:{PUBLIC_REPLY:120,OPENING:5,MESSAGE:30,FOLLOW:0,EMAIL:0,PHONE:0},listener:{openingDmFormat:"QUICK_REPLY",followUpDelayMinutes:0.5}});
+ expect(validateNormalizedCampaignPayload(payload)).toBeNull();
+ payload.stepDelays={MESSAGE:82800};payload.listener.followUpDelayMinutes=60;
+ expect(validateNormalizedCampaignPayload(payload)).toContain("24-hour");
+});

@@ -16,6 +16,8 @@ const db = vi.hoisted(() => ({
   conversation: { findUnique: vi.fn() },
   inboxMessage: { findFirst: vi.fn() },
 }));
+const wake=vi.hoisted(()=>vi.fn());
+vi.mock("@/lib/qstash-delivery-wake",()=>({scheduleDeliveryWake:wake}));
 const profile = vi.hoisted(() => vi.fn());
 const send = vi.hoisted(() => vi.fn());
 const quota = vi.hoisted(() => vi.fn());
@@ -173,19 +175,19 @@ describe("durable engagement delivery", () => {
       kind: "waiting",
     });
   });
-  it("claims a reminder once, sends saved buttons, then records terminal state", async () => {
+  it("claims a reminder once, sends text without reattaching the main buttons, then records terminal state", async () => {
     expect(await processAutomationFollowUps(now)).toEqual({
       checked: 1,
       sent: 1,
     });
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
-        responseFormat: "LINK",
+        responseFormat: "TEXT",
         message: "Your link",
         recipientId: "r1",
-        linkButtons: [{ label: "Open", url: "https://ap3k.com" }],
       }),
     );
+    expect(send.mock.calls[0][0]).not.toHaveProperty("linkButtons");
     expect(db.automationEngagementJob.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: "COMPLETED" } }),
     );
@@ -315,4 +317,20 @@ describe("phone and behavior delivery", () => {
       expect((await processAutomationFollowUps(now)).sent).toBe(1);
     },
   );
+});
+
+it("uses the original deadline to wake a 30-second follow-up and never wakes completed jobs",async()=>{
+ db.automationSchedulerHeartbeat.findUnique.mockResolvedValue({lastRunAt:now});
+ const dueAt=new Date(now.getTime()+30000);
+ db.automationEngagementJob.upsert.mockResolvedValue({id:"reminder",status:"PENDING",dueAt});
+ await scheduleFollowUp("a1","r1","flow",now,0.5);
+ expect(db.automationEngagementJob.upsert).toHaveBeenCalledWith(expect.objectContaining({create:expect.objectContaining({dueAt}),update:{}}));
+ expect(wake).toHaveBeenCalledWith({id:"reminder",status:"PENDING",dueAt});
+ wake.mockClear();db.automationEngagementJob.upsert.mockResolvedValue({id:"reminder",status:"COMPLETED",dueAt});
+ await scheduleFollowUp("a1","r1","flow",now,0.5);expect(wake).not.toHaveBeenCalled();
+});
+it("personalizes the follow-up that actually gets delivered",async()=>{
+ const automation=await db.automation.findUnique();automation.listener.followUpMessage="Hey {{username}}, did you see my message?";profile.mockResolvedValue({username:"creator"});
+ await processAutomationFollowUps(now);
+ expect(send).toHaveBeenCalledWith(expect.objectContaining({message:"Hey @creator, did you see my message?",responseFormat:"TEXT"}));
 });

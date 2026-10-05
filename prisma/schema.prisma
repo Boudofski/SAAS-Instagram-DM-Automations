@@ -293,6 +293,7 @@ model Automation {
   storyConfig          Json?
   followGateRequired   Boolean           @default(false)
   typingIndicator      Boolean           @default(false)
+  stepDelays           Json?
   deliveryDelaySeconds Int               @default(0)
   triggerOnShares      Boolean           @default(false)
   oneDmPerUser         Boolean           @default(false)
@@ -386,7 +387,8 @@ model Listener {
   emailCapturePrompt      String?
   followUpEnabled         Boolean    @default(false)
   followUpMessage         String?
-  followUpDelayMinutes    Int        @default(30)
+  followUpDelayMinutes    Float        @default(30)
+  openingDmFormat         String     @default("BUTTON")
   openingDmText           String?
   openingDmButtonText     String?
   openingDmEnabled        Boolean    @default(true)
