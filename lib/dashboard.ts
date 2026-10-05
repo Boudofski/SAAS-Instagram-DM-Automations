@@ -4,6 +4,7 @@ export function dashboardPath(clerkId?: string | null) {
 
 const SAFE_DASHBOARD_DESTINATIONS = new Set([
   "/automation",
+  "/contacts",
   "/automation/new",
   "/automation/new?type=flow",
   "/billing",

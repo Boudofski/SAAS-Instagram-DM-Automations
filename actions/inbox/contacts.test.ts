@@ -29,3 +29,14 @@ it("retains a known username when an inbox lookup did not return one", async () 
   expect(result.data).toHaveLength(1);
   expect(result.data[0]).toMatchObject({ recipientUsername: "real.name", email: "new@example.com" });
 });
+
+import { exportInstagramContacts } from './index';
+it('rejects CSV exports server-side for Free accounts before reading contact data',async()=>{
+ const result=await exportInstagramContacts();expect(result.status).toBe(403);expect(db.lead.findMany).not.toHaveBeenCalled();
+});
+it.each(['PRO','BUSINESS'])('exports all filtered contacts for %s in the active account',async plan=>{
+ db.user.findUnique.mockResolvedValue({id:'owner',subscription:{plan},integrations:[]});
+ db.conversation.findMany.mockResolvedValue([{id:'c',recipientIgId:'r',recipientUsername:'known',email:'known@example.com',phone:null,createdAt:new Date('2026-10-01'),lastInboundAt:new Date('2026-10-05')}]);
+ const result=await exportInstagramContacts({email:'has'});expect(result.status).toBe(200);expect(result.csv).toContain('known@example.com');
+ expect(db.conversation.findMany.mock.calls[0][0].where).toEqual({userId:'owner',integrationId:'account-b'});expect(db.conversation.findMany.mock.calls[0][0]).not.toHaveProperty('take');expect(db.lead.findMany.mock.calls[0][0]).not.toHaveProperty('take');
+});

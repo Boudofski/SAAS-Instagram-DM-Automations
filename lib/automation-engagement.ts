@@ -20,6 +20,8 @@ import {
   parseEmailReply,
   parsePhoneReply,
   followUpConditionMatches,
+  DEFAULT_EMAIL_CAPTURE_RETRY,
+  DEFAULT_PHONE_CAPTURE_RETRY,
 } from "./automation-engagement-settings";
 
 export async function followUpSchedulerReady(now = new Date()) {
@@ -110,7 +112,17 @@ export async function takeEmailReply(
   if (!pending) return null;
   const reply =
     pending.kind === "PHONE" ? parsePhoneReply(text) : parseEmailReply(text);
-  if (reply.kind === "invalid") return { kind: "waiting" as const };
+  if (reply.kind === "invalid") {
+    // Claim each inbound message before sending: webhook retries must not repeat
+    // the retry prompt, and an invalid value must never advance the sequence.
+    if (!messageMid) return { kind: "waiting" as const };
+    const claimed = await client.automationEngagementJob.updateMany({
+      where: { id:pending.id, status:"WAITING", OR:[{replyMessageId:null},{replyMessageId:{not:messageMid}}] },
+      data:{replyMessageId:messageMid},
+    });
+    if (claimed.count) await sendCaptureRetry(pending.automationId, integrationId, recipientIgId, pending.kind, pending.flowId);
+    return { kind: "waiting" as const };
+  }
   const claimed = await client.automationEngagementJob.updateMany({
     where: { id: pending.id, status: "WAITING" },
     data: {
@@ -160,6 +172,20 @@ export async function takeEmailReply(
     automationId: pending.automationId,
     flowId: pending.flowId,
   };
+}
+
+async function sendCaptureRetry(automationId:string,integrationId:string,recipientIgId:string,kind:string,flowId:string) {
+  const automation=await client.automation.findUnique({where:{id:automationId},include:{listener:true,integration:true,User:{select:{status:true,subscription:{select:{plan:true}}}}}});
+  const integration=automation?.integration, listener=automation?.listener;
+  if (!automation?.userId || !automation.active || automation.archivedAt || !automation.sendPrivateDm || automation.User?.status === "SUSPENDED" || !["PRO","BUSINESS"].includes(automation.User?.subscription?.plan??"FREE") || integration?.id!==integrationId || integration.status!=="CONNECTED" || integration.planLocked || integration.reconnectRequired || !integration.instagramId || !(kind==="PHONE"?listener?.phoneCaptureEnabled:listener?.emailCaptureEnabled)) return;
+  const token=resolveIntegrationSendToken(integration);
+  if(!token.ok || !(await canSendStaticReply(automation.userId)).ok)return;
+  const prompt=(kind==="PHONE"?listener?.phoneCaptureRetryMessage||DEFAULT_PHONE_CAPTURE_RETRY:listener?.emailCaptureRetryMessage||DEFAULT_EMAIL_CAPTURE_RETRY).trim();
+  const contact=await client.conversation.findUnique({where:{integrationId_recipientIgId:{integrationId,recipientIgId}},select:{recipientUsername:true}});
+  const message=personalizeUsername(prompt,contact?.recipientUsername);
+  const sent=await sendInstagramDirectResponse({token:token.token,igBusinessAccountId:integration.instagramId,recipientId:recipientIgId,automationId,message,responseFormat:"TEXT"});
+  await createMessageLog({automationId,recipientIgId,commentId:flowId,messageType:"DM",status:sent.ok?"SENT":"FAILED",errorMessage:sent.ok?"capture_retry_sent":"capture_retry_failed"});
+  if(sent.ok){await trackResponse(automationId,"DM");await recordOutboundInboxMessage({userId:automation.userId,integrationId,recipientIgId,automationId,content:message,metaMessageId:sent.messageIds[0]});}
 }
 
 export async function beginEmailRequest(

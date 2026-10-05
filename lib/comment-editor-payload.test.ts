@@ -41,3 +41,8 @@ it("round-trips independent delays, quick-reply openers and a 30-second follow-u
  payload.stepDelays={MESSAGE:82800};payload.listener.followUpDelayMinutes=60;
  expect(validateNormalizedCampaignPayload(payload)).toContain("24-hour");
 });
+
+it('preserves configurable retry messages through comment editor saving',()=>{
+ const saved=normalizeCampaignPayload(createCommentEditorPayload({...draft,emailCaptureEnabled:true,phoneCaptureEnabled:true,emailCapturePrompt:'Enter your email',phoneCapturePrompt:'Enter your phone number',emailCaptureRetryMessage:'{{username}}, try another email.',phoneCaptureRetryMessage:'Include the country code.'}));
+ expect(saved.listener).toMatchObject({emailCaptureRetryMessage:'{{username}}, try another email.',phoneCaptureRetryMessage:'Include the country code.'});
+});

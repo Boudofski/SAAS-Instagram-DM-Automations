@@ -207,12 +207,14 @@ function AutomationSetup({ params, searchParams }: Props) {
         : [],
       dmMessage: preparedDm.prompt,
       phoneCaptureEnabled: Boolean(automation.listener?.phoneCaptureEnabled),
+      phoneCaptureRetryMessage: automation.listener?.phoneCaptureRetryMessage ?? undefined,
       phoneCapturePrompt:
         automation.listener?.phoneCapturePrompt ??
         "What’s your phone number, including country code?",
       followUpCondition: automation.listener?.followUpCondition ?? "ALWAYS",
       adAutomation: Boolean(automation.adAutomation),
       emailCaptureEnabled: Boolean(automation.listener?.emailCaptureEnabled),
+      emailCaptureRetryMessage: automation.listener?.emailCaptureRetryMessage ?? undefined,
       emailCapturePrompt:
         automation.listener?.emailCapturePrompt ?? DEFAULT_EMAIL_CAPTURE_PROMPT,
       followUpEnabled: Boolean(automation.listener?.followUpEnabled),

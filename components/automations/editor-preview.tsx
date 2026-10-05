@@ -284,7 +284,7 @@ export default function EditorPreview({
                                 data.emailCapturePrompt || "",
                               ),
                             )}
-                            {bubble("creator@example.com", [], true)}
+                            {bubble("hello@example.com", [], true)}
                           </>
                         )}
                         {data.phoneCaptureEnabled && (
@@ -293,7 +293,7 @@ export default function EditorPreview({
                             {bubble(
                               data.phoneCapturePrompt || tr("What’s your phone number, including country code?"),
                             )}
-                            {bubble("+1 415 555 0123", [], true)}
+                            {bubble("+1 (949) 653-7130", [], true)}
                           </>
                         )}
                         {waitBefore("MESSAGE")}

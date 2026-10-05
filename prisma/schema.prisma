@@ -382,9 +382,11 @@ model Listener {
   cardSubtitle            String?
   phoneCaptureEnabled     Boolean @default(false)
   phoneCapturePrompt      String?
+  phoneCaptureRetryMessage String?
   followUpCondition       String @default("ALWAYS")
   emailCaptureEnabled     Boolean    @default(false)
   emailCapturePrompt      String?
+  emailCaptureRetryMessage String?
   followUpEnabled         Boolean    @default(false)
   followUpMessage         String?
   followUpDelayMinutes    Float        @default(30)
