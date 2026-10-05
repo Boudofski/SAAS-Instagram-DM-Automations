@@ -210,7 +210,7 @@ function AutomationSetup({ params, searchParams }: Props) {
       phoneCaptureRetryMessage: automation.listener?.phoneCaptureRetryMessage ?? undefined,
       phoneCapturePrompt:
         automation.listener?.phoneCapturePrompt ??
-        "What’s your phone number, including country code?",
+        "Enter your phone number",
       followUpCondition: automation.listener?.followUpCondition ?? "ALWAYS",
       adAutomation: Boolean(automation.adAutomation),
       emailCaptureEnabled: Boolean(automation.listener?.emailCaptureEnabled),

@@ -102,7 +102,7 @@ export default function EditorPreview({
     <div className={outbound ? styles.outboundRow : styles.messageRow}>
       {!outbound && <span className={styles.messageAvatar}>{avatarNode}</span>}
       <div className={outbound ? styles.outbound : styles.message}>
-        <p dir="auto"><MentionText text={message} username="ola_nordman"/></p>
+        <p dir="auto">{outbound ? message : <MentionText text={message} username="ola_nordman"/>}</p>
         {buttons.map((label, index) => (
           <span key={index} dir="auto" className={quick ? styles.quickReply : styles.button}>
             {links && <Link2 size={12} />}
