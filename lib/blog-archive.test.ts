@@ -41,6 +41,18 @@ describe("editorial archive", () => {
     expect([...result.posts, ...result.featured].some(p => p.slug === hidden)).toBe(false);
     expect(result.featured).toHaveLength(4);
   });
+  it("features maintained setup, message, comparison and troubleshooting guides", () => {
+    const { featured } = getEditorialArchive(BLOG_POSTS);
+    expect(featured.map(post => post.slug)).toEqual([
+      "instagram-comment-to-dm-automation",
+      "comment-to-dm-final-message-templates",
+      "manychat-vs-ap3k-pricing-for-instagram",
+      "comment-to-dm-wrong-link",
+    ]);
+    expect(featured.every(post => !post.importedArchive && !post.noIndex)).toBe(true);
+    const excluded = featured.map(post => ({ ...post, noIndex: true }));
+    expect(getEditorialArchive(excluded).featured).toEqual([]);
+  });
   it("bounds page controls and always includes the current page and endpoints", () => {
     for (let page = 1; page <= 100; page++) {
       const items = blogPaginationItems(page, 100);
