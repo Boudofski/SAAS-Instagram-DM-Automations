@@ -4,7 +4,7 @@
     "group": "getting-started",
     "title": "What is AP3K?",
     "description": "AP3K turns Instagram comments, story interactions, and incoming DMs into automated conversations. Create a trigger, write the response, and deliver the right next step while keeping the account’s activity in one…",
-    "html": "<p>AP3K turns Instagram comments, story interactions, and incoming DMs into automated conversations. Create a trigger, write the response, and deliver the right next step while keeping the account’s activity in one workspace.</p><h2 id=\"what-you-can-automate\">What you can automate</h2><ul><li>Send a DM after an eligible comment matches a keyword or Any Comment trigger.</li><li>Write public comment replies or use AI to draft variations.</li><li>Respond to story interactions and incoming DM triggers.</li><li>Add an opener, a resource link, or a request to follow.</li><li>Collect email addresses and phone numbers in the conversation.</li><li>Build branches, delays, tags, fields, and external requests in the flow builder.</li></ul><h2 id=\"who-it-is-for\">Who it is for</h2><p>Creators, shops, coaches, and service businesses can use AP3K to answer repeated questions and deliver resources after a person interacts on Instagram. You choose the message and link rather than sending unsolicited messages to an arbitrary list.</p><h2 id=\"example-campaigns\">Example campaigns</h2><ul><li>A creator asks viewers to comment GUIDE and sends a downloadable resource.</li><li>A shop sends product details after a matching post comment.</li><li>A coach collects an email before delivering an opted-in resource. These are campaign examples, not customer case studies.</li></ul><h2 id=\"set-up-your-first-automation\">Set up your first automation</h2><ol><li>Create an AP3K account and connect an Instagram Business or Creator account.</li><li>Choose a Post, Story, Chat, or Flow automation.</li><li>Configure the trigger and response, then review and publish.</li><li>Test the complete path from another Instagram account.</li></ol><h2 id=\"know-the-boundaries\">Know the boundaries</h2><p>AP3K uses Instagram’s official API and must respect its permissions and messaging eligibility. It does not backtrack older comments or automatically message every new follower. Facebook Messenger and native external MCP account connectors are not supported.</p><h2 id=\"start-here\">Start here</h2><p><a href=\"/docs/getting-started/connect-instagram-account\">Connect your Instagram account</a>, then <a href=\"/docs/post-automation/create-instagram-comment-to-dm-automation\">create an instagram comment-to-dm automation</a>. Review <a href=\"/pricing\">plans and pricing</a> for the allowance that fits your campaign.</p>",
+    "html": "<p>AP3K turns Instagram comments, story interactions, and incoming DMs into automated conversations. Create a trigger, write the response, and deliver the right next step while keeping the account’s activity in one workspace.</p><h2 id=\"what-you-can-automate\">What you can automate</h2><ul><li>Send a DM after an eligible comment matches a keyword or Any Comment trigger.</li><li>Write public comment replies or use AI to draft variations.</li><li>Respond to story interactions and incoming DM triggers.</li><li>Add an opener, a resource link, or a request to follow.</li><li>Collect email addresses and phone numbers in the conversation.</li><li>Build branches, delays, tags, fields, and external requests in the flow builder.</li></ul><h2 id=\"who-it-is-for\">Who it is for</h2><p>Creators, shops, coaches, and service businesses can use AP3K to answer repeated questions and deliver resources after a person interacts on Instagram. You choose the message and link rather than sending unsolicited messages to an arbitrary list.</p><h2 id=\"example-campaigns\">Example campaigns</h2><ul><li>A creator asks viewers to comment GUIDE and sends a downloadable resource.</li><li>A shop sends product details after a matching post comment.</li><li>A coach collects an email before delivering an opted-in resource. These are campaign examples, not customer case studies.</li></ul><h2 id=\"set-up-your-first-automation\">Set up your first automation</h2><ol><li>Create an AP3K account and connect an Instagram Business or Creator account.</li><li>Choose a Post, Story, Chat, or Flow automation.</li><li>Configure the trigger and response, then review and publish.</li><li>Test the complete path from another Instagram account.</li></ol><h2 id=\"know-the-boundaries\">Know the boundaries</h2><p>AP3K uses Instagram’s official API and must respect its permissions and messaging eligibility. It does not automatically message every new follower. Eligible comments from the previous seven days can be processed with the separate Backtrack comments action. Facebook Messenger and native external MCP account connectors are not supported.</p><h2 id=\"start-here\">Start here</h2><p><a href=\"/docs/getting-started/connect-instagram-account\">Connect your Instagram account</a>, then <a href=\"/docs/post-automation/create-instagram-comment-to-dm-automation\">create an instagram comment-to-dm automation</a>. Review <a href=\"/pricing\">plans and pricing</a> for the allowance that fits your campaign.</p>",
     "headings": [
       {
         "id": "what-you-can-automate",
@@ -37,7 +37,7 @@
         "level": 2
       }
     ],
-    "updated": "2026-10-02"
+    "updated": "2026-10-06"
   },
   {
     "slug": "getting-started/connect-instagram-account",
@@ -203,26 +203,31 @@
     "slug": "how-tos/backtrack-comments-in-automation",
     "group": "how-tos",
     "title": "Backtrack Comments in an Automation",
-    "description": "AP3K responds to new eligible interactions received after an automation is activated. It does not currently backtrack through older Instagram comments.",
-    "html": "<p>AP3K responds to new eligible interactions received after an automation is activated. It does not currently backtrack through older Instagram comments.</p><h2 id=\"what-this-means-for-an-existing-post\">What this means for an existing post</h2><p>You can select an existing post for a new automation, but comments that arrived before activation are not replayed. Publishing does not send DMs to everyone who already commented.</p><h2 id=\"handle-earlier-conversations\">Handle earlier conversations</h2><ul><li>Reply manually to older comments where appropriate.</li><li>Activate and test the automation before promoting the post again.</li><li>Ask an interested person to send a new DM or leave a new matching comment, without promising delivery to users whose Instagram settings prevent it.</li></ul><h2 id=\"prepare-the-next-campaign\">Prepare the next campaign</h2><p><a href=\"/docs/post-automation/create-instagram-comment-to-dm-automation\">Create an Instagram comment-to-DM automation</a>. Choose the post, set the keyword or Any Comment trigger, publish, and test from another account before sharing the call to action.</p>",
+    "description": "Reply to eligible Instagram comments from the previous seven days using AP3K Backtrack comments. Review media, quotas and delivery protections before starting.",
+    "html": "<p>Backtrack comments is a separate, deliberate action that processes eligible comments from the previous seven days using the saved automation rule. Publishing alone does not replay the entire comment history.</p><h2 id=\"before-you-start\">Before you start</h2><p>Use a supported automation with selected media. Confirm the Instagram account, post, trigger, messages and destination. Each successful public reply or DM still uses the normal action allowance. Duplicate and Meta delivery protections remain in force.</p><h2 id=\"start-backtracking\">Start backtracking</h2><ol><li>Open Automations and find the intended automation.</li><li>Open its actions menu and use View media to confirm the post.</li><li>Choose Backtrack comments and review the dialog and saved rule.</li><li>Start only when you intend to send real replies to eligible past commenters.</li><li>Review progress and sent, skipped or failed results. Not every older comment is eligible.</li></ol><h2 id=\"allowances\">Allowances and limits</h2><p>Free includes three backtracking attempts. Pro and Business remove this attempt limit. This does not remove monthly action allowances, Instagram rules or technical rate limits. Comments older than seven days are outside the backtracking window.</p><h2 id=\"troubleshoot\">If a comment is skipped</h2><p>Check timestamp, selected media, trigger match, previous delivery and messaging eligibility. Repeatedly starting the same job does not bypass duplicate protections. <a href=\"/docs/troubleshoot/fix-comment-automation-not-working\">Read the delivery troubleshooting guide</a>.</p>",
     "headings": [
       {
-        "id": "what-this-means-for-an-existing-post",
-        "text": "What this means for an existing post",
+        "id": "before-you-start",
+        "text": "Before you start",
         "level": 2
       },
       {
-        "id": "handle-earlier-conversations",
-        "text": "Handle earlier conversations",
+        "id": "start-backtracking",
+        "text": "Start backtracking",
         "level": 2
       },
       {
-        "id": "prepare-the-next-campaign",
-        "text": "Prepare the next campaign",
+        "id": "allowances",
+        "text": "Allowances and limits",
+        "level": 2
+      },
+      {
+        "id": "troubleshoot",
+        "text": "If a comment is skipped",
         "level": 2
       }
     ],
-    "updated": "2026-10-02"
+    "updated": "2026-10-06"
   },
   {
     "slug": "how-tos/delete-ap3k-account",
@@ -819,7 +824,7 @@
     "group": "migrating-from-manychat",
     "title": "Rebuild Your ManyChat Automations in AP3K",
     "description": "Rebuild the logic of your Instagram automations in AP3K. There is no automatic import of a ManyChat flow, and features from other channels do not transfer.",
-    "html": "<p>Rebuild the logic of your Instagram automations in AP3K. There is no automatic import of a ManyChat flow, and features from other channels do not transfer.</p><h2 id=\"map-the-main-steps\">Map the main steps</h2><table><thead><tr><th>Existing automation step</th><th>AP3K equivalent</th></tr></thead><tbody><tr><td>Comment keyword</td><td>Post automation with keywords or Any Comment</td></tr><tr><td>Public comment reply</td><td>Manual reply variations or AI public replies</td></tr><tr><td>Opening DM</td><td>Opener message</td></tr><tr><td>Resource link</td><td>Message with CTA link button</td></tr><tr><td>Email or phone question</td><td>Collect info</td></tr><tr><td>Delay and follow-up</td><td>Delay controls and follow-up settings</td></tr><tr><td>Story response</td><td>Story automation</td></tr><tr><td>Incoming DM keyword</td><td>Chat automation</td></tr><tr><td>Branches, tags, fields</td><td>Flow builder nodes</td></tr></tbody></table><h2 id=\"start-with-one-working-path\">Start with one working path</h2><p><a href=\"/docs/post-automation/create-instagram-comment-to-dm-automation\">Create an Instagram comment-to-DM automation</a>. Begin with a single post, one clear trigger, and one useful DM. Test it before adding collection, follow-ups, or branches.</p><h2 id=\"review-differences\">Review differences</h2><ul><li>AP3K focuses on Instagram; Facebook Messenger, WhatsApp, SMS, and email broadcasts are not equivalent automation channels here.</li><li>Comment triggers use configured keyword matching or Any Comment; do not assume an intent-matching rule was imported.</li><li>AP3K does not backtrack comments posted before activation.</li><li>DM button limits and supported layouts are enforced by the AP3K editor.</li><li>Native Zapier contact event subscriptions and external MCP clients are not supported. Explicit flow webhooks are available.</li></ul><h2 id=\"test-from-another-account\">Test from another account</h2><p>Publish the reviewed automation and run each path from a second Instagram account. Confirm collection saves to the correct contact, CTA links open correctly, and only the intended replies are sent.</p>",
+    "html": "<p>Rebuild the logic of your Instagram automations in AP3K. There is no automatic import of a ManyChat flow, and features from other channels do not transfer.</p><h2 id=\"map-the-main-steps\">Map the main steps</h2><table><thead><tr><th>Existing automation step</th><th>AP3K equivalent</th></tr></thead><tbody><tr><td>Comment keyword</td><td>Post automation with keywords or Any Comment</td></tr><tr><td>Public comment reply</td><td>Manual reply variations or AI public replies</td></tr><tr><td>Opening DM</td><td>Opener message</td></tr><tr><td>Resource link</td><td>Message with CTA link button</td></tr><tr><td>Email or phone question</td><td>Collect info</td></tr><tr><td>Delay and follow-up</td><td>Delay controls and follow-up settings</td></tr><tr><td>Story response</td><td>Story automation</td></tr><tr><td>Incoming DM keyword</td><td>Chat automation</td></tr><tr><td>Branches, tags, fields</td><td>Flow builder nodes</td></tr></tbody></table><h2 id=\"start-with-one-working-path\">Start with one working path</h2><p><a href=\"/docs/post-automation/create-instagram-comment-to-dm-automation\">Create an Instagram comment-to-DM automation</a>. Begin with a single post, one clear trigger, and one useful DM. Test it before adding collection, follow-ups, or branches.</p><h2 id=\"review-differences\">Review differences</h2><ul><li>AP3K focuses on Instagram; Facebook Messenger, WhatsApp, SMS, and email broadcasts are not equivalent automation channels here.</li><li>Comment triggers use configured keyword matching or Any Comment; do not assume an intent-matching rule was imported.</li><li>Publishing does not replay earlier comments. Use the separate Backtrack comments action for eligible comments from the previous seven days.</li><li>DM button limits and supported layouts are enforced by the AP3K editor.</li><li>Native Zapier contact event subscriptions and external MCP clients are not supported. Explicit flow webhooks are available.</li></ul><h2 id=\"test-from-another-account\">Test from another account</h2><p>Publish the reviewed automation and run each path from a second Instagram account. Confirm collection saves to the correct contact, CTA links open correctly, and only the intended replies are sent.</p>",
     "headings": [
       {
         "id": "map-the-main-steps",
@@ -842,7 +847,7 @@
         "level": 2
       }
     ],
-    "updated": "2026-10-02"
+    "updated": "2026-10-06"
   },
   {
     "slug": "migrating-from-manychat/after-migration",
@@ -929,7 +934,7 @@
     "group": "troubleshoot",
     "title": "Comment Automation Not Working: The Comment Is Invalid for a Private Reply",
     "description": "A comment must match an active automation and remain eligible for Instagram’s private reply API. Start with a new comment from a second account.",
-    "html": "<p>A comment must match an active automation and remain eligible for Instagram’s private reply API. Start with a new comment from a second account.</p><h2 id=\"check-the-trigger\">Check the trigger</h2><ul><li>Confirm the automation is published and enabled.</li><li>Confirm the selected post or scope includes the post being tested.</li><li>Check Any Comment or the configured keyword matching.</li><li>Use a comment posted after activation; AP3K does not backtrack older comments.</li></ul><h2 id=\"read-the-delivery-error\">Read the delivery error</h2><p>An error saying a comment is invalid for a private reply can indicate a deleted or ineligible comment, an already-sent private reply, or restrictions on reaching the recipient. A successful public reply does not guarantee a DM can be delivered.</p><h2 id=\"check-repeat-protection\">Check repeat protection</h2><p>One DM per user suppresses another DM to someone who already triggered the automation. This is separate from Instagram’s limit on replying privately to the same comment. Do not treat repeated test comments from one person as independent first-contact tests.</p><h2 id=\"if-every-new-comment-fails\">If every new comment fails</h2><p><a href=\"/docs/troubleshoot/fix-instagram-automation-not-working\">Check your Instagram permissions</a>. Confirm DM access and review whether another app controls messaging. Keep the Instagram account professional. A Facebook Page is not required for the direct Instagram Login flow.</p><h2 id=\"get-help-with-a-specific-attempt\">Get help with a specific attempt</h2><p>Contact support with your Instagram username, automation name, post link, comment time and timezone, and exact error. A concrete failed attempt is more useful than repeatedly reconnecting the account.</p>",
+    "html": "<p>A comment must match an active automation and remain eligible for Instagram’s private reply API. Start with a new comment from a second account.</p><h2 id=\"check-the-trigger\">Check the trigger</h2><ul><li>Confirm the automation is published and enabled.</li><li>Confirm the selected post or scope includes the post being tested.</li><li>Check Any Comment or the configured keyword matching.</li><li>Use a comment posted after activation; publishing does not automatically replay older comments. A separate Backtrack comments action can process eligible comments from the previous seven days.</li></ul><h2 id=\"read-the-delivery-error\">Read the delivery error</h2><p>An error saying a comment is invalid for a private reply can indicate a deleted or ineligible comment, an already-sent private reply, or restrictions on reaching the recipient. A successful public reply does not guarantee a DM can be delivered.</p><h2 id=\"check-repeat-protection\">Check repeat protection</h2><p>One DM per user suppresses another DM to someone who already triggered the automation. This is separate from Instagram’s limit on replying privately to the same comment. Do not treat repeated test comments from one person as independent first-contact tests.</p><h2 id=\"if-every-new-comment-fails\">If every new comment fails</h2><p><a href=\"/docs/troubleshoot/fix-instagram-automation-not-working\">Check your Instagram permissions</a>. Confirm DM access and review whether another app controls messaging. Keep the Instagram account professional. A Facebook Page is not required for the direct Instagram Login flow.</p><h2 id=\"get-help-with-a-specific-attempt\">Get help with a specific attempt</h2><p>Contact support with your Instagram username, automation name, post link, comment time and timezone, and exact error. A concrete failed attempt is more useful than repeatedly reconnecting the account.</p>",
     "headings": [
       {
         "id": "check-the-trigger",
@@ -957,7 +962,7 @@
         "level": 2
       }
     ],
-    "updated": "2026-10-02"
+    "updated": "2026-10-06"
   },
   {
     "slug": "troubleshoot/fix-public-reply-sent-but-no-dm",
@@ -1328,5 +1333,30 @@
       }
     ],
     "updated": "2026-10-02"
+  },
+  {
+    "slug": "how-tos/ai-meta-policy-safety-check",
+    "group": "how-tos",
+    "title": "AI Meta Policy Safety Check",
+    "description": "Review automation messages for risk patterns before publishing in AP3K. Understand the Free scan allowance, paid access and limits of AI guidance.",
+    "updated": "2026-10-06",
+    "html": "<p>AI Meta Policy Safety Check reviews the configured automation for risk patterns before publishing. It is an advisory review, not approval from Meta and not a guarantee that messages will be delivered.</p><h2 id=\"run-the-check\">Run the check before publishing</h2><ol><li>Complete the trigger, reply and DM settings.</li><li>Choose Publish to open the safety review. AP3K scans the configured automation before the final publication confirmation.</li><li>Read each finding and any suggested rewrite.</li><li>Review and deliberately apply changes that fit the actual offer.</li><li>Publish only after checking the complete customer journey, then test from another account.</li></ol><h2 id=\"scan-allowances\">Scan allowances</h2><p>Free includes three policy scans. Pro and Business have unlimited scans subject to technical rate limits. Policy scans have a separate allowance from backtracking attempts and automated sends.</p><h2 id=\"what-it-cannot-do\">What the check cannot do</h2><p>A clean scan does not override Instagram permissions, messaging rules, duplicate protection or monthly usage limits. The scan does not publish an automation. Keep business claims accurate, respect the recipient’s request and inspect real delivery after publishing.</p>",
+    "headings": [
+      {
+        "id": "run-the-check",
+        "text": "Run the check before publishing",
+        "level": 2
+      },
+      {
+        "id": "scan-allowances",
+        "text": "Scan allowances",
+        "level": 2
+      },
+      {
+        "id": "what-it-cannot-do",
+        "text": "What the check cannot do",
+        "level": 2
+      }
+    ]
   }
 ]

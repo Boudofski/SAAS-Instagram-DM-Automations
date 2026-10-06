@@ -18,7 +18,7 @@ import {
   type AiReplyTone,
 } from "@/lib/ai-reply-config";
 import { knowledgeContext, normalizeAiWorkspace } from "@/lib/ai-workspace";
-import { ap3kSupportKnowledge } from "@/lib/ap3k-help";
+import { supportKnowledgeFor } from "@/lib/support-knowledge";
 import { collectAiLinkOptions, parseAiDmModelReply } from "@/lib/ai-dm-links";
 
 type ModelCategory = AiProtectionCategory | "SAFE";
@@ -316,7 +316,7 @@ export async function generateAiSupportReply(input: {
     const completion = await createProvider(provider).chat.completions.create({
       model: provider.model,
       temperature: 0.1,
-      max_tokens: 520,
+      max_tokens: 900,
       messages: [
         {
           role: "system",
@@ -327,8 +327,9 @@ export async function generateAiSupportReply(input: {
             "Never request or repeat passwords, card details, one-time codes, Instagram access tokens, API keys, or other secrets.",
             "For account-specific billing or delivery status, explain where to check and recommend support; do not claim you inspected the account.",
             "Use the same language as the user. Be concise, friendly, and give numbered steps when a procedure is requested.",
+            "Use numbered plain-text steps. Relevant verified documentation, screenshots and navigation cards are attached by the UI; do not invent URLs, embed markup or image locations. Ask one focused question if the automation type is unclear.",
             "AP3K PRODUCT GUIDE:",
-            ap3kSupportKnowledge(),
+            supportKnowledgeFor(input.message, [...(input.history ?? [])].reverse().find(item => item.role === "user")?.content),
           ].join("\n\n"),
         },
         ...(input.history ?? []).slice(-10).map((item) => ({
@@ -338,7 +339,7 @@ export async function generateAiSupportReply(input: {
         { role: "user" as const, content: input.message.slice(0, 1200) },
       ],
     });
-    const reply = (completion.choices[0]?.message?.content ?? "").trim().slice(0, 2400);
+    const reply = (completion.choices[0]?.message?.content ?? "").trim().slice(0, 4200);
     return reply ? { ok: true, reply } : { ok: false };
   } catch (error) {
     console.error("[ai-support] generation skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });

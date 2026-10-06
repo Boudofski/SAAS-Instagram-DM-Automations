@@ -5,7 +5,7 @@ import { buildSitemap } from "./sitemap";
 import { getBlogPage } from "./blog-pagination";
 
 describe("editorial archive", () => {
-  it("keeps every imported article reachable exactly once across archive pages", () => {
+  it("keeps every indexable published article reachable exactly once across archive pages", () => {
     const { featured, posts } = getEditorialArchive(BLOG_POSTS);
     const seen: string[] = [];
     const pages = getBlogPage(undefined, posts.length)!.pages;
@@ -16,9 +16,16 @@ describe("editorial archive", () => {
       seen.push(...visible.map(p => p.slug));
     }
     expect(new Set(seen).size).toBe(seen.length);
-    expect(seen).not.toContain("ap3k-workspace-visual-guide");
+    expect(seen).toContain("ap3k-workspace-visual-guide");
+    expect(seen).toContain("comment-to-dm-button-labels");
     expect(BLOG_POSTS.some(p => p.slug === "ap3k-workspace-visual-guide")).toBe(true);
-    expect(seen.length).toBe(176);
+    expect(new Set(seen)).toEqual(new Set(BLOG_POSTS.filter(p => !p.noIndex).map(p => p.slug)));
+    expect(posts.map(p => p.publishedAt)).toEqual(posts.map(p => p.publishedAt).sort().reverse());
+  });
+  it("finds original guides by search and excludes deliberately noindexed posts", () => {
+    expect(getEditorialArchive(BLOG_POSTS, "button labels").posts.some(p => p.slug === "comment-to-dm-button-labels")).toBe(true);
+    const hidden = { ...BLOG_POSTS[0], slug: "excluded", noIndex: true };
+    expect(getEditorialArchive([hidden]).posts).toEqual([]);
   });
   it("only puts valid editorial archive pages in the sitemap", () => {
     const total = getEditorialArchive(BLOG_POSTS).posts.length;

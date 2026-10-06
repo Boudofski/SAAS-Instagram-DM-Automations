@@ -88,7 +88,7 @@ export const AP3K_HELP_ARTICLES: HelpArticle[] = [
     category: "Inbox",
     title: "Contacts and leads",
     summary: "Contacts records the Instagram people who interact with your connected automations.",
-    steps: ["Open Contacts to search people captured by AP3K.", "A lead is counted when an eligible automation captures the interaction defined by the flow.", "A captured contact is not a confirmed sale. Use your store or booking system to verify purchases and bookings.", "Open an Inbox conversation to review message context and reply manually.", "Use automation analytics to compare comments, public replies, DMs, and leads."],
+    steps: ["Open Contacts to search people captured by AP3K. Use Last interacted on, Created on, Email and Phone filters.", "Pro and Business can collect email and phone in supported automations and export filtered Contacts using Download CSV. Both fields update the same contact.", "A lead is counted when an eligible automation captures the interaction defined by the flow.", "A captured contact is not a confirmed sale. Use your store or booking system to verify purchases and bookings.", "Open an Inbox conversation to review message context and reply manually.", "Use automation analytics to compare comments, public replies, DMs, and leads."],
   },
   {
     slug: "plans-usage",

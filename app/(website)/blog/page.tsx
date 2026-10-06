@@ -101,10 +101,10 @@ export default async function BlogPage({ searchParams }: Props) {
     url: `https://ap3k.com${localizePublicPath(blogPagePath(pagination.page), locale)}`,
     mainEntity: {
       "@type": "ItemList",
-      itemListElement: [...(!query && pagination.page === 1 ? featured : []), ...posts].map((post, index) => ({
+      itemListElement: Array.from(new Map([...(!query && pagination.page === 1 ? featured : []), ...posts].map(post => [post.slug, post])).values()).map((post, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: `https://ap3k.com${localizePublicPath(`/blog/${post.slug}`, locale)}`,
+        url: `https://ap3k.com${localizePublicPath(`/blog/${post.slug}`, post.contentLocale ?? locale)}`,
       })),
     },
   };
@@ -129,6 +129,8 @@ export default async function BlogPage({ searchParams }: Props) {
 
         <h3>{post.title}</h3>
       </Link>
+      <p className="mt-3 text-xs font-semibold text-violet-700 dark:text-violet-300">{post.category}</p>
+      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{post.description}</p>
       <div className={s.byline}>
         <AP3KLogo
           showText={false}

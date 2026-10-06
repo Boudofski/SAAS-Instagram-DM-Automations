@@ -3,6 +3,7 @@
 import { onCurrentUser } from "@/actions/user";
 import { findUser } from "@/actions/user/queries";
 import { generateAiSupportReply } from "@/lib/ai-reply";
+import { selectSupportResources } from "@/lib/support-resources";
 import { client } from "@/lib/prisma";
 
 async function supportProfile() {
@@ -21,7 +22,8 @@ export async function getSupportHistoryAction() {
       take: 60,
       select: { id: true, role: true, content: true, createdAt: true },
     });
-    return { status: 200 as const, messages: messages.reverse() };
+    const chronological = messages.reverse();
+    return { status: 200 as const, messages: chronological.map((message, index) => ({ ...message, resources: message.role === "assistant" ? selectSupportResources(chronological[index - 1]?.content || "", chronological.slice(0, index - 1).reverse().find(item => item.role === "user")?.content) : [] })) };
   } catch {
     return { status: 401 as const, messages: [] };
   }
@@ -54,12 +56,12 @@ export async function askSupportAssistantAction(message: string) {
       message: prompt,
       history: history.reverse().map((item) => ({ role: item.role === "assistant" ? "assistant" : "user", content: item.content })),
     });
-    if (!result.ok) return { status: 503 as const, data: "The support assistant is unavailable. Please use the Knowledge base or email support@ap3k.com.", userMessage };
+    if (!result.ok) return { status: 503 as const, data: "The support assistant is unavailable. Please use the Documentation or email support@ap3k.com.", userMessage };
     const assistantMessage = await client.aiChatMessage.create({
       data: { userId: profile.id, context: "SUPPORT", role: "assistant", content: result.reply },
       select: { id: true, role: true, content: true, createdAt: true },
     });
-    return { status: 200 as const, data: result.reply, userMessage, assistantMessage };
+    return { status: 200 as const, data: result.reply, userMessage, assistantMessage: { ...assistantMessage, resources: selectSupportResources(prompt, [...history].reverse().find(item => item.role === "user")?.content) } };
   } catch {
     return { status: 503 as const, data: "Support is unavailable right now. Email support@ap3k.com." };
   }
