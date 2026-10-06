@@ -10,8 +10,10 @@ import {
   type Comparison,
 } from "@/lib/comparisons";
 import s from "./public-pages.module.css";
+import ManychatComparison from "./manychat-comparison";
 
 export default function ComparisonPage({ page }: { page: Comparison }) {
+  if (page.slug === "manychat") return <ManychatComparison />;
   const path = comparisonPath(page);
   const faqs = [
     {

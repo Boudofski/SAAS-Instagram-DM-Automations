@@ -1,7 +1,9 @@
+import { BUTTON_LABEL_GUIDE } from "./button-label-guide";
 import type { BlogPost } from "../blog";
 
 /** Substantive editorial revisions keep existing URLs, not duplicate SEO pages. */
 export const SEO_REVISIONS: Record<string, Partial<BlogPost>> = {
+  "comment-to-dm-button-labels": BUTTON_LABEL_GUIDE,
   "instagram-comment-to-dm-automation": {
     importedArchive: false,
     title: "Instagram Comment-to-DM Automation: Setup and Testing",

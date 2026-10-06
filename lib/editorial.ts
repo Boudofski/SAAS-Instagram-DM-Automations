@@ -62,6 +62,8 @@ export const editorialSchema = z.object({
     .array(
       z.object({
         heading: text(180).min(1),
+        video: z.boolean().optional(),
+        table: z.object({ headers: z.array(text(200)).min(1).max(6), rows: z.array(z.array(text(1000)).max(6)).max(30) }).optional(),
         paragraphs: z.array(text(10000)).max(20),
         bullets: z.array(text(2000)).max(30).optional(),
         screenshot: screenshot.optional(),
@@ -97,6 +99,8 @@ export function normalizeEditorial(value: unknown, now = new Date()): BlogPost {
       s.heading,
       ...s.paragraphs,
       ...(s.bullets || []),
+      ...(s.table?.headers || []),
+      ...(s.table?.rows || []).flat(),
       ...(s.steps || []).flatMap((t) => [t.title, t.body]),
     ]),
   ]

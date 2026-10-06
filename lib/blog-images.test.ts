@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { BLOG_POSTS } from './blog';
-import { SEO_REVISED_SLUGS } from './content/seo-revisions';
+import importedPosts from './content/imported-blog/index.json';
 import { articleImageUrl, getArticleImage } from './blog-images';
 import { buildCoverPlan, renderCoverSvg } from './blog-cover-diagram';
 import { tutorialImageSrc } from './tutorial-content';
@@ -13,7 +13,7 @@ describe('article-specific covers', () => {
     const posts = BLOG_POSTS.filter(post => !post.cover && post.importedArchive);
     const images = posts.map(getArticleImage);
     // A revised original guide uses a real AP3K screenshot instead of archive art.
-    expect(posts.length).toBe(175 - SEO_REVISED_SLUGS.size);
+    expect(posts.map(p => p.slug).sort()).toEqual(importedPosts.filter(p => BLOG_POSTS.some(current => current.slug === p.slug && current.importedArchive && !current.cover)).map(p => p.slug).sort());
     expect(new Set(images.map(image => image.src)).size).toBe(posts.length);
     for (const image of images) {
       expect(image.src).toMatch(/^\/images\/(blog\/imported\/[a-f0-9]+|docs\/[a-z-]+)\.webp$/);

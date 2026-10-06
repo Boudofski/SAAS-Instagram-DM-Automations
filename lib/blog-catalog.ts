@@ -8,6 +8,8 @@ import growthPosts from "./content/growth/en.json";
 import { ILLUSTRATED_POSTS, INSTAGRAM_CONNECTION_SECTIONS, type TutorialScreenshotId } from "./tutorial-content";
 
 export type BlogSection = {
+  video?: boolean;
+  table?: { headers: string[]; rows: string[][] };
   links?: { label: string; href: string }[];
   screenshot?: TutorialScreenshotId;
   heading: string;

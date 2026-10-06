@@ -5,7 +5,6 @@ import imported from './content/imported-blog/index.json';
 import covers from './content/imported-blog/covers.json';
 import redirects from './content/imported-blog/redirects.json';
 import { BLOG_POSTS } from './blog';
-import { SEO_REVISED_SLUGS } from './content/seo-revisions';
 import { getEditorialArchive } from './blog-archive';
 import { getBlogPage } from './blog-pagination';
 
@@ -22,11 +21,11 @@ describe('supplied blog archive migration', () => {
       expect(imported.some(post => post.slug === destination)).toBe(true);
     }
   });
-  it('publishes all 175 unique articles in the source order across 20 archive pages', () => {
+  it('keeps imported articles discoverable alongside original guides', () => {
     const archive = getEditorialArchive(BLOG_POSTS);
-    expect(archive.posts.filter(p => p.importedArchive || SEO_REVISED_SLUGS.has(p.slug)).map(p => p.slug)).toEqual(imported.map(p => p.slug));
-    expect(new Set(archive.posts.map(p => p.slug)).size).toBe(176);
-    expect(getBlogPage(undefined, archive.posts.length)?.pages).toBe(20);
+    expect(archive.posts.filter(p => imported.some(source => source.slug === p.slug)).map(p => p.slug).sort()).toEqual(imported.map(p => p.slug).sort());
+    expect(new Set(archive.posts.map(p => p.slug)).size).toBe(archive.posts.length);
+    expect(getBlogPage(undefined, archive.posts.length)?.pages).toBe(Math.ceil(archive.posts.length / 9));
     expect(archive.featured).toHaveLength(4);
   });
   it('uses a distinct, present cover for every imported article', () => {

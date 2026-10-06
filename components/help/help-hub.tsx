@@ -1,5 +1,8 @@
 "use client";
 
+import { useSupportSound } from "./use-support-sound";
+import { SupportResources } from "./support-resources";
+import type { SupportResource } from "@/lib/support-resources";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/providers/i18n-provider";
 import { translateUi } from "@/lib/i18n/translate";
@@ -8,13 +11,13 @@ import { useUi } from "@/components/i18n/use-ui";
 import { UiText } from "@/components/i18n/localized-copy";
 import { askSupportAssistantAction, clearSupportHistoryAction, getSupportHistoryAction } from "@/actions/support";
 import { cn } from "@/lib/utils";
-import { BookOpen, CircleHelp, ExternalLink, Loader2, Mail, RefreshCw, RotateCcw, Send, Sparkles, X } from "lucide-react";
+import { BookOpen, CircleHelp, ExternalLink, Loader2, Mail, RefreshCw, RotateCcw, Send, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { CSSProperties } from "react";
 
-type ChatMessage = { id: string; role: string; content: string; createdAt: Date | string };
+type ChatMessage = { id: string; role: string; content: string; createdAt: Date | string; resources?: SupportResource[] };
 
 export default function HelpHub({ slug, expanded = true, mobile = false }: { slug: string; expanded?: boolean; mobile?: boolean }) {
   const { locale } = useI18n();
@@ -53,7 +56,7 @@ export default function HelpHub({ slug, expanded = true, mobile = false }: { slu
             </div>
           </PopoverContent>
       </Popover>
-      {assistantOpen ? <SupportAssistant onClose={() => setAssistantOpen(false)} onRestoreFocus={() => helpButtonRef.current?.focus()} /> : null}
+      {assistantOpen ? <SupportAssistant workspace={slug} onClose={() => setAssistantOpen(false)} onRestoreFocus={() => helpButtonRef.current?.focus()} /> : null}
     </>
   );
 }
@@ -63,8 +66,9 @@ function HelpLink({ href, icon: Icon, title, detail }: { href: string; icon: typ
   return <Link href={localizePublicPath(href, locale)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-100 dark:hover:bg-white/[0.06]"><span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 light:text-slate-600 dark:bg-white/[0.06]"><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block text-sm font-black"><UiText>{title}</UiText></span><span className="block truncate text-xs text-slate-500 light:text-slate-600"><UiText>{detail}</UiText></span></span><ExternalLink className="h-3.5 w-3.5 text-slate-400" /></Link>;
 }
 
-function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; onRestoreFocus: () => void }) {
+function SupportAssistant({ workspace, onClose, onRestoreFocus }: { workspace: string; onClose: () => void; onRestoreFocus: () => void }) {
   const tr = useUi();
+  const sound = useSupportSound();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -93,12 +97,13 @@ function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; on
       visualViewport.removeEventListener("scroll", update);
     };
   }, []);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, pending]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, [messages, pending]);
 
   const send = async () => {
     const value = draft.trim();
     if (!value || requestInFlight.current) return;
     requestInFlight.current = true;
+    sound.prepare();
     setPending(true);
     setDraft("");
     setNotice(null);
@@ -108,6 +113,7 @@ function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; on
       const result = await askSupportAssistantAction(value);
       if (result.status === 200 && result.userMessage && result.assistantMessage) {
         setMessages((current) => [...current.filter((item) => item.id !== optimistic.id), result.userMessage!, result.assistantMessage!]);
+        sound.complete();
       } else {
         if ("userMessage" in result && result.userMessage) {
           setMessages((current) => [...current.filter((item) => item.id !== optimistic.id), result.userMessage!]);
@@ -146,13 +152,14 @@ function SupportAssistant({ onClose, onRestoreFocus }: { onClose: () => void; on
         <header className="flex min-h-[72px] shrink-0 items-center gap-3 border-b border-slate-200 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] dark:border-white/10 sm:py-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ap3k-gradient text-white shadow-lg shadow-violet-500/20"><Sparkles className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1"><Dialog.Title className="truncate font-black"><UiText>{"AP3K Support Assistant"}</UiText></Dialog.Title><Dialog.Description className="truncate text-xs text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Answers based on AP3K"}</UiText></Dialog.Description></div>
+          <button type="button" onClick={sound.toggle} aria-pressed={sound.enabled} aria-label={sound.enabled ? "Mute response sound" : "Enable response sound"} title={sound.enabled ? "Response sound on (suppressed with reduced motion)" : "Response sound off"} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 dark:text-slate-400">{sound.enabled ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
           <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={tr("Close support")} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 light:text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"><X className="h-5 w-5" /></button>
         </header>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-5">
           <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-slate-100 px-4 py-3 text-sm leading-6 dark:bg-white/[0.07]"><UiText>{"Hi! Ask me how to connect Instagram, build an automation, use AP3K AI, manage billing, or troubleshoot your workspace."}</UiText></div>
           <p className="px-1 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400"><UiText>{"Support Assistant · AI agent"}</UiText></p>
           {loading ? <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-violet-500" /></div> : null}
-          {messages.map((message) => <div dir="auto" key={message.id} className={cn("whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6", message.role === "user" ? "ms-auto max-w-[85%] rounded-br-md bg-violet-600 text-white" : "max-w-[92%] rounded-bl-md bg-slate-100 dark:bg-white/[0.07]")}>{message.content}</div>)}
+          {messages.map((message) => <div dir="auto" key={message.id} className={cn("whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6", message.role === "user" ? "ms-auto max-w-[85%] rounded-br-md bg-violet-600 text-white" : "max-w-[92%] rounded-bl-md bg-slate-100 dark:bg-white/[0.07]")}>{message.content}{message.role === "assistant" && message.resources?.length ? <SupportResources resources={message.resources} workspace={workspace} /> : null}</div>)}
           {pending ? <div className="flex w-fit items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs text-slate-500 light:text-slate-600 dark:bg-white/[0.07]"><Loader2 className="h-3.5 w-3.5 animate-spin" /><UiText>{" Thinking…"}</UiText></div> : null}
           {notice ? <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-200"><UiText>{notice}</UiText></p> : null}
           <div ref={bottomRef} />
