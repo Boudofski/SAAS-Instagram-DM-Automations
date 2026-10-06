@@ -286,10 +286,11 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
               Pro or Business.
             </p>
           </div>
-          <HomeShowcase locale="en" autoPlay={false} />
+          <HomeShowcase locale="en" autoPlay={false} contained />
           <p className={s.demoNote}>
-            Illustrative examples. Actual delivery depends on your settings,
-            plan and Instagram eligibility.
+            Swipe on mobile or select a feature on desktop. Illustrative
+            examples. Actual delivery depends on your settings, plan and
+            Instagram eligibility.
           </p>
         </section>
         <section className={s.section} id="features">
@@ -323,11 +324,11 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map(([label, ap3k, manychat]) => (
+                {rows.map(([label, ap3k, competitor]) => (
                   <tr key={label}>
                     <th scope="row">{label}</th>
                     <td>{ap3k}</td>
-                    <td>{manychat}</td>
+                    <td>{competitor}</td>
                   </tr>
                 ))}
               </tbody>

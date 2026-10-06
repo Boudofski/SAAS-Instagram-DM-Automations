@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ["latin"], display: "swap" });
 const ART = ["send_links", "reply_to_comments", "reply_to_dm", "send_a_follow_up_message", "get_new_followers", "collect_contact_details", "reply_to_story_mentions", "reply_to_shared_post"] as const;
 const CYCLE_MS = 5000;
 
-export default function HomeShowcase({ locale: fixedLocale, autoPlay = true }: { locale?: "en"; autoPlay?: boolean } = {}) {
+export default function HomeShowcase({ locale: fixedLocale, autoPlay = true, contained = false }: { locale?: "en"; autoPlay?: boolean; contained?: boolean } = {}) {
   const { locale: selectedLocale } = useI18n();
   const locale = fixedLocale ?? selectedLocale;
   const copy = HOME_SHOWCASE_COPY[locale];
@@ -66,7 +66,7 @@ export default function HomeShowcase({ locale: fixedLocale, autoPlay = true }: {
     </motion.div>
   </AnimatePresence>;
 
-  return <section ref={section} className={`${styles.section} ${inter.className}`} aria-labelledby={desktop ? "automatic-heading" : "automatic-heading-mobile"} lang={locale}>
+  return <section ref={section} className={`${styles.section} ${inter.className} ${contained ? styles.contained : ""}`} aria-labelledby={desktop ? "automatic-heading" : "automatic-heading-mobile"} lang={locale}>
     <div className={styles.desktop} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
       <motion.div aria-hidden="true" className={`${styles.wing} ${styles.left}`} style={reduced ? { rotate: -12 } : { x: leftX, rotate: leftRotate, opacity }}>{art("l")}</motion.div>
       <div className={styles.panel}>
