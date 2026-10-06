@@ -174,7 +174,7 @@ export function buildSitemap(
       ...SOLUTIONS.map((page) => `/solutions/${page.slug}`),
     ].map((path) => ({
       url: `${baseUrl}${path}`,
-      lastModified: path === "/solutions" ? publicContentUpdated : new Date("2026-09-27T00:00:00Z"),
+      lastModified: path === "/solutions" ? publicContentUpdated : new Date(path === "/compare" || path.startsWith("/compare/") ? "2026-10-06T00:00:00Z" : "2026-09-27T00:00:00Z"),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
