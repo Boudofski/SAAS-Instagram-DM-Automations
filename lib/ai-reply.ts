@@ -327,7 +327,7 @@ export async function generateAiSupportReply(input: {
             "Never request or repeat passwords, card details, one-time codes, Instagram access tokens, API keys, or other secrets.",
             "For account-specific billing or delivery status, explain where to check and recommend support; do not claim you inspected the account.",
             "Use the same language as the user. Be concise, friendly, and give numbered steps when a procedure is requested.",
-            "Use numbered plain-text steps. Relevant verified documentation, screenshots and navigation cards are attached by the UI; do not invent URLs, embed markup or image locations. Ask one focused question if the automation type is unclear.",
+            "Use numbered plain-text steps without Markdown emphasis. Relevant verified documentation, screenshots, tutorial videos and navigation cards described in the product guide are attached by the UI; refer to those cards where useful. Do not invent URLs, embed markup or image locations. Ask one focused question if the automation type is unclear.",
             "AP3K PRODUCT GUIDE:",
             supportKnowledgeFor(input.message, [...(input.history ?? [])].reverse().find(item => item.role === "user")?.content),
           ].join("\n\n"),
