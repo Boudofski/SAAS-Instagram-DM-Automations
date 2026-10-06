@@ -3,7 +3,7 @@ import type { BlogPost } from "../blog-catalog";
 /** Reviewed against the Post message editor, link-button serializer and plan limits. */
 export const DM_DELIVERY_GUIDES: Record<string, Partial<BlogPost>> = {
   "comment-to-dm-final-message-templates": {
-    title: "Instagram Auto-DM Templates: 8 Messages for Requested Links",
+    title: "8 Instagram Auto-DM Templates",
     seoTitle: "8 Instagram Auto-DM Templates for Requested Links | AP3K",
     description: "Copy eight Instagram DM examples for guides, products, bookings and events. Add the right button, set up the final message in AP3K and test delivery.",
     updatedAt: "2026-10-06",
@@ -76,7 +76,7 @@ export const DM_DELIVERY_GUIDES: Record<string, Partial<BlogPost>> = {
     ],
   },
   "comment-to-dm-three-link-buttons": {
-    title: "Instagram DM Link Buttons: Set Up One, Two or Three in AP3K",
+    title: "One, Two or Three Instagram DM Buttons",
     seoTitle: "Instagram DM Link Buttons: One, Two or Three | AP3K",
     description: "Choose the right number of Instagram DM links, configure up to three buttons in AP3K, and test each destination with clear labels and tracking examples.",
     updatedAt: "2026-10-06",
@@ -147,7 +147,7 @@ export const DM_DELIVERY_GUIDES: Record<string, Partial<BlogPost>> = {
     ],
   },
   "comment-to-dm-wrong-link": {
-    title: "Instagram Auto-DM Opens the Wrong Link: A Troubleshooting Guide",
+    title: "Fix an Instagram Auto-DM That Opens the Wrong Link",
     seoTitle: "Fix an Instagram Auto-DM That Opens the Wrong Link | AP3K",
     description: "Trace the wrong Instagram DM link from the received message to its AP3K automation, saved button, redirect and landing page. Fix it and retest safely.",
     updatedAt: "2026-10-06",
