@@ -39,3 +39,6 @@
 @media (prefers-reduced-motion: reduce) { .options button { transition: none; } .track { scroll-behavior: auto; } }
 
 :global(html:not(.dark)) .options button:focus-visible, :global(html:not(.dark)) .track:focus-visible { outline-color:#6d28d9; }
+
+/* Fit the swipe cards to narrower embedded sections, without changing the homepage. */
+.contained .slide { flex-basis: min(304px, 100%); }

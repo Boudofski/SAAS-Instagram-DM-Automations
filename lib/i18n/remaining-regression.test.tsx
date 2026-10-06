@@ -21,6 +21,9 @@ vi.mock("@/providers/i18n-provider", () => ({
   useI18n: () => ({ locale: state.locale }),
 }));
 vi.mock("./server", () => ({ getServerLocale: () => state.locale }));
+// Next transforms font loaders during builds; supply their class names in Node tests.
+vi.mock("next/font/google", () => ({ Inter: () => ({ className: "font-inter" }) }));
+vi.mock("next/font/local", () => ({ default: () => ({ className: "font-local" }) }));
 vi.mock("@/components/global/website-nav", () => ({ default: () => null }));
 vi.mock("@/components/global/website-footer", () => ({ default: () => null }));
 import LocalizedCopy, { UiText } from "@/components/i18n/localized-copy";
