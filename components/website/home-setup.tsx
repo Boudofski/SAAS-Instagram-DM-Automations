@@ -9,11 +9,17 @@ import styles from "./home-setup.module.css";
 const geist = localFont({ src: "../../public/fonts/geist/Geist-Variable.woff2", weight: "100 900", display: "swap" });
 const ANGLES = [-2, 1, -1];
 
-export default function HomeSetup() {
-  const { locale } = useI18n();
-  const copy = HOME_SETUP_COPY[locale];
+export default function HomeSetup({ locale: fixedLocale, comparison = false }: { locale?: "en"; comparison?: boolean } = {}) {
+  const { locale: selectedLocale } = useI18n();
+  const locale = fixedLocale ?? selectedLocale;
+  const baseCopy = HOME_SETUP_COPY[locale];
+  const copy = comparison ? { ...baseCopy, cards: [
+    { title: "Choose the trigger", description: "Pick an eligible post comment, Story interaction or incoming DM." },
+    { title: "Build your response", description: "Write the message and add the destination your audience requested." },
+    { title: "Test the full journey", description: "Review and publish deliberately, then test from another Instagram account." },
+  ] } : baseCopy;
   const reduced = useReducedMotion();
-  const labels = [copy.trigger, "share-link.com", "❤️ 9K · 💬 2K"];
+  const labels = [copy.trigger, "share-link.com", comparison ? "Preview → Test" : "❤️ 9K · 💬 2K"];
 
   return <section id="automation-setup" className={`${styles.section} ${geist.className}`} lang={locale} aria-labelledby="automation-setup-title">
     <div className={styles.container}>

@@ -10,6 +10,9 @@ import { buildSitemap } from "@/lib/sitemap";
 import { localeAlternates, localizePublicPath, resolveRequestLocale, SUPPORTED_LOCALES } from "@/lib/i18n/config";
 const state = vi.hoisted(() => ({ hidden: "", title: "", locale: "fr" }));
 vi.mock("@/lib/i18n/server", () => ({ getServerLocale: () => state.locale }));
+// Next transforms font loaders during builds; supply their class names in Node tests.
+vi.mock("next/font/google", () => ({ Inter: () => ({ className: "font-inter" }) }));
+vi.mock("next/font/local", () => ({ default: () => ({ className: "font-local" }) }));
 vi.mock("@/components/global/website-nav", () => ({ default: () => null }));
 vi.mock("@/components/global/website-footer", () => ({ default: () => null }));
 vi.mock("@/lib/editorial-server", () => ({ getPublishedPosts: async () => BLOG_POSTS.filter(p=>p.slug!==state.hidden).map(p=>state.title && p.slug===EXPANSION_POSTS[1].slug ? {...p,title:state.title} : p) }));
