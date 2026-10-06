@@ -6,6 +6,13 @@ import { AP3K_HELP_ARTICLES } from "./ap3k-help";
 import { BLOG_POSTS } from "./blog";
 
 describe("grounded support", () => {
+  it("tells the model about the tutorial and screenshot cards attached to its answer", () => {
+    const knowledge = supportKnowledgeFor("How do I add link buttons and watch the tutorial?");
+    expect(knowledge).toContain("a current example product screenshot");
+    expect(knowledge).toContain("plus the AP3K setup tutorial video");
+    expect(knowledge).toContain("SSOYGbfwLUQ");
+    expect(knowledge).toContain("expand Watch the AP3K setup tutorial");
+  });
   it("keeps every attached documentation destination real and internal", () => {
     const paths = new Set(["/pricing", ...DOCS_ARTICLES.map(a=>`/docs/${a.slug}`), ...AP3K_HELP_ARTICLES.map(a=>`/help/${a.slug}`)]);
     for (const resource of SUPPORT_RESOURCES) expect(paths.has(resource.href), resource.href).toBe(true);
