@@ -21,6 +21,7 @@ import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import Link from "next/link";
+import { Settings2 } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -96,7 +97,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
             : "border-slate-200 light:border-slate-300 bg-white dark:bg-gradient-to-br dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
-          <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <InstagramAvatar src={displayProfilePictureUrl} username={displayInstagramUsername} label={instagram.pageName} size="lg" />
               <div className="min-w-0">
@@ -119,8 +120,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               <span className="ap3k-badge ap3k-badge-slate hidden sm:inline-flex"><UiText>{planLabel}</UiText></span>
               {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green hidden sm:inline-flex"><UiText>{"Fresh"}</UiText></span>}
               {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate gap-1 hidden sm:inline-flex"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
-              <Link href={`/dashboard/${params.slug}/account`} className="inline-flex min-h-11 items-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition-colors hover:bg-violet-100 dark:hover:bg-rf-pink/15 sm:min-h-0">
-                <UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText>
+              <Link href={`/dashboard/${params.slug}/account`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition-colors hover:bg-violet-100 dark:hover:bg-rf-pink/15 sm:min-h-0">
+                {!tokenExpired && <Settings2 aria-hidden="true" className="h-4 w-4 sm:hidden" />}
+                <span className={tokenExpired ? "" : "sr-only sm:not-sr-only"}><UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText></span>
               </Link>
             </div>
           </div>
