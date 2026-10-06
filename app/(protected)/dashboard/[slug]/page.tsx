@@ -80,33 +80,33 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const dashboardProfileStats = getDashboardProfileStats({ snapshotComparison, metrics, usage, connected: instagramConnected });
 
   return (
-    <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
+    <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4 px-1 py-2 sm:gap-6 sm:py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div className="ap3k-content-enter">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-rf-pink"><UiText>{"AP3K"}</UiText></p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText><bdi dir="auto">{displayName}</bdi></h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+        <p className="hidden text-xs font-black uppercase tracking-[0.18em] text-rf-pink sm:block"><UiText>{"AP3K"}</UiText></p>
+        <h1 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl"><UiText>{"Welcome back, "}</UiText><bdi dir="auto">{displayName}</bdi></h1>
+        <p className="mt-1 hidden max-w-2xl text-sm sm:block text-slate-600 dark:text-slate-400">
           <UiText>{"See performance, manage automations, and keep Instagram conversations moving."}</UiText>
         </p>
       </div>
 
       {instagramConnected && instagram && (
         <div className={[
-          "group ap3k-content-enter overflow-hidden rounded-2xl border p-5 shadow-surface  dark:bg-white/[0.04]",
+          "group ap3k-content-enter overflow-hidden rounded-2xl border p-3 sm:p-5 shadow-surface  dark:bg-white/[0.04]",
           tokenExpired
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
             : "border-slate-200 light:border-slate-300 bg-white dark:bg-gradient-to-br dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
+          <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <InstagramAvatar src={displayProfilePictureUrl} username={displayInstagramUsername} label={instagram.pageName} size="lg" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+                  <p className="truncate text-lg font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
                     {displayInstagramUsername ? <bdi dir="ltr">@{displayInstagramUsername}</bdi> : <UiText>{"Instagram connected"}</UiText>}
                   </p>
                   <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}><UiText>{tokenExpired ? "Reconnect" : "Connected"}</UiText></span>
                 </div>
-                <p className="mt-1 text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">
+                <p className={`${tokenExpired ? "" : "hidden sm:block"} mt-1 text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400`}>
                   {tokenExpired
                     ? <UiText>{"Reconnect Instagram to resume automation activity."}</UiText>
                     : profileSnapshot?.fetchedAt
@@ -116,10 +116,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <span className="ap3k-badge ap3k-badge-slate"><UiText>{planLabel}</UiText></span>
-              {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green"><UiText>{"Fresh"}</UiText></span>}
-              {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate gap-1"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
-              <Link href={`/dashboard/${params.slug}/account`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition hover:-translate-y-0.5 hover:bg-violet-100 dark:hover:bg-rf-pink/15">
+              <span className="ap3k-badge ap3k-badge-slate hidden sm:inline-flex"><UiText>{planLabel}</UiText></span>
+              {profileSnapshotStatus.label === "Fresh" && <span className="ap3k-badge ap3k-badge-green hidden sm:inline-flex"><UiText>{"Fresh"}</UiText></span>}
+              {typeof profileSnapshot?.followersCount === "number" && <span className="ap3k-badge ap3k-badge-slate gap-1 hidden sm:inline-flex"><MetricValue value={profileSnapshot.followersCount} /> <UiText>{"followers"}</UiText></span>}
+              <Link href={`/dashboard/${params.slug}/account`} className="inline-flex min-h-11 items-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition-colors hover:bg-violet-100 dark:hover:bg-rf-pink/15 sm:min-h-0">
                 <UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText>
               </Link>
             </div>
@@ -131,8 +131,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
       <section className="ap3k-content-enter">
         <div className="mb-3">
-          <p className="ap3k-kicker"><UiText>{"Account analytics"}</UiText></p>
-          <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
+          <p className="ap3k-kicker hidden sm:block"><UiText>{"Account analytics"}</UiText></p>
+          <h2 className="text-base sm:text-xl font-black tracking-tight text-slate-950 dark:text-white"><UiText>{"Instagram performance"}</UiText></h2>
         </div>
         {instagramConnected && <div className="mb-3 flex ap3k-content-enter flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid w-full grid-cols-4 rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:inline-flex sm:w-fit">
@@ -178,9 +178,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       </section>
 
       <section className="ap3k-content-enter">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div>
-            <p className="ap3k-kicker"><UiText>{"Automations"}</UiText></p>
+            <p className="ap3k-kicker hidden sm:block"><UiText>{"Automations"}</UiText></p>
             <h2 className="font-black text-slate-950 dark:text-white"><UiText>{"Recent automations"}</UiText></h2>
           </div>
           <Link href={`/dashboard/${params.slug}/automation`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition hover:-translate-y-0.5 hover:bg-violet-100 dark:hover:bg-rf-pink/15"><UiText>{"View all"}</UiText></Link>
@@ -207,13 +207,13 @@ function AccountStatCard({ label, value, change, subtitle }: { label: string; va
         : "text-slate-500 light:text-slate-600 dark:text-slate-500";
 
   return (
-    <div className="min-w-0 border-b border-r border-slate-200 light:border-slate-300 px-3 py-4 transition duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0">
+    <div className={`${label === "Posts" ? "hidden sm:block" : ""} min-w-0 border-b border-r border-slate-200 light:border-slate-300 px-3 py-3 transition-colors duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0`}>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{label}</UiText></p>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
         <p className="min-w-0 break-words text-xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-2xl"><MetricValue value={value} /></p>
         <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}><MetricValue value={change?.label ?? "—"} /></span>
       </div>
-      <p className="mt-2 text-[11px] leading-tight text-slate-500 light:text-slate-600 dark:text-slate-400">{subtitle}</p>
+      <p className="mt-2 hidden text-[11px] leading-tight sm:block text-slate-500 light:text-slate-600 dark:text-slate-400">{subtitle}</p>
     </div>
   );
 }

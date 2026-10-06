@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { COMPARISONS, comparisonPath } from "@/lib/comparisons";
 
 const reviewPages = [
+  "/docs-review/mobile",
   "/compare",
   ...COMPARISONS.map(comparisonPath),
   "/blog",
@@ -17,6 +19,7 @@ const reviewPages = [
 ];
 
 export default function Review() {
+  const { theme, setTheme } = useTheme();
   const [width, setWidth] = useState(390);
   const [path, setPath] = useState(reviewPages[0]);
   return (
@@ -36,6 +39,7 @@ export default function Review() {
             {w}px
           </button>
         ))}
+        <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>Toggle theme</button>
         <select
           aria-label="Review page"
           value={path}
