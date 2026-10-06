@@ -1,4 +1,3 @@
-import FEATURED_BLOG_SLUGS from "./content/imported-blog/featured.json";
 import type { BlogPost } from "./blog";
 import { EXPANSION_POSTS } from "./content/expansion";
 import { filterBlogPosts } from "./blog-search";
@@ -9,7 +8,13 @@ export const REFERENCE_GUIDE_SLUGS = new Set([
   "ap3k-workspace-visual-guide", "create-ap3k-automation-visual-guide",
   "set-up-ap3k-ai-visual-guide", "connect-instagram-to-ap3k",
 ]);
-export { default as FEATURED_BLOG_SLUGS } from "./content/imported-blog/featured.json";
+// Curate maintained AP3K guides independently of the imported source archive.
+export const FEATURED_BLOG_SLUGS = [
+  "instagram-comment-to-dm-automation",
+  "comment-to-dm-final-message-templates",
+  "manychat-vs-ap3k-pricing-for-instagram",
+  "comment-to-dm-wrong-link",
+];
 export function getEditorialArchive(posts: BlogPost[], query = "") {
   // The caller supplies the published CMS collection. Content provenance is
   // not a publication flag: original AP3K guides must remain discoverable too.

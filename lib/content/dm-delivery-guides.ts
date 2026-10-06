@@ -36,7 +36,7 @@ export const DM_DELIVERY_GUIDES: Record<string, Partial<BlogPost>> = {
       },
       {
         heading: "Put the copy in the final DM controls",
-        paragraphs: ["Open the relevant Post automation and review the DM message controls. Use the message field for the text and the separate Button label and Destination URL fields for the action. Do not paste a drafted label into the URL field. The screenshot shows an example workspace, not a campaign already created for you."],
+        paragraphs: ["Open the relevant Post automation and review the DM message controls. Choose Text with button in the Message card’s layout selector to expose the link fields. Use the message field for the text and the separate Button label and Destination URL fields for the action. Do not paste a drafted label into the URL field. The screenshot shows an example workspace, not a campaign already created for you."],
         screenshot: "dm-message",
         steps: [
           { title: "Check the account and post", body: "Confirm the selected Instagram username and the post containing the offer. Edit the intended automation rather than a similarly named campaign." },
@@ -100,7 +100,7 @@ export const DM_DELIVERY_GUIDES: Record<string, Partial<BlogPost>> = {
       },
       {
         heading: "Add and review the links in AP3K",
-        paragraphs: ["Open the DM message controls in your Post automation. Each Button row pairs a Destination URL with a Button label. The editor provides Add link while fewer than three buttons are present. Its label counter allows up to 20 characters; keep the wording short enough to remain clear in the receiving app."],
+        paragraphs: ["Open the DM message controls in your Post automation and choose Text with button in the Message card’s layout selector. Each Button row pairs a Destination URL with a Button label. The editor provides Add link while fewer than three buttons are present. Its label counter allows up to 20 characters; keep the wording short enough to remain clear in the receiving app."],
         screenshot: "dm-message",
         steps: [
           { title: "Write the choice above the buttons", body: "Explain why there is more than one destination. For language versions, say ‘Choose the language you want to read’ instead of leaving the recipient to infer the difference." },

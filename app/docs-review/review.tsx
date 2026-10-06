@@ -3,6 +3,7 @@ import { useState } from "react";
 
 const reviewPages = [
   "/manychat-alternative",
+  "/blog",
   "/help/workspace-tour",
   "/tutorials/instagram-comment-to-dm",
   "/blog/manychat-vs-ap3k-pricing-for-instagram",
