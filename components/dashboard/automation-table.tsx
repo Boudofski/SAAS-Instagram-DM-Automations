@@ -169,7 +169,7 @@ export default function AutomationTable({
         </div>
       )}
 
-      <div className="grid gap-2 p-2 sm:gap-3 sm:p-3 xl:hidden">
+      <div className="divide-y divide-slate-200 dark:divide-white/10 xl:hidden">
         {paged.length === 0 ? (
           <EmptyRows />
         ) : (
@@ -184,7 +184,6 @@ export default function AutomationTable({
               onActivate={handleActivate}
               onDuplicate={handleDuplicate}
               onDelete={handleDelete}
-              compact={!showControls}
             />
           ))
         )}
@@ -247,7 +246,6 @@ function CampaignMobileCard({
   onActivate,
   onDuplicate,
   onDelete,
-  compact = false,
 }: any) {
   const { locale } = useI18n();
   const post = automation.posts?.[0];
@@ -267,15 +265,15 @@ function CampaignMobileCard({
     messagingReviewMode,
   );
   const status = campaignStatus(automation);
-  const replySummary = getReplySummary(automation);
-  const showExceptionalStatus = !["Live", "Paused"].includes(status);
+
 
   return (
     <article
       onClick={(event) =>
         openAnalyticsRow(event, automationAnalyticsHref(slug, automation))
       }
-      className="cursor-pointer rounded-xl border border-slate-200 light:border-slate-300 bg-slate-50 px-3 py-2.5 [contain-intrinsic-size:auto_104px] [content-visibility:auto] transition-colors duration-fast hover:border-pink-300/50 dark:border-white/10 dark:bg-[#101827] dark:hover:bg-white/[0.045] sm:rounded-2xl sm:p-4"
+      className="cursor-pointer px-3 py-2 transition-colors motion-reduce:transition-none hover:bg-slate-50 dark:hover:bg-white/[0.035] sm:px-4 sm:py-3"
+      aria-label={automation.name || translateUi("Untitled automation", locale)}
     >
       <div className="flex min-w-0 items-start gap-2.5">
         <Link
@@ -292,7 +290,7 @@ function CampaignMobileCard({
         <div className="min-w-0 flex-1">
           <Link
             href={automationAnalyticsHref(slug, automation)}
-            className="block truncate text-[15px] font-black leading-5 text-slate-950 hover:text-pink-600 dark:text-white sm:text-base"
+            className="block truncate text-sm font-bold leading-5 text-slate-950 hover:text-pink-600 dark:text-white sm:text-base"
           >
             {automation.name ? (
               <bdi dir="auto">{automation.name}</bdi>
@@ -328,43 +326,32 @@ function CampaignMobileCard({
           </p>
         </div>
 
-        {!compact && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <AutomationToggle
-              active={Boolean(automation.active)}
-              onToggle={(next) => onActivate(automation.id, next)}
-              compact
-            />
-            <AutomationActionsMenu
-              slug={slug}
-              automation={automation}
-              isPending={isPending}
-              onDuplicate={onDuplicate}
-              onDelete={onDelete}
-              compact
-            />
-          </div>
-        )}
+        <AutomationActionsMenu
+          slug={slug}
+          automation={automation}
+          isPending={isPending}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+          compact
+        />
       </div>
 
-      <div className="mt-2 flex min-w-0 items-center gap-2">
-        <ReplyPill summary={replySummary} />
-        {showExceptionalStatus ? <StatusPill status={status} /> : null}
-        <span className="ms-auto whitespace-nowrap text-[10px] font-bold text-slate-500 light:text-slate-600 dark:text-slate-400 sm:text-[11px]">
+      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+          <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${status === "Live" ? "bg-emerald-500" : status === "Needs review" ? "bg-red-500" : status === "Draft" ? "bg-blue-500" : "bg-amber-500"}`} />
+          <UiText>{status}</UiText>
+        </span>
+        <span className="min-w-0 flex-1 text-[11px] text-slate-500 dark:text-slate-400">
           <MetricValue value={runs} /> <UiText>{"Runs"}</UiText>
           {" · "}
           <MetricValue value={leads} /> <UiText>{"Leads"}</UiText>
         </span>
+        <AutomationToggle
+          active={Boolean(automation.active)}
+          onToggle={(next) => onActivate(automation.id, next)}
+          compact
+        />
       </div>
-
-      {compact ? (
-        <Link
-          href={automationAnalyticsHref(slug, automation)}
-          className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-slate-200 light:border-slate-300 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-rf-pink/30 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
-        >
-          <UiText>{"Manage automation"}</UiText>
-        </Link>
-      ) : null}
     </article>
   );
 }
@@ -512,27 +499,15 @@ function AutomationToggle({
       disabled={saving}
       onClick={() => void toggle()}
       className={[
-        "relative inline-flex shrink-0 items-center rounded-full border transition-[background-color,border-color,box-shadow] duration-200 ease-out",
-        compact ? "h-6 w-11" : "h-7 w-12",
+        "relative inline-flex shrink-0 items-center justify-center rounded-full transition-colors duration-200 ease-out motion-reduce:transition-none",
+        compact ? "h-11 w-11" : "h-7 w-12",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111827]",
-        checked
-          ? "border-emerald-500 bg-emerald-500 shadow-sm dark:border-emerald-400 dark:bg-emerald-500"
-          : "border-slate-200 light:border-slate-300 bg-[#edf0f3] dark:border-white/10 dark:bg-white/[0.12]",
         saving ? "cursor-wait opacity-70" : "cursor-pointer",
       ].join(" ")}
     >
-      <span
-        aria-hidden="true"
-        className={[
-          "absolute rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,.20)] transition-transform duration-200 ease-out",
-          compact ? "left-[3px] top-[3px] h-[18px] w-[18px]" : "left-[3px] top-[3px] h-5 w-5",
-          checked
-            ? compact
-              ? "translate-x-5"
-              : "translate-x-5"
-            : "translate-x-0",
-        ].join(" ")}
-      />
+      <span aria-hidden="true" className={`relative block rounded-full border transition-colors duration-200 motion-reduce:transition-none ${compact ? "h-6 w-11" : "h-7 w-12"} ${checked ? "border-emerald-500 bg-emerald-500 dark:border-emerald-400" : "border-slate-300 bg-slate-200 dark:border-white/10 dark:bg-white/[0.12]"}`}>
+        <span className={`absolute left-[2px] top-[2px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none ${compact ? "h-[18px] w-[18px]" : "h-5 w-5"} ${checked ? "translate-x-5" : "translate-x-0"}`} />
+      </span>
     </button>
   );
 }
@@ -574,13 +549,13 @@ function AutomationActionsMenu({
           aria-label={translateUi("More automation actions", locale)}
           className={[
             "inline-flex shrink-0 items-center justify-center border border-slate-200 light:border-slate-300 bg-white text-slate-500 light:text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white",
-            compact ? "h-7 w-7 rounded-lg" : "h-8 w-8 rounded-lg",
+            compact ? "h-11 w-11 rounded-xl border-transparent bg-transparent dark:border-transparent dark:bg-transparent" : "h-8 w-8 rounded-lg",
           ].join(" ")}
         >
           <MoreHorizontal className={compact ? "h-4 w-4" : "h-[18px] w-[18px]"} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={7} className="w-48 rounded-xl p-1.5">
+      <DropdownMenuContent align="end" sideOffset={7} className="w-56 max-w-[calc(100vw-2rem)] rounded-xl p-1.5 [&_[role=menuitem]]:min-h-11">
         {commentSource && <DropdownMenuItem disabled={!automation.active} onSelect={()=>setTool("backtrack")}><History className="mr-2 h-4 w-4"/>Backtrack comments</DropdownMenuItem>}
         {commentSource && <DropdownMenuItem onSelect={()=>void viewMedia()}><ImageIcon className="mr-2 h-4 w-4"/>View Media</DropdownMenuItem>}
         <DropdownMenuItem onSelect={()=>setTool("scan")}><ShieldCheck className="mr-2 h-4 w-4"/>Run safety check</DropdownMenuItem>
