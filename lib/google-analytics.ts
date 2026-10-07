@@ -7,8 +7,8 @@ export const AP3K_GA_ID = "G-1DKJMY5EQ0";
 export function analyticsCampaign(search: string) {
   const params = new URLSearchParams(search);
   const fields = [
-    ["utm_source", "campaign_source", ["instagram", "ap3k_email", "google", "creator_partner", "youtube"]],
-    ["utm_medium", "campaign_medium", ["organic_social", "email", "cpc", "referral"]],
+    ["utm_source", "campaign_source", ["instagram", "facebook", "ap3k_email", "google", "creator_partner", "youtube"]],
+    ["utm_medium", "campaign_medium", ["organic_social", "paid_social", "email", "cpc", "referral"]],
     ["utm_campaign", "campaign_name", ["comment_dm_launch_kit", "comment_dm_search", "creator_pilot"]],
     ["utm_content", "campaign_content", ["kit", "test", "launch", "reel_demo", "story_demo", "carousel", "bio", "search_intent", "partner_demo"]],
   ] as const;
@@ -26,7 +26,7 @@ export function gaMeasurementId(value?: string) {
 
 export function analyticsPage(pathname: string) {
   const path = stripLocaleFromPath(pathname.split(/[?#]/)[0]);
-  const privateArea = path.match(/^\/(dashboard|admin|payment|callback|sign-in|sign-up|onboarding|api)(?:\/|$)/)?.[1];
+  const privateArea = path.match(/^\/(dashboard|admin|ap3k-admin-v2|payment|callback|sign-in|sign-up|onboarding|api)(?:\/|$)/)?.[1];
   return {
     path: privateArea ? `/${privateArea}` : pathname.split(/[?#]/)[0],
     privateArea,

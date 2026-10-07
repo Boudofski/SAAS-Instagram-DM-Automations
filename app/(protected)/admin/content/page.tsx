@@ -6,11 +6,12 @@ import { BLOG_POSTS, type BlogPost } from "@/lib/blog";
 import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import { Button } from "@/components/ui/button";
 
-export default async function ContentPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; status?: string };
-}) {
+export default async function ContentPage(
+  props: {
+    searchParams: Promise<{ q?: string; status?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireOwnerAdmin();
   const rows = await client.editorialPost.findMany({
     orderBy: { updatedAt: "desc" },

@@ -30,7 +30,7 @@ describe("requireOwnerAdmin", () => {
     mockCurrentUser.mockResolvedValue({
       id: "clerk_user",
       fullName: "Owner",
-      primaryEmailAddress: { emailAddress: "owner@example.com" },
+      primaryEmailAddress: { emailAddress: "owner@example.com", verification: { status: "verified" } },
     });
 
     await expect(requireOwnerAdmin()).resolves.toMatchObject({
@@ -38,6 +38,11 @@ describe("requireOwnerAdmin", () => {
       email: "owner@example.com",
     });
     expect(mockNotFound).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unverified allowlisted email", async () => {
+    mockCurrentUser.mockResolvedValue({ id: "clerk_user", primaryEmailAddress: { emailAddress: "owner@example.com", verification: { status: "unverified" } } });
+    await expect(requireOwnerAdmin()).rejects.toThrow("not_found");
   });
 
   it("allows an admin Clerk user id", async () => {

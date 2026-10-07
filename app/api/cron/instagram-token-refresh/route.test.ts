@@ -31,6 +31,15 @@ describe("Instagram token refresh cron", () => {
     vi.unstubAllGlobals();
   });
 
+  it.each(["", "cron-secret"])("rejects spoofed schedule headers when secret is %s", async (secret) => {
+    vi.stubEnv("CRON_SECRET", secret);
+    const response = await GET(new Request("https://ap3k.com/api/cron/instagram-token-refresh", {
+      headers: { "x-vercel-cron-schedule": "27 4 * * *" },
+    }) as any);
+    expect(response.status).toBe(401);
+    expect(findManyIntegrations).not.toHaveBeenCalled();
+  });
+
   it("marks invalidated Meta tokens for reconnect and pauses active automations", async () => {
     findManyIntegrations.mockResolvedValue([
       {

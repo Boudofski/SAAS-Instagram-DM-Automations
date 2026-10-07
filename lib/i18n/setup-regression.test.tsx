@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SUPPORTED_LOCALES, type Locale } from "./config";
 import { SETUP_ROWS } from "./setup-copy";
 import { translateUi } from "./translate";
-import WizardPage from "@/app/(protected)/dashboard/[slug]/automation/new/page";
+import WizardPage from "@/components/automations/automation-setup-page";
 import MessageAutomationPreview from "@/components/automations/message-automation-preview";
 import type { WizardData, WizardStep } from "@/hooks/use-wizard";
 

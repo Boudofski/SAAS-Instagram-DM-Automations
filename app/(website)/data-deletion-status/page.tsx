@@ -10,12 +10,13 @@ const pageMetadata: Metadata = {
 export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/data-deletion-status"); }
 
 type DataDeletionStatusPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     code?: string;
-  };
+  }>;
 };
 
-export default function DataDeletionStatusPage({ searchParams }: DataDeletionStatusPageProps) {
+export default async function DataDeletionStatusPage(props: DataDeletionStatusPageProps) {
+  const searchParams = await props.searchParams;
   const code = typeof searchParams?.code === "string" ? searchParams.code : "";
 
   return (

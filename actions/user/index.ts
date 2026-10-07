@@ -1,8 +1,7 @@
 "use server";
 
 import { dashboardPath } from "@/lib/dashboard";
-import { applyPendingReferralRewards, REFERRAL_COOKIE } from "@/lib/referral-program";
-import { stripe } from "@/lib/stripe";
+import { REFERRAL_COOKIE } from "@/lib/referral-program";
 import { deliverOwnerAlertSafely } from "@/lib/email/owner-alerts";
 import { notifyWelcomeEmail } from "@/lib/email/events";
 import { currentUser } from "@clerk/nextjs/server";
@@ -12,21 +11,20 @@ import {
   createUser,
   findUser,
   findUserByEmail,
-  updateSubscription,
 } from "./queries";
 
 const onboardingSkippedCookie = (clerkId: string) =>
   `ap3k_onboarding_skipped_${clerkId}`;
 
-function currentReferralCode() {
-  const cookieStore = cookies();
+async function currentReferralCode() {
+  const cookieStore = await cookies();
   return typeof cookieStore.get === "function"
     ? cookieStore.get(REFERRAL_COOKIE)?.value
     : undefined;
 }
 
-function clearReferralCode() {
-  const cookieStore = cookies();
+async function clearReferralCode() {
+  const cookieStore = await cookies();
   if (typeof cookieStore.delete === "function") {
     cookieStore.delete(REFERRAL_COOKIE);
   }
@@ -237,9 +235,9 @@ export const ensureCurrentUserProfile = async () => {
         user.firstName ?? "",
         user.lastName ?? "",
         email,
-        currentReferralCode()
+        await currentReferralCode()
       );
-      clearReferralCode();
+      await clearReferralCode();
 
       await notifyWelcomeEmail({
         id: created.id,
@@ -325,7 +323,7 @@ export const getCurrentWorkspaceClerkId = async () => {
 export const skipOnboarding = async () => {
   const user = await onCurrentUser();
 
-  cookies().set(onboardingSkippedCookie(user.id), "true", {
+  (await cookies()).set(onboardingSkippedCookie(user.id), "true", {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 365,
     path: "/",
@@ -336,102 +334,8 @@ export const skipOnboarding = async () => {
   redirect("/dashboard");
 };
 
+// Keep legacy callers on the same payment and current-entitlement checks.
 export const onSubscribe = async (session_id: string) => {
-  const user = await onCurrentUser();
-
-  try {
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-
-    if (session) {
-      console.log("[stripe-checkout] session verification context", {
-        hasMetadataClerkId: Boolean(session.metadata?.clerkId),
-        hasClientReferenceId: Boolean(session.client_reference_id),
-        hasCustomer: Boolean(session.customer),
-        sessionStatus: session.status,
-        currentUserIdExists: Boolean(user.id),
-      });
-
-      const sessionOwner = session.metadata?.clerkId ?? session.client_reference_id;
-      if (!sessionOwner) {
-        console.warn("[stripe-checkout] session owner missing", {
-          sessionId: session.id,
-        });
-        return { status: 400, error: "missing_owner" };
-      }
-
-      if (sessionOwner !== user.id) {
-        console.warn("[stripe-checkout] session user mismatch", {
-          sessionId: session.id,
-        });
-        return { status: 403, error: "user_mismatch" };
-      }
-
-      if (session.status !== "complete") {
-        console.warn("[stripe-checkout] session is not complete", {
-          sessionId: session.id,
-          status: session.status,
-        });
-        return { status: 400, error: "session_incomplete" };
-      }
-
-      if (typeof session.customer !== "string") {
-        console.warn("[stripe-checkout] session customer missing", {
-          sessionId: session.id,
-        });
-        return { status: 400, error: "missing_customer" };
-      }
-
-      let profile = await findUser(user.id);
-      if (!profile) {
-        const email = user.emailAddresses[0]?.emailAddress;
-        if (!email) {
-          console.warn("[stripe-checkout] current user email missing", {
-            sessionId: session.id,
-          });
-          return { status: 400, error: "missing_user_email" };
-        }
-
-        await createUser(
-          user.id,
-          user.firstName ?? "",
-          user.lastName ?? "",
-          email,
-          currentReferralCode()
-        );
-        clearReferralCode();
-        profile = await findUser(user.id);
-      }
-
-      const subscript = await updateSubscription(user.id, {
-        customerId: session.customer,
-        plan: "PRO",
-      });
-
-      if (profile?.id) {
-        await applyPendingReferralRewards(profile.id, session.customer);
-      }
-
-      if (subscript) {
-        const slug = profile?.clerkId || "";
-        return {
-          status: 200,
-          dashboardPath: dashboardPath(slug),
-        };
-      }
-
-      console.warn("[stripe-checkout] subscription update returned empty", {
-        sessionId: session.id,
-      });
-      return { status: 401, error: "update_failed" };
-    }
-
-    console.warn("[stripe-checkout] session not found", { sessionId: session_id });
-    return { status: 404, error: "session_not_found" };
-  } catch (error) {
-    console.error("[stripe-checkout] session verification failed", {
-      sessionId: session_id,
-      message: error instanceof Error ? error.message : String(error),
-    });
-    return { status: 500, error: "verification_failed" };
-  }
+  const { verifyCheckoutSession } = await import("@/actions/billing/verify-checkout");
+  return verifyCheckoutSession(session_id);
 };

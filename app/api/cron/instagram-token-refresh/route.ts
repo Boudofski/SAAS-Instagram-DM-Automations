@@ -5,15 +5,13 @@ import { client } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const TOKEN_REFRESH_SCHEDULE = "27 4 * * *";
 const REFRESH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const INSTAGRAM_REFRESH_URL = "https://graph.instagram.com/refresh_access_token";
 
 function isAuthorizedCronRequest(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET?.trim();
-  const authorization = request.headers.get("authorization");
-  if (cronSecret) return authorization === `Bearer ${cronSecret}`;
-  return request.headers.get("x-vercel-cron-schedule") === TOKEN_REFRESH_SCHEDULE;
+  // Schedule headers are client-controlled, not proof of a Vercel cron call.
+  return Boolean(cronSecret) && request.headers.get("authorization") === `Bearer ${cronSecret}`;
 }
 
 type RefreshResponse = {

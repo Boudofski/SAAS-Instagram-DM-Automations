@@ -22,12 +22,11 @@ import {
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-type Props = { params: { slug: string }; searchParams?: { period?: string } };
+type Props = { params: Promise<{ slug: string }>; searchParams?: Promise<{ period?: string }> };
 
-export default async function InstagramAccountPage({
-  params,
-  searchParams,
-}: Props) {
+export default async function InstagramAccountPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const userResult = await onUserInfo();
   const user = userResult.status === 200 ? userResult.data : null;
   const instagram = getCanonicalInstagramIntegration(user?.integrations);

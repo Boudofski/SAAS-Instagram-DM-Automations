@@ -8,9 +8,9 @@ import { SEO_RESOURCES } from "@/lib/seo-resources";
 import { buildSitemap as sitemap } from "@/lib/sitemap";
 
 describe("English resource search metadata", () => {
-  it("matches sitemap language alternates instead of inheriting homepage peers", () => {
+  it("matches sitemap language alternates instead of inheriting homepage peers", async () => {
     const entries = sitemap();
-    const pages = [resources, calculator, ...SEO_RESOURCES.map(resource => generateMetadata({ params: { slug: resource.slug } }))];
+    const pages = await Promise.all([resources, calculator, ...SEO_RESOURCES.map(resource => generateMetadata({ params: Promise.resolve({ slug: resource.slug }) }))]);
     for (const page of pages) {
       const canonical = `https://ap3k.com${page.alternates?.canonical}`;
       const entry = entries.find(item => item.url === canonical);

@@ -49,7 +49,7 @@ it("refuses copied production metadata before minting or exposing a URL in previ
     filename: "recording.wav",
   });
   await expect(resolveAttachmentMessage(url)).rejects.toThrow("unavailable");
-  const r = await GET(new Request(url), { params: { id } });
+  const r = await GET(new Request(url), { params: Promise.resolve({ id }) });
   expect(r.status).toBe(404);
   expect(m.sign).not.toHaveBeenCalled();
   expect(m.find.mock.calls[0][0].where.storageKey.startsWith).toBe(

@@ -3,6 +3,9 @@ import { useState } from "react";
 import { COMPARISONS, comparisonPath } from "@/lib/comparisons";
 
 const reviewPages = [
+  "/",
+  "/pricing",
+  "/payment?cancel=true",
   "/compare",
   ...COMPARISONS.map(comparisonPath),
   "/blog",

@@ -9,10 +9,11 @@ import { isInstagramLoginEnabled } from "@/lib/instagram-login";
 import { redirect } from "next/navigation";
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
-async function Page({ params }: Props) {
+async function Page(props: Props) {
+  const params = await props.params;
   if (isInstagramLoginEnabled()) {
     redirect(`${dashboardPath(params.slug)}/integrations`);
   }

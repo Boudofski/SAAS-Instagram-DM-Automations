@@ -25,18 +25,20 @@ import { Settings2 } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-type Props = { params: { slug: string }; searchParams?: { period?: string } };
+type Props = { params: Promise<{ slug: string }>; searchParams?: Promise<{ period?: string }> };
 
 const onboardingSkippedCookie = (clerkId: string) => `ap3k_onboarding_skipped_${clerkId}`;
 
-export default async function DashboardPage({ params, searchParams }: Props) {
+export default async function DashboardPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const automationsPromise = getAllAutomation();
   const userResult = await onUserInfo();
 
   const onboardingSkipped =
     userResult.status === 200 &&
     userResult.data?.clerkId &&
-    cookies().get(onboardingSkippedCookie(userResult.data.clerkId))?.value === "true";
+    (await cookies()).get(onboardingSkippedCookie(userResult.data.clerkId))?.value === "true";
 
   const instagram = getCanonicalInstagramIntegration(userResult.status === 200 ? userResult.data?.integrations : null);
   if (userResult.status === 200 && !instagram && !onboardingSkipped) redirect("/onboarding");

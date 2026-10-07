@@ -36,11 +36,10 @@ const pageMetadata: Metadata = {
   twitter: { card: "summary_large_image", images: ["https://ap3k.com/opengraph-image"] },
 };
 type Props = {
-  searchParams: { page?: string | string[]; q?: string | string[] };
+  searchParams: Promise<{ page?: string | string[]; q?: string | string[] }>;
 };
-export async function generateMetadata({
-  searchParams,
-}: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const searchParams = await props.searchParams;
   const copy = blogArchiveCopy(getServerLocale());
   const query =
     typeof searchParams.q === "string"
@@ -68,7 +67,8 @@ export async function generateMetadata({
   );
 }
 
-export default async function BlogPage({ searchParams }: Props) {
+export default async function BlogPage(props: Props) {
+  const searchParams = await props.searchParams;
   const query =
     typeof searchParams.q === "string"
       ? searchParams.q.trim().slice(0, 120)

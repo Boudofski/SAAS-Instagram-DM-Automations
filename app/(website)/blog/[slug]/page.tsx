@@ -42,13 +42,14 @@ const ENGLISH_SEO_TITLES: Record<string, string> = {
     "Fix Instagram Comment-to-DM Automation | AP3K",
 };
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({ slug: post.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const post = await getPublishedPost(params.slug);
   if (!post) return {};
   const cover = getArticleImage(post);
@@ -105,14 +106,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return metadata;
 }
 
-export default async function BlogPostPage({ params }: Props) {
+export default async function BlogPostPage(props: Props) {
+  const params = await props.params;
   const post = await getPublishedPost(params.slug);
   if (!post) notFound();
   // A saved language preference does not make the canonical English URL a
   // localized route. Redirect only actual prefixes to avoid a redirect loop.
   if (
     post.contentLocale === "en" &&
-    /^\/(fr|es|de|pt)\//.test(headers().get("x-ap3k-request-path") || "")
+    /^\/(fr|es|de|pt)\//.test((await headers()).get("x-ap3k-request-path") || "")
   )
     permanentRedirect(`/blog/${post.slug}`);
   const publicPosts = (await getPublishedPosts()).filter(p => p.importedArchive || !REFERENCE_GUIDE_SLUGS.has(p.slug));

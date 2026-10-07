@@ -26,7 +26,11 @@ export async function requireOwnerAdmin() {
   if (!user) notFound();
 
   const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
-  const allowed = isOwnerAdminIdentity({ clerkId: user.id, email });
+  const allowed = isOwnerAdminIdentity({
+    clerkId: user.id,
+    // An unverified address is a claim, not proof of the allowlisted identity.
+    email: user.primaryEmailAddress?.verification?.status === "verified" ? email : null,
+  });
 
   if (!allowed) {
     console.warn("[admin-denied]", {

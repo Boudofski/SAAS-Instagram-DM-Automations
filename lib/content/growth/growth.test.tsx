@@ -36,13 +36,13 @@ describe("localized growth guides", () => {
       for (const [index, post] of Array.from(posts.entries())) {
         expect(post.slug).toBe(en[index].slug);
         expect(translateUi(en[index].title, state.locale)).toBe(post.title);
-        const html = renderToStaticMarkup(await BlogPage({ params: { slug: post.slug } }));
+        const html = renderToStaticMarkup(await BlogPage({ params: Promise.resolve({ slug: post.slug }) }));
         expect(html).toContain(post.title);
         expect(html).toContain(post.sections[3].paragraphs[0]);
         expect(html).not.toContain("comment-to-dm-example.jpg");
         expect(html).toContain(`href="${localizePublicPath("/pricing", state.locale)}"`);
         if (locale !== "en") expect(html).not.toContain(en[index].intro);
-        const metadata = await generateMetadata({ params: { slug: post.slug } });
+        const metadata = await generateMetadata({ params: Promise.resolve({ slug: post.slug }) });
         const url = `https://ap3k.com${localizePublicPath(`/blog/${post.slug}`, state.locale)}`;
         expect(metadata.alternates?.canonical).toBe(url);
         expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(6);

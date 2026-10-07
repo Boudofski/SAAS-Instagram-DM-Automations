@@ -42,24 +42,24 @@ describe("published editorial routing", () => {
   });
   it("does not redirect the canonical English URL because of a French preference", async () => {
     await expect(
-      BlogPage({ params: { slug: "custom-english-article" } }),
+      BlogPage({ params: Promise.resolve({ slug: "custom-english-article" }) }),
     ).resolves.toBeTruthy();
   });
   it("redirects an actual locale-prefixed URL to the English article", async () => {
     mocks.path = "/fr/blog/custom-english-article";
     await expect(
-      BlogPage({ params: { slug: "custom-english-article" } }),
+      BlogPage({ params: Promise.resolve({ slug: "custom-english-article" }) }),
     ).rejects.toThrow("REDIRECT:/blog/custom-english-article");
   });
   it("returns 404 for private drafts or unpublished articles", async () => {
     mocks.getPost.mockResolvedValue(null);
     await expect(
-      BlogPage({ params: { slug: "private-draft" } }),
+      BlogPage({ params: Promise.resolve({ slug: "private-draft" }) }),
     ).rejects.toThrow("NOT_FOUND");
   });
   it("respects owner search overrides, noindex, canonical and the article language", async () => {
     const metadata = await generateMetadata({
-      params: { slug: "custom-english-article" },
+      params: Promise.resolve({ slug: "custom-english-article" }),
     });
     expect(metadata.title).toBe("Owner-authored search title");
     expect(metadata.robots).toEqual({ index: false, follow: true });

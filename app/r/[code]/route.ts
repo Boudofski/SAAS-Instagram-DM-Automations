@@ -9,10 +9,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { code: string } },
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const code = normalizeReferralCode(params.code);
   const destination = new URL("/sign-up", request.url);
   if (!code) return NextResponse.redirect(destination);

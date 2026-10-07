@@ -3,10 +3,11 @@ import { dashboardDestinationPath } from "@/lib/dashboard";
 import { redirect } from "next/navigation";
 
 type Props = {
-  searchParams?: { next?: string | string[] };
+  searchParams?: Promise<{ next?: string | string[] }>;
 };
 
-async function Page({ searchParams }: Props) {
+async function Page(props: Props) {
+  const searchParams = await props.searchParams;
   const user = await onboardUser();
 
   if (user.status === 200 || user.status === 201) {

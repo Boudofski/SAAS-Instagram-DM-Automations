@@ -20,16 +20,17 @@ import { referralCheckoutDiscount } from "@/lib/referral-commissions";
 import { prepareReferralCreditForCheckout } from "@/lib/referral-program";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     session_id?: string;
     cancel?: string | boolean;
     plan?: string;
     interval?: string;
-  };
+  }>;
 };
 
 function StatusCard({
@@ -58,12 +59,18 @@ function StatusCard({
         <p className="max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-300">
           {body}
         </p>
+        <div className="mt-3 flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+          <Link href="/dashboard?next=%2Fbilling" className="ap3k-gradient-button inline-flex min-h-11 items-center justify-center px-5 text-sm font-semibold">Open Billing</Link>
+          <Link href="/pricing" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 px-5 text-sm font-semibold dark:border-white/20">View plans</Link>
+        </div>
+        <a href="mailto:support@ap3k.com" className="mt-1 text-sm underline underline-offset-4">Contact support</a>
       </div>
     </div>
   );
 }
 
-export default async function PaymentPage({ searchParams }: Props) {
+export default async function PaymentPage(props: Props) {
+  const searchParams = await props.searchParams;
   const { cancel, session_id, plan, interval } = searchParams;
 
   if (session_id) {

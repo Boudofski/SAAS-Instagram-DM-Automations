@@ -2,10 +2,8 @@ import { attachmentScopeFilter, attachmentKeyInScope } from "@/lib/attachment-sc
 import { Bucket } from "@upstash/blob";
 import { client } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
-export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (
     !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(
       params.id,

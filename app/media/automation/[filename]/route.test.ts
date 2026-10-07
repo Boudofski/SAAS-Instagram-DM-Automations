@@ -9,7 +9,7 @@ describe('public product delivery images', () => {
   it('returns image bytes without authentication and keeps them out of search', async () => {
     const bytes = new Uint8Array([255,216,255,217]);
     findUnique.mockResolvedValue({ data: bytes });
-    const response = await GET(request, {params:{ filename: `${id}.jpg` }});
+    const response = await GET(request, {params:Promise.resolve({ filename: `${id}.jpg` })});
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('image/jpeg');
     expect(response.headers.get('x-robots-tag')).toContain('noindex');
@@ -18,12 +18,12 @@ describe('public product delivery images', () => {
   });
   it('rejects malformed filenames before querying storage', async () => {
     for (const filename of ['invalid.jpg', `${id}.png`, `${id}.jpg.jpg`, `${id}`]) {
-      expect((await GET(request,{params:{filename}})).status).toBe(404);
+      expect((await GET(request,{params:Promise.resolve({filename})})).status).toBe(404);
     }
     expect(findUnique).not.toHaveBeenCalled();
   });
   it('returns 404 for missing images', async () => {
     findUnique.mockResolvedValue(null);
-    expect((await GET(request,{params:{filename:`${id}.jpg`}})).status).toBe(404);
+    expect((await GET(request,{params:Promise.resolve({filename:`${id}.jpg`})})).status).toBe(404);
   });
 });

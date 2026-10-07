@@ -4,14 +4,14 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     code?: string;
     state?: string;
     error?: string;
     error_reason?: string;
     error_description?: string;
     message?: string;
-  };
+  }>;
 };
 
 function integrationRedirect(slug?: string, error?: string) {
@@ -22,7 +22,7 @@ function integrationRedirect(slug?: string, error?: string) {
   return redirect(`${target}${separator}integration_error=${encodeURIComponent(error)}`);
 }
 
-function isInsufficientDeveloperRole(params: Props["searchParams"]) {
+function isInsufficientDeveloperRole(params: Awaited<Props["searchParams"]>) {
   const combined = [
     params.error,
     params.error_reason,
@@ -36,7 +36,8 @@ function isInsufficientDeveloperRole(params: Props["searchParams"]) {
   return combined.includes("insufficient developer role");
 }
 
-async function Page({ searchParams }: Props) {
+async function Page(props: Props) {
+  const searchParams = await props.searchParams;
   const { code, state, error, error_reason, error_description, message } = searchParams;
 
   if (error || error_reason || error_description || message) {

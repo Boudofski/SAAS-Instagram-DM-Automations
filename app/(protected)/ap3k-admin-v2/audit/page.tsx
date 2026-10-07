@@ -24,7 +24,7 @@ type SearchParams = {
   dateTo?: string;
 };
 
-type Props = { searchParams?: SearchParams };
+type Props = { searchParams?: Promise<SearchParams> };
 
 const ACTION_OPTIONS = [
   { value: "ADMIN_USER_DELETED", label: "Account deleted" },
@@ -50,7 +50,8 @@ function buildPageUrl(params: SearchParams, page: number): string {
   return `/admin/audit?${entries.join("&")}`;
 }
 
-export default async function AdminV2AuditPage({ searchParams }: Props) {
+export default async function AdminV2AuditPage(props: Props) {
+  const searchParams = await props.searchParams;
   const params = searchParams ?? {};
   const page = Math.max(0, parseInt(sp(params.page) ?? "0", 10) || 0);
 

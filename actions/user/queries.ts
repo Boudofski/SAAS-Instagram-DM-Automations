@@ -38,7 +38,7 @@ export const findUser = async (clerkId: string) => {
     include: userProfileInclude,
   });
   if (!profile) return null;
-  const selected = selectInstagramAccount(profile.integrations, requestedInstagramAccount());
+  const selected = selectInstagramAccount(profile.integrations, await requestedInstagramAccount());
   return { ...profile, integrations: selected ? [selected] : [] };
 };
 

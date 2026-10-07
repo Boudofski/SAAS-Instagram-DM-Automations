@@ -7,8 +7,9 @@ import type { DirectoryFilters } from "@/lib/admin-v2/directory-filters";
 import LocalTime from "@/components/global/local-time";
 import Link from "next/link";
 
-type Props = { searchParams?: DirectoryFilters & { page?: string; deleted?: string } };
-export default async function AdminV2UsersPage({ searchParams = {} }: Props) {
+type Props = { searchParams?: Promise<DirectoryFilters & { page?: string; deleted?: string }> };
+export default async function AdminV2UsersPage(props: Props) {
+  const searchParams = (await props.searchParams) ?? {};
   const page = Math.min(100000, Math.max(0, parseInt(searchParams.page ?? "0", 10) || 0));
   const [users, total] = await Promise.all([getAdminV2Users(page, searchParams), getAdminV2UserCount(searchParams)]);
   const rows = users.map(user => [

@@ -65,11 +65,12 @@ const ERROR_STEPS: Record<string, string[]> = {
 };
 
 type PageProps = {
-  params: { slug: string };
-  searchParams?: { integration_error?: string };
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ integration_error?: string }>;
 };
 
-async function Page({ searchParams }: PageProps) {
+async function Page(props: PageProps) {
+  const searchParams = await props.searchParams;
   const error = searchParams?.integration_error;
   const appReviewMode = isAppReviewMode();
   const directInstagramLogin = isInstagramLoginEnabled();

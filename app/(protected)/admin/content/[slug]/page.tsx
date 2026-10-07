@@ -5,11 +5,12 @@ import { getBlogPost, type BlogPost } from "@/lib/blog";
 import { EditorialEditor } from "@/components/admin-v2/editorial-editor";
 import { AdminPageHeader } from "@/components/admin-v2/page-header";
 
-export default async function EditorPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default async function EditorPage(
+  props: {
+    params: Promise<{ slug: string }>;
+  }
+) {
+  const params = await props.params;
   await requireOwnerAdmin();
   const row =
     params.slug === "new"

@@ -5,7 +5,7 @@ vi.mock("@/lib/prisma", () => ({ client: { automationTrackedLink: { findUnique: 
 vi.mock("@/lib/automation-tracking", async importOriginal => ({ ...await importOriginal<typeof import("@/lib/automation-tracking")>(), recordAutomationClick: mocks.click }));
 import { GET, HEAD } from "./route";
 const token = "00000000-0000-0000-0000-000000000001";
-const context = { params: { token } };
+const context = { params: Promise.resolve({ token }) };
 const request = (headers = {}) => new NextRequest(`https://ap3k.com/api/go/${token}?country=US`, { headers: { "user-agent": "Mozilla/5.0 Chrome/126", ...headers } });
 beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("VERCEL", "1"); mocks.link.mockResolvedValue({ automationId: "automation", recipientIgId: "contact", destination: "https://example.com/guide" }); vi.spyOn(console, "warn").mockImplementation(() => {}); });
 it("redirects a human with no caching or referrer leakage and edge-provided country", async () => {
@@ -29,7 +29,7 @@ it("does not trust country query parameters or geo headers outside Vercel", asyn
   expect(mocks.click.mock.calls[0][1]).toBeNull();
 });
 it("rejects invalid tokens before DB lookup and missing or unsafe destinations", async () => {
-  expect((await GET(request(), { params: { token: "../../etc" } })).status).toBe(404); expect(mocks.link).not.toHaveBeenCalled();
+  expect((await GET(request(), { params: Promise.resolve({ token: "../../etc" }) })).status).toBe(404); expect(mocks.link).not.toHaveBeenCalled();
   mocks.link.mockResolvedValue(null); expect((await GET(request(), context)).status).toBe(404);
   mocks.link.mockResolvedValue({ destination: "javascript:alert(1)" }); expect((await GET(request(), context)).status).toBe(404);
   expect(mocks.click).not.toHaveBeenCalled();
