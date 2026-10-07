@@ -43,3 +43,5 @@ Do not scale paid advertising yet. Stripe is enabled for selling, but a complete
 ## Release verification
 
 Local suite: 1,879 tests across 243 files after cron regressions. TypeScript, lint and optimized build must pass on the final revision. Check Vercel preview desktop/mobile and both themes, protected navigation, automation setup and payment cancellation recovery. Keep production blocked from review fixtures. Record PR, deployment and production smoke-test evidence in the release result; do not label a preview as production verification.
+
+Preview verification on PR #223: homepage and canceled-checkout views inspected at 320/390px and desktop, in light/dark themes; no page overflow observed. The unauthenticated preview produced an RSC prefetch failure for the protected Billing destination, so the recovery link disables speculative prefetch while preserving ordinary authenticated navigation. Browser-extension metadata errors are external to AP3K. Final production authentication/navigation checks remain part of release verification.
