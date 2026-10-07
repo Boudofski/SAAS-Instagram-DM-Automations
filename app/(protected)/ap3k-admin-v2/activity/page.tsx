@@ -9,9 +9,10 @@ import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import { humanEvent } from "@/lib/admin-v2/labels";
 import LocalTime from "@/components/global/local-time";
 
-type Props = { searchParams?: { page?: string } };
+type Props = { searchParams?: Promise<{ page?: string }> };
 
-export default async function AdminV2ActivityPage({ searchParams }: Props) {
+export default async function AdminV2ActivityPage(props: Props) {
+  const searchParams = await props.searchParams;
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
   const [events, total] = await Promise.all([
     getAdminUiActivity(page),

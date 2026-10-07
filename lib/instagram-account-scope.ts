@@ -5,8 +5,8 @@ import { client } from "@/lib/prisma";
 export const INSTAGRAM_ACCOUNT_COOKIE = "ap3k_instagram_account";
 export const NO_INSTAGRAM_ACCOUNT = "00000000-0000-0000-0000-000000000000";
 
-export function requestedInstagramAccount() {
-  try { return cookies().get(INSTAGRAM_ACCOUNT_COOKIE)?.value; } catch { return undefined; }
+export async function requestedInstagramAccount() {
+  try { return (await cookies()).get(INSTAGRAM_ACCOUNT_COOKIE)?.value; } catch { return undefined; }
 }
 
 export function selectInstagramAccount<T extends { id: string; status?: string; planLocked?: boolean }>(accounts: T[], requested?: string) {
@@ -25,5 +25,5 @@ export const currentInstagramAccountId = requestCache(async (clerkId: string) =>
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { id: true, status: true, planLocked: true },
   });
-  return selectInstagramAccount(accounts, requestedInstagramAccount())?.id ?? NO_INSTAGRAM_ACCOUNT;
+  return selectInstagramAccount(accounts, await requestedInstagramAccount())?.id ?? NO_INSTAGRAM_ACCOUNT;
 });

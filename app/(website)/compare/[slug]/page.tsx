@@ -5,7 +5,8 @@ import { localizedMetadata } from "@/lib/i18n/page-metadata";
 export function generateStaticParams() {
   return COMPARISONS.map((page) => ({ slug: page.slug }));
 }
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const page = getComparison(params.slug);
   return page
     ? localizedMetadata(
@@ -19,7 +20,8 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
       )
     : {};
 }
-export default function CompareRoute({ params }: { params: { slug: string } }) {
+export default async function CompareRoute(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const page = getComparison(params.slug);
   if (!page) notFound();
   if (page.slug === "manychat") permanentRedirect("/manychat-alternative");

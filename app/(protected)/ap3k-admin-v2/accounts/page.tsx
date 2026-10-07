@@ -9,7 +9,7 @@ import { AccountActionsCell } from "@/components/admin-v2/account-actions-cell";
 import { AdminPageHeader } from "@/components/admin-v2/page-header";
 import LocalTime from "@/components/global/local-time";
 
-type Props = { searchParams?: DirectoryFilters & { page?: string } };
+type Props = { searchParams?: Promise<DirectoryFilters & { page?: string }> };
 
 function webhookState(mode: string | null): { label: string; tone: "green" | "amber" | "slate" } {
   if (!mode) return { label: "Unknown", tone: "slate" };
@@ -20,7 +20,8 @@ function webhookState(mode: string | null): { label: string; tone: "green" | "am
   return { label: mode.replace(/_/g, " "), tone: "slate" };
 }
 
-export default async function AdminV2AccountsPage({ searchParams }: Props) {
+export default async function AdminV2AccountsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
   const [accounts, total] = await Promise.all([
     getAdminV2Accounts(page, searchParams),

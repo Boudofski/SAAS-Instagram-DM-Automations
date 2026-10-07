@@ -8,9 +8,10 @@ import { V2Badge } from "@/components/admin-v2/v2-badge";
 import { ReplyEditModal } from "@/components/admin-v2/reply-edit-modal";
 import { AdminPageHeader } from "@/components/admin-v2/page-header";
 
-type Props = { searchParams?: { page?: string } };
+type Props = { searchParams?: Promise<{ page?: string }> };
 
-export default async function AdminV2RepliesPage({ searchParams }: Props) {
+export default async function AdminV2RepliesPage(props: Props) {
+  const searchParams = await props.searchParams;
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
   const [templates, total] = await Promise.all([
     getAdminUiReplyTemplates(page),

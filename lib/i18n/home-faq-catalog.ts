@@ -6,7 +6,7 @@ export const HOME_FAQ = {
   "en": {
     "eyebrow": "Frequently asked questions",
     "title": "Everything you need to know",
-    "trust": "Your account connects securely. AP3K is a Meta Business Partner and uses Instagram’s official API.",
+    "trust": "AP3K connects through Instagram’s official API. You control the automations you activate.",
     "items": [
       [
         "What is AP3K?",
@@ -77,7 +77,7 @@ export const HOME_FAQ = {
   "fr": {
     "eyebrow": "Questions fréquentes",
     "title": "Tout ce que vous devez savoir",
-    "trust": "Votre compte se connecte en toute sécurité. AP3K est Meta Business Partner et utilise l’API officielle d’Instagram.",
+    "trust": "AP3K se connecte via l’API officielle d’Instagram. Vous contrôlez les automatisations que vous activez.",
     "items": [
       [
         "Qu’est-ce qu’AP3K ?",
@@ -148,7 +148,7 @@ export const HOME_FAQ = {
   "es": {
     "eyebrow": "Preguntas frecuentes",
     "title": "Todo lo que necesitas saber",
-    "trust": "Tu cuenta se conecta de forma segura. AP3K es Meta Business Partner y utiliza la API oficial de Instagram.",
+    "trust": "AP3K se conecta mediante la API oficial de Instagram. Tú controlas las automatizaciones que activas.",
     "items": [
       [
         "¿Qué es AP3K?",
@@ -219,7 +219,7 @@ export const HOME_FAQ = {
   "de": {
     "eyebrow": "Häufig gestellte Fragen",
     "title": "Alles, was du wissen musst",
-    "trust": "Dein Konto wird sicher verbunden. AP3K ist Meta Business Partner und nutzt die offizielle Instagram-API.",
+    "trust": "AP3K verbindet sich über die offizielle Instagram-API. Du entscheidest, welche Automatisierungen du aktivierst.",
     "items": [
       [
         "Was ist AP3K?",
@@ -290,7 +290,7 @@ export const HOME_FAQ = {
   "pt": {
     "eyebrow": "Perguntas frequentes",
     "title": "Tudo o que precisa de saber",
-    "trust": "A sua conta liga-se de forma segura. O AP3K é Meta Business Partner e utiliza a API oficial do Instagram.",
+    "trust": "O AP3K liga-se através da API oficial do Instagram. Controla as automações que ativa.",
     "items": [
       [
         "O que é o AP3K?",

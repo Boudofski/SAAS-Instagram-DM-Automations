@@ -5,9 +5,9 @@ import { getPrivateReplyPreflightPageData } from "@/lib/admin-v2/private-reply-p
 import { isMessagingReviewMode } from "@/lib/messaging-review-mode";
 
 type Props = {
-  searchParams?: {
+  searchParams?: Promise<{
     integrationId?: string;
-  };
+  }>;
 };
 
 function diagnosticTone(value: boolean | null) {
@@ -15,9 +15,8 @@ function diagnosticTone(value: boolean | null) {
   if (value === false) return "red" as const;
   return "amber" as const;
 }
-export default async function PrivateReplyPreflightPage({
-  searchParams,
-}: Props) {
+export default async function PrivateReplyPreflightPage(props: Props) {
+  const searchParams = await props.searchParams;
   const messagingReviewMode = isMessagingReviewMode();
   const pageData = await getPrivateReplyPreflightPageData(
     searchParams?.integrationId

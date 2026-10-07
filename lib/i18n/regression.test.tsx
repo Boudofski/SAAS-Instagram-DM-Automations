@@ -21,6 +21,8 @@ describe("language-switching regressions", () => {
     }
   });
   it("restores original English text, markup and props after every locale", () => {
+    // Raw anchors intentionally exercise HTML-tree localization.
+    // eslint-disable-next-line @next/next/no-html-link-for-pages
     const source = <main><h1>Turn Instagram Comments <span>Into Customers.</span></h1><a href="/pricing">Compare plans</a><input placeholder="Search automations, keywords, or content…" /><div translate="no">Customer text: こんにちは</div></main>;
     const original = renderToStaticMarkup(source);
     for (const locale of [...SUPPORTED_LOCALES, "en", "fr", "en"] as const) {

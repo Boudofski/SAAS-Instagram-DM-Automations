@@ -16,5 +16,11 @@ async function redirect(request: NextRequest, token: string, count: boolean) {
   }
   return NextResponse.redirect(link.destination, { status: 302, headers });
 }
-export async function GET(request: NextRequest, { params }: { params: { token: string } }) { return redirect(request, params.token, true); }
-export async function HEAD(request: NextRequest, { params }: { params: { token: string } }) { return redirect(request, params.token, false); }
+export async function GET(request: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
+  return redirect(request, params.token, true);
+}
+export async function HEAD(request: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
+  return redirect(request, params.token, false);
+}

@@ -23,7 +23,7 @@ export default async function OnboardingWelcomePage() {
   if (
     user.status === 200 &&
     user.data?.clerkId &&
-    cookies().get(onboardingSkippedCookie(user.data.clerkId))?.value === "true"
+    (await cookies()).get(onboardingSkippedCookie(user.data.clerkId))?.value === "true"
   ) {
     redirect("/dashboard");
   }

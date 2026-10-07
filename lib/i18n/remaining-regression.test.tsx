@@ -182,11 +182,11 @@ describe("complete public localization and search metadata", () => {
       expect(privacy).toContain("support@ap3k.com");
     }
   });
-  it("uses translated titles and self canonicals with reciprocal language alternatives", () => {
+  it("uses translated titles and self canonicals with reciprocal language alternatives", async () => {
     for (const locale of SUPPORTED_LOCALES) {
       state.locale = locale;
       for (const page of COMMERCIAL_PAGES) {
-        const metadata = commercialMetadata({ params: { slug: page.slug } });
+        const metadata = await commercialMetadata({ params: Promise.resolve({ slug: page.slug }) });
         expect(metadata.alternates?.canonical).toBe(
           `https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`,
         );

@@ -7,7 +7,10 @@ import { EMAIL_TEMPLATE_LIST, EMAIL_TEMPLATES, isEmailTemplateId } from "@/lib/e
 import { getEmailAdminOverview } from "@/lib/email/admin";
 import LocalTime from "@/components/global/local-time";
 
-export default async function EmailCenterPage({ searchParams }: { searchParams?: { template?: string; test?: string; ownerTest?: string } }) {
+export default async function EmailCenterPage(
+  props: { searchParams?: Promise<{ template?: string; test?: string; ownerTest?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const selectedId = isEmailTemplateId(searchParams?.template) ? searchParams.template : "welcome";
   const selected = EMAIL_TEMPLATES[selectedId];
   const overview = await getEmailAdminOverview();

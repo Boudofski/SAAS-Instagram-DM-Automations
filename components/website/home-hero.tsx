@@ -125,8 +125,7 @@ export default function HomeHero() {
           <Image src="/media/hero/creator-portraits.webp" alt="" width={123} height={36} sizes="123px" className={styles.portraits} />
         </div>
         <div className={styles.api}>
-          <Image className={styles.lightArt} src="/media/hero/meta-business-partner-light.svg" alt="Meta Business Partner" width={108} height={43} unoptimized />
-          <Image className={styles.darkArt} src="/media/hero/meta-business-partner-dark.svg" alt="Meta Business Partner" width={108} height={43} unoptimized />
+          <span>{copy.api}</span>
         </div>
       </div>
     </section>

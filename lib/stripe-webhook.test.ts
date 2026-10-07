@@ -260,6 +260,7 @@ describe("processStripeEvent", () => {
   it("activates both Pro and Business from the current Stripe price", async () => {
     for (const plan of ["PRO", "BUSINESS"] as const) {
       const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+      vi.mocked(deps.value.retrieveSubscription).mockResolvedValue(subscription({ customer: "cus_alpha", plan }));
       await processStripeEvent(
         event(
           "customer.subscription.created",
@@ -276,6 +277,9 @@ describe("processStripeEvent", () => {
 
   it("keeps access during past-due Smart Retries and revokes it when unpaid", async () => {
     const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    vi.mocked(deps.value.retrieveSubscription)
+      .mockResolvedValueOnce(subscription({ customer: "cus_alpha", status: "past_due" }))
+      .mockResolvedValueOnce(subscription({ customer: "cus_alpha", status: "unpaid" }));
     await processStripeEvent(
       event(
         "customer.subscription.updated",
@@ -851,5 +855,29 @@ describe("current Stripe account webhook compatibility", () => {
     deps.value.paidOffStripe = vi.fn(async () => 1500);
     await processStripeEvent(event("invoice.paid", { id: "in_external", parent: { subscription_details: { subscription: "sub_test" } }, amount_paid: 1500, currency: "usd" }), deps.value);
     expect(deps.qualifyPaidReferral).toHaveBeenCalledWith(expect.objectContaining({ paidOutOfBand: true }));
+  });
+});
+
+describe("out-of-order Stripe lifecycle events", () => {
+  it("does not restore paid access from an old active subscription event", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    vi.mocked(deps.value.retrieveSubscription).mockResolvedValue(subscription({ customer: "cus_alpha", status: "canceled" }));
+    await processStripeEvent(event("customer.subscription.updated", subscription({ customer: "cus_alpha", status: "active", plan: "BUSINESS" })), deps.value);
+    expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, { customerId: "cus_alpha", plan: "FREE" });
+  });
+  it("preserves a replacement plan when an obsolete subscription update arrives", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    vi.mocked(deps.value.retrieveSubscription).mockResolvedValue(subscription({ customer: "cus_alpha", status: "canceled" }));
+    deps.value.remainingCustomerPlan = vi.fn(async () => "BUSINESS" as const);
+    await processStripeEvent(event("customer.subscription.updated", subscription({ customer: "cus_alpha", status: "active" })), deps.value);
+    expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, { customerId: "cus_alpha", plan: "BUSINESS" });
+  });
+  it("preserves a replacement paid subscription when an old cancellation arrives", async () => {
+    const deps = dependencies({ customerOwners: { cus_alpha: USER_A } });
+    deps.value.remainingCustomerPlan = vi.fn(async () => "BUSINESS" as const);
+    deps.value.notifyCustomerEmail = vi.fn();
+    await processStripeEvent(event("customer.subscription.deleted", subscription({ customer: "cus_alpha", status: "canceled" })), deps.value);
+    expect(deps.syncSubscription).toHaveBeenCalledWith(USER_A.id, { customerId: "cus_alpha", plan: "BUSINESS" });
+    expect(deps.value.notifyCustomerEmail).not.toHaveBeenCalled();
   });
 });

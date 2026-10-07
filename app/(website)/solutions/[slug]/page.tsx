@@ -10,7 +10,8 @@ import s from "@/components/website/public-pages.module.css";
 export function generateStaticParams() {
   return SOLUTIONS.map((page) => ({ slug: page.slug }));
 }
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const page = SOLUTIONS.find((item) => item.slug === params.slug);
   return page
     ? localizedMetadata(
@@ -24,7 +25,8 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
       )
     : {};
 }
-export default function SolutionPage({ params }: { params: { slug: string } }) {
+export default async function SolutionPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const page = SOLUTIONS.find((item) => item.slug === params.slug);
   if (!page) notFound();
   return (

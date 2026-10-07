@@ -39,7 +39,7 @@ describe("growth content release", () => {
     }
     for(const p of EXPANSION_COMMERCIAL_PAGES) for(const t of p.tutorials) expect(destinations.has(`/blog/${t.slug}`)).toBe(true);
   });
-  it("keeps all new pages English-canonical, discoverable and free of invented language alternates", () => {
+  it("keeps all new pages English-canonical, discoverable and free of invented language alternates", async () => {
     const entries=buildSitemap();
     const paths=[...EXPANSION_POSTS.map(p=>`/blog/${p.slug}`),...EXPANSION_COMMERCIAL_PAGES.map(p=>`/${p.slug}`)];
     for(const path of paths) {
@@ -52,7 +52,7 @@ describe("growth content release", () => {
       expect(entries.some(e=>new URL(e.url).pathname===`/fr${path}`)).toBe(false);
     }
     for(const p of EXPANSION_COMMERCIAL_PAGES) {
-      const metadata=generateMetadata({params:{slug:p.slug}});
+      const metadata=await generateMetadata({params:Promise.resolve({slug:p.slug})});
       expect(metadata.alternates?.canonical).toBe(`https://ap3k.com/${p.slug}`);
       expect(metadata.openGraph).toMatchObject({locale:"en_US"});
     }

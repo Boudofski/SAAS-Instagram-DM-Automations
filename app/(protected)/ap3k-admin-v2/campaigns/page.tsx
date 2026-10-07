@@ -6,7 +6,7 @@ import type { AdminV2Campaign } from "@/lib/admin-v2/queries";
 import LocalTime from "@/components/global/local-time";
 import { CampaignActionsCell } from "@/components/admin-v2/campaign-action-modal";
 
-type Props = { searchParams?: { page?: string } };
+type Props = { searchParams?: Promise<{ page?: string }> };
 
 function campaignHealth(campaign: AdminV2Campaign): { label: string; tone: "green" | "amber" | "red" | "slate" } {
   if (campaign.archivedAt) return { label: "Archived", tone: "slate" };
@@ -15,7 +15,8 @@ function campaignHealth(campaign: AdminV2Campaign): { label: string; tone: "gree
   return { label: "Paused", tone: "red" };
 }
 
-export default async function AdminV2CampaignsPage({ searchParams }: Props) {
+export default async function AdminV2CampaignsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const page = Math.max(0, parseInt(searchParams?.page ?? "0", 10) || 0);
   const [campaigns, total] = await Promise.all([
     getAdminV2Campaigns(page),

@@ -21,7 +21,8 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default function AdminIndex({ searchParams }: { searchParams?: SearchParams }) {
+export default async function AdminIndex(props: { searchParams?: Promise<SearchParams> }) {
+  const searchParams = await props.searchParams;
   const tab = first(searchParams?.tab);
   const userId = first(searchParams?.userId);
 

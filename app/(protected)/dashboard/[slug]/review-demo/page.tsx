@@ -1,7 +1,7 @@
 import { UiText } from "@/components/i18n/localized-copy";
 import Link from "next/link";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 const REVIEW_STEPS = [
   "Connect Instagram with Meta Login",
@@ -13,7 +13,8 @@ const REVIEW_STEPS = [
   "Review activity log and captured lead",
 ];
 
-export default function ReviewDemoPage({ params }: Props) {
+export default async function ReviewDemoPage(props: Props) {
+  const params = await props.params;
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-1 py-4 text-slate-950 dark:text-slate-50 sm:px-2 lg:py-8">
       <div>

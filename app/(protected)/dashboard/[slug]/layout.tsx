@@ -21,12 +21,18 @@ export const metadata: Metadata = {
 
 type Props = {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
-async function Layout({ children, params }: Props) {
+async function Layout(props: Props) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const [userResult, accountMenu] = await Promise.all([onUserInfo(), getInstagramAccountMenu()]);
 
   // A valid Clerk session can briefly exist before AP3K provisions its local row,

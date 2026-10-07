@@ -2,7 +2,8 @@ import { client } from "@/lib/prisma";
 import { productImageId } from "@/lib/product-card";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!productImageId(`/api/automation-images/${params.id}`)) return new Response(null, { status: 404 });
   const image = await client.automationImage.findUnique({ where: { id: params.id }, select: { data: true } });
   if (!image) return new Response(null, { status: 404 });

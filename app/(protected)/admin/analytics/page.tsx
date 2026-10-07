@@ -6,11 +6,12 @@ import { getGoogleReports } from "@/lib/admin-v2/google-reports";
 import { AdminRefreshButton } from "@/components/admin-v2/refresh-button";
 import LocalTime from "@/components/global/local-time";
 
-export default async function AnalyticsPage({
-  searchParams,
-}: {
-  searchParams: { days?: string };
-}) {
+export default async function AnalyticsPage(
+  props: {
+    searchParams: Promise<{ days?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const days = searchParams.days === "7" ? 7 : 30;
   const [data, google] = await Promise.all([
     getAdminAnalytics(days),

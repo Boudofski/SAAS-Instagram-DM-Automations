@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Inter } from "next/font/google";
 import { ChevronDown } from "lucide-react";
 import { useI18n } from "@/providers/i18n-provider";
@@ -26,10 +25,6 @@ export default function HomeFaq() {
         </details>)}
       </div>
       <div className={styles.trust}>
-        <span className={styles.badge}>
-          <Image className={styles.lightLogo} src="/media/hero/meta-business-partner-light.svg" alt="Meta Business Partner" width={88} height={35} unoptimized />
-          <Image className={styles.darkLogo} src="/media/hero/meta-business-partner-dark.svg" alt="Meta Business Partner" width={88} height={35} unoptimized />
-        </span>
         <p>{copy.trust}</p>
       </div>
     </div>

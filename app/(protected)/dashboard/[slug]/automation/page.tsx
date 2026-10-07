@@ -6,9 +6,10 @@ import { getCampaignTableMetrics } from "@/lib/dashboard-metrics";
 import { buildCampaignBindingDiagnostics } from "@/lib/account-webhook-diagnostics";
 import { getCanonicalInstagramIntegration } from "@/lib/instagram-integration-status";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
-export default async function AutomationsPage({ params }: Props) {
+export default async function AutomationsPage(props: Props) {
+  const params = await props.params;
   const [result, userResult] = await Promise.all([
     getAllAutomation(),
     onUserInfo(),

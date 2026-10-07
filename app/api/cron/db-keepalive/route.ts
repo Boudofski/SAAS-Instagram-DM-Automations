@@ -5,21 +5,11 @@ import { client } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const KEEPALIVE_SCHEDULE = "17 4 * * *";
 
 function isAuthorizedCronRequest(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET?.trim();
-  const authorization = request.headers.get("authorization");
-
-  // Preferred production protection. Vercel automatically sends this bearer
-  // token when CRON_SECRET is configured in the project environment.
-  if (cronSecret) {
-    return authorization === `Bearer ${cronSecret}`;
-  }
-
-  // Safe fallback for this non-sensitive endpoint until CRON_SECRET is added.
-  // The route only performs SELECT 1 and never returns database contents.
-  return request.headers.get("x-vercel-cron-schedule") === KEEPALIVE_SCHEDULE;
+  // Schedule headers are client-controlled, not proof of a Vercel cron call.
+  return Boolean(cronSecret) && request.headers.get("authorization") === `Bearer ${cronSecret}`;
 }
 
 export async function GET(request: NextRequest) {

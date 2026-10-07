@@ -5,6 +5,7 @@ import {
   syncSubscriptionForUser,
 } from "@/actions/user/queries";
 import { inferActiveDatabasePlan } from "@/lib/stripe-config";
+import { activePlanForSubscription } from "@/lib/stripe-entitlements";
 import { stripe } from "@/lib/stripe";
 import {
   applyPendingReferralRewards,
@@ -31,6 +32,7 @@ export type StripeWebhookDependencies = {
     props: { customerId?: string; plan?: SUBSCRIPTION_PLAN },
   ): Promise<unknown>;
   retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription>;
+  remainingCustomerPlan?(customerId: string, excludedSubscriptionId: string): Promise<SUBSCRIPTION_PLAN>;
   retrieveCharge(chargeId: string): Promise<Stripe.Charge>;
   invoiceIdsForPaymentIntent?(paymentIntentId: string): Promise<string[]>;
   paidOffStripe?(invoiceId: string): Promise<number>;
@@ -98,6 +100,16 @@ const defaultDependencies: StripeWebhookDependencies = {
   syncSubscription: syncSubscriptionForUser,
   retrieveSubscription(subscriptionId) {
     return stripe.subscriptions.retrieve(subscriptionId);
+  },
+  async remainingCustomerPlan(customerId, deletedSubscriptionId) {
+    let plan: SUBSCRIPTION_PLAN = "FREE";
+    for await (const subscription of stripe.subscriptions.list({ customer: customerId, status: "all", limit: 100 })) {
+      if (subscription.id === deletedSubscriptionId) continue;
+      const current = activePlanForSubscription(subscription);
+      if (current === "BUSINESS") return current;
+      if (current === "PRO") plan = current;
+    }
+    return plan;
   },
   retrieveCharge(chargeId) {
     return stripe.charges.retrieve(chargeId);
@@ -169,28 +181,19 @@ function metadataClerkId(metadata?: Stripe.Metadata | null) {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-function activePlanForSubscription(
-  subscription: Stripe.Subscription,
-): SUBSCRIPTION_PLAN {
-  // Keep access during Stripe's recovery window. Revoke only when Stripe moves
-  // the subscription beyond a recoverable past_due state.
-  if (!["active", "trialing", "past_due"].includes(subscription.status)) {
-    return "FREE";
-  }
-
-  const price = subscription.items?.data?.[0]?.price;
-  return inferActiveDatabasePlan({
-    metadataPlan: subscription.metadata?.plan,
-    lookupKey: price?.lookup_key,
-    priceId: price?.id,
-  });
-}
-
 function invoiceSubscriptionId(invoice: Stripe.Invoice) {
   const value =
     (invoice as any).parent?.subscription_details?.subscription ??
     (invoice as any).subscription;
   return stripeId(value);
+}
+
+async function currentCustomerPlan(subscription: Stripe.Subscription, customerId: string, dependencies: StripeWebhookDependencies) {
+  const own = activePlanForSubscription(subscription);
+  if (own === "BUSINESS") return own;
+  // A stale event for an old subscription must not revoke or downgrade its replacement.
+  const other = await dependencies.remainingCustomerPlan?.(customerId, subscription.id) ?? "FREE";
+  return other === "BUSINESS" ? other : own === "PRO" || other === "PRO" ? "PRO" : "FREE";
 }
 
 async function syncStripeSubscription(
@@ -212,7 +215,7 @@ async function syncStripeSubscription(
     },
     dependencies,
   );
-  const plan = activePlanForSubscription(subscription);
+  const plan = await currentCustomerPlan(subscription, customerId, dependencies);
   await dependencies.syncSubscription(resolution.owner.id, {
     customerId,
     plan,
@@ -310,7 +313,7 @@ export async function processStripeEvent(
       if (subscriptionId) {
         const subscription =
           await dependencies.retrieveSubscription(subscriptionId);
-        const plan = activePlanForSubscription(subscription);
+        const plan = await currentCustomerPlan(subscription, customerId, dependencies);
         await dependencies.syncSubscription(resolution.owner.id, {
           customerId,
           plan,
@@ -337,9 +340,10 @@ export async function processStripeEvent(
     }
 
     case "customer.subscription.created": {
+      const current = await dependencies.retrieveSubscription((event.data.object as Stripe.Subscription).id);
       const resolution = await syncStripeSubscription(
         event.type,
-        event.data.object as Stripe.Subscription,
+        current,
         true,
         dependencies,
       );
@@ -347,9 +351,10 @@ export async function processStripeEvent(
     }
 
     case "customer.subscription.updated": {
+      const current = await dependencies.retrieveSubscription((event.data.object as Stripe.Subscription).id);
       const resolution = await syncStripeSubscription(
         event.type,
-        event.data.object as Stripe.Subscription,
+        current,
         false,
         dependencies,
       );
@@ -358,9 +363,10 @@ export async function processStripeEvent(
 
     case "customer.subscription.paused":
     case "customer.subscription.resumed": {
+      const current = await dependencies.retrieveSubscription((event.data.object as Stripe.Subscription).id);
       const resolution = await syncStripeSubscription(
         event.type,
-        event.data.object as Stripe.Subscription,
+        current,
         false,
         dependencies,
       );
@@ -486,9 +492,11 @@ export async function processStripeEvent(
         throw error;
       }
 
+      // A delayed deletion of an old subscription must not revoke its replacement.
+      const remainingPlan = await dependencies.remainingCustomerPlan?.(customerId, subscription.id) ?? "FREE";
       await dependencies.syncSubscription(resolution.owner.id, {
         customerId,
-        plan: "FREE",
+        plan: remainingPlan,
       });
       if (event.livemode === true && subscription.status === "canceled") {
         await dependencies.notifyOwnerEmail?.({
@@ -500,7 +508,7 @@ export async function processStripeEvent(
           occurredAt: new Date(event.created * 1000).toISOString(),
         });
       }
-      await notifyCustomerSafely(dependencies, {
+      if (remainingPlan === "FREE") await notifyCustomerSafely(dependencies, {
         userId: resolution.owner.id,
         templateId: "subscription_canceled",
         stripeEventId: event.id,

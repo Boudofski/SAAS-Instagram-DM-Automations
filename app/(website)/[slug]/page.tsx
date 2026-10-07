@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 const SITE_URL = "https://ap3k.com";
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 const SEO_KEYWORDS: Record<string, string[]> = {
   "instagram-dm-automation": [
@@ -73,7 +73,8 @@ export function generateStaticParams() {
   return COMMERCIAL_PAGES.map((page) => ({ slug: page.slug }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   if (params.slug === "manychat-alternative") {
     const comparison = getComparison("manychat")!;
     return localizedMetadata(
@@ -135,7 +136,8 @@ export function generateMetadata({ params }: Props): Metadata {
   );
 }
 
-export default function CommercialPageRoute({ params }: Props) {
+export default async function CommercialPageRoute(props: Props) {
+  const params = await props.params;
   const page = getCommercialPage(params.slug);
   if (!page) notFound();
   if (params.slug === "manychat-alternative")
