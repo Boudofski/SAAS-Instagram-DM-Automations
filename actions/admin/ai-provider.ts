@@ -150,7 +150,9 @@ export async function testAiProviderAction(providerId: string) {
     if (config) {
       await client.aiProviderConfig.update({
         where: { id: provider.id },
-        data: { enabled: false, lastTestedAt: testedAt, lastTestStatus: "FAILED", lastTestError: message, updatedBy: admin.clerkId },
+        // A health check must not change the owner's routing choice. A transient
+        // upstream outage should recover without requiring manual reactivation.
+        data: { lastTestedAt: testedAt, lastTestStatus: "FAILED", lastTestError: message, updatedBy: admin.clerkId },
       });
     }
     await createAdminAuditLog({

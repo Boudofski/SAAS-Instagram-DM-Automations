@@ -143,13 +143,12 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
       () => testAiProviderAction(providerId),
       () => {
         updateConfig(providerId, {
-          enabled: false,
           lastTestStatus: "CONNECTED",
           lastTestError: null,
           lastTestedAt: new Date().toISOString(),
         });
       },
-      (message) => updateConfig(providerId, { enabled: false, lastTestStatus: "FAILED", lastTestError: message }),
+      (message) => updateConfig(providerId, { lastTestStatus: "FAILED", lastTestError: message }),
     );
   };
 
@@ -175,7 +174,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">AP3K AI routing</p>
             <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Choose one provider. Keep two ready as backups.</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground dark:text-slate-400">Each API key is encrypted separately. Saving a changed key or model pauses that provider until it passes a fresh test.</p>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground dark:text-slate-400">Each API key is encrypted separately. Testing checks the connection without changing the active provider. Saving a changed key or model pauses that provider until it passes a fresh test.</p>
           </div>
         </div>
         {activeConfig ? <V2Badge tone="green">Active · {activeConfig.providerName}</V2Badge> : <V2Badge tone="amber">AI generation paused</V2Badge>}
