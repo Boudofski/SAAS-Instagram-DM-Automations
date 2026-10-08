@@ -16,6 +16,10 @@ describe("assistant completion budgets", () => {
       expect(request.reasoning_effort).toBe("low");
     }
   });
+  it("renders model emphasis as plain text in the support widget", async () => {
+    complete.mockResolvedValue({ choices: [{ message: { content: "Use **20 characters** or fewer." } }] });
+    expect(await generateAiSupportReply({ message: "Button label limit?" })).toEqual({ ok: true, reply: "Use 20 characters or fewer." });
+  });
   it("rejects an oversized support response instead of displaying a cut-off answer", async () => {
     complete.mockResolvedValue({ choices: [{ message: { content: "x".repeat(4201) } }] });
     expect(await generateAiSupportReply({ message: "Explain setup" })).toEqual({ ok: false });

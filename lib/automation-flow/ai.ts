@@ -150,7 +150,7 @@ export async function generateFlowAssistantDraft(input: FlowAssistantInput): Pro
   return withAiProvider("flow", async (provider) => {
   const api = createProvider(provider);
     const result = await api.chat.completions.create({
-      model: provider.model, temperature: 0.2,
+      model: provider.model, temperature: 0.2, response_format: { type: "json_object" },
       ...aiCompletionBudget(provider, "complex"), max_tokens: 8192,
       messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: JSON.stringify({ prompt: input.prompt, history: input.history ?? [], currentFlow: input.currentFlow ?? null, currentTriggers: input.currentTriggers ?? [] }) }],
     });
@@ -160,7 +160,7 @@ export async function generateFlowAssistantDraft(input: FlowAssistantInput): Pro
       const detail = error instanceof Error ? error.message : "Invalid graph";
       if (!/^(The generated flow is invalid:|The AI provider did not return valid flow JSON|The AI provider returned an unsupported flow response)/.test(detail)) throw error;
       const repaired = await api.chat.completions.create({
-        model: provider.model, temperature: 0.1,
+        model: provider.model, temperature: 0.1, response_format: { type: "json_object" },
         ...aiCompletionBudget(provider, "complex"), max_tokens: 8192,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },

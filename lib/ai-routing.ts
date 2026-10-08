@@ -167,9 +167,12 @@ async function recordFailure(
   task: string,
 ) {
   const failure = aiFailure(error, config.consecutiveFailures);
+  // A large draft exceeding its task budget does not prove short replies are down.
+  if ((task === "flow" || task === "policy") && failure.code === "TIMEOUT") {
+    failure.cooldownUntil = null;
+  }
   await healthUpdate(config, {
-    consecutiveFailures: { increment: 1 },
-    cooldownUntil: failure.cooldownUntil,
+    ...(failure.cooldownUntil ? { consecutiveFailures: { increment: 1 }, cooldownUntil: failure.cooldownUntil } : {}),
     lastFailureCode: failure.code,
   });
   console.warn("[ai-routing] provider attempt failed", {
@@ -331,12 +334,12 @@ export async function withAiProvider<T>(
   await calibrate(candidates);
   candidates = rankAiProviders(configs);
   const complex = task === "flow" || task === "policy";
-  const deadline = Date.now() + (complex ? 45_000 : 28_000);
+  const deadline = Date.now() + (complex ? 90_000 : 28_000);
   for (let index = 0; index < candidates.length; index++) {
     const config = candidates[index];
     const remaining = deadline - Date.now();
     if (remaining < 1000) break;
-    const timeoutMs = Math.min(complex ? 15_000 : 9000, remaining);
+    const timeoutMs = Math.min(complex ? 30_000 : 9000, remaining);
     if (config.cooldownUntil && config.consecutiveFailures > 0) {
       // One request probes recovery; other instances continue to healthy backups.
       try {

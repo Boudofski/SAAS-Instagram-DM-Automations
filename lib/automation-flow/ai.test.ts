@@ -111,8 +111,8 @@ describe("flow assistant proposals", () => {
   it("uses the configured provider model with timeout and no retry, not a fixed invented model", async () => {
     const result = await generateFlowAssistantDraft(input);
     expect(result.flow.nodes).toHaveLength(2);
-    expect(mocks.options).toHaveBeenCalledWith(expect.objectContaining({ timeout: 15000, maxRetries: 0, apiKey: "test-secret" }));
-    expect(mocks.completion).toHaveBeenCalledWith(expect.objectContaining({ model: "configured-model", max_tokens: 8192 }), expect.objectContaining({ timeout: 15000, maxRetries: 0, signal: expect.any(AbortSignal) }));
+    expect(mocks.options).toHaveBeenCalledWith(expect.objectContaining({ timeout: 30000, maxRetries: 0, apiKey: "test-secret" }));
+    expect(mocks.completion).toHaveBeenCalledWith(expect.objectContaining({ model: "configured-model", max_tokens: 8192 }), expect.objectContaining({ timeout: 30000, maxRetries: 0, signal: expect.any(AbortSignal) }));
     const systemPrompt = mocks.completion.mock.calls[0][0].messages[0].content;
     expect(systemPrompt).toContain('action(optional "add"|"remove", default "add")');
     expect(systemPrompt).toContain("POST only; no method field, headers, auth headers");

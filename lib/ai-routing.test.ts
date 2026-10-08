@@ -131,7 +131,6 @@ describe("shared provider routing", () => {
     expect(run).toHaveBeenCalledTimes(3);
     expect(mocks.update.mock.calls[0][0].data).toMatchObject({
       lastFailureCode: "INVALID_RESPONSE",
-      cooldownUntil: null,
     });
   });
   it("never routes around an explicit model refusal", async () => {
@@ -230,6 +229,35 @@ describe("shared provider routing", () => {
       "answer",
     );
     expect(mocks.complete).not.toHaveBeenCalled();
+  });
+});
+
+describe("complex-task isolation", () => {
+  it("allows a valid 20-second flow without treating its model as unavailable", async () => {
+    vi.useFakeTimers();
+    const result = withAiProvider(
+      "flow",
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ flow: "valid" }), 20_000),
+        ),
+    );
+    await vi.advanceTimersByTimeAsync(20_001);
+    expect(await result).toEqual({ flow: "valid" });
+  });
+  it("does not globally quarantine a provider when a complex draft times out", async () => {
+    const run = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("slow draft"), { name: "TimeoutError" }),
+      )
+      .mockResolvedValueOnce({ flow: "valid" });
+    expect(await withAiProvider("flow", run)).toEqual({ flow: "valid" });
+    expect(mocks.update.mock.calls[0][0].data).toMatchObject({
+      lastFailureCode: "TIMEOUT",
+    });
+    expect(mocks.update.mock.calls[0][0].data).not.toHaveProperty("cooldownUntil");
+    expect(mocks.update.mock.calls[0][0].data).not.toHaveProperty("consecutiveFailures");
   });
 });
 
