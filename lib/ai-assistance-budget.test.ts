@@ -16,6 +16,10 @@ describe("assistant completion budgets", () => {
       expect(request.reasoning_effort).toBe("low");
     }
   });
+  it("rejects an oversized support response instead of displaying a cut-off answer", async () => {
+    complete.mockResolvedValue({ choices: [{ message: { content: "x".repeat(4201) } }] });
+    expect(await generateAiSupportReply({ message: "Explain setup" })).toEqual({ ok: false });
+  });
   it("leaves enough completion space for email JSON while enforcing output length limits", async () => {
     const fallback = { subject: "Welcome", preview: "Get started", headline: "Welcome to AP3K", introduction: "Create your first automation." };
     complete.mockResolvedValue({ choices: [{ message: { content: JSON.stringify(fallback) } }] });
