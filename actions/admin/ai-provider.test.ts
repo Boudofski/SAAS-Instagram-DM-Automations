@@ -14,7 +14,7 @@ vi.mock("@/lib/ai-provider-crypto", () => ({
   decryptAiProviderSecret: () => "test-secret", aiProviderEncryptionReady: () => true, encryptAiProviderSecret: vi.fn(),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-import { activateAiProviderAction, disableAiProviderAction, testAiProviderAction } from "./ai-provider";
+import { activateAiProviderAction, disableAiProviderAction, setAiProviderFallbackAction, testAiProviderAction } from "./ai-provider";
 
 describe("AI provider health checks preserve routing", () => {
   let config: { id: string; enabled: boolean; model: string; encryptedApiKey: string; lastTestStatus: string };
@@ -61,6 +61,24 @@ describe("AI provider health checks preserve routing", () => {
     await expect(testAiProviderAction("google")).rejects.toThrow("NOT_FOUND");
     expect(mocks.find).not.toHaveBeenCalled();
     expect(mocks.test).not.toHaveBeenCalled();
+  });
+  it("does not verify credentials that changed during an in-flight test", async () => {
+    mocks.updateMany.mockResolvedValue({ count: 0 });
+    expect((await testAiProviderAction("google")).status).toBe(400);
+    expect(mocks.updateMany.mock.calls[0][0].where).toEqual({ id: "google", model: config.model, encryptedApiKey: config.encryptedApiKey });
+  });
+  it("requires a successful connection test before approving a backup", async () => {
+    config.lastTestStatus = "FAILED";
+    expect((await setAiProviderFallbackAction("google", true)).status).toBe(400);
+    expect(mocks.update).not.toHaveBeenCalled();
+    config.lastTestStatus = "CONNECTED";
+    expect((await setAiProviderFallbackAction("google", true)).status).toBe(200);
+    expect(mocks.update.mock.calls[0][0]).toMatchObject({ where: { model: config.model, encryptedApiKey: config.encryptedApiKey, lastTestStatus: "CONNECTED" }, data: { fallbackEnabled: true } });
+  });
+  it("requires owner authorization before changing backup routing", async () => {
+    mocks.guard.mockRejectedValue(new Error("NOT_FOUND"));
+    await expect(setAiProviderFallbackAction("google", true)).rejects.toThrow("NOT_FOUND");
+    expect(mocks.update).not.toHaveBeenCalled();
   });
   it("redacts the provider key from failed test results and audit records", async () => {
     mocks.test.mockRejectedValue(new Error("Rejected test-secret"));

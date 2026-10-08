@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-vi.mock("@/lib/ai-reply", () => ({ createProvider: vi.fn(), loadEnabledProvider: vi.fn() }));
+vi.mock("@/lib/ai-routing", () => ({ createProvider: vi.fn(), withAiProvider: vi.fn() }));
 import { parsePolicyScanResult } from "./ai-policy-scan";
 import { policyScanInputSchema, policyReplacementPreservesTokens } from "./automation-policy";
 const input = { integrationId: "ecbcaf2e-7e22-4f78-a82b-066171489842", sections: [{ id: "message", label: "Direct Message", texts: ["Buy now {{username}} https://ap3k.com/go"] }] };

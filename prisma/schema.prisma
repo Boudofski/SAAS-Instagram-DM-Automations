@@ -411,6 +411,13 @@ model AiProviderConfig {
   lastTestedAt    DateTime?
   lastTestStatus  String?
   lastTestError   String?
+  fallbackEnabled Boolean   @default(false)
+  benchmarkLatencyMs Int?
+  lastBenchmarkedAt DateTime?
+  lastSuccessAt DateTime?
+  consecutiveFailures Int @default(0)
+  cooldownUntil DateTime?
+  lastFailureCode String?
   updatedBy       String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

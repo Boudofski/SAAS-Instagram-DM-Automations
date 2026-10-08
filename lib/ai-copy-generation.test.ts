@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { complete } = vi.hoisted(() => ({ complete: vi.fn() }));
 vi.mock("openai", () => ({ default: class { chat = { completions: { create: complete } }; } }));
-vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { findFirst: vi.fn().mockResolvedValue({ id: "google", enabled: true, model: "gemini-3.5-flash-lite", encryptedApiKey: "test" }) } } }));
+vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { updateMany: vi.fn().mockResolvedValue({ count: 1 }), findMany: vi.fn().mockResolvedValue([{ id: "google", enabled: true, model: "gemini-3.5-flash-lite", encryptedApiKey: "test", benchmarkLatencyMs: 100 }]) } } }));
 vi.mock("@/lib/ai-provider-crypto", () => ({ decryptAiProviderSecret: () => "test-only" }));
 
 import { generateAutomationCopy } from "./ai-reply";

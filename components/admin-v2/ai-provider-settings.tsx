@@ -4,6 +4,7 @@ import {
   activateAiProviderAction,
   disableAiProviderAction,
   saveAiProviderAction,
+  setAiProviderFallbackAction,
   testAiProviderAction,
 } from "@/actions/admin/ai-provider";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
@@ -22,11 +23,16 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 type ProviderConfig = {
   id: AiProviderId;
   enabled: boolean;
+  fallbackEnabled: boolean;
+  benchmarkLatencyMs: number | null;
+  cooldownUntil: string | null;
+  lastSuccessAt: string | null;
+  lastFailureCode: string | null;
   providerName: string;
   baseUrl: string;
   model: string;
@@ -55,6 +61,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
     ?? "google";
   const [selectedId, setSelectedId] = useState<AiProviderId>(initialProvider);
   const [localConfigs, setLocalConfigs] = useState(configs);
+  useEffect(() => setLocalConfigs(configs), [configs]);
   const [models, setModels] = useState<Record<AiProviderId, string>>(() => Object.fromEntries(
     AI_PROVIDERS.map((provider) => [
       provider.id,
@@ -70,6 +77,8 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
   const definition = AI_PROVIDERS.find((provider) => provider.id === selectedId)!;
   const config = localConfigs.find((provider) => provider.id === selectedId)!;
   const activeConfig = localConfigs.find((provider) => provider.enabled);
+  const fastest = localConfigs.filter(item => (item.enabled || item.fallbackEnabled) && item.apiKeyHint && (!item.cooldownUntil || Date.parse(item.cooldownUntil) <= Date.now()))
+    .sort((a, b) => (a.benchmarkLatencyMs ?? Infinity) - (b.benchmarkLatencyMs ?? Infinity) || Number(b.enabled) - Number(a.enabled))[0];
   const isDirty = dirtyProviders.has(selectedId);
   const hasSavedKey = Boolean(config.apiKeyHint);
   const isVerified = config.lastTestStatus === "CONNECTED" && !isDirty;
@@ -124,6 +133,10 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
         updateConfig(providerId, {
           ...(result.testRequired ? {
             enabled: false,
+            fallbackEnabled: false,
+            benchmarkLatencyMs: null,
+            cooldownUntil: null,
+            lastFailureCode: null,
             lastTestStatus: null,
             lastTestError: null,
             lastTestedAt: null,
@@ -144,6 +157,9 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
       () => {
         updateConfig(providerId, {
           lastTestStatus: "CONNECTED",
+          cooldownUntil: null,
+          lastFailureCode: null,
+          benchmarkLatencyMs: null,
           lastTestError: null,
           lastTestedAt: new Date().toISOString(),
         });
@@ -155,7 +171,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
   const activate = () => {
     const providerId = selectedId;
     runAction("activate", () => activateAiProviderAction(providerId), () => {
-      setLocalConfigs((current) => current.map((item) => ({ ...item, enabled: item.id === providerId })));
+      setLocalConfigs((current) => current.map((item) => ({ ...item, enabled: item.id === providerId, fallbackEnabled: item.id === providerId || item.fallbackEnabled })));
     });
   };
 
@@ -173,11 +189,11 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-violet-400/20 bg-violet-400/10 text-violet-700 dark:text-violet-300"><Bot className="h-5 w-5" /></span>
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">AP3K AI routing</p>
-            <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Choose one provider. Keep two ready as backups.</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground dark:text-slate-400">Each API key is encrypted separately. Testing checks the connection without changing the active provider. Saving a changed key or model pauses that provider until it passes a fresh test.</p>
+            <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Fast replies. Automatic failover.</h2>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground dark:text-slate-400">AP3K measures a short test reply and uses the fastest healthy allowed connection first. Failed connections cool down and recover automatically. New keys or models require a fresh test and backup approval. Pause AI stops all routing.</p>
           </div>
         </div>
-        {activeConfig ? <V2Badge tone="green">Active · {activeConfig.providerName}</V2Badge> : <V2Badge tone="amber">AI generation paused</V2Badge>}
+        {activeConfig ? <V2Badge tone="green">AI enabled · {fastest?.providerName ?? "Recovering"}</V2Badge> : <V2Badge tone="amber">AI generation paused</V2Badge>}
       </div>
 
       <div className="grid gap-2 border-b border-slate-200 dark:border-white/[0.07] p-3 sm:grid-cols-3 sm:p-4">
@@ -211,7 +227,7 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-black text-slate-950 dark:text-white">{definition.name}</h3>
-              {config.enabled ? <V2Badge tone="green">Active</V2Badge> : isVerified ? <V2Badge tone="blue">Ready</V2Badge> : hasSavedKey ? <V2Badge tone="amber">Needs test</V2Badge> : <V2Badge tone="slate">Setup needed</V2Badge>}
+              {config.enabled ? <V2Badge tone="green">AI enabled</V2Badge> : isVerified ? <V2Badge tone="blue">Ready</V2Badge> : hasSavedKey ? <V2Badge tone="amber">Needs test</V2Badge> : <V2Badge tone="slate">Setup needed</V2Badge>}
             </div>
             <p className="mt-1 text-xs leading-5 text-muted-foreground dark:text-slate-400">{definition.description}</p>
           </div>
@@ -260,7 +276,18 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
           <div className="grid gap-px bg-slate-50 dark:bg-white/[0.07] sm:grid-cols-3">
             <Step number="1" title="Save" detail="Store the key and model" done={hasSavedKey && !isDirty} />
             <Step number="2" title="Test" detail="Verify a real AP3K reply" done={isVerified} />
-            <Step number="3" title="Activate" detail="Route all AI traffic here" done={config.enabled} />
+            <Step number="3" title="Enable" detail="Fastest healthy connection first" done={config.enabled} />
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-white/10 dark:bg-white/5">
+            <p className="font-bold text-slate-900 dark:text-white">Measured test response</p>
+            <p className="mt-1 text-muted-foreground">{config.benchmarkLatencyMs ? `${(config.benchmarkLatencyMs / 1000).toFixed(2)} seconds` : "Measured automatically on the next AI request"}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-white/10 dark:bg-white/5">
+            <p className="font-bold text-slate-900 dark:text-white">{config.cooldownUntil && Date.parse(config.cooldownUntil) > Date.now() ? "Temporary cooldown" : config.fallbackEnabled ? "Automatic backup allowed" : "Backup not enabled"}</p>
+            <p className="mt-1 text-muted-foreground">{config.cooldownUntil && Date.parse(config.cooldownUntil) > Date.now() ? `AP3K is using other available connections. Recovery is automatic. ${config.lastFailureCode ?? ""}` : "Only the selected connection receives each attempt. A failed attempt may be retried with an allowed backup."}</p>
           </div>
         </div>
 
@@ -269,10 +296,14 @@ export function AiProviderSettings({ configs, encryptionReady }: Props) {
         {notice ? <p role="status" className={`mt-4 rounded-xl border px-4 py-3 text-xs leading-5 ${notice.tone === "success" ? "border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-700 dark:text-emerald-200" : "border-red-500/20 bg-red-500/[0.07] text-red-700 dark:text-red-200"}`}>{notice.text}</p> : null}
 
         <div className="mt-5 flex flex-col gap-2 border-t border-slate-200 dark:border-white/[0.06] pt-4 sm:flex-row sm:flex-wrap sm:justify-end">
+          {!config.enabled ? <button type="button" disabled={isPending || isDirty || (!config.fallbackEnabled && !isVerified)} onClick={() => {
+            const providerId = selectedId; const allowed = !config.fallbackEnabled;
+            runAction("backup", () => setAiProviderFallbackAction(providerId, allowed), () => updateConfig(providerId, { fallbackEnabled: allowed }));
+          }} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-800 dark:border-white/10 dark:text-slate-200 disabled:opacity-35">{config.fallbackEnabled ? "Remove backup" : "Allow automatic backup"}</button> : null}
           {config.enabled ? <button type="button" onClick={pause} disabled={isPending} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 text-xs font-black text-slate-800 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-white/[0.05] disabled:opacity-35">{pendingAction === "pause" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />} Pause AI</button> : null}
           <button type="button" onClick={test} disabled={isPending || isDirty || !hasSavedKey} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-white/[0.09] px-4 text-xs font-black text-slate-800 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-white/[0.05] disabled:opacity-35">{pendingAction === "test" ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlugZap className="h-4 w-4" />} Test saved connection</button>
           <button type="submit" disabled={isPending || !encryptionReady || !isDirty} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-4 text-xs font-black text-violet-700 dark:text-violet-200 transition hover:bg-violet-500/15 disabled:opacity-35">{pendingAction === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} Save configuration</button>
-          {!config.enabled ? <button type="button" onClick={activate} disabled={isPending || !isVerified} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 text-xs font-black text-white shadow-lg transition hover:brightness-110 disabled:opacity-35">{pendingAction === "activate" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Make active provider</button> : null}
+          {!config.enabled ? <button type="button" onClick={activate} disabled={isPending || !isVerified} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 text-xs font-black text-white shadow-lg transition hover:brightness-110 disabled:opacity-35">{pendingAction === "activate" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Enable AI routing</button> : null}
         </div>
       </form>
     </section>

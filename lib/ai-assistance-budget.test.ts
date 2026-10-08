@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const { complete } = vi.hoisted(() => ({ complete: vi.fn() }));
 vi.mock("openai", () => ({ default: class { chat = { completions: { create: complete } }; } }));
-vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { findFirst: vi.fn().mockResolvedValue({ id: "google", enabled: true, model: "gemini-3.5-flash-lite", encryptedApiKey: "test" }) } } }));
+vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { updateMany: vi.fn().mockResolvedValue({ count: 1 }), findMany: vi.fn().mockResolvedValue([{ id: "google", enabled: true, model: "gemini-3.5-flash-lite", encryptedApiKey: "test", benchmarkLatencyMs: 100 }]) } } }));
 vi.mock("@/lib/ai-provider-crypto", () => ({ decryptAiProviderSecret: () => "test-only" }));
 import { generateAdminAssistance, generateAiEmailPersonalization, generateAiSupportReply } from "./ai-reply";
 
@@ -15,6 +15,10 @@ describe("assistant completion budgets", () => {
       expect(request.max_tokens).toBeGreaterThanOrEqual(2048);
       expect(request.reasoning_effort).toBe("low");
     }
+  });
+  it("rejects an oversized support response instead of displaying a cut-off answer", async () => {
+    complete.mockResolvedValue({ choices: [{ message: { content: "x".repeat(4201) } }] });
+    expect(await generateAiSupportReply({ message: "Explain setup" })).toEqual({ ok: false });
   });
   it("leaves enough completion space for email JSON while enforcing output length limits", async () => {
     const fallback = { subject: "Welcome", preview: "Get started", headline: "Welcome to AP3K", introduction: "Create your first automation." };
