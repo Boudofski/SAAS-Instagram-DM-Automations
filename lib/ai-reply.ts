@@ -285,7 +285,7 @@ export async function generateAiSupportReply(input: {
         { role: "user" as const, content: input.message.slice(0, 1200) },
       ],
     });
-    const reply = (completion.choices[0]?.message?.content ?? "").trim();
+    const reply = (completion.choices[0]?.message?.content ?? "").trim().replace(/\*\*([^*\n]+)\*\*/g, "$1");
     if (reply.length > 4200) throw new AiInvalidResponseError("Support answer exceeds display limit");
     return reply ? { ok: true as const, reply } : null;
     });
