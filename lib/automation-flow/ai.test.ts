@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ config: vi.fn(), completion: vi.fn(), options: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { findFirst: mocks.config } } }));
+vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { findMany: async () => { const config = await mocks.config(); return config ? [config] : []; }, updateMany: vi.fn().mockResolvedValue({ count: 1 }) } } }));
 vi.mock("@/lib/ai-provider-crypto", () => ({ decryptAiProviderSecret: () => "test-secret" }));
 vi.mock("openai", () => {
   class APIError extends Error { status = 429; }
@@ -111,8 +111,8 @@ describe("flow assistant proposals", () => {
   it("uses the configured provider model with timeout and no retry, not a fixed invented model", async () => {
     const result = await generateFlowAssistantDraft(input);
     expect(result.flow.nodes).toHaveLength(2);
-    expect(mocks.options).toHaveBeenCalledWith(expect.objectContaining({ timeout: 35000, maxRetries: 0, apiKey: "test-secret" }));
-    expect(mocks.completion).toHaveBeenCalledWith(expect.objectContaining({ model: "configured-model", max_tokens: 8192 }));
+    expect(mocks.options).toHaveBeenCalledWith(expect.objectContaining({ timeout: 15000, maxRetries: 0, apiKey: "test-secret" }));
+    expect(mocks.completion).toHaveBeenCalledWith(expect.objectContaining({ model: "configured-model", max_tokens: 8192 }), expect.objectContaining({ timeout: 15000, maxRetries: 0, signal: expect.any(AbortSignal) }));
     const systemPrompt = mocks.completion.mock.calls[0][0].messages[0].content;
     expect(systemPrompt).toContain('action(optional "add"|"remove", default "add")');
     expect(systemPrompt).toContain("POST only; no method field, headers, auth headers");
@@ -165,14 +165,14 @@ describe("flow assistant proposals", () => {
   });
   it("stops after one unsuccessful repair and never returns an invalid graph", async () => {
     mocks.completion.mockResolvedValue({ choices: [{ finish_reason: "stop", message: { content: "invalid json" } }] });
-    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("valid flow JSON");
+    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("temporarily unavailable");
     expect(mocks.completion).toHaveBeenCalledTimes(2);
   });
   it("surfaces unavailable providers and truncation without manufacturing a draft", async () => {
     mocks.config.mockResolvedValueOnce(null);
-    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("disabled");
+    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("paused");
     expect(mocks.completion).not.toHaveBeenCalled();
     mocks.completion.mockResolvedValueOnce({ choices: [{ finish_reason: "length", message: { content: JSON.stringify(response()) } }] });
-    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("response limit");
+    await expect(generateFlowAssistantDraft(input)).rejects.toThrow("temporarily unavailable");
   });
 });

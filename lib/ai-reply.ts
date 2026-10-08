@@ -2,12 +2,10 @@ import { DEFAULT_COMMENT_PROMPT, DEFAULT_COMMENT_ONLY_PROMPT, ensureCommentUsern
 import OpenAI from "openai";
 import { aiCompletionBudget } from "@/lib/ai-completion-budget";
 import { client } from "@/lib/prisma";
-import { decryptAiProviderSecret } from "@/lib/ai-provider-crypto";
+import { createProvider, withAiProvider, AiInvalidResponseError, type ProviderInput } from "@/lib/ai-routing";
 import {
   AI_PROVIDER_IDS,
   AI_PROVIDERS,
-  getAiProviderDefinition,
-  type AiProviderId,
 } from "@/lib/ai-providers";
 import {
   normalizeAiProtectionRules,
@@ -27,28 +25,6 @@ export type AiCommentDecision =
   | { action: "REPLY"; category: "SAFE"; reply: string }
   | { action: AiProtectionAction; category: AiProtectionCategory; reason: string }
   | { action: "SKIP"; category: "UNANSWERABLE"; reason: string };
-
-type ProviderInput = {
-  providerId: AiProviderId;
-  baseUrl: string;
-  model: string;
-  apiKey: string;
-};
-
-export function createProvider(input: ProviderInput) {
-  return new OpenAI({
-    apiKey: input.apiKey,
-    baseURL: input.baseUrl.replace(/\/+$/, ""),
-    timeout: 18_000,
-    maxRetries: 1,
-    ...(input.providerId === "openrouter" ? {
-      defaultHeaders: {
-        "HTTP-Referer": "https://ap3k.com",
-        "X-OpenRouter-Title": "AP3K",
-      },
-    } : {}),
-  });
-}
 
 function parseModelJson(raw: string): { category: ModelCategory; reply: string } {
   const withoutFence = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
@@ -115,20 +91,7 @@ async function runCompletion(
   } satisfies OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
 
   const client = createProvider(provider);
-  let completion: OpenAI.Chat.Completions.ChatCompletion;
-  try {
-    completion = await client.chat.completions.create({
-      ...request,
-      response_format: { type: "json_object" },
-    });
-  } catch (error) {
-    // Not every provider/model exposes structured-output support. The prompt
-    // and strict parser still require JSON, so retry once without the optional
-    // response_format field when a compatible endpoint rejects it.
-    const status = error instanceof OpenAI.APIError ? error.status : undefined;
-    if (status !== 400 && status !== 422) throw error;
-    completion = await client.chat.completions.create(request);
-  }
+  const completion = await client.chat.completions.create({ ...request, response_format: { type: "json_object" } });
 
   return parseModelJson(completion.choices[0]?.message?.content ?? "");
 }
@@ -151,6 +114,11 @@ export async function getAiProviderPublicConfigs() {
       lastTestedAt: config?.lastTestedAt ?? null,
       lastTestStatus: config?.lastTestStatus ?? null,
       lastTestError: config?.lastTestError ?? null,
+      fallbackEnabled: config?.fallbackEnabled ?? false,
+      benchmarkLatencyMs: config?.benchmarkLatencyMs ?? null,
+      cooldownUntil: config?.cooldownUntil?.toISOString() ?? null,
+      lastSuccessAt: config?.lastSuccessAt?.toISOString() ?? null,
+      lastFailureCode: config?.lastFailureCode ?? null,
     };
   });
 }
@@ -159,25 +127,9 @@ export async function getAiWorkspaceRuntimeConfig(userId: string, integrationId?
   return normalizeAiWorkspace(integrationId ? await client.instagramAiConfig.findFirst({ where: { userId, integrationId } }) : null);
 }
 
-export async function loadEnabledProvider(): Promise<ProviderInput> {
-  const config = await client.aiProviderConfig.findFirst({
-    where: { enabled: true, id: { in: [...AI_PROVIDER_IDS] } },
-    orderBy: { updatedAt: "desc" },
-  });
-  if (!config?.enabled) throw new Error("AI replies are disabled by the administrator.");
-  const provider = getAiProviderDefinition(config.id);
-  if (!provider || !config.model || !config.encryptedApiKey) throw new Error("AI provider configuration is incomplete.");
-  return {
-    providerId: provider.id,
-    baseUrl: provider.baseUrl,
-    model: config.model,
-    apiKey: decryptAiProviderSecret(config.encryptedApiKey),
-  };
-}
-
 /** Owner-only callers supply aggregate metrics or an editorial draft, never customer conversations. */
 export async function generateAdminAssistance(mode:"operations"|"editorial",context:string) {
-  const provider=await loadEnabledProvider();
+  return await withAiProvider("admin", async (provider) => {
   const completion=await createProvider(provider).chat.completions.create({
     model:provider.model,temperature:0.25,...aiCompletionBudget(provider),
     messages:[{role:"system",content:[
@@ -191,6 +143,7 @@ export async function generateAdminAssistance(mode:"operations"|"editorial",cont
   const output=completion.choices[0]?.message?.content?.trim();
   if(!output)throw new Error("Empty response.");
   return output.slice(0,8000);
+  });
 }
 
 export async function generateAiCommentDecision(input: {
@@ -203,7 +156,7 @@ export async function generateAiCommentDecision(input: {
   deliveryContext?: { sendDm: boolean; openingDm: boolean; username?: string | null };
 }): Promise<AiCommentDecision> {
   try {
-    const provider = await loadEnabledProvider();
+    return await withAiProvider("comment", async (provider) => {
     // Workspace behavior is the current source of truth. Per-automation values
     // remain readable only as a compatibility fallback for older campaigns.
     const tone = normalizeAiReplyTone(input.workspace?.defaultTone ?? input.tone);
@@ -233,8 +186,9 @@ export async function generateAiCommentDecision(input: {
     }
 
     const reply = input.deliveryContext ? ensureCommentUsername(result.reply, input.deliveryContext.username) : result.reply.replace(/\s+/g, " ").trim().slice(0, 220);
-    if (!reply) return { action: "SKIP", category: "UNANSWERABLE", reason: "ai_empty_reply" };
+    if (!reply) throw new AiInvalidResponseError("Empty safe reply");
     return { action: "REPLY", category: "SAFE", reply };
+    });
   } catch (error) {
     console.error("[ai-comment-reply] generation skipped", {
       reason: "provider_request_failed",
@@ -251,7 +205,7 @@ export async function generateAiDmReply(input: {
   history?: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<{ ok: true; reply: string; linkButton?: { label: string; url: string } } | { ok: false }> {
   try {
-    const provider = await loadEnabledProvider();
+    return await withAiProvider("dm", async (provider) => {
     const linkOptions = collectAiLinkOptions(input.workspace.knowledge, input.automationInstructions);
     const request = {
       model: provider.model,
@@ -288,19 +242,11 @@ export async function generateAiDmReply(input: {
       ],
     } satisfies OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
     const providerClient = createProvider(provider);
-    let completion: OpenAI.Chat.Completions.ChatCompletion;
-    try {
-      completion = await providerClient.chat.completions.create({
-        ...request,
-        response_format: { type: "json_object" },
-      });
-    } catch (error) {
-      const status = error instanceof OpenAI.APIError ? error.status : undefined;
-      if (status !== 400 && status !== 422) throw error;
-      completion = await providerClient.chat.completions.create(request);
-    }
+    const completion = await providerClient.chat.completions.create({ ...request, response_format: { type: "json_object" } });
+
     const parsed = parseAiDmModelReply(completion.choices[0]?.message?.content ?? "", linkOptions);
-    return parsed.reply ? { ok: true, ...parsed } : { ok: false };
+    return parsed.reply ? { ok: true as const, ...parsed } : null;
+    });
   } catch (error) {
     console.error("[ai-dm-reply] generation skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });
     return { ok: false };
@@ -312,7 +258,7 @@ export async function generateAiSupportReply(input: {
   history?: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<{ ok: true; reply: string } | { ok: false }> {
   try {
-    const provider = await loadEnabledProvider();
+    return await withAiProvider("support", async (provider) => {
     const completion = await createProvider(provider).chat.completions.create({
       model: provider.model,
       temperature: 0.1,
@@ -326,7 +272,7 @@ export async function generateAiSupportReply(input: {
             "If the guide does not support an answer, say you are not certain and direct the user to support@ap3k.com.",
             "Never request or repeat passwords, card details, one-time codes, Instagram access tokens, API keys, or other secrets.",
             "For account-specific billing or delivery status, explain where to check and recommend support; do not claim you inspected the account.",
-            "Use the same language as the user. Be concise, friendly, and give numbered steps when a procedure is requested.",
+            "Use the same language as the user. Be concise, friendly, and give numbered steps when a procedure is requested. Answer the specific question first; normally stay under 200 words and always under 4200 characters. Include the final review/save step when explaining a workflow.",
             "Use numbered plain-text steps without Markdown emphasis. Relevant verified documentation, screenshots, tutorial videos and navigation cards described in the product guide are attached by the UI; refer to those cards where useful. Do not invent URLs, embed markup or image locations. Ask one focused question if the automation type is unclear.",
             "AP3K PRODUCT GUIDE:",
             supportKnowledgeFor(input.message, [...(input.history ?? [])].reverse().find(item => item.role === "user")?.content),
@@ -339,8 +285,10 @@ export async function generateAiSupportReply(input: {
         { role: "user" as const, content: input.message.slice(0, 1200) },
       ],
     });
-    const reply = (completion.choices[0]?.message?.content ?? "").trim().slice(0, 4200);
-    return reply ? { ok: true, reply } : { ok: false };
+    const reply = (completion.choices[0]?.message?.content ?? "").trim();
+    if (reply.length > 4200) throw new AiInvalidResponseError("Support answer exceeds display limit");
+    return reply ? { ok: true as const, reply } : null;
+    });
   } catch (error) {
     console.error("[ai-support] generation skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });
     return { ok: false };
@@ -353,7 +301,7 @@ export async function generateAiEmailPersonalization(input: {
   safeContext?: { firstName?: string | null; instagramUsername?: string | null; automationName?: string | null };
 }): Promise<{ ok: true; subject: string; preview: string; headline: string; introduction: string } | { ok: false }> {
   try {
-    const provider = await loadEnabledProvider();
+    return await withAiProvider("email", async (provider) => {
     const request = {
       model: provider.model,
       temperature: 0.25,
@@ -381,17 +329,8 @@ export async function generateAiEmailPersonalization(input: {
       ],
     } satisfies OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
     const providerClient = createProvider(provider);
-    let completion: OpenAI.Chat.Completions.ChatCompletion;
-    try {
-      completion = await providerClient.chat.completions.create({
-        ...request,
-        response_format: { type: "json_object" },
-      });
-    } catch (error) {
-      const status = error instanceof OpenAI.APIError ? error.status : undefined;
-      if (status !== 400 && status !== 422) throw error;
-      completion = await providerClient.chat.completions.create(request);
-    }
+    const completion = await providerClient.chat.completions.create({ ...request, response_format: { type: "json_object" } });
+
     const raw = (completion.choices[0]?.message?.content ?? "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
     const firstBrace = raw.indexOf("{");
     const lastBrace = raw.lastIndexOf("}");
@@ -403,9 +342,10 @@ export async function generateAiEmailPersonalization(input: {
       introduction: String(parsed.introduction ?? "").trim().slice(0, 240),
     };
     if (Object.values(values).some((value) => !value || /https?:\/\/|www\.|\$|password|api key|access token|card number/i.test(value))) {
-      return { ok: false };
+      return null;
     }
-    return { ok: true, ...values };
+    return { ok: true as const, ...values };
+    });
   } catch (error) {
     console.error("[ai-email] personalization skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });
     return { ok: false };
@@ -426,7 +366,7 @@ export async function testAiProvider(input: ProviderInput) {
 /** Draft tasks only. The owner reviews these before saving or activation. */
 export async function generateAiConversationTasks(goal: string, context: string): Promise<string[] | null> {
   try {
-    const provider = await loadEnabledProvider();
+    return await withAiProvider("conversation-plan", async (provider) => {
     const result = await createProvider(provider).chat.completions.create({
       model: provider.model, temperature: 0.2, ...aiCompletionBudget(provider),
       messages: [{ role: "system", content: 'Create 3 to 6 short conversation tasks for a business Instagram assistant. Use only the supplied goal and facts. Ask one question at a time, understand needs, recommend a relevant offer, and answer questions. Do not invent products, prices, actions or promises. Do not request sensitive data. Match the language of the goal. Return JSON only: {"tasks":["..."]}. Each task must be under 240 characters.' },
@@ -436,6 +376,7 @@ export async function generateAiConversationTasks(goal: string, context: string)
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed.tasks) || parsed.tasks.length < 1 || parsed.tasks.length > 8 || parsed.tasks.some((task: unknown) => typeof task !== "string" || !task.trim() || task.length > 240)) return null;
     return parsed.tasks as string[];
+    });
   } catch (error) {
     console.error("[ai-conversation-plan] generation skipped", { errorType: error instanceof Error ? error.constructor.name : "UnknownError" });
     return null;
@@ -445,7 +386,7 @@ export async function generateAiConversationTasks(goal: string, context: string)
 /** AI drafts use the same facts and delivery constraints as the live automation. */
 export async function generateAutomationCopy(input: AutomationCopyInput): Promise<string[] | null> {
   if (input.mode === "MESSAGE_VARIATIONS" && variationGenerationError(input)) return null;
-  const provider = await loadEnabledProvider();
+  return await withAiProvider("copy", async (provider) => {
   const isComment = input.mode.startsWith("COMMENT");
   const isPrompt = input.mode === "COMMENT_PROMPT";
   const isManualReply = input.mode === "COMMENT_REPLIES";
@@ -466,12 +407,11 @@ export async function generateAutomationCopy(input: AutomationCopyInput): Promis
   ];
   const api = createProvider(provider);
   const request = { model: provider.model, messages, temperature: 0.7, ...aiCompletionBudget(provider) };
-  let completion;
-  try { completion = await api.chat.completions.create({ ...request, response_format: { type: "json_object" } }); }
-  catch (error) { if (!(error instanceof OpenAI.APIError) || ![400, 422].includes(error.status || 0)) throw error; completion = await api.chat.completions.create(request); }
+  const completion = await api.chat.completions.create({ ...request, response_format: { type: "json_object" } });
   const raw = (completion.choices[0]?.message?.content || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   const parsed = JSON.parse(raw);
   const items = normalizeCopyList(isPrompt ? [parsed.prompt] : parsed.items, count, budget);
+  if (!items.length) return null;
   if (input.mode === "MESSAGE_VARIATIONS") {
     const variables = input.text?.match(/\{\{[^{}]+\}\}/g) || [];
     const previous = new Set(normalizeCopyList([input.text, ...(input.existing || [])]).map(x=>x.toLowerCase()));
@@ -483,4 +423,5 @@ export async function generateAutomationCopy(input: AutomationCopyInput): Promis
   if (input.mode === "MESSAGE_VARIATIONS" && items.some(item => Array.from(allowedUrls).some(url => !item.includes(url)))) return null;
   if (isManualReply) return normalizeCopyList(items.map(removeGeneratedUsername), 1, budget);
   return isComment ? items.map(item => /Username|\{\{username\}\}/i.test(item) ? item : isPrompt ? `${item.slice(0, 357)} Always include Username in every reply.` : `{{username}} ${item}`.slice(0, budget)) : items;
+  }).catch(() => null);
 }

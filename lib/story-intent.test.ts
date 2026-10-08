@@ -1,7 +1,7 @@
 import {beforeEach,describe,expect,it,vi} from "vitest";
 const mocks=vi.hoisted(()=>({reserve:vi.fn(),complete:vi.fn(),release:vi.fn(),provider:vi.fn(),create:vi.fn()}));
 vi.mock("@/actions/usage/queries",()=>({reserveAiReplyQuota:mocks.reserve,completeAiReplyReservation:mocks.complete,releaseAiReplyReservation:mocks.release}));
-vi.mock("@/lib/ai-reply",()=>({loadEnabledProvider:mocks.provider,createProvider:()=>({chat:{completions:{create:mocks.create}}})}));
+vi.mock("@/lib/ai-routing",()=>({AiInvalidResponseError:class extends Error{},withAiProvider:async (_task:unknown,run:(provider:unknown)=>unknown)=>run(await mocks.provider()),createProvider:()=>({chat:{completions:{create:mocks.create}}})}));
 vi.mock("@/lib/ai-completion-budget",()=>({aiCompletionBudget:()=>({max_tokens:100})}));
 import {parseStoryIntent,storyIntentMatches} from "./story-intent";
 beforeEach(()=>{vi.resetAllMocks();mocks.reserve.mockResolvedValue({ok:true,reservationId:"r"});mocks.complete.mockResolvedValue({});mocks.release.mockResolvedValue({});mocks.provider.mockResolvedValue({model:"test"});mocks.create.mockResolvedValue({choices:[{message:{content:'{"match":true,"confidence":0.95}'}}]});});

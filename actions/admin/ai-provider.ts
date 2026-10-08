@@ -65,6 +65,13 @@ export async function saveAiProviderAction(formData: FormData) {
         } : {}),
         ...(connectionChanged ? {
           enabled: false,
+          fallbackEnabled: false,
+          benchmarkLatencyMs: null,
+          lastBenchmarkedAt: null,
+          lastSuccessAt: null,
+          consecutiveFailures: 0,
+          cooldownUntil: null,
+          lastFailureCode: null,
           lastTestedAt: null,
           lastTestStatus: null,
           lastTestError: null,
@@ -132,10 +139,12 @@ export async function testAiProviderAction(providerId: string) {
       model: config.model,
       apiKey,
     });
-    await client.aiProviderConfig.update({
-      where: { id: provider.id },
-      data: { lastTestedAt: testedAt, lastTestStatus: "CONNECTED", lastTestError: null, updatedBy: admin.clerkId },
+    const saved = await client.aiProviderConfig.updateMany({
+      where: { id: provider.id, model: config.model, encryptedApiKey: config.encryptedApiKey },
+      data: { lastTestedAt: testedAt, lastTestStatus: "CONNECTED", lastTestError: null, updatedBy: admin.clerkId,
+        benchmarkLatencyMs: null, lastBenchmarkedAt: null, lastSuccessAt: new Date(), consecutiveFailures: 0, cooldownUntil: null, lastFailureCode: null },
     });
+    if (!saved.count) throw new Error("This connection changed during the test. Test the saved connection again.");
     await createAdminAuditLog({
       admin,
       action: "AI_PROVIDER_TESTED",
@@ -148,8 +157,8 @@ export async function testAiProviderAction(providerId: string) {
   } catch (error) {
     const message = errorMessage(error, [apiKey]);
     if (config) {
-      await client.aiProviderConfig.update({
-        where: { id: provider.id },
+      await client.aiProviderConfig.updateMany({
+        where: { id: provider.id, model: config.model, encryptedApiKey: config.encryptedApiKey },
         // A health check must not change the owner's routing choice. A transient
         // upstream outage should recover without requiring manual reactivation.
         data: { lastTestedAt: testedAt, lastTestStatus: "FAILED", lastTestError: message, updatedBy: admin.clerkId },
@@ -180,7 +189,7 @@ export async function activateAiProviderAction(providerId: string) {
 
     await client.$transaction([
       client.aiProviderConfig.updateMany({ where: { enabled: true }, data: { enabled: false } }),
-      client.aiProviderConfig.update({ where: { id: provider.id }, data: { enabled: true, updatedBy: admin.clerkId } }),
+      client.aiProviderConfig.update({ where: { id: provider.id, model: config.model, encryptedApiKey: config.encryptedApiKey, lastTestStatus: "CONNECTED" }, data: { enabled: true, fallbackEnabled: true, updatedBy: admin.clerkId } }),
     ]);
     await createAdminAuditLog({
       admin,
@@ -190,7 +199,7 @@ export async function activateAiProviderAction(providerId: string) {
       after: { providerName: provider.name, model: config.model },
     });
     revalidateAiProviderPages();
-    return { status: 200 as const, data: `${provider.name} now powers every AP3K AI reply.` };
+    return { status: 200 as const, data: `AI is enabled. AP3K uses the fastest healthy connection among ${provider.name} and your allowed backups.` };
   } catch (error) {
     const message = errorMessage(error);
     await createAdminAuditLog({
@@ -221,4 +230,19 @@ export async function disableAiProviderAction(providerId: string) {
   });
   revalidateAiProviderPages();
   return { status: 200 as const, data: "AP3K AI generation is paused. Saved provider keys were kept." };
+}
+
+export async function setAiProviderFallbackAction(providerId: string, allowed: boolean) {
+  const admin = await requireAdminAction();
+  const provider = requireProvider(providerId);
+  if (typeof allowed !== "boolean") return { status: 400 as const, data: "Choose whether this connection can be used as a backup." };
+  const config = await client.aiProviderConfig.findUnique({ where: { id: provider.id } });
+  if (!config || (allowed && (!config.encryptedApiKey || config.lastTestStatus !== "CONNECTED"))) {
+    return { status: 400 as const, data: "Save and successfully test this connection before allowing backup traffic." };
+  }
+  await client.aiProviderConfig.update({ where: { id: provider.id, model: config.model, encryptedApiKey: config.encryptedApiKey, ...(allowed ? { lastTestStatus: "CONNECTED" } : {}) }, data: { fallbackEnabled: allowed, updatedBy: admin.clerkId } });
+  await createAdminAuditLog({ admin, action: "AI_PROVIDER_FALLBACK_UPDATED", targetType: "AiProviderConfig", targetId: provider.id,
+    before: { fallbackEnabled: config.fallbackEnabled }, after: { fallbackEnabled: allowed } });
+  revalidateAiProviderPages();
+  return { status: 200 as const, data: allowed ? `${provider.name} is available for automatic routing and failover.` : `${provider.name} was removed from backup routing.` };
 }

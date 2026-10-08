@@ -1,8 +1,5 @@
-import OpenAI from "openai";
 import { z } from "zod";
-import { client } from "@/lib/prisma";
-import { decryptAiProviderSecret } from "@/lib/ai-provider-crypto";
-import { AI_PROVIDER_IDS, getAiProviderDefinition } from "@/lib/ai-providers";
+import { createProvider, withAiProvider } from "@/lib/ai-routing";
 import { aiCompletionBudget } from "@/lib/ai-completion-budget";
 import { flowTriggerSchema, readFlowDraft } from "./triggers";
 import { validateFlow, type Flow } from "./definition";
@@ -150,32 +147,21 @@ Current triggers are supplied as context. Retain the existing source, story inte
 Examples: "CONSULT in DMs" -> capture goal, email, consultation_requested tag, confirmation that details were saved. "GUIDE on my post" -> email with a skip path to delivery, guide message with supplied link, optional delay of 1800 seconds and _linkClicked condition ending if true or a helpful reminder if false. "Story feedback" -> question with Share feedback / Need help buttons, distinct capture fields, support tag on the help branch, honest confirmation. Every question option and condition branch needs a complete next step or an intentional end. End the flow after delivering its purpose. Do not add unnecessary delays, follow gates, tags, data capture, or outbound calls. Review graph reachability, node limits, response boundaries and URL accuracy before returning JSON.`;
 
 export async function generateFlowAssistantDraft(input: FlowAssistantInput): Promise<FlowAssistantDraft> {
-  const config = await client.aiProviderConfig.findFirst({
-    where: { enabled: true, id: { in: [...AI_PROVIDER_IDS] } }, orderBy: { updatedAt: "desc" },
-  });
-  if (!config?.enabled) throw new Error("AI generation is disabled. Ask the administrator to connect an AI provider.");
-  const provider = getAiProviderDefinition(config.id);
-  if (!provider || !config.model || !config.encryptedApiKey) throw new Error("The AI provider configuration is incomplete.");
-  const api = new OpenAI({
-    apiKey: decryptAiProviderSecret(config.encryptedApiKey), baseURL: provider.baseUrl,
-    timeout: 35_000, maxRetries: 0,
-    ...(provider.id === "openrouter" ? { defaultHeaders: { "HTTP-Referer": "https://ap3k.com", "X-OpenRouter-Title": "AP3K" } } : {}),
-  });
-  try {
+  return withAiProvider("flow", async (provider) => {
+  const api = createProvider(provider);
     const result = await api.chat.completions.create({
-      model: config.model, temperature: 0.2,
-      ...aiCompletionBudget({ providerId: provider.id, model: config.model }), max_tokens: 8192,
+      model: provider.model, temperature: 0.2,
+      ...aiCompletionBudget(provider, "complex"), max_tokens: 8192,
       messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: JSON.stringify({ prompt: input.prompt, history: input.history ?? [], currentFlow: input.currentFlow ?? null, currentTriggers: input.currentTriggers ?? [] }) }],
     });
-    if (result.choices[0]?.finish_reason === "length") throw new Error("The AI provider reached its response limit. Ask for a smaller flow.");
     const raw = result.choices[0]?.message.content ?? "";
     try { return parseFlowAssistantDraft(raw, input); }
     catch (error) {
       const detail = error instanceof Error ? error.message : "Invalid graph";
       if (!/^(The generated flow is invalid:|The AI provider did not return valid flow JSON|The AI provider returned an unsupported flow response)/.test(detail)) throw error;
       const repaired = await api.chat.completions.create({
-        model: config.model, temperature: 0.1,
-        ...aiCompletionBudget({ providerId: provider.id, model: config.model }), max_tokens: 8192,
+        model: provider.model, temperature: 0.1,
+        ...aiCompletionBudget(provider, "complex"), max_tokens: 8192,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: JSON.stringify({ prompt: input.prompt, history: input.history ?? [], currentFlow: input.currentFlow ?? null, currentTriggers: input.currentTriggers ?? [] }) },
@@ -183,12 +169,7 @@ export async function generateFlowAssistantDraft(input: FlowAssistantInput): Pro
           { role: "user", content: `Repair this draft to satisfy the schema without changing the requested behavior. Validation error: ${detail.slice(0, 2000)}. Return complete JSON only.` },
         ],
       }, { timeout: 15_000 });
-      if (repaired.choices[0]?.finish_reason === "length") throw new Error("The AI provider reached its response limit. Ask for a smaller flow.");
       return parseFlowAssistantDraft(repaired.choices[0]?.message.content ?? "", input);
     }
-  } catch (error) {
-    if (error instanceof OpenAI.APIConnectionTimeoutError) throw new Error("The AI provider timed out. Please try again.");
-    if (error instanceof OpenAI.APIError) throw new Error(error.status === 429 ? "The AI provider is rate limited. Please try again shortly." : "The AI provider could not generate this flow. Check the provider connection in Admin.");
-    throw error;
-  }
+  });
 }
