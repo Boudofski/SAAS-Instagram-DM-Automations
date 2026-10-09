@@ -45,6 +45,32 @@ describe("owner configured external flow requests", () => {
     expect(m.lookup).not.toHaveBeenCalled();
     expect(m.request).not.toHaveBeenCalled();
   });
+  // PayloadsAllTheThings SSRF parser variants. DNS and HTTPS stay mocked:
+  // no request to loopback, metadata or any external service is made.
+  it.each([
+    "https://127.1/x",
+    "https://0177.0.0.1/x",
+    "https://0x7f.1/x",
+    "https://127.000.000.001/x",
+    "https://%31%32%37.0.0.1/x",
+    "https://127。0。0。1/x",
+    "https://[::ffff:7f00:1]/x",
+    "https://hooks.example.com@127.1/x",
+    "https://127.1/#@hooks.example.com",
+    "https://0xa9fea9fe/latest/meta-data",
+    "https://0251.0376.0251.0376/latest/meta-data",
+    "https://2852039166/latest/meta-data",
+    "https://metadata.google.internal/computeMetadata/v1/",
+  ])("rejects encoded and alternate private destinations before DNS: %s", async url => {
+    await expect(executeFlowWebhook({ ...input, url })).rejects.toThrow("webhook_invalid_destination");
+    expect(m.lookup).not.toHaveBeenCalled();
+    expect(m.request).not.toHaveBeenCalled();
+  });
+  it("rejects a public-looking DNS alias resolving to loopback", async () => {
+    m.lookup.mockResolvedValue([{ address: "127.0.0.1", family: 4 }]);
+    await expect(executeFlowWebhook({ ...input, url: "https://127.0.0.1.nip.io/x" })).rejects.toThrow("webhook_private_destination");
+    expect(m.request).not.toHaveBeenCalled();
+  });
   it.each([
     [{ address: "10.0.0.1", family: 4 }],
     [{ address: "93.184.216.34", family: 4 }, { address: "192.168.0.1", family: 4 }],
