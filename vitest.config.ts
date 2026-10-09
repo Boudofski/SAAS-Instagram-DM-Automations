@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    setupFiles: ["./lib/test-server-only.ts"],
   },
   resolve: {
     alias: {

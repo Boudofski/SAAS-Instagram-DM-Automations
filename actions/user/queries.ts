@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { requestedInstagramAccount, selectInstagramAccount } from "@/lib/instagram-account-scope";
 import { syncInstagramAccountEntitlements } from "@/lib/instagram-account-entitlements";

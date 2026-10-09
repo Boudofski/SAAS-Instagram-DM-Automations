@@ -1,4 +1,6 @@
 "use server";
+
+import { publicAutomation } from "@/lib/automation-public";
 import { prepareStoryPublication } from "@/lib/story-automation-runtime";
 import {attachmentScopeFilter} from "@/lib/attachment-scope";
 import {attachmentId} from "@/lib/message-attachment";
@@ -497,7 +499,7 @@ export const getAutomationInfo = async (id: string) => {
           message: error instanceof Error ? error.message : String(error),
         });
       }
-      return { status: 200, data: automation };
+      return { status: 200, data: publicAutomation(automation) };
     }
 
     return { status: 404 };
