@@ -34,3 +34,18 @@ Tracked-file credential-pattern scan found only documented local/example databas
 - Public endpoint abuse across many independently created accounts, volumetric DDoS protection and a full external penetration test remain outside this focused release.
 
 References: https://nextjs.org/docs/app/guides/data-security and https://github.com/advisories/GHSA-vfj7-8cjw-p6xm.
+
+## Follow-up review after PR #228
+
+Baseline: `a6f484efba32abdd368e77ea8cb2b8db1cc03cb3`.
+
+Two additional confirmed authorization/abuse-control defects:
+
+- **Suspended Inbox access:** Inbox actions authenticated the Clerk session and scoped resources to its owner, but never loaded the AP3K suspension status. An existing session could still read conversations/contacts, export contacts on a paid plan, and send manual replies. Select and check the status in the shared Inbox profile resolver before any of those operations. Existing selected-account ownership, connection, token, plan-lock and 24-hour reply-window checks remain in effect. Regression testing demonstrated a successful mocked send for a suspended profile before the fix, then denial before reads, session takeover and sending after it.
+- **Premature removal of referral invitation limits:** Referral invitations have a global, per-recipient calendar-month counter in the shared `MarketingRateLimit` table, but marketing cleanup removed every counter idle for two days. Preserve current UTC-month windows during cleanup, while retaining the two-day grace period for recently used older windows. Check this month's durable invitation history across all partners within the existing serializable reservation transaction, so surviving invite records still block repeat mail if previous cleanup erased a counter. Keep the atomic counter for concurrent reservations and cases where partner invitation history is later deleted. Failed attempts remain counted, as before. Existing deleted counters whose invitation history was also deleted cannot be reconstructed by this patch.
+
+Added regression coverage for suspended Inbox reads/exports/sends, valid manual replies, foreign conversations, the 24-hour window, disconnected/reconnect-required/plan-locked/expired integrations, cleanup across year/leap-month boundaries, prior invitations after counter loss, and eligible referral invitations. All external sends in these tests are mocked. The complete suite passes **1,957 tests in 254 files**. Lint and TypeScript checks pass with the existing non-fatal lint warnings.
+
+This pass also revisited owner-admin identity verification, CSV formula escaping, selected-account ownership, legacy automation mutations, referral transaction guards, and billing portal ownership. No additional exploit was established in those inspected paths. This remains a focused review, with the infrastructure, historical exposure and dependency limitations above still applicable. No real account was suspended and no Instagram reply or invitation email was sent for testing. No database migration is required; hashed rate-limit rows can now remain until their month ends instead of being purged after two idle days.
+
+An unrelated browser-verification finding was corrected in the same release: the referral calculator used obsolete $9/$29 monthly price estimates. It now derives the Pro/Business prices from `AP3K_PRICING` ($15/$25 monthly). This changes displayed estimates only; actual commissions remain based on paid Stripe invoices.

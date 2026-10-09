@@ -33,6 +33,7 @@ import type { getReferralDashboard } from "@/lib/referral-program";
 import { LOCALE_DETAILS } from "@/lib/i18n/config";
 import { REFERRAL_COPY } from "@/lib/i18n/referrals";
 import { useI18n } from "@/providers/i18n-provider";
+import { AP3K_PRICING } from "@/lib/billing-plans";
 
 type Props = {
   dashboard: Awaited<ReturnType<typeof getReferralDashboard>>;
@@ -50,7 +51,7 @@ export default function ReferralDashboard({ dashboard, inviteUrl }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const r = dashboard.recurring;
-  const [price, setPrice] = useState(900);
+  const [price, setPrice] = useState(AP3K_PRICING.PRO_MONTHLY * 100);
   const [signups, setSignups] = useState(1);
   const [pending, startTransition] = useTransition();
   const [working, setWorking] = useState<
@@ -201,8 +202,8 @@ export default function ReferralDashboard({ dashboard, inviteUrl }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <span className={`text-xs ${muted}`}>{c.based}</span>
           {[
-            { name: "Pro", cents: 900 },
-            { name: "Business", cents: 2900 },
+            { name: "Pro", cents: AP3K_PRICING.PRO_MONTHLY * 100 },
+            { name: "Business", cents: AP3K_PRICING.BUSINESS_MONTHLY * 100 },
           ].map((plan) => (
             <button
               key={plan.name}
@@ -229,7 +230,7 @@ export default function ReferralDashboard({ dashboard, inviteUrl }: Props) {
               </p>
             </div>
             <span className={`hidden text-xs font-semibold sm:block ${muted}`}>
-              {money(900)}
+              {money(AP3K_PRICING.PRO_MONTHLY * 100)}
               {c.monthly}
             </span>
           </div>

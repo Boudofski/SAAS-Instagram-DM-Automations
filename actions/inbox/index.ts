@@ -15,11 +15,14 @@ async function currentProfile() {
     where: { clerkId: clerk.id },
     select: {
       id: true,
+      status: true,
       subscription: { select: { plan: true } },
       integrations: { where: { id: integrationId } },
     },
   });
-  return profile ? { ...profile, integrationId } : null;
+  // Existing Clerk sessions survive an AP3K suspension. Enforce it at every
+  // Inbox action, before contact reads, conversation takeover or a Meta send.
+  return profile && profile.status !== "SUSPENDED" ? { ...profile, integrationId } : null;
 }
 
 export async function getInboxConversations() {
