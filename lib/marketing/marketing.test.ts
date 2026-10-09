@@ -21,8 +21,29 @@ beforeEach(() => {
   mocks.lead.findUnique.mockResolvedValue(lead()); mocks.user.findFirst.mockResolvedValue(null); mocks.slot.upsert.mockResolvedValue({ count: 1 });
   mocks.send.mockResolvedValue({ data: { id: "provider-id" }, error: null });
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 describe("launch-kit consent and delivery", () => {
+  it.each(["2026-10-09T12:00:00Z", "2027-01-01T00:01:00Z", "2028-02-29T23:59:00Z"])("keeps monthly recipient caps through cleanup at %s", async instant => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date(instant));
+    const now = Date.now();
+    const month = new Date(instant); month.setUTCDate(1); month.setUTCHours(0, 0, 0, 0);
+    const rows = [
+      { id: "current-month-referral", windowStart: month, updatedAt: new Date(now - 3 * 86400000) },
+      { id: "current-day-support", windowStart: new Date(now - 3600000), updatedAt: new Date(now) },
+      { id: "recent-previous-window", windowStart: new Date(month.getTime() - 86400000), updatedAt: new Date(now - 3600000) },
+      { id: "expired", windowStart: new Date(month.getTime() - 3 * 86400000), updatedAt: new Date(now - 3 * 86400000) },
+    ];
+    // Evaluate the actual deletion filter against representative stored counters.
+    const deleted: string[] = [];
+    mocks.slot.deleteMany.mockImplementation(async ({ where }) => {
+      for (const row of rows) if (Object.entries(where).every(([field, comparison]) => row[field as "windowStart" | "updatedAt"] < (comparison as { lt: Date }).lt)) deleted.push(row.id);
+      return { count: deleted.length };
+    });
+    mocks.lead.findMany.mockResolvedValue([]); mocks.delivery.findMany.mockResolvedValue([]);
+    await processMarketingQueue();
+    expect(deleted).toEqual(["expired"]);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
   it("rejects expired, tampered, wrong-purpose and cross-recipient tokens", () => {
     expect(validConfirmation(hashToken(token), token, new Date(Date.now() + 1000))).toBe(true);
     expect(validConfirmation(hashToken(token), token, new Date(Date.now() - 1))).toBe(false);

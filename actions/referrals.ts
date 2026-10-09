@@ -100,6 +100,12 @@ export async function sendReferralInvite(input: string) {
         })
       )
         throw new ReferralError("You already invited this email today.");
+      // Older cleanup runs could have removed the monthly counter. Honor the
+      // durable invitation history too, across all partners, before any send.
+      if (await tx.referralInvite.findFirst({
+        where: { recipient, day: { gte: month } },
+        select: { id: true },
+      })) throw new ReferralError("This email has already received a recent invitation.");
       const limit = await tx.marketingRateLimit.upsert({
         where: { key_windowStart: { key: recipientHash, windowStart: month } },
         create: { key: recipientHash, windowStart: month, count: 1 },

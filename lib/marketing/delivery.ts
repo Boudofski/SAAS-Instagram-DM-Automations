@@ -108,7 +108,14 @@ export async function deliverMarketingEmail(id: string): Promise<"sent" | "skipp
 
 export async function processMarketingQueue() {
   if (!marketingReady()) return { enabled: false, sent: 0, attempted: 0 };
-  await client.marketingRateLimit.deleteMany({ where: { updatedAt: { lt: new Date(Date.now() - 2 * 86400000) } } });
+  // This table also holds monthly, cross-partner referral invitation caps.
+  // An idle counter must survive its whole window, not just two idle days.
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  await client.marketingRateLimit.deleteMany({ where: {
+    windowStart: { lt: monthStart },
+    updatedAt: { lt: new Date(now.getTime() - 2 * 86400000) },
+  } });
   const leads = await client.marketingLead.findMany({
     where: { confirmedAt: { not: null }, unsubscribedAt: null, suppressedAt: null, completedAt: null },
     orderBy: { confirmedAt: "asc" }, take: 50,
