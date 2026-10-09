@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { BLOG_POSTS } from "./blog";
-import { getEditorialArchive, blogPaginationItems, REFERENCE_GUIDE_SLUGS } from "./blog-archive";
+import { getEditorialArchive, blogPaginationItems, getBlogDirectory } from "./blog-archive";
 import { buildSitemap } from "./sitemap";
 import { getBlogPage } from "./blog-pagination";
 
 describe("editorial archive", () => {
+  it("links every eligible guide in the directory without exposing hidden CMS or noindex entries", () => {
+    const supplied = BLOG_POSTS.slice(1).concat({ ...BLOG_POSTS[0], slug: "noindex-test", noIndex: true });
+    const listed = getBlogDirectory(supplied).flatMap(group => group.articles.map(post => post.slug));
+    expect(new Set(listed).size).toBe(listed.length);
+    expect(new Set(listed)).toEqual(new Set(supplied.filter(post => !post.noIndex).map(post => post.slug)));
+    expect(listed).not.toContain(BLOG_POSTS[0].slug);
+    expect(listed).not.toContain("noindex-test");
+  });
   it("keeps every indexable published article reachable exactly once across archive pages", () => {
     const { featured, posts } = getEditorialArchive(BLOG_POSTS);
     const seen: string[] = [];

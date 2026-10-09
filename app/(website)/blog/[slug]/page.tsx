@@ -2,7 +2,6 @@ import { TutorialVideo } from "@/components/docs/tutorial-video";
 import { ArticleSummary, ArticleShare } from "@/components/website/article-tools";
 import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import { getImportedArticleHtml } from "@/lib/imported-blog-server";
-import { REFERENCE_GUIDE_SLUGS } from "@/lib/blog-archive";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import e from "@/components/website/blog-editorial.module.css";
 import BlogCover from "@/components/website/blog-cover";
@@ -117,7 +116,7 @@ export default async function BlogPostPage(props: Props) {
     /^\/(fr|es|de|pt)\//.test((await headers()).get("x-ap3k-request-path") || "")
   )
     permanentRedirect(`/blog/${post.slug}`);
-  const publicPosts = (await getPublishedPosts()).filter(p => p.importedArchive || !REFERENCE_GUIDE_SLUGS.has(p.slug));
+  const publicPosts = (await getPublishedPosts()).filter(p => !p.noIndex);
   const importedHtml = post.importedArchive ? await getImportedArticleHtml(post.slug) : null;
 
   const related = post.related

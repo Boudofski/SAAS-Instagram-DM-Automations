@@ -44,3 +44,17 @@ export function blogPaginationItems(page: number, pages: number): (number | "gap
   });
   return result;
 }
+
+/** A server-rendered directory gives every published guide a direct archive link. */
+export function getBlogDirectory(posts: BlogPost[]) {
+  const groups = new Map<string, BlogPost[]>();
+  for (const post of getEditorialArchive(posts).posts) {
+    const group = groups.get(post.category) ?? [];
+    group.push(post);
+    groups.set(post.category, group);
+  }
+  return Array.from(groups, ([category, articles]) => ({
+    category,
+    articles: articles.sort((a, b) => a.title.localeCompare(b.title)),
+  })).sort((a, b) => a.category.localeCompare(b.category));
+}
