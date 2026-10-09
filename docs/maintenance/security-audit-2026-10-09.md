@@ -49,3 +49,64 @@ Added regression coverage for suspended Inbox reads/exports/sends, valid manual 
 This pass also revisited owner-admin identity verification, CSV formula escaping, selected-account ownership, legacy automation mutations, referral transaction guards, and billing portal ownership. No additional exploit was established in those inspected paths. This remains a focused review, with the infrastructure, historical exposure and dependency limitations above still applicable. No real account was suspended and no Instagram reply or invitation email was sent for testing. No database migration is required; hashed rate-limit rows can now remain until their month ends instead of being purged after two idle days.
 
 An unrelated browser-verification finding was corrected in the same release: the referral calculator used obsolete $9/$29 monthly price estimates. It now derives the Pro/Business prices from `AP3K_PRICING` ($15/$25 monthly). This changes displayed estimates only; actual commissions remain based on paid Stripe invoices.
+
+## Requested third-party tool and payload review after PR #229
+
+Baseline: main `7e72353c9d7d1e771ec1e280cad5130bbd86243b`.
+
+| Resource | Actual use | Limit |
+| --- | --- | --- |
+| PayloadsAllTheThings | Reviewed SSRF and CSV injection references; added 14 alternate-address/DNS cases and 9 benign CSV formula-prefix cases against AP3K's actual guards | Local tests mock DNS/HTTPS; no metadata requests or spreadsheet formula execution |
+| Nuclei 3.11.1 | Executed five reviewed custom HTTP templates against `https://ap3k.com`, at one request per second; all 14 requests completed with zero request errors | A small read-only, unauthenticated check, not the full community catalog or a complete pentest |
+| Shannon | Reviewed source-access, Docker, model-provider and exploit-runner requirements | Not executed: Docker unavailable; no production secrets or source uploaded to a third-party AI service |
+| Strix | Reviewed its code-audit skill and local runner requirements | Not executed: Docker unavailable; source review is not represented as a Strix result |
+| Codex Security deep-scan skill | Read workflow requirements | Not executed: required deep-scan server/tool unavailable; no replacement coordinator was run |
+
+The Nuclei Linux AMD64 release ZIP was downloaded from the official GitHub
+release and checked against its published checksum:
+`ea63d4ae232808cd7c6bc00d0142428e231fab59dae01042246097d195835ab6`.
+All five custom templates passed Nuclei validation. The first direct-connection
+attempt failed DNS and is **not** treated as security evidence. The completed run
+used the environment's configured outbound proxy. Missing optional local
+`.nuclei-ignore` warnings did not prevent the five explicitly selected templates
+from loading or the 14 requests from completing.
+
+The only scanner match was the expected informational HTTP-200 health baseline.
+No configured-file signature, unexpected anonymous success on the four selected
+private/admin APIs, credentialed CORS reflection, or missing configured security
+header on the two selected pages matched. Raw request/response recording,
+redirects, OAST, cloud upload and intrusive templates were disabled. Reusable
+checks and limitations are in `scripts/security/nuclei/README.md`.
+
+New regression cases cover short/octal/hex/percent-encoded/Unicode loopback
+addresses, equivalent metadata IP encodings, IPv4-mapped IPv6, user-info/fragment
+parser confusion, and public-looking DNS names returning loopback. All are
+rejected before an HTTPS request. CSV tests cover leading formula characters,
+spaces, tabs and line endings in username/email/phone cells, using harmless
+expressions such as `=1+1`. These **passed the existing implementation**; they are
+additional protection against regressions, not newly fixed vulnerabilities.
+
+Further upload source review ruled out two candidates: the installed SDK deletes
+objects when completion validation throws, and AP3K explicitly forces multipart
+uploads even for small files, preventing reuse of a single object-PUT URL after
+validation. Existing owner/deployment-scope checks, MIME/byte/size checks and
+completion replay guards were re-tested. Storage cleanup failures and platform
+permissions remain operational considerations; this review did not test a real
+storage outage or inspect cloud IAM.
+
+No additional exploitable application defect was confirmed in this pass, and no
+production application behavior or dependency versions were changed. A fresh
+`npm audit` still reports seven affected package nodes from the one previously
+tracked `braces` advisory. The checkout is shallow; no complete Git-history secret
+scan or retrospective incident-forensics claim is made. Authenticated live
+cross-tenant exploitation, infrastructure/IAM review, denial-of-service testing,
+and autonomous Shannon/Strix pentests were not performed.
+
+Reference revisions: PayloadsAllTheThings SSRF file
+`f436a3e64a5a17a890f5ef1740fe0b056bba259c`, CSV file
+`51f80f2af84743ddd837f960ac7b836c76ede76a`; Strix code-audit skill
+`b1829e9cba9db38d6d76e9fa274da3caa188ac75`.
+
+Verification for this pass: all **1,980 tests in 254 files** pass, including the 23
+new payload cases. Type checking and lint pass; existing non-fatal lint warnings
+remain. Only tests, reviewed scanner templates and audit documentation change.
