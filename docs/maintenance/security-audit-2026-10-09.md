@@ -8,12 +8,13 @@ Scope: focused source, dependency and build-artifact review. This is not a certi
 - Isolate internal user, integration and automation database modules with `server-only`. Keep authenticated application actions as the public interface. The previous production build registered 38 internal query helpers; the new build registers none. Add source regression tests and a post-build manifest gate to prevent recurrence. Existing trusted billing/webhook callers retain direct server access.
 - Minimize the automation editor response: omit the joined owner object, including Instagram credentials and internal connection diagnostics. Preserve all editor fields and server-side media refresh behavior.
 - Enforce the support assistant's 25 daily attempts using an atomic, persistent per-owner UTC-day counter. Chat deletion cannot reset it; simultaneous requests cannot share the last available slot. Existing messages seed the initial counter. Use the existing daily rate-limit table with an isolated hashed namespace and two-day retention, avoiding the webhook counter's shorter cleanup interval. Block suspended support users and fail closed if reservation fails. Provider failures consume attempts, limiting repeated expensive retries.
+- Enforce suspended-account denial in the AI workspace and shared AI usage reservation, including paid users and missing accounts.
 - Update Vitest/coverage to 4.1.11, resolving its mock-server traversal advisory and bringing Vite to 8.3.4. Override PostCSS selector parser to patched 7.1.6. Preserve Next 15.5.27 and Tailwind 3 to avoid a framework/design migration during this security release.
 
 ## Verification
 
 - Baseline compiled manifest exposed the internal query modules; the new manifest gate failed on that baseline and passes on the patched build.
-- Full regression suite: 1,936 tests passed; four additional support-action tests passed after that run. CI runs the combined suite.
+- Regression suite covers the server boundaries, editor response, support actions and suspended AI reservations. CI runs the complete suite for the final commit.
 - Lint and TypeScript checks passed; existing non-fatal UI lint warnings remain.
 - Final production build passed, including the manifest boundary gate.
 - Tests cover concurrent support attempts, history clearing, owner/day isolation, storage failure, suspended/unauthenticated users, provider-call prevention at the cap, and editor data minimization.

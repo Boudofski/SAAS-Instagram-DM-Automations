@@ -365,3 +365,19 @@ describe("shared multi-account usage", () => {
     expect(result.usage.staticReplies.used).toBe(500);
   });
 });
+
+
+describe("AI reservations for unavailable accounts", () => {
+  it("rejects a suspended paid user before reading usage or creating a reservation", async () => {
+    mockUserFindUnique.mockResolvedValue({ status: "SUSPENDED", subscription: { plan: "BUSINESS" } });
+    await expect(reserveAiReplyQuota({ userId: "user-a", channel: "PLAYGROUND" })).rejects.toThrow("Account unavailable");
+    expect(mockAutomationEventCount).not.toHaveBeenCalled();
+    expect(mockAutomationEventCreate).not.toHaveBeenCalled();
+  });
+  it("rejects a missing user", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+    await expect(reserveAiReplyQuota({ userId: "missing", channel: "PLAYGROUND" })).rejects.toThrow("Account unavailable");
+    expect(mockAutomationEventCount).not.toHaveBeenCalled();
+    expect(mockAutomationEventCreate).not.toHaveBeenCalled();
+  });
+});
