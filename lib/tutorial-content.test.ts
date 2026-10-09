@@ -11,7 +11,7 @@ describe("illustrated tutorials", () => {
     const ids = Object.keys(TUTORIAL_SCREENSHOTS).sort();
     expect(ids).toContain("dm-message");
     expect(Array.from(new Set(BLOG_POSTS.flatMap(post => post.sections.flatMap(section => section.screenshot ?? [])))).sort()).toEqual(ids);
-    expect(Array.from(new Set(Object.values(HELP_TUTORIALS).flatMap(entry => entry.screenshots))).sort()).toEqual(ids);
+    for (const id of Object.values(HELP_TUTORIALS).flatMap(entry => entry.screenshots)) expect(ids).toContain(id);
     for (const [slug, entry] of Object.entries(HELP_TUTORIALS)) {
       expect(AP3K_HELP_ARTICLES.some(article => article.slug === slug)).toBe(true);
       expect(BLOG_POSTS.some(post => post.slug === entry.guide)).toBe(true);

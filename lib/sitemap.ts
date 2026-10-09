@@ -27,7 +27,7 @@ export function buildSitemap(
   // Keep this fixed to the release date; never stamp every crawl with today.
   const publicContentUpdated = new Date("2026-10-05T00:00:00Z");
   const archiveUpdated = new Date(Math.max(
-    new Date("2026-10-05T00:00:00Z").getTime(),
+    new Date("2026-10-09T00:00:00Z").getTime(),
     ...getEditorialArchive(posts).posts.filter(post => !post.noIndex)
       .map(post => new Date(`${post.updatedAt}T00:00:00Z`).getTime())
       .filter(Number.isFinite),

@@ -13,6 +13,13 @@ export const TUTORIAL_LABELS = {
 };
 
 export const TUTORIAL_SCREENSHOTS = {
+  "trigger": {file:"trigger",width:1363,height:936,title:"Comment triggers",caption:"Choose the keyword, matching behavior and repeat-delivery rule in AP3K."},
+  "delay-controls": {file:"delay",width:1363,height:936,title:"Automation delay controls",caption:"Enable the delay control for the intended automation step."},
+  "collect-email": {file:"collect",width:1363,height:936,title:"Collect Email",caption:"Configure the email collection question before final delivery."},
+  "collect-phone": {file:"phone",width:1363,height:936,title:"Collect Phone",caption:"Configure phone collection and review the recipient conversation."},
+  "follow-gate": {file:"follow",width:1363,height:936,title:"Ask to follow",caption:"Review the follow request before the final DM."},
+  "chat": {file:"chat",width:1363,height:936,title:"Incoming DM automation",caption:"Configure a Chat automation for eligible incoming Instagram DMs."},
+  "message": {file:"message",width:1363,height:936,title:"Final DM",caption:"Review the final message and its link buttons."},
   "dm-message": {file:"message",width:1363,height:936,title:"DM message and link buttons",caption:"Write a final DM and configure its button label and destination in AP3K."},
   "instagram-ready": {"file":"account","width":1363,"height":936,"title":"Instagram connection readiness","caption":"The connected @ap3kautomation profile with Comments ready and DMs ready badges."},
   "instagram-account": {"file":"account","width":1363,"height":936,"title":"Instagram account health and controls","caption":"Manage the @ap3kautomation profile, connection readiness and Instagram performance."},

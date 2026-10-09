@@ -4,7 +4,7 @@ import AP3KLogo from "@/components/global/ap3k-logo";
 import BlogCover from "@/components/website/blog-cover";
 import s from "@/components/website/public-pages.module.css";
 import { notFound, redirect } from "next/navigation";
-import { getEditorialArchive, blogPaginationItems } from "@/lib/blog-archive";
+import { getEditorialArchive, blogPaginationItems, getBlogDirectory } from "@/lib/blog-archive";
 import e from "@/components/website/blog-editorial.module.css";
 import { Search, ArrowLeft, ArrowRight } from "lucide-react";
 import { blogPagePath, getBlogPage } from "@/lib/blog-pagination";
@@ -226,6 +226,20 @@ export default async function BlogPage(props: Props) {
               : <Link key={page} href={pageHref(page)} prefetch={false} aria-label={`Page ${page}`} aria-current={page === pagination.page ? "page" : undefined}>{page}</Link>)}
             {pagination.page < pagination.pages && <Link href={pageHref(pagination.page + 1)} aria-label="Next page"><span>Next</span><ArrowRight size={16} /></Link>}
           </nav>}
+          {!query && pagination.page === 1 && <section className="mt-12 rounded-2xl border border-slate-200 p-5 sm:p-8 dark:border-white/10" aria-labelledby="all-guides-title">
+            <h2 id="all-guides-title">Browse all guides by topic</h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Find setup instructions, campaign examples and troubleshooting guides without paging through the archive.</p>
+            <div className="mt-5 space-y-3">
+              {getBlogDirectory(allPosts).map(group => <details key={group.category} className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+                <summary className="cursor-pointer font-semibold">{group.category} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">({group.articles.length})</span></summary>
+                <ul className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                  {group.articles.map(post => <li key={post.slug} lang={post.contentLocale} translate={post.contentLocale ? "no" : undefined}>
+                    <Link href={localizePublicPath(`/blog/${post.slug}`, post.contentLocale ?? locale)} prefetch={false} className="inline-block py-1 text-sm leading-6 text-violet-700 underline decoration-violet-300 underline-offset-4 hover:decoration-current dark:text-violet-300">{post.title}</Link>
+                  </li>)}
+                </ul>
+              </details>)}
+            </div>
+          </section>}
         </main>
         <WebsiteFooter />
       </div>
