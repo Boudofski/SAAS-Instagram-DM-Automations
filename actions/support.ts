@@ -4,12 +4,13 @@ import { onCurrentUser } from "@/actions/user";
 import { findUser } from "@/actions/user/queries";
 import { generateAiSupportReply } from "@/lib/ai-reply";
 import { selectSupportResources } from "@/lib/support-resources";
+import { reserveSupportRequest } from "@/lib/support-quota";
 import { client } from "@/lib/prisma";
 
 async function supportProfile() {
   const clerk = await onCurrentUser();
   const profile = await findUser(clerk.id);
-  if (!profile?.id) throw new Error("AP3K account not found.");
+  if (!profile?.id || profile.status === "SUSPENDED") throw new Error("AP3K account not found.");
   return profile;
 }
 
@@ -35,12 +36,7 @@ export async function askSupportAssistantAction(message: string) {
     const prompt = message.trim().slice(0, 1200);
     if (!prompt) return { status: 400 as const, data: "Write a question first." };
 
-    const startOfDay = new Date();
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const dailyMessages = await client.aiChatMessage.count({
-      where: { userId: profile.id, context: "SUPPORT", role: "user", createdAt: { gte: startOfDay } },
-    });
-    if (dailyMessages >= 25) return { status: 429 as const, data: "You have reached today's support-assistant limit. Email support@ap3k.com for more help." };
+    if (!(await reserveSupportRequest(profile.id))) return { status: 429 as const, data: "You have reached today's support-assistant limit. Email support@ap3k.com for more help." };
 
     const history = await client.aiChatMessage.findMany({
       where: { userId: profile.id, context: "SUPPORT" },

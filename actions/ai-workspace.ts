@@ -13,7 +13,7 @@ import { revalidatePath } from "next/cache";
 async function currentProfile(expectedIntegrationId?: string) {
   const clerk = await onCurrentUser();
   const profile = await findUser(clerk.id);
-  if (!profile?.id) throw new Error("AP3K account not found.");
+  if (!profile?.id || profile.status === "SUSPENDED") throw new Error("AP3K account not found.");
   const integrationId = await currentInstagramAccountId(clerk.id);
   if (expectedIntegrationId !== undefined && expectedIntegrationId !== integrationId) throw new Error("Your Instagram account changed. Reload this page before saving.");
   return { ...profile, integrationId };

@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 import { normalizeStepDelays } from "@/lib/automation-step-delays";
 import { normalizeStoryConfig, readStoryConfig } from "@/lib/story-automation";
 import {attachmentId} from "@/lib/message-attachment";

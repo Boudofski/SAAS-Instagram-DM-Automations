@@ -156,8 +156,9 @@ export async function reserveAiReplyQuota(input: AiReplyReservationInput) {
 
     const user = await tx.user.findUnique({
       where: { id: input.userId },
-      select: { subscription: { select: { plan: true, usageResetAt: true } } },
+      select: { status: true, subscription: { select: { plan: true, usageResetAt: true } } },
     });
+    if (!user || user.status === "SUSPENDED") throw new Error("Account unavailable");
     const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
     const limit = plan === "FREE" && input.channel === "PLAYGROUND" && input.allowFreePreview ? 20 : getPlanLimits(plan).aiRepliesPerMonth;
     const period = getCurrentUsagePeriod(date);

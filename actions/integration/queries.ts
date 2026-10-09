@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { syncInstagramAccountEntitlements } from "@/lib/instagram-account-entitlements";
 import { MULTI_ACCOUNT_CONNECTIONS_ENABLED } from "@/lib/instagram-account-rollout";
