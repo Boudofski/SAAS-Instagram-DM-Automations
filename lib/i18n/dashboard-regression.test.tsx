@@ -44,7 +44,7 @@ describe("dashboard screenshot regressions", () => {
       expect(markup).not.toContain("Private user DM");
       expect(markup).toContain(translateUi("Comment reply + DM active", locale));
       expect(markup).toContain(translateUi("Both", locale));
-      expect(markup).toContain(translateUi("Live", locale));
+      expect(markup).toContain(translateUi("Enabled", locale));
       if (locale !== "en") expect(markup).not.toContain("Comment reply + DM active");
       if (locale === "en") {
         if (english) expect(markup).toBe(english);
