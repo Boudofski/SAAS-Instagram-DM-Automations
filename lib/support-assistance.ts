@@ -4,8 +4,10 @@ import { selectSupportResources } from "./support-resources";
 export type SupportAction = "billing" | "cancel" | "payment";
 
 export function supportActionsFor(question: string): SupportAction[] {
+  if (/\b(cancel|stop|pause)\b.{0,40}\b(automation|flow|message|dm|follow-up)\b/i.test(question) && !/\b(subscription|billing|plan)\b/i.test(question)) return [];
   if (/\b(cancel|cancellation|unsubscribe|annuler|résilier|cancelar|kündigen)\b|إلغاء/i.test(question)) return ["cancel", "billing"];
-  if (/\b(card|payment|invoice|receipt|carte|paiement|facture)\b/i.test(question)) return ["payment", "billing"];
+  if (/\b(invoice|receipt|facture)\b/i.test(question)) return ["billing"];
+  if (/\b(card|payment|carte|paiement)\b/i.test(question)) return ["payment", "billing"];
   return selectSupportResources(question).some(resource => resource.id === "billing") ? ["billing"] : [];
 }
 
