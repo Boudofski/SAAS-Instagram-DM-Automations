@@ -166,7 +166,7 @@ export default function BillingPlans({
                   <UiText>Lead capture, follow-ups and custom flows</UiText>
                 </p>
               )}
-              {existingPaid && !free && !disabled && <div className="mt-auto"><ManageBillingButton intent="update" label={selected ? "Manage billing frequency" : `Change to ${plan.name}`} /></div>}
+              {existingPaid && !free && !disabled && <div className="mt-auto"><ManageBillingButton intent="update" label={selected ? "Manage billing frequency" : "Compare and change plan"} /></div>}
               {!existingPaid &&
                 !internalAccess &&
                 !selected &&

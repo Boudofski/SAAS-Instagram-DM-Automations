@@ -130,7 +130,7 @@ export default function AutomationAnalyticsView({ data, slug }: { data: Automati
           </div>)}</div>}
         </div>
       </section>
-      <p className="aa-tracking-note">{data.trackingStartedAt ? `Tracked activity since ${new Date(data.trackingStartedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}.` : "Tracking starts with new activity."} <span title={followDescription}>New followers are verified through this automation.</span></p>
+      <p className="aa-tracking-note">{data.trackingStartedAt ? `Tracked activity since ${new Date(data.trackingStartedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}.` : "Tracking starts with new activity."} <span title={followDescription}>Confirmed follows are attributed to this automation.</span></p>
     </main>
   );
 }

@@ -401,7 +401,7 @@ export const updateAutomation = async (
   return await client.automation.update({
     where: { id: automation.id },
     data: {
-      ...(update.active === true && automation.posts?.[0]?.postid === "NEXT" ? { postConfig: prepareNextPost("NEXT", true, automation.postConfig)! } : {}),
+      ...(update.active === true && automation.posts?.[0]?.postid === "NEXT" && !readNextPost(automation.postConfig)?.armedAt ? { postConfig: prepareNextPost("NEXT", true, automation.postConfig)! } : {}),
       name: update.name,
       active: update.active,
       ...(update.active === true
