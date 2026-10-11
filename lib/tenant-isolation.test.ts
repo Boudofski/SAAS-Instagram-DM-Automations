@@ -227,9 +227,10 @@ describe("updateCompleteAutomation — ownership check before transaction", () =
         where: { id: AUTOMATION_A_ID },
         data: expect.objectContaining({
           sendPrivateDm: true,
-          listener: {
+          listener: { upsert: {
             create: expect.objectContaining({ prompt }),
-          },
+            update: expect.objectContaining({ prompt }),
+          } },
         }),
       })
     );
