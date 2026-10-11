@@ -10,7 +10,7 @@ const planRows = (['FREE', 'PRO', 'BUSINESS'] as const).map(id => {
 const posts: BlogPost[] = [
   {
     slug: 'ap3k-free-vs-pro-vs-business',
-    title: 'AP3K Free vs Pro vs Business: Choose a Plan for Your Instagram Workflow',
+    title: 'AP3K Free vs Pro vs Business: Which Plan Fits?',
     seoTitle: 'AP3K Free vs Pro vs Business: Which Plan Fits?',
     description: 'Compare AP3K plans by Instagram accounts, active automations, actions and AI replies. Work through a campaign example and understand what happens on downgrade.',
     publishedAt: '2026-10-11', updatedAt: '2026-10-11', readingTime: '', contentLocale: 'en', author: 'AP3K',
