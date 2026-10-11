@@ -17,7 +17,7 @@ import {
   getDashboardGreeting,
   parseDashboardPeriod,
 } from "@/lib/dashboard-metrics";
-import { getInstagramSnapshotComparisonWithRefresh, getProfileSnapshotStatus } from "@/lib/instagram-profile-snapshot";
+import { getInstagramSnapshotComparisonWithRefresh } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
@@ -68,7 +68,6 @@ export default async function DashboardPage(props: Props) {
 
   const snapshotComparison = snapshotState.comparison;
   const profileSnapshot = snapshotComparison?.current;
-  const profileSnapshotStatus = getProfileSnapshotStatus(profileSnapshot);
   const displayInstagramUsername = profileSnapshot?.username ?? instagram?.instagramUsername;
   const displayProfilePictureUrl = profileSnapshot?.profilePictureUrl ?? instagram?.profilePictureUrl;
   const planLabel = usage?.planLabel ?? planDisplayName(userResult.data?.subscription?.plan ?? "FREE");

@@ -2,6 +2,16 @@ import type { Locale } from "./config";
 
 // Reviewed interface copy introduced by the product audit, in fr/es/de/pt order.
 const phrases: Record<string, [string, string, string, string]> = {
+  "Enabled": ["Activée", "Activada", "Aktiviert", "Ativada"],
+  "Troubleshooting and safety": ["Dépannage et sécurité", "Solución de problemas y seguridad", "Fehlerbehebung und Sicherheit", "Solução de problemas e segurança"],
+  "Analytics and measurement": ["Analyses et mesure", "Análisis y medición", "Analysen und Messung", "Análises e medição"],
+  "Choosing a tool": ["Choisir un outil", "Elegir una herramienta", "Ein Tool auswählen", "Escolher uma ferramenta"],
+  "AI and customer support": ["IA et support client", "IA y atención al cliente", "KI und Kundensupport", "IA e suporte ao cliente"],
+  "Leads and sales": ["Prospects et ventes", "Leads y ventas", "Leads und Vertrieb", "Leads e vendas"],
+  "Messages and DMs": ["Messages et DM", "Mensajes y DM", "Nachrichten und DMs", "Mensagens e DMs"],
+  "Campaigns and growth": ["Campagnes et croissance", "Campañas y crecimiento", "Kampagnen und Wachstum", "Campanhas e crescimento"],
+  "Getting started and automations": ["Premiers pas et automatisations", "Primeros pasos y automatizaciones", "Erste Schritte und Automationen", "Primeiros passos e automações"],
+  "One successful public reply or DM is one automated action. A public reply followed by a DM uses two actions. Usage resets monthly on every billing interval.": ["Une réponse publique ou un DM envoyé avec succès compte pour une action automatisée. Une réponse publique suivie d’un DM utilise deux actions. L’utilisation est réinitialisée chaque mois, quelle que soit la facturation.", "Cada respuesta pública o DM enviado correctamente cuenta como una acción automatizada. Una respuesta pública seguida de un DM usa dos acciones. El uso se reinicia cada mes, con cualquier intervalo de facturación.", "Eine erfolgreich gesendete öffentliche Antwort oder DM zählt als eine automatisierte Aktion. Eine öffentliche Antwort mit anschließender DM benötigt zwei Aktionen. Die Nutzung wird unabhängig vom Abrechnungsintervall monatlich zurückgesetzt.", "Cada resposta pública ou DM enviado com sucesso conta como uma ação automatizada. Uma resposta pública seguida de um DM usa duas ações. O uso é reiniciado mensalmente, em qualquer intervalo de cobrança."],
   "AI reply setup": ["Configuration des réponses IA", "Configuración de respuestas IA", "KI-Antworten einrichten", "Configuração das respostas de IA"],
   "{count} of 3 setup steps complete": ["{count} étapes sur 3 terminées", "{count} de 3 pasos completados", "{count} von 3 Schritten abgeschlossen", "{count} de 3 etapas concluídas"],
   "Test a customer question": ["Testez une question client", "Prueba una pregunta de cliente", "Eine Kundenfrage testen", "Teste uma pergunta de cliente"],

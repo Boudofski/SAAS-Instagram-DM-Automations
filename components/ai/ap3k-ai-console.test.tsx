@@ -25,6 +25,8 @@ it("updates setup immediately after saving knowledge and requires a successful t
   await act(async () => tree.root.findByProps({ "aria-label": "Send test" }).props.onClick());
   await click("Overview");
   expect(text(tree.toJSON())).toContain("3 of 3 setup steps complete");
+  await click("Playground");
+  expect(text(tree.toJSON())).toContain("Return within 30 days.");
 });
 it("does not mark failed provider tests complete and preserves the question for retry", async () => {
   mocks.test.mockRejectedValue(new Error("Network failure"));
@@ -34,5 +36,10 @@ it("does not mark failed provider tests complete and preserves the question for 
   expect(tree.root.findByProps({ placeholder: "Ask a customer question…" }).props.value).toBe("Returns?");
   expect(text(tree.toJSON())).toContain("The test could not be completed");
   await click("Overview");
+  expect(text(tree.toJSON())).toContain("1 of 3 setup steps complete");
+});
+
+it("does not count an old test after saved business configuration changed", async () => {
+  await act(async () => { tree.unmount(); tree = create(<Ap3kAiConsole slug="owner" initial={initial} plan="PRO" lastConfiguredAt="2026-10-11T12:00:00Z" initialPlaygroundMessages={[{ id: "old", role: "assistant", content: "Old answer", createdAt: "2026-10-10T12:00:00Z" }]} />); });
   expect(text(tree.toJSON())).toContain("1 of 3 setup steps complete");
 });

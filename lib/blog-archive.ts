@@ -50,7 +50,7 @@ export function blogDirectoryTopic(category: string) {
   if (/troubleshoot|delivery|policy|safety|permissions/i.test(category)) return "Troubleshooting and safety";
   if (/measurement|analytics|attribution/i.test(category)) return "Analytics and measurement";
   if (/tool|compar|alternative/i.test(category)) return "Choosing a tool";
-  if (/AI|autoresponder|support/i.test(category)) return "AI and customer support";
+  if (/\bAI\b|autoresponder|support/i.test(category)) return "AI and customer support";
   if (/lead|qualif|email|ecommerce|business|sales|offer/i.test(category)) return "Leads and sales";
   if (/message|repl|DM|experience/i.test(category)) return "Messages and DMs";
   if (/growth|campaign|publish|handoff|content/i.test(category)) return "Campaigns and growth";

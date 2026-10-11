@@ -35,6 +35,7 @@ export async function getAiWorkspace() {
   return {
     integrationId: profile.integrationId,
     profile: normalizeAiWorkspace(workspace),
+    lastConfiguredAt: workspace?.updatedAt ?? null,
     plan: profile.subscription?.plan ?? "FREE",
     playgroundMessages: playgroundMessages.reverse(),
   };
