@@ -19,7 +19,7 @@ export default function BlogCover({
           src={image.src}
           alt={image.alt}
           fill
-          sizes="(max-width: 600px) calc(100vw - 40px), (max-width: 960px) 50vw, 800px"
+          sizes={credit ? "(max-width: 940px) calc(100vw - 40px), 900px" : "(max-width: 900px) calc(100vw - 40px), 420px"}
           priority={priority}
         />
       </div>
