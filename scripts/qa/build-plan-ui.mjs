@@ -12,7 +12,7 @@ const mocks={
  '@/actions/automation-tools':`export const getBacktrackInfo=async()=>null;`,
  '@/components/automations/saved-automation-tools':`export default ()=>null;export const showPublishedTools=()=>false;`,
 };
-await build({entryPoints:['scripts/qa/plan-ui.tsx'],outfile:'/tmp/ap3k-plan-ui.js',bundle:true,minify:true,jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'fixture',setup(b){b.onResolve({filter:/.*/},args=>mocks[args.path]?{path:args.path,namespace:'fixture'}:undefined);b.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:mocks[args.path],loader:'jsx',resolveDir:process.cwd()}));}}]});
+await build({entryPoints:['scripts/qa/plan-ui.tsx'],outfile:'/tmp/ap3k-plan-ui.js',bundle:true,minify:true,jsx:'automatic',define:{'process.env.NODE_ENV':'"production"','process.env':'{}'},plugins:[{name:'fixture',setup(b){b.onResolve({filter:/.*/},args=>mocks[args.path]?{path:args.path,namespace:'fixture'}:undefined);b.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:mocks[args.path],loader:'jsx',resolveDir:process.cwd()}));}}]});
 const css=(await postcss([tailwind({...loadConfig(process.cwd()+'/tailwind.config.ts'),content:['components/dashboard/automation-table.tsx','scripts/qa/plan-ui.tsx','components/ui/dropdown-menu.tsx']})]).process(await fs.readFile('app/globals.css','utf8'),{from:undefined})).css;
 const js=await fs.readFile('/tmp/ap3k-plan-ui.js','utf8');
 await fs.mkdir('public/__plan-review',{recursive:true});

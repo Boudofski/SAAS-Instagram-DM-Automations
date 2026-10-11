@@ -132,8 +132,7 @@ export const createCompleteAutomation = async (
     },
     select: {
       automations: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
+        where: { id: automationId },
         select: { id: true },
       },
     },
