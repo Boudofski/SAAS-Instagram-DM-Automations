@@ -293,8 +293,6 @@ function UsageCard({
   accounts?: boolean;
 }) {
   const { locale } = useI18n();
-  const router = useRouter();
-  const [refreshing, startRefresh] = useTransition();
   const unlimited = isUnlimited(metric.limit);
   const { tone } = getBillingUsagePresentation(
     metric,
