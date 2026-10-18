@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 const mocks = vi.hoisted(() => ({
- signIn: { create: vi.fn(), authenticateWithRedirect: vi.fn(), attemptFirstFactor: vi.fn() },
+ signIn: { id: null as string | null, status: null as string | null, supportedSecondFactors: [] as object[], create: vi.fn(), authenticateWithRedirect: vi.fn(), attemptFirstFactor: vi.fn(), prepareSecondFactor: vi.fn(), attemptSecondFactor: vi.fn() },
  signUp: { create: vi.fn(), authenticateWithRedirect: vi.fn(), prepareEmailAddressVerification: vi.fn(), attemptEmailAddressVerification: vi.fn(), update: vi.fn(), status: null as string | null, missingFields: [] as string[], unverifiedFields: [] as string[] },
  setActive: vi.fn(), replace: vi.fn(), path: '/sign-in', signedIn: false, loaded: true,
 }));
@@ -24,8 +24,63 @@ async function input(id: string, value: string) { await act(async () => { view.r
 async function submit() { await act(async () => { await view.root.findByType('form').props.onSubmit({ preventDefault() {} }); }); }
 async function clickText(label: string) { const button = view.root.findAllByType('button').find(b => b.children.filter(c => typeof c === 'string').join('').includes(label)); if (!button) throw new Error(`Missing ${label}`); await act(async () => { await button.props.onClick(); }); }
 afterEach(async () => { if(view) await act(async () => view.unmount()); });
-beforeEach(() => { vi.clearAllMocks(); mocks.path='/sign-in'; mocks.loaded=true; mocks.signedIn=false; mocks.signUp.status=null; mocks.signUp.missingFields=[]; mocks.signUp.unverifiedFields=[]; });
+beforeEach(() => { vi.resetAllMocks(); mocks.path='/sign-in'; mocks.loaded=true; mocks.signedIn=false; mocks.signIn.id=null; mocks.signIn.status=null; mocks.signIn.supportedSecondFactors=[]; mocks.signUp.status=null; mocks.signUp.missingFields=[]; mocks.signUp.unverifiedFields=[]; });
 describe('AP3K branded authentication', () => {
+ it.each(['needs_second_factor', 'needs_client_trust'])('continues %s with an AP3K email-code form and the same attempt', async (status) => {
+   mocks.signIn.status=status;
+   mocks.signIn.supportedSecondFactors=[{strategy:'email_code',emailAddressId:'email_test',safeIdentifier:'p***@example.com'}];
+   mocks.signIn.create.mockResolvedValue(mocks.signIn);
+   mocks.signIn.attemptSecondFactor.mockResolvedValue({status:'complete',createdSessionId:'verified_session'});
+   await render(); await input('auth-email','person@example.com'); await input('auth-password','test-password'); await submit();
+   expect(mocks.signIn.prepareSecondFactor).toHaveBeenCalledWith({strategy:'email_code',emailAddressId:'email_test'});
+   expect(view.root.findAllByProps({'data-testid':'secure-recovery'})).toHaveLength(0);
+   expect(view.root.findByProps({id:'auth-code'}).props.autoComplete).toBe('one-time-code');
+   expect(mocks.setActive).not.toHaveBeenCalled();
+   await input('auth-code','123456'); await submit();
+   expect(mocks.signIn.attemptSecondFactor).toHaveBeenCalledWith({strategy:'email_code',code:'123456'});
+   expect(mocks.signIn.create).toHaveBeenCalledTimes(1);
+   expect(mocks.setActive).toHaveBeenCalledWith({session:'verified_session'});
+   expect(mocks.replace).toHaveBeenCalledWith('/dashboard');
+ });
+ it('keeps an invalid device code recoverable without restarting sign-in', async () => {
+   mocks.signIn.status='needs_second_factor';
+   mocks.signIn.supportedSecondFactors=[{strategy:'email_code',emailAddressId:'email_test',safeIdentifier:'p***@example.com'}];
+   mocks.signIn.create.mockResolvedValue(mocks.signIn);
+   mocks.signIn.attemptSecondFactor.mockRejectedValue({errors:[{code:'form_code_incorrect'}]});
+   await render(); await submit(); await input('auth-code','000000'); await submit();
+   expect(view.root.findByProps({role:'alert'}).children.join('')).toBe(AUTH_COPY.en.expired);
+   expect(mocks.setActive).not.toHaveBeenCalled();
+   expect(mocks.signIn.create).toHaveBeenCalledTimes(1);
+   expect(mocks.signIn.prepareSecondFactor).toHaveBeenCalledTimes(1);
+ });
+ it('resumes a pending device check from a continuation URL without duplicate emails', async () => {
+   mocks.path='/sign-in/continue'; mocks.signIn.id='sia_pending'; mocks.signIn.status='needs_second_factor';
+   mocks.signIn.supportedSecondFactors=[{strategy:'email_code',emailAddressId:'email_test',safeIdentifier:'p***@example.com'}];
+   await render();
+   expect(view.root.findByProps({id:'auth-code'})).toBeTruthy();
+   expect(mocks.signIn.prepareSecondFactor).toHaveBeenCalledTimes(1);
+   expect(mocks.signIn.create).not.toHaveBeenCalled();
+ });
+ it('allows retrying code delivery after a send failure on the same attempt', async () => {
+   mocks.signIn.status='needs_second_factor';
+   mocks.signIn.supportedSecondFactors=[{strategy:'email_code',emailAddressId:'email_test',safeIdentifier:'p***@example.com'}];
+   mocks.signIn.create.mockResolvedValue(mocks.signIn);
+   mocks.signIn.prepareSecondFactor.mockRejectedValueOnce(new Error('Network unavailable'));
+   await render(); await submit();
+   expect(view.root.findByProps({role:'alert'})).toBeTruthy();
+   await clickText('Send a new code');
+   expect(mocks.signIn.prepareSecondFactor).toHaveBeenCalledTimes(2);
+   expect(mocks.signIn.create).toHaveBeenCalledTimes(1);
+ });
+ it('preserves the entered email when returning from device verification', async () => {
+   mocks.signIn.status='needs_second_factor';
+   mocks.signIn.supportedSecondFactors=[{strategy:'email_code',emailAddressId:'email_test',safeIdentifier:'p***@example.com'}];
+   mocks.signIn.create.mockResolvedValue(mocks.signIn);
+   await render(); await input('auth-email','person@example.com'); await submit();
+   await clickText('Back to sign in');
+   expect(view.root.findByProps({id:'auth-email'}).props.value).toBe('person@example.com');
+   expect(view.root.findAllByProps({id:'auth-code'})).toHaveLength(0);
+ });
  it('activates only a complete email sign-in and routes to the workspace', async () => {
    mocks.signIn.create.mockResolvedValue({ status:'complete', createdSessionId:'session_test' });
    await render(); await input('auth-email','person@example.com'); await input('auth-password','test-password'); await submit();
