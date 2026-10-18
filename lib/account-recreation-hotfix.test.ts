@@ -20,7 +20,7 @@ describe("account recreation hotfix contracts", () => {
   it("routes an authenticated user with no local profile back through provisioning", () => {
     const dashboardLayout = source("app/(protected)/dashboard/[slug]/layout.tsx");
 
-    expect(dashboardLayout).toContain("if (userResult.status === 404)");
+    expect(dashboardLayout).toContain("if (userResult.status !== 200)");
     expect(dashboardLayout).toContain('redirect("/dashboard")');
   });
 

@@ -60,6 +60,31 @@ export const updateUserIdentity = async (
   data: { firstname, lastname },
 });
 
+export const rebindVerifiedEmailWorkspace = async (
+  email: string,
+  expectedClerkId: string,
+  currentClerkId: string,
+  firstname: string,
+  lastname: string,
+) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const identity = firstname || lastname ? { firstname, lastname } : {};
+
+  try {
+    await client.user.updateMany({
+      where: { email: normalizedEmail, clerkId: expectedClerkId },
+      data: { clerkId: currentClerkId, ...identity },
+    });
+  } catch (error) {
+    // Two dashboard requests can race during the first render. If the other
+    // request completed the rebind, use its result instead of failing setup.
+    const candidate = error as { code?: string };
+    if (candidate.code !== "P2002") throw error;
+  }
+
+  return findUser(currentClerkId);
+};
+
 export const createUser = async (
   clerkId: string,
   firstname: string,
