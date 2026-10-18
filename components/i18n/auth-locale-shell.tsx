@@ -7,7 +7,10 @@ import LanguageSwitcher from "@/components/global/language-switcher";
 import { useI18n } from "@/providers/i18n-provider";
 import { localizePublicPath } from "@/lib/i18n/config";
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
+import { AuthStory } from "@/components/auth/auth-experience";
+import { AUTH_COPY } from "@/components/auth/copy";
 
 export default function AuthLocaleShell({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
@@ -38,12 +41,26 @@ export default function AuthLocaleShell({ children }: { children: ReactNode }) {
         privacyPageUrl: `https://ap3k.com${localizePublicPath("/privacy", locale)}`,
       } }}
     >
-      <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4 py-20 dark:bg-[#080911]">
-        <div className="absolute left-4 top-4 sm:left-8 sm:top-7">
-          <Link href={localizePublicPath("/", locale)}><AP3KLogo className="text-slate-950 dark:text-white" /></Link>
+      <div className="auth-page">
+        <header className="auth-header">
+          <Link className="auth-home" href={localizePublicPath("/", locale)} aria-label="AP3K"><AP3KLogo /></Link>
+          <LanguageSwitcher />
+        </header>
+        <div className="auth-layout">
+          <main className="auth-main">
+            {children}
+            <div className="auth-partner">
+              <Image className="dark:hidden" src="/media/hero/meta-business-partner-light.png" alt="Meta Business Partner" width={324} height={129} />
+              <Image className="hidden dark:block" src="/media/hero/meta-business-partner-dark.png" alt="Meta Business Partner" width={324} height={129} />
+            </div>
+            <footer className="auth-footer">
+              <span>© {new Date().getFullYear()} AP3K</span>
+              <Link href={localizePublicPath("/terms", locale)}>{AUTH_COPY[locale].terms}</Link>
+              <Link href={localizePublicPath("/privacy", locale)}>{AUTH_COPY[locale].privacy}</Link>
+            </footer>
+          </main>
+          <AuthStory />
         </div>
-        <div className="absolute right-4 top-4 sm:right-8 sm:top-7"><LanguageSwitcher /></div>
-        <div className="w-full max-w-md">{children}</div>
       </div>
     </ClerkProvider>
   );

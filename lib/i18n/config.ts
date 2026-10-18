@@ -177,7 +177,7 @@ export function localizePublicPath(pathname: string, locale: Locale): string {
 export function localizedLocalesForPath(pathname: string): readonly Locale[] {
   const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(pathname.split(/[?#]/)[0])).replace(/\/$/, "") || "/";
   if (isEnglishOnlyArticle(cleanPath)) return ["en"];
-  if (cleanPath === "/" || cleanPath === "/pricing") return SUPPORTED_LOCALES;
+  if (cleanPath === "/" || cleanPath === "/pricing" || /^\/(sign-in|sign-up)(\/|$)/.test(cleanPath)) return SUPPORTED_LOCALES;
   return FULLY_TRANSLATED_LOCALES;
 }
 
