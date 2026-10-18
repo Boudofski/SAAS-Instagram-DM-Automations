@@ -43,7 +43,7 @@ describe('AP3K branded authentication', () => {
  it('requires consent before Google signup', async () => {
    await render('sign-up'); await clickText('Continue with Google'); expect(mocks.signUp.authenticateWithRedirect).not.toHaveBeenCalled();
    await act(async () => view.root.findByProps({type:'checkbox'}).props.onChange({target:{checked:true}})); await clickText('Continue with Google');
-   expect(mocks.signUp.authenticateWithRedirect).toHaveBeenCalledWith(expect.objectContaining({legalAccepted:true,redirectUrlComplete:'/onboarding'}));
+   expect(mocks.signUp.authenticateWithRedirect).toHaveBeenCalledWith(expect.objectContaining({legalAccepted:true,redirectUrlComplete:'/dashboard'}));
  });
  it('handles signup with verification and activates only after the code succeeds', async () => {
    const result={status:'missing_requirements',unverifiedFields:['email_address'],prepareEmailAddressVerification:mocks.signUp.prepareEmailAddressVerification};
@@ -52,7 +52,7 @@ describe('AP3K branded authentication', () => {
    await act(async () => view.root.findByProps({type:'checkbox'}).props.onChange({target:{checked:true}})); await submit();
    expect(mocks.signUp.create).toHaveBeenCalledWith(expect.objectContaining({firstName:'My chosen name',legalAccepted:true}));
    expect(mocks.setActive).not.toHaveBeenCalled(); expect(mocks.signUp.prepareEmailAddressVerification).toHaveBeenCalledWith({strategy:'email_code'});
-   await input('auth-code','123456'); await submit(); expect(mocks.setActive).toHaveBeenCalledWith({session:'new_session'}); expect(mocks.replace).toHaveBeenCalledWith('/onboarding');
+   await input('auth-code','123456'); await submit(); expect(mocks.setActive).toHaveBeenCalledWith({session:'new_session'}); expect(mocks.replace).toHaveBeenCalledWith('/dashboard');
  });
  it('handles signup when the configured policy does not require an email code', async () => {
    mocks.signUp.create.mockResolvedValue({status:'complete',createdSessionId:'new_session'}); await render('sign-up');

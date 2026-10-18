@@ -14,9 +14,6 @@ import {
   updateUserIdentity,
 } from "./queries";
 
-const onboardingSkippedCookie = (clerkId: string) =>
-  `ap3k_onboarding_skipped_${clerkId}`;
-
 async function currentReferralCode() {
   const cookieStore = await cookies();
   return typeof cookieStore.get === "function"
@@ -331,20 +328,6 @@ export const getCurrentWorkspaceClerkId = async () => {
     });
     return user.id;
   }
-};
-
-export const skipOnboarding = async () => {
-  const user = await onCurrentUser();
-
-  (await cookies()).set(onboardingSkippedCookie(user.id), "true", {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 365,
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-
-  redirect("/dashboard");
 };
 
 // Keep legacy callers on the same payment and current-entitlement checks.

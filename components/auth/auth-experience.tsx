@@ -74,7 +74,7 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   const local = (url: string) => localizePublicPath(url, locale);
 
   useEffect(() => {
-    if (isSignedIn && !callback) router.replace(signingUp ? '/onboarding' : '/dashboard');
+    if (isSignedIn && !callback) router.replace('/dashboard');
   }, [isSignedIn, callback, router, signingUp]);
   useEffect(() => {
     if (!ready) return;
@@ -101,7 +101,7 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   async function finish(result: SignInResource | SignUpResource) {
     if (result.status === 'complete' && result.createdSessionId) {
       await setActive({ session: result.createdSessionId });
-      router.replace(signingUp ? '/onboarding' : '/dashboard');
+      router.replace('/dashboard');
       return;
     }
     // Retain the provider's recovery UI for MFA, passkeys, or future account
@@ -120,7 +120,7 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
     if (signingUp && !accepted) { setError(t.consent); return; }
     await run(async () => {
       const resource = signingUp ? signUp : signIn;
-      await resource!.authenticateWithRedirect({ strategy: 'oauth_google', redirectUrl: local(`/${mode}/sso-callback`), redirectUrlComplete: signingUp ? '/onboarding' : '/dashboard', ...(signingUp ? { legalAccepted: accepted } : {}) });
+      await resource!.authenticateWithRedirect({ strategy: 'oauth_google', redirectUrl: local(`/${mode}/sso-callback`), redirectUrlComplete: '/dashboard', ...(signingUp ? { legalAccepted: accepted } : {}) });
     });
   }
   async function submit(event: FormEvent) {
@@ -151,8 +151,8 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   const intro = step === 'verify' || step === 'reset' ? `${t.codeIntro} ${email}` : step === 'forgot' ? t.resetIntro : signingUp ? t.signupIntro : t.intro;
   const consent = <label className="auth-consent"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} /><span>{t.agree} <Link href={local('/terms')} target="_blank" rel="noopener noreferrer">{t.terms}</Link> {t.and} <Link href={local('/privacy')} target="_blank" rel="noopener noreferrer">{t.privacy}</Link>.</span></label>;
 
-  if (callback) return <div className="auth-form"><p role="status" className="auth-loading"><Loader2 className="animate-spin" size={20}/>{t.loading}</p><AuthenticateWithRedirectCallback signInUrl={local('/sign-in')} signUpUrl={local('/sign-up')} signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/onboarding" continueSignUpUrl={local('/sign-up/continue')} secondFactorUrl={local('/sign-in/continue')} firstFactorUrl={local('/sign-in/continue')} resetPasswordUrl={local('/sign-in/continue')} /><div id="clerk-captcha"/></div>;
-  if (step === 'advanced') return <div className="auth-form auth-advanced">{signingUp ? <SignUp routing="hash" forceRedirectUrl="/onboarding" /> : <SignIn routing="hash" forceRedirectUrl="/dashboard" />}</div>;
+  if (callback) return <div className="auth-form"><p role="status" className="auth-loading"><Loader2 className="animate-spin" size={20}/>{t.loading}</p><AuthenticateWithRedirectCallback signInUrl={local('/sign-in')} signUpUrl={local('/sign-up')} signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard" continueSignUpUrl={local('/sign-up/continue')} secondFactorUrl={local('/sign-in/continue')} firstFactorUrl={local('/sign-in/continue')} resetPasswordUrl={local('/sign-in/continue')} /><div id="clerk-captcha"/></div>;
+  if (step === 'advanced') return <div className="auth-form auth-advanced">{signingUp ? <SignUp routing="hash" forceRedirectUrl="/dashboard" /> : <SignIn routing="hash" forceRedirectUrl="/dashboard" />}</div>;
 
   return <div className="auth-form">
     <div className="auth-form-heading"><span className="auth-eyebrow">AP3K</span><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{intro}</p></div>

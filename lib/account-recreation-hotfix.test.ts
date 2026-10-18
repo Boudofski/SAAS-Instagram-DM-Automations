@@ -7,21 +7,21 @@ function source(path: string) {
 }
 
 describe("account recreation hotfix contracts", () => {
-  it("provisions an AP3K profile before rendering onboarding", () => {
+  it("provisions an AP3K profile before entering the dashboard", () => {
     const userActions = source("actions/user/index.ts");
-    const onboardingLayout = source("app/(protected)/onboarding/layout.tsx");
+    const dashboardEntry = source("app/(protected)/dashboard/page.tsx");
 
     expect(userActions).toContain("export const ensureCurrentUserProfile");
     expect(userActions).toContain("const racedProfile = await findUser(user.id)");
-    expect(onboardingLayout).toContain("await ensureCurrentUserProfile()");
-    expect(onboardingLayout).toContain("profile.status === 200 || profile.status === 201");
+    expect(dashboardEntry).toContain("await onboardUser()");
+    expect(dashboardEntry).toContain("user.status === 200 || user.status === 201");
   });
 
   it("routes an authenticated user with no local profile back through provisioning", () => {
     const dashboardLayout = source("app/(protected)/dashboard/[slug]/layout.tsx");
 
     expect(dashboardLayout).toContain("if (userResult.status === 404)");
-    expect(dashboardLayout).toContain('redirect("/onboarding")');
+    expect(dashboardLayout).toContain('redirect("/dashboard")');
   });
 
   it("uses an explicit dark onboarding surface with readable inherited text", () => {

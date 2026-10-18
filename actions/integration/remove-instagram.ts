@@ -112,8 +112,6 @@ export async function removeCurrentInstagramAccount(expectedIntegrationId = "") 
     revalidatePath(`/dashboard/${workspaceClerkId}/integrations`);
     revalidatePath(`/dashboard/${workspaceClerkId}/automation`);
     revalidatePath(`/dashboard/${workspaceClerkId}/automation`, "layout");
-    revalidatePath("/onboarding/connect");
-
     return {
       status: 200,
       data: "Instagram account removed",
