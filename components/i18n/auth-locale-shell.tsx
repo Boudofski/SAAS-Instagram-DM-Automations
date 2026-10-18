@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { ClerkProvider } from "@clerk/nextjs";
 import { deDE, esES, frFR, nlNL, ptPT } from "@clerk/localizations";
 import AP3KLogo from "@/components/global/ap3k-logo";
@@ -14,6 +15,8 @@ import { AUTH_COPY } from "@/components/auth/copy";
 
 export default function AuthLocaleShell({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
   const base = locale === "en" ? undefined : { de: deDE, es: esES, fr: frFR, nl: nlNL, pt: ptPT }[locale];
   const consent = {
     en: ["I agree to", "Terms of Service", "Privacy Policy", "and"],
@@ -36,7 +39,15 @@ export default function AuthLocaleShell({ children }: { children: ReactNode }) {
     <ClerkProvider localization={localization}
       signInUrl={localizePublicPath("/sign-in", locale)}
       signUpUrl={localizePublicPath("/sign-up", locale)}
-      appearance={{ layout: {
+      appearance={{ variables: {
+        colorPrimary: "#7950df",
+        colorBackground: dark ? "#17161f" : "#ffffff",
+        colorText: dark ? "#f5f3fa" : "#171723",
+        colorTextSecondary: dark ? "#a4a1b4" : "#686877",
+        colorInputBackground: dark ? "#211e2c" : "#ffffff",
+        colorInputText: dark ? "#f5f3fa" : "#171723",
+        borderRadius: "0.625rem",
+      }, layout: {
         termsPageUrl: `https://ap3k.com${localizePublicPath("/terms", locale)}`,
         privacyPageUrl: `https://ap3k.com${localizePublicPath("/privacy", locale)}`,
       } }}

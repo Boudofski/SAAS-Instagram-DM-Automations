@@ -56,6 +56,7 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   const path = usePathname();
   const callback = path.endsWith('/sso-callback');
   const continuing = path.endsWith('/continue');
+  const legacyContinuation = /\/sign-(?:in|up)\/.+/.test(path) && !callback && !continuing;
   const [step, setStep] = useState<Step>('entry');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,12 +77,14 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
     if (isSignedIn && !callback) router.replace(signingUp ? '/onboarding' : '/dashboard');
   }, [isSignedIn, callback, router, signingUp]);
   useEffect(() => {
-    if (!ready || !continuing) return;
+    if (!ready) return;
+    if (legacyContinuation) { setStep('advanced'); return; }
+    if (!continuing) return;
     // OAuth may return with legal consent or another verification still required.
     if (signingUp && signUp?.status === 'missing_requirements' && signUp.missingFields.every(f => ['legal_accepted', 'first_name', 'last_name'].includes(f)) && !signUp.unverifiedFields.length) {
       setStep('complete');
     } else setStep('advanced');
-  }, [ready, continuing, signingUp, signUp]);
+  }, [ready, continuing, legacyContinuation, signingUp, signUp]);
   useEffect(() => { if (step !== 'entry') heading.current?.focus(); }, [step]);
   useEffect(() => {
     if (!cooldown) return;
