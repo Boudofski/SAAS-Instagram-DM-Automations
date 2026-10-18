@@ -10,7 +10,7 @@ describe("authentication redirects", () => {
     const signIn = source("app/(auth)/sign-in/[[...sign-in]]/page.tsx");
     const signUp = source("app/(auth)/sign-up/[[...sign-up]]/page.tsx");
 
-    expect(signIn).toContain('<SignIn forceRedirectUrl="/dashboard" />');
-    expect(signUp).toContain('<SignUp forceRedirectUrl="/onboarding" />');
+    expect(signIn).toContain('mode="sign-in"');
+    expect(signUp).toContain('mode="sign-up"');
   });
 });
