@@ -63,6 +63,7 @@ export default function ConsentAwareAnalytics() {
 
       {ready && consent === null && showPrompt ? (
         <div
+          data-nosnippet=""
           role="dialog"
           aria-live="polite"
           aria-label={tr("Cookie preferences")}
