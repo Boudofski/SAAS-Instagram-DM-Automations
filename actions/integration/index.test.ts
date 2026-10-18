@@ -85,7 +85,7 @@ describe("disconnectCurrentInstagramIntegration", () => {
     mockSoftDisconnectIntegrationForUser.mockResolvedValue({ id: "integration-1", pausedCampaigns: 1 });
   });
 
-  it("returns success and revalidates dashboard, account, integrations, automation, and onboarding paths", async () => {
+  it("returns success and revalidates dashboard, account, integrations, and automation paths", async () => {
     await expect(disconnectCurrentInstagramIntegration()).resolves.toEqual({
       status: 200,
       data: "Instagram account disconnected",
@@ -98,7 +98,7 @@ describe("disconnectCurrentInstagramIntegration", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/clerk-user-1/integrations");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/clerk-user-1/automation");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/clerk-user-1/automation", "layout");
-    expect(mockRevalidatePath).toHaveBeenCalledWith("/onboarding/connect");
+    expect(mockRevalidatePath).not.toHaveBeenCalledWith("/onboarding/connect");
   });
 
   it("does not revalidate when no usable Instagram integration is connected", async () => {

@@ -17,6 +17,7 @@ import Link from "next/link";
 import React from "react";
 import { toast } from "sonner";
 import { formatUserFacingMetaError } from "@/lib/user-facing-errors";
+import { Instagram, Loader2 } from "lucide-react";
 
 type Props = {
   title: string;
@@ -203,11 +204,16 @@ function IntegrationCard({
               disabled={!isInstagram || isConnecting}
               className="ap3k-gradient-button min-h-11 w-full px-4 text-white disabled:opacity-60"
             >
+              {isConnecting ? (
+                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+              ) : (
+                <Instagram aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+              )}
               <UiText>{connected
                 ? "Reconnect Instagram"
                 : isConnecting
                   ? "Connecting..."
-                  : "Connect Instagram"}</UiText>
+                  : "Connect with Instagram"}</UiText>
             </Button>
           )}
           {onboarding && connected && (

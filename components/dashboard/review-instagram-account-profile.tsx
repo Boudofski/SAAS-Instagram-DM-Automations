@@ -1,8 +1,8 @@
 "use client";
 import { UiText } from "@/components/i18n/localized-copy";
+import ConnectInstagramButton from "@/components/dashboard/connect-instagram-button";
 import ReviewDisconnectInstagramButton from "@/components/dashboard/review-disconnect-instagram-button";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
-import Link from "next/link";
 import { useState } from "react";
 
 type Props = {
@@ -67,7 +67,7 @@ export default function ReviewInstagramAccountProfile({
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{" Connect an Instagram Business or Creator account to get started. "}</UiText></p>
-            <Link href="/onboarding" className="ap3k-gradient-button inline-flex justify-center px-4 py-2.5 text-sm"><UiText>{"Connect Instagram"}</UiText></Link>
+            <ConnectInstagramButton className="w-full" />
           </div>
         )}
       </div>

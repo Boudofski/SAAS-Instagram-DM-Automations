@@ -38,7 +38,7 @@ async function Layout(props: Props) {
   // A valid Clerk session can briefly exist before AP3K provisions its local row,
   // especially after an account is deleted and recreated with the same email.
   if (userResult.status === 404) {
-    redirect("/onboarding");
+    redirect("/dashboard");
   }
 
   const currentClerkId = userResult.status === 200 ? userResult.data?.clerkId : null;

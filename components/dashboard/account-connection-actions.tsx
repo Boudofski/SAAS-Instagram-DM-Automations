@@ -5,7 +5,7 @@ import {
   refreshInstagramProfileSnapshot,
 } from "@/actions/integration";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { Instagram, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -90,12 +90,12 @@ export default function AccountConnectionActions({
           disabled={isConnecting || isPending}
           className="ap3k-gradient-button h-11 min-w-0 rounded-xl px-3 text-white sm:px-4"
         >
-          <RefreshCw className="h-4 w-4" />
+          {connected ? <RefreshCw className="h-4 w-4" /> : <Instagram className="h-4 w-4" strokeWidth={2.25} />}
           <span className="sm:hidden">
             {connected ? "Reconnect" : "Connect"}
           </span>
           <span className="hidden sm:inline">
-            {connected ? "Reconnect Instagram" : "Connect Instagram"}
+            {connected ? "Reconnect Instagram" : "Connect with Instagram"}
           </span>
         </Button>
         {connected && (

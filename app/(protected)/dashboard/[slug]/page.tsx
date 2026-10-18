@@ -6,6 +6,7 @@ import { MetricValue, FollowerSubtitle, DashboardPeriodLabel } from "@/component
 import { UiText } from "@/components/i18n/localized-copy";
 import AutomationTable from "@/components/dashboard/automation-table";
 import AutomationEmptyState from "@/components/dashboard/automation-empty-state";
+import ConnectInstagramButton from "@/components/dashboard/connect-instagram-button";
 import InstagramAvatar from "@/components/dashboard/instagram-avatar";
 import LocalTime from "@/components/global/local-time";
 import { getAllAutomation } from "@/actions/automation";
@@ -23,12 +24,8 @@ import { getUserFacingStats } from "@/lib/user-facing-metrics";
 import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 type Props = { params: Promise<{ slug: string }>; searchParams?: Promise<{ period?: string }> };
-
-const onboardingSkippedCookie = (clerkId: string) => `ap3k_onboarding_skipped_${clerkId}`;
 
 export default async function DashboardPage(props: Props) {
   const searchParams = await props.searchParams;
@@ -36,13 +33,7 @@ export default async function DashboardPage(props: Props) {
   const automationsPromise = getAllAutomation();
   const userResult = await onUserInfo();
 
-  const onboardingSkipped =
-    userResult.status === 200 &&
-    userResult.data?.clerkId &&
-    (await cookies()).get(onboardingSkippedCookie(userResult.data.clerkId))?.value === "true";
-
   const instagram = getCanonicalInstagramIntegration(userResult.status === 200 ? userResult.data?.integrations : null);
-  if (userResult.status === 200 && !instagram && !onboardingSkipped) redirect("/onboarding");
 
   const instagramConnected = isCanonicalInstagramConnected(instagram);
   const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
@@ -159,7 +150,7 @@ export default async function DashboardPage(props: Props) {
           </div>
           <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>}
-        {!instagramConnected && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300">Connect Instagram to see your account performance and start collecting leads.</p><Link href={`/dashboard/${params.slug}/integrations`} className="ap3k-gradient-button shrink-0 px-4 py-2.5 text-center text-sm">Add Instagram account</Link></div>}
+        {!instagramConnected && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300">Connect Instagram to see your account performance and start collecting leads.</p><ConnectInstagramButton /></div>}
         <div className={`grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 ${dashboardProfileStats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
