@@ -12,7 +12,7 @@ import { localizePublicPath } from '@/lib/i18n/config';
 import { AUTH_COPY, type AuthCopy } from './copy';
 import './auth.css';
 
-type Step = 'entry' | 'verify' | 'forgot' | 'reset' | 'complete' | 'advanced';
+type Step = 'entry' | 'verify' | 'signin-code' | 'forgot' | 'reset' | 'complete' | 'advanced';
 
 export function authError(error: unknown, copy: AuthCopy): string {
   const code = (error as { errors?: { code?: string }[] })?.errors?.[0]?.code || '';
@@ -59,6 +59,7 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   const legacyContinuation = /\/sign-(?:in|up)\/.+/.test(path) && !callback && !continuing;
   const [step, setStep] = useState<Step>('entry');
   const [email, setEmail] = useState('');
+  const [verificationDestination, setVerificationDestination] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -69,6 +70,9 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   const [notice, setNotice] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const lock = useRef(false);
+  const verificationAttempt = useRef<SignInResource | null>(null);
+  const verificationEmailId = useRef<string | null>(null);
+  const resumedAttempt = useRef<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const ready = signInLoaded && signUpLoaded;
   const local = (url: string) => localizePublicPath(url, locale);
@@ -78,13 +82,22 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
   }, [isSignedIn, callback, router, signingUp]);
   useEffect(() => {
     if (!ready) return;
-    if (legacyContinuation) { setStep('advanced'); return; }
-    if (!continuing) return;
+    if (!continuing && !legacyContinuation) return;
+    if (!signingUp) {
+      // Resume the pending attempt after OAuth or an old continuation URL.
+      // Mounting a fresh prebuilt SignIn here restarts authentication.
+      if (!signIn?.id || resumedAttempt.current === signIn.id) return;
+      resumedAttempt.current = signIn.id;
+      void run(() => finish(signIn));
+      return;
+    }
     // OAuth may return with legal consent or another verification still required.
     if (signingUp && signUp?.status === 'missing_requirements' && signUp.missingFields.every(f => ['legal_accepted', 'first_name', 'last_name'].includes(f)) && !signUp.unverifiedFields.length) {
       setStep('complete');
     } else setStep('advanced');
-  }, [ready, continuing, legacyContinuation, signingUp, signUp]);
+    // run/finish use the current SDK resources; the attempt ID guards resends.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, continuing, legacyContinuation, signingUp, signUp, signIn]);
   useEffect(() => { if (step !== 'entry') heading.current?.focus(); }, [step]);
   useEffect(() => {
     if (!cooldown) return;
@@ -103,6 +116,22 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
       await setActive({ session: result.createdSessionId });
       router.replace('/dashboard');
       return;
+    }
+    // Clerk uses needs_second_factor on older instances and needs_client_trust
+    // on newer ones for a password sign-in from an unfamiliar device.
+    const status = String(result.status);
+    if ('supportedSecondFactors' in result &&
+        (status === 'needs_second_factor' || status === 'needs_client_trust')) {
+      const factor = result.supportedSecondFactors?.find(f => f.strategy === 'email_code');
+      if (factor?.strategy === 'email_code') {
+        verificationAttempt.current = result;
+        verificationEmailId.current = factor.emailAddressId;
+        setVerificationDestination(factor.safeIdentifier || result.identifier || email);
+        setPassword(''); setCode(''); setStep('signin-code');
+        await result.prepareSecondFactor({ strategy: 'email_code', emailAddressId: factor.emailAddressId });
+        setCooldown(30);
+        return;
+      }
     }
     // Retain the provider's recovery UI for MFA, passkeys, or future account
     // requirements. Never treat a partial authentication as a valid session.
@@ -136,6 +165,11 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
         await finish(result); return;
       }
       if (step === 'verify') { await signupResult(await signUp!.attemptEmailAddressVerification({ code })); return; }
+      if (step === 'signin-code') {
+        if (!verificationAttempt.current) { resetEntry(); return; }
+        await finish(await verificationAttempt.current.attemptSecondFactor({ strategy: 'email_code', code }));
+        return;
+      }
       if (step === 'complete') {
         await signupResult(await signUp!.update({ legalAccepted: accepted, ...(name.trim() ? { firstName: name.trim() } : {}) })); return;
       }
@@ -146,9 +180,10 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
       }
     });
   }
-  function resetEntry() { setStep('entry'); setError(''); setNotice(''); setCode(''); setPassword(''); }
-  const title = step === 'verify' ? t.verify : step === 'forgot' || step === 'reset' ? t.reset : step === 'complete' ? t.complete : signingUp ? t.create : t.welcome;
-  const intro = step === 'verify' || step === 'reset' ? `${t.codeIntro} ${email}` : step === 'forgot' ? t.resetIntro : signingUp ? t.signupIntro : t.intro;
+  function resetEntry() { verificationAttempt.current = null; verificationEmailId.current = null; setStep('entry'); setError(''); setNotice(''); setCode(''); setPassword(''); setCooldown(0); }
+  const verifying = step === 'verify' || step === 'signin-code';
+  const title = verifying ? t.verify : step === 'forgot' || step === 'reset' ? t.reset : step === 'complete' ? t.complete : signingUp ? t.create : t.welcome;
+  const intro = verifying || step === 'reset' ? `${t.codeIntro} ${step === 'signin-code' ? verificationDestination : email}` : step === 'forgot' ? t.resetIntro : signingUp ? t.signupIntro : t.intro;
   const consent = <label className="auth-consent"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} /><span>{t.agree} <Link href={local('/terms')} target="_blank" rel="noopener noreferrer">{t.terms}</Link> {t.and} <Link href={local('/privacy')} target="_blank" rel="noopener noreferrer">{t.privacy}</Link>.</span></label>;
 
   if (callback) return <div className="auth-form"><p role="status" className="auth-loading"><Loader2 className="animate-spin" size={20}/>{t.loading}</p><AuthenticateWithRedirectCallback signInUrl={local('/sign-in')} signUpUrl={local('/sign-up')} signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard" continueSignUpUrl={local('/sign-up/continue')} secondFactorUrl={local('/sign-in/continue')} firstFactorUrl={local('/sign-in/continue')} resetPasswordUrl={local('/sign-in/continue')} /><div id="clerk-captcha"/></div>;
@@ -160,16 +195,20 @@ export default function AuthExperience({ mode }: { mode: 'sign-in' | 'sign-up' }
     <form onSubmit={submit} aria-busy={busy}>
       {(signingUp && step === 'entry' || step === 'complete') && <div className="auth-field"><label htmlFor="auth-name">{t.name}</label><input id="auth-name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} maxLength={256}/></div>}
       {(step === 'entry' || step === 'forgot') && <div className="auth-field"><label htmlFor="auth-email">{t.email}</label><input id="auth-email" type="email" autoComplete="email" placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} /></div>}
-      {(step === 'verify' || step === 'reset') && <div className="auth-field"><label htmlFor="auth-code">{t.code}</label><input id="auth-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} className="auth-code" /></div>}
+      {(verifying || step === 'reset') && <div className="auth-field"><label htmlFor="auth-code">{t.code}</label><input id="auth-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} className="auth-code" /></div>}
       {(step === 'entry' || step === 'reset') && <div className="auth-field"><div className="auth-label-row"><label htmlFor="auth-password">{step === 'reset' ? t.newPassword : t.password}</label>{!signingUp && step === 'entry' && <button type="button" onClick={() => { setPassword(''); setError(''); setStep('forgot'); }}>{t.forgot}</button>}</div><div className="auth-password"><input id="auth-password" type={visible ? 'text' : 'password'} autoComplete={signingUp || step === 'reset' ? 'new-password' : 'current-password'} required value={password} onChange={e => setPassword(e.target.value)} /><button type="button" aria-label={visible ? t.hide : t.show} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div></div>}
       {(signingUp && step === 'entry' || step === 'complete') && consent}
       <div id="clerk-captcha" data-cl-theme="auto" />
       {error && <p className="auth-error" role="alert">{error}</p>}
       {notice && <p className="auth-notice" role="status">{notice}</p>}
-      <button className="auth-primary" type="submit" disabled={!ready || busy}>{busy ? <><Loader2 size={18} className="animate-spin"/>{t.loading}</> : <>{step === 'forgot' ? t.sendCode : step === 'reset' ? t.savePassword : step === 'verify' ? t.verifyButton : step === 'complete' ? t.continue : signingUp ? t.signUp : t.signIn}<ArrowRight size={18}/></>}</button>
+      <button className="auth-primary" type="submit" disabled={!ready || busy}>{busy ? <><Loader2 size={18} className="animate-spin"/>{t.loading}</> : <>{step === 'forgot' ? t.sendCode : step === 'reset' ? t.savePassword : verifying ? t.verifyButton : step === 'complete' ? t.continue : signingUp ? t.signUp : t.signIn}<ArrowRight size={18}/></>}</button>
     </form>
-    {(step === 'verify' || step === 'reset') && <button type="button" className="auth-resend" disabled={busy || cooldown > 0} onClick={() => run(async () => {
+    {(verifying || step === 'reset') && <button type="button" className="auth-resend" disabled={busy || cooldown > 0} onClick={() => run(async () => {
       if (step === 'verify') await signUp!.prepareEmailAddressVerification({ strategy: 'email_code' });
+      else if (step === 'signin-code') {
+        if (!verificationAttempt.current || !verificationEmailId.current) { resetEntry(); return; }
+        await verificationAttempt.current.prepareSecondFactor({ strategy: 'email_code', emailAddressId: verificationEmailId.current });
+      }
       else await signIn!.create({ strategy: 'reset_password_email_code', identifier: email.trim() });
       setCooldown(30); setNotice(t.sent);
     })}>{t.resend}{cooldown > 0 ? ` (${cooldown})` : ''}</button>}
