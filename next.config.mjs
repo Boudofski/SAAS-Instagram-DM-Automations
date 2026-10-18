@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep titles, canonicals and language alternates in the initial HTML head.
+  // Search Console's saved render left streamed metadata in the body and did
+  // not recognize the declared canonical. Apply consistently to every client.
+  htmlLimitedBots: /.*/,
   outputFileTracingIncludes: { "/blog/[slug]": ["./lib/content/imported-blog/*.html"] },
   images: {
     remotePatterns: [
