@@ -1,5 +1,4 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { dashboardDestinationPath } from "@/lib/dashboard";
 import { getAuthenticatedHomeRedirect } from "@/lib/authenticated-home-redirect";
 import {
   LOCALE_COOKIE,
@@ -17,11 +16,14 @@ import {
 } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher([
+const isProtectedPageRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/onboarding(.*)",
   "/admin(.*)",
   "/ap3k-admin(.*)",
+]);
+
+const isProtectedApiRoute = createRouteMatcher([
   "/api/payment(.*)",
 ]);
 
@@ -96,22 +98,20 @@ export default clerkMiddleware(async (auth, req) => {
     return response;
   }
 
-  if (isProtectedRoute(req)) await auth.protect();
-
-  // Resolve the entry URL from the verified session at the edge. Loading the
-  // provisioning page first cold-started a second server function on every login.
-  // The destination layout still checks ownership and sends missing workspaces
-  // through onboarding, where profile creation and welcome delivery belong.
-  if (pathname === "/dashboard" && req.method === "GET") {
+  if (isProtectedPageRoute(req)) {
     const { userId } = await auth();
-    if (userId) {
-      const response = NextResponse.redirect(new URL(
-        dashboardDestinationPath(userId, req.nextUrl.searchParams.get("next")), req.url
-      ));
+    if (!userId) {
+      const destination = new URL("/sign-in", req.url);
+      destination.searchParams.set("next", `${pathname}${req.nextUrl.search}`);
+      const response = NextResponse.redirect(destination);
       response.headers.set("Cache-Control", "private, no-store");
       return response;
     }
   }
+
+  // Keep API authentication semantics (including non-page error responses)
+  // under Clerk. Browser pages always use AP3K's branded sign-in above.
+  if (isProtectedApiRoute(req)) await auth.protect();
 
   const locale = resolveRequestLocale(requestedPath, firstVisit ? browserPreference : savedLocale);
   const requestHeaders = new Headers(req.headers);

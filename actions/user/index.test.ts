@@ -5,6 +5,7 @@ const mockFindUser = vi.fn();
 const mockFindUserByEmail = vi.fn();
 const mockCreateUser = vi.fn();
 const mockUpdateUserIdentity = vi.fn();
+const mockRebindVerifiedEmailWorkspace = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: (...args: unknown[]) => mockCurrentUser(...args),
@@ -33,6 +34,7 @@ vi.mock("./queries", () => ({
   findUserByEmail: (...args: unknown[]) => mockFindUserByEmail(...args),
   createUser: (...args: unknown[]) => mockCreateUser(...args),
   updateUserIdentity: (...args: unknown[]) => mockUpdateUserIdentity(...args),
+  rebindVerifiedEmailWorkspace: (...args: unknown[]) => mockRebindVerifiedEmailWorkspace(...args),
   updateSubscription: vi.fn(),
 }));
 
@@ -48,8 +50,8 @@ function clerkUser() {
     id: CURRENT_CLERK_ID,
     firstName: "Abdou",
     lastName: "Boudofski",
-    primaryEmailAddress: { emailAddress: EMAIL },
-    emailAddresses: [{ emailAddress: EMAIL }],
+    primaryEmailAddress: { emailAddress: EMAIL, verification: { status: "verified" } },
+    emailAddresses: [{ emailAddress: EMAIL, verification: { status: "verified" } }],
   };
 }
 
@@ -74,7 +76,6 @@ function workspaceProfile(clerkId = EXISTING_CLERK_ID) {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubEnv("VERCEL_ENV", "preview");
-  vi.stubEnv("AP3K_DEV_ALLOW_EMAIL_PROFILE_CLAIM", "false");
   mockCurrentUser.mockResolvedValue(clerkUser());
   mockFindUserByEmail.mockResolvedValue(null);
   vi.spyOn(console, "info").mockImplementation(() => undefined);
@@ -133,37 +134,38 @@ describe("ensureCurrentUserProfile", () => {
     });
   });
 
-  it("claims the existing same-email profile only when the dev flag is enabled", async () => {
-    vi.stubEnv("AP3K_DEV_ALLOW_EMAIL_PROFILE_CLAIM", "true");
+  it("recovers an existing workspace when the current Clerk email is verified", async () => {
     mockFindUser.mockResolvedValue(null);
     mockFindUserByEmail.mockResolvedValue(workspaceProfile());
+    mockRebindVerifiedEmailWorkspace.mockResolvedValue(workspaceProfile(CURRENT_CLERK_ID));
 
     const result = await ensureCurrentUserProfile();
 
     expect(mockFindUserByEmail).toHaveBeenCalledWith(EMAIL);
+    expect(mockRebindVerifiedEmailWorkspace).toHaveBeenCalledWith(
+      EMAIL,
+      EXISTING_CLERK_ID,
+      CURRENT_CLERK_ID,
+      "Abdou",
+      "Boudofski",
+    );
     expect(result).toEqual({
       status: 200,
       data: {
         firstname: "Abdou",
         lastname: "Boudofski",
-        clerkId: EXISTING_CLERK_ID,
+        clerkId: CURRENT_CLERK_ID,
       },
       error: null,
     });
     expect(mockCreateUser).not.toHaveBeenCalled();
-
-    vi.stubEnv("AP3K_DEV_ALLOW_EMAIL_PROFILE_CLAIM", "false");
-    const blocked = await ensureCurrentUserProfile();
-    expect(blocked).toEqual({
-      status: 409,
-      data: null,
-      error: "profile_email_conflict",
-    });
   });
 
-  it("blocks the email claim in production even when the flag is enabled", async () => {
-    vi.stubEnv("AP3K_DEV_ALLOW_EMAIL_PROFILE_CLAIM", "true");
-    vi.stubEnv("VERCEL_ENV", "production");
+  it("blocks same-email workspace recovery when Clerk has not verified the address", async () => {
+    const unverified = clerkUser();
+    unverified.primaryEmailAddress.verification.status = "unverified";
+    unverified.emailAddresses[0].verification.status = "unverified";
+    mockCurrentUser.mockResolvedValue(unverified);
     mockFindUser.mockResolvedValue(null);
     mockFindUserByEmail.mockResolvedValue(workspaceProfile());
 
@@ -175,12 +177,13 @@ describe("ensureCurrentUserProfile", () => {
       error: "profile_email_conflict",
     });
     expect(mockCreateUser).not.toHaveBeenCalled();
+    expect(mockRebindVerifiedEmailWorkspace).not.toHaveBeenCalled();
   });
 
-  it("does not expose stored integration tokens in fallback results or logs", async () => {
-    vi.stubEnv("AP3K_DEV_ALLOW_EMAIL_PROFILE_CLAIM", "true");
+  it("does not expose stored integration tokens in recovery results or logs", async () => {
     mockFindUser.mockResolvedValue(null);
     mockFindUserByEmail.mockResolvedValue(workspaceProfile());
+    mockRebindVerifiedEmailWorkspace.mockResolvedValue(workspaceProfile(CURRENT_CLERK_ID));
 
     const result = await ensureCurrentUserProfile();
     const logs = [

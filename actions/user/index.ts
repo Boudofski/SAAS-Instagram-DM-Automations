@@ -11,6 +11,7 @@ import {
   createUser,
   findUser,
   findUserByEmail,
+  rebindVerifiedEmailWorkspace,
   updateUserIdentity,
 } from "./queries";
 
@@ -36,12 +37,17 @@ const publicUserProfile = <T extends { integrations?: any[] }>(profile: T) => ({
   })) ?? [],
 });
 
+type ClerkEmailIdentity = {
+  emailAddress?: string | null;
+  verification?: { status?: string | null } | null;
+};
+
 type ClerkWorkspaceIdentity = {
   id: string;
   firstName?: string | null;
   lastName?: string | null;
-  primaryEmailAddress?: { emailAddress?: string | null } | null;
-  emailAddresses: Array<{ emailAddress?: string | null }>;
+  primaryEmailAddress?: ClerkEmailIdentity | null;
+  emailAddresses: ClerkEmailIdentity[];
 };
 
 function currentIdentityEmail(user: ClerkWorkspaceIdentity) {
@@ -58,10 +64,11 @@ function hasPrimaryIdentityEmail(user: ClerkWorkspaceIdentity) {
   return Boolean(user.primaryEmailAddress?.emailAddress?.trim());
 }
 
-function isDevEmailProfileClaimEnabled() {
-  return (
-    process.env.AP3K_DEV_ALLOW_EMAIL_PROFILE_CLAIM === "true" &&
-    process.env.VERCEL_ENV !== "production"
+function isCurrentIdentityEmailVerified(user: ClerkWorkspaceIdentity, email: string) {
+  return [user.primaryEmailAddress, ...user.emailAddresses].some(
+    (candidate) =>
+      candidate?.emailAddress?.trim().toLowerCase() === email &&
+      candidate.verification?.status === "verified"
   );
 }
 
@@ -101,7 +108,7 @@ async function resolveWorkspaceProfile(
     email && (!foundByClerkId || options.logDiagnostics)
       ? await findUserByEmail(email)
       : null;
-  const emailClaimEnabled = isDevEmailProfileClaimEnabled();
+  const emailVerified = Boolean(email) && isCurrentIdentityEmailVerified(user, email);
 
   if (options.logDiagnostics) {
     console.info("[user-provision] AP3K profile resolution", {
@@ -109,7 +116,7 @@ async function resolveWorkspaceProfile(
       primaryEmailPresent: hasPrimaryIdentityEmail(user),
       userExistsByClerkId: Boolean(foundByClerkId),
       userExistsByEmail: Boolean(foundByEmail),
-      emailClaimEnabled,
+      emailVerified,
       vercelEnvironment: process.env.VERCEL_ENV ?? "local",
     });
   }
@@ -133,19 +140,39 @@ async function resolveWorkspaceProfile(
     };
   }
 
-  if (foundByEmail && emailClaimEnabled) {
-    console.warn("[user-provision] using non-production email profile claim", {
+  if (foundByEmail && emailVerified) {
+    const rebound = await rebindVerifiedEmailWorkspace(
+      email,
+      foundByEmail.clerkId,
+      user.id,
+      user.firstName?.trim() ?? "",
+      user.lastName?.trim() ?? "",
+    );
+    if (rebound) {
+      console.warn("[user-provision] recovered verified-email workspace", {
+        currentClerkUserIdPresent: Boolean(user.id),
+        primaryEmailPresent: hasPrimaryIdentityEmail(user),
+        existingWorkspaceClerkIdPresent: Boolean(foundByEmail.clerkId),
+        emailVerified: true,
+        vercelEnvironment: process.env.VERCEL_ENV ?? "local",
+      });
+      return {
+        profile: rebound,
+        email,
+        emailConflict: false,
+        resolution: "verified_email_rebind" as const,
+      };
+    }
+  }
+
+  if (foundByEmail) {
+    console.warn("[user-provision] email workspace recovery blocked", {
       currentClerkUserIdPresent: Boolean(user.id),
       primaryEmailPresent: hasPrimaryIdentityEmail(user),
       existingWorkspaceClerkIdPresent: Boolean(foundByEmail.clerkId),
+      emailVerified,
       vercelEnvironment: process.env.VERCEL_ENV ?? "local",
     });
-    return {
-      profile: foundByEmail,
-      email,
-      emailConflict: false,
-      resolution: "dev_email_claim" as const,
-    };
   }
 
   return {
@@ -229,7 +256,7 @@ export const ensureCurrentUserProfile = async () => {
         primaryEmailPresent: hasPrimaryIdentityEmail(user),
         userExistsByClerkId: false,
         userExistsByEmail: true,
-        emailClaimEnabled: isDevEmailProfileClaimEnabled(),
+        emailVerified: isCurrentIdentityEmailVerified(user, email),
         vercelEnvironment: process.env.VERCEL_ENV ?? "local",
       });
       return {

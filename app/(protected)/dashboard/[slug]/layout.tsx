@@ -37,16 +37,14 @@ async function Layout(props: Props) {
 
   // A valid Clerk session can briefly exist before AP3K provisions its local row,
   // especially after an account is deleted and recreated with the same email.
-  if (userResult.status === 404) {
+  if (userResult.status !== 200) {
     redirect("/dashboard");
   }
 
-  const currentClerkId = userResult.status === 200 ? userResult.data?.clerkId : null;
-  const profile = userResult.status === 200 ? userResult.data : null;
+  const currentClerkId = userResult.data?.clerkId;
+  const profile = userResult.data;
 
-  if (!currentClerkId) {
-    redirect("/sign-in");
-  }
+  if (!currentClerkId) redirect("/dashboard");
 
   if (params.slug !== currentClerkId) {
     console.warn("[tenant-denied]", {
