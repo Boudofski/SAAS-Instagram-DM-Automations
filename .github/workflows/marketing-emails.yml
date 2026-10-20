@@ -1,7 +1,7 @@
 name: Marketing emails
 on:
   schedule:
-    - cron: '17 5 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 permissions:
   id-token: write
