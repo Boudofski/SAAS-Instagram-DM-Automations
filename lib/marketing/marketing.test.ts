@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ client: { emailDelivery: mocks.delivery, marketingLead: mocks.lead, user: mocks.user, marketingRateLimit: mocks.slot } }));
 vi.mock("resend", () => ({ Resend: class { emails = { send: mocks.send }; } }));
+vi.mock("./autopilot", () => ({ planMarketingEmails: vi.fn() }));
+import { planMarketingEmails } from "./autopilot";
+import { defaultEmailPlan } from "./autopilot-policy";
 import { deliverMarketingEmail, marketingReady, processMarketingQueue } from "./delivery";
 const token = "a".repeat(64);
 const payload = { from: "AP3K <updates@ap3k.com>", to: "subscriber@example.com", replyTo: "support@ap3k.com", subject: "Saved", html: "<p>Saved</p>", text: "Saved", headers: {} };
@@ -106,5 +109,37 @@ describe("launch-kit consent and delivery", () => {
     }
     expect(marketingEmail("kit", "ecommerce", "", "").text).toContain("PRODUCT");
     expect(marketingEmail("kit", "creator", "", "").text).toContain("GUIDE");
+  });
+});
+
+describe("autopilot delivery", () => {
+  it("does not send or consume quota before the persisted schedule", async () => {
+    const original = row();
+    mocks.delivery.findUnique.mockResolvedValue({ ...original, metadata: { ...original.metadata, notBefore: new Date(Date.now() + 3600000).toISOString() } });
+    expect(await deliverMarketingEmail("delivery")).toBe("queued");
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.slot.upsert).not.toHaveBeenCalled();
+  });
+  it("does not replan already queued lessons", async () => {
+    mocks.lead.findMany.mockResolvedValue([lead()]);
+    mocks.delivery.findMany.mockResolvedValueOnce([{ templateId: "marketing_kit", sentAt: new Date(Date.now() - 2 * 86400000) }]).mockResolvedValueOnce([]);
+    await processMarketingQueue();
+    expect(planMarketingEmails).not.toHaveBeenCalled();
+    expect(mocks.delivery.upsert).not.toHaveBeenCalled();
+  });
+  it("persists a bounded decision and exact rendered payload for a new lesson", async () => {
+    mocks.lead.findMany.mockResolvedValue([{ ...lead(), audience: "creator" }]);
+    mocks.delivery.findUnique.mockResolvedValue(null);
+    mocks.delivery.findMany.mockResolvedValueOnce([{ templateId: "marketing_kit", sentAt: new Date(Date.now() - 2 * 86400000) }]).mockResolvedValueOnce([]);
+    const plan = defaultEmailPlan();
+    plan.creator_test = { variant: "checklist", delayHours: 6 };
+    vi.mocked(planMarketingEmails).mockResolvedValue({ source: "ai", plan });
+    await processMarketingQueue();
+    expect(planMarketingEmails).toHaveBeenCalledTimes(1);
+    const saved = mocks.delivery.upsert.mock.calls[0][0].create;
+    expect(saved.metadata.autopilot).toEqual({ source: "ai", variant: "checklist", delayHours: 6 });
+    expect(Date.parse(saved.metadata.notBefore)).toBeGreaterThan(Date.now() + 5 * 3600000);
+    expect(saved.metadata.payload.text).toContain("resource link");
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 });
