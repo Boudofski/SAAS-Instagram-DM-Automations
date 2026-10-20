@@ -13,7 +13,7 @@ export const SEO_RESOURCES: SeoResource[] = [
     eyebrow: "One post. One keyword. One useful link.",
     title: "Instagram Comment-to-DM Launch Kit",
     description: "Launch your first comment-to-DM campaign with complete creator and ecommerce examples, a live-account test checklist, and a simple way to measure results.",
-    updatedAt: "2026-09-29",
+    updatedAt: "2026-10-20",
     sections: [
       { title: "1. Choose a request people already make", intro: "Start with an Instagram Business or Creator account, one post or Reel, and a destination that works on a phone. These are example scripts, not results from customer campaigns.", items: ["Creator: deliver a checklist, recipe, training plan, or tutorial your audience has asked for. Pick one resource; do not promise several unrelated benefits.", "Store: link to a specific product, size guide, or collection. Make sure the page shows current stock, pricing, and delivery information.", "Use one keyword such as GUIDE or PRODUCT. Keep the keyword, post caption, trigger, and promised destination consistent."] },
       { title: "2. Copy a complete creator campaign", intro: "Example: a creator sharing a meal-planning checklist. Replace the resource and link with your real offer.", items: ["Caption: Want my weekly meal-planning checklist? Comment GUIDE and I’ll send the link by DM.", "Public reply: Check your DMs for the checklist. Use this only when your workflow also sends the promised message; avoid claiming delivery you have not verified.", "DM: Here’s the meal-planning checklist from the post. Tap below to open it and save a copy for your next grocery shop.", "Button: Get the checklist. Destination: the direct checklist page, not an unrelated homepage."] },

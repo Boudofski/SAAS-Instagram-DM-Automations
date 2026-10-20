@@ -1,3 +1,5 @@
+import NewsletterForm from "@/components/home/NewsletterForm";
+import { LAUNCH_KIT_PATH } from "@/lib/marketing/content";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
@@ -54,6 +56,7 @@ export default async function ResourcePage(props: Props) {
         <p className="ap3k-kicker">{resource.eyebrow}</p>
         <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">{resource.title}</h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{resource.description}</p>
+        {`/resources/${resource.slug}` === LAUNCH_KIT_PATH && <NewsletterForm />}
         <div id="campaign-examples" className="mt-12 scroll-mt-28 space-y-10">
           {resource.sections.map(section => <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
             <h2 className="text-2xl font-black tracking-tight">{section.title}</h2>

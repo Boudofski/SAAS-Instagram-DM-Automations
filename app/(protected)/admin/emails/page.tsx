@@ -22,22 +22,28 @@ export default async function EmailCenterPage(
       <AdminPageHeader
         eyebrow="Email system"
         title="AP3K Email Center"
-        description="Preview every customer email, verify delivery health, and send a protected test to the owner inbox. Critical facts stay deterministic; optional AI copy can only personalize non-sensitive lifecycle messages."
+        description="Preview customer emails, monitor delivery, and manage subscriber follow-ups."
         actions={<V2Badge tone={overview.configuration.configured ? "green" : "amber"}>{overview.configuration.configured ? "Delivery connected" : "Connection required"}</V2Badge>}
       />
 
       {searchParams?.test ? (
         <div className={`rounded-xl border px-4 py-3 text-xs font-bold ${searchParams.test === "sent" ? "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-200" : "border-amber-500/20 bg-amber-500/[0.08] text-amber-800 dark:text-amber-200"}`}>
-          {searchParams.test === "sent" ? "Test email sent to the AP3K owner inbox." : searchParams.test === "not-configured" ? "Connect Resend and verify the AP3K sending domain before sending tests." : `Test email was not sent (${searchParams.test}).`}
+          {searchParams.test === "sent" ? "Test accepted by the email provider. Check delivery activity for confirmation." : searchParams.test === "not-configured" ? "Connect Resend and verify the AP3K sending domain before sending tests." : `Test email was not sent (${searchParams.test}).`}
         </div>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatusCard label="Templates" value={EMAIL_TEMPLATE_LIST.length} detail="Transactional + lifecycle" icon={<MailCheck className="h-4 w-4" />} />
-        <StatusCard label="Successful" value={sentCount} detail="Sent or confirmed by Resend" icon={<Send className="h-4 w-4" />} />
+        <StatusCard label="Provider accepted" value={sentCount} detail="Acceptance does not confirm inbox delivery" icon={<Send className="h-4 w-4" />} />
         <StatusCard label="Delivery issues" value={failureCount} detail="Failed, bounced, or suppressed" icon={<TriangleAlert className="h-4 w-4" />} />
         <StatusCard label="Webhook" value={overview.configuration.webhookConfigured ? "Ready" : "Missing"} detail="Signed delivery events" icon={<ShieldCheck className="h-4 w-4" />} />
       </div>
+
+      <AdminSurface className="p-5 sm:p-6">
+        <h2 className="text-lg font-bold">Subscribers &amp; email series</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">Review launch-kit signups, consent, opt-outs, and scheduled lessons. Only confirmed subscribers receive the series.</p>
+        <Link href="/admin/acquisition" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700">Manage subscribers</Link>
+      </AdminSurface>
 
       <AdminSurface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -64,9 +70,9 @@ export default async function EmailCenterPage(
                 <Link key={template.id} href={`/admin/emails?template=${template.id}`} className={`block rounded-xl border px-3 py-3 transition ${template.id === selectedId ? "border-pink-400/20 bg-pink-400/[0.08]" : "border-transparent hover:border-slate-200 dark:hover:border-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.03]"}`}>
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-black text-slate-800 dark:text-slate-100">{template.label}</p>
-                    <span className="rounded-full border border-slate-200 dark:border-white/[0.07] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-muted-foreground">{template.category}</span>
+                    <span className="rounded-full border border-slate-200 dark:border-white/[0.07] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground">{template.category}</span>
                   </div>
-                  <p className="mt-1 text-[10px] leading-4 text-muted-foreground">{template.description}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{template.description}</p>
                 </Link>
               ))}
             </div>
@@ -96,9 +102,9 @@ export default async function EmailCenterPage(
             <div className="divide-y divide-slate-200 dark:divide-white/[0.05]">
               {overview.recent.map((delivery) => (
                 <div key={delivery.id} className="grid gap-2 px-4 py-3 text-[11px] sm:grid-cols-[150px_minmax(0,1fr)_130px_110px] sm:items-center">
-                  <V2Badge tone={["FAILED", "BOUNCED", "COMPLAINED", "SUPPRESSED"].includes(delivery.status) ? "red" : delivery.status === "SKIPPED" ? "amber" : "green"}>{delivery.status}</V2Badge>
+                  <V2Badge tone={["FAILED", "BOUNCED", "COMPLAINED", "SUPPRESSED"].includes(delivery.status) ? "red" : ["SENT", "DELIVERED", "OPENED", "CLICKED"].includes(delivery.status) ? "green" : "amber"}>{delivery.status}</V2Badge>
                   <div className="min-w-0"><p className="truncate font-bold text-slate-800 dark:text-slate-200">{delivery.subject}</p><p className="truncate text-muted-foreground">{delivery.templateId} · {delivery.recipient}</p>{delivery.errorMessage ? <p className="mt-1 text-rose-700 dark:text-rose-300">{delivery.errorMessage}</p> : null}</div>
-                  <p className="truncate font-mono text-[9px] text-muted-foreground">{delivery.providerMessageId || "No provider ID"}</p>
+                  <p className="truncate font-mono text-xs text-muted-foreground">{delivery.providerMessageId || "No provider ID"}</p>
                   <p className="text-muted-foreground"><LocalTime value={delivery.createdAt} /></p>
                 </div>
               ))}
@@ -111,5 +117,5 @@ export default async function EmailCenterPage(
 }
 
 function StatusCard({ label, value, detail, icon }: { label: string; value: string | number; detail: string; icon: React.ReactNode }) {
-  return <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-white/[0.025] p-4"><div className="flex items-center justify-between"><p className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">{label}</p><span className="text-pink-700 dark:text-pink-300">{icon}</span></div><p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p><p className="mt-1 text-[10px] text-muted-foreground">{detail}</p></div>;
+  return <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-white/[0.025] p-4"><div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">{label}</p><span className="text-pink-700 dark:text-pink-300">{icon}</span></div><p className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p><p className="mt-1 text-[10px] text-muted-foreground">{detail}</p></div>;
 }

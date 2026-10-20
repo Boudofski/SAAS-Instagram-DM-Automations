@@ -1,5 +1,6 @@
 "use client";
 import { editorStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
+import UpgradeDialog from "./upgrade-dialog";
 import OpenerMessage from "./opener-message";
 import PolicyScanDialog from "./policy-scan-dialog";
 import { mapCommentPolicy, applyCommentPolicy } from "@/lib/automation-policy-input";
@@ -106,6 +107,7 @@ export default function CommentEditor(p: CommentEditorProps) {
   useEffect(() => { if (hasSavedDelay) setDelayEnabled(true); }, [hasSavedDelay]);
   const [scanInput, setScanInput] = useState<PolicyScanInput | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
   const [publishAttempted, setPublishAttempted] = useState(false);
   const aiPublishError = data.aiReplyEnabled &&
     ((publishAttempted && !p.paid) || p.error === "AI only available on paid plans.");
@@ -118,6 +120,7 @@ export default function CommentEditor(p: CommentEditorProps) {
   }, [p.error]);
   const save = (active: boolean) => {
     if (active && data.aiReplyEnabled && !p.paid) {
+      setUpgrade(true);
       setPublishAttempted(true);
       setOpenMessage(null);
       setOpenTrigger("reply");
@@ -230,6 +233,7 @@ export default function CommentEditor(p: CommentEditorProps) {
 
   return (
     <>
+    <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} />
     {scanInput && <PolicyScanDialog open onOpenChange={open => { if (!open) setScanInput(null); }} input={scanInput} slug={p.slug} onPublish={() => { setScanInput(null); p.onSave(true); }} onApply={findings => { update(applyCommentPolicy(data, findings)); setScanInput(null); }} />}
     <EditorLayout
       slug={p.slug}

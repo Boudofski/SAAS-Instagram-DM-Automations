@@ -1,4 +1,5 @@
 "use client";
+import UpgradeDialog from "./upgrade-dialog";
 import StoryAutomationWizard from "./story-automation-wizard";
 import PolicyScanDialog from "./policy-scan-dialog";
 import { mapMessagePolicy, applyMessagePolicy } from "@/lib/automation-policy-input";
@@ -145,6 +146,7 @@ function LegacyMessageAutomationWizard({
   const tr = useUi();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [upgrade, setUpgrade] = useState(false);
   const [openTrigger, setOpenTrigger] = useState(true);
   const [messagePreview, setMessagePreview] = useState<string | null>(null);
   const [openMessage, setOpenMessage] = useState<string | null>("message");
@@ -311,7 +313,7 @@ function LegacyMessageAutomationWizard({
       setError("Add the follow request message and verification button.");
       return;
     }
-    if (active && draft.aiReplyEnabled && !paid) { setError("AI only available on paid plans."); return; }
+    if (active && draft.aiReplyEnabled && !paid) { setUpgrade(true); return; }
     if (active && !skipScan) { setScanInput(mapMessagePolicy(draft, integrationId, source)); return; }
     submitting.current = true;
     setSaving(true);
@@ -381,6 +383,7 @@ function LegacyMessageAutomationWizard({
       : "When someone sends you a DM";
   return (
     <>
+    <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} />
     {scanInput && <PolicyScanDialog open onOpenChange={open => { if (!open) setScanInput(null); }} input={scanInput} slug={slug} onPublish={() => { setScanInput(null); void save(true, true); }} onApply={findings => { setDraft(current => applyMessagePolicy(current, findings)); setScanInput(null); }} />}
     <EditorLayout
       slug={slug}

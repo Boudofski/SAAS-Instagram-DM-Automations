@@ -24,7 +24,7 @@ export default function UpgradeDialog({
   const tr = useUi();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[94dvh] w-[calc(100%-24px)] max-w-[970px] overflow-y-auto rounded-[26px] bg-white p-5 text-slate-950 dark:bg-[#11131d] dark:text-slate-100 sm:p-10">
+      <DialogContent className="max-h-[94dvh] w-[calc(100%_-_24px)] max-w-[970px] overflow-y-auto rounded-[26px] bg-white p-5 text-slate-950 dark:bg-[#11131d] dark:text-slate-100 sm:p-10">
         <div className="mb-4 text-center">
           <span className="mb-4 inline-block -rotate-6 rounded-xl bg-zinc-900 px-3 py-1 text-lg font-bold text-white dark:bg-zinc-700">
             PRO
