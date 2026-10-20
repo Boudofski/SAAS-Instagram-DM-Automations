@@ -29,6 +29,11 @@ export default async function AcquisitionPage(props: { searchParams?: Promise<{ 
     <div className="space-y-7">
       <AdminPageHeader eyebrow="Customer acquisition" title="Acquisition" description="Follow new email subscribers and the activation of accounts created in the last 30 days. These are database records; visits, ad attribution, and paid invoices are measured separately." />
       <AdminSurface className="p-6">
+        <h2 className="text-lg font-bold">Email autopilot</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{process.env.AP3K_EMAIL_AUTOPILOT_ENABLED === "false" ? "AI planning is paused. Approved standard templates still run on schedule." : "AI planning is enabled. For eligible follow-ups, AI chooses an approved standard or checklist template and may defer delivery by up to 12 hours. If AI is unavailable, standard templates run automatically."}</p>
+        <p className="mt-2 text-sm text-muted-foreground">Confirmation and kit delivery stay immediate. Each subscriber receives only the series they requested. Consent, opt-outs, customer exits, daily limits, and at least 24 hours between lessons are enforced independently of AI. Timing is not yet optimized from conversion data.</p>
+      </AdminSurface>
+      <AdminSurface className="p-6">
         <h2 className="text-lg font-bold">Launch-kit email series</h2>
         <p className="mt-2 text-sm text-muted-foreground">{marketingReady() ? "Ready for new confirmed subscribers. Sends only in production; at most 30 marketing attempts per day. Hourly processing uses the dedicated signed GitHub workflow." : "Paused: production delivery and signed webhooks must be configured. The public kit remains available."}</p>
         {searchParams?.run ? <p role="status" className="mt-3 text-sm">{searchParams.run.startsWith("sent-") && /^sent-\d+$/.test(searchParams.run) ? `Queue processed: ${searchParams.run.slice(5)} emails accepted by the provider.` : "Queue could not run. Check delivery configuration and Email Center."}</p> : null}

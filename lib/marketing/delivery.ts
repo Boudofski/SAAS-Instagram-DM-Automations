@@ -2,10 +2,12 @@ import { Prisma, type MarketingLead } from "@prisma/client";
 import { Resend } from "resend";
 import { client } from "@/lib/prisma";
 import { FOLLOW_UPS, marketingEmail, type MarketingStage } from "./content";
+import { planMarketingEmails } from "./autopilot";
+import type { EmailDecision } from "./autopilot-policy";
 import { hashToken, unsubscribeToken } from "./tokens";
 
 type Payload = { from: string; to: string; replyTo: string; subject: string; html: string; text: string; headers: Record<string, string> };
-type QueueMetadata = { leadId: string; stage: MarketingStage; payload: Payload; attempts: number; firstAttemptAt?: string };
+type QueueMetadata = { leadId: string; stage: MarketingStage; payload: Payload; attempts: number; firstAttemptAt?: string; notBefore?: string; autopilot?: { source: "ai" | "fallback"; variant: string; delayHours: number } };
 const terminal = ["BOUNCED", "COMPLAINED", "SUPPRESSED"] as const;
 const accepted = ["SENT", "DELIVERED", "OPENED", "CLICKED"] as const;
 export function marketingReady() {
@@ -24,13 +26,13 @@ export async function takeMarketingSlot(scope: string, identity: string, maximum
   return row.count <= maximum;
 }
 
-export async function queueMarketingEmail(lead: MarketingLead, stage: MarketingStage, confirmationToken = "") {
+export async function queueMarketingEmail(lead: MarketingLead, stage: MarketingStage, confirmationToken = "", decision?: EmailDecision & { source: "ai" | "fallback" }) {
   const unsubscribeUrl = `https://ap3k.com/api/marketing/unsubscribe?id=${lead.id}&token=${unsubscribeToken(lead.id)}`;
   const confirmationUrl = `https://ap3k.com/api/marketing/confirm?id=${lead.id}&token=${confirmationToken}`;
   const payload: Payload = {
     from: process.env.AP3K_EMAIL_FROM?.trim() || "AP3K <updates@ap3k.com>",
     replyTo: process.env.AP3K_EMAIL_REPLY_TO?.trim() || "support@ap3k.com",
-    to: lead.email, ...marketingEmail(stage, lead.audience, confirmationUrl, unsubscribeUrl),
+    to: lead.email, ...marketingEmail(stage, lead.audience, confirmationUrl, unsubscribeUrl, decision?.variant),
     headers: { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
   };
   // Confirmation key changes only on an explicit, rate-limited resend request.
@@ -39,7 +41,7 @@ export async function queueMarketingEmail(lead: MarketingLead, stage: MarketingS
     where: { idempotencyKey }, update: {}, create: {
       category: "lead_nurture", templateId: `marketing_${stage}`, recipient: lead.email,
       subject: payload.subject, idempotencyKey, status: "PENDING",
-      metadata: { leadId: lead.id, stage, payload, attempts: 0 } as unknown as Prisma.InputJsonValue,
+      metadata: { leadId: lead.id, stage, payload, attempts: 0, ...(decision ? { autopilot: decision, notBefore: new Date(Date.now() + decision.delayHours * 3600000).toISOString() } : {}) } as unknown as Prisma.InputJsonValue,
     },
   });
 }
@@ -73,6 +75,7 @@ export async function deliverMarketingEmail(id: string): Promise<"sent" | "skipp
       return "skipped";
     }
   }
+  if (metadata.notBefore && Date.parse(metadata.notBefore) > Date.now()) return "queued";
   // Reserve at most 30 attempts/day for marketing, leaving transactional headroom
   // on the currently observed 100/day plan. Other projects share the provider cap.
   if (!await takeMarketingSlot("send", "all", 30)) return "queued";
@@ -120,13 +123,20 @@ export async function processMarketingQueue() {
     where: { confirmedAt: { not: null }, unsubscribedAt: null, suppressedAt: null, completedAt: null },
     orderBy: { confirmedAt: "asc" }, take: 50,
   });
+  let plan: Awaited<ReturnType<typeof planMarketingEmails>> | undefined;
   for (const lead of leads) {
     const history = await client.emailDelivery.findMany({ where: { recipient: lead.email, category: "lead_nurture", status: { in: [...accepted] } }, select: { templateId: true, sentAt: true } });
     // Recover confirmation->queue interruption without duplicating the first email.
     if (!history.some(e => e.templateId === "marketing_kit")) { await queueMarketingEmail(lead, "kit"); continue; }
     if (history.some(e => e.sentAt && Date.now() - e.sentAt.getTime() < 24 * 3600000)) continue;
     const next = FOLLOW_UPS.find(s => !history.some(e => e.templateId === `marketing_${s.stage}`));
-    if (next && Date.now() - lead.confirmedAt!.getTime() >= next.days * 86400000) await queueMarketingEmail(lead, next.stage);
+    if (next && Date.now() - lead.confirmedAt!.getTime() >= next.days * 86400000) {
+      const idempotencyKey = `ap3k:marketing:${lead.id}:${next.stage}`;
+      if (await client.emailDelivery.findUnique({ where: { idempotencyKey }, select: { id: true } })) continue;
+      plan ??= await planMarketingEmails();
+      const key = `${lead.audience === "ecommerce" ? "ecommerce" : "creator"}_${next.stage}` as const;
+      await queueMarketingEmail(lead, next.stage, "", { ...plan.plan[key], source: plan.source });
+    }
   }
   const pending = await client.emailDelivery.findMany({ where: { category: "lead_nurture", providerMessageId: null, status: { in: ["PENDING", "FAILED"] }, OR: [{ errorCode: null }, { errorCode: { in: ["marketing_retry", "marketing_sending"] } }] }, orderBy: { createdAt: "asc" }, take: 15 });
   let sent = 0;

@@ -17,7 +17,7 @@ function campaignUrl(path: string, stage: string) {
 }
 const escape = (value: string) => value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 
-export function marketingEmail(stage: MarketingStage, audience: string, confirmationUrl: string, unsubscribeUrl: string) {
+export function marketingEmail(stage: MarketingStage, audience: string, confirmationUrl: string, unsubscribeUrl: string, variant: "standard" | "checklist" = "standard") {
   const ecommerce = audience === "ecommerce";
   const content = {
     confirm: {
@@ -41,6 +41,26 @@ export function marketingEmail(stage: MarketingStage, audience: string, confirma
       label: "Create my AP3K account", url: campaignUrl("/sign-up", "launch"),
     },
   }[stage];
+  if (variant === "checklist" && stage === "test") {
+    content.subject = ecommerce ? "Your product-link campaign test checklist" : "Your resource-delivery test checklist";
+    content.paragraphs = [
+      "Before promoting your post, test the whole journey from a second Instagram account.",
+      "1. Comment the exact keyword. Check both the inbox and message requests.",
+      ecommerce ? "2. Open the product link inside Instagram. Check the product, current price, and availability." : "2. Open the resource link inside Instagram. Make sure it delivers the exact resource promised in the post.",
+      "3. Leave an unrelated comment. Your keyword automation should ignore it.",
+      "Fix any delivery or destination problem before you spend on promotion."
+    ];
+  }
+  if (variant === "checklist" && stage === "launch") {
+    content.subject = ecommerce ? "Set up one product-link campaign with AP3K" : "Set up one resource-delivery campaign with AP3K";
+    content.paragraphs = [
+      "Start with one campaign you can test from beginning to end.",
+      "1. Create your AP3K account and connect an Instagram Business or Creator account.",
+      ecommerce ? "2. Choose a post, use PRODUCT as the keyword, and add your product link." : "2. Choose a post, use GUIDE as the keyword, and add your resource link.",
+      "3. Test from a second account before promoting the post.",
+      "Start free and check the current pricing page before upgrading. This is the final email in your launch-kit series. Reply if you need help with a step."
+    ];
+  }
   const footer = `${COMPANY.legalName} · ${COMPANY.mailingAddress}`;
   const reason = stage === "confirm" ? "You requested this confirmation on ap3k.com." : "You confirmed the AP3K launch-kit email series. This email includes AP3K product education and offers.";
   const text = [content.subject, ...content.paragraphs, `${content.label}: ${content.url}`, reason, `Unsubscribe: ${unsubscribeUrl}`, footer, "Questions? Reply to support@ap3k.com."].join("\n\n");
