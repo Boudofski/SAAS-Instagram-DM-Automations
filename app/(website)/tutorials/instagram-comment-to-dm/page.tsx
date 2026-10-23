@@ -6,7 +6,7 @@ import Breadcrumbs from '@/components/seo/breadcrumbs';
 import { POST_AUTOMATION_VIDEO as video } from '@/lib/tutorial-video';
 const url = `https://ap3k.com${video.path}`;
 export const metadata: Metadata = {
-  title: `${video.title} — Video Tutorial | AP3K`, description: video.description,
+  title: 'Instagram Comment-to-DM Video Tutorial | AP3K', description: 'Watch AP3K create a post automation: choose a post, set a keyword, configure the reply and DM, add a link, publish and test delivery.',
   alternates: {canonical: url, languages: {en:url,'x-default':url}},
   openGraph: {title:video.title,description:video.description,url,type:'video.other',images:[video.thumbnail]},
   twitter: {card:'summary_large_image',title:video.title,description:video.description,images:[video.thumbnail]},

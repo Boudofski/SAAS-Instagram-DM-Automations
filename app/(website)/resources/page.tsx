@@ -13,6 +13,8 @@ export const metadata: Metadata = {
 };
 
 const ESSENTIAL_GUIDES = [
+  ["Instagram automation: setup, limits and testing", "/instagram-automation-guide"],
+  ["Set up Instagram comment-to-DM automation", "/blog/instagram-comment-to-dm-automation"],
   ["Browse Instagram automation articles", "/blog"],
   ["Compare Instagram DM automation tools", "/blog/compare-instagram-dm-automation-tools"],
   ["Is Instagram DM automation safe?", "/blog/is-instagram-dm-automation-safe"],

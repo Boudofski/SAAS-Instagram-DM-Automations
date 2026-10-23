@@ -34,6 +34,7 @@ export function buildSitemap(
   ));
   const companyUpdated = new Date(`${COMPANY.detailsUpdated}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/instagram-automation-guide`, lastModified: new Date('2026-10-23T00:00:00Z'), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/about`, lastModified: publicContentUpdated, changeFrequency: "monthly", priority: 0.6 },
     {
       url: baseUrl,

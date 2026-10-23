@@ -5,6 +5,7 @@ import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
+  '/blog/accessible-instagram-dm-links-mobile',
   "/blog/ap3k-free-vs-pro-vs-business",
   "/blog/pause-restart-instagram-automations",
   "/blog/ap3k-ai-offers-policies-faq-template",
@@ -177,7 +178,7 @@ export function localizePublicPath(pathname: string, locale: Locale): string {
 export function localizedLocalesForPath(pathname: string): readonly Locale[] {
   const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(pathname.split(/[?#]/)[0])).replace(/\/$/, "") || "/";
   if (isEnglishOnlyArticle(cleanPath)) return ["en"];
-  if (cleanPath === "/" || cleanPath === "/pricing" || /^\/(sign-in|sign-up)(\/|$)/.test(cleanPath)) return SUPPORTED_LOCALES;
+  if (cleanPath === "/" || cleanPath === "/pricing" || cleanPath === "/instagram-automation-guide" || /^\/(sign-in|sign-up)(\/|$)/.test(cleanPath)) return SUPPORTED_LOCALES;
   return FULLY_TRANSLATED_LOCALES;
 }
 

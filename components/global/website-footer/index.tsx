@@ -7,6 +7,7 @@ import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
 import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
 import Link from "next/link";
+import { AUTOMATION_GUIDE } from '@/lib/i18n/automation-guide';
 
 function TikTokIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><path d="M16.6 1h-3.7v14.8a3.2 3.2 0 1 1-2.8-3.2V8.9a7 7 0 1 0 6.5 7V8.4a9 9 0 0 0 5.2 1.7V6.4A5.3 5.3 0 0 1 16.6 1Z" /></svg>;
@@ -55,6 +56,7 @@ export default function WebsiteFooter() {
             <p className="max-w-sm text-sm leading-6 text-slate-500 dark:text-rf-muted">
               {t("footerDescription")}
             </p>
+            <Link href={href('/instagram-automation-guide')} className={`${linkClass} text-sm underline underline-offset-4`}>{AUTOMATION_GUIDE[locale].title}</Link>
             <div
               className="mt-2 flex max-w-full items-center gap-1"
               aria-label="AP3K social media"

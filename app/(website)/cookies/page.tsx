@@ -4,13 +4,21 @@ import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
+import { getServerLocale } from '@/lib/i18n/server';
 
 const pageMetadata: Metadata = {
   title: "Cookie Policy — AP3K",
   description: "How AP3K uses necessary storage and optional analytics and marketing technologies.",
   alternates: { canonical: "/cookies" },
 };
-export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/cookies"); }
+export function generateMetadata(): Metadata {
+  const result = localizedMetadata(pageMetadata, '/cookies');
+  const locale = getServerLocale();
+  // Spanish and Portuguese otherwise share an identical translated title.
+  if (locale === 'es') result.title = 'Política de cookies y preferencias | AP3K';
+  if (locale === 'pt') result.title = 'Política de cookies e preferências | AP3K';
+  return result;
+}
 
 const sections = [
   ["Necessary storage", "AP3K uses essential browser storage and cookies for authentication, security, preferences, and core product functions. These cannot be disabled through the optional tracking control."],

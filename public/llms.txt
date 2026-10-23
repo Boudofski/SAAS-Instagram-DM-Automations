@@ -1,0 +1,24 @@
+# AP3K
+
+> AP3K is a SaaS for Instagram Business and Creator accounts. It lets account owners configure replies to eligible comments and DMs, deliver requested links, and inspect campaign activity. An automation requires a supported account connection and an eligible interaction. A preview is not a delivery receipt.
+
+Official site: https://ap3k.com/
+Last reviewed: 2026-10-23
+
+## Start here
+- Instagram automation guide (English, French, Spanish, German, Dutch, Portuguese): https://ap3k.com/instagram-automation-guide
+- Current AP3K pricing and limits: https://ap3k.com/pricing
+- How AP3K works: https://ap3k.com/blog/how-ap3k-works-step-by-step
+- Comment-to-DM setup and delivery tests: https://ap3k.com/blog/instagram-comment-to-dm-automation
+- Mobile DM link usability checklist: https://ap3k.com/blog/accessible-instagram-dm-links-mobile
+- Help and product docs: https://ap3k.com/docs
+- Company and contact details: https://ap3k.com/about
+
+## Product facts
+- Free: one Instagram account, up to five active automations, 500 automated actions each month, and no live AI replies.
+- Pro and Business have separate monthly automated-action and AI-reply allowances; current amounts and billing terms are on the pricing page.
+- Connected Instagram account capacity is not teammate-seat access. AP3K does not currently provide team seats.
+- A public comment reply and a private DM are separate actions. Delivery depends on account permissions, platform rules, and the configured campaign.
+- AP3K does not sell Instagram followers or guarantee reach, message delivery, leads, or revenue.
+
+This file is a human-readable discovery aid; the HTML pages, sitemap, and current pricing page remain authoritative.
