@@ -1,4 +1,5 @@
 import { PRACTICAL_PRODUCT_GUIDES } from "./content/practical-product-guides";
+import { MOBILE_DM_GUIDE } from './content/mobile-dm-guide';
 import { LAUNCH_MEASUREMENT_GUIDES } from "./content/launch-measurement-guides";
 import { SEO_COMPARISON_POSTS } from "./content/seo-comparisons";
 import importedPosts from "./content/imported-blog/index.json";
@@ -46,6 +47,7 @@ export type BlogPost = {
 };
 
 export const LEGACY_BLOG_POSTS: BlogPost[] = [
+  MOBILE_DM_GUIDE,
   ...PRACTICAL_PRODUCT_GUIDES,
   ...LAUNCH_MEASUREMENT_GUIDES,
   COMMENT_DM_POSTS[0],

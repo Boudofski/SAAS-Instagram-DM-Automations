@@ -90,8 +90,11 @@ class Page(html.parser.HTMLParser):
 def clean_url(value, base=BASE):
     parsed = urllib.parse.urlsplit(urllib.parse.urljoin(base, value))
     if parsed.scheme not in ('http', 'https') or parsed.netloc != 'ap3k.com': return None
-    if parsed.query: return None
-    return urllib.parse.urlunsplit(('https', parsed.netloc, parsed.path or '/', '', ''))
+    # Canonical archive pages use ?page=N. Keep those while discarding tracking,
+    # search and session variants that must not become crawl targets.
+    params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    if params and (set(params) != {'page'} or len(params['page']) != 1 or not params['page'][0].isdigit() or int(params['page'][0]) < 2): return None
+    return urllib.parse.urlunsplit(('https', parsed.netloc, parsed.path or '/', parsed.query, ''))
 
 
 def main():

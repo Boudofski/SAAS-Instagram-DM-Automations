@@ -15,7 +15,7 @@ export const SITE_METADATA: Record<
       "Transformez les commentaires Instagram en DM automatiques avec AP3K. Envoyez des liens, collectez des prospects et commencez gratuitement.",
   },
   es: {
-    title: "AP3K — Herramienta de automatización de DM de Instagram (gratis)",
+    title: "AP3K — Automatización de DM en Instagram (gratis)",
     description:
       "Convierte comentarios de Instagram en mensajes directos automáticos. Envía enlaces, capta contactos y empieza gratis con AP3K.",
   },

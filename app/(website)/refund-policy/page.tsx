@@ -4,13 +4,19 @@ import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
+import { getServerLocale } from '@/lib/i18n/server';
+import { translateUi } from '@/lib/i18n/translate';
 
 const pageMetadata: Metadata = {
   title: "Refund Policy — AP3K",
-  description: "AP3K subscription cancellation and refund policy.",
+  description: "Read how AP3K subscription cancellation works, when paid access ends and how to request a review for a duplicate charge, billing error or service failure.",
   alternates: { canonical: "/refund-policy" },
 };
-export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/refund-policy"); }
+export function generateMetadata(): Metadata {
+  const metadata = localizedMetadata(pageMetadata, '/refund-policy');
+  metadata.description = translateUi(pageMetadata.description!, getServerLocale());
+  return metadata;
+}
 
 export default function RefundPolicyPage() {
   return (
