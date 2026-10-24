@@ -21,6 +21,13 @@ export const COMPANY_SCHEMA = {
   name: COMPANY.brand,
   legalName: COMPANY.legalName,
   url: "https://ap3k.com",
+  sameAs: [
+    "https://www.instagram.com/ap3kautomation",
+    "https://www.facebook.com/ap3kautomation/",
+    "https://www.linkedin.com/company/ap3kautomation",
+    "https://www.youtube.com/@AP3Kautomation",
+    "https://www.tiktok.com/@ap3kautomation",
+  ],
   foundingDate: COMPANY.formationDate,
   email: COMPANY.supportEmail,
   logo: {

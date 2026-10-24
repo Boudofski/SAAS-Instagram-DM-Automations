@@ -22,5 +22,17 @@ describe("website footer", () => {
     expect(html).toContain("support@ap3k.com");
     expect(html).toContain("refund-policy");
     expect(html).not.toContain("popularGuides");
+
+    for (const [language, href] of [
+      ["en", "/"],
+      ["fr", "/fr"],
+      ["es", "/es"],
+      ["de", "/de"],
+      ["nl", "/nl"],
+      ["pt", "/pt"],
+    ]) {
+      expect(html).toContain(`href="${href}"`);
+      expect(html).toContain(`hrefLang="${language}"`);
+    }
   });
 });
