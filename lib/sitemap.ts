@@ -1,3 +1,4 @@
+import { blogArchiveAlternates } from "@/lib/localized-blog-archive";
 import { getEditorialArchive } from "@/lib/blog-archive";
 import { COMPARISONS, comparisonPath } from "@/lib/comparisons";
 import { SOLUTIONS } from "@/lib/solutions";
@@ -26,8 +27,9 @@ export function buildSitemap(
   // Significant public-copy and navigation updates shipped on this date.
   // Keep this fixed to the release date; never stamp every crawl with today.
   const publicContentUpdated = new Date("2026-10-05T00:00:00Z");
+  const localizedDiscoveryUpdated = new Date("2026-10-24T00:00:00Z");
   const archiveUpdated = new Date(Math.max(
-    new Date("2026-10-09T00:00:00Z").getTime(),
+    localizedDiscoveryUpdated.getTime(),
     ...getEditorialArchive(posts).posts.filter(post => !post.noIndex)
       .map(post => new Date(`${post.updatedAt}T00:00:00Z`).getTime())
       .filter(Number.isFinite),
@@ -38,7 +40,7 @@ export function buildSitemap(
     { url: `${baseUrl}/about`, lastModified: publicContentUpdated, changeFrequency: "monthly", priority: 0.6 },
     {
       url: baseUrl,
-      lastModified: publicContentUpdated,
+      lastModified: localizedDiscoveryUpdated,
       changeFrequency: "weekly",
       priority: 1,
     },
@@ -188,20 +190,22 @@ export function buildSitemap(
   ].flatMap((page) => {
     const parsed = new URL(page.url);
     const path = `${parsed.pathname}${parsed.search}`;
+    const archivePage = parsed.pathname === "/blog" ? Number(parsed.searchParams.get("page") || "1") : null;
+    const archiveLanguages = archivePage ? blogArchiveAlternates(posts, archivePage) : null;
     const englishOnly =
       isEnglishOnlyArticle(path) ||
       posts.some(
         (post) => post.contentLocale === "en" && path === `/blog/${post.slug}`,
       );
-    const languages = englishOnly
+    const languages = archiveLanguages ?? (englishOnly
       ? { en: `${baseUrl}${path}`, "x-default": `${baseUrl}${path}` }
       : Object.fromEntries(
           Object.entries(localeAlternates(path)).map(([language, value]) => [
             language,
             `${baseUrl}${value}`,
           ]),
-        );
-    return (englishOnly ? (["en"] as const) : localizedLocalesForPath(path)).map(
+        ));
+    return (englishOnly ? (["en"] as const) : localizedLocalesForPath(path)).filter(locale => !archiveLanguages || locale in archiveLanguages).map(
       (locale) => ({
         ...page,
         url: `${baseUrl}${localizePublicPath(path, locale)}`,

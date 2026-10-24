@@ -6,6 +6,7 @@ import LocalizedCopy from "@/components/i18n/server-localized-copy";
 import { HOME_FAQ } from "@/lib/i18n/home-faq";
 import HomeFaq from "@/components/website/home-faq";
 import HomeAutomationChoices from "@/components/website/home-automation-choices";
+import HomeLearning from "@/components/website/home-learning";
 import { LOCALE_DETAILS, localeAlternates, localizePublicPath } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import { COMPANY_SCHEMA } from "@/lib/company";
@@ -151,6 +152,8 @@ export default async function LandingPage() {
           <HomeUniqueResponses />
 
           <HomeAutomationChoices />
+
+          <HomeLearning />
 
           <HomeFaq />
 

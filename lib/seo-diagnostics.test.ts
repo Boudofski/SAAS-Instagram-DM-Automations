@@ -3,6 +3,9 @@ import fs from "node:fs";
 import { buildSitemap as sitemap } from "@/lib/sitemap";
 import robots from "@/app/robots";
 import { localizedLocalesForPath, localizePublicPath, stripLocaleFromPath } from "@/lib/i18n/config";
+import { BLOG_POSTS } from './blog';
+import { blogArchiveAlternates, getLocalizedBlogArchive } from './localized-blog-archive';
+import { getBlogPage } from './blog-pagination';
 
 describe("public indexing contracts", () => {
   it("lists unique public URLs with complete reciprocal language alternates", () => {
@@ -13,9 +16,12 @@ describe("public indexing contracts", () => {
       const parsed = new URL(page.url);
       const path = stripLocaleFromPath(`${parsed.pathname}${parsed.search}`);
       expect(path).not.toMatch(/^\/(api|dashboard|admin|sign-in|sign-up|payment)(\/|$)/);
-      for (const locale of localizedLocalesForPath(path)) {
-        const expected = `https://ap3k.com${localizePublicPath(path, locale)}`;
-        expect(page.alternates?.languages?.[locale]).toBe(expected);
+      const locales = parsed.pathname.endsWith('/blog')
+        ? Object.keys(blogArchiveAlternates(BLOG_POSTS, Number(parsed.searchParams.get('page') || '1'))).filter(locale => locale !== 'x-default')
+        : localizedLocalesForPath(path);
+      for (const locale of locales) {
+        const expected = `https://ap3k.com${localizePublicPath(path, locale as Parameters<typeof localizePublicPath>[1])}`;
+        expect(page.alternates?.languages?.[locale as Parameters<typeof localizePublicPath>[1]]).toBe(expected);
         expect(urls.has(expected)).toBe(true);
       }
       expect(page.alternates?.languages?.['x-default']).toBe(`https://ap3k.com${path}`);
@@ -24,10 +30,13 @@ describe("public indexing contracts", () => {
   it("lists every canonical blog archive page and keeps article dates truthful", () => {
     const pages = sitemap();
     for (const locale of localizedLocalesForPath("/blog")) {
-      for (let page = 2; page <= 6; page++) {
+      const totalPages = getBlogPage(undefined, getLocalizedBlogArchive(BLOG_POSTS, locale).posts.length)!.pages;
+      for (let page = 2; page <= totalPages; page++) {
         const prefix = locale === "en" ? "" : `/${locale}`;
         expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog?page=${page}`)).toBe(true);
       }
+      const prefix = locale === 'en' ? '' : `/${locale}`;
+      expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog?page=${totalPages + 1}`)).toBe(false);
     }
     const hub = pages.find(item => item.url === "https://ap3k.com/blog/instagram-comment-to-dm-automation");
     expect(hub?.lastModified).toEqual(new Date("2026-10-05T00:00:00Z"));

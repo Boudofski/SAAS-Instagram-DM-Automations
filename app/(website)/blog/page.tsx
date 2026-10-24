@@ -1,19 +1,21 @@
+import { BLOG_ARCHIVE_UI } from "@/lib/i18n/blog-archive-ui";
 import { blogArchiveCopy } from "@/lib/blog-archive-metadata";
 import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import BlogCover from "@/components/website/blog-cover";
 import s from "@/components/website/public-pages.module.css";
 import { notFound, redirect } from "next/navigation";
-import { getEditorialArchive, blogPaginationItems, getBlogDirectory } from "@/lib/blog-archive";
+import { blogPaginationItems, getBlogDirectory } from "@/lib/blog-archive";
 import e from "@/components/website/blog-editorial.module.css";
 import { Search, ArrowLeft, ArrowRight } from "lucide-react";
 import { blogPagePath, getBlogPage } from "@/lib/blog-pagination";
 import { getServerLocale } from "@/lib/i18n/server";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { localizedMetadata } from "@/lib/i18n/page-metadata";
-import LocalizedCopy from "@/components/i18n/localized-copy";
+import LocalizedCopy from "@/components/i18n/server-localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
+import { getLocalizedBlogArchive, blogArchiveAlternates } from "@/lib/localized-blog-archive";
 import { getPublishedPosts } from "@/lib/editorial-server";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +42,9 @@ type Props = {
 };
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const searchParams = await props.searchParams;
-  const copy = blogArchiveCopy(getServerLocale());
+  const locale = getServerLocale();
+  const published = await getPublishedPosts();
+  const copy = blogArchiveCopy(locale);
   const query =
     typeof searchParams.q === "string"
       ? searchParams.q.trim().slice(0, 120)
@@ -52,11 +56,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     };
   const pagination = getBlogPage(
     searchParams.page,
-    getEditorialArchive(await getPublishedPosts()).posts.length,
+    getLocalizedBlogArchive(published, locale).posts.length,
   );
   if (!pagination) return { robots: { index: false, follow: true } };
   const pageCopy = blogArchiveCopy(getServerLocale(), pagination.page);
-  return localizedMetadata(
+  const metadata = localizedMetadata(
     {
       ...pageMetadata,
       title: pageCopy.title,
@@ -65,6 +69,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     },
     blogPagePath(pagination.page),
   );
+  return { ...metadata, alternates: { ...metadata.alternates, languages: blogArchiveAlternates(published, pagination.page) } };
 }
 
 export default async function BlogPage(props: Props) {
@@ -73,7 +78,8 @@ export default async function BlogPage(props: Props) {
     typeof searchParams.q === "string"
       ? searchParams.q.trim().slice(0, 120)
       : "";
-  const { posts: allPosts, featured } = getEditorialArchive(await getPublishedPosts(), query);
+  const locale = getServerLocale();
+  const { posts: allPosts, featured } = getLocalizedBlogArchive(await getPublishedPosts(), locale, query);
   const pagination = getBlogPage(searchParams.page, allPosts.length);
   if (!pagination) notFound();
   if (searchParams.page === "1")
@@ -83,16 +89,9 @@ export default async function BlogPage(props: Props) {
         getServerLocale(),
       ),
     );
-  const locale = getServerLocale();
   const copy = blogArchiveCopy(locale, pagination.page);
-  const posts = (
-    locale === "en"
-      ? allPosts
-      : [
-          ...allPosts.filter((p) => !p.contentLocale),
-          ...allPosts.filter((p) => p.contentLocale),
-        ]
-  ).slice(pagination.start, pagination.end);
+  const ui = BLOG_ARCHIVE_UI[locale];
+  const posts = allPosts.slice(pagination.start, pagination.end);
   const featuredOnPage = featured.filter(item => !posts.some(post => post.slug === item.slug)).slice(0, 2);
   const collection = {
     "@context": "https://schema.org",
@@ -169,12 +168,13 @@ export default async function BlogPage(props: Props) {
             <p>
               {copy.intro}
             </p>
+            {locale !== "en" && <p className="mt-4 text-sm">{ui.languageNote}{" "}<Link href="/blog" hrefLang="en" translate="no" className="underline underline-offset-4">{ui.english}</Link></p>}
           </header>
           {!query && pagination.page === 1 && featuredOnPage.length > 0 && (
             <section>
-              <h2>Featured Posts</h2>
+              <h2>{ui.featured}</h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Read from our top picks
+                {ui.picks}
               </p>
               <div className={e.featuredGrid}>{featuredOnPage.map(card)}</div>
             </section>
@@ -186,7 +186,7 @@ export default async function BlogPage(props: Props) {
           >
             <Search aria-hidden="true" size={20} />
             <label htmlFor="blog-search" className="sr-only">
-              Search blogs
+              {ui.searchLabel}
             </label>
             <input
               id="blog-search"
@@ -194,42 +194,42 @@ export default async function BlogPage(props: Props) {
               name="q"
               defaultValue={query}
               maxLength={120}
-              placeholder="Search blogs"
+              placeholder={ui.searchLabel}
               className={e.searchInput}
             />
             <button type="submit" className={s.button}>
-              Search
+              {ui.search}
             </button>
           </form>
           <section>
             <h2 className={!query ? "sr-only" : undefined}>
               {query
-                ? `Results for “${query}”`
+                ? `${ui.results} “${query}”`
                 : pagination.page === 1
-                  ? "Latest articles"
-                  : `Articles · Page ${pagination.page}`}
+                  ? ui.latest
+                  : `${ui.articles} · ${copy.pageLabel} ${pagination.page}`}
             </h2>
             {posts.length === 0 && (
               <p className="my-6 text-sm">
-                No articles matched. Try a broader search or{" "}
-                <Link href="/blog" className="underline">
-                  browse all articles
+                {ui.empty}{" "}
+                <Link href={localizePublicPath("/blog", locale)} className="underline">
+                  {ui.browse}
                 </Link>
                 .
               </p>
             )}
             <div className={e.grid}>{posts.map(card)}</div>
           </section>
-          {pagination.pages > 1 && <nav className={e.pagination} aria-label="Blog pagination">
-            {pagination.page > 1 && <Link href={pageHref(pagination.page - 1)} aria-label="Previous page"><ArrowLeft size={16} /><span>Previous</span></Link>}
+          {pagination.pages > 1 && <nav className={e.pagination} aria-label={ui.pagination}>
+            {pagination.page > 1 && <Link href={pageHref(pagination.page - 1)} aria-label={ui.previous}><ArrowLeft size={16} /><span>{ui.previous}</span></Link>}
             {blogPaginationItems(pagination.page, pagination.pages).map((page, index) => page === "gap"
               ? <span key={`gap-${index}`} aria-hidden="true">…</span>
-              : <Link key={page} href={pageHref(page)} prefetch={false} aria-label={`Page ${page}`} aria-current={page === pagination.page ? "page" : undefined}>{page}</Link>)}
-            {pagination.page < pagination.pages && <Link href={pageHref(pagination.page + 1)} aria-label="Next page"><span>Next</span><ArrowRight size={16} /></Link>}
+              : <Link key={page} href={pageHref(page)} prefetch={false} aria-label={`${copy.pageLabel} ${page}`} aria-current={page === pagination.page ? "page" : undefined}>{page}</Link>)}
+            {pagination.page < pagination.pages && <Link href={pageHref(pagination.page + 1)} aria-label={ui.next}><span>{ui.next}</span><ArrowRight size={16} /></Link>}
           </nav>}
           {!query && pagination.page === 1 && <section className="mt-12 rounded-2xl border border-slate-200 p-5 sm:p-8 dark:border-white/10" aria-labelledby="all-guides-title">
-            <h2 id="all-guides-title">Browse all guides by topic</h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Find setup instructions, campaign examples and troubleshooting guides without paging through the archive.</p>
+            <h2 id="all-guides-title">{ui.directory}</h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{ui.directoryIntro}</p>
             <div className="mt-5 space-y-3">
               {getBlogDirectory(allPosts).map(group => <details key={group.category} className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
                 <summary className="cursor-pointer font-semibold">{group.category} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">({group.articles.length})</span></summary>

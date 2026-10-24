@@ -1,3 +1,4 @@
+import { blogPostsForLocale } from "@/lib/localized-blog-archive";
 import ProductVideo from "@/components/website/product-video";
 import { QUICK_DEMO_POSTS } from "@/lib/product-videos";
 import { TutorialVideo } from "@/components/docs/tutorial-video";
@@ -118,7 +119,8 @@ export default async function BlogPostPage(props: Props) {
     /^\/(fr|es|de|pt)\//.test((await headers()).get("x-ap3k-request-path") || "")
   )
     permanentRedirect(`/blog/${post.slug}`);
-  const publicPosts = (await getPublishedPosts()).filter(p => !p.noIndex);
+  const locale = post.contentLocale ?? getServerLocale();
+  const publicPosts = blogPostsForLocale(await getPublishedPosts(), locale).filter(p => !p.noIndex);
   const importedHtml = post.importedArchive ? await getImportedArticleHtml(post.slug) : null;
 
   const related = post.related
@@ -138,7 +140,6 @@ export default async function BlogPostPage(props: Props) {
   const products = COMMERCIAL_PAGES.filter((page) =>
     page.tutorials.some((guide) => guide.slug === post.slug),
   );
-  const locale = post.contentLocale ?? getServerLocale();
   const cover = getArticleImage(post);
   const articleImage = articleImageUrl(cover);
   const articleImageWidth = cover.width;
