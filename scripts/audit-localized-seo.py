@@ -63,7 +63,9 @@ def main():
     args = parser.parse_args()
     _, _, _, xml = fetch(ROOT + '/sitemap.xml')
     urls = [el.text for el in ET.fromstring(xml).findall('{*}url/{*}loc')]
-    known = set(urls)
+    # The origin with and without '/' is the same root document.
+    normalize = lambda url: ROOT if url == ROOT + '/' else url
+    known = {normalize(url) for url in urls}
     targets = [url for url in urls if urlparse(url).path.split('/')[1] in ('fr', 'es', 'de')]
     if len(targets) > 250: raise RuntimeError('Unexpected sitemap expansion; review before crawling more than 250 URLs')
 
@@ -82,7 +84,7 @@ def main():
             if not page.title or len(page.h1) != 1 or not page.h1[0].strip(): result['errors'].append('missing title or invalid H1')
             if any('noindex' in value.lower() for value in [*page.robots, headers.get('X-Robots-Tag', '')]): result['errors'].append('noindex')
             if page.alternates.get(locale) != url: result['errors'].append('missing self language alternate')
-            if any(target not in known for target in page.alternates.values()): result['errors'].append('language alternate missing from sitemap')
+            if any(normalize(target) not in known for target in page.alternates.values()): result['errors'].append('language alternate missing from sitemap')
         except Exception as error:
             result['errors'].append(str(error))
         return result

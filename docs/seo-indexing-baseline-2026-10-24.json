@@ -1,0 +1,788 @@
+{
+  "inspectedOn": "2026-10-24",
+  "note": "Historical Google Search Console status; not a post-release indexing result.",
+  "counts": {
+    "fr": {
+      "URL is unknown to Google": 5,
+      "Crawled - currently not indexed": 2,
+      "Discovered - currently not indexed": 21,
+      "Submitted and indexed": 21
+    },
+    "es": {
+      "Discovered - currently not indexed": 14,
+      "Crawled - currently not indexed": 1,
+      "Submitted and indexed": 33,
+      "URL is unknown to Google": 1
+    },
+    "de": {
+      "Submitted and indexed": 29,
+      "Discovered - currently not indexed": 16,
+      "Crawled - currently not indexed": 1,
+      "URL is unknown to Google": 3
+    }
+  },
+  "urls": [
+    {
+      "url": "https://ap3k.com/fr/instagram-automation-guide",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-automation-guide",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-automation-guide",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-10-23T22:11:19Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-automation-guide"
+    },
+    {
+      "url": "https://ap3k.com/fr",
+      "coverage": "Crawled - currently not indexed",
+      "lastCrawl": "2026-10-19T01:23:25Z",
+      "googleCanonical": "https://ap3k.com/fr"
+    },
+    {
+      "url": "https://ap3k.com/es",
+      "coverage": "Crawled - currently not indexed",
+      "lastCrawl": "2026-10-19T00:05:14Z",
+      "googleCanonical": "https://ap3k.com/es"
+    },
+    {
+      "url": "https://ap3k.com/de",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-19T20:25:01Z",
+      "googleCanonical": "https://ap3k.com/de"
+    },
+    {
+      "url": "https://ap3k.com/fr/pricing",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/pricing",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/pricing",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:00:20Z",
+      "googleCanonical": "https://ap3k.com/fr/blog"
+    },
+    {
+      "url": "https://ap3k.com/es/blog",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:04:15Z",
+      "googleCanonical": "https://ap3k.com/es/blog"
+    },
+    {
+      "url": "https://ap3k.com/de/blog",
+      "coverage": "Crawled - currently not indexed",
+      "lastCrawl": "2026-10-23T19:24:41Z",
+      "googleCanonical": "https://ap3k.com/de/blog"
+    },
+    {
+      "url": "https://ap3k.com/fr/contact",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/contact",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:32:53Z",
+      "googleCanonical": "https://ap3k.com/es/contact"
+    },
+    {
+      "url": "https://ap3k.com/de/contact",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/privacy",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T14:47:10Z",
+      "googleCanonical": "https://ap3k.com/fr/privacy"
+    },
+    {
+      "url": "https://ap3k.com/es/privacy",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:53:18Z",
+      "googleCanonical": "https://ap3k.com/es/privacy"
+    },
+    {
+      "url": "https://ap3k.com/de/privacy",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-15T23:11:45Z",
+      "googleCanonical": "https://ap3k.com/de/privacy"
+    },
+    {
+      "url": "https://ap3k.com/fr/terms",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T08:06:06Z",
+      "googleCanonical": "https://ap3k.com/fr/terms"
+    },
+    {
+      "url": "https://ap3k.com/es/terms",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T04:31:22Z",
+      "googleCanonical": "https://ap3k.com/es/terms"
+    },
+    {
+      "url": "https://ap3k.com/de/terms",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T08:13:50Z",
+      "googleCanonical": "https://ap3k.com/de/terms"
+    },
+    {
+      "url": "https://ap3k.com/fr/cookies",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T08:08:40Z",
+      "googleCanonical": "https://ap3k.com/fr/cookies"
+    },
+    {
+      "url": "https://ap3k.com/es/cookies",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T09:40:49Z",
+      "googleCanonical": "https://ap3k.com/es/cookies"
+    },
+    {
+      "url": "https://ap3k.com/de/cookies",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:02:41Z",
+      "googleCanonical": "https://ap3k.com/de/cookies"
+    },
+    {
+      "url": "https://ap3k.com/fr/refund-policy",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:32:14Z",
+      "googleCanonical": "https://ap3k.com/fr/refund-policy"
+    },
+    {
+      "url": "https://ap3k.com/es/refund-policy",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:54:10Z",
+      "googleCanonical": "https://ap3k.com/es/refund-policy"
+    },
+    {
+      "url": "https://ap3k.com/de/refund-policy",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/data-deletion",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/data-deletion",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-25T08:59:20Z",
+      "googleCanonical": "https://ap3k.com/es/data-deletion"
+    },
+    {
+      "url": "https://ap3k.com/de/data-deletion",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:53:16Z",
+      "googleCanonical": "https://ap3k.com/de/data-deletion"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-dm-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T08:09:03Z",
+      "googleCanonical": "https://ap3k.com/fr/instagram-dm-automation"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-dm-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:11:34Z",
+      "googleCanonical": "https://ap3k.com/es/instagram-dm-automation"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-dm-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T04:14:09Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-dm-automation"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-comment-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:53:59Z",
+      "googleCanonical": "https://ap3k.com/fr/instagram-comment-automation"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-comment-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-19T09:15:03Z",
+      "googleCanonical": "https://ap3k.com/es/instagram-comment-automation"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-comment-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-15T23:11:01Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-comment-automation"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-comment-to-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:29:03Z",
+      "googleCanonical": "https://ap3k.com/fr/instagram-comment-to-dm"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-comment-to-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-10-09T21:41:23Z",
+      "googleCanonical": "https://ap3k.com/es/instagram-comment-to-dm"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-comment-to-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T19:05:30Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-comment-to-dm"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-auto-reply",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-auto-reply",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-auto-reply",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:41:39Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-auto-reply"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-story-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-17T09:54:02Z",
+      "googleCanonical": "https://ap3k.com/fr/instagram-story-automation"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-story-automation",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-story-automation",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-automation-for-creators",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-automation-for-creators",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:47:40Z",
+      "googleCanonical": "https://ap3k.com/es/instagram-automation-for-creators"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-automation-for-creators",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T09:47:50Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-automation-for-creators"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-automation-for-coaches",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-automation-for-coaches",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T06:55:57Z",
+      "googleCanonical": "https://ap3k.com/es/instagram-automation-for-coaches"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-automation-for-coaches",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/instagram-automation-for-ecommerce",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:24:53Z",
+      "googleCanonical": "https://ap3k.com/fr/instagram-automation-for-ecommerce"
+    },
+    {
+      "url": "https://ap3k.com/es/instagram-automation-for-ecommerce",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:08:11Z",
+      "googleCanonical": "https://ap3k.com/es/instagram-automation-for-ecommerce"
+    },
+    {
+      "url": "https://ap3k.com/de/instagram-automation-for-ecommerce",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:13:05Z",
+      "googleCanonical": "https://ap3k.com/de/instagram-automation-for-ecommerce"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog?page=2",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T11:44:51Z",
+      "googleCanonical": "https://ap3k.com/fr/blog?page=2"
+    },
+    {
+      "url": "https://ap3k.com/es/blog?page=2",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T08:07:30Z",
+      "googleCanonical": "https://ap3k.com/es/blog?page=2"
+    },
+    {
+      "url": "https://ap3k.com/de/blog?page=2",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T10:14:30Z",
+      "googleCanonical": "https://ap3k.com/de/blog?page=2"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/automatic-instagram-links-and-replies",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/automatic-instagram-links-and-replies",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T06:23:06Z",
+      "googleCanonical": "https://ap3k.com/es/blog/automatic-instagram-links-and-replies"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/automatic-instagram-links-and-replies",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:59:33Z",
+      "googleCanonical": "https://ap3k.com/de/blog/automatic-instagram-links-and-replies"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/manage-instagram-dms-and-comments-faster",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:11:35Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/manage-instagram-dms-and-comments-faster"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/manage-instagram-dms-and-comments-faster",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/manage-instagram-dms-and-comments-faster",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/instagram-dm-sales-funnel",
+      "coverage": "Crawled - currently not indexed",
+      "lastCrawl": "2026-09-16T05:15:08Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/instagram-dm-sales-funnel"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/instagram-dm-sales-funnel",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T14:28:11Z",
+      "googleCanonical": "https://ap3k.com/es/blog/instagram-dm-sales-funnel"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/instagram-dm-sales-funnel",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T06:17:34Z",
+      "googleCanonical": "https://ap3k.com/de/blog/instagram-dm-sales-funnel"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/ai-instagram-dm-autoresponder",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/ai-instagram-dm-autoresponder",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/ai-instagram-dm-autoresponder",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/compare-instagram-dm-automation-tools",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/compare-instagram-dm-automation-tools",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T11:14:13Z",
+      "googleCanonical": "https://ap3k.com/es/blog/compare-instagram-dm-automation-tools"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/compare-instagram-dm-automation-tools",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/is-instagram-dm-automation-safe",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/is-instagram-dm-automation-safe",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T10:45:35Z",
+      "googleCanonical": "https://ap3k.com/es/blog/is-instagram-dm-automation-safe"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/is-instagram-dm-automation-safe",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/automate-instagram-dms-from-comments",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/automate-instagram-dms-from-comments",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/automate-instagram-dms-from-comments",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/instagram-comment-automation-keyword-vs-any-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:52:07Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/instagram-comment-automation-keyword-vs-any-comment"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/instagram-comment-automation-keyword-vs-any-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T04:28:39Z",
+      "googleCanonical": "https://ap3k.com/es/blog/instagram-comment-automation-keyword-vs-any-comment"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/instagram-comment-automation-keyword-vs-any-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T02:49:03Z",
+      "googleCanonical": "https://ap3k.com/de/blog/instagram-comment-automation-keyword-vs-any-comment"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/instagram-comment-reply-vs-dm",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/instagram-comment-reply-vs-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T03:32:10Z",
+      "googleCanonical": "https://ap3k.com/es/blog/instagram-comment-reply-vs-dm"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/instagram-comment-reply-vs-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-15T23:46:37Z",
+      "googleCanonical": "https://ap3k.com/de/blog/instagram-comment-reply-vs-dm"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/turn-instagram-comments-into-leads",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T10:54:55Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/turn-instagram-comments-into-leads"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/turn-instagram-comments-into-leads",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T10:40:30Z",
+      "googleCanonical": "https://ap3k.com/es/blog/turn-instagram-comments-into-leads"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/turn-instagram-comments-into-leads",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-15T23:00:51Z",
+      "googleCanonical": "https://ap3k.com/de/blog/turn-instagram-comments-into-leads"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/instagram-automation-business-creator-accounts",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/instagram-automation-business-creator-accounts",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T09:13:42Z",
+      "googleCanonical": "https://ap3k.com/es/blog/instagram-automation-business-creator-accounts"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/instagram-automation-business-creator-accounts",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/how-ap3k-works-step-by-step",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T10:20:41Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/how-ap3k-works-step-by-step"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/how-ap3k-works-step-by-step",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:02:51Z",
+      "googleCanonical": "https://ap3k.com/es/blog/how-ap3k-works-step-by-step"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/how-ap3k-works-step-by-step",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:09:47Z",
+      "googleCanonical": "https://ap3k.com/de/blog/how-ap3k-works-step-by-step"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/create-instagram-keyword-campaign",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/create-instagram-keyword-campaign",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/create-instagram-keyword-campaign",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:29:19Z",
+      "googleCanonical": "https://ap3k.com/de/blog/create-instagram-keyword-campaign"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/automate-every-instagram-comment",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/automate-every-instagram-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T09:16:15Z",
+      "googleCanonical": "https://ap3k.com/es/blog/automate-every-instagram-comment"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/automate-every-instagram-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T03:55:39Z",
+      "googleCanonical": "https://ap3k.com/de/blog/automate-every-instagram-comment"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/send-link-instagram-dm-after-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T05:35:28Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/send-link-instagram-dm-after-comment"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/send-link-instagram-dm-after-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T07:10:56Z",
+      "googleCanonical": "https://ap3k.com/es/blog/send-link-instagram-dm-after-comment"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/send-link-instagram-dm-after-comment",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T08:16:34Z",
+      "googleCanonical": "https://ap3k.com/de/blog/send-link-instagram-dm-after-comment"
+    },
+    {
+      "url": "https://ap3k.com/fr/blog/instagram-comment-automation-not-working",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T04:12:59Z",
+      "googleCanonical": "https://ap3k.com/fr/blog/instagram-comment-automation-not-working"
+    },
+    {
+      "url": "https://ap3k.com/es/blog/instagram-comment-automation-not-working",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T09:51:59Z",
+      "googleCanonical": "https://ap3k.com/es/blog/instagram-comment-automation-not-working"
+    },
+    {
+      "url": "https://ap3k.com/de/blog/instagram-comment-automation-not-working",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-16T03:21:20Z",
+      "googleCanonical": "https://ap3k.com/de/blog/instagram-comment-automation-not-working"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/connect-instagram",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/connect-instagram",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T19:50:36Z",
+      "googleCanonical": "https://ap3k.com/es/help/connect-instagram"
+    },
+    {
+      "url": "https://ap3k.com/de/help/connect-instagram",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T03:19:18Z",
+      "googleCanonical": "https://ap3k.com/de/help/connect-instagram"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/reconnect-instagram",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/reconnect-instagram",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/help/reconnect-instagram",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/create-automation",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/es/help/create-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T19:53:46Z",
+      "googleCanonical": "https://ap3k.com/es/help/create-automation"
+    },
+    {
+      "url": "https://ap3k.com/de/help/create-automation",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T12:34:00Z",
+      "googleCanonical": "https://ap3k.com/de/help/create-automation"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/opening-final-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T15:28:44Z",
+      "googleCanonical": "https://ap3k.com/fr/help/opening-final-dm"
+    },
+    {
+      "url": "https://ap3k.com/es/help/opening-final-dm",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T15:39:40Z",
+      "googleCanonical": "https://ap3k.com/es/help/opening-final-dm"
+    },
+    {
+      "url": "https://ap3k.com/de/help/opening-final-dm",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/automation-troubleshooting",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/automation-troubleshooting",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T01:32:13Z",
+      "googleCanonical": "https://ap3k.com/es/help/automation-troubleshooting"
+    },
+    {
+      "url": "https://ap3k.com/de/help/automation-troubleshooting",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/ai-setup",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T15:42:50Z",
+      "googleCanonical": "https://ap3k.com/fr/help/ai-setup"
+    },
+    {
+      "url": "https://ap3k.com/es/help/ai-setup",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T15:26:29Z",
+      "googleCanonical": "https://ap3k.com/es/help/ai-setup"
+    },
+    {
+      "url": "https://ap3k.com/de/help/ai-setup",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T07:14:11Z",
+      "googleCanonical": "https://ap3k.com/de/help/ai-setup"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/ai-safety",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/es/help/ai-safety",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T17:24:25Z",
+      "googleCanonical": "https://ap3k.com/es/help/ai-safety"
+    },
+    {
+      "url": "https://ap3k.com/de/help/ai-safety",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-21T12:36:51Z",
+      "googleCanonical": "https://ap3k.com/de/help/ai-safety"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/ai-knowledge",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T03:59:32Z",
+      "googleCanonical": "https://ap3k.com/fr/help/ai-knowledge"
+    },
+    {
+      "url": "https://ap3k.com/es/help/ai-knowledge",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/help/ai-knowledge",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T03:07:58Z",
+      "googleCanonical": "https://ap3k.com/de/help/ai-knowledge"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/inbox",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/inbox",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T07:27:03Z",
+      "googleCanonical": "https://ap3k.com/es/help/inbox"
+    },
+    {
+      "url": "https://ap3k.com/de/help/inbox",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T04:11:19Z",
+      "googleCanonical": "https://ap3k.com/de/help/inbox"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/contacts-leads",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/contacts-leads",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/help/contacts-leads",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/plans-usage",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/plans-usage",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/help/plans-usage",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/billing-troubleshooting",
+      "coverage": "Submitted and indexed",
+      "lastCrawl": "2026-09-22T09:41:18Z",
+      "googleCanonical": "https://ap3k.com/fr/help/billing-troubleshooting"
+    },
+    {
+      "url": "https://ap3k.com/es/help/billing-troubleshooting",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/help/billing-troubleshooting",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/refer-earn",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/refer-earn",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/de/help/refer-earn",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/fr/help/privacy-delete",
+      "coverage": "Discovered - currently not indexed"
+    },
+    {
+      "url": "https://ap3k.com/es/help/privacy-delete",
+      "coverage": "URL is unknown to Google"
+    },
+    {
+      "url": "https://ap3k.com/de/help/privacy-delete",
+      "coverage": "Discovered - currently not indexed"
+    }
+  ]
+}
