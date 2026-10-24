@@ -93,6 +93,7 @@ export default async function LandingPage() {
   const locale = getServerLocale();
   const localizedSoftware = {
     ...softwareSchema,
+    "@id": "https://ap3k.com/#software",
     inLanguage: locale,
     url: `https://ap3k.com${localizePublicPath("/", locale)}`,
     description: SITE_METADATA[locale].description,
@@ -116,6 +117,17 @@ export default async function LandingPage() {
     alternateName: ["AP3K Instagram DM Automation", "AP3K Comment-to-DM"],
     publisher: COMPANY_SCHEMA,
   };
+  const localizedHomePage = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `https://ap3k.com${localizePublicPath("/", locale)}#webpage`,
+    url: `https://ap3k.com${localizePublicPath("/", locale)}`,
+    name: SITE_METADATA[locale].title,
+    description: SITE_METADATA[locale].description,
+    inLanguage: LOCALE_DETAILS[locale].htmlLang,
+    isPartOf: { "@id": "https://ap3k.com/#website" },
+    about: { "@id": "https://ap3k.com/#software" },
+  };
 
   return (
     <LocalizedCopy>
@@ -137,6 +149,12 @@ export default async function LandingPage() {
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(localizedHomePage).replace(/</g, "\\u003c"),
           }}
         />
         <WebsiteNav current="home" />

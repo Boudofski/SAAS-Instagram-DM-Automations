@@ -32,6 +32,6 @@ export const SITE_METADATA: Record<
   pt: {
     title: "AP3K — Ferramenta de automação de DMs do Instagram (grátis)",
     description:
-      "Transforme comentários do Instagram em DMs automáticas. Envie links, recolha contactos e comece grátis com 500 ações por mês.",
+      "O AP3K transforma comentários do Instagram em DMs automáticas. Envie links, recolha contactos e comece grátis com 500 ações por mês.",
   },
 };

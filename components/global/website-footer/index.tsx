@@ -3,7 +3,7 @@ import { usePublicUi } from "@/components/i18n/use-public-ui";
 
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
-import { localizePublicPath } from "@/lib/i18n/config";
+import { LOCALE_DETAILS, SUPPORTED_LOCALES, localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
 import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
 import Link from "next/link";
@@ -182,6 +182,25 @@ export default function WebsiteFooter() {
             <CookiePreferencesButton className={linkClass} />
           </div>
         </div>
+        <nav
+          aria-label="Languages"
+          className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs"
+        >
+          {SUPPORTED_LOCALES.map((language) => (
+            <Link
+              key={language}
+              href={localizePublicPath("/", language)}
+              hrefLang={LOCALE_DETAILS[language].htmlLang}
+              lang={LOCALE_DETAILS[language].htmlLang}
+              aria-current={language === locale ? "page" : undefined}
+              className={language === locale
+                ? "font-semibold text-slate-900 dark:text-white"
+                : linkClass}
+            >
+              {LOCALE_DETAILS[language].nativeName}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   );
