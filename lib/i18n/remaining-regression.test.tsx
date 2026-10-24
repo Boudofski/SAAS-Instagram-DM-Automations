@@ -216,9 +216,13 @@ describe("complete public localization and search metadata", () => {
     expect(new Set(entries.map((p) => p.url)).size).toBe(entries.length);
     for (const page of entries) {
       const alternatives = page.alternates?.languages;
-      expect(Object.keys(alternatives ?? {})).toHaveLength(
-        localizedLocalesForPath(new URL(page.url).pathname).length + 1,
-      );
+      // Paginated archives only advertise languages with that many pages.
+      if (!new URL(page.url).searchParams.has('page')) {
+        expect(Object.keys(alternatives ?? {})).toHaveLength(
+          localizedLocalesForPath(new URL(page.url).pathname).length + 1,
+        );
+      }
+      expect(Object.values(alternatives ?? {})).toContain(page.url);
       for (const url of Object.values(alternatives ?? {}))
         expect(entries.some((p) => p.url === url)).toBe(true);
       expect(new URL(page.url).pathname).not.toMatch(
