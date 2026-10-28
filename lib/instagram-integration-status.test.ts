@@ -3,6 +3,7 @@ import {
   getCanonicalInstagramIntegration,
   hasDisconnectedOrMissingInstagramIntegration,
   isCanonicalInstagramConnected,
+  shouldReconnectInstagram,
 } from "./instagram-integration-status";
 
 const connected = {
@@ -42,5 +43,14 @@ describe("canonical Instagram integration status", () => {
     expect(hasDisconnectedOrMissingInstagramIntegration([])).toBe(true);
     expect(hasDisconnectedOrMissingInstagramIntegration([{ ...connected, status: "DISCONNECTED" }])).toBe(true);
     expect(hasDisconnectedOrMissingInstagramIntegration([connected])).toBe(false);
+  });
+
+  it("detects an existing Instagram account that needs authorization again", () => {
+    expect(shouldReconnectInstagram({ ...connected, reconnectRequired: true })).toBe(true);
+    expect(shouldReconnectInstagram({ ...connected, expiresAt: new Date(Date.now() - 60_000) })).toBe(true);
+    expect(shouldReconnectInstagram({ ...connected, tokenPresent: false })).toBe(true);
+    expect(shouldReconnectInstagram(connected)).toBe(false);
+    expect(shouldReconnectInstagram({ ...connected, status: "DISCONNECTED" })).toBe(false);
+    expect(shouldReconnectInstagram({ ...connected, planLocked: true })).toBe(false);
   });
 });

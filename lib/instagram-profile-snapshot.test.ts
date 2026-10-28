@@ -6,6 +6,7 @@ const mockFindIntegrationFirst = vi.fn();
 const mockUpdateIntegration = vi.fn();
 const mockPauseAutomations = vi.fn();
 const mockGetInstagramBusinessProfile = vi.fn();
+const mockNotifyInstagramReconnectEmail = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   client: {
@@ -27,6 +28,10 @@ vi.mock("@/lib/fetch", () => ({
   getInstagramBusinessProfile: (...args: any[]) => mockGetInstagramBusinessProfile(...args),
   getSafeMetaError: (error: any) => error?.safe ?? { message: error?.message ?? String(error) },
   META_GRAPH_VERSION: "v25.0",
+}));
+
+vi.mock("@/lib/email/events", () => ({
+  notifyInstagramReconnectEmail: (...args: any[]) => mockNotifyInstagramReconnectEmail(...args),
 }));
 
 import {
@@ -225,6 +230,7 @@ describe("instagram profile snapshots", () => {
         needsReview: true,
       }),
     });
+    expect(mockNotifyInstagramReconnectEmail).toHaveBeenCalledWith({ integrationId: "integration-a" });
     expect(JSON.stringify(result)).not.toContain("page-token-secret");
   });
 
@@ -268,6 +274,7 @@ describe("instagram profile snapshots", () => {
         needsReview: true,
       }),
     });
+    expect(mockNotifyInstagramReconnectEmail).toHaveBeenCalledWith({ integrationId: "integration-a" });
   });
 
   it("refresh helper saves partial snapshot when followers missing but username present", async () => {

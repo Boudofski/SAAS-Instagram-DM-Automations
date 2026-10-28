@@ -2,6 +2,7 @@ import { type InstagramAccountSnapshot } from "@prisma/client";
 import { getInstagramBusinessProfile, getSafeMetaError, META_GRAPH_VERSION } from "@/lib/fetch";
 import { client } from "@/lib/prisma";
 import { INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON } from "@/lib/instagram-authorization";
+import { notifyInstagramReconnectEmail } from "@/lib/email/events";
 import {
   type ChangeSummary,
   type DashboardPeriod,
@@ -306,6 +307,7 @@ async function markIntegrationReconnectRequired(
       reviewReason: INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON,
     },
   }).catch(() => undefined);
+  await notifyInstagramReconnectEmail({ integrationId });
 }
 
 async function storeProfileFetchDiagnostics(

@@ -158,6 +158,46 @@ export async function notifyInstagramConnectedEmail(input: {
   });
 }
 
+export async function notifyInstagramReconnectEmail(input: {
+  integrationId: string;
+}) {
+  try {
+    const integration = await client.integrations.findUnique({
+      where: { id: input.integrationId },
+      select: {
+        id: true,
+        userId: true,
+        instagramUsername: true,
+        expiresAt: true,
+      },
+    });
+    if (!integration?.userId) return;
+
+    const user = await loadUserEmailProfile(integration.userId);
+    if (!user) return;
+
+    // The token expiry changes after every successful reconnect, giving each
+    // authorization incident one stable key while suppressing repeated alerts
+    // from profile refreshes and scheduled token checks.
+    const incident = integration.expiresAt?.toISOString() ?? "unknown-expiry";
+    return safelySendEvent({
+      templateId: "instagram_reconnect",
+      user,
+      idempotencyKey: `instagram-reconnect:${integration.id}:${incident}`,
+      context: {
+        instagramUsername: integration.instagramUsername,
+        actionUrl: workspaceUrl(user.clerkId),
+      },
+      metadata: { integrationId: integration.id },
+    });
+  } catch (error) {
+    console.warn("[email-event] reconnect notification skipped", {
+      integrationId: input.integrationId,
+      errorType: error instanceof Error ? error.constructor.name : "UnknownError",
+    });
+  }
+}
+
 export async function notifyAutomationActivatedEmail(input: {
   userId: string;
   automationId: string;

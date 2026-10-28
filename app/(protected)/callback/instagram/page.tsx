@@ -64,7 +64,14 @@ async function Page(props: Props) {
 
     if (user.status === 200) {
       const integrationId = user.data && "integrationId" in user.data ? user.data.integrationId : null;
-      if (typeof integrationId === "string") return redirect(`/api/instagram/selected?integrationId=${encodeURIComponent(integrationId)}`);
+      const resumedCampaigns = user.data && "resumedCampaigns" in user.data && typeof user.data.resumedCampaigns === "number"
+        ? user.data.resumedCampaigns
+        : 0;
+      if (typeof integrationId === "string") {
+        const params = new URLSearchParams({ integrationId });
+        if (resumedCampaigns > 0) params.set("restored", String(resumedCampaigns));
+        return redirect(`/api/instagram/selected?${params.toString()}`);
+      }
       return integrationRedirect(slug);
     }
 
