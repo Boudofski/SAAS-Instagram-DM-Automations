@@ -197,10 +197,12 @@ describe("complete public localization and search metadata", () => {
         );
         const expectedTitle =
           page.slug === "manychat-alternative"
-            ? "ManyChat Alternative for Instagram | AP3K vs ManyChat"
+            ? "Free ManyChat Alternative for Instagram | AP3K"
             : (page.seoTitle ??
               (locale === "en" && page.slug === "instagram-comment-to-dm"
-                ? "Instagram Comment-to-DM Automation | AP3K"
+                ? "Free Instagram Comment-to-DM Automation | AP3K"
+                : locale === "en" && page.slug === "instagram-auto-reply"
+                  ? "Instagram Automation Reply Tool | AP3K"
                 : `${translateUi(`${page.eyebrow.charAt(0).toUpperCase()}${page.eyebrow.slice(1)}`, locale)} | AP3K`));
         expect(metadata.title).toBe(expectedTitle);
         if (locale !== "en" && locale !== "nl" && !isEnglishOnlyArticle(`/${page.slug}`))
