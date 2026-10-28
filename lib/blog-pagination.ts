@@ -1,6 +1,6 @@
 export const BLOG_PAGE_SIZE = 9;
 export function blogPagePath(page: number): string {
-  return page === 1 ? "/blog" : `/blog?page=${page}`;
+  return page === 1 ? "/blog" : `/blog/page/${page}`;
 }
 export function getBlogPage(value: string | string[] | undefined, total: number) {
   if (Array.isArray(value) || (value !== undefined && !/^[1-9]\d*$/.test(value))) return null;

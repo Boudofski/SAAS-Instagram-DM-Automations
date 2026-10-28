@@ -30,7 +30,7 @@ describe('language-specific article discovery', () => {
       const pages = buildSitemap();
       const total = getLocalizedBlogArchive(BLOG_POSTS, locale).posts.length;
       const last = getBlogPage(undefined, total)!.pages;
-      expect(blogArchiveAlternates(BLOG_POSTS, last)[locale]).toBe(`https://ap3k.com/${locale}/blog?page=${last}`);
+      expect(blogArchiveAlternates(BLOG_POSTS, last)[locale]).toBe(`https://ap3k.com/${locale}/blog/page/${last}`);
       expect(blogArchiveAlternates(BLOG_POSTS, last + 1)).not.toHaveProperty(locale);
       for (const path of HOME_LEARNING_PATHS) {
         expect(pages.some(page => page.url === `https://ap3k.com/${locale}${path}`)).toBe(true);

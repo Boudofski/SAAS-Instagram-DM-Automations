@@ -91,11 +91,12 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   if (!page) return {};
   const pathname = `/${page.slug}`;
   const isEnglish = getServerLocale() === "en";
+  const keywordTitle = `${page.eyebrow.charAt(0).toUpperCase()}${page.eyebrow.slice(1)}`;
   const seoTitle =
     page.seoTitle ??
     (isEnglish && page.slug === "instagram-comment-to-dm"
       ? "Instagram Comment-to-DM Automation | AP3K"
-      : `${page.title} | AP3K`);
+      : `${keywordTitle} | AP3K`);
   const seoDescription =
     isEnglish && page.slug === "instagram-comment-to-dm"
       ? "Automate Instagram comment-to-DM campaigns with keyword triggers, public replies and instant link delivery. Start free with AP3K."

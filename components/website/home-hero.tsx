@@ -37,14 +37,42 @@ export default function HomeHero() {
   const [pageVisible, setPageVisible] = useState(true);
   const [motionReady, setMotionReady] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
+  const [wideScene, setWideScene] = useState(false);
   const showVideo = videoReady && motionReady && reducedMotion === false;
   const playing = motionReady && reducedMotion === false && inView && pageVisible;
 
   useEffect(() => {
-    // Start the small muted demo as soon as the page hydrates on every screen.
-    // Keep the poster for reduced-motion and data-saving visitors.
+    // Load decorative desktop art only when it can be displayed. Rendering the
+    // hidden cards on phones made browsers download more than 1 MB of SVGs.
+    const media = window.matchMedia("(min-width: 1280px)");
+    const update = () => setWideScene(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    // Let the headline and poster paint before requesting the optional demo.
+    // This keeps the video away from the mobile LCP critical path.
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (!connection?.saveData) setMotionReady(true);
+    if (connection?.saveData) return;
+    let timeout = 0;
+    let idle = 0;
+    const start = () => {
+      const requestIdle = (window as Window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      }).requestIdleCallback;
+      if (requestIdle) idle = requestIdle(() => setMotionReady(true), { timeout: 2500 });
+      else timeout = window.setTimeout(() => setMotionReady(true), 1500);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => {
+      window.removeEventListener("load", start);
+      if (timeout) window.clearTimeout(timeout);
+      const cancelIdle = (window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+      if (idle && cancelIdle) cancelIdle(idle);
+    };
   }, []);
 
   useEffect(() => {
@@ -83,8 +111,8 @@ export default function HomeHero() {
     <section ref={section} lang={locale} className={`${styles.hero} ${inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
       <div className={styles.glow} aria-hidden="true" />
       <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
-        <ConversationCards side="left" />
-        <ConversationCards side="right" />
+        {wideScene && <ConversationCards side="left" />}
+        {wideScene && <ConversationCards side="right" />}
       </div>
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
@@ -92,7 +120,7 @@ export default function HomeHero() {
             <Image className={`${styles.keywordVideo} ${styles.posterLayer}`} data-hidden={showVideo} src="/media/hero/comment-water-drop-poster.webp"
               alt="" width={1530} height={364} priority unoptimized />
             <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
-              width={1530} height={364} muted loop playsInline preload="metadata" tabIndex={-1}
+              width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
               src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
               onPlaying={() => setVideoReady(true)}
               onEmptied={() => setVideoReady(false)}

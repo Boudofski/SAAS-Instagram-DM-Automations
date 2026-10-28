@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import { getServerLocale } from '@/lib/i18n/server';
 
 const pageMetadata: Metadata = {
-  title: "Cookie Policy — AP3K",
+  title: "AP3K Cookie Policy and Tracking Preferences",
   description: "How AP3K uses necessary storage and optional analytics and marketing technologies.",
   alternates: { canonical: "/cookies" },
 };

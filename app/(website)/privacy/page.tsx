@@ -7,7 +7,7 @@ import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
 const pageMetadata: Metadata = {
-  title: "Privacy Policy — AP3K",
+  title: "Privacy Policy for AP3K Instagram Automation",
   description: "How AP3K handles Instagram account, campaign, Comment reply, DM, lead, activity, and billing data.",
   alternates: { canonical: "/privacy" },
 };

@@ -190,7 +190,12 @@ export function buildSitemap(
   ].flatMap((page) => {
     const parsed = new URL(page.url);
     const path = `${parsed.pathname}${parsed.search}`;
-    const archivePage = parsed.pathname === "/blog" ? Number(parsed.searchParams.get("page") || "1") : null;
+    const archiveMatch = parsed.pathname.match(/^\/blog\/page\/(\d+)$/);
+    const archivePage = parsed.pathname === "/blog"
+      ? 1
+      : archiveMatch
+        ? Number(archiveMatch[1])
+        : null;
     const archiveLanguages = archivePage ? blogArchiveAlternates(posts, archivePage) : null;
     const englishOnly =
       isEnglishOnlyArticle(path) ||

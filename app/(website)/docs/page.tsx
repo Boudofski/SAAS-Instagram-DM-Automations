@@ -5,7 +5,7 @@ import {DOCS_ARTICLES,DOCS_GROUPS} from '@/lib/docs';
 import ProductVideo from '@/components/website/product-video';
 import {TutorialVideo} from '@/components/docs/tutorial-video';
 import styles from '@/components/docs/docs.module.css';
-export const metadata:Metadata={title:'AP3K Documentation',description:'Step-by-step guides for connecting Instagram, creating automations, sending DMs, and troubleshooting AP3K.',alternates:{canonical:'/docs',languages:{en:'/docs','x-default':'/docs'}},openGraph:{title:'AP3K Documentation',url:'https://ap3k.com/docs'}};
+export const metadata:Metadata={title:'AP3K Documentation for Instagram Automation',description:'Step-by-step AP3K guides for connecting Instagram, creating comment-to-DM automations, sending messages and troubleshooting delivery.',alternates:{canonical:'/docs',languages:{en:'/docs','x-default':'/docs'}},openGraph:{title:'AP3K Documentation for Instagram Automation',url:'https://ap3k.com/docs'}};
 const icons=[Rocket,Clapperboard,PlayCircle,MessagesSquare,Workflow,LifeBuoy];
 const featured=['getting-started','post-automation','story-automation','chat-automation','flow-builder','troubleshoot'];
 export default function DocsPage(){return <>

@@ -38,9 +38,9 @@ describe("editorial archive", () => {
   });
   it("only puts valid editorial archive pages in the sitemap", () => {
     const total = getEditorialArchive(BLOG_POSTS).posts.length;
-    const pages = buildSitemap(BLOG_POSTS).filter(p => new URL(p.url).pathname === "/blog" && new URL(p.url).searchParams.has("page"));
+    const pages = buildSitemap(BLOG_POSTS).filter(p => /^\/blog\/page\/\d+$/.test(new URL(p.url).pathname));
     expect(pages).toHaveLength(getBlogPage(undefined, total)!.pages - 1);
-    for (const page of pages) expect(getBlogPage(new URL(page.url).searchParams.get("page")!, total)).not.toBeNull();
+    for (const page of pages) expect(getBlogPage(new URL(page.url).pathname.split("/").pop(), total)).not.toBeNull();
   });
   it("searches featured posts and respects the published collection passed by the CMS", () => {
     const { featured } = getEditorialArchive(BLOG_POSTS);
