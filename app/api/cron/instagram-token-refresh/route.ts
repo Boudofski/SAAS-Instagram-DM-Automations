@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { client } from "@/lib/prisma";
+import { INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON } from "@/lib/instagram-authorization";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
               data: {
                 active: false,
                 needsReview: true,
-                reviewReason: "Instagram authorization expired. Reconnect Instagram before reactivating this automation.",
+                reviewReason: INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON,
               },
             }).catch(() => undefined);
           }

@@ -1,6 +1,7 @@
 import { type InstagramAccountSnapshot } from "@prisma/client";
 import { getInstagramBusinessProfile, getSafeMetaError, META_GRAPH_VERSION } from "@/lib/fetch";
 import { client } from "@/lib/prisma";
+import { INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON } from "@/lib/instagram-authorization";
 import {
   type ChangeSummary,
   type DashboardPeriod,
@@ -302,7 +303,7 @@ async function markIntegrationReconnectRequired(
     data: {
       active: false,
       needsReview: true,
-      reviewReason: "Instagram authorization expired. Reconnect Instagram before reactivating this automation.",
+      reviewReason: INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON,
     },
   }).catch(() => undefined);
 }

@@ -13,6 +13,8 @@ import {
   classifyInstagramIntegrationSaveError,
   InstagramIntegrationSaveError,
 } from "@/lib/instagram-integration-save-errors";
+import { syncAutomationPlanEntitlements } from "@/lib/automation-plan-entitlements";
+import { INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON } from "@/lib/instagram-authorization";
 
 const META_OAUTH_STATE_MARKER = "META_OAUTH_STATE";
 
@@ -393,6 +395,37 @@ export const createIntegration = async (
     const account = existing
       ? await tx.integrations.update({ where: { id: existing.id }, data })
       : await tx.integrations.create({ data: { ...data, userId: user.id } });
+
+    // Token invalidation pauses only automations that were active at the time.
+    // A successful reconnect to the same immutable Instagram identity should
+    // restore those exact automations instead of leaving every post in a stale
+    // review state. Re-apply the current plan afterwards so a plan change that
+    // happened while disconnected is still enforced.
+    const resumedCampaigns = existing
+      ? await tx.automation.updateMany({
+          where: {
+            userId: user.id,
+            integrationId: account.id,
+            archivedAt: null,
+            active: false,
+            needsReview: true,
+            reviewReason: INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON,
+          },
+          data: {
+            active: true,
+            needsReview: false,
+            reviewReason: null,
+          },
+        })
+      : { count: 0 };
+
+    if (resumedCampaigns.count > 0) {
+      await syncAutomationPlanEntitlements(
+        tx,
+        user.id,
+        user.subscription?.plan ?? "FREE",
+      );
+    }
     // Users who prepared drafts before their first connection keep those drafts.
     // Never move existing account-owned data to a newly connected account.
     if (!user.integrations.length) {
@@ -401,7 +434,14 @@ export const createIntegration = async (
       await tx.aiChatMessage.updateMany({ where: { userId: user.id, integrationId: null, context: "PLAYGROUND" }, data: { integrationId: account.id } });
 
     }
-    return { firstname: user.firstname, lastname: user.lastname, clerkId, integrationId: account.id, userId: user.id };
+    return {
+      firstname: user.firstname,
+      lastname: user.lastname,
+      clerkId,
+      integrationId: account.id,
+      userId: user.id,
+      resumedCampaigns: resumedCampaigns.count,
+    };
   }, { timeout: 20000 });
   try { await activateConnectionBenefits(saved.userId); } catch { console.warn("[referral] connection benefits deferred"); }
   return saved;
