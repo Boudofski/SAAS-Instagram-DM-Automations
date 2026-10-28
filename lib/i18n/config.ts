@@ -17,6 +17,7 @@ const englishArticles = new Set([
   ...expansionSlugs.map((slug) => `/blog/${slug}`),
   ...commercialSlugs.map((slug) => `/${slug}`),
   "/resources/instagram-growth-library",
+  "/free-instagram-automation",
   ...englishArticleSlugs.map((slug) => `/blog/${slug}`),
   "/resources",
   "/resources/instagram-comment-to-dm-templates",

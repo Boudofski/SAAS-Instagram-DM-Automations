@@ -27,11 +27,14 @@ const SEO_KEYWORDS: Record<string, string[]> = {
   ],
   "instagram-comment-to-dm": [
     "Instagram comment to DM automation",
+    "comment to DM automation free",
+    "Instagram comment to DM automation free",
     "comment to DM Instagram",
     "Instagram auto DM from comments",
     "Instagram comment automation",
   ],
   "instagram-auto-reply": [
+    "Instagram automation reply",
     "Instagram auto responder",
     "Instagram auto reply",
     "quick reply message for Instagram",
@@ -44,6 +47,9 @@ const SEO_KEYWORDS: Record<string, string[]> = {
   ],
   "manychat-alternative": [
     "ManyChat alternative",
+    "ManyChat alternative free",
+    "free ManyChat alternative",
+    "ManyChat alternative for Instagram free",
     "ManyChat alternatives",
     "Many Chat alternatives",
     "Instagram automation tools",
@@ -79,7 +85,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     const comparison = getComparison("manychat")!;
     return localizedMetadata(
       {
-        title: "ManyChat Alternative for Instagram | AP3K vs ManyChat",
+        title: "Free ManyChat Alternative for Instagram | AP3K",
         description: comparison.description,
         openGraph: { images: ["https://ap3k.com/opengraph-image"] },
       },
@@ -95,11 +101,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const seoTitle =
     page.seoTitle ??
     (isEnglish && page.slug === "instagram-comment-to-dm"
-      ? "Instagram Comment-to-DM Automation | AP3K"
+      ? "Free Instagram Comment-to-DM Automation | AP3K"
+      : isEnglish && page.slug === "instagram-auto-reply"
+        ? "Instagram Automation Reply Tool | AP3K"
       : `${keywordTitle} | AP3K`);
   const seoDescription =
     isEnglish && page.slug === "instagram-comment-to-dm"
-      ? "Automate Instagram comment-to-DM campaigns with keyword triggers, public replies and instant link delivery. Start free with AP3K."
+      ? "Automate Instagram comment-to-DM campaigns free with keyword triggers, public replies and instant link delivery. AP3K includes 500 monthly actions."
       : page.description;
   return localizedMetadata(
     {

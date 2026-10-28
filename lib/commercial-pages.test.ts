@@ -18,6 +18,7 @@ describe("commercial landing pages", () => {
       "instagram-auto-reply",
       "instagram-story-automation",
       "manychat-alternative",
+      "free-instagram-automation",
       "instagram-automation-for-creators",
       "instagram-automation-for-coaches",
       "instagram-automation-for-ecommerce",

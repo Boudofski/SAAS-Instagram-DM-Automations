@@ -85,6 +85,7 @@ export default function WebsiteFooter() {
                 links: [
                   ["Pricing", "/pricing"],
                   ["Instagram automation", "/instagram-dm-automation"],
+                  ["Free Instagram automation", "/free-instagram-automation"],
                   ["Comment to DM", "/instagram-comment-to-dm"],
                   ["Comment automation", "/instagram-comment-automation"],
                   ["Login", "/sign-in"],

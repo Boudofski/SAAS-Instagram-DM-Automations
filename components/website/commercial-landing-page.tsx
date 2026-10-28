@@ -39,6 +39,18 @@ export default function CommercialLandingPage({
     url: `https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`,
     description: translateUi(page.description, locale),
     featureList: page.workflow.map((item) => translateUi(item.title, locale)),
+    ...(page.slug === "free-instagram-automation"
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+            url: "https://ap3k.com/sign-up",
+            description:
+              "One Instagram account, five active automations, and 500 successful automated actions per month.",
+          },
+        }
+      : {}),
   };
 
   return (
@@ -121,6 +133,11 @@ export default function CommercialLandingPage({
               Comment-to-DM message templates →
             </Link>
             <Link href="/compare">Compare Instagram automation tools →</Link>
+            {page.slug !== "free-instagram-automation" && (
+              <Link href="/free-instagram-automation">
+                Test free Instagram automation →
+              </Link>
+            )}
           </div>
           <section className={styles.cta}>
             <h2>Put your next conversation on autopilot.</h2>

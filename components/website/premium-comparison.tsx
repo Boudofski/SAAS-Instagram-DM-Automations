@@ -120,7 +120,9 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
     {
       "@context": "https://schema.org",
       "@type": "Article",
-      headline: `${page.name} vs AP3K: find your fit`,
+      headline: isManychat
+        ? "Free ManyChat Alternative for Instagram: AP3K vs ManyChat"
+        : `${page.name} vs AP3K: find your fit`,
       description: page.description,
       datePublished: "2026-09-27",
       dateModified: "2026-10-06",
@@ -172,9 +174,9 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
           <div>
             <span className={s.eyebrow}>{page.name.toUpperCase()} VS AP3K</span>
             <h1>
-              {page.name} vs AP3K.
+              {isManychat ? "A free ManyChat alternative for Instagram." : `${page.name} vs AP3K.`}
               <br />
-              <span>Find your fit.</span>
+              <span>{isManychat ? "Compare before you switch." : "Find your fit."}</span>
             </h1>
             <p className={s.lead}>{page.description}</p>
             <div className={s.actions}>
@@ -458,6 +460,11 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
           >
             Understand plans and usage <ArrowRight size={17} />
           </Link>
+          {isManychat && (
+            <Link href="/free-instagram-automation" className={s.inlineLink}>
+              Test a free Instagram automation campaign <ArrowRight size={17} />
+            </Link>
+          )}
         </section>
         <section className={s.productSection}>
           <div>
