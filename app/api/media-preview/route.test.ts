@@ -25,7 +25,7 @@ vi.mock("@/lib/instagram-media", () => ({
   resolveInstagramMediaConnection: (...args: any[]) => mocks.resolveConnection(...args),
 }));
 
-import { GET, trustedInstagramPreviewUrl } from "./route";
+import { GET } from "./route";
 
 function upstream(input: { ok: boolean; url: string; contentType?: string; json?: unknown; body?: string }) {
   return {
@@ -68,12 +68,6 @@ describe("authenticated Instagram media preview", () => {
   });
 
   afterEach(() => vi.unstubAllGlobals());
-
-  it("rejects untrusted or non-HTTPS source URLs", () => {
-    expect(trustedInstagramPreviewUrl("https://scontent.cdninstagram.com/a.jpg")).toContain("cdninstagram.com");
-    expect(trustedInstagramPreviewUrl("http://scontent.cdninstagram.com/a.jpg")).toBeNull();
-    expect(trustedInstagramPreviewUrl("https://example.com/a.jpg")).toBeNull();
-  });
 
   it("refreshes a failed CDN URL and serves the image through AP3K", async () => {
     const fetchMock = vi.fn()

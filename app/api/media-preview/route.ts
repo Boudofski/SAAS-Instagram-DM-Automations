@@ -15,7 +15,7 @@ type MetaMedia = {
   thumbnail_url?: string;
 };
 
-export function trustedInstagramPreviewUrl(value?: string | null) {
+function trustedInstagramPreviewUrl(value?: string | null) {
   if (!value) return null;
   try {
     const url = new URL(value);
