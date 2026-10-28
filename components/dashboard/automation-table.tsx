@@ -662,15 +662,22 @@ function CampaignThumb({
   size?: "sm" | "lg";
 }) {
   const { locale } = useI18n();
+  const [previewFailed, setPreviewFailed] = useState(false);
   const sizeClass = size === "lg" ? "h-12 w-12" : "h-10 w-10";
-  if (post?.media && !isAny) {
+  const postId = typeof post?.postid === "string" && /^\d{5,30}$/.test(post.postid) ? post.postid : null;
+  const previewSrc = postId ? `/api/media-preview?postId=${encodeURIComponent(postId)}` : null;
+
+  useEffect(() => setPreviewFailed(false), [previewSrc]);
+
+  if (previewSrc && !isAny && !previewFailed) {
     return (
       <Image
-        src={post.media}
+        src={previewSrc}
         alt={post.caption ?? translateUi("Automation post", locale)}
         width={48}
         height={48}
         unoptimized
+        onError={() => setPreviewFailed(true)}
         className={`${sizeClass} flex-shrink-0 rounded-xl object-cover`}
       />
     );
