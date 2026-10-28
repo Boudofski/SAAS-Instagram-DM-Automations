@@ -1,4 +1,5 @@
 vi.mock("@/lib/instagram-account-entitlements", () => ({ syncInstagramAccountEntitlements: vi.fn() }));
+vi.mock("@/lib/automation-plan-entitlements", () => ({ syncAutomationPlanEntitlements: vi.fn() }));
 vi.mock("@/lib/instagram-account-scope", () => ({ currentInstagramAccountId: vi.fn(async () => "current-integration"), INSTAGRAM_ACCOUNT_COOKIE: "ap3k_instagram_account" }));
 vi.mock("next/headers", () => ({ cookies: () => ({ set: vi.fn() }) }));
 vi.mock("@/lib/referral-program", () => ({ activateConnectionBenefits: vi.fn() }));
@@ -313,7 +314,7 @@ describe("multi-account OAuth persistence", () => {
         create: vi.fn(async ({ data }) => ({ id: "account-b", ...data })),
         update: vi.fn(async ({ where, data }) => ({ id: where.id, ...data })),
       },
-      automation: { updateMany: vi.fn() },
+      automation: { updateMany: vi.fn(async () => ({ count: 0 })) },
     };
     mockClient.$transaction.mockImplementation(async (callback: any) => callback(tx));
   });
@@ -332,6 +333,34 @@ describe("multi-account OAuth persistence", () => {
     await createIntegration("clerk-1", token, expiry, "ig-a", "new_username");
     expect(tx.integrations.update).toHaveBeenCalledWith({ where: { id: "account-a" }, data: expect.objectContaining({ instagramUsername: "new_username" }) });
     expect(tx.integrations.create).not.toHaveBeenCalled();
+  });
+
+  it("restores automations paused by token invalidation after reconnecting the same account", async () => {
+    tx.automation.updateMany.mockResolvedValue({ count: 4 });
+
+    await expect(
+      createIntegration("clerk-1", token, expiry, "ig-a", "new_username")
+    ).resolves.toMatchObject({
+      integrationId: "account-a",
+      resumedCampaigns: 4,
+    });
+
+    expect(tx.automation.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        integrationId: "account-a",
+        archivedAt: null,
+        active: false,
+        needsReview: true,
+        reviewReason:
+          "Instagram authorization expired. Reconnect Instagram before reactivating this automation.",
+      },
+      data: {
+        active: true,
+        needsReview: false,
+        reviewReason: null,
+      },
+    });
   });
 
   it.each([["FREE", 1], ["PRO", 3], ["BUSINESS", 10]])("enforces %s account capacity inside the serialized transaction", async (plan, limit) => {
