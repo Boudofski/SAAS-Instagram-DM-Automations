@@ -954,6 +954,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
   // catch misclassifies it as database_save_failed and then redirects to the error
   // page even though the save succeeded. Track the error outside and redirect after.
   let selectedIntegrationId: string | undefined;
+  let restoredAutomationCount = 0;
   let integrationError: string | null = null;
 
   try {
@@ -998,6 +999,7 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
       );
 
       selectedIntegrationId = savedIntegration.integrationId;
+      restoredAutomationCount = savedIntegration.resumedCampaigns;
 
       // Non-fatal cleanup — must not be able to poison the success path
       try {
@@ -1038,7 +1040,11 @@ export const selectPendingInstagramAccount = async (formData: FormData) => {
   if (integrationError) {
     return redirect(`${dashboardPath(workspaceClerkId)}/integrations?integration_error=${integrationError}`);
   }
-  if (selectedIntegrationId) return redirect(`/api/instagram/selected?integrationId=${encodeURIComponent(selectedIntegrationId)}`);
+  if (selectedIntegrationId) {
+    const params = new URLSearchParams({ integrationId: selectedIntegrationId });
+    if (restoredAutomationCount > 0) params.set("restored", String(restoredAutomationCount));
+    return redirect(`/api/instagram/selected?${params.toString()}`);
+  }
   return redirect(dashboardPath(workspaceClerkId));
 };
 

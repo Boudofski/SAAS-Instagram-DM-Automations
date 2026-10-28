@@ -21,11 +21,11 @@ import {
 import { getInstagramSnapshotComparisonWithRefresh } from "@/lib/instagram-profile-snapshot";
 import { getDashboardProfileStats } from "@/lib/instagram-account-ux";
 import { getUserFacingStats } from "@/lib/user-facing-metrics";
-import { getCanonicalInstagramIntegration, isCanonicalInstagramConnected } from "@/lib/instagram-integration-status";
+import { isCanonicalInstagramConnected, shouldReconnectInstagram } from "@/lib/instagram-integration-status";
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
 
-type Props = { params: Promise<{ slug: string }>; searchParams?: Promise<{ period?: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams?: Promise<{ period?: string; instagram_reconnected?: string; automations_restored?: string }> };
 
 export default async function DashboardPage(props: Props) {
   const searchParams = await props.searchParams;
@@ -33,12 +33,17 @@ export default async function DashboardPage(props: Props) {
   const automationsPromise = getAllAutomation();
   const userResult = await onUserInfo();
 
-  const instagram = getCanonicalInstagramIntegration(userResult.status === 200 ? userResult.data?.integrations : null);
+  // The dashboard user query already scopes this list to the selected account.
+  // Keep the selected row even when its authorization is unhealthy so the
+  // dashboard can offer a direct reconnect action instead of hiding it.
+  const instagram = userResult.status === 200 ? userResult.data?.integrations?.[0] ?? null : null;
 
   const instagramConnected = isCanonicalInstagramConnected(instagram);
-  const tokenExpired = Boolean(instagram?.expiresAt && new Date(instagram.expiresAt).getTime() < Date.now());
+  const reconnectRequired = shouldReconnectInstagram(instagram);
   const displayName = getDashboardGreeting(userResult.data ?? {});
   const period = parseDashboardPeriod(searchParams?.period);
+  const restoredAutomationCount = Number.parseInt(searchParams?.automations_restored ?? "0", 10);
+  const showReconnectSuccess = searchParams?.instagram_reconnected === "1" && restoredAutomationCount > 0;
 
   const [automationsResult, usage, dashboardStats, campaignMetrics, snapshotState] = userResult.data?.id
     ? await Promise.all([
@@ -82,10 +87,16 @@ export default async function DashboardPage(props: Props) {
         </p>
       </div>
 
-      {instagramConnected && instagram && (
+      {showReconnectSuccess && (
+        <div role="status" className="ap3k-content-enter rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
+          <UiText>{"Instagram reconnected. Every automation paused by the authorization issue is active again."}</UiText>
+        </div>
+      )}
+
+      {instagram && (instagramConnected || reconnectRequired) && (
         <div className={[
           "group ap3k-content-enter overflow-hidden rounded-2xl border p-3 sm:p-4 shadow-surface  dark:bg-white/[0.04]",
-          tokenExpired
+          reconnectRequired
             ? "border-amber-200 bg-amber-50/80 dark:border-amber-500/35 dark:bg-amber-500/10"
             : "border-slate-200 light:border-slate-300 bg-white dark:bg-gradient-to-br dark:border-emerald-500/25 dark:from-emerald-500/[0.12] dark:via-white/[0.04] dark:to-rf-pink/[0.08]",
         ].join(" ")}>
@@ -97,11 +108,11 @@ export default async function DashboardPage(props: Props) {
                   <p className="truncate text-lg font-black tracking-tight text-slate-950 dark:text-white sm:text-xl">
                     {displayInstagramUsername ? <bdi dir="ltr">@{displayInstagramUsername}</bdi> : <UiText>{"Instagram connected"}</UiText>}
                   </p>
-                  <span className={tokenExpired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}><UiText>{tokenExpired ? "Reconnect" : "Connected"}</UiText></span>
+                  <span className={reconnectRequired ? "ap3k-badge ap3k-badge-amber" : "ap3k-badge ap3k-badge-green"}><UiText>{reconnectRequired ? "Reconnect" : "Connected"}</UiText></span>
                 </div>
-                <p className={`${tokenExpired ? "" : "hidden sm:block"} mt-1 text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400`}>
-                  {tokenExpired
-                    ? <UiText>{"Reconnect Instagram to resume automation activity."}</UiText>
+                <p className={`${reconnectRequired ? "" : "hidden sm:block"} mt-1 text-sm font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400`}>
+                  {reconnectRequired
+                    ? <UiText>{"Reconnect once. AP3K will automatically restore every automation paused by the authorization issue."}</UiText>
                     : profileSnapshot?.fetchedAt
                       ? <LocalTime value={profileSnapshot.fetchedAt} prefix="Profile refreshed" />
                       : <UiText>{"Instagram is ready for automation activity."}</UiText>}
@@ -110,10 +121,14 @@ export default async function DashboardPage(props: Props) {
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <span className="ap3k-badge ap3k-badge-slate hidden sm:inline-flex"><UiText>{planLabel}</UiText></span>
-              <Link href={`/dashboard/${params.slug}/account`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition-colors hover:bg-violet-100 dark:hover:bg-rf-pink/15 sm:min-h-0">
-                {!tokenExpired && <Settings2 aria-hidden="true" className="h-4 w-4 sm:hidden" />}
-                <span className={tokenExpired ? "" : "sr-only sm:not-sr-only"}><UiText>{tokenExpired ? "Reconnect Instagram" : "Manage account"}</UiText></span>
-              </Link>
+              {reconnectRequired ? (
+                <ConnectInstagramButton label="Reconnect Instagram" className="min-h-10 px-3 py-2 text-xs" />
+              ) : (
+                <Link href={`/dashboard/${params.slug}/account`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-800 dark:border-rf-pink/20 dark:bg-rf-pink/10 dark:text-rf-pink transition-colors hover:bg-violet-100 dark:hover:bg-rf-pink/15 sm:min-h-0">
+                  <Settings2 aria-hidden="true" className="h-4 w-4 sm:hidden" />
+                  <span className="sr-only sm:not-sr-only"><UiText>{"Manage account"}</UiText></span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -150,7 +165,7 @@ export default async function DashboardPage(props: Props) {
           </div>
           <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>}
-        {!instagramConnected && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300">Connect Instagram to see your account performance and start collecting leads.</p><ConnectInstagramButton /></div>}
+        {!instagramConnected && !reconnectRequired && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300">Connect Instagram to see your account performance and start collecting leads.</p><ConnectInstagramButton /></div>}
         <div className={`grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 ${dashboardProfileStats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard

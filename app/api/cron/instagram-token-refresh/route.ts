@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { client } from "@/lib/prisma";
 import { INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON } from "@/lib/instagram-authorization";
+import { notifyInstagramReconnectEmail } from "@/lib/email/events";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -93,6 +94,7 @@ export async function GET(request: NextRequest) {
                 reviewReason: INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON,
               },
             }).catch(() => undefined);
+            await notifyInstagramReconnectEmail({ integrationId: integration.id });
           }
           console.warn("[cron] Instagram token refresh rejected", {
             integrationId: integration.id,

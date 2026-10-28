@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findManyIntegrations, updateIntegration, pauseAutomations } = vi.hoisted(() => ({
+const { findManyIntegrations, updateIntegration, pauseAutomations, notifyReconnect } = vi.hoisted(() => ({
   findManyIntegrations: vi.fn(),
   updateIntegration: vi.fn(),
   pauseAutomations: vi.fn(),
+  notifyReconnect: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -16,6 +17,10 @@ vi.mock("@/lib/prisma", () => ({
       updateMany: (...args: any[]) => pauseAutomations(...args),
     },
   },
+}));
+
+vi.mock("@/lib/email/events", () => ({
+  notifyInstagramReconnectEmail: (...args: any[]) => notifyReconnect(...args),
 }));
 
 import { GET } from "./route";
@@ -85,5 +90,6 @@ describe("Instagram token refresh cron", () => {
         needsReview: true,
       }),
     });
+    expect(notifyReconnect).toHaveBeenCalledWith({ integrationId: "integration-a" });
   });
 });

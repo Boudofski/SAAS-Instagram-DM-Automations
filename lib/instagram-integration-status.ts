@@ -37,6 +37,20 @@ export function isCanonicalInstagramConnected(integration: InstagramIntegrationS
   );
 }
 
+export function shouldReconnectInstagram(integration: InstagramIntegrationStatusInput) {
+  if (
+    !integration ||
+    integration.name !== "INSTAGRAM" ||
+    !integration.instagramId ||
+    integration.status === "DISCONNECTED" ||
+    integration.planLocked
+  ) {
+    return false;
+  }
+
+  return !isCanonicalInstagramConnected(integration);
+}
+
 export function getCanonicalInstagramIntegration<T extends InstagramIntegrationStatusBase>(integrations?: T[] | null) {
   return integrations?.find(isCanonicalInstagramConnected) ?? null;
 }
