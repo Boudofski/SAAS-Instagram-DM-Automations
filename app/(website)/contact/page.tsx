@@ -8,9 +8,9 @@ import { CircleHelp, CreditCard, Instagram, Mail, ShieldCheck } from "lucide-rea
 import type { Metadata } from "next";
 
 const pageMetadata: Metadata = {
-  title: "Contact AP3K Support",
+  title: "Contact AP3K Support for Instagram Automation",
   description:
-    "Contact AP3K support for Instagram connections, automations, Inbox, billing, account access, privacy, and data requests.",
+    "Contact AP3K support for Instagram connections, automations, billing, account access, privacy and data requests.",
   alternates: { canonical: "/contact" },
 };
 export function generateMetadata(): Metadata { return localizedMetadata(pageMetadata, "/contact"); }

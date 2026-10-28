@@ -67,10 +67,10 @@ describe("comment-to-DM editorial library", () => {
       expect(posts.length).toBeGreaterThan(0);
       expect(posts.length).toBeLessThanOrEqual(12);
       seen.push(...posts.map(post => post.slug));
-      expect(blogPagePath(page)).toBe(page === 1 ? "/blog" : `/blog?page=${page}`);
+      expect(blogPagePath(page)).toBe(page === 1 ? "/blog" : `/blog/page/${page}`);
     }
     expect(seen).toEqual(BLOG_POSTS.map(post => post.slug));
     for (const value of ["0", "-1", "1.5", "abc", "02", "99999", ["1", "2"]]) expect(getBlogPage(value, total)).toBeNull();
-    expect(localizePublicPath(blogPagePath(2), "fr")).toBe("/fr/blog?page=2");
+    expect(localizePublicPath(blogPagePath(2), "fr")).toBe("/fr/blog/page/2");
   });
 });

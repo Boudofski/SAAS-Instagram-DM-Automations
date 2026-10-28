@@ -16,8 +16,9 @@ describe("public indexing contracts", () => {
       const parsed = new URL(page.url);
       const path = stripLocaleFromPath(`${parsed.pathname}${parsed.search}`);
       expect(path).not.toMatch(/^\/(api|dashboard|admin|sign-in|sign-up|payment)(\/|$)/);
-      const locales = parsed.pathname.endsWith('/blog')
-        ? Object.keys(blogArchiveAlternates(BLOG_POSTS, Number(parsed.searchParams.get('page') || '1'))).filter(locale => locale !== 'x-default')
+      const archiveMatch = parsed.pathname.match(/\/blog(?:\/page\/(\d+))?$/);
+      const locales = archiveMatch
+        ? Object.keys(blogArchiveAlternates(BLOG_POSTS, Number(archiveMatch[1] || '1'))).filter(locale => locale !== 'x-default')
         : localizedLocalesForPath(path);
       for (const locale of locales) {
         const expected = `https://ap3k.com${localizePublicPath(path, locale as Parameters<typeof localizePublicPath>[1])}`;
@@ -33,10 +34,10 @@ describe("public indexing contracts", () => {
       const totalPages = getBlogPage(undefined, getLocalizedBlogArchive(BLOG_POSTS, locale).posts.length)!.pages;
       for (let page = 2; page <= totalPages; page++) {
         const prefix = locale === "en" ? "" : `/${locale}`;
-        expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog?page=${page}`)).toBe(true);
+        expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog/page/${page}`)).toBe(true);
       }
       const prefix = locale === 'en' ? '' : `/${locale}`;
-      expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog?page=${totalPages + 1}`)).toBe(false);
+      expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog/page/${totalPages + 1}`)).toBe(false);
     }
     const hub = pages.find(item => item.url === "https://ap3k.com/blog/instagram-comment-to-dm-automation");
     expect(hub?.lastModified).toEqual(new Date("2026-10-05T00:00:00Z"));

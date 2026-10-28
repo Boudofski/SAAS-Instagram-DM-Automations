@@ -8,7 +8,7 @@ import { getServerLocale } from '@/lib/i18n/server';
 import { translateUi } from '@/lib/i18n/translate';
 
 const pageMetadata: Metadata = {
-  title: "Refund Policy — AP3K",
+  title: "AP3K Refund and Subscription Cancellation Policy",
   description: "Read how AP3K subscription cancellation works, when paid access ends and how to request a review for a duplicate charge, billing error or service failure.",
   alternates: { canonical: "/refund-policy" },
 };

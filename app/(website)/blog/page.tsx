@@ -4,7 +4,7 @@ import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import BlogCover from "@/components/website/blog-cover";
 import s from "@/components/website/public-pages.module.css";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { blogPaginationItems, getBlogDirectory } from "@/lib/blog-archive";
 import e from "@/components/website/blog-editorial.module.css";
 import { Search, ArrowLeft, ArrowRight } from "lucide-react";
@@ -38,7 +38,7 @@ const pageMetadata: Metadata = {
   twitter: { card: "summary_large_image", images: ["https://ap3k.com/opengraph-image"] },
 };
 type Props = {
-  searchParams: Promise<{ page?: string | string[]; q?: string | string[] }>;
+  searchParams: Promise<{ page?: string | string[]; q?: string | string[]; _clean?: string }>;
 };
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const searchParams = await props.searchParams;
@@ -82,13 +82,17 @@ export default async function BlogPage(props: Props) {
   const { posts: allPosts, featured } = getLocalizedBlogArchive(await getPublishedPosts(), locale, query);
   const pagination = getBlogPage(searchParams.page, allPosts.length);
   if (!pagination) notFound();
-  if (searchParams.page === "1")
+  if (searchParams._clean !== "1" && searchParams.page === "1")
     redirect(
       localizePublicPath(
         query ? `/blog?q=${encodeURIComponent(query)}` : "/blog",
         getServerLocale(),
       ),
     );
+  if (searchParams._clean !== "1" && pagination.page > 1) {
+    const destination = `${blogPagePath(pagination.page)}${query ? `?q=${encodeURIComponent(query)}` : ""}`;
+    permanentRedirect(localizePublicPath(destination, locale));
+  }
   const copy = blogArchiveCopy(locale, pagination.page);
   const ui = BLOG_ARCHIVE_UI[locale];
   const posts = allPosts.slice(pagination.start, pagination.end);
@@ -110,7 +114,7 @@ export default async function BlogPage(props: Props) {
   };
 
   const pageHref = (page: number) => localizePublicPath(
-    `${blogPagePath(page)}${query ? `${page === 1 ? "?" : "&"}q=${encodeURIComponent(query)}` : ""}`, locale);
+    `${blogPagePath(page)}${query ? `?q=${encodeURIComponent(query)}` : ""}`, locale);
   const card = (post: (typeof posts)[number], index: number) => (
     <article
       key={post.slug}

@@ -201,7 +201,7 @@ describe("complete public localization and search metadata", () => {
             : (page.seoTitle ??
               (locale === "en" && page.slug === "instagram-comment-to-dm"
                 ? "Instagram Comment-to-DM Automation | AP3K"
-                : `${translateUi(page.title, locale)} | AP3K`));
+                : `${translateUi(`${page.eyebrow.charAt(0).toUpperCase()}${page.eyebrow.slice(1)}`, locale)} | AP3K`));
         expect(metadata.title).toBe(expectedTitle);
         if (locale !== "en" && locale !== "nl" && !isEnglishOnlyArticle(`/${page.slug}`))
           expect(metadata.description).not.toBe(page.description);
@@ -217,7 +217,7 @@ describe("complete public localization and search metadata", () => {
     for (const page of entries) {
       const alternatives = page.alternates?.languages;
       // Paginated archives only advertise languages with that many pages.
-      if (!new URL(page.url).searchParams.has('page')) {
+      if (!/\/blog\/page\/\d+$/.test(new URL(page.url).pathname)) {
         expect(Object.keys(alternatives ?? {})).toHaveLength(
           localizedLocalesForPath(new URL(page.url).pathname).length + 1,
         );

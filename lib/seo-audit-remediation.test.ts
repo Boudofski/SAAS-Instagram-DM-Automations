@@ -59,7 +59,7 @@ describe('evidence-based SEO remediation', () => {
     expect(pages.find(p => p.url === 'https://ap3k.com/blog')?.lastModified).toEqual(new Date('2026-10-24T00:00:00Z'));
     expect(pages.find(p => p.url === 'https://ap3k.com/blog/comment-to-dm-one-post-vs-all-posts')?.lastModified).toEqual(new Date('2026-09-21T00:00:00Z'));
     const changed = BLOG_POSTS.map(p => p.slug === 'instagram-comment-to-dm-automation' ? { ...p, updatedAt: '2026-10-25' } : p);
-    expect(buildSitemap(changed).find(p => p.url === 'https://ap3k.com/blog?page=2')?.lastModified).toEqual(new Date('2026-10-25T00:00:00Z'));
+    expect(buildSitemap(changed).find(p => p.url === 'https://ap3k.com/blog/page/2')?.lastModified).toEqual(new Date('2026-10-25T00:00:00Z'));
   });
   it('keeps backtracking and Business capacity accurate in all homepage languages', () => {
     for (const locale of SUPPORTED_LOCALES) {
@@ -72,14 +72,15 @@ describe('evidence-based SEO remediation', () => {
     expect(limitation).toBeTruthy();
     for (const locale of SUPPORTED_LOCALES.filter(l => l !== 'en')) expect(translateUi(limitation, locale)).not.toBe(limitation);
   });
-  it('preloads a stable hero image and starts the mobile demo without interaction', () => {
+  it('preloads a stable hero image without putting decorative media on the mobile LCP path', () => {
     const source = readFileSync('components/website/home-hero.tsx', 'utf8');
     expect(source).toContain('comment-water-drop-poster.webp');
     expect(source).toContain('priority unoptimized');
     expect(source).toContain('motionReady && reducedMotion === false');
-    expect(source).toContain('if (!connection?.saveData) setMotionReady(true)');
+    expect(source).toContain('requestIdleCallback');
+    expect(source).toContain('wideScene && <ConversationCards');
     expect(source).not.toContain('window.addEventListener("pointerdown"');
-    expect(source).toContain('preload="metadata"');
+    expect(source).toContain('preload="none"');
     expect(source).toContain('copy.titleTop}{" "}');
   });
 });

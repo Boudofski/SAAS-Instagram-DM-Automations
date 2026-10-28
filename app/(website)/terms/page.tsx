@@ -7,7 +7,7 @@ import WebsiteNav from "@/components/global/website-nav";
 import type { Metadata } from "next";
 
 const pageMetadata: Metadata = {
-  title: "Terms of Service — AP3K",
+  title: "Terms of Service for AP3K Instagram Automation",
   description: "Terms for using AP3K Instagram comment automation, comment reply, and DM workflows.",
   alternates: { canonical: "/terms" },
 };
