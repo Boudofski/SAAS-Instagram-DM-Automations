@@ -165,7 +165,7 @@ export function buildSitemap(
     },
   ];
 
-  return [
+  const localizedPages: MetadataRoute.Sitemap = [
     ...staticPages,
     {url: `${baseUrl}/tutorials/instagram-comment-to-dm`, lastModified: new Date("2026-10-02T00:00:00Z"), changeFrequency: "monthly" as const, priority: 0.8},
     ...[
@@ -218,4 +218,36 @@ export function buildSitemap(
       }),
     );
   });
+
+  const commentDmLanguages = {
+    ar: `${baseUrl}/ar/instagram-comment-to-dm`,
+    en: `${baseUrl}/instagram-comment-to-dm`,
+    fr: `${baseUrl}/fr/instagram-comment-to-dm`,
+    es: `${baseUrl}/es/instagram-comment-to-dm`,
+    de: `${baseUrl}/de/instagram-comment-to-dm`,
+    pt: `${baseUrl}/pt/instagram-comment-to-dm`,
+    "x-default": `${baseUrl}/instagram-comment-to-dm`,
+  };
+  const withArabicAlternate = localizedPages.map((page) =>
+    new URL(page.url).pathname.replace(/^\/(?:fr|es|de|pt)(?=\/)/, "") ===
+    "/instagram-comment-to-dm"
+      ? {
+          ...page,
+          alternates: {
+            languages: commentDmLanguages,
+          },
+        }
+      : page,
+  );
+
+  return [
+    ...withArabicAlternate,
+    {
+      url: `${baseUrl}/ar/instagram-comment-to-dm`,
+      lastModified: new Date("2026-10-30T00:00:00Z"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+      alternates: { languages: commentDmLanguages },
+    },
+  ];
 }
