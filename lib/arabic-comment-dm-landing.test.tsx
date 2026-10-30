@@ -69,4 +69,16 @@ describe("Arabic comment-to-DM acquisition page", () => {
     expect(exception).toBeLessThan(retiredRedirect);
     expect(middleware).toContain('requestHeaders.set("x-ap3k-arabic-page", "1")');
   });
+
+  it("localizes and repositions the delayed cookie prompt on the Arabic page", () => {
+    const consent = fs.readFileSync(
+      "components/global/consent-aware-analytics.tsx",
+      "utf8",
+    );
+    expect(consent).toContain('pathname === "/ar/instagram-comment-to-dm"');
+    expect(consent).toContain("خصوصيتك، اختيارك");
+    expect(consent).toContain("الضرورية فقط");
+    expect(consent).toContain("قبول التحليلات");
+    expect(consent).toContain('isArabicLanding ? "sm:left-5" : "sm:right-5"');
+  });
 });
