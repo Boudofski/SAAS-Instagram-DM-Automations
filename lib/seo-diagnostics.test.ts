@@ -25,7 +25,10 @@ describe("public indexing contracts", () => {
         expect(page.alternates?.languages?.[locale as Parameters<typeof localizePublicPath>[1]]).toBe(expected);
         expect(urls.has(expected)).toBe(true);
       }
-      expect(page.alternates?.languages?.['x-default']).toBe(`https://ap3k.com${path}`);
+      const xDefaultPath = parsed.pathname === "/ar/instagram-comment-to-dm"
+        ? "/instagram-comment-to-dm"
+        : path;
+      expect(page.alternates?.languages?.['x-default']).toBe(`https://ap3k.com${xDefaultPath}`);
     }
   });
   it("lists every canonical blog archive page and keeps article dates truthful", () => {

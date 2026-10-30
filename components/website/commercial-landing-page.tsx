@@ -133,6 +133,11 @@ export default function CommercialLandingPage({
               Comment-to-DM message templates →
             </Link>
             <Link href="/compare">Compare Instagram automation tools →</Link>
+            {page.slug === "instagram-comment-to-dm" && (
+              <Link href="/ar/instagram-comment-to-dm" lang="ar" dir="rtl">
+                الشرح الكامل بالعربية ←
+              </Link>
+            )}
             {page.slug !== "free-instagram-automation" && (
               <Link href="/free-instagram-automation">
                 Test free Instagram automation →

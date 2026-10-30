@@ -192,8 +192,9 @@ describe("complete public localization and search metadata", () => {
         expect(metadata.alternates?.canonical).toBe(
           `https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`,
         );
+        const arabicAlternate = page.slug === "instagram-comment-to-dm" ? 1 : 0;
         expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(
-          localizedLocalesForPath(`/${page.slug}`).length + 1,
+          localizedLocalesForPath(`/${page.slug}`).length + 1 + arabicAlternate,
         );
         const expectedTitle =
           page.slug === "manychat-alternative"
@@ -220,8 +221,13 @@ describe("complete public localization and search metadata", () => {
       const alternatives = page.alternates?.languages;
       // Paginated archives only advertise languages with that many pages.
       if (!/\/blog\/page\/\d+$/.test(new URL(page.url).pathname)) {
+        const pathname = new URL(page.url).pathname;
+        const isCommentDm = pathname.replace(
+          /^\/(?:ar|fr|es|de|pt)(?=\/)/,
+          "",
+        ) === "/instagram-comment-to-dm";
         expect(Object.keys(alternatives ?? {})).toHaveLength(
-          localizedLocalesForPath(new URL(page.url).pathname).length + 1,
+          localizedLocalesForPath(pathname).length + 1 + (isCommentDm ? 1 : 0),
         );
       }
       expect(Object.values(alternatives ?? {})).toContain(page.url);

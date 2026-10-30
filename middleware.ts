@@ -29,6 +29,18 @@ const isProtectedApiRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, req) => {
   const requestedPath = req.nextUrl.pathname;
+  const isArabicCommentDmLanding =
+    requestedPath.replace(/\/$/, "") === "/ar/instagram-comment-to-dm";
+
+  // Arabic was retired from the global locale catalog. Keep this one reviewed
+  // acquisition page public without reopening fallback Arabic URLs site-wide.
+  if (isArabicCommentDmLanding) {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-ap3k-locale", "en");
+    requestHeaders.set("x-ap3k-request-path", requestedPath);
+    requestHeaders.set("x-ap3k-arabic-page", "1");
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
   const retiredLocale = retiredLocaleFromPath(requestedPath);
   if (retiredLocale) {
     const destination = req.nextUrl.clone();

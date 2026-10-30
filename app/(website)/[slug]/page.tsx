@@ -109,7 +109,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     isEnglish && page.slug === "instagram-comment-to-dm"
       ? "Automate Instagram comment-to-DM campaigns free with keyword triggers, public replies and instant link delivery. AP3K includes 500 monthly actions."
       : page.description;
-  return localizedMetadata(
+  const metadata = localizedMetadata(
     {
       title: seoTitle,
       description: seoDescription,
@@ -143,6 +143,17 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     },
     pathname,
   );
+  if (page.slug !== "instagram-comment-to-dm") return metadata;
+  return {
+    ...metadata,
+    alternates: {
+      ...metadata.alternates,
+      languages: {
+        ...(metadata.alternates?.languages ?? {}),
+        ar: "https://ap3k.com/ar/instagram-comment-to-dm",
+      },
+    },
+  };
 }
 
 export default async function CommercialPageRoute(props: Props) {
