@@ -10,6 +10,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { Cookie } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const CONSENT_KEY = "ap3k_tracking_consent_v1";
@@ -20,6 +21,9 @@ type Consent = "accepted" | "necessary" | null;
 export default function ConsentAwareAnalytics() {
   const tr = usePublicUi();
   const { locale } = useI18n();
+  const pathname = usePathname();
+  const isArabicLanding = pathname === "/ar/instagram-comment-to-dm";
+  const label = (english: string, arabic: string) => isArabicLanding ? arabic : tr(english);
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -66,8 +70,9 @@ export default function ConsentAwareAnalytics() {
           data-nosnippet=""
           role="dialog"
           aria-live="polite"
-          aria-label={tr("Cookie preferences")}
-          className="fixed inset-x-3 bottom-3 z-[100] overflow-hidden rounded-2xl border border-white/10 bg-[#11131f]/95 p-3.5 text-white shadow-[0_20px_70px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 motion-safe:duration-500 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[390px] sm:p-4"
+          aria-label={label("Cookie preferences", "تفضيلات ملفات الارتباط")}
+          dir={isArabicLanding ? "rtl" : undefined}
+          className={`fixed inset-x-3 bottom-3 z-[100] overflow-hidden rounded-2xl border border-white/10 bg-[#11131f]/95 p-3.5 text-white shadow-[0_20px_70px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 motion-safe:duration-500 sm:inset-x-auto sm:bottom-5 sm:w-[390px] sm:p-4 ${isArabicLanding ? "sm:left-5" : "sm:right-5"}`}
         >
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/80 to-transparent" />
           <div className="flex items-start gap-3">
@@ -75,14 +80,14 @@ export default function ConsentAwareAnalytics() {
               <Cookie className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-black tracking-tight">{tr("Your privacy, your choice")}</p>
-              <p className="mt-0.5 text-[11px] leading-[1.45] text-slate-300">{tr("Optional analytics help us improve AP3K. Necessary storage is always active.")} {" "}<Link href={localizePublicPath("/cookies", locale)} className="font-bold text-violet-300 underline decoration-violet-400/40 underline-offset-2 transition hover:text-violet-200">{tr("Cookie Policy")}</Link>.
+              <p className="text-sm font-black tracking-tight">{label("Your privacy, your choice", "خصوصيتك، اختيارك")}</p>
+              <p className="mt-0.5 text-[11px] leading-[1.45] text-slate-300">{label("Optional analytics help us improve AP3K. Necessary storage is always active.", "تساعدنا التحليلات الاختيارية على تحسين AP3K. التخزين الضروري يعمل دائمًا.")} {" "}<Link href={localizePublicPath("/cookies", locale)} className="font-bold text-violet-300 underline decoration-violet-400/40 underline-offset-2 transition hover:text-violet-200">{label("Cookie Policy", "سياسة ملفات الارتباط")}</Link>.
               </p>
             </div>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => choose("necessary")} className="min-h-10 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-[11px] font-black text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08]">{tr("Necessary only")}</button>
-            <button type="button" onClick={() => choose("accepted")} className="min-h-10 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 text-[11px] font-black text-white shadow-lg shadow-violet-950/30 transition hover:brightness-110">{tr("Accept analytics")}</button>
+            <button type="button" onClick={() => choose("necessary")} className="min-h-10 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-[11px] font-black text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08]">{label("Necessary only", "الضرورية فقط")}</button>
+            <button type="button" onClick={() => choose("accepted")} className="min-h-10 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 text-[11px] font-black text-white shadow-lg shadow-violet-950/30 transition hover:brightness-110">{label("Accept analytics", "قبول التحليلات")}</button>
           </div>
         </div>
       ) : null}
