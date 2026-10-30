@@ -34,6 +34,10 @@ if (process.env.VERCEL_ENV === "production") {
   const migrationEnv = {
     ...process.env,
     DATABASE_URL: migrationUrl(process.env),
+    // Neon can retain session advisory locks when a backend connection returns
+    // to its proxy after Prisma exits. Production deploys are serialized by the
+    // main branch, so migrations remain ordered without Prisma's session lock.
+    PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "1",
   };
   runMigrationWithRetry(
     process.platform === "win32" ? "npx.cmd" : "npx",

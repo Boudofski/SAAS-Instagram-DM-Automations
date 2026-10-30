@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { migrationUrl } from "../scripts/migration-url.mjs";
 
@@ -15,5 +16,9 @@ describe("migration connection", () => {
   });
   it("fails when no connection is configured", () => {
     expect(() => migrationUrl({})).toThrow("DATABASE_URL");
+  });
+  it("prevents pooled Neon sessions from retaining Prisma's migration lock", () => {
+    const buildScript = fs.readFileSync("scripts/vercel-build.mjs", "utf8");
+    expect(buildScript).toContain('PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "1"');
   });
 });
