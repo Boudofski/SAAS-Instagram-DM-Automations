@@ -17,6 +17,7 @@ const mockHasRecentHandledCommenter = vi.fn();
 const mockCountLoopGuardEvents = vi.fn();
 const mockCountRecentSelfCommentSkips = vi.fn();
 const mockPauseAutomationForLoopGuard = vi.fn();
+const mockSetPublicReplyCooldown = vi.fn();
 const mockIsAppReviewMode = vi.fn();
 const mockCanSendStaticReply = vi.fn();
 const mockUpsertLead = vi.fn();
@@ -45,6 +46,7 @@ vi.mock("@/actions/webhook/queries", () => ({
   countLoopGuardEvents: (...args: any[]) => mockCountLoopGuardEvents(...args),
   countRecentSelfCommentSkips: (...args: any[]) => mockCountRecentSelfCommentSkips(...args),
   pauseAutomationForLoopGuard: (...args: any[]) => mockPauseAutomationForLoopGuard(...args),
+  setPublicReplyCooldown: (...args: any[]) => mockSetPublicReplyCooldown(...args),
   createMessageLog: (...args: any[]) => mockCreateMessageLog(...args),
   upsertLead: (...args: any[]) => mockUpsertLead(...args),
   createAutomationEvent: (...args: any[]) => mockCreateAutomationEvent(...args),
@@ -123,6 +125,7 @@ function automation(sendPrivateDm: boolean, overrides: Record<string, any> = {})
     matchingMode: "CONTAINS",
     triggerMode: overrides.triggerMode ?? "SPECIFIC_KEYWORD",
     sendPrivateDm,
+    publicReplyCooldownUntil: overrides.publicReplyCooldownUntil ?? null,
     keywords: overrides.keywords ?? [{ word: "ai" }],
     posts: [{ postid: "ANY" }],
     listener: {
@@ -200,6 +203,7 @@ beforeEach(() => {
   mockCountLoopGuardEvents.mockResolvedValue(0);
   mockCountRecentSelfCommentSkips.mockResolvedValue(0);
   mockPauseAutomationForLoopGuard.mockResolvedValue({});
+  mockSetPublicReplyCooldown.mockResolvedValue({});
   mockIsAppReviewMode.mockReturnValue(false);
   mockCanSendStaticReply.mockResolvedValue({
     ok: true,
@@ -751,6 +755,33 @@ describe("comment webhook private DM toggle", () => {
           publicReplyVolumeExceeded: true,
         }),
       })
+    );
+  });
+
+  it("keeps sending the DM while Meta's public-reply abuse cooldown is active", async () => {
+    const campaign = automation(true, {
+      publicReplyCooldownUntil: new Date(Date.now() + 10 * 60 * 1000),
+    });
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: {
+        matchingIntegrationFound: true,
+        matchedAutomationIds: [campaign.id],
+      },
+    });
+
+    await POST(commentRequest());
+
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendMediaComment).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageType: "COMMENT_REPLY",
+        status: "SKIPPED",
+        errorMessage: "meta_public_reply_abuse_cooldown",
+      }),
     );
   });
 
