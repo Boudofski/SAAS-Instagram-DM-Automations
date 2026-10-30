@@ -298,6 +298,7 @@ model Automation {
   deliveryDelaySeconds Int               @default(0)
   triggerOnShares      Boolean           @default(false)
   oneDmPerUser         Boolean           @default(false)
+  publicReplyCooldownUntil DateTime?
   needsReview          Boolean           @default(false)
   reviewReason         String?
   archivedAt           DateTime?

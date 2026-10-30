@@ -62,6 +62,7 @@ import {
   hasProcessedCommentWebhook,
   hasAp3kGeneratedCommentId,
   countRecentPublicReplies,
+  setPublicReplyCooldown,
   countRecentSelfCommentSkips,
   pauseAutomationForLoopGuard,
   createMessageLog,
@@ -143,6 +144,7 @@ const LOOP_GUARD_MEDIA_WINDOW_MS = 10 * 60 * 1000;
 const LOOP_GUARD_AUTOMATION_WINDOW_MS = 60 * 60 * 1000;
 const MAX_PUBLIC_REPLIES_PER_AUTOMATION_MEDIA_10M = 5;
 const MAX_PUBLIC_REPLIES_PER_AUTOMATION_HOUR = 50;
+const META_PUBLIC_REPLY_ABUSE_COOLDOWN_MS = 15 * 60 * 1000;
 // ANY_COMMENT campaigns only: pause if self-comment skip rate exceeds this within 10 min.
 const SELF_COMMENT_PAUSE_THRESHOLD = 3;
 const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -1438,6 +1440,37 @@ async function processEntry(
       let publicSlot: Awaited<
         ReturnType<typeof reservePublicReplySlot>
       > | null = null;
+      const publicReplyCooldownUntil = automation.publicReplyCooldownUntil;
+      if (
+        chosenReply &&
+        publicReplyCooldownUntil &&
+        publicReplyCooldownUntil.getTime() > Date.now()
+      ) {
+        await Promise.allSettled([
+          createMessageLog({
+            automationId: automation.id,
+            recipientIgId: commenterId,
+            mediaId,
+            commentId,
+            messageType: "COMMENT_REPLY",
+            status: "SKIPPED",
+            errorMessage: "meta_public_reply_abuse_cooldown",
+          }),
+          createAutomationEvent({
+            automationId: automation.id,
+            eventType: "COMMENT_SKIPPED",
+            igUserId: commenterId,
+            mediaId,
+            commentId,
+            keyword: matchedKeyword,
+            meta: {
+              reason: "meta_public_reply_abuse_cooldown",
+              cooldownUntil: publicReplyCooldownUntil.toISOString(),
+            },
+          }),
+        ]);
+        chosenReply = null;
+      }
       if (chosenReply) {
         try {
           publicSlot = await reservePublicReplySlot({
@@ -1500,8 +1533,25 @@ async function processEntry(
           }
         } catch (threadedErr) {
           const threadedError = formatSafeMetaError(threadedErr);
+          const safeThreadedError = getSafeMetaError(threadedErr);
+          const metaAbuseBlocked =
+            safeThreadedError.code === 368 ||
+            safeThreadedError.subcode === 4928002;
+          if (metaAbuseBlocked) {
+            await setPublicReplyCooldown(
+              automation.id,
+              new Date(Date.now() + META_PUBLIC_REPLY_ABUSE_COOLDOWN_MS),
+            ).catch((error) =>
+              console.error("[webhook] could not persist public reply cooldown", {
+                automationId: automation.id,
+                error: error instanceof Error ? error.message : "unknown_error",
+              }),
+            );
+          }
           console.warn(
-            "[webhook] threaded comment reply failed — trying Standard Access @mention fallback",
+            metaAbuseBlocked
+              ? "[webhook] public replies paused after Meta abuse protection response"
+              : "[webhook] threaded comment reply failed — trying Standard Access @mention fallback",
             {
               error: getSafeMetaError(threadedErr),
               hasCommenterUsername: Boolean(commenterUsername),
@@ -1510,7 +1560,9 @@ async function processEntry(
           );
 
           // Fallback: Standard Access — top-level comment with @mention
-          if (mediaId) {
+          if (metaAbuseBlocked) {
+            publicReplyErrorMessage = threadedError;
+          } else if (mediaId) {
             publicReplyEndpoint = "mention_comment";
             const mentionText =
               commenterUsername && !replyText.includes(`@${commenterUsername}`)

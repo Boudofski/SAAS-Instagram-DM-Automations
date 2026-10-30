@@ -1172,6 +1172,17 @@ export const countRecentPublicReplies = async (data: {
   });
 };
 
+export const setPublicReplyCooldown = async (
+  automationId: string,
+  until: Date,
+) => {
+  return await client.automation.update({
+    where: { id: automationId },
+    data: { publicReplyCooldownUntil: until },
+    select: { id: true, publicReplyCooldownUntil: true },
+  });
+};
+
 export const hasRecentHandledCommenter = async (data: {
   automationId: string;
   commenterId: string;
