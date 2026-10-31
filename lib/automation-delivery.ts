@@ -29,8 +29,9 @@ export async function processAutomationDeliveries(now=new Date(), only?:{automat
   const jobs=await client.automationDeliveryJob.findMany({where:{status:"PENDING",dueAt:{lte:now},...only},orderBy:{dueAt:"asc"},take:20,include:{automation:{select:{active:true,archivedAt:true,integrationId:true,User:{select:{status:true,subscription:{select:{plan:true}}}},listener:{select:{aiReplyEnabled:true,aiDmReplyEnabled:true,flowDefinition:true}},integration:{select:{status:true,reconnectRequired:true,planLocked:true}}}}}});
   let processed=0;
   let recoveryDeferred=0;
+  let lastRecoverySendAt=0;
   for(const job of jobs){
-    if(Date.now()-started>35000)break;
+    if(Date.now()-started>45000)break;
     const claimed=await client.automationDeliveryJob.updateMany({where:{id:job.id,status:"PENDING"},data:{status:"PROCESSING"}});
     if(!claimed.count)continue;
     const payload=job.payload as {entry:unknown;object:string;recipientIgId?:string;backtrack?:boolean;commentTimestamp?:string;recoveryDmOnly?:boolean;recoveryAttempt?:number};
@@ -62,7 +63,6 @@ export async function processAutomationDeliveries(now=new Date(), only?:{automat
         const dueAt = new Date(Date.now() + 5 * 60_000);
         const nextPayload = { ...payload, recoveryAttempt: (payload.recoveryAttempt ?? 0) + 1 } as Prisma.InputJsonValue;
         await client.automationDeliveryJob.update({where:{id:job.id},data:{status:"PENDING",dueAt,payload:nextPayload}});
-        await scheduleDeliveryWake({id:job.id,dueAt});
         recoveryDeferred++;
         continue;
       }
@@ -71,6 +71,13 @@ export async function processAutomationDeliveries(now=new Date(), only?:{automat
     const publicOnly = (payload.entry as {ap3kDeliveryStep?:string})?.ap3kDeliveryStep === "PUBLIC_REPLY";
     const conversationMovedOn = payload.recipientIgId && job.automation.integrationId ? await client.inboxMessage.findFirst({where:{conversation:{integrationId:job.automation.integrationId,recipientIgId:payload.recipientIgId},createdAt:{gt:job.createdAt},direction:{in:publicOnly ? ["INBOUND"] : ["INBOUND","OUTBOUND"]}},select:{id:true}}) : null;
     if(conversationMovedOn || !job.automation.active || job.automation.archivedAt || now.getTime()-job.createdAt.getTime()>=86400000){await client.automationDeliveryJob.update({where:{id:job.id},data:{status:"CANCELLED",payload:{}}});continue;}
+    // Recovery traffic is intentionally paced inside one scheduler invocation.
+    // This avoids one QStash message per recipient while keeping Meta traffic gradual.
+    if (payload.recoveryDmOnly) {
+      const waitMs = lastRecoverySendAt ? Math.max(0, 3000 - (Date.now() - lastRecoverySendAt)) : 0;
+      if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+      lastRecoverySendAt = Date.now();
+    }
     try {
       const {resumeAutomationDelivery}=await import("@/lib/meta-webhook-handler");
       const attemptStartedAt = new Date();
@@ -96,7 +103,6 @@ export async function processAutomationDeliveries(now=new Date(), only?:{automat
           const dueAt = new Date(Date.now() + Math.min(15, 2 + attempt) * 60_000);
           const nextPayload = { ...payload, recoveryAttempt: attempt } as Prisma.InputJsonValue;
           await client.automationDeliveryJob.update({where:{id:job.id},data:{status:"PENDING",dueAt,payload:nextPayload}});
-          await scheduleDeliveryWake({id:job.id,dueAt});
           recoveryDeferred++;
           continue;
         }
@@ -112,14 +118,8 @@ export async function processAutomationDeliveries(now=new Date(), only?:{automat
     }
   }
   await client.automationDeliveryJob.updateMany({where:{status:"PROCESSING",updatedAt:{lt:new Date(now.getTime()-10*60000)}},data:{status:"FAILED",payload:{}}});
-  // One wake per batch keeps large recovery queues moving without publishing
-  // thousands of QStash messages. The persisted dueAt still controls pacing.
-  const nextJob = await client.automationDeliveryJob.findFirst({
-    where: { status: "PENDING" },
-    orderBy: { dueAt: "asc" },
-    select: { id: true, dueAt: true },
-  });
-  if (nextJob) await scheduleDeliveryWake(nextJob);
+  // The recurring scheduler drains recovery rows in paced batches. Normal delayed
+  // events already receive their precise wake when they are created.
   return {delayedProcessed:processed,recoveryDeferred};
 }
 
