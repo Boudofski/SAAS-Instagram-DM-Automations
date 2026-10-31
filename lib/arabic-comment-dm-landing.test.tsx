@@ -25,7 +25,9 @@ describe("Arabic comment-to-DM acquisition page", () => {
     const html = renderToStaticMarkup(<ArabicCommentToDmPage />);
     expect(html).toContain('lang="ar"');
     expect(html).toContain('dir="rtl"');
-    expect(html).toContain("حوّل كل تعليق");
+    expect(html).toContain("علّقوا على الريلز");
+    expect(html).toContain("instagram-features_01-phone.mp4");
+    expect(html).toContain("هذا هو المنتج الحقيقي");
     expect(html).toContain("500 عملية تلقائية ناجحة شهريًا");
     expect(html).toContain("خمس عمليات أتمتة نشطة");
     expect(html).toContain("utm_campaign=comment-to-dm");
@@ -67,7 +69,9 @@ describe("Arabic comment-to-DM acquisition page", () => {
     );
     expect(exception).toBeGreaterThan(-1);
     expect(exception).toBeLessThan(retiredRedirect);
-    expect(middleware).toContain('requestHeaders.set("x-ap3k-arabic-page", "1")');
+    expect(middleware).toContain(
+      'requestHeaders.set("x-ap3k-arabic-page", "1")',
+    );
   });
 
   it("localizes and repositions the delayed cookie prompt on the Arabic page", () => {
