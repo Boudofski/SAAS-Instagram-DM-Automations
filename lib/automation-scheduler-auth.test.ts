@@ -7,6 +7,8 @@ beforeEach(() => { vi.resetAllMocks(); delete process.env.CRON_SECRET; });
 describe("scheduler authentication", () => {
   it("accepts only the repository's main-branch scheduler identity", () => {
     expect(schedulerClaimsAllowed(claims)).toBe(true);
+    expect(schedulerClaimsAllowed({ ...claims, event_name: "workflow_dispatch" })).toBe(true);
+    expect(schedulerClaimsAllowed({ ...claims, event_name: "push" })).toBe(true);
     for (const key of ["repository_id", "repository_owner_id", "repository", "ref", "workflow_ref", "event_name"]) expect(schedulerClaimsAllowed({ ...claims, [key]: "untrusted" })).toBe(false);
   });
   it("requires cryptographic verification, exact audience, issuer and expiry", async () => {

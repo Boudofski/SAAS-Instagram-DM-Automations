@@ -9,7 +9,7 @@ export function schedulerClaimsAllowed(payload: JWTPayload) {
   return payload.repository_id === "1237811208" && payload.repository_owner_id === "92354296"
     && payload.repository === REPOSITORY && payload.ref === "refs/heads/main"
     && payload.workflow_ref === `${REPOSITORY}/.github/workflows/automation-follow-ups.yml@refs/heads/main`
-    && ["schedule", "workflow_dispatch"].includes(String(payload.event_name));
+    && ["schedule", "workflow_dispatch", "push"].includes(String(payload.event_name));
 }
 
 export async function authorizeAutomationScheduler(request: Request) {
