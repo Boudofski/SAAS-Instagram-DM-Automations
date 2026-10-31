@@ -6,6 +6,8 @@ import { authorizeQStashScheduler } from "@/lib/qstash-scheduler-auth";
 import { NextResponse } from "next/server";
 import { processAutomationFollowUps } from "@/lib/automation-engagement";
 import { processScheduledAutomationFlows } from "@/lib/automation-flow/scheduler";
+import { processOwnerAlertQueue } from "@/lib/email/owner-alerts";
+import { notifySchedulerFailure, scanOperationalIntegrationAlerts } from "@/lib/email/operational-alerts";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,8 +21,12 @@ export async function POST(request: Request) {
 }
 async function processQueues() {
   try {
-    const [followUps, flows, delayed, stories, followers] = await Promise.all([processAutomationFollowUps(), processScheduledAutomationFlows(), processAutomationDeliveries(), bindPendingNextStories().catch(()=>({storyMonitorUnavailable:true})), refreshPendingFollowers().catch(() => ({ followerMonitorUnavailable: true }))]);
-    return NextResponse.json({ ok: true, ...followUps, ...flows, ...delayed, ...stories, ...followers });
+    const integrationAlerts = await scanOperationalIntegrationAlerts();
+    const [followUps, flows, delayed, stories, followers, ownerAlerts] = await Promise.all([processAutomationFollowUps(), processScheduledAutomationFlows(), processAutomationDeliveries(), bindPendingNextStories().catch(()=>({storyMonitorUnavailable:true})), refreshPendingFollowers().catch(() => ({ followerMonitorUnavailable: true })), processOwnerAlertQueue().catch(() => ({ attempted: 0, sent: 0 }))]);
+    return NextResponse.json({ ok: true, ...followUps, ...flows, ...delayed, ...stories, ...followers, integrationAlerts, ownerAlerts });
   }
-  catch { return NextResponse.json({ error: "Follow-up queue unavailable" }, { status: 503 }); }
+  catch (error) {
+    await notifySchedulerFailure({ worker: "automation follow-up", error });
+    return NextResponse.json({ error: "Follow-up queue unavailable" }, { status: 503 });
+  }
 }
