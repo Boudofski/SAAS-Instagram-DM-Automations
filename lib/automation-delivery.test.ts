@@ -24,7 +24,7 @@ it("defers DM-only recovery while Instagram message access is disabled",async()=
  await processAutomationDeliveries(now);
  expect(resume).not.toHaveBeenCalled();
  expect(db.automationDeliveryJob.update).toHaveBeenCalledWith(expect.objectContaining({where:{id:"j"},data:expect.objectContaining({status:"PENDING",dueAt:expect.any(Date)})}));
- expect(wake).toHaveBeenCalledWith(expect.objectContaining({id:"j",dueAt:expect.any(Date)}));
+ expect(wake).not.toHaveBeenCalled();
 });
 
 it("completes DM-only recovery only after a sent outcome is recorded",async()=>{
@@ -35,12 +35,10 @@ it("completes DM-only recovery only after a sent outcome is recorded",async()=>{
  expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"COMPLETED",payload:{}}});
 });
 
-it("schedules one next wake so large queues drain batch by batch",async()=>{
- const next={id:"next-job",dueAt:new Date(now.getTime()+10_000)};
+it("does not publish a wake for every processed batch",async()=>{
  db.automationDeliveryJob.findMany.mockResolvedValue([job]);
- db.automationDeliveryJob.findFirst.mockResolvedValue(next);
  await processAutomationDeliveries(now);
- expect(wake).toHaveBeenCalledWith(next);
+ expect(wake).not.toHaveBeenCalled();
 });
 
 it("cancels a delayed response when the conversation has moved on",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,recipientIgId:"recipient"}}]);db.inboxMessage.findFirst.mockResolvedValue({id:"later-message"});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();expect(db.inboxMessage.findFirst.mock.calls[0][0].where.conversation).toEqual({integrationId:"account",recipientIgId:"recipient"});expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"CANCELLED",payload:{}}});});
