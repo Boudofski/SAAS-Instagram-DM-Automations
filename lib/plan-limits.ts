@@ -79,6 +79,39 @@ export function getPlanLimits(plan?: ProductPlan | null) {
   return PLAN_LIMITS[plan ?? "FREE"] ?? PLAN_LIMITS.FREE;
 }
 
+export type PlanLimitOverrides = {
+  monthlyReplyLimitOverride?: number | null;
+  aiReplyLimitOverride?: number | null;
+  activeCampaignLimitOverride?: number | null;
+  connectedAccountLimitOverride?: number | null;
+  overrideExpiresAt?: Date | null;
+};
+
+/** Internal limits are effective only until their optional expiry. Stripe and
+ * the persisted customer plan remain unchanged. Zero is a valid hard limit. */
+export function getEffectivePlanLimits(
+  plan: ProductPlan | null | undefined,
+  overrides: PlanLimitOverrides | null | undefined,
+  date = new Date(),
+): PlanLimits {
+  const defaults = getPlanLimits(plan);
+  if (!overrides || (overrides.overrideExpiresAt && overrides.overrideExpiresAt <= date)) {
+    return defaults;
+  }
+
+  return {
+    ...defaults,
+    staticRepliesPerMonth:
+      overrides.monthlyReplyLimitOverride ?? defaults.staticRepliesPerMonth,
+    aiRepliesPerMonth:
+      overrides.aiReplyLimitOverride ?? defaults.aiRepliesPerMonth,
+    activeCampaigns:
+      overrides.activeCampaignLimitOverride ?? defaults.activeCampaigns,
+    connectedInstagramAccounts:
+      overrides.connectedAccountLimitOverride ?? defaults.connectedInstagramAccounts,
+  };
+}
+
 export function getPlanLabel(plan?: ProductPlan | null) {
   return getPlanLimits(plan).label;
 }

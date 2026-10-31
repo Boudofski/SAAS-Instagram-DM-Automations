@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const db=vi.hoisted(()=>({messageLog:{findFirst:vi.fn()},inboxMessage:{findFirst:vi.fn()},automationDmRecipient:{createMany:vi.fn()},automationDeliveryJob:{createMany:vi.fn(),findMany:vi.fn(),updateMany:vi.fn(),update:vi.fn(),upsert:vi.fn()}}));
+const db=vi.hoisted(()=>({messageLog:{findFirst:vi.fn()},inboxMessage:{findFirst:vi.fn()},automationDmRecipient:{createMany:vi.fn()},automationDeliveryJob:{createMany:vi.fn(),findMany:vi.fn(),findFirst:vi.fn(),updateMany:vi.fn(),update:vi.fn(),upsert:vi.fn()}}));
 const resume=vi.hoisted(()=>vi.fn());
 const wake=vi.hoisted(()=>vi.fn());
 vi.mock("@/lib/qstash-delivery-wake",()=>({scheduleDeliveryWake:wake}));
 vi.mock("@/lib/prisma",()=>({client:db}));vi.mock("@/lib/meta-webhook-handler",()=>({resumeAutomationDelivery:resume}));
 import {claimDmRecipient,claimImmediateComment,deferAutomationDelivery,processAutomationDeliveries} from "./automation-delivery";
-beforeEach(()=>{vi.clearAllMocks();wake.mockResolvedValue(false);db.automationDeliveryJob.upsert.mockImplementation(async ({create})=>({...create,id:"job",status:"PENDING"}));db.messageLog.findFirst.mockResolvedValue(null);db.automationDeliveryJob.updateMany.mockResolvedValue({count:1});db.automationDeliveryJob.update.mockResolvedValue({});resume.mockResolvedValue(undefined);});
+beforeEach(()=>{vi.clearAllMocks();wake.mockResolvedValue(false);db.automationDeliveryJob.upsert.mockImplementation(async ({create})=>({...create,id:"job",status:"PENDING"}));db.automationDeliveryJob.findFirst.mockResolvedValue(null);db.messageLog.findFirst.mockResolvedValue(null);db.automationDeliveryJob.updateMany.mockResolvedValue({count:1});db.automationDeliveryJob.update.mockResolvedValue({});resume.mockResolvedValue(undefined);});
 describe("one DM per recipient",()=>{
  it("atomically allows only one of concurrent triggers",async()=>{const claimed=new Set<string>();db.automationDmRecipient.createMany.mockImplementation(async ({data})=>{const key=data[0].automationId+data[0].recipientIgId;if(claimed.has(key))return {count:0};claimed.add(key);return {count:1};});expect(await Promise.all([claimDmRecipient("a","r"),claimDmRecipient("a","r")])).toEqual([true,false]);expect(await claimDmRecipient("b","r")).toBe(true);});
  it("honors already delivered messages when enabled later",async()=>{db.messageLog.findFirst.mockResolvedValue({id:"sent"});expect(await claimDmRecipient("a","r")).toBe(false);expect(db.automationDmRecipient.createMany).not.toHaveBeenCalled();});
@@ -16,6 +16,31 @@ describe("durable delays",()=>{
  it("claims due work before resuming it and clears retained payload",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([job]);await processAutomationDeliveries(now);expect(resume).toHaveBeenCalledWith("a",{id:"ig"},"instagram");expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"COMPLETED",payload:{}}});});
  it("never runs a paused campaign, expired message, or work claimed elsewhere",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{active:false}},{...job,id:"expired",createdAt:new Date(now.getTime()-86400001)}]);await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();db.automationDeliveryJob.findMany.mockResolvedValue([job]);db.automationDeliveryJob.updateMany.mockResolvedValue({count:0});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();});
  it("does not replay a delivery with an ambiguous failure",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([job]);resume.mockRejectedValue(new Error("timeout"));await processAutomationDeliveries(now);expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"FAILED",payload:{}}});});
+});
+
+it("defers DM-only recovery while Instagram message access is disabled",async()=>{
+ db.messageLog.findFirst.mockResolvedValue({status:"FAILED",errorMessage:"dm_access_disabled"});
+ db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,recipientIgId:"recipient",recoveryDmOnly:true}}]);
+ await processAutomationDeliveries(now);
+ expect(resume).not.toHaveBeenCalled();
+ expect(db.automationDeliveryJob.update).toHaveBeenCalledWith(expect.objectContaining({where:{id:"j"},data:expect.objectContaining({status:"PENDING",dueAt:expect.any(Date)})}));
+ expect(wake).toHaveBeenCalledWith(expect.objectContaining({id:"j",dueAt:expect.any(Date)}));
+});
+
+it("completes DM-only recovery only after a sent outcome is recorded",async()=>{
+ db.messageLog.findFirst.mockResolvedValueOnce({status:"SENT",errorMessage:"final_dm_payload_sent"}).mockResolvedValueOnce({status:"SENT",errorMessage:"final_dm_payload_sent"});
+ db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,entry:{id:"ig",ap3kDeliveryStep:"PRIVATE_DM",changes:[{value:{id:"comment-1"}}]},recipientIgId:"recipient",recoveryDmOnly:true}}]);
+ await processAutomationDeliveries(now);
+ expect(resume).toHaveBeenCalled();
+ expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"COMPLETED",payload:{}}});
+});
+
+it("schedules one next wake so large queues drain batch by batch",async()=>{
+ const next={id:"next-job",dueAt:new Date(now.getTime()+10_000)};
+ db.automationDeliveryJob.findMany.mockResolvedValue([job]);
+ db.automationDeliveryJob.findFirst.mockResolvedValue(next);
+ await processAutomationDeliveries(now);
+ expect(wake).toHaveBeenCalledWith(next);
 });
 
 it("cancels a delayed response when the conversation has moved on",async()=>{db.automationDeliveryJob.findMany.mockResolvedValue([{...job,automation:{...job.automation,integrationId:"account"},payload:{...job.payload,recipientIgId:"recipient"}}]);db.inboxMessage.findFirst.mockResolvedValue({id:"later-message"});await processAutomationDeliveries(now);expect(resume).not.toHaveBeenCalled();expect(db.inboxMessage.findFirst.mock.calls[0][0].where.conversation).toEqual({integrationId:"account",recipientIgId:"recipient"});expect(db.automationDeliveryJob.update).toHaveBeenCalledWith({where:{id:"j"},data:{status:"CANCELLED",payload:{}}});});

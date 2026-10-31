@@ -586,6 +586,19 @@ describe("adminUpdateUserBillingOverridesAction", () => {
     );
   });
 
+  it("rejects malformed override values instead of silently clearing them", async () => {
+    const result = await adminUpdateUserBillingOverridesAction(
+      form({
+        userId: "user-1",
+        reason: "VIP partner",
+        monthlyReplyLimitOverride: "100000oops",
+      }),
+    );
+
+    expect(result.status).toBe(400);
+    expect(mockSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
   it("writes a SUCCESS audit with ADMIN_BILLING_OVERRIDES_UPDATED and before/after", async () => {
     await adminUpdateUserBillingOverridesAction(
       form({

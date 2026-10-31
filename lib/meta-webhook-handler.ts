@@ -1139,7 +1139,8 @@ async function processEntry(
       }
 
       if (automation.userId && (publicReplyEnabled || privateDmEnabled)) {
-        const usageAllowed = await canSendStaticReply(automation.userId);
+        const requiredUnits = Number(publicReplyEnabled) + Number(privateDmEnabled);
+        const usageAllowed = await canSendStaticReply(automation.userId, new Date(), requiredUnits);
         if (!usageAllowed.ok) {
           await createAutomationEvent({
             automationId: automation.id,

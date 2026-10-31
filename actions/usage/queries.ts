@@ -1,8 +1,8 @@
 import { client } from "@/lib/prisma";
 import {
   getCurrentUsagePeriod,
+  getEffectivePlanLimits,
   getPlanLabel,
-  getPlanLimits,
   isUnlimited,
   makeUsageMetric,
   type ProductPlan,
@@ -18,17 +18,21 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         select: {
           plan: true,
           usageResetAt: true,
+          monthlyReplyLimitOverride: true,
+          aiReplyLimitOverride: true,
+          activeCampaignLimitOverride: true,
+          connectedAccountLimitOverride: true,
+          overrideExpiresAt: true,
         },
       },
     },
   });
 
   const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
-  const limits = getPlanLimits(plan);
+  const limits = getEffectivePlanLimits(plan, user?.subscription, date);
 
-  // Keep the published plan limits authoritative across billing and enforcement.
-  // Historical per-account overrides and launch-trial columns are intentionally
-  // ignored so every user sees the same monthly entitlement the product advertises.
+  // Published plan limits remain the default. Explicit owner overrides are
+  // separate from Stripe and apply only while they are active.
   const staticLimit = limits.staticRepliesPerMonth;
   const aiLimit = limits.aiRepliesPerMonth;
   const campaignLimit = limits.activeCampaigns;
@@ -104,12 +108,13 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   };
 }
 
-export async function canSendStaticReply(userId: string, date = new Date()) {
+export async function canSendStaticReply(userId: string, date = new Date(), units = 1) {
   const usage = await getUserMonthlyUsage(userId, date);
+  const hasCapacity = usage.staticReplies.remaining === null || usage.staticReplies.remaining >= Math.max(1, units);
   return {
-    ok: !usage.staticReplies.blocked,
+    ok: hasCapacity,
     usage,
-    reason: usage.staticReplies.blocked ? "static_reply_limit_reached" : undefined,
+    reason: hasCapacity ? undefined : "static_reply_limit_reached",
   };
 }
 
@@ -156,11 +161,19 @@ export async function reserveAiReplyQuota(input: AiReplyReservationInput) {
 
     const user = await tx.user.findUnique({
       where: { id: input.userId },
-      select: { status: true, subscription: { select: { plan: true, usageResetAt: true } } },
+      select: { status: true, subscription: { select: {
+        plan: true,
+        usageResetAt: true,
+        aiReplyLimitOverride: true,
+        overrideExpiresAt: true,
+      } } },
     });
     if (!user || user.status === "SUSPENDED") throw new Error("Account unavailable");
     const plan = (user?.subscription?.plan ?? "FREE") as ProductPlan;
-    const limit = plan === "FREE" && input.channel === "PLAYGROUND" && input.allowFreePreview ? 20 : getPlanLimits(plan).aiRepliesPerMonth;
+    const effectiveLimits = getEffectivePlanLimits(plan, user?.subscription, date);
+    const limit = plan === "FREE" && input.channel === "PLAYGROUND" && input.allowFreePreview
+      ? 20
+      : effectiveLimits.aiRepliesPerMonth;
     const period = getCurrentUsagePeriod(date);
     const resetAt = user?.subscription?.usageResetAt;
     const effectiveStart = resetAt && resetAt > period.enforcementStart
