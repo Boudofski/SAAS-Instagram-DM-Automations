@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import LocalTime from "@/components/global/local-time";
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function InternalOverridesCard({ user, usage }: Props) {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,7 @@ export function InternalOverridesCard({ user, usage }: Props) {
       const result = await adminUpdateUserBillingOverridesAction(formData);
       if (result.status === 200) {
         setSuccessMsg("Overrides updated successfully.");
+        router.refresh();
         setTimeout(() => setIsModalOpen(false), 1200);
       } else {
         setError(String(result.data));
@@ -95,6 +98,7 @@ export function InternalOverridesCard({ user, usage }: Props) {
         setConnectedAccount("");
         setExpiresAt("");
         setReason("");
+        router.refresh();
         setTimeout(() => setIsModalOpen(false), 1200);
       } else {
         setError(String(result.data));
@@ -231,7 +235,7 @@ function LimitInput({ label, value, onChange }: { label: string; value: string; 
   return (
     <label className="block">
       <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
-      <input type="number" min="0" value={value} onChange={(event) => onChange(event.target.value)} placeholder="Plan default" className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
+      <input type="number" min="0" max="1000000000" step="1" value={value} onChange={(event) => onChange(event.target.value)} placeholder="Plan default" className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-white/[0.09] bg-slate-50 dark:bg-white/[0.035] px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-600 focus:border-pink-400/40 focus:ring-2 focus:ring-pink-500/10" />
     </label>
   );
 }

@@ -415,15 +415,30 @@ export async function adminUpdateUserBillingOverridesAction(formData: FormData) 
   const userId = adminFormString(formData, "userId");
   const reason = adminFormString(formData, "reason");
 
-  const monthlyReplyLimitOverride = parseOverride(formData.get("monthlyReplyLimitOverride") as string);
-  const aiReplyLimitOverride = parseOverride(formData.get("aiReplyLimitOverride") as string);
-  const activeCampaignLimitOverride = parseOverride(formData.get("activeCampaignLimitOverride") as string);
-  const connectedAccountLimitOverride = parseOverride(formData.get("connectedAccountLimitOverride") as string);
+  const rawOverrides = {
+    monthlyReplyLimitOverride: formData.get("monthlyReplyLimitOverride"),
+    aiReplyLimitOverride: formData.get("aiReplyLimitOverride"),
+    activeCampaignLimitOverride: formData.get("activeCampaignLimitOverride"),
+    connectedAccountLimitOverride: formData.get("connectedAccountLimitOverride"),
+  };
+  for (const value of Object.values(rawOverrides)) {
+    if (value !== null && String(value).trim() && !/^\d+$/.test(String(value).trim())) {
+      return { status: 400 as const, data: "Overrides must be whole non-negative numbers." };
+    }
+  }
+  const monthlyReplyLimitOverride = parseOverride(rawOverrides.monthlyReplyLimitOverride);
+  const aiReplyLimitOverride = parseOverride(rawOverrides.aiReplyLimitOverride);
+  const activeCampaignLimitOverride = parseOverride(rawOverrides.activeCampaignLimitOverride);
+  const connectedAccountLimitOverride = parseOverride(rawOverrides.connectedAccountLimitOverride);
   const overrideExpiresAtRaw = formData.get("overrideExpiresAt") as string;
   const overrideExpiresAt = overrideExpiresAtRaw ? new Date(overrideExpiresAtRaw) : null;
 
   if (reason.length < MIN_REASON) {
     return { status: 400 as const, data: "Reason must be at least 5 characters." };
+  }
+
+  if (overrideExpiresAt && Number.isNaN(overrideExpiresAt.getTime())) {
+    return { status: 400 as const, data: "Expiration date is invalid." };
   }
 
   if (
@@ -515,8 +530,9 @@ export async function adminUpdateUserBillingOverridesAction(formData: FormData) 
   }
 }
 
-function parseOverride(val: string | null): number | null {
-  if (val === null || val === undefined || val.trim() === "") return null;
-  const num = parseInt(val, 10);
-  return isNaN(num) ? null : num;
+function parseOverride(val: FormDataEntryValue | null): number | null {
+  const normalized = val === null || val === undefined ? "" : String(val).trim();
+  if (!normalized) return null;
+  const num = Number(normalized);
+  return Number.isSafeInteger(num) ? num : null;
 }

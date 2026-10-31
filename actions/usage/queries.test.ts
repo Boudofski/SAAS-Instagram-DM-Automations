@@ -136,6 +136,43 @@ describe("usage query helpers", () => {
     expect(result.reason).toBe("static_reply_limit_reached");
   });
 
+  it("enforces an active internal monthly reply override", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "BUSINESS",
+        monthlyReplyLimitOverride: 100_000,
+        overrideExpiresAt: new Date("2029-01-31T00:00:00Z"),
+      },
+    });
+    mockMessageLogCount.mockResolvedValueOnce(40_000).mockResolvedValueOnce(10_000);
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-10-31T12:00:00Z"));
+
+    expect(usage.staticReplies).toMatchObject({ used: 50_000, limit: 100_000, remaining: 50_000, blocked: false });
+  });
+
+  it("falls back to plan limits after an override expires", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        monthlyReplyLimitOverride: 100_000,
+        overrideExpiresAt: new Date("2026-10-01T00:00:00Z"),
+      },
+    });
+
+    const usage = await getUserMonthlyUsage("user-1", new Date("2026-10-31T12:00:00Z"));
+
+    expect(usage.staticReplies.limit).toBe(500);
+  });
+
+  it("requires capacity for a paired public reply and DM", async () => {
+    mockMessageLogCount.mockResolvedValueOnce(499).mockResolvedValueOnce(0);
+
+    const result = await canSendStaticReply("user-1", new Date("2026-05-24T12:00:00Z"), 2);
+
+    expect(result).toMatchObject({ ok: false, reason: "static_reply_limit_reached" });
+  });
+
   it("hard-blocks AI on Free before creating a provider reservation", async () => {
     const result = await reserveAiReplyQuota({
       userId: "user-1",
@@ -182,6 +219,25 @@ describe("usage query helpers", () => {
         channel: "COMMENT",
       }),
     }));
+  });
+
+  it("uses an active AI override during atomic reservation", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      subscription: {
+        plan: "FREE",
+        aiReplyLimitOverride: 10,
+        overrideExpiresAt: new Date("2029-01-31T00:00:00Z"),
+      },
+    });
+    mockAutomationEventCount.mockResolvedValue(9);
+
+    const result = await reserveAiReplyQuota({
+      userId: "user-1",
+      automationId: "automation-1",
+      date: new Date("2026-10-31T12:00:00Z"),
+    });
+
+    expect(result).toMatchObject({ ok: true, used: 10, limit: 10 });
   });
 
   it("completes successful reservations and releases provider failures", async () => {
@@ -314,7 +370,7 @@ describe("usage query helpers", () => {
     );
   });
 
-  it("keeps published plan limits authoritative over legacy internal overrides", async () => {
+  it("uses active internal overrides without changing the persisted plan", async () => {
     mockUserFindUnique.mockResolvedValue({
       subscription: {
         plan: "FREE",
@@ -329,8 +385,9 @@ describe("usage query helpers", () => {
     const usage = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
 
     expect(usage.staticReplies.limit).toBe(500);
-    expect(usage.activeCampaigns.limit).toBe(5);
-    expect(usage.connectedAccounts.limit).toBe(1);
+    expect(usage.activeCampaigns.limit).toBe(10);
+    expect(usage.connectedAccounts.limit).toBe(5);
+    expect(usage.plan).toBe("FREE");
   });
 
   it("ignores expired billing overrides", async () => {
