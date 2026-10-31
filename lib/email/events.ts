@@ -169,6 +169,8 @@ export async function notifyInstagramReconnectEmail(input: {
         userId: true,
         instagramUsername: true,
         expiresAt: true,
+        oauthLastErrorAt: true,
+        webhookSubscriptionLastAttemptedAt: true,
       },
     });
     if (!integration?.userId) return;
@@ -179,8 +181,8 @@ export async function notifyInstagramReconnectEmail(input: {
     // The token expiry changes after every successful reconnect, giving each
     // authorization incident one stable key while suppressing repeated alerts
     // from profile refreshes and scheduled token checks.
-    const incident = integration.expiresAt?.toISOString() ?? "unknown-expiry";
-    return safelySendEvent({
+    const incident = (integration.oauthLastErrorAt ?? integration.webhookSubscriptionLastAttemptedAt ?? integration.expiresAt)?.toISOString() ?? "current-state";
+    await safelySendEvent({
       templateId: "instagram_reconnect",
       user,
       idempotencyKey: `instagram-reconnect:${integration.id}:${incident}`,
@@ -189,6 +191,17 @@ export async function notifyInstagramReconnectEmail(input: {
         actionUrl: workspaceUrl(user.clerkId),
       },
       metadata: { integrationId: integration.id },
+    });
+    const { enqueueOwnerAlert } = await import("@/lib/email/owner-alerts");
+    await enqueueOwnerAlert({
+      kind: "system",
+      key: `integration-health:${integration.id}:${incident}`,
+      userId: user.id,
+      email: user.email,
+      name: user.firstname || undefined,
+      occurredAt: new Date().toISOString(),
+      reference: integration.instagramUsername ? `@${integration.instagramUsername}` : integration.id,
+      detail: `Instagram authorization requires reconnection${integration.instagramUsername ? ` for @${integration.instagramUsername}` : ""}. AP3K sent the customer a reconnect email and paused affected delivery to prevent further failures.`,
     });
   } catch (error) {
     console.warn("[email-event] reconnect notification skipped", {

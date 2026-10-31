@@ -1244,12 +1244,23 @@ export const createMessageLog = async (data: {
   status: SEND_STATUS;
   errorMessage?: string;
 }) => {
-  return await client.messageLog.create({
+  const log = await client.messageLog.create({
     data: {
       ...data,
       sentAt: data.status === "SENT" ? new Date() : undefined,
     },
   });
+  if (data.status !== "SENT" && data.errorMessage) {
+    const { enqueueOperationalDeliveryAlert } = await import("@/lib/email/operational-alerts");
+    await enqueueOperationalDeliveryAlert({
+      automationId: data.automationId,
+      status: data.status,
+      messageType: data.messageType,
+      errorMessage: data.errorMessage,
+      occurredAt: log.createdAt,
+    });
+  }
+  return log;
 };
 
 export const upsertLead = async (data: {
