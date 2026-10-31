@@ -1,13 +1,6 @@
 name: Automation follow-ups
 on:
-  # QStash handles normal recurring wake-ups. This bounded schedule is an
-  # incident fallback for the 2026-10-31 recovery queue only.
-  schedule:
-    - cron: "*/5 19-23 31 10 *"
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/automation-follow-ups.yml"
+  # QStash handles recurring wake-ups; keep GitHub as manual recovery.
   workflow_dispatch:
 permissions:
   id-token: write
@@ -24,9 +17,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.event_name }}" == "schedule" && "$(date -u +%F)" != "2026-10-31" ]]; then
-            exit 0
-          fi
           audience='https://ap3k.com/api/cron/automation-follow-ups'
           encoded_audience=$(printf '%s' "$audience" | jq -sRr @uri)
           identity=$(curl --fail --silent --show-error --max-time 15 \
