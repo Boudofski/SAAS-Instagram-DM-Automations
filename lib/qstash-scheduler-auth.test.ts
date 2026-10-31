@@ -5,6 +5,7 @@ import { authorizeQStashScheduler, QSTASH_SCHEDULER_URL } from "./qstash-schedul
 
 const current = "test-current-qstash-signing-key";
 const next = "test-next-qstash-signing-key";
+const usCurrent = "test-us-current-qstash-signing-key";
 async function token(body = "", overrides: Record<string, unknown> = {}, key = current, algorithm = "HS256") {
   const now = Math.floor(Date.now() / 1000);
   return new SignJWT({ iss: "Upstash", sub: QSTASH_SCHEDULER_URL, iat: now, nbf: now, exp: now + 300,
@@ -18,6 +19,8 @@ beforeEach(() => {
   vi.stubEnv("VERCEL_ENV", "production");
   vi.stubEnv("QSTASH_CURRENT_SIGNING_KEY", current);
   vi.stubEnv("QSTASH_NEXT_SIGNING_KEY", next);
+  vi.stubEnv("QSTASH_US_CURRENT_SIGNING_KEY", usCurrent);
+  vi.stubEnv("QSTASH_US_NEXT_SIGNING_KEY", "test-us-next-qstash-signing-key");
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -25,6 +28,7 @@ describe("QStash scheduler request authentication", () => {
   it("accepts real signatures with either rotating key and padded body hashes", async () => {
     expect(await authorizeQStashScheduler(request(await token()))).toBe(true);
     expect(await authorizeQStashScheduler(request(await token("", {}, next)))).toBe(true);
+    expect(await authorizeQStashScheduler(request(await token("", {}, usCurrent)))).toBe(true);
     const body = '{"check":"✓"}';
     expect(await authorizeQStashScheduler(request(await token(body, { body: createHash("sha256").update(body).digest("base64url") + "=" }), body))).toBe(true);
   });
@@ -33,6 +37,7 @@ describe("QStash scheduler request authentication", () => {
     expect(await authorizeQStashScheduler(request("invalid.jwt"))).toBe(false);
     expect(await authorizeQStashScheduler(request(await token("", {}, "another-account")))).toBe(false);
     vi.stubEnv("QSTASH_CURRENT_SIGNING_KEY", ""); vi.stubEnv("QSTASH_NEXT_SIGNING_KEY", "");
+    vi.stubEnv("QSTASH_US_CURRENT_SIGNING_KEY", ""); vi.stubEnv("QSTASH_US_NEXT_SIGNING_KEY", "");
     expect(await authorizeQStashScheduler(request(await token()))).toBe(false);
   });
   it("binds signatures to the exact production endpoint and POST method", async () => {

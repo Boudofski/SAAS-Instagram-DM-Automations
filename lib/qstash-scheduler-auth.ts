@@ -13,8 +13,12 @@ export async function authorizeQStashScheduler(request: Request) {
   if (request.method !== "POST") return reject("method");
   if (request.url !== QSTASH_SCHEDULER_URL) return reject("destination");
   const signature = request.headers.get("upstash-signature");
-  const keys = [process.env.QSTASH_CURRENT_SIGNING_KEY, process.env.QSTASH_NEXT_SIGNING_KEY]
-    .map((key) => key?.trim()).filter((key): key is string => Boolean(key));
+  const keys = [
+    process.env.QSTASH_CURRENT_SIGNING_KEY,
+    process.env.QSTASH_NEXT_SIGNING_KEY,
+    process.env.QSTASH_US_CURRENT_SIGNING_KEY,
+    process.env.QSTASH_US_NEXT_SIGNING_KEY,
+  ].map((key) => key?.trim()).filter((key): key is string => Boolean(key));
   if (!signature || signature.length > 16_384) return reject("signature-header");
   if (!keys.length) return reject("missing-signing-keys");
 
