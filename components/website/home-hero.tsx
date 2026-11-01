@@ -38,6 +38,8 @@ export default function HomeHero() {
   const [motionReady, setMotionReady] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [wideScene, setWideScene] = useState(false);
+  const [keywordScene, setKeywordScene] = useState(0);
+  const localizedKeyword = locale !== "en";
   const showVideo = videoReady && motionReady && reducedMotion === false;
   const playing = motionReady && reducedMotion === false && inView && pageVisible;
 
@@ -90,6 +92,15 @@ export default function HomeHero() {
   }, [playing]);
 
   useEffect(() => {
+    if (!localizedKeyword || reducedMotion || !inView || !pageVisible) return;
+    const timer = window.setInterval(
+      () => setKeywordScene((current) => (current + 1) % copy.scenes.length),
+      2800,
+    );
+    return () => window.clearInterval(timer);
+  }, [copy.scenes.length, inView, localizedKeyword, pageVisible, reducedMotion]);
+
+  useEffect(() => {
     const element = section.current;
     if (!element) return;
     let frame = 0;
@@ -116,22 +127,34 @@ export default function HomeHero() {
       </div>
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
-          <div className={styles.keywordMedia}>
-            <Image className={`${styles.keywordVideo} ${styles.posterLayer}`} data-hidden={showVideo} src="/media/hero/comment-water-drop-poster.webp"
-              alt="" width={1530} height={364} priority unoptimized />
-            <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
-              width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
-              src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
-              onPlaying={() => setVideoReady(true)}
-              onEmptied={() => setVideoReady(false)}
-              onError={() => setVideoReady(false)} data-ready={showVideo} />
-          </div>
+          {localizedKeyword ? (
+            <div className={styles.localizedKeyword} dir={locale === "ar" ? "rtl" : "ltr"}>
+              <span>{copy.keywordPrefix}</span>
+              <strong key={`${locale}-${keywordScene}`}>{copy.scenes[keywordScene].keyword}</strong>
+              <span>{copy.keywordSuffix}</span>
+            </div>
+          ) : (
+            <div className={styles.keywordMedia}>
+              <Image className={`${styles.keywordVideo} ${styles.posterLayer}`} data-hidden={showVideo} src="/media/hero/comment-water-drop-poster.webp"
+                alt="" width={1530} height={364} priority unoptimized />
+              <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
+                width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
+                src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
+                onPlaying={() => setVideoReady(true)}
+                onEmptied={() => setVideoReady(false)}
+                onError={() => setVideoReady(false)} data-ready={showVideo} />
+            </div>
+          )}
         </div>
         <h1 id="home-hero-title" className={styles.title}>
           <span>{copy.titleTop}{" "}</span>
           <strong>{copy.titleBottom}</strong>
         </h1>
-        <p className={styles.description}>{copy.description}</p>
+        <p className={styles.description} dir={locale === "ar" ? "rtl" : undefined}>
+          {copy.description.includes("AP3K") ? <>
+            {copy.description.split("AP3K")[0]}<bdi dir="ltr">AP3K</bdi>{copy.description.split("AP3K")[1]}
+          </> : copy.description}
+        </p>
         <div className={styles.actions}>
           <Link className={styles.primary} href={localizePublicPath("/sign-up", locale)}>{copy.cta}</Link>
         </div>

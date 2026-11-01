@@ -139,3 +139,31 @@
 .signIn {border-radius:30px}
 @media(max-width:799px){.headerSearch,.header::before{display:none}.brand{width:140px}.headerActions{gap:10px}}
 .brand>div {align-items:flex-start}
+
+/* The docs shell is shared by every locale. Keep its navigation and article
+   rhythm native in RTL instead of mirroring only the text. */
+:global([dir="rtl"]) .sidebar {left:auto;right:0;border-right:0;border-left:1px solid var(--docs-border)}
+:global([dir="rtl"]) .main {margin-left:0;margin-right:280px;text-align:right}
+:global([dir="rtl"]) .headerSearch {left:auto;right:231px}
+:global([dir="rtl"]) .header::before {left:auto;right:279px}
+:global([dir="rtl"]) .brand>span {left:auto;right:36px}
+:global([dir="rtl"]) .searchWide,
+:global([dir="rtl"]) .searchButton {text-align:right}
+:global([dir="rtl"]) .searchWide kbd,
+:global([dir="rtl"]) .searchButton kbd {margin-left:0;margin-right:auto}
+:global([dir="rtl"]) .sidebar summary svg,
+:global([dir="rtl"]) .mobileDrawer summary svg {transform:rotate(90deg)}
+:global([dir="rtl"]) .sidebar details[open]>summary svg,
+:global([dir="rtl"]) .mobileDrawer details[open]>summary svg {transform:rotate(0deg)}
+:global([dir="rtl"]) .prose ul,
+:global([dir="rtl"]) .prose ol {padding-left:0;padding-right:24px}
+:global([dir="rtl"]) .prose li {padding-left:0;padding-right:3px}
+:global([dir="rtl"]) .prose aside,
+:global([dir="rtl"]) .prose section[aria-label] {border-left:1px solid var(--docs-border);border-right:3px solid var(--docs-accent)}
+:global([dir="rtl"]) .toc a {padding:5px 14px 5px 0;border-left:0;border-right:1px solid var(--docs-border)}
+:global([dir="rtl"]) .pager a:last-child {text-align:left}
+:global([dir="rtl"]) .mobileDrawer {inset:0 0 0 auto}
+:global([dir="rtl"]) .zoom>button {right:auto;left:16px}
+
+@media(max-width:1199px){:global([dir="rtl"]) .headerActions{margin-left:0;margin-right:auto}}
+@media(max-width:799px){:global([dir="rtl"]) .main{margin-right:0}}

@@ -84,7 +84,7 @@ export default function RootLayout({
       <body className={locale === "ar" ? arabic.className : jakarta.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={false}
           disableTransitionOnChange
         >

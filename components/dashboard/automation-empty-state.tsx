@@ -8,6 +8,8 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import { UiText } from "@/components/i18n/localized-copy";
 import { useUi } from "@/components/i18n/use-ui";
+import { useI18n } from "@/providers/i18n-provider";
+import { localizePublicPath } from "@/lib/i18n/config";
 import styles from "./automation-empty-state.module.css";
 
 type ConversationMessage = { text: string; hold: number; avatar?: 1 | 2 | 3 };
@@ -51,6 +53,7 @@ const conversation: readonly ConversationMessage[] = [
 
 export default function AutomationEmptyState({ slug }: { slug: string }) {
   const tr = useUi();
+  const { locale } = useI18n();
   const reducedMotion = useReducedMotion();
   const [step, setStep] = useState(0);
 
@@ -102,8 +105,8 @@ export default function AutomationEmptyState({ slug }: { slug: string }) {
       <h2><UiText>Create your first automation</UiText></h2>
       <p><UiText>Create a new DM automation for your Instagram account</UiText></p>
       <div className={styles.actions}>
-        <Link href={`/dashboard/${slug}/automation/new`} className={styles.create}><UiText>New automation</UiText><ArrowRight size={18} aria-hidden="true" /></Link>
-        <Link href="/help" className={styles.docs}><BookOpen size={17} aria-hidden="true" /><UiText>Read docs</UiText></Link>
+        <Link href={`/dashboard/${slug}/automation/new`} className={styles.create}><UiText>New automation</UiText><ArrowRight size={18} aria-hidden="true" className="rtl:rotate-180" /></Link>
+        <Link href={localizePublicPath("/docs", locale)} className={styles.docs}><BookOpen size={17} aria-hidden="true" /><UiText>Read docs</UiText></Link>
       </div>
     </section>
   </div>;

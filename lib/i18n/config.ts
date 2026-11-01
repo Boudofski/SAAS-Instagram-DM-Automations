@@ -40,7 +40,7 @@ export function isEnglishOnlyArticle(pathname: string): boolean {
     "",
   );
   return (
-    /^\/(compare|solutions|docs|tutorials)(\/|$)/.test(path) ||
+    /^\/(compare|solutions|tutorials)(\/|$)/.test(path) ||
     path === "/manychat-alternative" ||
     path === "/about" ||
     englishArticles.has(path)
@@ -189,7 +189,7 @@ export function localizePublicPath(pathname: string, locale: Locale): string {
 export function localizedLocalesForPath(pathname: string): readonly Locale[] {
   const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(pathname.split(/[?#]/)[0])).replace(/\/$/, "") || "/";
   if (isEnglishOnlyArticle(cleanPath)) return ["en"];
-  if (cleanPath === "/" || cleanPath === "/pricing" || cleanPath === "/instagram-automation-guide" || /^\/(sign-in|sign-up)(\/|$)/.test(cleanPath)) return SUPPORTED_LOCALES;
+  if (cleanPath === "/" || cleanPath === "/pricing" || cleanPath === "/instagram-automation-guide" || /^\/(sign-in|sign-up|docs)(\/|$)/.test(cleanPath)) return SUPPORTED_LOCALES;
   if (cleanPath === "/instagram-comment-to-dm") return ["en", "ar", "fr", "es", "de", "pt"];
   return FULLY_TRANSLATED_LOCALES;
 }
