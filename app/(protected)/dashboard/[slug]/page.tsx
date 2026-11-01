@@ -165,7 +165,7 @@ export default async function DashboardPage(props: Props) {
           </div>
           <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>}
-        {!instagramConnected && !reconnectRequired && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300">Connect Instagram to see your account performance and start collecting leads.</p><ConnectInstagramButton /></div>}
+        {!instagramConnected && !reconnectRequired && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300"><UiText>Connect Instagram to see your account performance and start collecting leads.</UiText></p><ConnectInstagramButton /></div>}
         <div className={`grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 ${dashboardProfileStats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard

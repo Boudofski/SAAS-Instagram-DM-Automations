@@ -27,6 +27,7 @@ import {
 } from "@/lib/billing-plans";
 import { getPlanLimits } from "@/lib/plan-limits";
 import s from "./public-pricing.module.css";
+import { useUi } from "@/components/i18n/use-ui";
 type Feature = { icon: LucideIcon; text: string };
 const freeGroups: { label: string; features: Feature[] }[] = [
   {
@@ -152,6 +153,7 @@ export default function PublicPricing({
   checkoutDisabled?: boolean;
   internalPlanAccess?: boolean;
 }) {
+  const tr = useUi();
   const [interval, setInterval] = useState<BillingInterval>(
     paidOnly ? "month" : "year",
   );
@@ -176,11 +178,11 @@ export default function PublicPricing({
               <section
                 key={plan.id}
                 className={`${s.card} ${plan.featured ? s.featured : ""}`}
-                aria-label={`${plan.name} plan`}
+                aria-label={`${tr(plan.name)} ${tr("plan")}`}
               >
                 <div className={s.top}>
                   <div className={s.name}>
-                    <h2>{plan.name}</h2>
+                    <h2>{tr(plan.name)}</h2>
                     {plan.featured ? (
                       <span className={s.popular}>Recommended</span>
                     ) : index === 2 ? (
@@ -188,13 +190,13 @@ export default function PublicPricing({
                     ) : null}
                   </div>
                   <p className={s.description}>
-                    {
+                    {tr(
                       [
                         "Try Instagram automation, free.",
                         "More conversations. More possibilities.",
                         "More capacity for growing brands.",
                       ][index]
-                    }
+                    )}
                   </p>
                 </div>
                 <div className={s.body}>
@@ -215,13 +217,9 @@ export default function PublicPricing({
                         <span>Free forever. No card required.</span>
                       ) : (
                         <>
-                          <span>
-                            {interval === "year"
-                              ? `$${total} billed yearly`
-                              : `$${total} billed monthly`}
-                          </span>
+                          <span dir="auto">${total} {tr(interval === "year" ? "billed yearly" : "billed monthly")}</span>
                           {interval === "year" && (
-                            <span className={s.saving}>Save ${savings}</span>
+                            <span className={s.saving}>{tr("Save")} ${savings}</span>
                           )}
                         </>
                       )}
@@ -257,7 +255,7 @@ export default function PublicPricing({
                           : checkoutHref(plan.id as PaidPlan, interval)
                       }
                     >
-                      {free ? "Start for free" : `Upgrade to ${plan.name}`}
+                      {free ? tr("Start for free") : `${tr("Upgrade to")} ${tr(plan.name)}`}
                     </Link>
                   )}
                   <div className={s.features}>
@@ -309,12 +307,12 @@ export default function PublicPricing({
                     {[freeGroups, proGroups, businessGroups][index].map(
                       (group) => (
                         <div className={s.featureGroup} key={group.label}>
-                          <p className={s.groupLabel}>{group.label}</p>
+                          <p className={s.groupLabel}>{tr(group.label)}</p>
                           <ul>
                             {group.features.map(({ icon: Icon, text }) => (
                               <li key={text}>
                                 <Icon />
-                                <span>{text}</span>
+                                <span>{tr(text)}</span>
                               </li>
                             ))}
                           </ul>

@@ -137,9 +137,9 @@ export default function AutomationTable({
   return (
     <>
     {automations.some(a => planPauseMessage(a)) && <div role="status" className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
-      <p className="font-semibold">Some automations were paused after your plan changed</p>
-      <p className="mt-1 leading-relaxed">Your automations and contacts are saved. To change which automations run, pause an active automation and activate an eligible saved one. Paid features require a paid plan. Upgrading does not restart paused automations automatically.</p>
-      <Link href={`/dashboard/${encodeURIComponent(slug)}/billing`} className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-amber-950 px-3 font-semibold text-white dark:bg-amber-100 dark:text-amber-950">Review your plan</Link>
+      <p className="font-semibold"><UiText>Some automations were paused after your plan changed</UiText></p>
+      <p className="mt-1 leading-relaxed"><UiText>Your automations and contacts are saved. To change which automations run, pause an active automation and activate an eligible saved one. Paid features require a paid plan. Upgrading does not restart paused automations automatically.</UiText></p>
+      <Link href={`/dashboard/${encodeURIComponent(slug)}/billing`} className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-amber-950 px-3 font-semibold text-white dark:bg-amber-100 dark:text-amber-950"><UiText>Review your plan</UiText></Link>
     </div>}
     {publishedId && <SavedAutomationTools automationId={publishedId} slug={slug} tool="published" onClose={()=>setPublishedId(null)}/>}
     <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-sm transition-colors duration-fast dark:border-white/[0.12] dark:bg-[#111827] dark:shadow-ap3k-card sm:rounded-2xl">
@@ -564,9 +564,9 @@ function AutomationActionsMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={7} className="w-56 max-w-[calc(100vw-2rem)] rounded-xl p-1.5 [&_[role=menuitem]]:min-h-11">
-        {commentSource && <DropdownMenuItem disabled={!automation.active} onSelect={()=>setTool("backtrack")}><History className="mr-2 h-4 w-4"/>Backtrack comments</DropdownMenuItem>}
-        {commentSource && <DropdownMenuItem onSelect={()=>void viewMedia()}><ImageIcon className="mr-2 h-4 w-4"/>View Media</DropdownMenuItem>}
-        <DropdownMenuItem onSelect={()=>setTool("scan")}><ShieldCheck className="mr-2 h-4 w-4"/>Run safety check</DropdownMenuItem>
+        {commentSource && <DropdownMenuItem disabled={!automation.active} onSelect={()=>setTool("backtrack")}><History className="me-2 h-4 w-4"/><UiText>Backtrack comments</UiText></DropdownMenuItem>}
+        {commentSource && <DropdownMenuItem onSelect={()=>void viewMedia()}><ImageIcon className="me-2 h-4 w-4"/><UiText>View Media</UiText></DropdownMenuItem>}
+        <DropdownMenuItem onSelect={()=>setTool("scan")}><ShieldCheck className="me-2 h-4 w-4"/><UiText>Run safety check</UiText></DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href={automationEditHref(slug, automation)}>

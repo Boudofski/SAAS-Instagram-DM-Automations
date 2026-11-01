@@ -115,7 +115,7 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
                   </Link>
                 </TooltipTrigger>
                 {!expanded && (
-                  <TooltipContent side="right" sideOffset={12}>
+                  <TooltipContent side={locale === "ar" ? "left" : "right"} sideOffset={12}>
                     {t(item.messageKey)}
                   </TooltipContent>
                 )}

@@ -22,6 +22,7 @@ import { DASHBOARD_COPY } from "./dashboard-copy";
 import { PUBLIC_COPY } from "./public-copy";
 import { NL_PUBLIC_COPY } from "./nl-public-copy";
 import { ARABIC_HOME_COPY } from "./arabic-home-copy";
+import { ARABIC_COMPLETE_COPY } from "./arabic-complete-copy";
 import type { Locale } from "./config";
 
 const catalogs = Object.fromEntries(
@@ -64,6 +65,7 @@ const catalogs = Object.fromEntries(
       ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[
         locale as Locale
       ],
+      ...(locale === "ar" ? ARABIC_COMPLETE_COPY : {}),
     },
   ]),
 ) as Record<Locale, Record<string, string>>;

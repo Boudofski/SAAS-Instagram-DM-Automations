@@ -35,7 +35,7 @@ describe("dashboard screenshot regressions", () => {
   });
   it("localizes actual automation rows and preserves user names and keywords in every language", () => {
     let english = "";
-    for (const locale of [...FULLY_TRANSLATED_LOCALES, "en"] as Locale[]) {
+    for (const locale of Array.from(new Set([...FULLY_TRANSLATED_LOCALES, "ar", "en"])) as Locale[]) {
       activeLocale = locale;
       const markup = renderToStaticMarkup(<AutomationTable slug="fixture" automations={[automation]} showControls={false} />);
       expect(markup).toContain('<bdi dir="auto">Save</bdi>');
@@ -63,7 +63,7 @@ describe("dashboard screenshot regressions", () => {
   });
   it("formats the inclusive month range in the selected language without ICU day fragments", () => {
     const start = new Date("2026-09-01T00:00:00Z"), end = new Date("2026-10-01T00:00:00Z");
-    for (const locale of FULLY_TRANSLATED_LOCALES) {
+    for (const locale of [...FULLY_TRANSLATED_LOCALES, "ar"] as Locale[]) {
       const range = formatDashboardPeriod("month", start, end, locale);
       expect(range).not.toContain("day:");
       expect(range).toBe(new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).formatRange(start, new Date("2026-09-30T00:00:00Z")));
@@ -72,7 +72,7 @@ describe("dashboard screenshot regressions", () => {
     expect(formatDashboardPeriod("7d", undefined, undefined, "fr")).toBe("7 derniers jours");
   });
   it("translates growth sentences while isolating numeric substitutions", () => {
-    for (const locale of FULLY_TRANSLATED_LOCALES) {
+    for (const locale of [...FULLY_TRANSLATED_LOCALES, "ar"] as Locale[]) {
       activeLocale = locale;
       const markup = renderToStaticMarkup(<FollowerSubtitle fallback="Unused" count={961} percent={0} />);
       expect(markup).toContain('dir="ltr"');

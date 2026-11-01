@@ -47,7 +47,7 @@ describe("automation setup localization", () => {
     }
   });
   it("renders the accordion editor in every language without translating customer content", () => {
-    for (locale of FULLY_TRANSLATED_LOCALES) {
+    for (locale of [...FULLY_TRANSLATED_LOCALES, "ar"] as Locale[]) {
       const html=renderToStaticMarkup(<WizardPage params={{slug:"fixture"}} searchParams={{type:"comment"}}/>);
       const text=plain(html);
       for (const heading of ["Setup Triggers and Public Reply","Setup Direct Message"]) {
@@ -59,7 +59,7 @@ describe("automation setup localization", () => {
     }
   });
   it("renders the actual type picker and both message entry screens without English headings", () => {
-    for (locale of FULLY_TRANSLATED_LOCALES) {
+    for (locale of [...FULLY_TRANSLATED_LOCALES, "ar"] as Locale[]) {
       const picker = plain(renderToStaticMarkup(<WizardPage params={{ slug: "fixture" }} />));
       for (const label of ["New automation"]) expect(picker).toContain(translateUi(label, locale));
       expect(picker).not.toContain("Start from scratch");
