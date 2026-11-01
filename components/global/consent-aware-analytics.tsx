@@ -10,7 +10,6 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { Cookie } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const CONSENT_KEY = "ap3k_tracking_consent_v1";
@@ -21,8 +20,7 @@ type Consent = "accepted" | "necessary" | null;
 export default function ConsentAwareAnalytics() {
   const tr = usePublicUi();
   const { locale } = useI18n();
-  const pathname = usePathname();
-  const isArabicLanding = pathname === "/ar/instagram-comment-to-dm";
+  const isArabicLanding = locale === "ar";
   const label = (english: string, arabic: string) => isArabicLanding ? arabic : tr(english);
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
