@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_Arabic } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import { useI18n } from "@/providers/i18n-provider";
 import { localizePublicPath } from "@/lib/i18n/config";
-import { HOME_HERO_COPY } from "@/lib/i18n/home-hero";
+import { HOME_HERO_COPY, KEYWORD_ANIMATION_COPY } from "@/lib/i18n/home-hero";
 import styles from "./home-hero.module.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
+const arabic = Noto_Sans_Arabic({ subsets: ["arabic"], display: "swap" });
 
 function ConversationCards({ side }: { side: "left" | "right" }) {
   return (
@@ -30,17 +31,14 @@ function ConversationCards({ side }: { side: "left" | "right" }) {
 export default function HomeHero() {
   const { locale } = useI18n();
   const copy = HOME_HERO_COPY[locale];
+  const keywordCopy = KEYWORD_ANIMATION_COPY[locale];
   const section = useRef<HTMLElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
   const inView = useInView(section, { amount: 0.15 });
   const reducedMotion = useReducedMotion();
   const [pageVisible, setPageVisible] = useState(true);
   const [motionReady, setMotionReady] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
   const [wideScene, setWideScene] = useState(false);
   const [keywordScene, setKeywordScene] = useState(0);
-  const localizedKeyword = locale !== "en";
-  const showVideo = videoReady && motionReady && reducedMotion === false;
   const playing = motionReady && reducedMotion === false && inView && pageVisible;
 
   useEffect(() => {
@@ -67,10 +65,8 @@ export default function HomeHero() {
       if (requestIdle) idle = requestIdle(() => setMotionReady(true), { timeout: 2500 });
       else timeout = window.setTimeout(() => setMotionReady(true), 1500);
     };
-    if (document.readyState === "complete") start();
-    else window.addEventListener("load", start, { once: true });
+    start();
     return () => {
-      window.removeEventListener("load", start);
       if (timeout) window.clearTimeout(timeout);
       const cancelIdle = (window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
       if (idle && cancelIdle) cancelIdle(idle);
@@ -85,20 +81,13 @@ export default function HomeHero() {
   }, []);
 
   useEffect(() => {
-    const element = video.current;
-    if (!element) return;
-    if (playing) void element.play().catch(() => { /* Keep the poster if autoplay is unavailable. */ });
-    else element.pause();
-  }, [playing]);
-
-  useEffect(() => {
-    if (!localizedKeyword || reducedMotion || !inView || !pageVisible) return;
+    if (!playing) return;
     const timer = window.setInterval(
-      () => setKeywordScene((current) => (current + 1) % copy.scenes.length),
+      () => setKeywordScene((current) => (current + 1) % keywordCopy.keywords.length),
       2800,
     );
     return () => window.clearInterval(timer);
-  }, [copy.scenes.length, inView, localizedKeyword, pageVisible, reducedMotion]);
+  }, [keywordCopy.keywords.length, playing]);
 
   useEffect(() => {
     const element = section.current;
@@ -119,7 +108,7 @@ export default function HomeHero() {
   }, [reducedMotion]);
 
   return (
-    <section ref={section} lang={locale} className={`${styles.hero} ${inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
+    <section ref={section} lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${styles.hero} ${locale === "ar" ? arabic.className : inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
       <div className={styles.glow} aria-hidden="true" />
       <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
         {wideScene && <ConversationCards side="left" />}
@@ -127,24 +116,12 @@ export default function HomeHero() {
       </div>
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
-          {localizedKeyword ? (
-            <div className={styles.localizedKeyword} dir={locale === "ar" ? "rtl" : "ltr"}>
-              <span>{copy.keywordPrefix}</span>
-              <strong key={`${locale}-${keywordScene}`}>{copy.scenes[keywordScene].keyword}</strong>
-              <span>{copy.keywordSuffix}</span>
-            </div>
-          ) : (
-            <div className={styles.keywordMedia}>
-              <Image className={`${styles.keywordVideo} ${styles.posterLayer}`} data-hidden={showVideo} src="/media/hero/comment-water-drop-poster.webp"
-                alt="" width={1530} height={364} priority unoptimized />
-              <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
-                width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
-                src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
-                onPlaying={() => setVideoReady(true)}
-                onEmptied={() => setVideoReady(false)}
-                onError={() => setVideoReady(false)} data-ready={showVideo} />
-            </div>
-          )}
+          <div className={styles.localizedKeyword} dir={locale === "ar" ? "rtl" : "ltr"}>
+            <span>{keywordCopy.prefix}{" "}
+              <strong key={`${locale}-${keywordScene}`}><bdi>{keywordCopy.keywords[keywordScene]}</bdi></strong>
+              {" "}{keywordCopy.suffix}
+            </span>
+          </div>
         </div>
         <h1 id="home-hero-title" className={styles.title}>
           <span>{copy.titleTop}{" "}</span>

@@ -18,7 +18,7 @@ import { sendReferralInvite } from "@/actions/referrals";
 
 export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
   const { locale, t } = useI18n();
-  const c = REFERRAL_COPY[locale];
+  const c = REFERRAL_COPY[locale] ?? REFERRAL_COPY.en;
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
   const [pending, startTransition] = useTransition();
@@ -122,7 +122,7 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
             type="button"
             onClick={copyLink}
             aria-live="polite"
-            className="ml-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 text-xs font-semibold transition hover:bg-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:bg-white/[0.07] dark:hover:bg-white/10"
+            className="ms-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 text-xs font-semibold transition hover:bg-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:bg-white/[0.07] dark:hover:bg-white/10"
           >
             {copied ? (
               <Check className="h-4 w-4" />
@@ -169,6 +169,7 @@ export function ReferralShareCard({ inviteUrl }: { inviteUrl: string }) {
           </label>
           <input
             id="referral-invite-email"
+            dir="ltr"
             type="email"
             autoComplete="email"
             required

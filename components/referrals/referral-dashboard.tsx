@@ -48,7 +48,7 @@ const button =
 
 export default function ReferralDashboard({ dashboard, inviteUrl }: Props) {
   const { locale } = useI18n();
-  const c = REFERRAL_COPY[locale];
+  const c = REFERRAL_COPY[locale] ?? REFERRAL_COPY.en;
   const router = useRouter();
   const pathname = usePathname();
   const r = dashboard.recurring;
@@ -403,7 +403,7 @@ export default function ReferralDashboard({ dashboard, inviteUrl }: Props) {
       </section>
       <section className={`${panel} overflow-hidden`} aria-label={c.source}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[590px] text-left text-xs">
+          <table className="w-full min-w-[590px] text-start text-xs">
             <thead className="bg-zinc-100/80 text-[10px] uppercase tracking-wider text-zinc-500 dark:bg-white/[0.04] dark:text-zinc-400">
               <tr>
                 {[c.source, c.rate, c.subscribed, c.earned, c.status].map(

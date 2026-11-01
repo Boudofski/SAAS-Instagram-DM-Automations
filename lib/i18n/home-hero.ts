@@ -224,3 +224,14 @@ export const HOME_HERO_COPY: Record<Locale, HomeHeroCopy> = {
     ],
   },
 };
+
+/** Live text keeps the same liquid animation translatable in every language. */
+export const KEYWORD_ANIMATION_COPY: Record<Locale, { prefix: string; suffix: string; keywords: readonly string[] }> = {
+  en: { prefix: "Comment", suffix: "to get the product link", keywords: ["buy", "link", "shop"] },
+  ar: { prefix: "علّق بكلمة", suffix: "ليصلك رابط المنتج", keywords: ["شراء", "رابط", "تسوّق"] },
+  fr: { prefix: "Commentez", suffix: "pour recevoir le lien du produit", keywords: ["achat", "lien", "boutique"] },
+  es: { prefix: "Comenta", suffix: "para recibir el enlace del producto", keywords: ["comprar", "enlace", "tienda"] },
+  de: { prefix: "Kommentiere", suffix: "und erhalte den Produktlink", keywords: ["kaufen", "Link", "Shop"] },
+  nl: { prefix: "Reageer met", suffix: "en ontvang de productlink", keywords: ["kopen", "link", "winkel"] },
+  pt: { prefix: "Comente", suffix: "para receber o link do produto", keywords: ["comprar", "link", "loja"] },
+};
