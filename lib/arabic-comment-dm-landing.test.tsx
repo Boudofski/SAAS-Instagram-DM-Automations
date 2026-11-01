@@ -61,17 +61,12 @@ describe("Arabic comment-to-DM acquisition page", () => {
     }
   });
 
-  it("allows only this reviewed Arabic route through retired-locale handling", () => {
+  it("renders the bespoke campaign directly while Arabic is a first-class locale", () => {
     const middleware = fs.readFileSync("middleware.ts", "utf8");
-    const exception = middleware.indexOf("isArabicCommentDmLanding");
-    const retiredRedirect = middleware.indexOf(
-      "const retiredLocale = retiredLocaleFromPath",
-    );
-    expect(exception).toBeGreaterThan(-1);
-    expect(exception).toBeLessThan(retiredRedirect);
     expect(middleware).toContain(
-      'requestHeaders.set("x-ap3k-arabic-page", "1")',
+      'requestedPath.replace(/\\\/$/, "") === "/ar/instagram-comment-to-dm"',
     );
+    expect(middleware).toContain("return NextResponse.next({ request: { headers: requestHeaders } })");
   });
 
   it("localizes and repositions the delayed cookie prompt on the Arabic page", () => {

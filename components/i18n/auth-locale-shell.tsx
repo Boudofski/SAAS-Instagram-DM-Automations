@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { ClerkProvider } from "@clerk/nextjs";
-import { deDE, esES, frFR, nlNL, ptPT } from "@clerk/localizations";
+import { arSA, deDE, esES, frFR, nlNL, ptPT } from "@clerk/localizations";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import LanguageSwitcher from "@/components/global/language-switcher";
 import { useI18n } from "@/providers/i18n-provider";
@@ -17,9 +17,10 @@ export default function AuthLocaleShell({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
-  const base = locale === "en" ? undefined : { de: deDE, es: esES, fr: frFR, nl: nlNL, pt: ptPT }[locale];
+  const base = locale === "en" ? undefined : { ar: arSA, de: deDE, es: esES, fr: frFR, nl: nlNL, pt: ptPT }[locale];
   const consent = {
     en: ["I agree to", "Terms of Service", "Privacy Policy", "and"],
+    ar: ["أوافق على", "شروط الخدمة", "سياسة الخصوصية", "و"],
     fr: ["J’accepte", "les conditions d’utilisation", "la politique de confidentialité", "et"],
     es: ["Acepto", "los términos del servicio", "la política de privacidad", "y"],
     de: ["Ich akzeptiere", "die Nutzungsbedingungen", "die Datenschutzerklärung", "und"],

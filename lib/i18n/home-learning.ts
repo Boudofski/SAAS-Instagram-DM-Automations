@@ -12,6 +12,16 @@ export const HOME_LEARNING: Record<Locale, LearningCopy> = {
       ['Find out why a message did not arrive', 'Check the connected account, automation status, comment trigger and test conditions in order.'],
     ],
   },
+  ar: {
+    title: 'أنشئ أتمتة إنستغرام تناسب جمهورك',
+    intro: 'اختر محفزًا واضحًا، وأرسل ردًا مفيدًا، واختبر المحادثة كاملة قبل إطلاق حملتك.',
+    guide: 'اقرأ دليل أتمتة إنستغرام', archive: 'تصفح الأدلة العملية',
+    cards: [
+      ['إرسال رابط بعد تعليق', 'اختر المنشور والكلمة المفتاحية، واكتب الرسالة الافتتاحية، وتأكد من وصول الرابط الصحيح.'],
+      ['تحويل المحادثات إلى عملاء محتملين', 'وضّح ما سيحصل عليه الشخص واطلب فقط المعلومات التي تحتاجها للمتابعة.'],
+      ['معرفة سبب عدم وصول الرسالة', 'تحقق بالترتيب من الحساب المتصل وحالة الأتمتة ومحفز التعليق وشروط الاختبار.'],
+    ],
+  },
   fr: {
     title: 'Créez une automatisation Instagram adaptée à votre audience',
     intro: 'Choisissez un déclencheur précis, préparez une réponse utile et testez toute la conversation avant de lancer votre campagne.',

@@ -91,6 +91,22 @@ const en = {
 type Copy = { [K in keyof typeof en]: string };
 const translations: Record<Exclude<Locale, "en">, Partial<Copy>> = {
   nl: {},
+  ar: {
+    title: "الإحالة والربح",
+    share: "شارك رابط الإحالة الخاص بك",
+    copy: "نسخ الرابط",
+    copied: "تم النسخ",
+    invite: "دعوة عبر البريد الإلكتروني",
+    send: "إرسال الدعوة",
+    email: "البريد الإلكتروني",
+    promo: "الرمز الترويجي",
+    discount: "الخصم",
+    pending: "قيد الانتظار",
+    paid: "مدفوع",
+    available: "متاح للسحب",
+    processing: "جارٍ المعالجة…",
+    rulesTitle: "شروط البرنامج",
+  },
   fr: {
     title: "Parrainer et gagner",
     share: "Partagez votre lien",

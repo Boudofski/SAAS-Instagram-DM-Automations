@@ -12,6 +12,12 @@ export const BLOG_ARCHIVE_UI: Record<Locale, Copy> = {
     pagination: 'Blog pagination', previous: 'Previous', next: 'Next', directory: 'Browse all guides by topic', directoryIntro: 'Find setup instructions, campaign examples and troubleshooting guides by topic.',
     english: 'Browse the English archive', languageNote: 'These guides are available in English.',
   },
+  ar: {
+    featured: 'Featured guides', picks: 'Start with these practical guides.', search: 'Search', searchLabel: 'Search guides',
+    latest: 'Latest articles', articles: 'Articles', results: 'Results for', empty: 'No articles matched. Try another search or', browse: 'browse all articles',
+    pagination: 'Blog pagination', previous: 'Previous', next: 'Next', directory: 'Browse all guides by topic', directoryIntro: 'Find setup instructions, campaign examples and troubleshooting guides by topic.',
+    english: 'Browse the English archive', languageNote: 'These guides are available in English.',
+  },
   fr: {
     featured: 'Guides à découvrir', picks: 'Commencez par ces guides pratiques.', search: 'Rechercher', searchLabel: 'Rechercher un guide',
     latest: 'Derniers articles', articles: 'Articles', results: 'Résultats pour', empty: 'Aucun article trouvé. Essayez une autre recherche ou', browse: 'consultez tous les articles',

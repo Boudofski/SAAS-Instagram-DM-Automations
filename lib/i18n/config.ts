@@ -47,11 +47,12 @@ export function isEnglishOnlyArticle(pathname: string): boolean {
   );
 }
 
-export const SUPPORTED_LOCALES = ["en", "fr", "es", "de", "nl", "pt"] as const;
+export const SUPPORTED_LOCALES = ["en", "ar", "fr", "es", "de", "nl", "pt"] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
-/** Locales with complete application, article, help and policy catalogs. */
+/** Locales with complete article, help and policy catalogs. Arabic launches on
+ * reviewed acquisition pages while the product UI uses its recovered catalog. */
 export const FULLY_TRANSLATED_LOCALES = ["en", "fr", "es", "de", "pt"] as const satisfies readonly Locale[];
 
 export const DEFAULT_LOCALE: Locale = "en";
@@ -71,6 +72,12 @@ export const LOCALE_DETAILS: Record<
     htmlLang: "en",
     direction: "ltr",
     openGraph: "en_US",
+  },
+  ar: {
+    nativeName: "العربية",
+    htmlLang: "ar",
+    direction: "rtl",
+    openGraph: "ar_AR",
   },
   fr: {
     nativeName: "Français",
@@ -107,6 +114,9 @@ export const LOCALE_DETAILS: Record<
 // Keep translation source columns explicit so locale changes cannot shift copy.
 export const LOCALE_SOURCE_COLUMN: Record<Locale, number> = {
   en: 0,
+  // Row catalogs fall back to English, then the reviewed Arabic catalogs in
+  // translate.ts replace every available phrase. This prevents empty UI text.
+  ar: 0,
   fr: 1,
   es: 2,
   de: 3,
@@ -127,7 +137,7 @@ export function normalizeLocale(value: string | null | undefined): Locale {
 }
 
 /** Locale prefixes that were previously public and now permanently resolve to English. */
-export const RETIRED_LOCALES = ["ar"] as const;
+export const RETIRED_LOCALES = [] as const;
 
 export function retiredLocaleFromPath(
   pathname: string,
@@ -180,6 +190,7 @@ export function localizedLocalesForPath(pathname: string): readonly Locale[] {
   const cleanPath = stripLocaleFromPath(stripRetiredLocaleFromPath(pathname.split(/[?#]/)[0])).replace(/\/$/, "") || "/";
   if (isEnglishOnlyArticle(cleanPath)) return ["en"];
   if (cleanPath === "/" || cleanPath === "/pricing" || cleanPath === "/instagram-automation-guide" || /^\/(sign-in|sign-up)(\/|$)/.test(cleanPath)) return SUPPORTED_LOCALES;
+  if (cleanPath === "/instagram-comment-to-dm") return ["en", "ar", "fr", "es", "de", "pt"];
   return FULLY_TRANSLATED_LOCALES;
 }
 

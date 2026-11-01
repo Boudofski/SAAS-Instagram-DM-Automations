@@ -240,14 +240,5 @@ export function buildSitemap(
       : page,
   );
 
-  return [
-    ...withArabicAlternate,
-    {
-      url: `${baseUrl}/ar/instagram-comment-to-dm`,
-      lastModified: new Date("2026-10-30T00:00:00Z"),
-      changeFrequency: "monthly",
-      priority: 0.9,
-      alternates: { languages: commentDmLanguages },
-    },
-  ];
+  return withArabicAlternate;
 }

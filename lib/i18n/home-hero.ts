@@ -63,6 +63,21 @@ export const HOME_HERO_COPY: Record<Locale, HomeHeroCopy> = {
       { keyword: "OFFER", comment: "OFFER — I’d love the details! 💜", message: "Here’s the offer you asked about! Take a look below. 🎁", button: "See the offer" },
     ],
   },
+  ar: {
+    eyebrow: "أتمتة تعليقات ورسائل إنستغرام",
+    titleTop: "حوّل كل تعليق على إنستغرام",
+    titleBottom: "إلى رسالة خاصة تلقائيًا",
+    description: "يساعدك AP3K على أتمتة التعليقات والرسائل الخاصة والردود على القصص في إنستغرام.",
+    cta: "ابدأ مجانًا", secondary: "شاهد كيف يعمل", allowance: "500 إجراء آلي كل شهر. لا تحتاج إلى بطاقة بنكية.",
+    audience: "مصمم لصنّاع المحتوى على إنستغرام", api: "واجهة Instagram الرسمية", keywordPrefix: "اكتب", keywordSuffix: "ودع AP3K يتولى الباقي.",
+    demoLabel: "مثال على الأتمتة", demoDescription: "يكتب شخص كلمة مفتاحية في تعليق على منشورك، فيرسل AP3K الرابط المطلوب تلقائيًا عبر رسالة خاصة.",
+    reply: "رد", sent: "أرسلها AP3K", dmTitle: "صندوق رسائل إنستغرام", active: "نشط الآن", message: "إليك الرابط الذي وعدتك به! ✨", openLink: "افتح الرابط", commentRequest: "أرسل لي الرابط من فضلك!", pause: "إيقاف الحركة", play: "تشغيل الحركة",
+    scenes: [
+      { keyword: "دليل", comment: "دليل — أريد نسخة من فضلك! 🙌", message: "دليلك جاهز! اضغط أدناه للحصول عليه. ✨", button: "احصل على الدليل" },
+      { keyword: "رابط", comment: "رابط — أرسله لي من فضلك! 🔗", message: "إليك الرابط الذي وعدتك به! ✨", button: "افتح الرابط" },
+      { keyword: "عرض", comment: "عرض — أريد معرفة التفاصيل! 💜", message: "إليك العرض الذي طلبته! شاهده أدناه. 🎁", button: "شاهد العرض" },
+    ],
+  },
   fr: {
     eyebrow: "Automatisez vos commentaires et messages Instagram",
     titleTop: "À chaque commentaire Instagram",

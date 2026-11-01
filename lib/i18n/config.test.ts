@@ -15,10 +15,11 @@ import { MESSAGES } from "./messages";
 import { PRODUCT_PHRASE_TRANSLATIONS } from "./product-phrase-translations";
 
 describe("AP3K locale routing", () => {
-  it("supports the six intended locales in LTR", () => {
-    expect(SUPPORTED_LOCALES).toEqual(["en", "fr", "es", "de", "nl", "pt"]);
+  it("supports Arabic and the six existing locales with the correct direction", () => {
+    expect(SUPPORTED_LOCALES).toEqual(["en", "ar", "fr", "es", "de", "nl", "pt"]);
     expect(DEFAULT_LOCALE).toBe("en");
-    expect(Object.values(LOCALE_DETAILS).every(locale => locale.direction === "ltr")).toBe(true);
+    expect(LOCALE_DETAILS.ar.direction).toBe("rtl");
+    expect(Object.entries(LOCALE_DETAILS).filter(([locale]) => locale !== "ar").every(([, details]) => details.direction === "ltr")).toBe(true);
   });
 
   it("normalizes regional browser language values", () => {
@@ -82,7 +83,8 @@ describe("browser language negotiation", () => {
     expect(browserLocale("fr-CA,fr;q=0.9,en;q=0.8")).toBe("fr");
     expect(browserLocale("it-IT,pt-BR;q=0.8,en;q=0.5")).toBe("pt");
     expect(browserLocale("fr;q=0,en;q=0.9")).toBe("en");
-    expect(browserLocale("de;q=0.5,ar;q=0.9")).toBe("de");
+    expect(browserLocale("de;q=0.5,ar;q=0.9")).toBe("ar");
+    expect(browserLocale("ar-MA,fr;q=0.8,en;q=0.5")).toBe("ar");
     expect(browserLocale("nl-BE,nl;q=0.9,en;q=0.7")).toBe("nl");
     expect(browserLocale("ja-JP")).toBe("en");
   });

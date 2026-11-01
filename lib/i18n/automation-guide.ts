@@ -15,6 +15,18 @@ export const AUTOMATION_GUIDE: Record<Locale, Guide> = {
       {title:'5. Diagnose the first failed step',text:'If nothing runs, check the account, selected post, enabled status and keyword. If a public reply appears without a DM, inspect message permissions and the recorded failure. Duplicate protection, usage limits and platform rules can affect delivery. Change one cause at a time and repeat the test.',link:'Troubleshoot a missing automated reply',path:'/blog/instagram-comment-automation-not-working'},
     ], pricing:'View pricing',start:'Create an AP3K account',
   },
+  ar: {
+    title: 'أتمتة رسائل إنستغرام: الإعداد والحدود والاختبار',
+    description: 'تعلّم كيف تعمل أتمتة التعليقات إلى رسائل خاصة، وما الحساب المطلوب، وكيف يُحسب الاستخدام، وما الذي يجب اختباره قبل الإطلاق مع AP3K.',
+    intro: 'ترسل أتمتة رسائل إنستغرام رسالة خاصة مُعدّة مسبقًا بعد تفاعل مؤهل. في حملة التعليق إلى رسالة خاصة، يعلّق شخص على منشورك أو ريلز، وتتحقق القاعدة من المحفز، ثم ترسل الرد الذي أعددته. ابدأ برابط مفيد ووعد واضح.',
+    sections: [
+      {title:'1. استخدم حساب إنستغرام المناسب',text:'اربط حساب أعمال أو صانع محتوى أنت مخوّل بإدارته. تحقق من اسم المستخدم وأذونات الرسائل قبل إنشاء الحملة. استخدم مسار التفويض الرسمي ولا تعطِ كلمة مرور إنستغرام لأي شخص. حفظ الاتصال وحده لا يعني أن كل أذونات الرسائل جاهزة.',link:'متطلبات حسابات الأعمال وصنّاع المحتوى',path:'/blog/instagram-automation-business-creator-accounts'},
+      {title:'2. اختر التفاعل والرد',text:'استخدم أتمتة المنشور للتعليقات على منشور أو ريلز. يظهر الرد العلني أسفل المنشور، أما الرسالة الخاصة فلا يراها إلا المستلم. فعّل الإجراءات التي يحتاجها عرضك. كلمة مثل «دليل» مناسبة عندما يعد الوصف بمورد، بينما قاعدة أي تعليق أوسع ويجب استخدامها بعناية.',link:'الكلمات المفتاحية مقارنة بأي تعليق',path:'/blog/instagram-comment-automation-keyword-vs-any-comment'},
+      {title:'3. احسب الإجراءات وليس الأشخاص فقط',text:'تشمل الخطة المجانية 500 إجراء آلي شهريًا. إذا تلقى 100 شخص ردًا علنيًا ورسالة خاصة لكل منهم، فهذا يساوي 200 إجراء مُرسل. الرسائل الإضافية تستهلك استخدامًا أيضًا. تزيد الخطط المدفوعة السعة لكنها لا تعني إرسالًا غير محدود. راجع حدودك قبل الإعلان عن الحملة.',link:'قارن الخطط والحدود الحالية',path:'/pricing'},
+      {title:'4. اختبر الرحلة كاملة',text:'فعّل القاعدة بعد مراجعتها، ثم اكتب تعليقًا جديدًا من حساب إنستغرام آخر. تحقق بشكل منفصل من الرد العلني وصندوق الوارد وطلبات الرسائل. افتح الرابط النهائي داخل إنستغرام وأكمل الخطوات الاختيارية. اختبر أيضًا نصًا غير مطابق. المعاينة ليست إثبات تسليم، وإرسال الرسالة لا يعني حدوث عملية بيع.',link:'إعداد واختبار أتمتة التعليق إلى رسالة خاصة',path:'/blog/automate-instagram-dms-from-comments'},
+      {title:'5. حدّد أول خطوة فشلت',text:'إذا لم تعمل الأتمتة، فتحقق من الحساب والمنشور المحدد وحالة التفعيل والكلمة المفتاحية. إذا ظهر الرد العلني من دون رسالة خاصة، فراجع أذونات الرسائل والخطأ المسجل. قد تؤثر الحماية من التكرار وحدود الاستخدام وقواعد المنصة في التسليم. غيّر سببًا واحدًا في كل مرة وأعد الاختبار.',link:'حل مشكلة عدم وصول الرد الآلي',path:'/blog/instagram-comment-automation-not-working'},
+    ], pricing:'عرض الأسعار',start:'إنشاء حساب AP3K',
+  },
   fr: {
     title:'Automatiser les DM Instagram : configuration et tests',
     description:'Découvrez comment envoyer un DM après un commentaire Instagram : compte requis, mots-clés, limites du forfait et tests avant le lancement avec AP3K.',

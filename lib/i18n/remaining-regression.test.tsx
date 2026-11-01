@@ -192,9 +192,8 @@ describe("complete public localization and search metadata", () => {
         expect(metadata.alternates?.canonical).toBe(
           `https://ap3k.com${localizePublicPath(`/${page.slug}`, locale)}`,
         );
-        const arabicAlternate = page.slug === "instagram-comment-to-dm" ? 1 : 0;
         expect(Object.keys(metadata.alternates?.languages ?? {})).toHaveLength(
-          localizedLocalesForPath(`/${page.slug}`).length + 1 + arabicAlternate,
+          localizedLocalesForPath(`/${page.slug}`).length + 1,
         );
         const expectedTitle =
           page.slug === "manychat-alternative"
@@ -206,7 +205,7 @@ describe("complete public localization and search metadata", () => {
                   ? "Instagram Automation Reply Tool | AP3K"
                 : `${translateUi(`${page.eyebrow.charAt(0).toUpperCase()}${page.eyebrow.slice(1)}`, locale)} | AP3K`));
         expect(metadata.title).toBe(expectedTitle);
-        if (locale !== "en" && locale !== "nl" && !isEnglishOnlyArticle(`/${page.slug}`))
+        if (locale !== "en" && locale !== "nl" && localizedLocalesForPath(`/${page.slug}`).includes(locale) && !isEnglishOnlyArticle(`/${page.slug}`))
           expect(metadata.description).not.toBe(page.description);
       }
       expect(privacyMetadata().alternates?.canonical).toBe(
@@ -222,12 +221,8 @@ describe("complete public localization and search metadata", () => {
       // Paginated archives only advertise languages with that many pages.
       if (!/\/blog\/page\/\d+$/.test(new URL(page.url).pathname)) {
         const pathname = new URL(page.url).pathname;
-        const isCommentDm = pathname.replace(
-          /^\/(?:ar|fr|es|de|pt)(?=\/)/,
-          "",
-        ) === "/instagram-comment-to-dm";
         expect(Object.keys(alternatives ?? {})).toHaveLength(
-          localizedLocalesForPath(pathname).length + 1 + (isCommentDm ? 1 : 0),
+          localizedLocalesForPath(pathname).length + 1,
         );
       }
       expect(Object.values(alternatives ?? {})).toContain(page.url);

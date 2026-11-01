@@ -1,5 +1,23 @@
 {
   "en": {},
+  "ar": {
+    "Accept analytics": "قبول التحليلات",
+    "Blog": "المدونة",
+    "Comment automation": "ردود التعليقات",
+    "Cookie Policy": "سياسة ملفات تعريف الارتباط",
+    "Cookie preferences": "تفضيلات ملفات تعريف الارتباط",
+    "Dark": "داكن",
+    "Documentation": "قاعدة المعرفة",
+    "Light": "فاتح",
+    "Necessary only": "الضرورية فقط",
+    "Pricing": "الأسعار",
+    "Privacy": "الخصوصية",
+    "Product": "منتج",
+    "Reply": "رد",
+    "Theme selector": "اختيار المظهر",
+    "Theme: {theme}. Switch theme.": "المظهر: {theme}. تغيير المظهر.",
+    "Your privacy, your choice": "خصوصيتك، خيارك"
+  },
   "fr": {
     "10+ versions, varied automatically": "Plus de 10 versions, variées automatiquement",
     "A fresh public reply for every comment": "Une réponse publique différente à chaque commentaire",

@@ -6,6 +6,7 @@ import { GROWTH_SOURCES } from "@/lib/content/growth/sources";
 
 const copy = {
   en: ["Official sources", "Ready to automate Instagram?", "Start free, compare the plans, or review the setup guide before connecting your professional Instagram account.", "Explore Instagram DM automation", "Setup and troubleshooting", "Compare plans"],
+  ar: ["المصادر الرسمية", "شاهد مثالًا لتحويل التعليق إلى رسالة خاصة", "لقطة شاشة للمثال التفاعلي العام في AP3K باللغة الإنجليزية وببيانات تجريبية. توضح تسلسل الخطوات، وليست محادثة عميل حقيقية أو نتيجة تسليم فعلية.", "شغّل المثال التفاعلي", "الإعداد وحل المشكلات", "قارن الخطط"],
   fr: ["Sources officielles", "Prêt à automatiser Instagram ?", "Commencez gratuitement, comparez les offres ou consultez le guide de configuration avant de connecter votre compte Instagram professionnel.", "Découvrir l’automatisation des DM Instagram", "Configuration et dépannage", "Comparer les offres"],
   es: ["Fuentes oficiales", "¿Listo para automatizar Instagram?", "Empieza gratis, compara los planes o revisa la guía de configuración antes de conectar tu cuenta profesional de Instagram.", "Explorar la automatización de mensajes de Instagram", "Configuración y solución de problemas", "Comparar planes"],
   de: ["Offizielle Quellen", "Bereit für Instagram-Automatisierung?", "Starte kostenlos, vergleiche die Tarife oder lies die Einrichtungsanleitung, bevor du dein professionelles Instagram-Konto verbindest.", "Instagram-DM-Automatisierung entdecken", "Einrichtung und Fehlerbehebung", "Tarife vergleichen"],
