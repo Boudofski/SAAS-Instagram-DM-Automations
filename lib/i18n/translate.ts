@@ -21,6 +21,7 @@ import { PHRASE_TRANSLATIONS } from "./phrase-translations";
 import { DASHBOARD_COPY } from "./dashboard-copy";
 import { PUBLIC_COPY } from "./public-copy";
 import { NL_PUBLIC_COPY } from "./nl-public-copy";
+import { ARABIC_HOME_COPY } from "./arabic-home-copy";
 import type { Locale } from "./config";
 
 const catalogs = Object.fromEntries(
@@ -54,6 +55,11 @@ const catalogs = Object.fromEntries(
       ...PRODUCT_AUDIT_COPY[locale as Locale],
       ...SEO_20261023_COPY[locale as Locale],
       ...(locale === "nl" ? NL_PUBLIC_COPY : {}),
+      // Arabic row catalogs use English as a safe structural fallback. Apply
+      // the recovered, reviewed Arabic catalog after those rows so translated
+      // values win instead of being overwritten by the fallback strings.
+      ...(locale === "ar" ? EXTENDED_COPY.ar : {}),
+      ...(locale === "ar" ? ARABIC_HOME_COPY : {}),
       // Reviewed wording overrides legacy machine translations and older phrase catalogs.
       ...(EDITORIAL_COPY as Partial<Record<Locale, Record<string, string>>>)[
         locale as Locale

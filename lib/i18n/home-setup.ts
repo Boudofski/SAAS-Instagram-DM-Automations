@@ -17,6 +17,15 @@ export const HOME_SETUP_COPY: Record<Locale, SetupCopy> = {
       { title: "Let it run on autopilot", description: "Every comment gets a reply while you focus on content" },
     ],
   },
+  ar: {
+    title: ["أنشئ", "أتمتتك", "في دقائق"],
+    description: "رد تلقائيًا على تعليقات ورسائل إنستغرام وركّز وقتك على صناعة المحتوى.", trigger: "المحفّز",
+    cards: [
+      { title: "اختر الكلمات المفتاحية", description: "حدد التعليقات أو الكلمات التي تشغّل الرسالة فورًا" },
+      { title: "أنشئ ردك", description: "أضف الرسائل أو الروابط أو العروض التي تريد إرسالها تلقائيًا" },
+      { title: "دع AP3K يعمل تلقائيًا", description: "يحصل كل تعليق مؤهل على رد بينما تركز أنت على المحتوى" },
+    ],
+  },
   fr: {
     title: ["Configurez", "l’automatisation", "en quelques minutes"],
     description: "Répondez automatiquement aux commentaires et aux DM sur Instagram pendant que vous vous concentrez sur le contenu, pas sur les conversations.",

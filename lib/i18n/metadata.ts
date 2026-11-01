@@ -9,6 +9,10 @@ export const SITE_METADATA: Record<
     description:
       "Turn Instagram comments into automatic DMs with AP3K. Send links, collect leads and track results. Start free with 500 automated actions each month.",
   },
+  ar: {
+    title: "AP3K — أداة أتمتة رسائل إنستغرام (خطة مجانية)",
+    description: "حوّل تعليقات إنستغرام إلى رسائل خاصة تلقائية مع AP3K. أرسل الروابط واجمع العملاء المحتملين وابدأ مجانًا مع 500 إجراء آلي شهريًا.",
+  },
   fr: {
     title: "AP3K — Outil d’automatisation des DM Instagram (gratuit)",
     description:

@@ -3,6 +3,7 @@ import type { Locale } from './config';
 const source = 'Read how AP3K subscription cancellation works, when paid access ends and how to request a review for a duplicate charge, billing error or service failure.';
 export const SEO_20261023_COPY: Record<Locale, Record<string, string>> = {
   en: {},
+  ar: {},
   fr: { [source]: 'Consultez les conditions d’annulation des abonnements AP3K, la fin de l’accès payant et la marche à suivre pour demander l’examen d’une erreur de facturation.' },
   es: { [source]: 'Consulta cómo cancelar una suscripción AP3K, cuándo termina el acceso de pago y cómo solicitar la revisión de un cobro duplicado o un error de facturación.' },
   de: { [source]: 'Erfahren Sie, wie Sie ein AP3K-Abonnement kündigen, wann der bezahlte Zugang endet und wie Sie doppelte Belastungen oder Abrechnungsfehler prüfen lassen.' },

@@ -16,6 +16,10 @@ const PRICING_METADATA = {
     "AP3K Pricing — Free, Pro & Business Plans",
     "Compare AP3K Free, Pro and Business plans for Instagram comment replies, DMs, AI, lead tracking and automation analytics.",
   ],
+  ar: [
+    "أسعار AP3K — خطط Free وPro وBusiness",
+    "قارن خطط AP3K لأتمتة تعليقات ورسائل إنستغرام والذكاء الاصطناعي وجمع العملاء المحتملين وتحليل النتائج.",
+  ],
   fr: [
     "Tarifs AP3K — Offres Instagram Gratuit, Pro et Business",
     "Comparez les offres AP3K Gratuit, Pro et Business pour les réponses, DM, fonctions d’IA et le suivi des prospects Instagram.",

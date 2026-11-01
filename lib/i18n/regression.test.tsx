@@ -13,7 +13,7 @@ describe("language-switching regressions", () => {
     expect(resolveRequestLocale("/", "ar")).toBe("en");
     expect(resolveRequestLocale("/pricing", "ar")).toBe("en");
     expect(resolveRequestLocale("/fr/pricing", "ar")).toBe("fr");
-    expect(resolveRequestLocale("/dashboard/user", "ar")).toBe("en");
+    expect(resolveRequestLocale("/dashboard/user", "ar")).toBe("ar");
   });
   it("keeps checkout and callback routes unprefixed", () => {
     for (const path of ["/payment", "/callback/instagram", "/api/payment", "/dashboard", "/onboarding"]) {

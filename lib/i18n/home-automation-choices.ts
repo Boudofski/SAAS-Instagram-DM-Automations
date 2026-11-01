@@ -12,6 +12,13 @@ export const HOME_AUTOMATION_CHOICES: Record<Locale, Copy> = {
       { title: "Flow Builder", subtitle: "Advanced and Limitless Flows", cta: "Start with Flow Builder", alt: "Flow builder preview", features: ["Visual node based flow builder with templates", "Multi step DM sequences", "Conditional paths and smart triggers", "Delay, filters and advanced actions", "Fully customizable journeys"] },
     ],
   },
+  ar: {
+    title: "أنشئ الأتمتة بالطريقة التي تناسبك", subtitle: "ابدأ ببساطة أو أنشئ مسارات متقدمة بتحكم كامل",
+    cards: [
+      { title: "الأتمتة الأساسية", subtitle: "إعداد سريع وسهل", cta: "ابدأ بأتمتة أساسية", alt: "معاينة خطوات الأتمتة الأساسية", features: ["إعداد خلال دقائق", "قوالب جاهزة للاستخدام", "رد تلقائي على التعليقات والرسائل", "جمع البريد الإلكتروني والعملاء المحتملين", "لا تحتاج إلى خبرة تقنية"] },
+      { title: "منشئ المسارات", subtitle: "مسارات متقدمة ومرنة", cta: "ابدأ بمنشئ المسارات", alt: "معاينة منشئ المسارات", features: ["منشئ بصري مع قوالب", "تسلسلات رسائل متعددة الخطوات", "مسارات شرطية ومحفزات ذكية", "تأخير وفلاتر وإجراءات متقدمة", "رحلات قابلة للتخصيص بالكامل"] },
+    ],
+  },
   fr: {
     title: "Créez vos automatisations à votre façon",
     subtitle: "Commencez simplement ou créez des scénarios avancés en gardant le contrôle",

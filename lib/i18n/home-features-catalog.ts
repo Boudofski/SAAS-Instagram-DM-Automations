@@ -29,6 +29,23 @@ export const HOME_FEATURES_COPY: Record<Locale, FeaturesCopy> = {
       { title: "Team access link", description: "Feature preview: share secure dashboard access with your team through an invitation link." },
     ],
   },
+  ar: {
+    kicker: "ميزات قوية تساعدك على", title: "تطوير استراتيجيتك على إنستغرام", unavailable: "غير متاح بعد",
+    featured: [
+      { title: "اطلب المتابعة", description: "نمِّ جمهورك مع كل محادثة. يمكن لـ AP3K طلب متابعة حسابك والتحقق منها قبل إرسال الرابط أو المورد." },
+      { title: "ردود تلقائية بالذكاء الاصطناعي", description: "حافظ على تفاعل جمهورك بردود مناسبة يكتبها الذكاء الاصطناعي حسب النبرة والتعليمات التي تختارها." },
+    ],
+    cards: [
+      { title: "أتمتة القصص", description: "رد تلقائيًا على تفاعلات القصص المؤهلة وحافظ على تفاعل جمهورك." },
+      { title: "المنشور التالي", description: "جهّز أتمتة خاصة بمنشورك أو ريلز القادم." },
+      { title: "الأتمتة الشاملة", description: "طبّق قواعد التعليقات على كل منشوراتك واستخدم محفزات القصص." },
+      { title: "استرجاع التعليقات", description: "عالج التعليقات المؤهلة السابقة على المنشورات المدعومة." },
+      { title: "الإشارة في القصة", description: "أرسل ردًا تلقائيًا عندما يذكرك شخص في قصته." },
+      { title: "تتبع الروابط", description: "تابع زيارات الروابط وقارن الوجهات واعرض النقرات اليومية." },
+      { title: "الإعلانات والمنشورات الممولة", description: "أتمت التفاعلات المؤهلة مع الإعلانات والمحتوى الممول." },
+      { title: "وصول الفريق", description: "شارك وصولًا آمنًا لمساحة العمل مع فريقك عبر دعوة." },
+    ],
+  },
   fr: {
     kicker: "Des fonctionnalités puissantes pour",
     title: "Améliorer votre stratégie Instagram",

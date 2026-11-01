@@ -1,6 +1,7 @@
 import type { Locale } from "./config";
 export const SEO_PUBLIC_COPY: Record<Locale, Record<string, string>> = {
   "en": {},
+  ar: {},
   "fr": {
     "Contact AP3K Support for Instagram Automation": "Assistance AP3K pour l’automatisation Instagram",
     "Contact AP3K support for Instagram connections, automations, billing, account access, privacy and data requests.": "Contactez AP3K pour les connexions Instagram, les automatisations, la facturation, l’accès au compte, la confidentialité et les données.",

@@ -20,6 +20,7 @@ import LocalizedCopy from "@/components/i18n/localized-copy";
 
 const BILLING_LABELS: Record<Locale, { annual: string; monthly: string; equivalent: string }> = {
   en: { annual: "per year, billed annually", monthly: "per month, billed monthly", equivalent: "Monthly equivalent" },
+  ar: { annual: "سنوياً، تُدفع مرة واحدة كل سنة", monthly: "شهرياً، تُدفع كل شهر", equivalent: "ما يعادل شهرياً" },
   fr: { annual: "par an, facturé annuellement", monthly: "par mois, facturé mensuellement", equivalent: "Équivalent mensuel" },
   es: { annual: "al año, con facturación anual", monthly: "al mes, con facturación mensual", equivalent: "Equivalente mensual" },
   de: { annual: "pro Jahr, jährlich abgerechnet", monthly: "pro Monat, monatlich abgerechnet", equivalent: "Monatlicher Gegenwert" },

@@ -7,8 +7,7 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { LOCALE_DETAILS, localeAlternates } from "@/lib/i18n/config";
 import { SITE_METADATA } from "@/lib/i18n/metadata";
 import type { Metadata } from "next";
-import { headers, type UnsafeUnwrappedHeaders } from "next/headers";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Noto_Sans_Arabic, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -16,6 +15,11 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   fallback: ["Arial", "Helvetica", "sans-serif"],
+});
+const arabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  display: "swap",
+  fallback: ["Arial", "sans-serif"],
 });
 // Public ownership token for the connected AP3K Search Console property.
 // Retain an existing environment-provided owner token as well.
@@ -70,18 +74,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const locale = getServerLocale();
   const localeDetails = LOCALE_DETAILS[locale];
-  const isArabicLanding =
-    (headers() as unknown as UnsafeUnwrappedHeaders).get(
-      "x-ap3k-arabic-page",
-    ) === "1";
 
   return (
     <html
-      lang={isArabicLanding ? "ar" : localeDetails.htmlLang}
-      dir={isArabicLanding ? "rtl" : localeDetails.direction}
+      lang={localeDetails.htmlLang}
+      dir={localeDetails.direction}
       suppressHydrationWarning
     >
-      <body className={jakarta.className}>
+      <body className={locale === "ar" ? arabic.className : jakarta.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
