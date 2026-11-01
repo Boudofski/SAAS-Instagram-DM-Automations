@@ -48,10 +48,10 @@ export default function ContactsClient({slug,contacts,canExport=false}:{slug:str
     </div>
     <div className={css.tableWrap}><table className={css.table}><thead><tr>{columns.map(([key,label])=><th key={key} scope="col" aria-sort={filters.sort===key?(filters.direction==='asc'?'ascending':'descending'):'none'}><button type="button" onClick={()=>sort(key)}>{tr(label)}{sortIcon(key)}</button></th>)}</tr></thead>
       <tbody>{rows.map(c=><tr key={c.id}>
-        <td data-label={tr('Username')}><div className={css.username}>{c.recipientUsername?<a href={`https://www.instagram.com/${encodeURIComponent(c.recipientUsername.replace(/^@/,''))}/`} target="_blank" rel="noopener noreferrer">@{c.recipientUsername.replace(/^@/,'')}</a>:<span>{tr('Instagram user')}</span>}{c.conversationId&&<Link className={css.chat} href={`/dashboard/${encodeURIComponent(slug)}/inbox?conversation=${encodeURIComponent(c.conversationId)}`} aria-label={tr('Open chat')}><MessageCircle size={16}/></Link>}</div></td>
+        <td data-label={tr('Username')}><div className={css.username}>{c.recipientUsername?<a dir="ltr" href={`https://www.instagram.com/${encodeURIComponent(c.recipientUsername.replace(/^@/,''))}/`} target="_blank" rel="noopener noreferrer">@{c.recipientUsername.replace(/^@/,'')}</a>:<span>{tr('Instagram user')}</span>}{c.conversationId&&<Link className={css.chat} href={`/dashboard/${encodeURIComponent(slug)}/inbox?conversation=${encodeURIComponent(c.conversationId)}`} aria-label={tr('Open chat')}><MessageCircle size={16}/></Link>}</div></td>
         <td data-label={tr('Last interacted on')}><time dateTime={contactTime(c.lastInteractedAt)?new Date(contactTime(c.lastInteractedAt)).toISOString():undefined}>{date(c.lastInteractedAt)}</time></td>
         <td data-label={tr('Created on')}><time dateTime={contactTime(c.createdAt)?new Date(contactTime(c.createdAt)).toISOString():undefined}>{date(c.createdAt)}</time></td>
-        <td data-label={tr('Email')}>{c.email||'—'}</td><td data-label={tr('Phone')}><bdi>{c.phone||'—'}</bdi></td>
+        <td data-label={tr('Email')}><bdi dir="ltr">{c.email||'—'}</bdi></td><td data-label={tr('Phone')}><bdi dir="ltr">{c.phone||'—'}</bdi></td>
       </tr>)}</tbody></table>
       {!rows.length&&<div className={css.empty}><UsersRound size={32}/><h2>{tr(filters.query||activeFilters?'No matching contacts':'No contacts yet')}</h2><p>{tr('Contacts appear after an Instagram interaction reaches AP3K.')}</p></div>}
     </div>
