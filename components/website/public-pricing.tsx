@@ -363,10 +363,10 @@ export default function PublicPricing({
                           </strong>
                           <small>
                             {plan.id === "FREE"
-                              ? "Free forever"
+                              ? tr("Free forever")
                               : interval === "year"
-                                ? `$${plan.annualPrice} billed yearly`
-                                : "billed monthly"}
+                                ? `$${plan.annualPrice} ${tr("billed yearly")}`
+                                : tr("billed monthly")}
                           </small>
                         </div>
                       </th>

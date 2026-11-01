@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import { UiText } from "@/components/i18n/localized-copy";
+import { useUi } from "@/components/i18n/use-ui";
 import styles from "./automation-empty-state.module.css";
 
 type ConversationMessage = { text: string; hold: number; avatar?: 1 | 2 | 3 };
@@ -49,6 +50,7 @@ const conversation: readonly ConversationMessage[] = [
 ];
 
 export default function AutomationEmptyState({ slug }: { slug: string }) {
+  const tr = useUi();
   const reducedMotion = useReducedMotion();
   const [step, setStep] = useState(0);
 
@@ -76,7 +78,7 @@ export default function AutomationEmptyState({ slug }: { slug: string }) {
   const visible = Array.from({ length: last - first + 1 }, (_, offset) => first + offset);
 
   return <div className={styles.stage}>
-    <section className={styles.card} aria-label="Create your first automation">
+    <section className={styles.card} aria-label={tr("Create your first automation")}>
       <div className={styles.conversation} aria-hidden="true">
         <div className={styles.messages}>
           {visible.map((index) => {
