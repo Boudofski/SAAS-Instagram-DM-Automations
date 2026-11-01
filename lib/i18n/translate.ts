@@ -23,6 +23,7 @@ import { PUBLIC_COPY } from "./public-copy";
 import { NL_PUBLIC_COPY } from "./nl-public-copy";
 import { ARABIC_HOME_COPY } from "./arabic-home-copy";
 import { ARABIC_COMPLETE_COPY } from "./arabic-complete-copy";
+import { DOCS_COPY } from "./docs-copy";
 import type { Locale } from "./config";
 
 const catalogs = Object.fromEntries(
@@ -55,6 +56,7 @@ const catalogs = Object.fromEntries(
       ...AUTOMATION_COPY_CONTROLS[locale as Locale],
       ...PRODUCT_AUDIT_COPY[locale as Locale],
       ...SEO_20261023_COPY[locale as Locale],
+      ...DOCS_COPY[locale as Locale],
       ...(locale === "nl" ? NL_PUBLIC_COPY : {}),
       // Arabic row catalogs use English as a safe structural fallback. Apply
       // the recovered, reviewed Arabic catalog after those rows so translated

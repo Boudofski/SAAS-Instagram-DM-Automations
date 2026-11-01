@@ -69,7 +69,7 @@ export const HOME_HERO_COPY: Record<Locale, HomeHeroCopy> = {
     titleBottom: "إلى رسالة خاصة تلقائيًا",
     description: "يساعدك AP3K على أتمتة التعليقات والرسائل الخاصة والردود على القصص في إنستغرام.",
     cta: "ابدأ مجانًا", secondary: "شاهد كيف يعمل", allowance: "500 إجراء آلي كل شهر. لا تحتاج إلى بطاقة بنكية.",
-    audience: "مصمم لصنّاع المحتوى على إنستغرام", api: "واجهة Instagram الرسمية", keywordPrefix: "اكتب", keywordSuffix: "ودع AP3K يتولى الباقي.",
+    audience: "مصمم لصنّاع المحتوى على إنستغرام", api: "واجهة Instagram الرسمية", keywordPrefix: "اكتب", keywordSuffix: "لتحصل على الرابط في رسالة خاصة",
     demoLabel: "مثال على الأتمتة", demoDescription: "يكتب شخص كلمة مفتاحية في تعليق على منشورك، فيرسل AP3K الرابط المطلوب تلقائيًا عبر رسالة خاصة.",
     reply: "رد", sent: "أرسلها AP3K", dmTitle: "صندوق رسائل إنستغرام", active: "نشط الآن", message: "إليك الرابط الذي وعدتك به! ✨", openLink: "افتح الرابط", commentRequest: "أرسل لي الرابط من فضلك!", pause: "إيقاف الحركة", play: "تشغيل الحركة",
     scenes: [

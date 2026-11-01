@@ -20,6 +20,10 @@ describe("language-switching regressions", () => {
       expect(localizePublicPath(path, "fr")).toBe(path);
     }
   });
+  it("keeps documentation inside the selected public locale", () => {
+    expect(localizePublicPath("/docs", "ar")).toBe("/ar/docs");
+    expect(localizePublicPath("/docs/getting-started/connect-instagram-account", "fr")).toBe("/fr/docs/getting-started/connect-instagram-account");
+  });
   it("restores original English text, markup and props after every locale", () => {
     // Raw anchors intentionally exercise HTML-tree localization.
     // eslint-disable-next-line @next/next/no-html-link-for-pages
