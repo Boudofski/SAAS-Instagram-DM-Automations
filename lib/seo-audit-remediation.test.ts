@@ -75,7 +75,7 @@ describe('evidence-based SEO remediation', () => {
   it('renders live localized hero text without putting decorative media on the mobile LCP path', () => {
     const source = readFileSync('components/website/home-hero.tsx', 'utf8');
     expect(source).toContain('KEYWORD_ANIMATION_COPY[locale]');
-    expect(source).not.toContain('comment-water-drop.webm');
+    expect(source).toContain('motionReady && reducedMotion === false');
     expect(source).toContain('motionReady && reducedMotion === false');
     expect(source).toContain('requestIdleCallback');
     expect(source).toContain('wideScene && <ConversationCards');

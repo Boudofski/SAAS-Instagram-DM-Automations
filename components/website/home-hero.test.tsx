@@ -13,12 +13,18 @@ describe('localized hero animation', () => {
       state.locale = locale;
       const html = renderToStaticMarkup(<HomeHero />);
       const copy = KEYWORD_ANIMATION_COPY[locale];
+      if (locale === 'en') {
+        expect(html).toContain('comment-water-drop-poster.webp');
+        expect(html).toContain('<video');
+        expect(html).toContain('playsinline');
+        return;
+      }
       expect(html).toContain(copy.prefix);
       expect(html).toContain(copy.suffix);
       expect(html).toContain(`<bdi>${copy.keywords[0]}</bdi>`);
       expect(html).toContain(`dir="${locale === 'ar' ? 'rtl' : 'ltr'}"`);
       expect(html).not.toContain('<video');
-      if (locale !== 'en') expect(html).not.toContain('to get the product link');
+      expect(html).not.toContain('to get the product link');
     });
   }
 });

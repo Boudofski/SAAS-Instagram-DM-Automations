@@ -33,6 +33,8 @@ export default function HomeHero() {
   const copy = HOME_HERO_COPY[locale];
   const keywordCopy = KEYWORD_ANIMATION_COPY[locale];
   const section = useRef<HTMLElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
   const inView = useInView(section, { amount: 0.15 });
   const reducedMotion = useReducedMotion();
   const [pageVisible, setPageVisible] = useState(true);
@@ -81,13 +83,20 @@ export default function HomeHero() {
   }, []);
 
   useEffect(() => {
-    if (!playing) return;
+    const element = video.current;
+    if (!element) return;
+    if (playing) void element.play().catch(() => setVideoReady(false));
+    else element.pause();
+  }, [playing, locale]);
+
+  useEffect(() => {
+    if (!playing || locale === "en") return;
     const timer = window.setInterval(
       () => setKeywordScene((current) => (current + 1) % keywordCopy.keywords.length),
       2800,
     );
     return () => window.clearInterval(timer);
-  }, [keywordCopy.keywords.length, playing]);
+  }, [keywordCopy.keywords.length, playing, locale]);
 
   useEffect(() => {
     const element = section.current;
@@ -116,12 +125,21 @@ export default function HomeHero() {
       </div>
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
-          <div className={styles.localizedKeyword} dir={locale === "ar" ? "rtl" : "ltr"}>
+          {locale === "en" ? <div className={styles.keywordMedia}>
+            <Image className={`${styles.keywordVideo} ${styles.posterLayer}`}
+              data-hidden={videoReady && playing}
+              src="/media/hero/comment-water-drop-poster.webp" alt="" width={1530} height={364} priority unoptimized />
+            <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
+              width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
+              src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
+              onPlaying={() => setVideoReady(true)} onEmptied={() => setVideoReady(false)}
+              onError={() => setVideoReady(false)} data-ready={videoReady && playing} />
+          </div> : <div className={styles.localizedKeyword} dir={locale === "ar" ? "rtl" : "ltr"}>
             <span>{keywordCopy.prefix}{" "}
               <strong key={`${locale}-${keywordScene}`}><bdi>{keywordCopy.keywords[keywordScene]}</bdi></strong>
               {" "}{keywordCopy.suffix}
             </span>
-          </div>
+          </div>}
         </div>
         <h1 id="home-hero-title" className={styles.title}>
           <span>{copy.titleTop}{" "}</span>
