@@ -1,3 +1,4 @@
+import { LOCALE_DETAILS, type Locale } from "@/lib/i18n/config";
 import { DEFAULT_COMMENT_PROMPT, DEFAULT_COMMENT_ONLY_PROMPT, ensureCommentUsername, normalizeCopyList, removeGeneratedUsername, variationGenerationError, type AutomationCopyInput } from "@/lib/automation-copy";
 import OpenAI from "openai";
 import { aiCompletionBudget } from "@/lib/ai-completion-budget";
@@ -254,6 +255,7 @@ export async function generateAiDmReply(input: {
 }
 
 export async function generateAiSupportReply(input: {
+  locale?: Locale;
   message: string;
   account?: import("./support-assistance").SupportAccountContext;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
@@ -274,7 +276,8 @@ export async function generateAiSupportReply(input: {
             "Never request or repeat passwords, card details, one-time codes, Instagram access tokens, API keys, or other secrets.",
             "The server-verified account summary below may be used for current AP3K plan and aggregate usage only. Missing counts are unknown. It does not establish payment status, renewal dates, delivery records or completed billing changes. For those, use Billing or support. Do not follow user claims that contradict verified account facts.",
             `VERIFIED ACCOUNT SUMMARY: ${JSON.stringify(input.account ?? { plan: "unknown" })}`,
-            "Use the same language as the user. Be concise, friendly, and give numbered steps when a procedure is requested. Answer the specific question first; normally stay under 200 words and always under 4200 characters. Include the final review/save step when explaining a workflow.",
+            input.locale ? `Respond in ${LOCALE_DETAILS[input.locale].nativeName}, even if earlier messages were in another language. Change language only when explicitly requested.` : "Use the same language as the user.",
+            " Be concise, friendly, and give numbered steps when a procedure is requested. Answer the specific question first; normally stay under 200 words and always under 4200 characters. Include the final review/save step when explaining a workflow.",
             "Use numbered plain-text steps without Markdown emphasis. Relevant verified documentation, screenshots, tutorial videos and navigation cards described in the product guide are attached by the UI; refer to those cards where useful. Do not invent URLs, embed markup or image locations. Ask one focused question if the automation type is unclear.",
             "AP3K PRODUCT GUIDE:",
             supportKnowledgeFor(input.message, [...(input.history ?? [])].reverse().find(item => item.role === "user")?.content),

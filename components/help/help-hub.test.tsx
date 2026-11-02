@@ -40,7 +40,7 @@ it("suggestions send immediately once, then reveal the reply after a short cue",
   const suggestion = () => tree.root.findAllByType("button").find(b => b.props.className?.includes("text-start text-xs"))!;
   await act(async () => { suggestion().props.onClick(); suggestion().props.onClick(); });
   expect(mocks.ask).toHaveBeenCalledOnce();
-  expect(mocks.ask).toHaveBeenCalledWith("Which AP3K plan fits my needs?");
+  expect(mocks.ask).toHaveBeenCalledWith("Which AP3K plan fits my needs?", "en");
   expect(suggestion().props.disabled).toBe(true);
   expect(JSON.stringify(tree.toJSON())).not.toContain("Tell me which features");
   await act(async () => { vi.advanceTimersByTime(1000); });

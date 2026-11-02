@@ -1,3 +1,4 @@
+import { LOCALE_DETAILS, SUPPORTED_LOCALES } from "@/lib/i18n/config";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ config: vi.fn(), completion: vi.fn(), options: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ client: { aiProviderConfig: { findMany: async () => { const config = await mocks.config(); return config ? [config] : []; }, updateMany: vi.fn().mockResolvedValue({ count: 1 }) } } }));
@@ -23,6 +24,12 @@ describe("flow assistant proposals", () => {
     vi.clearAllMocks();
     mocks.config.mockResolvedValue({ id: "google", enabled: true, model: "configured-model", encryptedApiKey: "encrypted" });
     mocks.completion.mockResolvedValue({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(response()) } }] });
+  });
+  it.each(SUPPORTED_LOCALES)("sends the selected %s locale to the AI provider", async (locale) => {
+    await generateFlowAssistantDraft({ ...input, locale });
+    const request = mocks.completion.mock.calls[0][0];
+    expect(request.messages[0].content).toContain(`in ${LOCALE_DETAILS[locale].nativeName}`);
+    expect(request.messages[0].content).toContain("Preserve existing customer-written text");
   });
   it("accepts a real validated delayed graph and the user's destination", () => {
     const parsed = parseFlowAssistantDraft(JSON.stringify(response()), input);

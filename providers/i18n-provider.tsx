@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useEffect, useState, type ReactNode } from "react";
-import { LOCALE_COOKIE, LOCALE_DETAILS, isProtectedPath, resolveRequestLocale, type Locale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, LOCALE_DETAILS, localeFromPath, isProtectedPath, resolveRequestLocale, type Locale } from "@/lib/i18n/config";
 import { usePathname } from "next/navigation";
 import { MESSAGES, type MessageKey } from "@/lib/i18n/messages";
 
@@ -16,7 +16,6 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
   const [activeLocale, setLocale] = useState(locale);
   const pathname = usePathname();
-  useEffect(() => setLocale(locale), [locale]);
   // Next preserves root layouts across navigation, including Back/Forward.
   // The visible public URL, not a cached layout prop or old cookie, is authoritative.
   useEffect(() => {
@@ -24,7 +23,7 @@ export function I18nProvider({ locale, children }: { locale: Locale; children: R
     const nextLocale = resolveRequestLocale(pathname, cookie);
     setLocale(nextLocale);
     // Persist actual visits and history changes, never speculative prefetches.
-    if (!isProtectedPath(pathname)) {
+    if (!isProtectedPath(pathname) && localeFromPath(pathname)) {
       const secure = window.location.protocol === "https:" ? "; Secure" : "";
       document.cookie = `${LOCALE_COOKIE}=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
     }

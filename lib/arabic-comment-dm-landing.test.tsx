@@ -74,7 +74,7 @@ describe("Arabic comment-to-DM acquisition page", () => {
       "components/global/consent-aware-analytics.tsx",
       "utf8",
     );
-    expect(consent).toContain('pathname === "/ar/instagram-comment-to-dm"');
+    expect(consent).toContain('locale === "ar"');
     expect(consent).toContain("خصوصيتك، اختيارك");
     expect(consent).toContain("الضرورية فقط");
     expect(consent).toContain("قبول التحليلات");

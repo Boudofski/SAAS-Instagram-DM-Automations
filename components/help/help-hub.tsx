@@ -78,6 +78,7 @@ function HelpLink({ href, icon: Icon, title, detail }: { href: string; icon: typ
 
 export function SupportAssistant({ workspace, onClose, onRestoreFocus }: { workspace: string; onClose: () => void; onRestoreFocus: () => void }) {
   const tr = useUi();
+  const { locale } = useI18n();
   const sound = useSupportSound();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -142,7 +143,7 @@ export function SupportAssistant({ workspace, onClose, onRestoreFocus }: { works
     try {
       // Start network work immediately; fast answers get a short, local typing cue.
       const [result] = await Promise.all([
-        askSupportAssistantAction(value),
+        askSupportAssistantAction(value, locale),
         new Promise<void>(resolve => setTimeout(resolve, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1000)),
       ]);
       if (!mounted.current) return;

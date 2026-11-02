@@ -2,6 +2,7 @@
 
 import { onCurrentUser } from "@/actions/user";
 import { findUser } from "@/actions/user/queries";
+import { normalizeLocale } from "@/lib/i18n/config";
 import { generateAiSupportReply } from "@/lib/ai-reply";
 import { selectSupportResources } from "@/lib/support-resources";
 import { reserveSupportRequest } from "@/lib/support-quota";
@@ -32,7 +33,7 @@ export async function getSupportHistoryAction() {
   }
 }
 
-export async function askSupportAssistantAction(message: string) {
+export async function askSupportAssistantAction(message: string, locale?: string) {
   try {
     const profile = await supportProfile();
     const prompt = message.trim().slice(0, 1200);
@@ -61,6 +62,7 @@ export async function askSupportAssistantAction(message: string) {
     }
     const result = await generateAiSupportReply({
       message: prompt,
+      locale: locale ? normalizeLocale(locale) : undefined,
       account,
       history: history.reverse().map((item) => ({ role: item.role === "assistant" ? "assistant" : "user", content: item.content })),
     });

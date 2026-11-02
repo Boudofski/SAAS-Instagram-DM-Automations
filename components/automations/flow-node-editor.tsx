@@ -1,4 +1,6 @@
 "use client";
+import { useUi } from "@/components/i18n/use-ui";
+import { UiText } from "@/components/i18n/localized-copy";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { Flow, FlowNode } from "@/lib/automation-flow/definition";
@@ -128,6 +130,7 @@ export default function FlowNodeEditor({
   flow: Flow;
   onChange: (flow: Flow) => void;
 }) {
+  const tr = useUi();
   const update = (patch: Record<string, unknown>) =>
     onChange({
       ...flow,
@@ -137,9 +140,7 @@ export default function FlowNodeEditor({
     });
   return (
     <div className="space-y-5 p-5">
-      <label className="block text-xs font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">
-        Step name
-        <input
+      <label className="block text-xs font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Step name"}</UiText><input
           value={node.label}
           maxLength={80}
           onChange={(e) => update({ label: e.target.value })}
@@ -155,9 +156,7 @@ export default function FlowNodeEditor({
         "product",
         "carousel",
       ].includes(node.kind) && (
-        <label className="block text-xs font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400">
-          Message type
-          <select
+        <label className="block text-xs font-semibold text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Message type"}</UiText><select
             className={input}
             value={node.kind}
             onChange={(e) => {
@@ -182,27 +181,24 @@ export default function FlowNodeEditor({
               "capture",
             ].map((k) => (
               <option value={k} key={k}>
-                {NODE_NAMES[k as FlowNode["kind"]]}
+                {tr(NODE_NAMES[k as FlowNode["kind"]])}
               </option>
             ))}
           </select>
         </label>
       )}
       {"text" in node && node.kind !== "product" && (
-        <label className="block text-sm font-medium">
-          Message
-          <textarea
+        <label className="block text-sm font-medium"><UiText>{"Message"}</UiText><textarea
             dir="auto"
             rows={5}
             maxLength={node.kind === "message" ? 1000 : 800}
             value={node.text}
-            placeholder="Enter your message here"
+            placeholder={tr("Enter your message here")}
             onChange={(e) => update({ text: e.target.value })}
             className={input}
           />
           <span className="mt-1 block text-right text-[11px] text-slate-500 light:text-slate-600 dark:text-slate-400">
-            {node.text.length} characters
-          </span>
+            {node.text.length}<UiText>{"characters"}</UiText></span>
         </label>
       )}
       {node.kind === "message" && (
@@ -210,7 +206,7 @@ export default function FlowNodeEditor({
           {node.links.map((l, i) => (
             <div key={i} className="rounded-xl bg-slate-50 p-3 dark:bg-white/5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Link {i + 1}</span>
+                <span className="text-xs font-medium"><UiText>{"Link "}</UiText>{i + 1}</span>
                 <button
                   aria-label={`Remove link ${i + 1}`}
                   onClick={() =>
@@ -222,7 +218,7 @@ export default function FlowNodeEditor({
               </div>
               <input
                 aria-label={`Button label ${i + 1}`}
-                placeholder="Button text"
+                placeholder={tr("Button text")}
                 maxLength={20}
                 value={l.label}
                 onChange={(e) =>
@@ -237,7 +233,7 @@ export default function FlowNodeEditor({
               <input
                 aria-label={`Link URL ${i + 1}`}
                 type="url"
-                placeholder="https://yourwebsite.com"
+                placeholder={tr("https://yourwebsite.com")}
                 value={l.url}
                 onChange={(e) =>
                   update({
@@ -259,9 +255,7 @@ export default function FlowNodeEditor({
                 })
               }
             >
-              <Plus size={15} />
-              Add link button
-            </button>
+              <Plus size={15} /><UiText>{"Add link button"}</UiText></button>
           )}
         </div>
       )}
@@ -289,8 +283,7 @@ export default function FlowNodeEditor({
               className="space-y-3 border-b border-slate-200 light:border-slate-300 pb-5 dark:border-white/10"
             >
               <div className="flex justify-between text-sm font-semibold">
-                <span>
-                  Card {i + 1} of {node.cards.length}
+                <span><UiText>{"Card"}</UiText>{i + 1}<UiText>{" of "}</UiText>{node.cards.length}
                 </span>
                 {node.cards.length > 1 && (
                   <button
@@ -348,20 +341,16 @@ export default function FlowNodeEditor({
                 })
               }
               className="text-sm font-semibold text-violet-600 dark:text-violet-300"
-            >
-              + Add card
-            </button>
+            ><UiText>{"+ Add card"}</UiText></button>
           )}
         </div>
       )}
       {(node.kind === "question" ||
         node.kind === "capture" ||
         node.kind === "setfield") && (
-        <label className="block text-sm font-medium">
-          Save reply to field
-          <input
+        <label className="block text-sm font-medium"><UiText>{"Save reply to field"}</UiText><input
             value={node.field}
-            placeholder="contact_name"
+            placeholder={tr("contact_name")}
             onChange={(e) =>
               update({ field: e.target.value.replace(/[^a-zA-Z0-9_-]/g, "") })
             }
@@ -370,9 +359,7 @@ export default function FlowNodeEditor({
         </label>
       )}
       {node.kind === "setfield" && (
-        <label className="block text-sm font-medium">
-          Value
-          <input
+        <label className="block text-sm font-medium"><UiText>{"Value"}</UiText><input
             value={node.value}
             onChange={(e) => update({ value: e.target.value })}
             className={input}
@@ -419,9 +406,7 @@ export default function FlowNodeEditor({
                   ],
                 })
               }
-            >
-              + Add button
-            </button>
+            ><UiText>{"+ Add button"}</UiText></button>
           )}
         </div>
       )}
@@ -432,18 +417,12 @@ export default function FlowNodeEditor({
             seconds={node.seconds}
             onChange={(seconds) => update({ seconds })}
           />
-          <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-            The first delay up to 30 seconds runs in the background. Longer
-            waits and recovery are checked every five minutes. Messages send
-            only while Instagram’s reply window is open.
-          </p>
+          <p className="mt-3 text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"The first delay up to 30 seconds runs in the background. Longer waits and recovery are checked every five minutes. Messages send only while Instagram’s reply window is open."}</UiText></p>
         </div>
       )}
       {node.kind === "condition" && (
         <>
-          <label className="block text-sm font-medium">
-            Condition type
-            <select
+          <label className="block text-sm font-medium"><UiText>{"Condition type"}</UiText><select
               className={input}
               value={
                 [
@@ -493,15 +472,13 @@ export default function FlowNodeEditor({
             "phone",
           ].includes(node.field) && (
             <input
-              aria-label="Custom field"
+              aria-label={tr("Custom field")}
               value={node.field}
               onChange={(e) => update({ field: e.target.value })}
               className={input}
             />
           )}
-          <label className="block text-sm font-medium">
-            Match
-            <select
+          <label className="block text-sm font-medium"><UiText>{"Match"}</UiText><select
               className={input}
               value={node.operator ?? "eq"}
               onChange={(e) => update({ operator: e.target.value })}
@@ -521,26 +498,19 @@ export default function FlowNodeEditor({
             </select>
           </label>
           {node.operator !== "exists" && (
-            <label className="block text-sm font-medium">
-              Value
-              <input
+            <label className="block text-sm font-medium"><UiText>{"Value"}</UiText><input
                 value={node.equals}
                 onChange={(e) => update({ equals: e.target.value })}
                 className={input}
               />
             </label>
           )}
-          <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400">
-            Instagram profile conditions are verified when this step runs.
-            Unavailable profile data does not qualify.
-          </p>
+          <p className="text-xs text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Instagram profile conditions are verified when this step runs. Unavailable profile data does not qualify."}</UiText></p>
         </>
       )}
       {node.kind === "random" && (
-        <label className="block text-sm font-medium">
-          First branch probability ({node.percent}%)
-          <input
-            aria-label="First branch probability"
+        <label className="block text-sm font-medium"><UiText>{"First branch probability ("}</UiText>{node.percent}<UiText>{"%)"}</UiText><input
+            aria-label={tr("First branch probability")}
             type="range"
             min={1}
             max={99}
@@ -548,26 +518,20 @@ export default function FlowNodeEditor({
             onChange={(e) => update({ percent: Number(e.target.value) })}
             className="mt-4 w-full accent-violet-600"
           />
-          <span className="mt-2 block text-xs text-slate-500 light:text-slate-600">
-            Second branch: {100 - node.percent}%
-          </span>
+          <span className="mt-2 block text-xs text-slate-500 light:text-slate-600"><UiText>{"Second branch:"}</UiText>{100 - node.percent}<UiText>{"%"}</UiText></span>
         </label>
       )}
       {node.kind === "webhook" && (
         <>
-          <label className="block text-sm font-medium">
-            Webhook URL
-            <input
+          <label className="block text-sm font-medium"><UiText>{"Webhook URL"}</UiText><input
               type="url"
               value={node.url}
-              placeholder="https://hooks.zapier.com/…"
+              placeholder={tr("https://hooks.zapier.com/…")}
               onChange={(e) => update({ url: e.target.value })}
               className={input}
             />
           </label>
-          <label className="block text-sm font-medium">
-            JSON body
-            <textarea
+          <label className="block text-sm font-medium"><UiText>{"JSON body"}</UiText><textarea
               rows={8}
               maxLength={8192}
               value={node.body}
@@ -575,29 +539,23 @@ export default function FlowNodeEditor({
               className={`${input} font-mono`}
             />
           </label>
-          <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-            Sends a POST request with JSON. Insert contact fields as{" "}
-            {"{{email}}"} inside string values. Preview never sends a request.
-          </p>
+          <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Sends a POST request with JSON. Insert contact fields as"}</UiText>{" "}
+            {"{{email}}"}<UiText>{"inside string values. Preview never sends a request."}</UiText></p>
         </>
       )}
       {node.kind === "tag" && (
-        <label className="block text-sm font-medium">
-          Action
-          <select
+        <label className="block text-sm font-medium"><UiText>{"Action"}</UiText><select
             value={node.action ?? "add"}
             onChange={(e) => update({ action: e.target.value })}
             className={input}
           >
-            <option value="add">Add tag</option>
-            <option value="remove">Remove tag</option>
+            <option value="add"><UiText>{"Add tag"}</UiText></option>
+            <option value="remove"><UiText>{"Remove tag"}</UiText></option>
           </select>
         </label>
       )}
       {node.kind === "tag" && (
-        <label className="block text-sm font-medium">
-          Contact tag
-          <input
+        <label className="block text-sm font-medium"><UiText>{"Contact tag"}</UiText><input
             value={node.tag}
             onChange={(e) =>
               update({ tag: e.target.value.replace(/[^a-zA-Z0-9_-]/g, "") })
@@ -608,9 +566,7 @@ export default function FlowNodeEditor({
       )}
       {edges(node).length > 0 && (
         <div className="space-y-3 border-t border-slate-200 light:border-slate-300 pt-4 dark:border-white/10">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600">
-            Connections
-          </h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-slate-600"><UiText>{"Connections"}</UiText></h3>
           {edges(node).map((edge, i) => (
             <label key={i} className="block text-xs">
               {edge.label}
@@ -624,7 +580,7 @@ export default function FlowNodeEditor({
                   )
                 }
               >
-                <option value="">Finish here</option>
+                <option value=""><UiText>{"Finish here"}</UiText></option>
                 {flow.nodes
                   .filter((n) => n.id !== node.id)
                   .map((n) => (
@@ -648,6 +604,7 @@ function DelayDuration({
   seconds: number;
   onChange: (seconds: number) => void;
 }) {
+  const tr = useUi();
   const [unit, setUnit] = useState(
     seconds % 86400 === 0
       ? 86400
@@ -658,11 +615,9 @@ function DelayDuration({
           : 1,
   );
   return (
-    <label className="block text-sm font-medium">
-      Delay duration
-      <div className="mt-2 flex gap-2">
+    <label className="block text-sm font-medium"><UiText>{"Delay duration"}</UiText><div className="mt-2 flex gap-2">
         <input
-          aria-label="Delay duration"
+          aria-label={tr("Delay duration")}
           type="number"
           min={1}
           max={604800 / unit}
@@ -678,7 +633,7 @@ function DelayDuration({
           className={input}
         />
         <select
-          aria-label="Delay unit"
+          aria-label={tr("Delay unit")}
           value={unit}
           onChange={(e) => {
             const next = Number(e.target.value);

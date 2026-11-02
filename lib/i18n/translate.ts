@@ -1,3 +1,4 @@
+import ASSISTANT_COPY from "./assistant-copy.json";
 import { PRODUCT_AUDIT_COPY } from "./product-audit-copy";
 import { SEO_20261023_COPY } from './seo-20261023-copy';
 import { SEO_PUBLIC_COPY } from "./seo-public-copy";
@@ -68,6 +69,7 @@ const catalogs = Object.fromEntries(
         locale as Locale
       ],
       ...(locale === "ar" ? ARABIC_COMPLETE_COPY : {}),
+      ...(ASSISTANT_COPY as Partial<Record<Locale, Record<string, string>>>)[locale as Locale],
     },
   ]),
 ) as Record<Locale, Record<string, string>>;

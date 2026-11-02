@@ -59,6 +59,18 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const savedLocale = req.cookies.get(LOCALE_COOKIE)?.value;
+  const savedDestination = isLocale(savedLocale) ? localizePublicPath(pathname, savedLocale) : requestedPath;
+  if (!pathLocale && isLocale(savedLocale) && savedLocale !== "en" && !isProtectedPath(pathname)
+    && !/\.[^/]+$/.test(pathname) && !/^\/(media|trpc)(?:\/|$)/.test(pathname)
+    && savedDestination !== requestedPath && req.method === "GET"
+    && !/bot|crawler|spider|slurp/i.test(req.headers.get("user-agent") || "")) {
+    const destination = req.nextUrl.clone();
+    destination.pathname = savedDestination;
+    const response = NextResponse.redirect(destination);
+    response.headers.set("Vary", "Cookie");
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
+  }
   const browserPreference = browserLocale(req.headers.get("accept-language"));
   const firstVisit = !isEnglishOnlyArticle(pathname) && !isLocale(savedLocale) && !pathLocale
     && !/\.[^/]+$/.test(pathname)

@@ -1,3 +1,4 @@
+import { LOCALE_DETAILS, SUPPORTED_LOCALES } from "@/lib/i18n/config";
 import { z } from "zod";
 import { createProvider, withAiProvider } from "@/lib/ai-routing";
 import { aiCompletionBudget } from "@/lib/ai-completion-budget";
@@ -7,6 +8,7 @@ import { validateFlow, type Flow } from "./definition";
 export const FLOW_LINK_PLACEHOLDER = "https://example.com/replace-me";
 const MAX_JSON_LENGTH = 120_000;
 export const flowAssistantInputSchema = z.object({
+  locale: z.enum(SUPPORTED_LOCALES).optional(),
   integrationId: z.string().uuid(),
   prompt: z.string().trim().min(1).max(4000),
   currentFlow: z.unknown().optional(),
@@ -152,7 +154,7 @@ export async function generateFlowAssistantDraft(input: FlowAssistantInput): Pro
     const result = await api.chat.completions.create({
       model: provider.model, temperature: 0.2, response_format: { type: "json_object" },
       ...aiCompletionBudget(provider, "complex"), max_tokens: 8192,
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: JSON.stringify({ prompt: input.prompt, history: input.history ?? [], currentFlow: input.currentFlow ?? null, currentTriggers: input.currentTriggers ?? [] }) }],
+      messages: [{ role: "system", content: SYSTEM_PROMPT + ` Write the summary, flow name, questions and new message text in ${LOCALE_DETAILS[input.locale ?? "en"].nativeName}. Preserve existing customer-written text, keywords, URLs and JSON field names. Use another language only if explicitly requested.` }, { role: "user", content: JSON.stringify({ prompt: input.prompt, history: input.history ?? [], currentFlow: input.currentFlow ?? null, currentTriggers: input.currentTriggers ?? [] }) }],
     });
     const raw = result.choices[0]?.message.content ?? "";
     try { return parseFlowAssistantDraft(raw, input); }
@@ -163,7 +165,7 @@ export async function generateFlowAssistantDraft(input: FlowAssistantInput): Pro
         model: provider.model, temperature: 0.1, response_format: { type: "json_object" },
         ...aiCompletionBudget(provider, "complex"), max_tokens: 8192,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: SYSTEM_PROMPT + ` Write the summary, flow name, questions and new message text in ${LOCALE_DETAILS[input.locale ?? "en"].nativeName}. Preserve existing customer-written text, keywords, URLs and JSON field names. Use another language only if explicitly requested.` },
           { role: "user", content: JSON.stringify({ prompt: input.prompt, history: input.history ?? [], currentFlow: input.currentFlow ?? null, currentTriggers: input.currentTriggers ?? [] }) },
           { role: "assistant", content: raw.slice(0, MAX_JSON_LENGTH) },
           { role: "user", content: `Repair this draft to satisfy the schema without changing the requested behavior. Validation error: ${detail.slice(0, 2000)}. Return complete JSON only.` },

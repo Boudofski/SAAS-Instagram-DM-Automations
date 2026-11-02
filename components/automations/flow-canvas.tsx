@@ -1,4 +1,7 @@
 "use client";
+import { useUi } from "@/components/i18n/use-ui";
+import { UiText } from "@/components/i18n/localized-copy";
+import { useI18n } from "@/providers/i18n-provider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
@@ -80,25 +83,23 @@ const iconMap: Record<FlowNode["kind"], typeof Send> = {
   end: Flag,
 };
 function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
+  const tr = useUi();
+  const { locale } = useI18n();
   const n = data.node;
   if (!n)
     return (
       <div
-        className={`flow-card flow-trigger ${selected ? "is-selected" : ""}`}
+        dir={locale === "ar" ? "rtl" : "ltr"} className={`flow-card flow-trigger ${selected ? "is-selected" : ""}`}
       >
         <div className="flex items-center gap-2 px-[14px] py-[17px] text-[12px] font-medium">
-          <Diamond size={16} fill="currentColor" />
-          Begin when…
-        </div>
-        <p className="px-[14px] pb-4 text-[12px] leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-          A Trigger is an action that initiates your Flow. Click to add one.
-        </p>
+          <Diamond size={16} fill="currentColor" /><UiText>{"Begin when…"}</UiText></div>
+        <p className="px-[14px] pb-4 text-[12px] leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"A Trigger is an action that initiates your Flow. Click to add one."}</UiText></p>
         <div className="space-y-2 px-[14px]">
           {data.triggers?.map((t) => (
             <button
               key={t.id}
               onClick={() => data.onTrigger?.(t.id)}
-              className="nodrag flex w-full items-center gap-3 rounded-md bg-[#f5f5f5] px-3 py-3 text-left dark:bg-white/5"
+              className="nodrag flex w-full items-center gap-3 rounded-md bg-[#f5f5f5] px-3 py-3 text-start dark:bg-white/5"
             >
               <Instagram size={20} className="shrink-0 text-pink-500" />
               <span className="min-w-0">
@@ -115,13 +116,9 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
             onClick={() => data.onTrigger?.()}
             className="nodrag flex h-10 w-full items-center justify-center gap-2 rounded-md border border-dashed border-violet-400 text-[12px] text-violet-600 dark:text-violet-300"
           >
-            <Plus size={16} />
-            New Trigger
-          </button>
+            <Plus size={16} /><UiText>{"New Trigger"}</UiText></button>
         </div>
-        <div className="relative mt-2 flex justify-end p-[14px] text-xs">
-          Then
-          <Handle className="flow-output-handle" aria-label="Drag Then to connect or add a node" type="source" position={Position.Right} id="out-0" />
+        <div className="relative mt-2 flex justify-end p-[14px] text-xs"><UiText>{"Then"}</UiText><Handle className="flow-output-handle" aria-label={tr("Drag Then to connect or add a node")} type="source" position={Position.Right} id="out-0" />
         </div>
       </div>
     );
@@ -137,7 +134,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
     "capture",
   ].includes(n.kind);
   return (
-    <div className={`flow-card ${selected ? "is-selected" : ""}`}>
+    <div dir={locale === "ar" ? "rtl" : "ltr"} className={`flow-card ${selected ? "is-selected" : ""}`}>
       <Handle type="target" position={Position.Left} />
       <div
         className={`flex items-center gap-2.5 px-[14px] py-[14px] text-[12px] ${n.kind === "delay" ? "text-rose-700 dark:text-rose-300" : n.kind === "condition" ? "text-cyan-700 dark:text-cyan-300" : "text-slate-700 dark:text-slate-200"}`}
@@ -145,12 +142,10 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
         <Icon size={18} />
         <div>
           {isMessage && (
-            <span className="block text-[10px] leading-4 text-slate-400 light:text-slate-600">
-              Instagram
-            </span>
+            <span className="block text-[10px] leading-4 text-slate-400 light:text-slate-600"><UiText>{"Instagram"}</UiText></span>
           )}
           <strong className="font-medium">
-            {isMessage ? "Send message" : NODE_NAMES[n.kind]}
+            {tr(isMessage ? "Send message" : NODE_NAMES[n.kind])}
           </strong>
         </div>
       </div>
@@ -179,8 +174,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
                   )}
                   {c.title || `Card ${i + 1}`}
                   <p className="text-[10px] text-slate-400 light:text-slate-600">
-                    {c.links.length} link buttons
-                  </p>
+                    {c.links.length}<UiText>{"link buttons"}</UiText></p>
                 </div>
               ))}
             </div>
@@ -188,7 +182,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
           {"text" in n && (
             <p dir="auto" className="whitespace-pre-wrap break-words">
               {n.text || (
-                <span className="text-slate-400 light:text-slate-600">Enter your message…</span>
+                <span className="text-slate-400 light:text-slate-600"><UiText>{"Enter your message…"}</UiText></span>
               )}
             </p>
           )}
@@ -218,24 +212,20 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
               </div>
             ))}
           {["email", "phone", "capture"].includes(n.kind) && (
-            <p className="text-[10px] text-violet-500 light:text-violet-700">
-              Wait for {n.kind === "capture" ? "a reply" : `a valid ${n.kind}`}
+            <p className="text-[10px] text-violet-500 light:text-violet-700"><UiText>{"Wait for"}</UiText>{n.kind === "capture" ? "a reply" : `a valid ${n.kind}`}
             </p>
           )}
         </div>
       )}
       {n.kind === "delay" && (
-        <p className="px-[14px] pb-2 text-xs">
-          Wait{" "}
+        <p className="px-[14px] pb-2 text-xs"><UiText>{"Wait"}</UiText>{" "}
           <strong>
             {n.seconds < 60
               ? `${n.seconds} seconds`
               : n.seconds < 3600
                 ? `${n.seconds / 60} minutes`
                 : `${n.seconds / 3600} hours`}
-          </strong>{" "}
-          and continue
-        </p>
+          </strong>{" "}<UiText>{"and continue"}</UiText></p>
       )}
       {n.kind === "condition" && (
         <p className="px-[14px] pb-2 text-xs">
@@ -244,17 +234,15 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
       )}
       {n.kind === "tag" && (
         <p className="px-[14px] pb-2 text-xs">
-          {n.action === "remove" ? "Remove" : "Add"} tag: {n.tag}
+          {n.action === "remove" ? "Remove" : "Add"}<UiText>{" tag: "}</UiText>{n.tag}
         </p>
       )}
       {n.kind === "webhook" && (
-        <p className="px-[14px] pb-2 text-xs">
-          POST JSON to your connected service
-        </p>
+        <p className="px-[14px] pb-2 text-xs"><UiText>{"POST JSON to your connected service"}</UiText></p>
       )}
       {n.kind === "setfield" && (
         <p className="px-[14px] pb-2 text-xs">
-          {n.field} = {n.value || "…"}
+          {n.field}<UiText>{" = "}</UiText>{n.value || "…"}
         </p>
       )}
       {n.kind !== "question" &&
@@ -268,7 +256,7 @@ function AutomationNode({ data, selected }: NodeProps<GraphNode>) {
               : n.kind === "condition" && i === 1
                 ? "Doesn’t match any"
                 : o.label}
-            <Handle className="flow-output-handle" aria-label="Drag to connect or add a node" type="source" position={Position.Right} id={`out-${i}`} />
+            <Handle className="flow-output-handle" aria-label={tr("Drag to connect or add a node")} type="source" position={Position.Right} id={`out-${i}`} />
           </div>
         ))}
     </div>
@@ -290,6 +278,7 @@ export default function FlowCanvas({
   triggerPanelOpen?: boolean;
   onOpenStep?: () => void;
 }) {
+  const tr = useUi();
   const { resolvedTheme } = useTheme();
   const [selected, setSelected] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
@@ -476,6 +465,7 @@ export default function FlowCanvas({
     setNodes((current) => applyNodeChanges(changes, current));
   return (
     <div
+      dir="ltr"
       ref={workspace}
       className="flow-workspace relative h-full w-full"
       onKeyDown={(event) => {
@@ -547,8 +537,8 @@ export default function FlowCanvas({
         <Controls showInteractive={false} position="bottom-left" fitViewOptions={{ padding: 0.15, maxZoom: 1 }} />
       </ReactFlow>
       <button
-        aria-label="Compact flow spacing"
-        title="Compact flow spacing"
+        aria-label={tr("Compact flow spacing")}
+        title={tr("Compact flow spacing")}
         onClick={() => {
           closeMenu();
           setEdit(false);
@@ -559,10 +549,9 @@ export default function FlowCanvas({
         }}
         className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-slate-200 light:border-slate-300 bg-white px-3 py-2 text-xs shadow-sm dark:border-white/10 dark:bg-[#192233]"
       >
-        <LayoutGrid size={15} /> Compact layout
-      </button>
+        <LayoutGrid size={15} /><UiText>{"Compact layout"}</UiText></button>
       <button
-        aria-label="Add node"
+        aria-label={tr("Add node")}
         onClick={() => {
           setPending(null);
           setEdit(false);
@@ -582,11 +571,11 @@ export default function FlowCanvas({
           style={pending ? { left: pending.menuPosition.x, top: pending.menuPosition.y, maxHeight: `calc(100% - ${pending.menuPosition.y + 12}px)` } : { left: 64, bottom: 12 }}
           className="absolute z-30 max-h-[calc(100%_-_24px)] w-[240px] max-w-[calc(100%_-_24px)] overflow-y-auto rounded-2xl border border-slate-200 light:border-slate-300 bg-white p-2 shadow-xl outline-none dark:border-white/10 dark:bg-[#1b2334]"
         >
-          <button aria-label="Cancel adding node" onClick={closeMenu} className="float-right rounded p-2 text-slate-500 light:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5">
+          <button aria-label={tr("Cancel adding node")} onClick={closeMenu} className="float-right rounded p-2 text-slate-500 light:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5">
             <X size={14} />
           </button>
-          {pending && <p className="px-3 pt-2 text-xs text-violet-600 dark:text-violet-300">Choose a node to connect here</p>}
-          {flow.nodes.length >= 50 && <p role="status" className="px-3 py-2 text-xs text-amber-600 light:text-amber-800">This flow has reached the 50-node limit.</p>}
+          {pending && <p className="px-3 pt-2 text-xs text-violet-600 dark:text-violet-300"><UiText>{"Choose a node to connect here"}</UiText></p>}
+          {flow.nodes.length >= 50 && <p role="status" className="px-3 py-2 text-xs text-amber-600 light:text-amber-800"><UiText>{"This flow has reached the 50-node limit."}</UiText></p>}
           <p className="px-3 py-2 text-xs font-semibold text-slate-400 light:text-slate-600">
             {subMenu === "message"
               ? "Message type"
@@ -616,7 +605,7 @@ export default function FlowCanvas({
                 else if (!subMenu && k === "tag") setSubMenu("action");
                 else add(k as FlowNode["kind"]);
               }}
-              className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5"
+              className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-start text-sm hover:bg-slate-100 dark:hover:bg-white/5"
             >
               {k === "delay" ? (
                 <Hourglass size={17} />
@@ -638,11 +627,9 @@ export default function FlowCanvas({
       )}
       {selected && node && !edit && (
         <div className="absolute right-4 top-4 z-10 flex gap-2 rounded-2xl bg-white p-2 shadow-lg dark:bg-slate-800">
-          <button onClick={() => setEdit(true)} className="px-3 text-xs">
-            Edit step
-          </button>
+          <button onClick={() => setEdit(true)} className="px-3 text-xs"><UiText>{"Edit step"}</UiText></button>
           <button
-            aria-label="Delete node"
+            aria-label={tr("Delete node")}
             onClick={() => remove(node.id)}
             className="p-2 text-red-500"
           >
@@ -652,15 +639,15 @@ export default function FlowCanvas({
       )}
       {edit && node && (
         <aside
-          aria-label="Step settings"
+          aria-label={tr("Step settings")}
           className="absolute inset-y-0 right-0 z-20 flex w-full max-w-none sm:max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
         >
           <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
             <h2 className="flex-1 text-sm font-semibold">
-              {NODE_NAMES[node.kind]}
+              {tr(NODE_NAMES[node.kind])}
             </h2>
             <button
-              aria-label="Copy node"
+              aria-label={tr("Copy node")}
               disabled={flow.nodes.length >= 50}
               onClick={() => {
                 const copied = {
@@ -677,14 +664,14 @@ export default function FlowCanvas({
               <Copy size={17} />
             </button>
             <button
-              aria-label="Delete node"
+              aria-label={tr("Delete node")}
               onClick={() => remove(node.id)}
               className="p-2 text-red-500"
             >
               <Trash2 size={17} />
             </button>
             <button
-              aria-label="Close step settings"
+              aria-label={tr("Close step settings")}
               onClick={() => setEdit(false)}
               className="p-2"
             >

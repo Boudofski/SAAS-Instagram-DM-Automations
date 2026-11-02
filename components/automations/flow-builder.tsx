@@ -1,4 +1,7 @@
 "use client";
+import { UiText } from "@/components/i18n/localized-copy";
+import { useI18n } from "@/providers/i18n-provider";
+import { useUi } from "@/components/i18n/use-ui";
 import { useEffect, useRef, useState } from "react";
 import PolicyScanDialog from "./policy-scan-dialog";
 import { mapFlowPolicy, applyFlowPolicy } from "@/lib/automation-policy-input";
@@ -98,6 +101,8 @@ export default function FlowBuilder({
   username,
   avatar,
 }: Props) {
+  const { locale } = useI18n();
+  const tr = useUi();
   const search = useSearchParams();
   const router = useRouter();
   const [basic, setBasic] = useState(search.get("editor") === "basic");
@@ -353,6 +358,7 @@ export default function FlowBuilder({
     setAiMessages((m) => [...m, { role: "user", content: text }]);
     try {
       const result = await generateAutomationFlow({
+        locale,
         integrationId,
         prompt: text,
         currentFlow: doc.flow.nodes.length ? doc.flow : undefined,
@@ -428,7 +434,7 @@ export default function FlowBuilder({
   };
   const triggerSummary = doc.triggers.map((t) => ({
     id: t.id,
-    label: triggerLabel(t),
+    label: tr(triggerLabel(t)),
     detail: t.sharedPost
       ? "Post or reel shared to your inbox"
       : t.source === "STORY"
@@ -475,20 +481,20 @@ export default function FlowBuilder({
     >
       <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
       <Sidebar slug={slug} />
-      <div className="flex h-full min-w-0 flex-col transition-[margin] lg:ml-[76px] lg:peer-data-[expanded=true]:ml-[232px]">
+      <div className="flex h-full min-w-0 flex-col transition-[margin] lg:ms-[76px] lg:peer-data-[expanded=true]:ms-[232px]">
         <header className="flex min-h-[60px] shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 bg-white px-3 dark:border-white/5 dark:bg-[#111827] sm:gap-3 sm:px-5">
           <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
             <SheetTrigger asChild>
               <button
                 type="button"
-                aria-label="Open navigation"
+                aria-label={tr("Open navigation")}
                 className={`${headerButton} lg:hidden`}
               >
                 <Menu size={18} />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[min(320px,88vw)] p-0 pt-10">
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SheetContent side={locale === "ar" ? "right" : "left"} className="w-[min(320px,88vw)] p-0 pt-10">
+              <SheetTitle className="sr-only"><UiText>{"Navigation"}</UiText></SheetTitle>
               <Sidebar
                 slug={slug}
                 drawer
@@ -502,12 +508,10 @@ export default function FlowBuilder({
           >
             {basic ? "Automations" : "Flow builder"}
           </Link>
-          <span className="hidden text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block">
-            /
-          </span>
+          <span className="hidden text-slate-500 light:text-slate-600 dark:text-slate-400 sm:block"><UiText>{"/"}</UiText></span>
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <input
-              aria-label="Automation name"
+              aria-label={tr("Automation name")}
               value={doc.name}
               maxLength={120}
               onChange={(e) => patch({ name: e.target.value })}
@@ -520,12 +524,12 @@ export default function FlowBuilder({
             <span
               className={`hidden rounded-md px-2 py-0.5 text-[10px] font-medium sm:block ${live ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-amber-50 text-amber-600 light:text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"}`}
             >
-              {live ? "Active" : "Draft"}
+              {tr(live ? "Active" : "Draft")}
             </span>
           </div>
           <div className="hidden items-center gap-1 md:flex">
             <button
-              aria-label="Undo"
+              aria-label={tr("Undo")}
               disabled={!past.length}
               onClick={undo}
               className={headerButton}
@@ -533,7 +537,7 @@ export default function FlowBuilder({
               <Undo2 size={16} />
             </button>
             <button
-              aria-label="Redo"
+              aria-label={tr("Redo")}
               disabled={!future.length}
               onClick={redo}
               className={headerButton}
@@ -559,14 +563,14 @@ export default function FlowBuilder({
             </span>
           </div>
           <button
-            aria-label="Preview flow"
+            aria-label={tr("Preview flow")}
             onClick={() => setPreview(true)}
             className={headerButton}
           >
             <Eye size={17} />
           </button>
           <button
-            aria-label="Save draft"
+            aria-label={tr("Save draft")}
             aria-busy={busy}
             disabled={busy}
             onClick={() => void save(false)}
@@ -588,21 +592,19 @@ export default function FlowBuilder({
             className="flex shrink-0 items-start gap-3 border-b border-red-200 bg-red-50 px-5 py-3 text-xs leading-5 text-red-700 dark:border-red-500/20 dark:bg-red-950 dark:text-red-200"
           >
             <span className="flex-1">{error}</span>
-            <button aria-label="Dismiss error" onClick={() => setError("")}>
+            <button aria-label={tr("Dismiss error")} onClick={() => setError("")}>
               <X size={16} />
             </button>
           </div>
         )}
         {!integrationId && (
-          <p className="bg-amber-50 p-3 text-center text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-            Connect your Instagram account to save and publish.
-          </p>
+          <p className="bg-amber-50 p-3 text-center text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"><UiText>{"Connect your Instagram account to save and publish."}</UiText></p>
         )}
         <main className="relative min-h-0 flex-1">
           {!basic && (
             <div className="absolute right-3 top-3 z-10 flex rounded-xl border border-slate-200 light:border-slate-300 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-[#192233] md:hidden">
               <button
-                aria-label="Undo"
+                aria-label={tr("Undo")}
                 disabled={!past.length}
                 onClick={undo}
                 className={headerButton}
@@ -610,7 +612,7 @@ export default function FlowBuilder({
                 <Undo2 size={16} />
               </button>
               <button
-                aria-label="Redo"
+                aria-label={tr("Redo")}
                 disabled={!future.length}
                 onClick={redo}
                 className={headerButton}
@@ -643,23 +645,23 @@ export default function FlowBuilder({
                 className="shrink-0 text-violet-600 dark:text-violet-400"
               />
               <input
-                aria-label="Describe the flow you want to build"
+                aria-label={tr("Describe the flow you want to build")}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 maxLength={4000}
-                placeholder="Describe the flow you want to build…"
+                placeholder={tr("Describe the flow you want to build…")}
                 className="min-w-0 flex-1 bg-transparent text-xs outline-none"
               />
               <button
                 type="button"
-                aria-label="Open the Flow Assistant"
+                aria-label={tr("Open the Flow Assistant")}
                 onClick={() => setAssistant(true)}
                 className="p-1 text-slate-500 light:text-slate-600 dark:text-slate-400"
               >
                 <Menu size={16} />
               </button>
               <button
-                aria-label="Send to Flow Assistant"
+                aria-label={tr("Send to Flow Assistant")}
                 disabled={generating || !prompt.trim()}
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-r from-violet-600 to-blue-500 text-white disabled:opacity-40"
               >
@@ -669,14 +671,14 @@ export default function FlowBuilder({
           )}
           {triggerPanel && (
             <aside
-              aria-label="Trigger settings"
-              className="absolute inset-y-0 right-0 z-30 flex w-full max-w-none sm:max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
+              aria-label={tr("Trigger settings")}
+              className="absolute inset-y-0 end-0 z-30 flex w-full max-w-none sm:max-w-[384px] flex-col border-l border-slate-200 light:border-slate-300 bg-white shadow-xl dark:border-white/10 dark:bg-[#111827]"
             >
               <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 dark:border-white/5">
                 <Diamond size={17} />
-                <h2 className="flex-1 text-sm font-semibold">Begin when…</h2>
+                <h2 className="flex-1 text-sm font-semibold"><UiText>{"Begin when…"}</UiText></h2>
                 <button
-                  aria-label="Close trigger settings"
+                  aria-label={tr("Close trigger settings")}
                   onClick={() => setTriggerPanel(false)}
                   className="p-2"
                 >
@@ -703,7 +705,7 @@ export default function FlowBuilder({
                 />
                 <div className="space-y-4 border-t border-slate-100 light:border-slate-200 p-5 dark:border-white/10">
                   <label className="flex items-center justify-between gap-3 text-sm">
-                    <span>Run once per contact</span>
+                    <span><UiText>{"Run once per contact"}</UiText></span>
                     <input
                       type="checkbox"
                       checked={doc.flow.oncePerContact}
@@ -718,14 +720,8 @@ export default function FlowBuilder({
                   </label>
                   {doc.triggers.some((t) => t.source === "COMMENT") && (
                     <>
-                      <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400">
-                        Comment flows start with a private reply and wait for a
-                        button tap. A first step with one button supplies this
-                        opening automatically.
-                      </p>
-                      <label className="block text-xs font-medium">
-                        Opening message
-                        <textarea
+                      <p className="text-xs leading-5 text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Comment flows start with a private reply and wait for a button tap. A first step with one button supplies this opening automatically."}</UiText></p>
+                      <label className="block text-xs font-medium"><UiText>{"Opening message"}</UiText><textarea
                           value={doc.opening}
                           maxLength={800}
                           onChange={(e) => patch({ opening: e.target.value })}
@@ -733,9 +729,7 @@ export default function FlowBuilder({
                           rows={3}
                         />
                       </label>
-                      <label className="block text-xs font-medium">
-                        Opening button
-                        <input
+                      <label className="block text-xs font-medium"><UiText>{"Opening button"}</UiText><input
                           value={doc.openingButton}
                           maxLength={20}
                           onChange={(e) =>
@@ -744,9 +738,7 @@ export default function FlowBuilder({
                           className="flow-editor-input"
                         />
                       </label>
-                      <label className="block text-xs font-medium">
-                        Public comment reply
-                        <textarea
+                      <label className="block text-xs font-medium"><UiText>{"Public comment reply"}</UiText><textarea
                           value={doc.publicReply}
                           maxLength={300}
                           onChange={(e) =>
@@ -763,25 +755,18 @@ export default function FlowBuilder({
                   <button
                     className="mx-5 mb-5 text-xs font-semibold text-violet-600 dark:text-violet-300"
                     onClick={() => setEditingTrigger(undefined)}
-                  >
-                    + Add another trigger
-                  </button>
+                  ><UiText>{"+ Add another trigger"}</UiText></button>
                 )}
               </div>
             </aside>
           )}
         </main>
         <Dialog open={assistant} onOpenChange={setAssistant}>
-          <DialogContent className="flow-editor-dialog font-sans inset-y-0 left-auto right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
+          <DialogContent dir={locale === "ar" ? "rtl" : "ltr"} className="flow-editor-dialog font-sans inset-y-0 left-auto right-0 rtl:left-0 rtl:right-auto flex h-[100dvh] max-h-[100dvh] w-full max-w-[448px] translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-e-0 bg-white p-0 text-slate-950 dark:bg-[#111827] dark:text-slate-100 sm:rounded-none">
             <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-100 light:border-slate-200 px-5 pe-14 dark:border-white/5">
               <Sparkles size={20} className="text-violet-500 light:text-violet-700" />
-              <DialogTitle className="text-sm font-semibold">
-                Flow Assistant
-              </DialogTitle>
-              <DialogDescription className="sr-only">
-                Describe an automation and the assistant builds an editable
-                draft on your canvas.
-              </DialogDescription>
+              <DialogTitle className="text-sm font-semibold"><UiText>{"Flow Assistant"}</UiText></DialogTitle>
+              <DialogDescription className="sr-only"><UiText>{"Describe an automation and the assistant builds an editable draft on your canvas."}</UiText></DialogDescription>
             </header>
             <div ref={chatScroll} role="log" aria-live="polite" aria-relevant="additions" className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-5">
               {!aiMessages.length ? (
@@ -790,24 +775,17 @@ export default function FlowBuilder({
                     <span className="grid h-14 w-14 place-items-center rounded-2xl border border-violet-100 bg-violet-50 dark:border-violet-500/20 dark:bg-violet-500/10">
                       <Sparkles size={29} className="text-violet-500 light:text-violet-700" />
                     </span>
-                    <h2 className="text-[19px] font-semibold">
-                      How can I help you build?
-                    </h2>
-                    <p className="max-w-[300px] text-xs leading-[21px] text-slate-500 light:text-slate-600 dark:text-slate-400">
-                      Describe an automation in plain words, or start from one
-                      of the ideas below.
-                    </p>
+                    <h2 className="text-[19px] font-semibold"><UiText>{"How can I help you build?"}</UiText></h2>
+                    <p className="max-w-[300px] text-xs leading-[21px] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Describe an automation in plain words, or start from one of the ideas below."}</UiText></p>
                   </div>
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 light:text-slate-600 dark:text-slate-400">
-                    Try asking
-                  </p>
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{"Try asking"}</UiText></p>
                   <div className="space-y-2">
-                    {suggestions.map((s) => (
+                    {suggestions.map(tr).map((s) => (
                       <button
                         key={s}
                         onClick={() => void ask(s)}
                         disabled={generating}
-                        className="w-full rounded-xl border border-black/[.06] bg-[#f9faf9] px-3.5 py-3 text-left text-xs leading-5 text-slate-500 light:text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-violet-500/10"
+                        className="w-full rounded-xl border border-black/[.06] bg-[#f9faf9] px-3.5 py-3 text-start text-xs leading-5 text-slate-500 light:text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-violet-500/10"
                       >
                         {s}
                       </button>
@@ -829,9 +807,7 @@ export default function FlowBuilder({
                       role="status"
                       className="flex items-center gap-2 text-xs text-violet-500 light:text-violet-700"
                     >
-                      <Loader2 size={14} className="animate-spin" />
-                      Building your flow…
-                    </p>
+                      <Loader2 size={14} className="animate-spin" /><UiText>{"Building your flow…"}</UiText></p>
                   )}
                   {aiWarning && (
                     <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
@@ -849,17 +825,17 @@ export default function FlowBuilder({
               className="flex shrink-0 items-end gap-2 border-t border-slate-100 light:border-slate-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-white/5"
             >
               <textarea
-                aria-label="Message to Flow Assistant"
+                aria-label={tr("Message to Flow Assistant")}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(min-width: 768px)").matches) { e.preventDefault(); void ask(); } }}
                 rows={2}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 maxLength={4000}
-                placeholder="Describe the flow you want to build…"
+                placeholder={tr("Describe the flow you want to build…")}
                 className="min-w-0 flex-1 resize-none rounded-2xl border border-slate-200 light:border-slate-300 bg-transparent p-3 text-base md:text-sm outline-none focus:border-violet-400 dark:border-white/10"
               />
               <button
-                aria-label="Generate flow"
+                aria-label={tr("Generate flow")}
                 disabled={generating || !prompt.trim()}
                 className="grid h-11 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-r from-violet-600 to-blue-500 text-white disabled:opacity-40"
               >
@@ -873,11 +849,9 @@ export default function FlowBuilder({
           </DialogContent>
         </Dialog>
         <Dialog open={preview} onOpenChange={setPreview}>
-          <DialogContent className="flow-editor-dialog max-h-[calc(100dvh-2rem)] max-w-[400px] overflow-y-auto bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
-            <DialogTitle>Preview your flow</DialogTitle>
-            <DialogDescription>
-              This simulation does not send messages to Instagram.
-            </DialogDescription>
+          <DialogContent dir={locale === "ar" ? "rtl" : "ltr"} className="flow-editor-dialog max-h-[calc(100dvh-2rem)] max-w-[400px] overflow-y-auto bg-[#f0eef8] p-4 dark:bg-[#1d1b2e]">
+            <DialogTitle><UiText>{"Preview your flow"}</UiText></DialogTitle>
+            <DialogDescription><UiText>{"This simulation does not send messages to Instagram."}</UiText></DialogDescription>
             <FlowPreview
               flow={doc.flow}
               triggers={doc.triggers}

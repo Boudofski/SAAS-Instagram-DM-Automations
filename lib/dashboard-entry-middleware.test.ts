@@ -53,7 +53,7 @@ describe("dashboard entry routing", () => {
   });
   it("respects a visitor's saved language instead of overriding it", async () => {
     const response = await run(session(null), localizedRequest("/", { cookie: "ap3k_locale=fr", "accept-language": "ar-MA,ar;q=0.9" }));
-    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("location")).toBe("https://ap3k.com/fr");
   });
   it("serves Arabic paths with RTL locale context and no redirect loop", async () => {
     const response = await run(session(null), localizedRequest("/ar"));

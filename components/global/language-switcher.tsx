@@ -15,7 +15,8 @@ export default function LanguageSwitcher({ compact = false, textOnly = false, cl
   const [isPending, startTransition] = useTransition();
 
   const changeLocale = (nextLocale: Locale) => {
-    if (nextLocale === locale) return;
+    const saved = document.cookie.split("; ").find(entry => entry.startsWith(`${LOCALE_COOKIE}=`))?.split("=")[1];
+    if (nextLocale === locale && saved === nextLocale) return;
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `${LOCALE_COOKIE}=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
     setLocale(nextLocale);

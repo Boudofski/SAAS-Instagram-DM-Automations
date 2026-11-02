@@ -2,6 +2,7 @@ import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+vi.mock("@/providers/i18n-provider", () => ({ useI18n: () => ({ locale: "en" }) }));
 const mocks = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), save: vi.fn(), invalidate: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }), useSearchParams: () => new URLSearchParams("editor=basic") }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({}) }));
