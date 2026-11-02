@@ -20,6 +20,10 @@ describe("accordion editor delivery payload",()=>{
     const payload=normalizeCampaignPayload(createCommentEditorPayload({...draft,active:false,messageFormat:"LINK"},true));
     expect(payload.active).toBe(true);expect(payload.listener.ctaLink).toBe("https://example.com/");expect(payload.listener.responseFormat).toBe("LINK");expect(validateNormalizedCampaignPayload(payload)).toBeNull();
   });
+  it("preserves an independent follow gate with the opener disabled",()=>{
+    const payload=normalizeCampaignPayload(createCommentEditorPayload({...draft,openingDmEnabled:false,followGateRequired:true}));
+    expect(payload).toMatchObject({followGateRequired:true,listener:{openingDmEnabled:false}});
+  });
   it("preserves AI, opening, follow and email settings through an edit",()=>{
     const payload=normalizeCampaignPayload(createCommentEditorPayload({...draft,openingDmEnabled:true,followGateRequired:true,emailCaptureEnabled:true,emailCapturePrompt:"Share your email",aiReplyEnabled:true,aiReplyInstructions:"Answer about this guide",aiReplyTone:"PROFESSIONAL"}));
     expect(payload).toMatchObject({followGateRequired:true,listener:{openingDmEnabled:true,emailCaptureEnabled:true,aiReplyEnabled:true,aiReplyInstructions:"Answer about this guide",aiReplyTone:"PROFESSIONAL"}});

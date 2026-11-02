@@ -192,7 +192,7 @@ function DmPreview({ data, handle, profilePictureUrl }: { data: WizardData; hand
         ) : (
           <>
             {data.openingDmEnabled ? <><IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.openingDmText || tr("Your opening DM")} buttons={[{ label: data.openingDmButtonText || tr("Continue"), url: "#" }]} /><OutgoingBubble text={data.openingDmButtonText || tr("Continue")} /></> : null}
-            {data.openingDmEnabled && data.followGateRequired ? (
+            {data.followGateRequired ? (
               <>
                 <IncomingBubble avatar={<Avatar src={profilePictureUrl} name={handle} size="xs" />} text={data.followRequestDmText || tr("Follow this account to receive the link.")} buttons={[{ label: tr("Follow"), url: `https://www.instagram.com/${handle}/` }, { label: data.followRequestButtonText || tr("Following"), url: "#" }]} />
                 <OutgoingBubble text={data.followRequestButtonText || tr("Following")} />

@@ -218,7 +218,7 @@ export function normalizeCampaignPayload(
     matchingMode,
     triggerMode,
     sendPrivateDm,
-    followGateRequired: openingDmEnabled && Boolean(payload.followGateRequired),
+    followGateRequired: sendPrivateDm && Boolean(payload.followGateRequired),
     typingIndicator: false,
     deliveryDelaySeconds: payload.stepDelays ? 0 : normalizeDeliveryDelay(payload.deliveryDelaySeconds),
     stepDelays: normalizeStepDelays(payload.stepDelays),

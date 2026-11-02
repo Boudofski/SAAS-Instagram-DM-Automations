@@ -1002,6 +1002,19 @@ describe("independent comment delivery steps",()=>{
   expect(mockTrackResponse.mock.calls.filter(call=>call[1]==="COMMENT")).toHaveLength(1);
   expect(mockCreateAutomationEvent.mock.calls.filter(call=>call[0].eventType==="COMMENT_RECEIVED")).toHaveLength(1);
  });
+ it("sends the follow request first when the opener is disabled, without leaking final content",async()=>{
+  const campaign=automation(true);
+  Object.assign(campaign,{followGateRequired:true});
+  campaign.User.subscription.plan="PRO";
+  Object.assign(campaign.listener,{openingDmEnabled:false,followRequestDmText:"Follow to get the guide",followRequestButtonText:"I followed",emailCaptureEnabled:true});
+  mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true}});
+  await POST(commentRequest());
+  expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledWith(expect.objectContaining({
+    message:"Follow to get the guide",responseFormat:"TEXT",linkButtons:[],postbackButton:undefined,
+    followGatePrompt:expect.objectContaining({message:"Follow to get the guide",verificationButtonTitle:"I followed"}),
+  }));
+  expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({errorMessage:"follow_request_dm_sent"}));
+ });
  it("uses a native quick reply for the selected opener format",async()=>{
   const campaign=automation(true);Object.assign(campaign.listener,{openingDmFormat:"QUICK_REPLY"});
   mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true}});

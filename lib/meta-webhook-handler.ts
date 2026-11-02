@@ -836,7 +836,7 @@ async function processEntry(
       if (resumedAutomationId && resumedAutomationId !== automation.id) continue;
       if (!resumedAutomationId && !envelope.dryRun && envelope.source !== "INTERNAL_SELF_TEST" && normalizeStepDelays(automation.stepDelays)) {
         const publicDelay = stepDelay(automation,"PUBLIC_REPLY");
-        let firstDmStep: AutomationStep = automation.listener?.openingDmEnabled !== false ? "OPENING" : "MESSAGE";
+        let firstDmStep: AutomationStep = automation.listener?.openingDmEnabled !== false ? "OPENING" : automation.followGateRequired ? "FOLLOW" : "MESSAGE";
         if (firstDmStep === "MESSAGE" && (automation.listener?.emailCaptureEnabled || automation.listener?.phoneCaptureEnabled)) {
           const captured = await client.lead.findUnique({where:{automationId_igUserId:{automationId:automation.id,igUserId:commenterId}},select:{email:true,phone:true}});
           if (automation.listener.emailCaptureEnabled && !captured?.email) firstDmStep = "EMAIL";
@@ -1757,11 +1757,12 @@ async function processEntry(
       // 6. Send either the optional opening DM or the final configured payload
       // immediately. Existing automations retain the opening step by default.
       const openingDmEnabled = listener.openingDmEnabled !== false;
+      const followFirst = !openingDmEnabled && automation.followGateRequired;
       let dmMessageText = resolveTemplate(
         personalizeUsername(
           openingDmEnabled
             ? resolveOpeningDmText(listener.openingDmText)
-            : selectMessageVariation(
+            : followFirst ? resolveFollowRequestDmText(listener.followRequestDmText) : selectMessageVariation(
                 listener.prompt,
                 listener.messageVariations,
                 commentId,
@@ -1770,7 +1771,7 @@ async function processEntry(
         ),
         templateVars,
       );
-      const captureFirst = !openingDmEnabled && (listener.emailCaptureEnabled || listener.phoneCaptureEnabled);
+      const captureFirst = !openingDmEnabled && !followFirst && (listener.emailCaptureEnabled || listener.phoneCaptureEnabled);
       if ((listener.emailCaptureEnabled || listener.phoneCaptureEnabled) && !["PRO","BUSINESS"].includes(automation.User?.subscription?.plan ?? "FREE")) {
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"capture_requires_paid_plan",processedAt:new Date()});
         continue;
@@ -1793,7 +1794,7 @@ async function processEntry(
         }
         if (firstCaptureJob === "waiting") continue;
       }
-      const intermediateDm = openingDmEnabled || Boolean(firstCaptureJob);
+      const intermediateDm = openingDmEnabled || followFirst || Boolean(firstCaptureJob);
       const directLinkButtons = intermediateDm
         ? []
         : readLinkButtons(
@@ -1801,7 +1802,7 @@ async function processEntry(
             listener.ctaButtonTitle,
             listener.ctaLink,
           );
-      const fullWidthCallbacksReady = openingDmEnabled
+      const fullWidthCallbacksReady = openingDmEnabled || followFirst
         ? await ensureInstagramButtonCallbacks(integrationRaw?.id, token)
         : false;
       // Establish the baseline before the first follow request; a button press is never proof of a follow.
@@ -1831,7 +1832,7 @@ async function processEntry(
         // Use the full-width postback only after both subscription layers are
         // confirmed. Otherwise retain the native quick-reply fallback.
         preferQuickReplyForPostback:
-          openingDmEnabled && (listener.openingDmFormat === "QUICK_REPLY" || !fullWidthCallbacksReady),
+          (openingDmEnabled && listener.openingDmFormat === "QUICK_REPLY") || ((openingDmEnabled || followFirst) && !fullWidthCallbacksReady),
         token,
         igBusinessAccountId: instagramBusinessAccountId,
         commentId,
@@ -1850,6 +1851,13 @@ async function processEntry(
         cardSubtitle: intermediateDm ? undefined : listener.cardSubtitle,
         mediaUrl: intermediateDm ? undefined : listener.mediaUrl,
         mediaType: intermediateDm ? undefined : listener.mediaType,
+        followGatePrompt: followFirst ? {
+          username: integrationRaw?.instagramUsername,
+          state: "INITIAL",
+          message: dmMessageText,
+          verificationButtonTitle: resolveFollowRequestButtonText(listener.followRequestButtonText),
+          verificationPayload: followRequestActionPayload(automation.id, commentId),
+        } : undefined,
         postbackButton: openingDmEnabled
           ? {
               title: resolveOpeningDmButtonText(listener.openingDmButtonText),
@@ -1872,7 +1880,7 @@ async function processEntry(
           status: "SENT",
           errorMessage: openingDmEnabled
             ? "opening_dm_sent"
-            : firstCaptureJob ? "email_request_dm_sent" : "final_dm_payload_sent",
+            : followFirst ? "follow_request_dm_sent" : firstCaptureJob ? "email_request_dm_sent" : "final_dm_payload_sent",
         });
         await createAutomationEvent({
           automationId: automation.id,
@@ -1884,7 +1892,7 @@ async function processEntry(
           meta: {
             endpoint: dmResult.endpoint,
             ctaMode: dmResult.ctaMode,
-            dmFlowStep: openingDmEnabled ? "OPENING" : firstCaptureJob ? "CAPTURE" : "FINAL",
+            dmFlowStep: openingDmEnabled ? "OPENING" : followFirst ? "FOLLOW" : firstCaptureJob ? "CAPTURE" : "FINAL",
             ...(listener.flowDefinition
               ? { flowRevision: listener.flowRevision }
               : {}),
@@ -1896,7 +1904,7 @@ async function processEntry(
           status: "PROCESSED",
           errorMessage: openingDmEnabled
             ? "opening_dm_sent"
-            : firstCaptureJob ? "email_request_dm_sent" : "final_dm_payload_sent",
+            : followFirst ? "follow_request_dm_sent" : firstCaptureJob ? "email_request_dm_sent" : "final_dm_payload_sent",
           processedAt: new Date(),
         });
       } else {
