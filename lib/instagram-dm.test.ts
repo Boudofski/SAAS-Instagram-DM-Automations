@@ -86,7 +86,7 @@ describe("sendInstagramCommentPrivateReply", () => {
     mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
     await sendInstagramCommentPrivateReply({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,commentId:COMMENT_ID,commenterId:COMMENTER_ID,message:"تفضل https://ap3k.com",responseFormat:"TEXT"});
     const body=mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.attachment.payload.buttons).toEqual([{type:"web_url",title:"ap3k.com",url:"https://ap3k.com/"}]);
+    expect(body.message.text).toBe("تفضل https://ap3k.com/");
   });
 
   it("sends private reply with recipient.comment_id on primary attempt", async () => {
@@ -358,7 +358,7 @@ describe("sendInstagramCommentPrivateReply", () => {
     ]);
   });
 
-  it("keeps the CTA URL in one button when it already appears in message copy", async () => {
+  it("keeps inline CTA URLs in normal text without duplicating them", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: {} });
 
     const messageWithCta = "Check this out https://example.com/shop";
@@ -372,8 +372,8 @@ describe("sendInstagramCommentPrivateReply", () => {
     });
 
     const body = mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.attachment.payload.text).toBe(messageWithCta);
-    expect(body.message.attachment.payload.buttons[0].url).toBe("https://example.com/shop");
+    expect(body.message.text).toBe(messageWithCta);
+    expect(body.message.attachment).toBeUndefined();
   });
 
   it("never includes token value in returned result", async () => {
@@ -417,7 +417,7 @@ describe("sendInstagramDirectResponse", () => {
     mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
     await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,recipientId:COMMENTER_ID,automationId:"automation-url",message:"Visit https://example.com/guide",responseFormat:"TEXT"});
     const body=mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.attachment.payload.buttons[0]).toMatchObject({type:"web_url",url:"https://example.com/guide"});
+    expect(body.message.text).toBe("Visit https://example.com/guide");
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
   });
 

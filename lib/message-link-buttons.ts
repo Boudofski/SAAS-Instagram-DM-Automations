@@ -1,25 +1,29 @@
-import { normalizeLinkUrl, type LinkButton } from "./link-buttons";
+import { normalizeLinkButtons } from "./link-buttons";
+import type { LinkButton } from "./link-buttons";
 
-/** Add native URL buttons for links pasted into an ordinary message.
- * Never change interactive gates or replace explicitly configured buttons/media.
- */
+// Instagram renders URLs inside button-template text as noninteractive text.
+// Link lists must remain normal messages, with complete HTTP(S) destinations.
 export function withMessageLinkButtons<T extends {
   message: string; responseFormat?: string | null; ctaUrl?: string | null;
-  linkButtons?: LinkButton[]; postbackButton?: unknown; followGatePrompt?: unknown;
-}>(params: T): T & { linkButtons?: LinkButton[]; responseFormat?: string | null } {
-  if (params.postbackButton || params.followGatePrompt || params.ctaUrl || params.linkButtons?.length ||
+  ctaTitle?: string | null; linkButtons?: LinkButton[];
+  postbackButton?: unknown; followGatePrompt?: unknown;
+}>(params: T): T {
+  if (params.postbackButton || params.followGatePrompt ||
       (params.responseFormat && !["TEXT", "LINK"].includes(params.responseFormat))) return params;
-  const buttons: LinkButton[] = [];
-  for (const match of params.message.matchAll(/(?:https?:\/\/|www\.)[^\s<>\u200e\u200f\u202a-\u202e\u2066-\u2069]+/gi)) {
-    let raw = match[0].replace(/[.,!?;:،؛؟"'\]}]+$/u, "");
-    // Keep balanced URL parentheses, drop prose/Markdown closing punctuation.
-    while (raw.endsWith(")") && (raw.match(/\)/g)?.length ?? 0) > (raw.match(/\(/g)?.length ?? 0)) raw = raw.slice(0, -1);
-    const url = normalizeLinkUrl(raw);
-    if (!url || buttons.some(button => button.url === url)) continue;
-    const parsed = new URL(url);
-    if (!parsed.hostname.includes(".") || parsed.username || parsed.password) continue;
-    buttons.push({ label: parsed.hostname.replace(/^www\./, "").slice(0, 20), url });
-    if (buttons.length === 3) break;
-  }
-  return buttons.length ? { ...params, responseFormat: "LINK", linkButtons: buttons } : params;
+  let found = false;
+  const message = params.message.replace(/(^|[\s(:：])((?:https?:\/\/|www\.)[^\s<>]+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:com|ai|io|app|co|org|net|ma|fr|de|es|uk|dev|tech|google)(?:\/[^\s<>]*)?)(?=$|[\s.,،؛؟!:)])/gim, (whole, prefix: string, raw: string) => {
+    // Do not turn email addresses or code identifiers into links.
+    let end = "";
+    while (/[.,!?;:،؛؟"'\]}]$/.test(raw) || (raw.endsWith(")") && (raw.match(/\)/g)?.length ?? 0) > (raw.match(/\(/g)?.length ?? 0))) { end = raw.slice(-1) + end; raw = raw.slice(0,-1); }
+    try {
+      const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+      if (!url.hostname.includes(".") || url.username || url.password) return whole;
+      found = true;
+      return prefix + url.toString() + end;
+    } catch { return whole; }
+  });
+  if (!found) return params;
+  const buttons = normalizeLinkButtons(params.linkButtons, params.ctaTitle, params.ctaUrl);
+  const extra = buttons.filter(b => b.url && !message.includes(b.url) && !message.includes(b.url.replace(/\/$/,""))).map(b => `${b.label}: ${b.url}`);
+  return { ...params, message: message + (extra.length ? `\n\n${extra.join("\n")}` : ""), responseFormat: "TEXT", linkButtons: [], ctaUrl: null };
 }

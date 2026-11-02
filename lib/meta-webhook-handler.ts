@@ -1757,7 +1757,9 @@ async function processEntry(
       // 6. Send either the optional opening DM or the final configured payload
       // immediately. Existing automations retain the opening step by default.
       const openingDmEnabled = listener.openingDmEnabled !== false;
-      const followFirst = !openingDmEnabled && automation.followGateRequired;
+      const initialFollowProfile = !openingDmEnabled && automation.followGateRequired
+        ? await getInstagramRecipientProfile({ token, recipientId: commenterId }) : null;
+      const followFirst = !openingDmEnabled && automation.followGateRequired && initialFollowProfile?.followsBusiness !== true;
       let dmMessageText = resolveTemplate(
         personalizeUsername(
           openingDmEnabled
@@ -1853,8 +1855,8 @@ async function processEntry(
         mediaType: intermediateDm ? undefined : listener.mediaType,
         followGatePrompt: followFirst ? {
           username: integrationRaw?.instagramUsername,
-          state: "INITIAL",
-          message: dmMessageText,
+          state: initialFollowProfile?.followsBusiness === false ? "INITIAL" : "UNAVAILABLE",
+          message: initialFollowProfile?.followsBusiness === false ? dmMessageText : undefined,
           verificationButtonTitle: resolveFollowRequestButtonText(listener.followRequestButtonText),
           verificationPayload: followRequestActionPayload(automation.id, commentId),
         } : undefined,
@@ -2700,7 +2702,7 @@ async function processConfiguredMessageAutomation(params: {
 
   const token = tokenResolution.token;
   const profile =
-    params.senderProfile ??
+    (params.senderProfile && (!automation.followGateRequired || typeof params.senderProfile.followsBusiness === "boolean") ? params.senderProfile : null) ??
     (automation.followGateRequired
       ? await getInstagramRecipientProfile({ token, recipientId: senderId })
       : null);
