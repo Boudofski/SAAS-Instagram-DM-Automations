@@ -82,7 +82,7 @@ afterEach(() => {
 });
 
 describe("sendInstagramCommentPrivateReply", () => {
-  it("turns a pasted URL into a clickable private-reply button",async()=>{
+  it("normalizes a pasted URL in a plain private reply",async()=>{
     mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
     await sendInstagramCommentPrivateReply({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,commentId:COMMENT_ID,commenterId:COMMENTER_ID,message:"تفضل https://ap3k.com",responseFormat:"TEXT"});
     const body=mockedAxios.post.mock.calls[0][1] as any;
@@ -358,7 +358,7 @@ describe("sendInstagramCommentPrivateReply", () => {
     ]);
   });
 
-  it("keeps inline CTA URLs in normal text without duplicating them", async () => {
+  it("keeps an explicit CTA attached even when its URL also occurs in the message", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: {} });
 
     const messageWithCta = "Check this out https://example.com/shop";
@@ -372,8 +372,9 @@ describe("sendInstagramCommentPrivateReply", () => {
     });
 
     const body = mockedAxios.post.mock.calls[0][1] as any;
-    expect(body.message.text).toBe(messageWithCta);
-    expect(body.message.attachment).toBeUndefined();
+    expect(body.message.attachment.payload.text).toBe(messageWithCta);
+    expect(body.message.attachment.payload.buttons[0].url).toBe("https://example.com/shop");
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
   });
 
   it("never includes token value in returned result", async () => {
@@ -413,19 +414,17 @@ describe("sendInstagramCommentPrivateReply", () => {
 });
 
 describe("sendInstagramDirectResponse", () => {
-  it("keeps the Arabic tutorial button after a normal clickable link list",async()=>{
+  it("keeps the Arabic tutorial button attached to the original message",async()=>{
     mockedAxios.post.mockResolvedValue({status:200,data:{message_id:"mid.url"}});
     const result=await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,recipientId:COMMENTER_ID,automationId:"automation-links",message:"Claude: claude.ai",responseFormat:"LINK",linkButtons:[{label:"شرح الأدوات هنا 🔗",url:"https://example.com/tutorial"}]});
     expect(result.ok).toBe(true);
-    expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     const first=mockedAxios.post.mock.calls[0][1] as any;
-    const second=mockedAxios.post.mock.calls[1][1] as any;
-    expect(first.message).toEqual({text:"Claude: https://claude.ai/"});
-    expect(second.message.attachment.payload.buttons).toEqual([{type:"web_url",title:"شرح الأدوات هنا 🔗",url:"https://example.com/tutorial"}]);
-    expect(second.message.attachment.payload.text).toBe("شرح الأدوات هنا 🔗");
+    expect(first.message.attachment.payload.buttons).toEqual([{type:"web_url",title:"شرح الأدوات هنا 🔗",url:"https://example.com/tutorial"}]);
+    expect(first.message.attachment.payload.text).toBe("Claude: claude.ai");
   });
 
-  it("turns pasted links into clickable DM buttons without sending an extra message",async()=>{
+  it("keeps pasted links in plain text without sending an extra message",async()=>{
     mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
     await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,recipientId:COMMENTER_ID,automationId:"automation-url",message:"Visit https://example.com/guide",responseFormat:"TEXT"});
     const body=mockedAxios.post.mock.calls[0][1] as any;
@@ -807,4 +806,27 @@ describe("affiliate product card delivery", () => {
     expect(mockedAxios.post).toHaveBeenCalledTimes(2);
     for (const call of mockedAxios.post.mock.calls) expect((call[1] as any).message.attachment.payload.template_type).toBe("generic");
   });
+});
+
+
+describe("configured URL button delivery regression", () => {
+  for (const route of ["comment", "direct"] as const) {
+    for (const count of [1, 2, 3]) {
+      it(`keeps ${count} buttons in one ${route} message containing a URL`, async () => {
+        mockedAxios.post.mockResolvedValue({ status: 200, data: { message_id: "mid.buttons" } });
+        const linkButtons = Array.from({length: count}, (_, i) => ({label: `رابط ${i+1}`, url: `https://example.com/${i}`}));
+        const message = "تفضل الدليل https://example.com/guide";
+        const common = {token: VALID_TOKEN, igBusinessAccountId: IG_BIZ_ID, automationId: "automation-buttons", message, responseFormat: "LINK", linkButtons};
+        const result = route === "comment"
+          ? await sendInstagramCommentPrivateReply({...common, commentId: COMMENT_ID, commenterId: COMMENTER_ID})
+          : await sendInstagramDirectResponse({...common, recipientId: COMMENTER_ID});
+        expect(result.ok).toBe(true);
+        expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+        const body = mockedAxios.post.mock.calls[0][1] as any;
+        expect(body.message.attachment.payload).toEqual({template_type: "button", text: message,
+          buttons: linkButtons.map(b => ({type: "web_url", title: b.label, url: b.url}))});
+        expect(body.message.text).toBeUndefined();
+      });
+    }
+  }
 });
