@@ -219,12 +219,19 @@ function normalizeInstagramUsername(value?: string | null) {
     .slice(0, 30) || "our account";
 }
 
-export function getInstagramFollowGatePromptCopy(prompt: FollowGatePrompt) {
+export function getInstagramFollowGatePromptCopy(prompt: FollowGatePrompt, igBusinessAccountId?: string) {
   const username = normalizeInstagramUsername(prompt.username);
   const displayHandle = username === "our account" ? "our Instagram account" : `@${username}`;
   const profileUrl = username === "our account"
     ? "https://www.instagram.com/"
     : `https://www.instagram.com/${encodeURIComponent(username)}/`;
+
+  // Account-specific copy requested by the owner; never apply it by display name.
+  if (prompt.state === "NOT_FOLLOWING" && igBusinessAccountId === "17841402182933940") {
+    const title = "! شكلك للحين ما تتابعني 👀";
+    const subtitle = 'تابعني من الزر تحت، وبعدها\nاضغط "تابعتك ✅" وتوصلك الروابط ✨';
+    return { title, subtitle, profileUrl, text: `${title}\n\n${subtitle}` };
+  }
 
   if (prompt.state === "NOT_FOLLOWING") {
     const title = "❌ Not Following Yet!";
@@ -243,8 +250,8 @@ export function getInstagramFollowGatePromptCopy(prompt: FollowGatePrompt) {
   return { title, subtitle, profileUrl, text: `${title}\n${subtitle}` };
 }
 
-function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) {
-  const copy = getInstagramFollowGatePromptCopy(prompt);
+function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt, igBusinessAccountId?: string) {
+  const copy = getInstagramFollowGatePromptCopy(prompt, igBusinessAccountId);
   const verificationPayload = prompt.verificationPayload?.trim() || `AP3K_FOLLOW_CHECK:${automationId}`;
   const text = prompt.message?.trim() || copy.text;
   const verificationButtonTitle = normalizeButtonTitle(prompt.verificationButtonTitle || "I followed ✅");
@@ -255,7 +262,7 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
         template_type: "button",
         text,
         buttons: [
-          { type: "web_url", title: "Follow", url: copy.profileUrl },
+          { type: "web_url", title: "Visit Profile", url: copy.profileUrl },
           { type: "postback", title: verificationButtonTitle, payload: verificationPayload },
         ],
       },
@@ -269,7 +276,7 @@ function buildFollowGatePayload(automationId: string, prompt: FollowGatePrompt) 
       payload: {
         template_type: "button",
         text,
-        buttons: [{ type: "web_url", title: "Follow", url: copy.profileUrl }],
+        buttons: [{ type: "web_url", title: "Visit Profile", url: copy.profileUrl }],
       },
     },
   };
@@ -467,7 +474,7 @@ export async function sendInstagramDirectResponse(params: {
       const payload = buildPostbackButtonPayload(params.message, params.postbackButton);
       responseMessage = params.preferQuickReplyForPostback ? payload.fallback : payload.preferred;
     } else if (params.followGatePrompt) {
-      const payload = buildFollowGatePayload(params.automationId, params.followGatePrompt);
+      const payload = buildFollowGatePayload(params.automationId, params.followGatePrompt, params.igBusinessAccountId);
       if (params.preferQuickReplyForPostback) {
         try {
           const followCard = await postDirectPayload(params, payload.reliable);
@@ -520,7 +527,7 @@ export async function sendInstagramDirectResponse(params: {
           });
         }
       } else if (params.followGatePrompt && shouldTryTextFallback(error)) {
-        const followPayload = buildFollowGatePayload(params.automationId, params.followGatePrompt);
+        const followPayload = buildFollowGatePayload(params.automationId, params.followGatePrompt, params.igBusinessAccountId);
         sent = await postDirectPayload(params, followGateCardSent
           ? { text: `Reply “${normalizeButtonTitle(params.followGatePrompt.verificationButtonTitle || "I followed ✅")}” to continue.` }
           : followPayload.fallback
@@ -679,7 +686,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   const { token, igBusinessAccountId, commentId, commenterId } = params;
   const automationId = params.automationId ?? commentId;
   const followGatePayload = params.followGatePrompt
-    ? buildFollowGatePayload(automationId, params.followGatePrompt)
+    ? buildFollowGatePayload(automationId, params.followGatePrompt, params.igBusinessAccountId)
     : null;
   const postbackPayload = params.postbackButton
     ? buildPostbackButtonPayload(params.message, params.postbackButton)

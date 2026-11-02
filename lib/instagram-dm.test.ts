@@ -323,7 +323,7 @@ describe("sendInstagramCommentPrivateReply", () => {
     expect(body.message.attachment.payload.template_type).toBe("button");
     expect(body.message.attachment.payload.text).toContain("Follow @ap3k");
     expect(body.message.attachment.payload.buttons).toEqual([
-      { type: "web_url", title: "Follow", url: "https://www.instagram.com/ap3k/" },
+      { type: "web_url", title: "Visit Profile", url: "https://www.instagram.com/ap3k/" },
       { type: "postback", title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-gate" },
     ]);
   });
@@ -561,7 +561,7 @@ describe("sendInstagramDirectResponse", () => {
     });
   });
 
-  it("sends Follow and I followed as two clickable card buttons", async () => {
+  it("sends Visit Profile and I followed as two clickable card buttons", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-gate" } });
 
     const result = await sendInstagramDirectResponse({
@@ -585,7 +585,7 @@ describe("sendInstagramDirectResponse", () => {
     expect(card.template_type).toBe("button");
     expect(card.text).toBe("Follow to unlock this guide.");
     expect(card.buttons).toEqual([
-      { type: "web_url", title: "Follow", url: "https://www.instagram.com/ap3k/" },
+      { type: "web_url", title: "Visit Profile", url: "https://www.instagram.com/ap3k/" },
       { type: "postback", title: "Done ✅", payload: "AP3K_FOLLOW_CHECK:automation-3:comment-9" },
     ]);
   });
@@ -617,7 +617,7 @@ describe("sendInstagramDirectResponse", () => {
       text: expect.stringContaining("Follow @ap3k"),
       buttons: [{
         type: "web_url",
-        title: "Follow",
+        title: "Visit Profile",
         url: "https://www.instagram.com/ap3k/",
       }],
     });
@@ -829,4 +829,21 @@ describe("configured URL button delivery regression", () => {
       });
     }
   }
+});
+
+
+describe("account-scoped follow retry copy", () => {
+  const arabic = '! شكلك للحين ما تتابعني 👀\n\nتابعني من الزر تحت، وبعدها\nاضغط "تابعتك ✅" وتوصلك الروابط ✨';
+  it("uses the requested Arabic retry for Boudofi's stable Instagram ID only", () => {
+    expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"NOT_FOLLOWING"},"17841402182933940").text).toBe(arabic);
+    expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"NOT_FOLLOWING"},"other-account").text).toContain("Not Following Yet");
+    expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"UNAVAILABLE"},"17841402182933940").text).toContain("Verification delayed");
+  });
+  it("delivers the Arabic retry and both correctly labelled buttons", async () => {
+    mockedAxios.post.mockResolvedValue({status:200,data:{message_id:"mid.retry"}});
+    await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:"17841402182933940",recipientId:COMMENTER_ID,automationId:"automation-retry",message:"",followGatePrompt:{username:"boudofi",state:"NOT_FOLLOWING",verificationButtonTitle:"تابعتك ✅"}});
+    const body=mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.message.attachment.payload.text).toBe(arabic);
+    expect(body.message.attachment.payload.buttons.map((b:any)=>b.title)).toEqual(["Visit Profile","تابعتك ✅"]);
+  });
 });

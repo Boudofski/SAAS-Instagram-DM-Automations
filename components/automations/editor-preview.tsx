@@ -266,7 +266,7 @@ export default function EditorPreview({
                           <>
                             {waitBefore("FOLLOW")}
                             {bubble(data.followRequestDmText || "", [
-                              tr("Follow"),
+                              tr("Visit Profile"),
                               data.followRequestButtonText || tr("I followed"),
                             ])}
                             {bubble(

@@ -75,7 +75,7 @@ describe("automation setup localization", () => {
     for (locale of SUPPORTED_LOCALES) {
       const html = renderToStaticMarkup(<MessageAutomationPreview source="DM" step={2} trigger="MENTION" triggerMode="SPECIFIC_KEYWORD" keywords={["hello こんにちは"]} message="Keep my DM unchanged" linkButtons={[{ label: "Save", url: "https://example.com" }]} followGateRequired followRequestDmText="Keep my follow request" followRequestButtonText="Following" />);
       expect(html).toContain("hello こんにちは"); expect(html).toContain("Keep my DM unchanged"); expect(html).toContain("Keep my follow request"); expect(html).toContain('dir="auto"');
-      expect(plain(html)).toContain(translateUi("Follow", locale));
+      expect(plain(html)).toContain(translateUi("Visit Profile", locale));
     }
   });
 });

@@ -1,6 +1,7 @@
 import type { Locale } from "./config";
 export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
   "en": {
+    "Visit Profile": "Visit Profile",
     "Manual": "Manual",
     "Prompt": "Prompt",
     "Regenerate prompt": "Regenerate prompt",
@@ -117,6 +118,7 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
       "Add link": "إضافة رابط"
   },
   "fr": {
+    "Visit Profile": "Voir le profil",
     "Manual": "Manuel",
     "Prompt": "Consigne",
     "Regenerate prompt": "Régénérer la consigne",
@@ -175,6 +177,7 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Add link": "Ajouter un lien"
   },
   "es": {
+    "Visit Profile": "Ver perfil",
     "Manual": "Manual",
     "Prompt": "Instrucciones",
     "Regenerate prompt": "Regenerar instrucciones",
@@ -233,6 +236,7 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Add link": "Añadir enlace"
   },
   "de": {
+    "Visit Profile": "Profil ansehen",
     "Manual": "Manuell",
     "Prompt": "Anweisung",
     "Regenerate prompt": "Anweisung neu erstellen",
@@ -290,8 +294,10 @@ export const AUTOMATION_COPY_CONTROLS: Record<Locale,Record<string,string>> = {
     "Button": "Button",
     "Add link": "Link hinzufügen"
   },
-  "nl": {},
+  "nl": {
+    "Visit Profile": "Profiel bekijken",},
   "pt": {
+    "Visit Profile": "Visitar perfil",
     "Manual": "Manual",
     "Prompt": "Instruções",
     "Regenerate prompt": "Gerar novas instruções",
