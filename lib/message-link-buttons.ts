@@ -7,7 +7,7 @@ export function withMessageLinkButtons<T extends {
   message: string; responseFormat?: string | null; ctaUrl?: string | null;
   ctaTitle?: string | null; linkButtons?: LinkButton[];
   postbackButton?: unknown; followGatePrompt?: unknown;
-}>(params: T): T {
+}>(params: T, preserveButtons = false): T {
   if (params.postbackButton || params.followGatePrompt ||
       (params.responseFormat && !["TEXT", "LINK"].includes(params.responseFormat))) return params;
   let found = false;
@@ -24,6 +24,7 @@ export function withMessageLinkButtons<T extends {
   });
   if (!found) return params;
   const buttons = normalizeLinkButtons(params.linkButtons, params.ctaTitle, params.ctaUrl);
+  if (preserveButtons) return { ...params, message };
   const extra = buttons.filter(b => b.url && !message.includes(b.url) && !message.includes(b.url.replace(/\/$/,""))).map(b => `${b.label}: ${b.url}`);
   return { ...params, message: message + (extra.length ? `\n\n${extra.join("\n")}` : ""), responseFormat: "TEXT", linkButtons: [], ctaUrl: null };
 }

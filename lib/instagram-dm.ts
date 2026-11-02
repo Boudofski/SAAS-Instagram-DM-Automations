@@ -424,7 +424,7 @@ export async function sendInstagramDirectResponse(params: {
   postbackButton?: InstagramPostbackButton;
   preferQuickReplyForPostback?: boolean;
 }): Promise<DirectResponseResult> {
-  params = await withTrackedLinks(withMessageLinkButtons(params));
+  params = await withTrackedLinks(withMessageLinkButtons(params, true));
   const messageIds: string[] = [];
   const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
 
@@ -461,6 +461,16 @@ export async function sendInstagramDirectResponse(params: {
       }
     }
 
+    const separateLinkText = !params.postbackButton && !params.followGatePrompt &&
+      (!params.responseFormat || ["TEXT", "LINK"].includes(params.responseFormat)) &&
+      /https?:\/\//i.test(params.message) && normalizeLinkButtons(params.linkButtons, params.ctaTitle, params.ctaUrl).some(b => b.url);
+    const buttonCopy = separateLinkText
+      ? normalizeLinkButtons(params.linkButtons, params.ctaTitle, params.ctaUrl).map(b => b.label).join("\n")
+      : params.message;
+    if (separateLinkText) {
+      const textId = await postDirectPayload(params, { text: params.message });
+      if (textId) messageIds.push(textId);
+    }
     let responseMessage: InstagramMessagePayload;
     let followGateCardSent = false;
     if (params.postbackButton) {
@@ -486,7 +496,7 @@ export async function sendInstagramDirectResponse(params: {
     } else if (params.responseFormat === "PRODUCT_CARD" && params.mediaUrl) {
       responseMessage = buildProductCardPayload(params);
     } else if (params.responseFormat === "LINK" || params.ctaUrl || params.linkButtons?.length) {
-      const button = buildButtonPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
+      const button = buildButtonPayload(buttonCopy, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
       responseMessage = { ...button, ...(quickReplies.length > 0 ? { quick_replies: quickReplies } : {}) } as InstagramMessagePayload;
     } else {
       responseMessage = {
@@ -528,7 +538,7 @@ export async function sendInstagramDirectResponse(params: {
       } else {
         if (params.responseFormat === "PRODUCT_CARD") throw error;
         if (params.responseFormat !== "LINK" && !params.ctaUrl && !params.linkButtons?.length) throw error;
-        const fallback = buildTextFallbackPayload(params.message, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
+        const fallback = buildTextFallbackPayload(buttonCopy, params.ctaTitle, params.ctaUrl, params.linkButtons).message;
         sent = await postDirectPayload(params, addQuickReplies(fallback, params.automationId, params.quickReplies ?? []));
       }
     }

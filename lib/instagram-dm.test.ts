@@ -413,6 +413,18 @@ describe("sendInstagramCommentPrivateReply", () => {
 });
 
 describe("sendInstagramDirectResponse", () => {
+  it("keeps the Arabic tutorial button after a normal clickable link list",async()=>{
+    mockedAxios.post.mockResolvedValue({status:200,data:{message_id:"mid.url"}});
+    const result=await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,recipientId:COMMENTER_ID,automationId:"automation-links",message:"Claude: claude.ai",responseFormat:"LINK",linkButtons:[{label:"شرح الأدوات هنا 🔗",url:"https://example.com/tutorial"}]});
+    expect(result.ok).toBe(true);
+    expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+    const first=mockedAxios.post.mock.calls[0][1] as any;
+    const second=mockedAxios.post.mock.calls[1][1] as any;
+    expect(first.message).toEqual({text:"Claude: https://claude.ai/"});
+    expect(second.message.attachment.payload.buttons).toEqual([{type:"web_url",title:"شرح الأدوات هنا 🔗",url:"https://example.com/tutorial"}]);
+    expect(second.message.attachment.payload.text).toBe("شرح الأدوات هنا 🔗");
+  });
+
   it("turns pasted links into clickable DM buttons without sending an extra message",async()=>{
     mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
     await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,recipientId:COMMENTER_ID,automationId:"automation-url",message:"Visit https://example.com/guide",responseFormat:"TEXT"});
