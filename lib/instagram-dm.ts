@@ -1,3 +1,4 @@
+import { withMessageLinkButtons } from "./message-link-buttons";
 import { resolveAttachmentMessage } from "@/lib/attachment-delivery";
 import { knownFollowStatus, withTrackedLinks } from "@/lib/automation-tracking";
 import axios from "axios";
@@ -423,7 +424,7 @@ export async function sendInstagramDirectResponse(params: {
   postbackButton?: InstagramPostbackButton;
   preferQuickReplyForPostback?: boolean;
 }): Promise<DirectResponseResult> {
-  params = await withTrackedLinks(params);
+  params = await withTrackedLinks(withMessageLinkButtons(params));
   const messageIds: string[] = [];
   const quickReplies = buildQuickReplies(params.automationId, params.quickReplies ?? [], params.quickReplyPayloads);
 
@@ -674,7 +675,7 @@ export async function sendInstagramCommentPrivateReply(params: {
   postbackButton?: InstagramPostbackButton;
   preferQuickReplyForPostback?: boolean;
 }): Promise<PrivateReplyResult> {
-  params = await withTrackedLinks(params);
+  params = await withTrackedLinks(withMessageLinkButtons(params));
   const { token, igBusinessAccountId, commentId, commenterId } = params;
   const automationId = params.automationId ?? commentId;
   const followGatePayload = params.followGatePrompt

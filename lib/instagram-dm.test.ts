@@ -82,6 +82,13 @@ afterEach(() => {
 });
 
 describe("sendInstagramCommentPrivateReply", () => {
+  it("turns a pasted URL into a clickable private-reply button",async()=>{
+    mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
+    await sendInstagramCommentPrivateReply({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,commentId:COMMENT_ID,commenterId:COMMENTER_ID,message:"تفضل https://ap3k.com",responseFormat:"TEXT"});
+    const body=mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.message.attachment.payload.buttons).toEqual([{type:"web_url",title:"ap3k.com",url:"https://ap3k.com/"}]);
+  });
+
   it("sends private reply with recipient.comment_id on primary attempt", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.123" } });
 
@@ -406,6 +413,14 @@ describe("sendInstagramCommentPrivateReply", () => {
 });
 
 describe("sendInstagramDirectResponse", () => {
+  it("turns pasted links into clickable DM buttons without sending an extra message",async()=>{
+    mockedAxios.post.mockResolvedValueOnce({status:200,data:{message_id:"mid.url"}});
+    await sendInstagramDirectResponse({token:VALID_TOKEN,igBusinessAccountId:IG_BIZ_ID,recipientId:COMMENTER_ID,automationId:"automation-url",message:"Visit https://example.com/guide",responseFormat:"TEXT"});
+    const body=mockedAxios.post.mock.calls[0][1] as any;
+    expect(body.message.attachment.payload.buttons[0]).toMatchObject({type:"web_url",url:"https://example.com/guide"});
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+  });
+
   it("sends up to three labeled links as stacked web buttons", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.links" } });
 
