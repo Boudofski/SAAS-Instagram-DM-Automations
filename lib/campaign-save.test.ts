@@ -205,7 +205,7 @@ describe("normalizeCampaignPayload", () => {
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 
-  it("supports sending the final DM immediately without an opening DM", () => {
+  it("preserves the follow request independently of the opening DM", () => {
     const normalized = normalizeCampaignPayload({
       ...basePayload,
       sendPrivateDm: true,
@@ -214,7 +214,7 @@ describe("normalizeCampaignPayload", () => {
     });
 
     expect(normalized.listener.openingDmEnabled).toBe(false);
-    expect(normalized.followGateRequired).toBe(false);
+    expect(normalized.followGateRequired).toBe(true);
     expect(validateNormalizedCampaignPayload(normalized)).toBeNull();
   });
 
