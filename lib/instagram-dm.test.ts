@@ -837,7 +837,8 @@ describe("account-scoped follow retry copy", () => {
   it("uses the requested Arabic retry for Boudofi's stable Instagram ID only", () => {
     expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"NOT_FOLLOWING"},"17841402182933940").text).toBe(arabic);
     expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"NOT_FOLLOWING"},"other-account").text).toContain("Not Following Yet");
-    expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"UNAVAILABLE"},"17841402182933940").text).toContain("Verification delayed");
+    expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"UNAVAILABLE"},"17841402182933940").text).toContain("تعذّر التأكد من المتابعة الآن");
+    expect(getInstagramFollowGatePromptCopy({username:"boudofi",state:"UNAVAILABLE"},"other-account").text).toContain("Verification delayed");
   });
   it("delivers the Arabic retry and both correctly labelled buttons", async () => {
     mockedAxios.post.mockResolvedValue({status:200,data:{message_id:"mid.retry"}});
@@ -846,4 +847,21 @@ describe("account-scoped follow retry copy", () => {
     expect(body.message.attachment.payload.text).toBe(arabic);
     expect(body.message.attachment.payload.buttons.map((b:any)=>b.title)).toEqual(["Visit Profile","تابعتك ✅"]);
   });
+});
+
+
+describe("Boudofi unavailable follow verification", () => {
+  for (const route of ["comment", "direct"] as const) {
+    it(`uses Arabic on the ${route} unavailable verification path`, async () => {
+      mockedAxios.post.mockResolvedValue({status:200,data:{message_id:"mid.unavailable"}});
+      const common = {token:VALID_TOKEN,igBusinessAccountId:"17841402182933940",automationId:"automation-unavailable",message:"",followGatePrompt:{username:"boudofi",state:"UNAVAILABLE" as const,verificationButtonTitle:"تابعتك ✅"}};
+      const result=route === "comment"
+        ? await sendInstagramCommentPrivateReply({...common,commentId:COMMENT_ID,commenterId:COMMENTER_ID})
+        : await sendInstagramDirectResponse({...common,recipientId:COMMENTER_ID});
+      expect(result.ok).toBe(true);
+      const body=mockedAxios.post.mock.calls[0][1] as any;
+      expect(body.message.attachment.payload.text).toBe('تعذّر التأكد من المتابعة الآن 👀\n\nتابعني من الزر تحت، وبعدها\nاضغط "تابعتك ✅" وتوصلك الروابط ✨');
+      expect(body.message.attachment.payload.buttons.map((b:any)=>b.title)).toEqual(["Visit Profile","تابعتك ✅"]);
+    });
+  }
 });

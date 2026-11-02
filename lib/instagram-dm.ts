@@ -239,6 +239,12 @@ export function getInstagramFollowGatePromptCopy(prompt: FollowGatePrompt, igBus
     return { title, subtitle, profileUrl, text: `${title}\n${subtitle}` };
   }
 
+  if (prompt.state === "UNAVAILABLE" && igBusinessAccountId === "17841402182933940") {
+    const title = "تعذّر التأكد من المتابعة الآن 👀";
+    const subtitle = 'تابعني من الزر تحت، وبعدها\nاضغط "تابعتك ✅" وتوصلك الروابط ✨';
+    return { title, subtitle, profileUrl, text: `${title}\n\n${subtitle}` };
+  }
+
   if (prompt.state === "UNAVAILABLE") {
     const title = "⚠️ Verification delayed";
     const subtitle = `We couldn't verify your follow yet. Follow ${displayHandle}, then tap I followed ✅ again.`;
