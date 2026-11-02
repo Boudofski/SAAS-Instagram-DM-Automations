@@ -3,7 +3,7 @@ import { usePublicUi } from "@/components/i18n/use-public-ui";
 
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
-import { LOCALE_DETAILS, SUPPORTED_LOCALES, localizePublicPath } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, LOCALE_DETAILS, SUPPORTED_LOCALES, localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
 import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
 import Link from "next/link";
@@ -38,7 +38,7 @@ const SOCIAL_LINKS = [
 ] as const;
 
 export default function WebsiteFooter() {
-  const { locale, t } = useI18n();
+  const { locale, t, setLocale } = useI18n();
   const tr = usePublicUi();
   const href = (path: string) => localizePublicPath(path, locale);
   const linkClass =
@@ -191,6 +191,11 @@ export default function WebsiteFooter() {
             <Link
               key={language}
               href={localizePublicPath("/", language)}
+              onClick={() => {
+                const secure = window.location.protocol === "https:" ? "; Secure" : "";
+                document.cookie = `${LOCALE_COOKIE}=${language}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+                setLocale(language);
+              }}
               hrefLang={LOCALE_DETAILS[language].htmlLang}
               lang={LOCALE_DETAILS[language].htmlLang}
               aria-current={language === locale ? "page" : undefined}
