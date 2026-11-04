@@ -64,7 +64,7 @@ export function buildSitemap(
     },
     {
       url: `${baseUrl}/docs`,
-      lastModified: new Date("2026-10-02T00:00:00Z"),
+      lastModified: new Date("2026-11-04T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.7,
     },

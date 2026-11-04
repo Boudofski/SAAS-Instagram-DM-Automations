@@ -1,3 +1,4 @@
+import { MANYCHAT_COMPARISON_REFRESH } from "./manychat-comparison-refresh";
 import { BUTTON_LABEL_GUIDE } from "./button-label-guide";
 import { SEARCH_QUALITY_REVISIONS } from "./search-quality-revisions";
 import { OCTOBER_INDEXING_REVISIONS } from "./october-indexing-revisions";
@@ -9,6 +10,7 @@ export const SEO_REVISIONS: Record<string, Partial<BlogPost>> = {
   ...SEARCH_QUALITY_REVISIONS,
   ...OCTOBER_INDEXING_REVISIONS,
   ...DM_DELIVERY_GUIDES,
+  "best-manychat-alternative-for-instagram-dm-automation": MANYCHAT_COMPARISON_REFRESH,
   "comment-to-dm-button-labels": BUTTON_LABEL_GUIDE,
   "instagram-comment-to-dm-automation": {
     importedArchive: false,

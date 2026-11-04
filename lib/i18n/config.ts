@@ -5,6 +5,9 @@ import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
+  "/blog/instagram-dm-automation-2027-launch-checklist",
+  "/blog/manychat-to-ap3k-migration-checklist-2027",
+  "/blog/instagram-comment-to-dm-calendar-2027",
   '/blog/accessible-instagram-dm-links-mobile',
   "/blog/ap3k-free-vs-pro-vs-business",
   "/blog/pause-restart-instagram-automations",

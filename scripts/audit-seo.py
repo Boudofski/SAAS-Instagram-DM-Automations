@@ -11,7 +11,9 @@ from html.parser import HTMLParser
 
 ORIGIN = (sys.argv[1] if len(sys.argv) > 1 else 'https://ap3k.com').rstrip('/')
 SITEMAP_URLS = set()
-LANGUAGE_SETS = ({'en', 'x-default'}, {'en', 'fr', 'es', 'de', 'pt', 'x-default'})
+SUPPORTED_LANGUAGES = {'en', 'ar', 'fr', 'es', 'de', 'nl', 'pt', 'x-default'}
+def valid_languages(values):
+    return {'en', 'x-default'}.issubset(values) and set(values).issubset(SUPPORTED_LANGUAGES)
 
 class Page(HTMLParser):
     def __init__(self):
@@ -62,10 +64,10 @@ def check(entry):
         if not page.title or not page.description: errors.append('Missing title or description')
         if page.noindex: errors.append('Meta noindex')
         path = urlsplit(url).path.split('/')
-        locale = path[1] if len(path) > 1 and path[1] in ('fr','es','de','pt') else 'en'
+        locale = path[1] if len(path) > 1 and path[1] in ('ar','fr','es','de','nl','pt') else 'en'
         if page.lang != locale: errors.append('HTML language mismatch')
         if expected_alternates and normalize_alternates(page.alternates) != normalize_alternates(expected_alternates): errors.append('HTML/sitemap language alternates disagree')
-        if set(page.alternates) not in LANGUAGE_SETS: errors.append('Unsupported HTML language set')
+        if not valid_languages(page.alternates): errors.append('Unsupported HTML language set')
         if any(target.rstrip('/') not in SITEMAP_URLS for target in page.alternates.values()): errors.append('HTML alternate target missing from sitemap')
         if page.alternates.get(locale, '').rstrip('/') != url.rstrip('/'): errors.append('Missing self language alternate')
         return {'url': url, 'title': page.title, 'errors': errors}
@@ -82,7 +84,7 @@ if __name__ == '__main__':
     SITEMAP_URLS = {url.rstrip('/') for url in urls}
     for url, alternates in entries:
         # Hreflang may be supplied exclusively in HTML. Validate it on every page.
-        if alternates and set(alternates) not in LANGUAGE_SETS:
+        if alternates and not valid_languages(alternates):
             raise ValueError(f'Unsupported sitemap language set: {url}')
         if any(target not in urls for target in alternates.values()):
             raise ValueError(f'Sitemap alternate target missing: {url}')
