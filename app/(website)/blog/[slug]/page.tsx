@@ -1,3 +1,5 @@
+import { JsonLdScript } from "next-seo";
+import { buildBlogStructuredData } from "@/lib/blog-structured-data";
 import { blogPostsForLocale } from "@/lib/localized-blog-archive";
 import ProductVideo from "@/components/website/product-video";
 import { QUICK_DEMO_POSTS } from "@/lib/product-videos";
@@ -144,54 +146,14 @@ export default async function BlogPostPage(props: Props) {
   const articleImage = articleImageUrl(cover);
   const articleImageWidth = cover.width;
   const articleImageHeight = cover.height;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: translateUi(post.title, locale),
-    description: translateUi(post.description, locale),
-    inLanguage: post.contentLocale ?? locale,
-    articleSection: post.category,
-    ...(post.wordCount ? { wordCount: post.wordCount } : {}),
-    isPartOf: { "@type": "Blog", "@id": `${SITE_URL}/blog`, name: "AP3K Blog" },
-    datePublished: post.publishedAt,
-    dateModified: post.updatedAt,
-    mainEntityOfPage: `${SITE_URL}${localizePublicPath(`/blog/${post.slug}`, locale)}`,
-    author: {
-      "@type": "Organization",
-      "@id": `${SITE_URL}/#organization`,
-      name: "AP3K",
-      url: SITE_URL,
-    },
-    publisher: {
-      "@type": "Organization",
-      "@id": `${SITE_URL}/#organization`,
-      name: "AP3K",
-      url: SITE_URL,
-      logo: {
-        "@type": "ImageObject",
-        url: `${SITE_URL}/icon.png`,
-        width: 512,
-        height: 512,
-      },
-    },
-    image: {
-      "@type": "ImageObject",
-      url: articleImage,
-      width: articleImageWidth,
-      height: articleImageHeight,
-    },
-    keywords: post.keywords.map((key) => translateUi(key, locale)).join(", "),
-  };
+  const jsonLd = buildBlogStructuredData(post, locale, {
+    url: articleImage, width: articleImageWidth, height: articleImageHeight,
+  });
 
   return (
     <LocalizedCopy>
       <div className={`${s.page} ${blogSans.className} ${blogSans.variable} ${blogSerif.variable}`}>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
-          }}
-        />
+        <JsonLdScript data={jsonLd} id="blog-article-schema" scriptKey="blog-article-schema" />
         <WebsiteNav current="blog" />
         <main>
           <article

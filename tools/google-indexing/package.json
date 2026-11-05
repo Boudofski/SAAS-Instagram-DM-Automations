@@ -1,0 +1,7 @@
+{
+  "name": "ap3k-google-indexing-utility",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Isolated optional Google Indexing API utility for eligible job or live broadcast pages only",
+  "dependencies": { "google-indexing-script": "0.4.0" }
+}

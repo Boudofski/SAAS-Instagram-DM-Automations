@@ -1,3 +1,4 @@
+import { BreadcrumbJsonLd } from "next-seo";
 import Link from "next/link";
 import { getServerLocale } from "@/lib/i18n/server";
 import { localizePublicPath } from "@/lib/i18n/config";
@@ -13,15 +14,11 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
     href: localizePublicPath(item.path, locale),
   }));
   const label = { en: "Breadcrumb", ar: "مسار التنقل", fr: "Fil d’Ariane", es: "Ruta de navegación", de: "Navigationspfad", nl: "Kruimelpad", pt: "Caminho de navegação" }[locale];
-  const schema = {
-    "@context": "https://schema.org", "@type": "BreadcrumbList",
-    itemListElement: trail.map((item, index) => ({
-      "@type": "ListItem", position: index + 1, name: item.name,
-      item: `https://ap3k.com${item.href}`,
-    })),
-  };
   return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
+    <BreadcrumbJsonLd
+      scriptId="page-breadcrumb-schema"
+      items={trail.map(item => ({ name: item.name, item: `https://ap3k.com${item.href}` }))}
+    />
     <nav aria-label={label} className="mb-6 text-xs leading-6">
       <ol className="flex flex-wrap items-center gap-x-2">
         {trail.map((item, index) => <li key={item.href} className="inline-flex items-center gap-2">
