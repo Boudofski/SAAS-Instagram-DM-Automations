@@ -1,7 +1,7 @@
 # AP3K product marketing context
 
-**Document version:** v1
-**Last updated:** 2026-09-29
+**Document version:** v2
+**Last updated:** 2026-11-05
 **Status:** Drafted from the product and observed data; audience/offer hypotheses need customer validation.
 
 ## Product
@@ -30,3 +30,11 @@ See `docs/acquisition-launch-2026-09-29.md` for copy, links, sequence, ads draft
 
 ## Changelog
 - v1 (2026-09-29) — Initial evidence-based context; prioritized a creator launch-kit funnel over more marketing infrastructure.
+
+## Verified packaging (2026-11-05)
+Source: `lib/plan-limits.ts` and `lib/billing-plans.ts`. Free: 500 actions/month, 1 Instagram account, 5 active campaigns. Pro: 5,000 actions/month, 500 AI replies, 3 accounts. Business: 20,000 actions/month, 2,000 AI replies, 6 accounts. Paid active campaigns are unlimited. One public reply or DM consumes one action; a reply plus DM consumes two. These are action allowances, not unique-contact allowances. Extra messages consume additional actions. Annual billing does not make usage annual. Internal account overrides are not public offers.
+
+## Marketing priorities
+Help visitors launch one working campaign, then measure activation and paid conversion. Seven locales are supported, including Arabic; keep new marketing UI explicitly localized and RTL-safe. No current funnel baseline or verified customer testimonial was established in this review. Do not raise Free limits or cut prices based only on competitor headline allowances; measure activation, retained use, delivery costs and upgrade behavior first.
+
+- v2 (2026-11-05) — Preserved the launch-kit strategy, documented current limits, installed pinned marketing workflows, and prioritized pricing capacity clarity. Conversion impact remains unmeasured.

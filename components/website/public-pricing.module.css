@@ -551,3 +551,12 @@
     padding: 20px 16px;
   }
 }
+
+.capacity { margin: 48px auto 0; padding: 28px; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); text-align: start; }
+.capacity h2 { font-size: 22px; line-height: 1.5; font-weight: 700; }
+.capacity p { margin-top: 8px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.capacityGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-block: 20px; list-style: none; padding: 0; }
+.capacityGrid li { display: flex; flex-direction: column; gap: 6px; padding: 18px; border-radius: 16px; background: var(--soft); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.capacityGrid strong { font-size: 28px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.capacity .capacityNote { font-size: 12px; }
+@media (max-width: 600px) { .capacity { padding: 20px; } .capacityGrid { grid-template-columns: minmax(0, 1fr); } }

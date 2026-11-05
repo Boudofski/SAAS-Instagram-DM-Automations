@@ -27,6 +27,7 @@ import {
 } from "@/lib/billing-plans";
 import { getPlanLimits } from "@/lib/plan-limits";
 import s from "./public-pricing.module.css";
+import PricingCapacity from "./pricing-capacity";
 import { useUi } from "@/components/i18n/use-ui";
 type Feature = { icon: LucideIcon; text: string };
 const freeGroups: { label: string; features: Feature[] }[] = [
@@ -329,6 +330,7 @@ export default function PublicPricing({
           One successful public reply or DM is one automated action. A public reply
           followed by a DM uses two actions. Usage resets monthly on every billing interval.
         </p>
+        {!paidOnly && <PricingCapacity />}
         {!paidOnly && (
           <section
             className={s.comparison}
