@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Bundle next-seo with the App Router React runtime rather than Node React.
+  transpilePackages: ["next-seo"],
   // Keep titles, canonicals and language alternates in the initial HTML head.
   // Search Console's saved render left streamed metadata in the body and did
   // not recognize the declared canonical. Apply consistently to every client.
