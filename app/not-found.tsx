@@ -19,7 +19,7 @@ export function generateMetadata(): Metadata {
     description: text.body,
     robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
     alternates: { canonical: null, languages: {} },
-    openGraph: { title: `${text.title} — AP3K`, description: text.body, url: null },
+    openGraph: { title: `${text.title} — AP3K`, description: text.body },
   };
 }
 export default function NotFound() {
