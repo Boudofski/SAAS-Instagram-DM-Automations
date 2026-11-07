@@ -23,9 +23,14 @@ async function currentReferralCode() {
 }
 
 async function clearReferralCode() {
-  const cookieStore = await cookies();
-  if (typeof cookieStore.delete === "function") {
-    cookieStore.delete(REFERRAL_COOKIE);
+  // Dashboard provisioning can run during Server Component rendering, where
+  // Next.js exposes cookies but rejects mutations. Cleanup must not skip the
+  // welcome email after the account transaction has already committed.
+  try {
+    const cookieStore = await cookies();
+    if (typeof cookieStore.delete === "function") cookieStore.delete(REFERRAL_COOKIE);
+  } catch {
+    // Referral attribution is already recorded and cannot be applied twice.
   }
 }
 

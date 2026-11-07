@@ -6,6 +6,10 @@ const mockFindUserByEmail = vi.fn();
 const mockCreateUser = vi.fn();
 const mockUpdateUserIdentity = vi.fn();
 const mockRebindVerifiedEmailWorkspace = vi.fn();
+const mockCookieDelete = vi.fn();
+const mockWelcome = vi.fn();
+vi.mock("@/lib/email/events", () => ({ notifyWelcomeEmail: (...args: unknown[]) => mockWelcome(...args) }));
+vi.mock("@/lib/email/owner-alerts", () => ({ deliverOwnerAlertSafely: vi.fn() }));
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: (...args: unknown[]) => mockCurrentUser(...args),
@@ -16,7 +20,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/headers", () => ({
-  cookies: () => ({ set: vi.fn() }),
+  cookies: () => ({ set: vi.fn(), delete: mockCookieDelete }),
 }));
 
 vi.mock("@/lib/stripe", () => ({
@@ -89,6 +93,15 @@ afterEach(() => {
 });
 
 describe("ensureCurrentUserProfile", () => {
+  it("sends the welcome email when Server Component cookie cleanup is forbidden", async () => {
+    mockFindUser.mockResolvedValue(null);
+    const created = workspaceProfile(CURRENT_CLERK_ID);
+    mockCreateUser.mockResolvedValue(created);
+    mockCookieDelete.mockImplementation(() => { throw new Error("Cookies can only be modified in a Server Action or Route Handler"); });
+    const result = await ensureCurrentUserProfile();
+    expect(result.status).toBe(201);
+    expect(mockWelcome).toHaveBeenCalledWith({ id: created.id, clerkId: created.clerkId, email: created.email, firstname: created.firstname });
+  });
   it("keeps the normal Clerk ID lookup path", async () => {
     const profile = workspaceProfile(CURRENT_CLERK_ID);
     mockFindUser.mockResolvedValue(profile);
