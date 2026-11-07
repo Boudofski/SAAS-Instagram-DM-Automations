@@ -1,7 +1,7 @@
 # AP3K product marketing context
 
-**Document version:** v2
-**Last updated:** 2026-11-05
+**Document version:** v3
+**Last updated:** 2026-11-07
 **Status:** Drafted from the product and observed data; audience/offer hypotheses need customer validation.
 
 ## Product
@@ -23,7 +23,7 @@ Direct category alternatives include ManyChat and LinktoDM. Manual replies and n
 Direct, specific, helpful. Use “comment,” “keyword,” “DM,” “resource,” and “campaign.” Avoid invented ROI, ranking promises, fake scarcity, fake customers, and partner badges without proof. No verified customer quotes or conversion results were established in this release. Product demonstrations must be labeled as demonstrations.
 
 ## Goals
-First target: ten consenting pilot users who launch a working real campaign, then verify repeat use and actual paid invoices. This is a target, not an achieved result. Distinguish traffic, CTA clicks, registrations, stored connection states, sent messages, verified delivery, and revenue.
+AP3K is already in use. The owner’s 2026-11-05 admin screenshot shows 165 registered accounts, 51 connections, 77 active automations and 61 successful sends that day. The owner uses AP3K for @boudofi. These are dated screenshot observations, not a current database query or verified paid-customer count. Prioritize activation and retention of existing signups alongside acquisition. The last-30-day snapshot shows 122 signups, 40 connected accounts and 13 accounts with a successful send; owner/test accounts are included and milestones are not strictly nested. Distinguish traffic, CTA clicks, registrations, stored connection states, sent messages, verified delivery, and revenue.
 
 ## Operating assets
 See `docs/acquisition-launch-2026-09-29.md` for copy, links, sequence, ads drafts, baseline, and launch gates. Owner view: `/admin/acquisition`. Prospect consent is stored locally; no scraped or historic addresses are automatically enrolled.

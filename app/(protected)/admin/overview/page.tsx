@@ -57,7 +57,7 @@ export default async function OverviewPage() {
   const needsAttention = issues.some((i) => i.count > 0);
   const cards = [
     {
-      label: "Customers",
+      label: "Registered accounts",
       value: stats.totalUsers,
       sub: "All current AP3K accounts",
       icon: Users,
@@ -71,7 +71,7 @@ export default async function OverviewPage() {
       href: "/admin/accounts",
     },
     {
-      label: "Live automations",
+      label: "Active automations",
       value: stats.activeCampaigns,
       sub: "Active, non-archived campaigns",
       icon: Workflow,

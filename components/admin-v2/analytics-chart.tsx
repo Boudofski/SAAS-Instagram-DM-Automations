@@ -20,7 +20,7 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Activity over time</h2>
-          <p className="mt-1 text-xs text-muted-foreground dark:text-slate-400">Daily totals · UTC</p>
+          <p className="mt-1 text-xs text-muted-foreground dark:text-slate-400">Daily totals · UTC · Today is partial</p>
         </div>
         <div className="flex flex-wrap gap-1">
           {(["sent", "signups", "leads", "failed"] as const).map((m) => (
@@ -60,7 +60,8 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
             />
             <YAxis
               allowDecimals={false}
-              width={38}
+              width={64}
+              tickFormatter={(value: number) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value)}
               stroke="hsl(var(--muted-foreground))"
               fontSize={11}
             />
@@ -73,7 +74,7 @@ export function AnalyticsChart({ data }: { data: DailyMetric[] }) {
               }}
             />
             <Area
-              type="monotone"
+              type="linear"
               dataKey={metric}
               stroke={metric === "failed" ? "hsl(var(--destructive))" : "hsl(var(--primary))"}
               fill={metric === "failed" ? "hsl(var(--destructive))" : "hsl(var(--primary))"}
