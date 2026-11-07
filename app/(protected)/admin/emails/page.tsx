@@ -1,6 +1,7 @@
+import { getOnboardingOverview, ONBOARDING_DAILY_LIMIT } from "@/lib/email/onboarding";
 import Link from "next/link";
 import { MailCheck, Send, ShieldCheck, TriangleAlert } from "lucide-react";
-import { adminSendEmailTestAction, adminSendOwnerAlertTestAction, adminRetryOwnerAlertsAction } from "@/actions/admin/email";
+import { adminSendOnboardingRemindersAction, adminSendEmailTestAction, adminSendOwnerAlertTestAction, adminRetryOwnerAlertsAction } from "@/actions/admin/email";
 import { AdminPageHeader, AdminSectionHeader, AdminSurface } from "@/components/admin-v2/page-header";
 import { V2Badge } from "@/components/admin-v2/v2-badge";
 import { EMAIL_TEMPLATE_LIST, EMAIL_TEMPLATES, isEmailTemplateId } from "@/lib/email/catalog";
@@ -8,12 +9,12 @@ import { getEmailAdminOverview } from "@/lib/email/admin";
 import LocalTime from "@/components/global/local-time";
 
 export default async function EmailCenterPage(
-  props: { searchParams?: Promise<{ template?: string; test?: string; ownerTest?: string }> }
+  props: { searchParams?: Promise<{ template?: string; test?: string; ownerTest?: string; onboarding?: string; sent?: string }> }
 ) {
   const searchParams = await props.searchParams;
   const selectedId = isEmailTemplateId(searchParams?.template) ? searchParams.template : "welcome";
   const selected = EMAIL_TEMPLATES[selectedId];
-  const overview = await getEmailAdminOverview();
+  const [overview, onboarding] = await Promise.all([getEmailAdminOverview(), getOnboardingOverview()]);
   const sentCount = (overview.counts.SENT || 0) + (overview.counts.DELIVERED || 0) + (overview.counts.OPENED || 0) + (overview.counts.CLICKED || 0);
   const failureCount = (overview.counts.FAILED || 0) + (overview.counts.BOUNCED || 0) + (overview.counts.COMPLAINED || 0) + (overview.counts.SUPPRESSED || 0);
 
@@ -38,6 +39,28 @@ export default async function EmailCenterPage(
         <StatusCard label="Delivery issues" value={failureCount} detail="Failed, bounced, or suppressed" icon={<TriangleAlert className="h-4 w-4" />} />
         <StatusCard label="Webhook" value={overview.configuration.webhookConfigured ? "Ready" : "Missing"} detail="Signed delivery events" icon={<ShieldCheck className="h-4 w-4" />} />
       </div>
+
+      <AdminSurface className="overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><p className="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-300">Customer onboarding</p><h2 className="mt-2 text-xl font-bold">Help customers send their first DM</h2></div>
+          <V2Badge tone={onboarding.enabled ? "green" : "amber"}>{onboarding.enabled ? "Automatic · hourly" : "Not sending"}</V2Badge>
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          {[["Eligible now", onboarding.eligible], ["Reminders accepted", onboarding.accepted], ["Delivery review", onboarding.attention]].map(([label, value]) => <div key={label} className="rounded-xl bg-slate-50 p-3 dark:bg-white/5"><p className="text-2xl font-bold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>)}
+        </div>
+        <ol className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+          <li><strong>1. Welcome immediately</strong><p className="mt-1 text-muted-foreground">New accounts receive the setup tutorial and a dashboard link.</p></li>
+          <li><strong>2. Remind after 24 hours</strong><p className="mt-1 text-muted-foreground">One helpful reminder for accounts that have never connected Instagram.</p></li>
+          <li><strong>3. Stop when connected</strong><p className="mt-1 text-muted-foreground">Opt-outs, suspended accounts and known delivery suppressions are excluded.</p></li>
+        </ol>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <form action={adminSendOnboardingRemindersAction}><button disabled={!onboarding.enabled || !onboarding.eligible} className="min-h-11 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40">Send next eligible batch</button></form>
+          <Link href="/admin/emails?template=connect_instagram" className="min-h-11 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-white/15">Preview reminder</Link>
+          <Link href="/admin/emails?template=welcome" className="px-2 py-3 text-sm font-semibold text-violet-700 dark:text-violet-300">Preview welcome →</Link>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-muted-foreground">Up to {ONBOARDING_DAILY_LIMIT} reminder attempts daily, six per batch. Existing eligible accounts are processed automatically. Delivery is rechecked before sending; provider acceptance does not guarantee inbox delivery. Failed or uncertain attempts require review, not automatic resending.</p>
+        {searchParams?.onboarding && <p role="status" className="mt-3 text-sm font-semibold">{searchParams.onboarding === "disabled" ? "Onboarding delivery is not enabled in this environment." : "Batch checked. Updated counts and delivery records appear below."}</p>}
+      </AdminSurface>
 
       <AdminSurface className="p-5 sm:p-6">
         <h2 className="text-lg font-bold">Subscribers &amp; email series</h2>

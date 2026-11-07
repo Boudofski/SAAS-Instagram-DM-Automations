@@ -1,5 +1,7 @@
 import { dashboardEntryPath } from "@/lib/dashboard";
 
+export const AP3K_TUTORIAL_URL = "https://www.youtube.com/watch?v=SSOYGbfwLUQ";
+
 export const EMAIL_TEMPLATE_IDS = [
   "welcome",
   "connect_instagram",
@@ -117,18 +119,19 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
     preference: "transactional",
     aiPersonalization: false,
     build: (context, appUrl) => ({
-      subject: "Turn your first Instagram comment into a customer",
-      preview: "Your AP3K workspace is ready. Connect Instagram and launch your first automation.",
-      eyebrow: "WELCOME TO AP3K",
-      headline: `Your workspace is ready${firstName(context)}.`,
+      subject: "Welcome to AP3K — let’s set up your first Instagram DM",
+      preview: "Your free workspace is ready. Watch the tutorial, connect Instagram, and test your first automation.",
+      eyebrow: "YOUR FIRST AUTOMATION",
+      headline: `Welcome to AP3K${firstName(context)}.`,
       paragraphs: [
-        "AP3K turns Instagram comments into timely replies, direct messages, and trackable leads—without complicated flows or code.",
-        "You can launch your first comment-to-DM automation in a few minutes.",
+        "Someone comments on your post. AP3K sends them the link you promised—so you can spend less time copying and pasting replies.",
+        "Start with one post, one keyword, and one useful link. The video tutorial walks you through the setup.",
       ],
-      bullets: ["Connect one Instagram Business or Creator account", "Choose a post and comment trigger", "Write the public reply and promised DM", "Test the complete flow before activating"],
-      cta: { label: "Connect Instagram", url: context.actionUrl || dashboard(appUrl) },
-      secondaryCta: { label: "Open AP3K", url: dashboard(appUrl) },
-      closing: "Turn attention into action.",
+      bullets: ["1. Open your dashboard and connect an Instagram Business or Creator account.", "2. Create a post automation and choose the comment that triggers it.", "3. Add your message and link, activate it, then test with a second Instagram account."],
+      callout: { title: "Start free", text: "Your Free plan includes 500 automated actions each month. One public reply plus one DM uses 2 actions. No card is needed to start." },
+      cta: { label: "Connect my Instagram", url: context.actionUrl || dashboard(appUrl) },
+      secondaryCta: { label: "Watch the setup tutorial", url: AP3K_TUTORIAL_URL },
+      closing: "Need a hand? Reply to this email and tell us where you’re stuck.",
     }),
   },
   connect_instagram: {
@@ -137,16 +140,18 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
     description: "A useful onboarding reminder when Instagram is not connected.",
     category: "onboarding",
     preference: "productTips",
-    aiPersonalization: true,
+    aiPersonalization: false,
     build: (context, appUrl) => ({
-      subject: "Connect Instagram to start automating",
-      preview: "AP3K needs an Instagram professional account before it can reply or send DMs.",
-      eyebrow: "ONE STEP LEFT",
-      headline: `Connect Instagram${firstName(context)}.`,
-      paragraphs: ["Your workspace is ready, but AP3K cannot run automations until an Instagram Business or Creator account is connected through Meta's official authorization flow."],
-      bullets: ["AP3K never asks for your Instagram password", "You approve permissions directly with Meta", "You can disconnect the account from AP3K Settings"],
-      cta: { label: "Connect Instagram", url: context.actionUrl || dashboard(appUrl) },
-      closing: "Once connected, we will help you build and test the first automation.",
+      subject: "Your first automated Instagram DM starts here",
+      preview: "Connect your Instagram account, then let AP3K send the link when someone comments.",
+      eyebrow: "LET’S GET YOU CONNECTED",
+      headline: `Your workspace is ready${firstName(context)}.`,
+      paragraphs: ["You’ve created your AP3K account. The next step is to connect Instagram so you can set up your first comment-to-DM automation.", "Imagine posting: “Comment GUIDE and I’ll send you the link.” Once your automation is active, AP3K can send the message you prepared when an eligible comment arrives."],
+      bullets: ["Open your AP3K dashboard and choose Connect Instagram.", "Sign in with Meta and approve the connection for your Business or Creator account.", "Choose one post, add your message and link, then activate and test with a second account."],
+      callout: { title: "You can start on the Free plan", text: "500 automated actions per month. One public reply + one DM counts as 2 actions. AP3K never asks you to send us your Instagram password." },
+      cta: { label: "Connect my Instagram", url: context.actionUrl || dashboard(appUrl) },
+      secondaryCta: { label: "Watch the setup tutorial", url: AP3K_TUTORIAL_URL },
+      closing: "Not sure which account to connect? Reply to this email—we’re here to help.",
     }),
   },
   instagram_connected: {

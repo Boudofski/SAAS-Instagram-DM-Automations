@@ -118,9 +118,9 @@ export function Ap3kEmail({ content, appUrl, preferenceUrl, recipientHint }: Ap3
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ backgroundColor: "#FFFFFF", border: `1px solid ${colors.border}`, borderTop: 0, borderRadius: "0 0 22px 22px", boxShadow: "0 18px 50px rgba(33, 22, 73, 0.08)", padding: "38px 38px 34px" }}>
+                      <td style={{ backgroundColor: "#FFFFFF", border: `1px solid ${colors.border}`, borderTop: 0, borderRadius: "0 0 22px 22px", boxShadow: "0 18px 50px rgba(33, 22, 73, 0.08)", padding: "30px 24px 28px" }}>
                         <p style={{ color: colors.pink, fontFamily: font, fontSize: "11px", fontWeight: 900, letterSpacing: "2px", margin: "0 0 13px", textTransform: "uppercase" }}>{content.eyebrow}</p>
-                        <h1 style={{ color: colors.ink, fontFamily: font, fontSize: "32px", fontWeight: 900, letterSpacing: "-1.4px", lineHeight: "39px", margin: "0 0 22px" }}>{content.headline}</h1>
+                        <h1 style={{ color: colors.ink, fontFamily: font, fontSize: "28px", fontWeight: 800, letterSpacing: "-0.7px", lineHeight: "36px", margin: "0 0 22px" }}>{content.headline}</h1>
                         {content.paragraphs.map((paragraph, index) => (
                           <p key={`${index}-${paragraph.slice(0, 20)}`} style={{ color: "#475569", fontFamily: font, fontSize: "15px", lineHeight: "25px", margin: index === 0 ? "0 0 13px" : "13px 0" }}>{paragraph}</p>
                         ))}

@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { requireOwnerAdmin } from "@/lib/admin";
 import { client } from "@/lib/prisma";
 import { getEmailConfiguration, sendAp3kEmail } from "@/lib/email/delivery";
+import { ownerAlertConfiguration } from "@/lib/email/owner-alert-content";
 import { isEmailTemplateId } from "@/lib/email/catalog";
 
 export async function adminSendEmailTestAction(templateId: string) {
   const admin = await requireOwnerAdmin();
+  const testRecipient = ownerAlertConfiguration().recipient;
   const selected = isEmailTemplateId(templateId) ? templateId : "welcome";
   const configuration = getEmailConfiguration();
   if (!configuration.configured || !admin.email) {
@@ -17,7 +19,7 @@ export async function adminSendEmailTestAction(templateId: string) {
   const profile = await client.user.findUnique({ where: { email: admin.email }, select: { id: true, firstname: true } });
   const result = await sendAp3kEmail({
     templateId: selected,
-    to: admin.email,
+    to: testRecipient,
     userId: profile?.id,
     idempotencyKey: `admin-test:${selected}:${Date.now()}`,
     context: {
@@ -58,4 +60,11 @@ export async function adminRetryOwnerAlertsAction() {
   const { processOwnerAlertQueue } = await import("@/lib/email/owner-alerts");
   await processOwnerAlertQueue();
   redirect("/admin/emails?ownerTest=checked");
+}
+
+export async function adminSendOnboardingRemindersAction() {
+  await requireOwnerAdmin();
+  const { processOnboardingReminders } = await import("@/lib/email/onboarding");
+  const result = await processOnboardingReminders();
+  redirect(`/admin/emails?onboarding=${result.enabled ? "checked" : "disabled"}&sent=${result.sent}`);
 }
