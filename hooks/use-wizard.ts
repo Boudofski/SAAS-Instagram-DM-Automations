@@ -1,6 +1,6 @@
 "use client";
 import { useI18n } from "@/providers/i18n-provider";
-import { automationStarterCopy } from "@/lib/automation-starter-copy";
+import { automationStarterCopy, BOUDOFI_INTEGRATION_ID } from "@/lib/automation-starter-copy";
 import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
 
 import {
@@ -156,6 +156,8 @@ export function useWizard(
   const [data, setData] = useState<WizardData>(() => ({
     ...INITIAL,
     // Existing automations are hydrated from their saved settings; new drafts start with three localized manual replies.
+    ...(!automationId && templateId ? commentTemplateDefaults(templateId) : {}),
+    ...(integrationId === BOUDOFI_INTEGRATION_ID ? { followGateRequired: false } : {}),
     aiReplyEnabled: false,
     aiReplyInstructions: automationId ? "" : tr(DEFAULT_COMMENT_ONLY_PROMPT),
     dmMessage: starter.message,
@@ -170,7 +172,6 @@ export function useWizard(
       ...button,
       label: starter.button,
     })),
-    ...(!automationId && templateId ? commentTemplateDefaults(templateId) : {}),
   }));
   const draftKey = `ap3k:comment-draft:${slug}:${integrationId}:${automationId || templateId || "new"}`;
   const restoredKey = useRef("");
