@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/providers/i18n-provider";
+import { automationStarterCopy } from "@/lib/automation-starter-copy";
 import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
 
 import {
@@ -93,9 +95,9 @@ export type WizardData = {
 };
 
 export const DEFAULT_PUBLIC_REPLIES = [
-  "Thanks! Please see DMs.",
-  "Sent you a message! Check it out!",
-  "Nice! Check your DMs!",
+  "Check your DMs for the details 📩",
+  "Your link is coming in a DM 🔗 Check your inbox!",
+  "Look out for my message 📩 Check message requests too 👌",
 ] as const;
 
 export const DEFAULT_DM_MESSAGE = "Here's the link I promised! 🎁";
@@ -148,23 +150,25 @@ export function useWizard(
   const router = useRouter();
   const queryClient = useQueryClient();
   const tr = useUi();
+  const { locale } = useI18n();
+  const starter = automationStarterCopy(locale, integrationId);
   const [step, setStep] = useState<WizardStep>(1);
   const [data, setData] = useState<WizardData>(() => ({
     ...INITIAL,
-    // Existing automations are hydrated from their saved settings; new drafts start with AI.
-    aiReplyEnabled: !automationId,
+    // Existing automations are hydrated from their saved settings; new drafts start with three localized manual replies.
+    aiReplyEnabled: false,
     aiReplyInstructions: automationId ? "" : tr(DEFAULT_COMMENT_ONLY_PROMPT),
-    dmMessage: tr(INITIAL.dmMessage),
-    publicReply: tr(INITIAL.publicReply),
-    publicReply2: tr(INITIAL.publicReply2),
-    publicReply3: tr(INITIAL.publicReply3),
-    openingDmText: tr(INITIAL.openingDmText),
-    openingDmButtonText: tr(INITIAL.openingDmButtonText),
+    dmMessage: starter.message,
+    publicReply: starter.replies[0],
+    publicReply2: starter.replies[1],
+    publicReply3: starter.replies[2],
+    openingDmText: starter.opening,
+    openingDmButtonText: starter.openingButton,
     followRequestDmText: tr(INITIAL.followRequestDmText),
     followRequestButtonText: tr(INITIAL.followRequestButtonText),
     linkButtons: INITIAL.linkButtons.map((button) => ({
       ...button,
-      label: tr(button.label),
+      label: starter.button,
     })),
     ...(!automationId && templateId ? commentTemplateDefaults(templateId) : {}),
   }));
@@ -203,6 +207,20 @@ export function useWizard(
       return next;
     });
   }, [tr, automationId]);
+  const previousStarter = useRef(starter);
+  useEffect(() => {
+    const before = previousStarter.current; previousStarter.current = starter;
+    if (automationId || before === starter) return;
+    setData(current => ({ ...current,
+      dmMessage: current.dmMessage === before.message ? starter.message : current.dmMessage,
+      publicReply: current.publicReply === before.replies[0] ? starter.replies[0] : current.publicReply,
+      publicReply2: current.publicReply2 === before.replies[1] ? starter.replies[1] : current.publicReply2,
+      publicReply3: current.publicReply3 === before.replies[2] ? starter.replies[2] : current.publicReply3,
+      openingDmText: current.openingDmText === before.opening ? starter.opening : current.openingDmText,
+      openingDmButtonText: current.openingDmButtonText === before.openingButton ? starter.openingButton : current.openingDmButtonText,
+      linkButtons: current.linkButtons.map(button => button.label === before.button ? { ...button, label: starter.button } : button),
+    }));
+  }, [starter, automationId]);
   const submitting = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

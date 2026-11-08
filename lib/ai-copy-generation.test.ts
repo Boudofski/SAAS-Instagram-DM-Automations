@@ -13,11 +13,18 @@ describe("AI editor generation boundaries", () => {
   const base = { mode: "MESSAGE_VARIATIONS" as const, integrationId: "test", text: "Tap below for the guide.", hasButtons: true, linkButtons: [{ label: "Get the guide", url: "https://example.com/guide" }] };
   it("generates only one anonymous manual reply even when the provider adds personalization", async () => {
     for (const token of ["{{username}}", "Username", "@test.creator"]) {
-      output([`Thanks ${token}! Check your DMs 😊`, "A second reply"]);
-      expect(await generateAutomationCopy({ mode: "COMMENT_REPLIES", integrationId: "test", sendDm: true, instructions: "Always include Username" })).toEqual(["Thanks! Check your DMs 😊"]);
+      output([`Check your DMs ${token} 😊`, "A second reply"]);
+      expect(await generateAutomationCopy({ mode: "COMMENT_REPLIES", integrationId: "test", sendDm: true, instructions: "Always include Username" })).toEqual(["Check your DMs 😊"]);
     }
     expect(JSON.parse(complete.mock.calls[0][0].messages[1].content).prompt).toBeUndefined();
     expect(complete.mock.calls[0][0].messages[0].content).toContain("with 1 distinct strings");
+  });
+  it("replaces promotional or wrong-language public replies with safe localized acknowledgments", async () => {
+    output(["اكتب DEMO في التعليقات وتابعني الآن"]);
+    const result = await generateAutomationCopy({ mode: "COMMENT_REPLIES", integrationId: "test", locale: "ar", sendDm: true, caption: "Comment DEMO" });
+    expect(result?.[0]).toContain("الخاص");
+    expect(result?.[0]).not.toMatch(/DEMO|تابعني|اكتب/);
+    expect(JSON.parse(complete.mock.calls[0][0].messages[1].content).caption).toBeUndefined();
   });
   it("generates five initial variations and one additional variation using the link context", async () => {
     const five = ["Your guide is below.", "Open your guide below.", "Get the guide with this button.", "Enjoy the guide below!", "The button opens your guide."];

@@ -1,5 +1,6 @@
 "use client";
 
+import { COPY_LANGUAGES, automationCopyLocale } from "@/lib/automation-starter-copy";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Eye, EyeOff, Info, Layers, Loader2, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -16,24 +17,27 @@ type Context = Omit<AutomationCopyInput, "mode" | "text" | "existing" | "instruc
 
 function useCopyGeneration(context: Context) {
   const { locale } = useI18n();
+  const [chosenLocale, setChosenLocale] = useState("");
+  const copyLocale = automationCopyLocale(chosenLocale || locale, context.integrationId);
+  const languageControl = <label className={s.hint}>🌐 <select aria-label="Copy language" value={copyLocale} disabled={context.integrationId === "981901f8-6606-4175-89f3-32fca0ae4ed5"} onChange={e => setChosenLocale(e.target.value)}>{Object.entries(COPY_LANGUAGES).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label>;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pending = useRef(false);
-  const contextKey = JSON.stringify({ ...context, locale });
+  const contextKey = JSON.stringify({ ...context, locale: copyLocale });
   const latestContext = useRef(contextKey); latestContext.current = contextKey;
   async function generate(mode: AutomationCopyMode, values: Partial<AutomationCopyInput> = {}) {
     if (pending.current) return null;
     if (!context.available) { setError("AI generation is available on Pro and Business plans."); return null; }
     pending.current = true; setBusy(true); setError(null);
     try {
-      const result = await generateAutomationCopyAction({ ...context, ...values, mode, locale });
+      const result = await generateAutomationCopyAction({ ...context, ...values, mode, locale: copyLocale });
       if (latestContext.current !== contextKey) return null;
       if (!result.ok) { setError(result.error); return null; }
       return result.items;
     } catch { setError("AI could not generate copy. Your saved text is unchanged. Try again."); return null; }
     finally { pending.current = false; setBusy(false); }
   }
-  return { generate, busy, error };
+  return { generate, busy, error, languageControl };
 }
 
 export function CopyField({ label, value, onChange, maxLength = 1000, rows = 4, disabled = false, compact = false }: { label: string; value: string; onChange: (value: string) => void; maxLength?: number; rows?: number; disabled?: boolean; compact?: boolean }) {
@@ -71,6 +75,7 @@ export function PublicReplyComposer({ replies, onRepliesChange, ai, prompt, onPr
     if (items && promptRef.current === before) { setSamples(items); onPreview(items[0]); }
   }
   return <div className={s.copySection}>
+    {generation.languageControl}
     {ai ? <>
       <div className={s.copyHeading}><strong>{tr("Prompt")}</strong><button type="button" className={s.textAction} disabled={generation.busy || !context.available} onClick={() => void regeneratePrompt()}>{generation.busy ? <Loader2 className="animate-spin"/> : <Sparkles/>}{tr("Regenerate prompt")}</button></div>
       <div className={publishLocked ? s.lockedCopy : undefined}><CopyField label="AI comment prompt" value={prompt} onChange={onPromptChange} maxLength={prompt.length > 400 ? 1600 : 400} rows={4}/></div>
@@ -121,6 +126,7 @@ export function MessageCopyComposer({ message, onMessageChange, variations, onVa
   const shown = selected > 0 ? variations[selected - 1] ?? message : message;
   const previewButtons = context.hasButtons ? linkButtons : [];
   return <div className={s.copySection} onFocusCapture={() => onPreview?.(shown)}>
+    {generation.languageControl}
     <div className={s.variationsBar}>
       <span><Layers size={15}/>{tr("Variations")}<Info size={14} className={s.variationInfo} aria-label={tr("These rotate automatically so your DMs feel personal. Your links and buttons stay the same.")}/></span>
       <button type="button" className={s.variationAdd} disabled={generation.busy || (!variations.length && !canGenerate)} title={readiness ? tr(readiness) : undefined} onClick={show}><span aria-hidden="true">✦</span>{tr(variations.length ? "Edit variations" : "Add variations")}{variations.length ? ` (${variations.length})` : ""}</button>
