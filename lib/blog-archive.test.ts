@@ -53,10 +53,10 @@ describe("editorial archive", () => {
   it("features current original product guides", () => {
     const { featured } = getEditorialArchive(BLOG_POSTS);
     expect(featured.map(post => post.slug)).toEqual([
-      "instagram-dm-automation-2027-launch-checklist",
-      "manychat-to-ap3k-migration-checklist-2027",
-      "instagram-comment-to-dm-calendar-2027",
-      "ap3k-ai-offers-policies-faq-template",
+      "free-instagram-chatbot",
+      "how-to-set-up-auto-dm-on-instagram",
+      "best-manychat-alternative-for-instagram-dm-automation",
+      "is-it-safe-to-auto-dm-on-instagram",
     ]);
     expect(featured.every(post => !post.importedArchive && !post.noIndex)).toBe(true);
     const excluded = featured.map(post => ({ ...post, noIndex: true }));
