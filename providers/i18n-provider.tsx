@@ -32,6 +32,13 @@ export function I18nProvider({ locale, children }: { locale: Locale; children: R
     document.documentElement.lang = LOCALE_DETAILS[activeLocale].htmlLang;
     document.documentElement.dir = LOCALE_DETAILS[activeLocale].direction;
   }, [activeLocale]);
+  useEffect(()=>{
+    if(!isProtectedPath(pathname))return;
+    const explicit=document.cookie.split("; ").find(entry=>entry.startsWith(`${LOCALE_COOKIE}=`))?.split("=")[1];
+    if(explicit!==activeLocale)return;
+    const controller=new AbortController();const timer=setTimeout(()=>{void fetch("/api/account/locale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({locale:activeLocale}),signal:controller.signal}).catch(()=>{});},500);
+    return()=>{clearTimeout(timer);controller.abort();};
+  },[activeLocale,pathname]);
   const value = useMemo<I18nContextValue>(
     () => ({ locale: activeLocale, setLocale, t: (key) => MESSAGES[activeLocale][key] }),
     [activeLocale],

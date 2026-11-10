@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferredLocale" TEXT;
+ALTER TABLE "MarketingLead" ADD COLUMN IF NOT EXISTS "preferredLocale" TEXT;

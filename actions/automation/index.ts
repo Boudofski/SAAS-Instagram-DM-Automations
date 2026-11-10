@@ -120,7 +120,7 @@ export const saveCampaign = async (
       const profile = await findUser(user.id);
       if (!["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE"))
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
         };
     }
@@ -129,7 +129,7 @@ export const saveCampaign = async (
       const aiPlan = aiProfile?.subscription?.plan ?? "FREE";
       if (aiPlan !== "PRO" && aiPlan !== "BUSINESS") {
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "AI only available on paid plans.",
         };
       }
@@ -234,7 +234,7 @@ export const saveCampaign = async (
 
       if (!activation.ok) {
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Your plan's active automation limit has been reached. Pause another automation or upgrade.",
         };
       }
@@ -264,7 +264,7 @@ export const saveCampaign = async (
 
     return { status: 404, data: "Automation not found" };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, data: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, data: error.message };
     const message = campaignSaveErrorMessage(error);
     console.error("[campaign-save] save failed", {
       action: "saveCampaign",
@@ -336,7 +336,7 @@ export const saveMessageAutomation = async (
       !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")
     )
       return {
-        status: 403,
+        status: 403, code: "PLAN_LIMIT",
         data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
       };
     if (
@@ -352,7 +352,7 @@ export const saveMessageAutomation = async (
       const plan = profile?.subscription?.plan ?? "FREE";
       if (plan !== "PRO" && plan !== "BUSINESS") {
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "AI DM replies are available on Pro and Business plans.",
         };
       }
@@ -373,7 +373,7 @@ export const saveMessageAutomation = async (
         : { ok: false };
       if (!activation.ok) {
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Your plan's active automation limit has been reached. Pause one or upgrade.",
         };
       }
@@ -381,7 +381,7 @@ export const saveMessageAutomation = async (
 
     if (cleanPayload.source === "STORY" && cleanPayload.storyConfig) {
       const paid = ["PRO","BUSINESS"].includes(profile?.subscription?.plan ?? "FREE");
-      if (cleanPayload.active && !paid && (cleanPayload.storyConfig.scope === "NEXT" || cleanPayload.triggerMode === "INTENT_MATCH")) return {status:403,data:"Next story and intent matching require Pro or Business."};
+      if (cleanPayload.active && !paid && (cleanPayload.storyConfig.scope === "NEXT" || cleanPayload.triggerMode === "INTENT_MATCH")) return {status:403, code: "PLAN_LIMIT",data:"Next story and intent matching require Pro or Business."};
       const previous = automationId ? await client.automation.findFirst({where:{id:automationId,User:{clerkId:user.id},integrationId:await currentInstagramAccountId(user.id),archivedAt:null},select:{id:true,storyConfig:true,active:true}}) : null;
       if (automationId && !previous) return {status:404,data:"Automation not found"};
       const integration = getCanonicalInstagramIntegration((profile as any)?.integrations);
@@ -413,7 +413,7 @@ export const saveMessageAutomation = async (
     }
     return { status: 200, data: { id: saved.id } };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, data: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, data: error.message };
     console.error("[message-automation-save] save failed", {
       automationId,
       userId: user.id,
@@ -552,7 +552,7 @@ export const updateAutomationName = async (
     if (data.active === true) {
       const saved = await client.automation.findFirst({where:{id:automationId,User:{clerkId:user.id},integrationId:await currentInstagramAccountId(user.id)},select:{listener:{select:{aiReplyEnabled:true,aiDmReplyEnabled:true}}}});
       const plan = (await findUser(user.id))?.subscription?.plan ?? "FREE";
-      if ((saved?.listener?.aiReplyEnabled || saved?.listener?.aiDmReplyEnabled) && !["PRO", "BUSINESS"].includes(plan)) return {status:403,data:"AI only available on paid plans."};
+      if ((saved?.listener?.aiReplyEnabled || saved?.listener?.aiDmReplyEnabled) && !["PRO", "BUSINESS"].includes(plan)) return {status:403, code: "PLAN_LIMIT",data:"AI only available on paid plans."};
       const profile = await findUser(user.id);
       if ((profile as any)?.status === "SUSPENDED") {
         return {
@@ -597,7 +597,7 @@ export const updateAutomationName = async (
         : { ok: false };
       if (!activation.ok) {
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Your plan's active automation limit has been reached. Pause another automation or upgrade.",
         };
       }
@@ -608,7 +608,7 @@ export const updateAutomationName = async (
     if (update) return { status: 200, data: "Automation updated" };
     return { status: 404, data: "Failed to update automation" };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, data: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, data: error.message };
     return { status: 500, data: "Failed to update automation" };
   }
 };
@@ -635,7 +635,7 @@ export const saveListener = async (
     if (create) return { status: 200, data: "Listener created" };
     return { status: 404, data: "Failed to create listener" };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, data: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, data: error.message };
     return { status: 500, data: "Failed to save listener" };
   }
 };
@@ -749,7 +749,7 @@ export const savePosts = async (
     if (create) return { status: 200, data: "Posts created" };
     return { status: 404, data: "Failed to create posts" };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, data: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, data: error.message };
     return { status: 500, data: "Failed to save posts" };
   }
 };
@@ -787,7 +787,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
           },
         },
       });
-      if ((existing?.listener?.aiReplyEnabled || existing?.listener?.aiDmReplyEnabled) && !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")) return {status:403,data:"AI only available on paid plans."};
+      if ((existing?.listener?.aiReplyEnabled || existing?.listener?.aiDmReplyEnabled) && !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")) return {status:403, code: "PLAN_LIMIT",data:"AI only available on paid plans."};
       if (
         existing &&
         hasProEngagement({
@@ -797,7 +797,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
         !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")
       )
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Collect info, Ask to follow, and Follow-up messages require Pro or Business.",
         };
       if (
@@ -805,7 +805,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
         !["PRO", "BUSINESS"].includes(profile?.subscription?.plan ?? "FREE")
       )
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Publishing custom flows requires Pro or Business.",
         };
       if (existing?.listener?.flowDefinition) {
@@ -878,7 +878,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
         : { ok: false };
       if (!activation.ok) {
         return {
-          status: 403,
+          status: 403, code: "PLAN_LIMIT",
           data: "Your plan's active automation limit has been reached. Pause another automation or upgrade.",
         };
       }
@@ -899,7 +899,7 @@ export const activateAutomation = async (id: string, status: boolean) => {
     }
     return { status: 404, data: "Failed to activate automation" };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, data: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, data: error.message };
     return { status: 500, data: "Failed to activate automation" };
   }
 };

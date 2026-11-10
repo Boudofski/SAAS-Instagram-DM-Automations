@@ -11,6 +11,7 @@ datasource db {
 }
 
 model User {
+  preferredLocale String?
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clerkId             String               @unique
   email               String               @unique
@@ -43,6 +44,7 @@ model User {
 // Prospects explicitly requesting the public launch-kit email series. Never import
 // customer Instagram contacts or infer marketing consent from account creation.
 model MarketingLead {
+  preferredLocale String?
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email            String    @unique
   audience         String

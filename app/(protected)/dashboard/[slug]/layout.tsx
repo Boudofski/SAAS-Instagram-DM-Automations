@@ -1,3 +1,4 @@
+import UpgradePrompt from "@/components/automations/upgrade-prompt";
 import { getInstagramAccountMenu } from "@/actions/instagram-accounts";
 import MobileNavigation from "@/components/dashboard/mobile-navigation";
 import Sidebar from "@/components/global/sidebar";
@@ -68,6 +69,7 @@ async function Layout(props: Props) {
     <HydrationBoundary state={dehydrate(query)}>
       <TimeZoneProvider initialTimeZone={profile?.timeZone} initialAutomatic={profile?.timeZoneAuto}>
       <ClerkCacheSyncer />
+      <UpgradePrompt />
       <div className="ap3k-page overflow-x-hidden">
         <Sidebar slug={params.slug} />
         <MobileNavigation slug={params.slug} />

@@ -4,7 +4,7 @@ import { client } from "@/lib/prisma";
 import { automationsToPause, PLAN_PAUSE_MESSAGES, PLAN_PAUSE_PREFIX, usesPaidAutomationFeatures } from "@/lib/automation-plan-policy";
 import { getPlanLimits, isUnlimited, type ProductPlan } from "@/lib/plan-limits";
 
-export class AutomationPlanError extends Error {}
+export class AutomationPlanError extends Error { constructor(message:string, public readonly code?: "PLAN_LIMIT"){super(message);} }
 
 /** Caller holds the owner's User row lock, shared with publication and billing. */
 export async function syncAutomationPlanEntitlements(tx: Prisma.TransactionClient, userId: string, plan: ProductPlan) {
@@ -51,11 +51,11 @@ export async function assertAutomationPlan(tx: Prisma.TransactionClient, userId:
   if (row.archivedAt || row.needsReview || row.User?.status === "SUSPENDED") throw new AutomationPlanError("Review this automation and your account before activating it.");
   if (!row.integration || row.integration.userId !== userId || row.integration.planLocked || row.integration.status !== "CONNECTED" || row.integration.reconnectRequired) throw new AutomationPlanError("Connect or unlock this Instagram account before activating automations.");
   const plan = row.User?.subscription?.plan ?? "FREE";
-  if (plan === "FREE" && usesPaidAutomationFeatures(row)) throw new AutomationPlanError("This automation uses paid features. Upgrade to Pro or Business, or remove those features before activating.");
+  if (plan === "FREE" && usesPaidAutomationFeatures(row)) throw new AutomationPlanError("This automation uses paid features. Upgrade to Pro or Business, or remove those features before activating.", "PLAN_LIMIT");
   const limit = getPlanLimits(plan).activeCampaigns;
   if (!isUnlimited(limit)) {
     const count = await tx.automation.count({ where: { userId, active: true, archivedAt: null, OR: [{ integration: { planLocked: false } }, { integrationId: null }] } });
-    if (count > limit) throw new AutomationPlanError(`Your plan allows ${limit} active automations. Pause another automation or upgrade.`);
+    if (count > limit) throw new AutomationPlanError(`Your plan allows ${limit} active automations. Pause another automation or upgrade.`, "PLAN_LIMIT");
   }
   await tx.automation.updateMany({ where: { id: automationId, userId, reviewReason: { startsWith: PLAN_PAUSE_PREFIX }, needsReview: false }, data: { reviewReason: null } });
 }

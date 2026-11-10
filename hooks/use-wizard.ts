@@ -1,4 +1,6 @@
 "use client";
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
+
 import { useI18n } from "@/providers/i18n-provider";
 import { automationStarterCopy, BOUDOFI_INTEGRATION_ID } from "@/lib/automation-starter-copy";
 import { commentTemplateDefaults } from "@/lib/automation-flow/basic-presets";
@@ -395,6 +397,7 @@ export function useWizard(
 
       const saved = await saveCampaign(payload, automationId, integrationId);
 
+      if (requestUpgradeForResult(saved)) return;
       const savedData = saved.data;
       const campaignId =
         typeof savedData === "object" && savedData !== null && "id" in savedData

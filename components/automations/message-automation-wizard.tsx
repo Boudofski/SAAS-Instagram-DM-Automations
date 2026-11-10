@@ -1,4 +1,6 @@
 "use client";
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
+
 import UpgradeDialog from "./upgrade-dialog";
 import StoryAutomationWizard from "./story-automation-wizard";
 import PolicyScanDialog from "./policy-scan-dialog";
@@ -324,6 +326,7 @@ function LegacyMessageAutomationWizard({
         automationId,
         integrationId,
       );
+      if (requestUpgradeForResult(result)) return;
       if (
         result.status === 200 &&
         typeof result.data === "object" &&
