@@ -1,3 +1,4 @@
+import {processUsageAlerts} from "@/lib/email/usage-alerts";
 import { processOnboardingReminders } from "@/lib/email/onboarding";
 import { NextResponse } from "next/server";
 import { processMarketingQueue } from "@/lib/marketing/delivery";
@@ -8,9 +9,10 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   if (!await authorizeMarketingScheduler(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
+    const usage = await processUsageAlerts();
     const marketing = await processMarketingQueue();
     const onboarding = await processOnboardingReminders();
-    return NextResponse.json({ ...marketing, onboarding });
+    return NextResponse.json({ ...marketing, onboarding, usage });
   }
   catch { return NextResponse.json({ error: "Marketing queue unavailable" }, { status: 503 }); }
 }

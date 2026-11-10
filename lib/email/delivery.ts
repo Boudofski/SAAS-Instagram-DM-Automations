@@ -1,3 +1,4 @@
+import {emailLocale} from "./localize";
 import { Resend } from "resend";
 import { Prisma } from "@prisma/client";
 import { client } from "@/lib/prisma";
@@ -87,7 +88,8 @@ export async function sendAp3kEmail(input: {
 
   const appUrl = getApplicationUrl();
   const preferenceUrl = `${appUrl}${dashboardEntryPath("/settings#email-preferences")}`;
-  const context = input.context ?? {};
+  const profile=input.userId?await client.user.findUnique({where:{id:input.userId},select:{preferredLocale:true}}):null;
+  const context={...input.context,locale:emailLocale(profile?.preferredLocale??input.context?.locale)};
   let content = buildEmailTemplate(input.templateId, context, appUrl);
   const allowed = await preferenceAllows(input.userId, definition.preference);
   if (!allowed) {
@@ -108,7 +110,7 @@ export async function sendAp3kEmail(input: {
     return { ok: false, status: "opted_out", deliveryId: delivery.id, error: "Recipient opted out of this email category." };
   }
 
-  if (input.personalizeWithAi && definition.aiPersonalization) {
+  if (context.locale === "en" && input.personalizeWithAi && definition.aiPersonalization) {
     const personalized = await generateAiEmailPersonalization({
       templateLabel: definition.label,
       fallback: {

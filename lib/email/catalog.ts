@@ -1,3 +1,5 @@
+import {localizeEmail} from "./localize";
+import type {Locale} from "@/lib/i18n/config";
 import { dashboardEntryPath } from "@/lib/dashboard";
 
 export const AP3K_TUTORIAL_URL = "https://www.youtube.com/watch?v=SSOYGbfwLUQ";
@@ -30,6 +32,7 @@ export type EmailCategory = "onboarding" | "automation" | "account" | "usage" | 
 export type EmailMetric = { label: string; value: string; detail?: string };
 
 export type EmailTemplateContent = {
+  locale?: Locale;
   subject: string;
   preview: string;
   eyebrow: string;
@@ -44,6 +47,7 @@ export type EmailTemplateContent = {
 };
 
 export type EmailTemplateContext = {
+  locale?: Locale;
   firstName?: string | null;
   instagramUsername?: string | null;
   automationName?: string | null;
@@ -258,7 +262,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       eyebrow: "LIMIT REACHED",
       headline: "Automated sends are paused.",
       paragraphs: [`You have used ${formatNumber(context.actionsUsed)} of ${formatNumber(context.actionLimit)} monthly automated actions. AP3K will not attempt additional billable sends until the allowance resets or the plan is upgraded.`],
-      callout: { title: "Nothing is lost", text: "Your automations and configuration remain saved. They can resume after the monthly reset or a successful plan change.", tone: "danger" },
+      callout: { title: "Your settings remain saved", text: "Your automations and configuration remain saved. They can resume after the monthly reset or a successful plan change.", tone: "danger" },
       cta: { label: "View plans and usage", url: context.actionUrl || workspace(appUrl, "/billing") },
     }),
   },
@@ -447,5 +451,5 @@ export function isEmailTemplateId(value: unknown): value is EmailTemplateId {
 }
 
 export function buildEmailTemplate(id: EmailTemplateId, context: EmailTemplateContext, appUrl: string) {
-  return EMAIL_TEMPLATES[id].build(context, appUrl.replace(/\/+$/, ""));
+  return localizeEmail(id, context, EMAIL_TEMPLATES[id].build(context, appUrl.replace(/\/+$/, "")));
 }
