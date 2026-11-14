@@ -88,6 +88,27 @@ export async function processUsageAlerts() {
           },
         },
         { deletedReplyUsage: { some: { createdAt: { gte: since } } } },
+        {
+          integrations: {
+            some: {
+              starterReceipts: {
+                some: { createdAt: { gte: since }, status: "SENT" },
+              },
+            },
+          },
+        },
+        {
+          automations: {
+            some: {
+              events: {
+                some: {
+                  createdAt: { gte: since },
+                  eventType: { in: ["PUBLIC_REPLY_SENT", "DM_SENT"] },
+                },
+              },
+            },
+          },
+        },
       ],
     },
     select: { id: true },
