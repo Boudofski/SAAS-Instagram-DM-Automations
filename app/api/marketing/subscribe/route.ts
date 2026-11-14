@@ -1,3 +1,5 @@
+import {LOCALE_COOKIE} from "@/lib/i18n/config";
+import {emailLocale} from "@/lib/email/localize";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { NextResponse } from "next/server";
@@ -33,7 +35,8 @@ export async function POST(request: Request) {
     // Preserve opt-outs. Re-enrollment requires explicit support review, never a form overwrite.
     if (existing && (existing.confirmedAt || existing.unsubscribedAt || existing.suppressedAt || existing.createdAt.getTime() > Date.now() - 60_000)) return response();
     const token = randomBytes(32).toString("hex");
-    const values = { audience, source, consentVersion: CONSENT_VERSION, confirmationHash: hashToken(token), expiresAt: new Date(Date.now() + 48 * 3600000) };
+    const preferredLocale=emailLocale(request.headers.get("cookie")?.split(";").map(v=>v.trim()).find(v=>v.startsWith(`${LOCALE_COOKIE}=`))?.split("=")[1]);
+    const values = { preferredLocale, audience, source, consentVersion: CONSENT_VERSION, confirmationHash: hashToken(token), expiresAt: new Date(Date.now() + 48 * 3600000) };
     let lead;
     if (existing) {
       const updated = await client.marketingLead.updateMany({ where: { id: existing.id, updatedAt: existing.updatedAt, confirmedAt: null, unsubscribedAt: null, suppressedAt: null }, data: values });

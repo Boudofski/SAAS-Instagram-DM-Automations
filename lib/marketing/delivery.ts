@@ -29,10 +29,11 @@ export async function takeMarketingSlot(scope: string, identity: string, maximum
 export async function queueMarketingEmail(lead: MarketingLead, stage: MarketingStage, confirmationToken = "", decision?: EmailDecision & { source: "ai" | "fallback" }) {
   const unsubscribeUrl = `https://ap3k.com/api/marketing/unsubscribe?id=${lead.id}&token=${unsubscribeToken(lead.id)}`;
   const confirmationUrl = `https://ap3k.com/api/marketing/confirm?id=${lead.id}&token=${confirmationToken}`;
+  const account=await client.user.findFirst({where:{email:{equals:lead.email,mode:"insensitive"}},select:{preferredLocale:true}});
   const payload: Payload = {
     from: process.env.AP3K_EMAIL_FROM?.trim() || "AP3K <updates@ap3k.com>",
     replyTo: process.env.AP3K_EMAIL_REPLY_TO?.trim() || "support@ap3k.com",
-    to: lead.email, ...marketingEmail(stage, lead.audience, confirmationUrl, unsubscribeUrl, decision?.variant),
+    to: lead.email, ...marketingEmail(stage, lead.audience, confirmationUrl, unsubscribeUrl, decision?.variant, account?.preferredLocale??lead.preferredLocale??"en"),
     headers: { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
   };
   // Confirmation key changes only on an explicit, rate-limited resend request.
