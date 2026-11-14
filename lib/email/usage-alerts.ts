@@ -21,11 +21,13 @@ export async function notifyAutomationUsage(automationId:string,blocked=false){t
 export async function processUsageAlerts(){
  const result={checked:0,sent:0,failed:0};if(process.env.VERCEL_ENV!=='production'||!getEmailConfiguration().configured)return result;
  const since=new Date();since.setUTCDate(1);since.setUTCHours(0,0,0,0);
- let cursor:string|undefined;
- do{
-  const users=await client.user.findMany({where:{status:'ACTIVE',OR:[{automations:{some:{messageLogs:{some:{createdAt:{gte:since},status:'SENT'}}}}},{deletedReplyUsage:{some:{createdAt:{gte:since}}}}]},select:{id:true},orderBy:{id:'asc'},take:50,...(cursor?{cursor:{id:cursor},skip:1}:{})});
-  for(const user of users){result.checked++;try{const r=await notifyUsage(user.id);if(r?.ok&&r.status==='sent'){result.sent++;await new Promise(resolve=>setTimeout(resolve,650));}if(r&&!r.ok&&r.status==='failed')result.failed++;}catch{result.failed++;}}
-  cursor=users.length===50?users[users.length-1].id:undefined;
- }while(cursor);
+ const users=await client.user.findMany({where:{status:'ACTIVE',OR:[{automations:{some:{messageLogs:{some:{createdAt:{gte:since},status:'SENT'}}}}},{deletedReplyUsage:{some:{createdAt:{gte:since}}}}]},select:{id:true},orderBy:[{usageEmailCheckedAt:{sort:'asc',nulls:'first'}},{id:'asc'}],take:50});
+ const deadline=Date.now()+20000;
+ for(const user of users){
+  if(Date.now()>deadline)break;
+  result.checked++;
+  try{const r=await notifyUsage(user.id);if(r?.ok&&r.status==='sent'){result.sent++;await new Promise(resolve=>setTimeout(resolve,650));}if(r&&!r.ok&&r.status==='failed')result.failed++;}catch{result.failed++;}
+  await client.user.update({where:{id:user.id},data:{usageEmailCheckedAt:new Date()}});
+ }
  return result;
 }

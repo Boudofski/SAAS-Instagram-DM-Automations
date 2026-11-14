@@ -11,6 +11,7 @@ datasource db {
 }
 
 model User {
+  usageEmailCheckedAt DateTime?
   preferredLocale String?
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clerkId             String               @unique

@@ -262,7 +262,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
       eyebrow: "LIMIT REACHED",
       headline: "Automated sends are paused.",
       paragraphs: [`You have used ${formatNumber(context.actionsUsed)} of ${formatNumber(context.actionLimit)} monthly automated actions. AP3K will not attempt additional billable sends until the allowance resets or the plan is upgraded.`],
-      callout: { title: "Your settings remain saved", text: "Your automations and configuration remain saved. They can resume after the monthly reset or a successful plan change.", tone: "danger" },
+      callout: { title: "Your settings remain saved", text: "Your settings remain saved. Enabled automations can handle new activity after your quota resets or your upgrade is confirmed. Skipped messages are not replayed automatically.", tone: "danger" },
       cta: { label: "View plans and usage", url: context.actionUrl || workspace(appUrl, "/billing") },
     }),
   },
