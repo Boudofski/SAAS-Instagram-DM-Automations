@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
 import { ArrowRight, CheckCircle2, ChevronDown, Loader2, MessageSquare, Reply, Send, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { scanAutomationPolicy } from "@/actions/automation-policy";
@@ -74,7 +74,7 @@ export function PolicyScanView({ open, onOpenChange, input, slug, onPublish, onA
             {onPublish ? <button type="button" className={s.button} onClick={publish}>{findings.length ? "Publish anyway" : "Publish"}<ArrowRight /></button> : <button type="button" className={s.button} onClick={() => onOpenChange(false)}>Done</button>}
           </> : <>
             {onPublish && <button type="button" className={`${s.button} ${s.outline}`} onClick={publish}>Skip check and publish</button>}
-            {result.code === "LIMIT" ? <Link className={s.button} href={`/dashboard/${slug}/billing`}>Upgrade<ArrowRight /></Link> : <button type="button" className={s.button} onClick={onRetry}>Retry scan</button>}
+            {result.code === "LIMIT" ? <button type="button" className={s.button} onClick={() => {onOpenChange(false);requestUpgradeForResult({code:"PLAN_LIMIT"});}}>Upgrade<ArrowRight /></button> : <button type="button" className={s.button} onClick={onRetry}>Retry scan</button>}
           </>}
         </div>
         {result?.ok && <p className={s.footnote}>AI guidance, not Meta approval. Review suggestions before publishing.</p>}

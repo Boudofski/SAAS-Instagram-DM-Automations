@@ -1,5 +1,7 @@
 "use server";
 
+import {client} from "@/lib/prisma";
+import {LOCALE_COOKIE,SUPPORTED_LOCALES,type Locale} from "@/lib/i18n/config";
 import { dashboardPath } from "@/lib/dashboard";
 import { REFERRAL_COOKIE } from "@/lib/referral-program";
 import { deliverOwnerAlertSafely } from "@/lib/email/owner-alerts";
@@ -281,6 +283,8 @@ export const ensureCurrentUserProfile = async () => {
       );
       await clearReferralCode();
 
+      const selectedLocale=(await cookies()).get?.(LOCALE_COOKIE)?.value;
+      if(SUPPORTED_LOCALES.includes(selectedLocale as Locale))await client.user.update({where:{id:created.id},data:{preferredLocale:selectedLocale}});
       await notifyWelcomeEmail({
         id: created.id,
         clerkId: created.clerkId,

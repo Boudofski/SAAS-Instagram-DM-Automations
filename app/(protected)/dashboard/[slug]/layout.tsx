@@ -1,3 +1,5 @@
+import UsageBanner from "@/components/dashboard/usage-banner";
+import UpgradePrompt from "@/components/automations/upgrade-prompt";
 import { getInstagramAccountMenu } from "@/actions/instagram-accounts";
 import MobileNavigation from "@/components/dashboard/mobile-navigation";
 import Sidebar from "@/components/global/sidebar";
@@ -68,10 +70,12 @@ async function Layout(props: Props) {
     <HydrationBoundary state={dehydrate(query)}>
       <TimeZoneProvider initialTimeZone={profile?.timeZone} initialAutomatic={profile?.timeZoneAuto}>
       <ClerkCacheSyncer />
+      <UpgradePrompt />
       <div className="ap3k-page overflow-x-hidden">
         <Sidebar slug={params.slug} />
         <MobileNavigation slug={params.slug} />
         <div className="ap3k-app-shell [--app-sidebar-offset:0px] lg:[--app-sidebar-offset:76px] lg:peer-data-[expanded=true]:[--app-sidebar-offset:232px] relative z-10 flex min-w-0 flex-col px-3 pb-20 pt-3 transition-[margin] duration-base ease-ui-out lg:ms-[76px] lg:px-6 lg:py-5 lg:peer-data-[expanded=true]:ms-[232px]">
+          <UsageBanner />
           {children}
         </div>
       </div>

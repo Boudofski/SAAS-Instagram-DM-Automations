@@ -1,4 +1,6 @@
 "use client";
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
+
 import { editorStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
 import OpenerMessage from "./opener-message";
 
@@ -121,6 +123,7 @@ export default function StoryAutomationWizard({integrationId="",slug,automationI
     submitting.current=true;setSaving(true);setError(null);
     try{
       const result=await saveMessageAutomation(payload,automationId,integrationId);
+      if(requestUpgradeForResult(result)) return;
       if(result.status===200 && typeof result.data==="object" && result.data?.id){
         await refreshSavedAutomation(queryClient,result.data.id);
         router.push(`/dashboard/${slug}/automation${active?`?published=${encodeURIComponent(result.data.id)}`:""}`);router.refresh();

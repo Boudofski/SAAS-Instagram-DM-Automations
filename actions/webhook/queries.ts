@@ -1260,6 +1260,11 @@ export const createMessageLog = async (data: {
       occurredAt: log.createdAt,
     });
   }
+  if (data.status === "SENT" || data.errorMessage === "static_reply_limit_reached") {
+    const {notifyAutomationUsage}=await import("@/lib/email/usage-alerts");
+    const {waitUntil}=await import("@vercel/functions");
+    waitUntil(notifyAutomationUsage(data.automationId,data.errorMessage === "static_reply_limit_reached"));
+  }
   return log;
 };
 

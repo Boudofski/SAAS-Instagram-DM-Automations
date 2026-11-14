@@ -1,3 +1,4 @@
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
 import {
   MutationFunction,
   MutationKey,
@@ -19,7 +20,8 @@ export const useMutationData = (
     mutationKey,
     mutationFn,
     onSuccess: (data) => {
-      if (onSuccess) onSuccess();
+      if (requestUpgradeForResult(data)) return;
+      if (data?.status === 200 && onSuccess) onSuccess();
       return toast(data?.status === 200 ? "Success" : "Error", {
         description: data?.data,
       });

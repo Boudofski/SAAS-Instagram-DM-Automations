@@ -9,9 +9,9 @@ describe("AP3K email render contract", () => {
     expect(renderer).toContain("toPlainText(html)");
     expect(renderer).toContain("createElement(Ap3kEmail");
     expect(component).toContain("/brand/ap3k-social-avatar.png");
-    expect(component).toContain("Email preferences");
-    expect(component).toContain("Help Center");
-    expect(component).toContain("support@ap3k.com");
+    expect(component).toContain("copy.preferences");
+    expect(component).toContain("copy.help");
+    expect(component).toContain("copy.footer");
   });
 
   it("uses email-compatible table layout and inline presentation styles", () => {

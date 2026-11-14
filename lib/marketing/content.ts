@@ -1,3 +1,5 @@
+import {MARKETING_COPY} from "./locale-copy";
+import {emailLocale} from "@/lib/email/localize";
 import { COMPANY } from "@/lib/company";
 
 export const CONSENT_VERSION = "launch-kit-v1-2026-09-29";
@@ -17,7 +19,7 @@ function campaignUrl(path: string, stage: string) {
 }
 const escape = (value: string) => value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 
-export function marketingEmail(stage: MarketingStage, audience: string, confirmationUrl: string, unsubscribeUrl: string, variant: "standard" | "checklist" = "standard") {
+export function marketingEmail(stage: MarketingStage, audience: string, confirmationUrl: string, unsubscribeUrl: string, variant: "standard" | "checklist" = "standard", language = "en") {
   const ecommerce = audience === "ecommerce";
   const content = {
     confirm: {
@@ -61,9 +63,12 @@ export function marketingEmail(stage: MarketingStage, audience: string, confirma
       "Start free and check the current pricing page before upgrading. This is the final email in your launch-kit series. Reply if you need help with a step."
     ];
   }
+  const locale=emailLocale(language),localized=MARKETING_COPY[locale],index=MARKETING_STAGES.indexOf(stage);
+  if(localized){content.subject=localized.subjects[index];content.paragraphs=localized.bodies[index];content.label=localized.labels[index];}
+  const unsubscribe=localized?.unsubscribe??"Unsubscribe",help=localized?.help??"Questions? Reply to support@ap3k.com.";
   const footer = `${COMPANY.legalName} · ${COMPANY.mailingAddress}`;
-  const reason = stage === "confirm" ? "You requested this confirmation on ap3k.com." : "You confirmed the AP3K launch-kit email series. This email includes AP3K product education and offers.";
-  const text = [content.subject, ...content.paragraphs, `${content.label}: ${content.url}`, reason, `Unsubscribe: ${unsubscribeUrl}`, footer, "Questions? Reply to support@ap3k.com."].join("\n\n");
-  const html = `<!doctype html><html lang="en"><body style="margin:0;background:#f8fafc;color:#0f172a;font:16px/1.6 Arial,sans-serif"><div style="max-width:560px;margin:24px auto;padding:28px;background:#fff;border:1px solid #e2e8f0;border-radius:16px"><p style="font-weight:800;color:#6d28d9">AP3K</p><h1 style="font-size:24px;line-height:1.3">${escape(content.subject)}</h1>${content.paragraphs.map(p => `<p>${escape(p)}</p>`).join("")}<p style="margin:28px 0"><a href="${escape(content.url)}" style="display:inline-block;background:#6d28d9;color:white;padding:14px 22px;border-radius:10px;text-decoration:none;font-weight:700">${escape(content.label)}</a></p><hr style="border:0;border-top:1px solid #e2e8f0"><p style="font-size:13px;color:#475569">${escape(reason)} <a href="${escape(unsubscribeUrl)}">Unsubscribe</a>.</p><p style="font-size:13px;color:#475569">${escape(footer)}<br>Questions? Reply to support@ap3k.com.</p></div></body></html>`;
+  const reason = localized?.reason ?? (stage === "confirm" ? "You requested this confirmation on ap3k.com." : "You confirmed the AP3K launch-kit email series. This email includes AP3K product education and offers.");
+  const text = [content.subject, ...content.paragraphs, `${content.label}: ${content.url}`, reason, `${unsubscribe}: ${unsubscribeUrl}`, footer, help].join("\n\n");
+  const html = `<!doctype html><html lang="${locale}" dir="${locale==='ar'?'rtl':'ltr'}"><body style="margin:0;background:#f8fafc;color:#0f172a;font:16px/1.6 Arial,sans-serif"><div style="max-width:560px;margin:24px auto;padding:28px;background:#fff;border:1px solid #e2e8f0;border-radius:16px"><p style="font-weight:800;color:#6d28d9">AP3K</p><h1 style="font-size:24px;line-height:1.3">${escape(content.subject)}</h1>${content.paragraphs.map(p => `<p>${escape(p)}</p>`).join("")}<p style="margin:28px 0"><a href="${escape(content.url)}" style="display:inline-block;background:#6d28d9;color:white;padding:14px 22px;border-radius:10px;text-decoration:none;font-weight:700">${escape(content.label)}</a></p><hr style="border:0;border-top:1px solid #e2e8f0"><p style="font-size:13px;color:#475569">${escape(reason)} <a href="${escape(unsubscribeUrl)}">${escape(unsubscribe)}</a>.</p><p style="font-size:13px;color:#475569">${escape(footer)}<br>${escape(help)}</p></div></body></html>`;
   return { subject: content.subject, html, text };
 }

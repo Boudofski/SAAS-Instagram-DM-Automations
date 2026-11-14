@@ -1,3 +1,4 @@
+import {EMAIL_COPY} from "@/lib/email/locale-copy";
 import type { CSSProperties, ReactNode } from "react";
 import type { EmailMetric, EmailTemplateContent } from "@/lib/email/catalog";
 
@@ -80,11 +81,12 @@ function MetricGrid({ metrics }: { metrics: EmailMetric[] }) {
 }
 
 export function Ap3kEmail({ content, appUrl, preferenceUrl, recipientHint }: Ap3kEmailProps) {
+ const locale=content.locale??"en",copy=EMAIL_COPY[locale];
   const helpUrl = `${appUrl.replace(/\/+$/, "")}/help`;
   const privacyUrl = `${appUrl.replace(/\/+$/, "")}/privacy`;
 
   return (
-    <html lang="en">
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <head>
         <meta httpEquiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -138,13 +140,13 @@ export function Ap3kEmail({ content, appUrl, preferenceUrl, recipientHint }: Ap3
                         {content.metrics?.length ? <MetricGrid metrics={content.metrics} /> : null}
                         {content.cta || content.secondaryCta ? (
                           <div style={{ marginTop: "26px" }}>
-                            {content.cta ? <Button href={content.cta.url}>{content.cta.label} →</Button> : null}
+                            {content.cta ? <Button href={content.cta.url}>{content.cta.label} {locale === "ar" ? "←" : "→"}</Button> : null}
                             {content.secondaryCta ? <Button href={content.secondaryCta.url} secondary>{content.secondaryCta.label}</Button> : null}
                           </div>
                         ) : null}
                         {content.closing ? <p style={{ color: colors.ink, fontFamily: font, fontSize: "14px", fontWeight: 700, lineHeight: "23px", margin: "23px 0 0" }}>{content.closing}</p> : null}
                         <div style={{ borderTop: `1px solid ${colors.border}`, marginTop: "30px", paddingTop: "22px" }}>
-                          <p style={{ color: colors.slate, fontFamily: font, fontSize: "12px", lineHeight: "19px", margin: 0 }}>AP3K turns Instagram comments into replies, DMs, and trackable leads.</p>
+                          <p style={{ color: colors.slate, fontFamily: font, fontSize: "12px", lineHeight: "19px", margin: 0 }}>{copy.footer}</p>
                         </div>
                       </td>
                     </tr>
@@ -152,12 +154,12 @@ export function Ap3kEmail({ content, appUrl, preferenceUrl, recipientHint }: Ap3
                       <td align="center" style={{ padding: "22px 18px 0" }}>
                         <p style={{ color: "#7C879B", fontFamily: font, fontSize: "11px", lineHeight: "18px", margin: "0 0 8px" }}>
                           <a href={appUrl} style={{ color: colors.violet, fontWeight: 800, textDecoration: "none" }}>AP3K.com</a>
-                          {" · "}<a href={helpUrl} style={{ color: "#64748B", textDecoration: "underline" }}>Help Center</a>
-                          {" · "}<a href={privacyUrl} style={{ color: "#64748B", textDecoration: "underline" }}>Privacy</a>
-                          {preferenceUrl ? <>{" · "}<a href={preferenceUrl} style={{ color: "#64748B", textDecoration: "underline" }}>Email preferences</a></> : null}
+                          {" · "}<a href={helpUrl} style={{ color: "#64748B", textDecoration: "underline" }}>{copy.help}</a>
+                          {" · "}<a href={privacyUrl} style={{ color: "#64748B", textDecoration: "underline" }}>{copy.privacy}</a>
+                          {preferenceUrl ? <>{" · "}<a href={preferenceUrl} style={{ color: "#64748B", textDecoration: "underline" }}>{copy.preferences}</a></> : null}
                         </p>
                         <p style={{ color: "#94A3B8", fontFamily: font, fontSize: "10px", lineHeight: "16px", margin: 0 }}>
-                          Sent by AP3K{recipientHint ? ` to ${recipientHint}` : ""}. Reply to reach support@ap3k.com.
+                          AP3K{recipientHint ? ` · ${recipientHint}` : ""}
                         </p>
                       </td>
                     </tr>

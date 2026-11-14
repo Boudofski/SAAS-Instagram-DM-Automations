@@ -1,7 +1,6 @@
 name: Marketing emails
 on:
-  schedule:
-    - cron: '17 * * * *'
+  # Periodic delivery uses QStash. Keep this workflow as a manual fallback.
   workflow_dispatch:
 permissions:
   id-token: write

@@ -65,3 +65,10 @@ describe("QStash scheduler request authentication", () => {
     expect(await authorizeQStashScheduler(request("x".repeat(16385)))).toBe(false);
   });
 });
+
+it("accepts marketing signatures only at the marketing destination",async()=>{
+ const url="https://ap3k.com/api/cron/marketing";
+ expect(await authorizeQStashScheduler(request(await token("",{sub:url}),"",url),url)).toBe(true);
+ expect(await authorizeQStashScheduler(request(await token(),"",url),url)).toBe(false);
+ expect(await authorizeQStashScheduler(request(await token("",{sub:url})),url)).toBe(false);
+});

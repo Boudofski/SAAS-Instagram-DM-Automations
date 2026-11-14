@@ -1,5 +1,6 @@
 "use client";
 
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
 import { createPortal } from "react-dom";
 import { UiText } from "@/components/i18n/localized-copy";
 import { useEffect, useState } from "react";
@@ -70,7 +71,7 @@ export default function InstagramAccountSwitcher({ slug, expanded = true }: { sl
       <DropdownMenuContent align="start" className="z-[100] w-72 max-w-[calc(100vw-2rem)]">
         <DropdownMenuLabel>{copy.accounts}</DropdownMenuLabel>
         <div className="max-h-64 overflow-y-auto">
-          {data?.accounts.map((account) => <DropdownMenuItem key={account.id} disabled={busy} onSelect={() => account.planLocked ? window.location.assign(`/dashboard/${slug}/billing`) : void switchTo(account.id)} className={`gap-2 py-2 ${account.id === data.selectedId ? "bg-accent" : ""}`}>
+          {data?.accounts.map((account) => <DropdownMenuItem key={account.id} disabled={busy} onSelect={() => account.planLocked ? requestUpgradeForResult({code:"PLAN_LIMIT"}) : void switchTo(account.id)} className={`gap-2 py-2 ${account.id === data.selectedId ? "bg-accent" : ""}`}>
             <InstagramAvatar src={account.profilePictureUrl} username={account.instagramUsername} size="sm" />
             <span className="min-w-0 flex-1"><bdi dir="ltr" className="block truncate">@{account.instagramUsername ?? "Instagram"}</bdi>{(account.planLocked || account.status === "DISCONNECTED") && <span className="text-xs text-slate-500 light:text-slate-600">{account.planLocked ? copy.locked : copy.disconnected}</span>}</span>
             {account.planLocked ? <Lock className="h-4 w-4" /> : account.id === data.selectedId && <Check className="h-4 w-4 text-violet-500 light:text-violet-700" />}
@@ -78,7 +79,7 @@ export default function InstagramAccountSwitcher({ slug, expanded = true }: { sl
         </div>
         <DropdownMenuSeparator />
         {selected?.status === "CONNECTED" && <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/account`} className="gap-2"><Settings className="h-4 w-4" />{copy.manage}</Link></DropdownMenuItem>}
-        {data?.additionsEnabled && (atLimit ? <DropdownMenuItem asChild><Link href={`/dashboard/${slug}/${data.plan === "BUSINESS" ? "account" : "billing"}`} className="gap-2 text-violet-600"><Plus className="h-4 w-4 shrink-0" />{data.plan === "BUSINESS" ? copy.manage : copy.upgrade}</Link></DropdownMenuItem> : <DropdownMenuItem disabled={busy || !data} onSelect={() => void connect()} className="gap-2 text-violet-600"><Plus className="h-4 w-4" />{copy.add}</DropdownMenuItem>)}
+        {data?.additionsEnabled && (atLimit ? <DropdownMenuItem onSelect={() => data.plan === "BUSINESS" ? window.location.assign(`/dashboard/${slug}/account`) : requestUpgradeForResult({code:"PLAN_LIMIT"})} className="gap-2 text-violet-600"><Plus className="h-4 w-4 shrink-0" />{data.plan === "BUSINESS" ? copy.manage : copy.upgrade}</DropdownMenuItem> : <DropdownMenuItem disabled={busy || !data} onSelect={() => void connect()} className="gap-2 text-violet-600"><Plus className="h-4 w-4" />{copy.add}</DropdownMenuItem>)}
       </DropdownMenuContent>
     </DropdownMenu>
     {error && <p role="alert" className="mt-2 text-xs text-red-500">{error}</p>}

@@ -4,14 +4,14 @@ import { jwtVerify } from "jose";
 export const QSTASH_SCHEDULER_URL = "https://ap3k.com/api/cron/automation-follow-ups";
 
 /** QStash sends a signed, empty POST to wake the existing database queues. */
-export async function authorizeQStashScheduler(request: Request) {
+export async function authorizeQStashScheduler(request: Request, destination: "https://ap3k.com/api/cron/automation-follow-ups" | "https://ap3k.com/api/cron/marketing" = QSTASH_SCHEDULER_URL) {
   const reject = (reason: string) => {
     console.warn("[qstash-auth] rejected", { reason });
     return false;
   };
   if (process.env.VERCEL_ENV !== "production") return reject("environment");
   if (request.method !== "POST") return reject("method");
-  if (request.url !== QSTASH_SCHEDULER_URL) return reject("destination");
+  if (request.url !== destination) return reject("destination");
   const signature = request.headers.get("upstash-signature");
   const keys = [
     process.env.QSTASH_CURRENT_SIGNING_KEY,
@@ -45,7 +45,7 @@ export async function authorizeQStashScheduler(request: Request) {
   for (const key of keys) {
     try {
       const { payload } = await jwtVerify(signature, new TextEncoder().encode(key), {
-        algorithms: ["HS256"], issuer: "Upstash", subject: QSTASH_SCHEDULER_URL,
+        algorithms: ["HS256"], issuer: "Upstash", subject: destination,
         requiredClaims: ["exp", "nbf", "iat", "sub", "body"],
         maxTokenAge: "10m", clockTolerance: 5,
       });

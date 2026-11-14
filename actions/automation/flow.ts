@@ -84,7 +84,7 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
   if (input.active) {
     if (!["PRO", "BUSINESS"].includes(user.subscription?.plan ?? "FREE"))
       return {
-        status: 403,
+        status: 403, code: "PLAN_LIMIT",
         error:
           "Publishing custom flows requires Pro or Business. You can save and preview a draft on Free.",
       };
@@ -105,7 +105,7 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
       };
     if (!(await canActivateCampaign(user.id, input.id)).ok)
       return {
-        status: 403,
+        status: 403, code: "PLAN_LIMIT",
         error: "Your active-automation limit has been reached.",
       };
   }
@@ -204,7 +204,7 @@ export async function saveAutomationFlow(raw: SaveFlowInput) {
       revision: input.id ? input.revision + 1 : 1,
     };
   } catch (error) {
-    if (error instanceof AutomationPlanError) return { status: 403, error: error.message };
+    if (error instanceof AutomationPlanError) return { status: 403, code: error.code, error: error.message };
     if (error instanceof Error && error.message === "FLOW_CONFLICT")
       return {
         status: 409,

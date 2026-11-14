@@ -1,4 +1,6 @@
 "use client";
+import {requestUpgradeForResult} from "@/lib/upgrade-prompt";
+
 import { UiText } from "@/components/i18n/localized-copy";
 import { useI18n } from "@/providers/i18n-provider";
 import { useUi } from "@/components/i18n/use-ui";
@@ -294,6 +296,7 @@ export default function FlowBuilder({
         publicReply: doc.publicReply,
         flow: doc.flow,
       });
+      if(requestUpgradeForResult(result)) return;
       if (result.status !== 200 || !result.id) {
         setError(result.error ?? "Could not save this flow.");
         return;
@@ -365,6 +368,7 @@ export default function FlowBuilder({
         history,
         currentTriggers: doc.triggers,
       });
+      if(requestUpgradeForResult(result)) return;
       if (result.status !== 200 || !result.flow) {
         setAiMessages((m) => [
           ...m,
