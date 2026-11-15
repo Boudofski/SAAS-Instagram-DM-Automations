@@ -48,7 +48,13 @@ describe("automation safety dialog publication decisions", () => {
   it("shows the free allowance and an explicit skip without adding publishing to list-only scans", () => {
     const result: PolicyScanResult = { ok: false, code: "LIMIT", error: "Limit", used: 3, limit: 3 };
     expect(scan(result)).toContain("3 of 3 free scans used");
-    expect(scan(result)).toContain('href="/dashboard/owner/billing"');
+    expect(scan(result)).toContain('Upgrade');
+    const dispatchEvent=vi.fn();vi.stubGlobal('window',{dispatchEvent});
+    try {
+      const upgrade=state.buttons.find(button=>React.Children.toArray(button.children).includes('Upgrade'));
+      expect(upgrade).toBeDefined();upgrade!.onClick!();
+      expect(dispatchEvent.mock.calls[0][0].type).toBe('ap3k:upgrade-required');
+    } finally {vi.unstubAllGlobals();}
     expect(scan(result)).toContain("Skip check and publish");
     expect(scan(result, false)).not.toContain("Skip check and publish");
   });

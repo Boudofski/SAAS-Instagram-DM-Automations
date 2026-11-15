@@ -627,6 +627,7 @@ model MessageLog {
   errorMessage  String?
   sentAt        DateTime?
   createdAt     DateTime     @default(now())
+  @@index([recipientIgId, mediaId, status])
 }
 
 // Draft and published snapshots are separate: saving never changes the public site.

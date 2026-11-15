@@ -15,3 +15,5 @@ WHERE a."userId" IS NOT NULL AND m."mediaId" IS NOT NULL AND m."commentId" IS NO
  AND m.status='SENT' AND m."messageType" IN ('DM','COMMENT_REPLY')
 ORDER BY a."userId",m."mediaId",m."recipientIgId",m."createdAt",m.id
 ON CONFLICT DO NOTHING;
+
+CREATE INDEX "MessageLog_recipientIgId_mediaId_status_idx" ON "MessageLog" ("recipientIgId", "mediaId", "status");
