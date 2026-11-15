@@ -1,3 +1,4 @@
+import {claimCommentRecipient,isCommentThreadReply} from "@/lib/comment-recipient-claim";
 import { stepDelay, normalizeStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
 import { readStoryConfig } from "@/lib/story-automation";
 import { deliveryCandidates, eligibleCommentTimestamp } from "@/lib/automation-backtrack";
@@ -571,6 +572,11 @@ async function processEntry(
           errorMessage: `missing_required_comment_fields:${missing}`,
           processedAt: new Date(),
         });
+        continue;
+      }
+
+      if (isCommentThreadReply(change)) {
+        await updateWebhookEvent(webhookEvent.id,{status:"IGNORED",errorMessage:"comment_thread_reply_ignored",processedAt:new Date()});
         continue;
       }
 
@@ -1275,6 +1281,11 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"backtrack_comment_expired",processedAt:new Date()});
         continue;
       }
+      if (envelope.source !== "INTERNAL_SELF_TEST" && automation.userId && !await claimCommentRecipient({userId:automation.userId,automationId:automation.id,mediaId,recipientIgId:commenterId,commentId})) {
+        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSED",errorMessage:"person_already_handled_on_post",processedAt:new Date()});
+        continue;
+      }
+
       const templateVars = {
         username: commenterUsername ?? "",
         first_name: commenterUsername ?? "",
@@ -1778,10 +1789,7 @@ async function processEntry(
         await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"IGNORED",errorMessage:"capture_requires_paid_plan",processedAt:new Date()});
         continue;
       }
-      if (automation.oneDmPerUser && !(await claimDmRecipient(automation.id, commenterId))) {
-        await updateWebhookEvent(webhookEvent.id,{automationId:automation.id,status:"PROCESSED",errorMessage:"one_dm_per_user"});
-        continue;
-      }
+      // Comment journeys are deduplicated per post above, not across all posts.
       let firstCaptureJob: string | undefined;
       if (captureFirst) {
         for (const kind of ["EMAIL","PHONE"] as const) {
