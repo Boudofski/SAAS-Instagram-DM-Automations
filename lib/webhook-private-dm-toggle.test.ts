@@ -1,3 +1,5 @@
+const mockCommentRecipient=vi.hoisted(()=>vi.fn().mockResolvedValue(true));
+vi.mock("@/lib/comment-recipient-claim",async(importOriginal)=>({...await importOriginal<typeof import("@/lib/comment-recipient-claim")>(),claimCommentRecipient:mockCommentRecipient}));
 const mockClaimComment = vi.hoisted(()=>vi.fn().mockResolvedValue(true));
 vi.mock("@/lib/automation-delivery",()=>({claimImmediateComment:mockClaimComment,claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -183,6 +185,7 @@ function commentRequest(overrides: Record<string, any> = {}) {
 }
 
 beforeEach(() => {
+  mockCommentRecipient.mockResolvedValue(true);
     mockPublicSlot.mockResolvedValue({ok:true,id:"slot"});
     ai.decision.mockResolvedValue({action:"REPLY",category:"SAFE",reply:"Hi @tester! Check your DMs 😊"});
     ai.reserve.mockResolvedValue({ok:true,reservationId:"quota"});
@@ -1062,5 +1065,22 @@ describe('collect contact details as the first private reply',()=>{
   const campaign:any=automation(true);campaign.listener.emailCaptureEnabled=true;campaign.listener.openingDmEnabled=false;
   mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
   await POST(commentRequest());expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();expect(captureMock.begin).not.toHaveBeenCalled();
+ });
+});
+
+describe('per-post comment delivery policy',()=>{
+ it('does not match or send on a reply in a comment thread',async()=>{
+  const body=await commentRequest().json();body.entry[0].changes[0].value.parent_id='parent-comment';
+  await POST(new Request('https://ap3k.test/api/webhooks/meta',{method:'POST',headers:{'x-hub-signature-256':'sha256=test'},body:JSON.stringify(body)}) as any);
+  expect(mockFindAutomationForCommentWithReason).not.toHaveBeenCalled();
+  expect(mockSendCommentReply).not.toHaveBeenCalled();expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+  expect(mockUpdateWebhookEvent).toHaveBeenCalledWith('webhook-event-1',expect.objectContaining({errorMessage:'comment_thread_reply_ignored'}));
+ });
+ it('does not send either action when another comment already owns this post journey',async()=>{
+  const campaign=automation(true);mockFindAutomationForCommentWithReason.mockResolvedValue({automation:campaign,automations:[campaign],diagnostics:{matchingIntegrationFound:true,matchedAutomationIds:[campaign.id]}});
+  mockCommentRecipient.mockResolvedValue(false);
+  await POST(commentRequest());
+  expect(mockSendCommentReply).not.toHaveBeenCalled();expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+  expect(mockUpdateWebhookEvent).toHaveBeenCalledWith('webhook-event-1',expect.objectContaining({errorMessage:'person_already_handled_on_post'}));
  });
 });

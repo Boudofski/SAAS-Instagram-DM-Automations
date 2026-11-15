@@ -11,6 +11,7 @@ datasource db {
 }
 
 model User {
+  commentRecipientClaims CommentRecipientClaim[]
   usageEmailCheckedAt DateTime?
   preferredLocale String?
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -626,6 +627,7 @@ model MessageLog {
   errorMessage  String?
   sentAt        DateTime?
   createdAt     DateTime     @default(now())
+  @@index([recipientIgId, mediaId, status])
 }
 
 // Draft and published snapshots are separate: saving never changes the public site.
@@ -1062,4 +1064,16 @@ model AutomationPolicyScan {
   createdAt DateTime @default(now())
   completedAt DateTime?
   @@index([userId, status, createdAt])
+}
+
+// Survives campaign deletion, but is removed when the owner deletes their account.
+model CommentRecipientClaim {
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaId String
+  recipientIgId String
+  commentId String
+  automationId String @db.Uuid
+  createdAt DateTime @default(now())
+  @@id([userId, mediaId, recipientIgId])
 }
