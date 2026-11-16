@@ -6,6 +6,17 @@ vi.mock("@/lib/prisma", () => ({ client: {
   conversationStarterReceipt: { createMany: m.receipt, updateMany: m.update },
   inboxMessage: { findFirst: m.inbox },
 } }));
+const staticUsage = vi.hoisted(() => ({
+  okResult: { ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } },
+  reserve: vi.fn(async (..._args: unknown[]): Promise<any> => ({ ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } })),
+  settle: vi.fn(async (..._args: unknown[]) => undefined),
+  release: vi.fn(async (..._args: unknown[]) => undefined),
+}));
+vi.mock("@/lib/usage-reservation", () => ({
+  reserveStaticUsage: (...args: unknown[]) => (staticUsage.reserve as any)(...args),
+  settleStaticUsageUnit: (...args: unknown[]) => (staticUsage.settle as any)(...args),
+  releaseStaticUsage: (...args: unknown[]) => (staticUsage.release as any)(...args),
+}));
 vi.mock("@/actions/usage/queries", () => ({ canSendStaticReply: m.quota }));
 vi.mock("@/actions/webhook/queries", () => ({ recordOutboundInboxMessage: m.record }));
 vi.mock("@/lib/fetch", () => ({ sendDm: m.send }));
@@ -15,6 +26,7 @@ const integration = { id: "i1", userId: "u1", instagramId: "ig1", token: "a".rep
 const input = () => ({ integrationId: "i1", recipientIgId: "r1", eventId: "mid1", payload: `AP3K_STARTER:${item.id}`, inboundAt: new Date() });
 beforeEach(() => {
   vi.resetAllMocks();
+  staticUsage.reserve.mockResolvedValue(staticUsage.okResult);
   m.integration.mockResolvedValue(integration);
   m.session.mockResolvedValue(null);
   m.quota.mockResolvedValue({ ok: true });
@@ -39,6 +51,25 @@ describe("verified conversation starter callbacks", () => {
   it("does not replay a claimed, delivered or uncertain callback", async () => {
     m.receipt.mockResolvedValue({ count: 0 });
     await handleConversationStarter(input());
+    expect(m.send).not.toHaveBeenCalled();
+  });
+  it("reserves an action before the one-time receipt and releases it after the outcome", async () => {
+    await handleConversationStarter(input());
+    expect(staticUsage.reserve.mock.invocationCallOrder[0]).toBeLessThan(m.receipt.mock.invocationCallOrder[0]);
+    // Released only after the receipt records SENT, so the action is never uncounted.
+    expect(m.update.mock.invocationCallOrder.at(-1)!).toBeLessThan(staticUsage.release.mock.invocationCallOrder[0]);
+    expect(staticUsage.release).toHaveBeenCalledWith("reservation-1");
+  });
+  it("releases the reservation for a duplicate callback without sending", async () => {
+    m.receipt.mockResolvedValue({ count: 0 });
+    await handleConversationStarter(input());
+    expect(m.send).not.toHaveBeenCalled();
+    expect(staticUsage.release).toHaveBeenCalledWith("reservation-1");
+  });
+  it("does not claim the receipt or send when the atomic reservation is refused", async () => {
+    staticUsage.reserve.mockResolvedValue({ ok: false, reservationId: null, usage: staticUsage.okResult.usage, reason: "static_reply_limit_reached" });
+    await handleConversationStarter(input());
+    expect(m.receipt).not.toHaveBeenCalled();
     expect(m.send).not.toHaveBeenCalled();
   });
   it("checks the messaging window before touching account data", async () => {
