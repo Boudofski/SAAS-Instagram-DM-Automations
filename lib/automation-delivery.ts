@@ -130,6 +130,27 @@ export async function claimImmediateComment(automationId:string,commentId:string
   return result.count===1;
 }
 
+/** Final-payload receipts reuse the unique delivery-job key as an atomic claim.
+ * Button callbacks (follow check, opening continue) can arrive twice within
+ * milliseconds — a double tap or a duplicate Meta delivery — and the SENT log
+ * is written only after the Graph call, so a read-only history check lets both
+ * through. Exactly one caller wins this insert per automation, person and flow. */
+export function finalPayloadEventKey(recipientIgId:string,flowId:string) {
+  return `final:${recipientIgId}:${flowId}`;
+}
+export async function claimFinalPayload(automationId:string,recipientIgId:string,flowId:string) {
+  const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});
+  return result.count===1;
+}
+/** Release only after Meta definitively rejected the request (HTTP 4xx), so the
+ * person can tap again. Timeouts and 5xx responses may have been delivered;
+ * keep the receipt rather than risk a duplicate DM. */
+export async function releaseFinalPayload(automationId:string,recipientIgId:string,flowId:string,httpStatus?:number) {
+  if (typeof httpStatus !== "number" || httpStatus < 400 || httpStatus >= 500) return false;
+  await client.automationDeliveryJob.deleteMany({where:{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED"}});
+  return true;
+}
+
 /** Reserve a Story webhook once even with one-DM-per-user switched off. */
 export async function claimImmediateStory(automationId:string,messageId:string) {
   const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:`story:${messageId}`,status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});
