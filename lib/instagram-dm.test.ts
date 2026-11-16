@@ -510,6 +510,29 @@ describe("sendInstagramDirectResponse", () => {
     expect(textBody.message.text).toBe("Here is the preview");
   });
 
+  it("reports the media part as delivered when the accompanying text is rejected", async () => {
+    mockedAxios.post
+      .mockResolvedValueOnce({ status: 200, data: { message_id: "mid.media" } })
+      .mockRejectedValueOnce(metaGenericError(100));
+
+    const result = await sendInstagramDirectResponse({
+      token: VALID_TOKEN,
+      igBusinessAccountId: IG_BIZ_ID,
+      recipientId: COMMENTER_ID,
+      automationId: "automation-2",
+      message: "Here is the preview",
+      responseFormat: "MEDIA",
+      mediaType: "IMAGE",
+      mediaUrl: "https://example.com/preview.jpg",
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.metaError).toMatchObject({ status: 400, code: 100 });
+    // Callers must not treat this as "nothing delivered" and retry the media.
+    expect(result.deliveredMessageIds).toEqual(["mid.media"]);
+  });
+
   it("sends an editable follow request with a repeatable verification postback", async () => {
     mockedAxios.post.mockResolvedValueOnce({ status: 200, data: { message_id: "mid.follow-request" } });
 

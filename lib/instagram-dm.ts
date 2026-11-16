@@ -413,7 +413,9 @@ function buildQuickReplies(automationId: string, replies: string[], payloads?: s
 
 export type DirectResponseResult =
   | { ok: true; messageIds: string[] }
-  | { ok: false; metaError: SafeMetaApiError };
+  /** deliveredMessageIds lists parts Meta accepted before the failure (for
+   * example the media attachment ahead of a failed text/button message). */
+  | { ok: false; metaError: SafeMetaApiError; deliveredMessageIds?: string[] };
 
 export async function sendInstagramDirectResponse(params: {
   token: string;
@@ -555,7 +557,7 @@ export async function sendInstagramDirectResponse(params: {
     if (params.typingIndicator) {
       await sendInstagramSenderAction(params.igBusinessAccountId, params.recipientId, "typing_off", params.token).catch(() => undefined);
     }
-    return { ok: false, metaError: buildMetaError(error) };
+    return { ok: false, metaError: buildMetaError(error), deliveredMessageIds: [...messageIds] };
   }
 }
 

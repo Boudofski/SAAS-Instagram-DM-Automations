@@ -7,7 +7,7 @@ vi.mock("@/lib/prisma", () => ({ client: db }));
 vi.mock("@/lib/qstash-delivery-wake", () => ({ scheduleDeliveryWake: vi.fn() }));
 vi.mock("@/lib/meta-webhook-handler", () => ({ resumeAutomationDelivery: vi.fn() }));
 
-import { claimFinalPayload, finalPayloadEventKey, releaseFinalPayload } from "./automation-delivery";
+import { claimFinalPayload, finalPayloadEventKey, isDefinitiveRejection, releaseFinalPayload } from "./automation-delivery";
 
 const receipts = new Set<string>();
 beforeEach(() => {
@@ -52,16 +52,36 @@ describe("final payload claim for button callbacks", () => {
 
   it("releases after a definite Meta rejection so a later tap can deliver", async () => {
     await claimFinalPayload("automation", "person", "comment-1");
-    expect(await releaseFinalPayload("automation", "person", "comment-1", 400)).toBe(true);
+    expect(await releaseFinalPayload("automation", "person", "comment-1", { status: 400, code: 100, deliveredMessageIds: [] })).toBe(true);
     expect(await claimFinalPayload("automation", "person", "comment-1")).toBe(true);
   });
 
-  it("keeps the receipt when the outcome is ambiguous", async () => {
+  it.each([
+    ["no response (timeout or network)", {}],
+    ["HTTP 500", { status: 500 }],
+    ["HTTP 503", { status: 503 }],
+    ["HTTP 408 request timeout", { status: 408 }],
+    ["Graph unknown error code 1", { status: 400, code: 1 }],
+    ["Graph transient error code 2", { status: 400, code: 2 }],
+    ["a 4xx after the media part was already delivered", { status: 400, code: 100, deliveredMessageIds: ["mid.media"] }],
+  ])("keeps the receipt when the outcome is ambiguous: %s", async (_label, failure) => {
     await claimFinalPayload("automation", "person", "comment-1");
-    for (const status of [undefined, 500, 503]) {
-      expect(await releaseFinalPayload("automation", "person", "comment-1", status)).toBe(false);
-    }
+    expect(isDefinitiveRejection(failure)).toBe(false);
+    expect(await releaseFinalPayload("automation", "person", "comment-1", failure)).toBe(false);
     expect(db.automationDeliveryJob.deleteMany).not.toHaveBeenCalled();
     expect(await claimFinalPayload("automation", "person", "comment-1")).toBe(false);
+  });
+
+  it("keeps the receipt and does not throw when releasing it fails", async () => {
+    db.automationDeliveryJob.deleteMany.mockRejectedValueOnce(new Error("db unavailable"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(releaseFinalPayload("automation", "person", "comment-1", { status: 400, code: 10 })).resolves.toBe(false);
+  });
+
+  it("only removes the completed receipt for that journey", async () => {
+    await releaseFinalPayload("automation", "person", "comment-1", { status: 403, code: 10 });
+    expect(db.automationDeliveryJob.deleteMany).toHaveBeenCalledWith({
+      where: { automationId: "automation", eventKey: finalPayloadEventKey("person", "comment-1"), status: "COMPLETED" },
+    });
   });
 });

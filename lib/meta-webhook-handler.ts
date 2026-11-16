@@ -2973,7 +2973,7 @@ async function processConfiguredMessageAutomation(params: {
 
   const sent = result.ok;
   if (!result.ok && finalPayloadClaimFlowId)
-    await releaseFinalPayload(automation.id, senderId, finalPayloadClaimFlowId, result.metaError.status);
+    await releaseFinalPayload(automation.id, senderId, finalPayloadClaimFlowId, { ...result.metaError, deliveredMessageIds: result.deliveredMessageIds });
   if (conversationTurn)
     await finishAiConversationTurn(conversationTurn, {
       message: inboundText,

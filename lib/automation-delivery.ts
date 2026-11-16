@@ -142,13 +142,28 @@ export async function claimFinalPayload(automationId:string,recipientIgId:string
   const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});
   return result.count===1;
 }
-/** Release only after Meta definitively rejected the request (HTTP 4xx), so the
- * person can tap again. Timeouts and 5xx responses may have been delivered;
- * keep the receipt rather than risk a duplicate DM. */
-export async function releaseFinalPayload(automationId:string,recipientIgId:string,flowId:string,httpStatus?:number) {
-  if (typeof httpStatus !== "number" || httpStatus < 400 || httpStatus >= 500) return false;
-  await client.automationDeliveryJob.deleteMany({where:{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED"}});
-  return true;
+/** True only when Meta's response proves nothing in this send was delivered:
+ * an HTTP 4xx that is not a timeout (408) or a Graph transient error (codes 1
+ * and 2), and no earlier part of the message (such as a media attachment) was
+ * accepted. Timeouts, 5xx and missing responses may have been delivered. */
+export function isDefinitiveRejection(failure:{status?:number;code?:number;deliveredMessageIds?:string[]}) {
+  const {status,code}=failure;
+  if (typeof status !== "number" || status < 400 || status >= 500 || status === 408) return false;
+  if (code === 1 || code === 2) return false;
+  return !(failure.deliveredMessageIds?.length);
+}
+/** Release the receipt after a definitive rejection so a later tap can still
+ * deliver. Ambiguous outcomes keep it rather than risk a duplicate DM. */
+export async function releaseFinalPayload(automationId:string,recipientIgId:string,flowId:string,failure:{status?:number;code?:number;deliveredMessageIds?:string[]}) {
+  if (!isDefinitiveRejection(failure)) return false;
+  try {
+    await client.automationDeliveryJob.deleteMany({where:{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED"}});
+    return true;
+  } catch {
+    // Keeping the receipt is the safe failure: no duplicate, the person can re-trigger.
+    console.error("[delivery] final payload receipt release failed",{automationId});
+    return false;
+  }
 }
 
 /** Reserve a Story webhook once even with one-DM-per-user switched off. */
