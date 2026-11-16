@@ -130,6 +130,42 @@ export async function claimImmediateComment(automationId:string,commentId:string
   return result.count===1;
 }
 
+/** Final-payload receipts reuse the unique delivery-job key as an atomic claim.
+ * Button callbacks (follow check, opening continue) can arrive twice within
+ * milliseconds — a double tap or a duplicate Meta delivery — and the SENT log
+ * is written only after the Graph call, so a read-only history check lets both
+ * through. Exactly one caller wins this insert per automation, person and flow. */
+export function finalPayloadEventKey(recipientIgId:string,flowId:string) {
+  return `final:${recipientIgId}:${flowId}`;
+}
+export async function claimFinalPayload(automationId:string,recipientIgId:string,flowId:string) {
+  const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});
+  return result.count===1;
+}
+/** True only when Meta's response proves nothing in this send was delivered:
+ * an HTTP 4xx that is not a timeout (408) or a Graph transient error (codes 1
+ * and 2), and no earlier part of the message (such as a media attachment) was
+ * accepted. Timeouts, 5xx and missing responses may have been delivered. */
+export function isDefinitiveRejection(failure:{status?:number;code?:number;deliveredMessageIds?:string[]}) {
+  const {status,code}=failure;
+  if (typeof status !== "number" || status < 400 || status >= 500 || status === 408) return false;
+  if (code === 1 || code === 2) return false;
+  return !(failure.deliveredMessageIds?.length);
+}
+/** Release the receipt after a definitive rejection so a later tap can still
+ * deliver. Ambiguous outcomes keep it rather than risk a duplicate DM. */
+export async function releaseFinalPayload(automationId:string,recipientIgId:string,flowId:string,failure:{status?:number;code?:number;deliveredMessageIds?:string[]}) {
+  if (!isDefinitiveRejection(failure)) return false;
+  try {
+    await client.automationDeliveryJob.deleteMany({where:{automationId,eventKey:finalPayloadEventKey(recipientIgId,flowId),status:"COMPLETED"}});
+    return true;
+  } catch {
+    // Keeping the receipt is the safe failure: no duplicate, the person can re-trigger.
+    console.error("[delivery] final payload receipt release failed",{automationId});
+    return false;
+  }
+}
+
 /** Reserve a Story webhook once even with one-DM-per-user switched off. */
 export async function claimImmediateStory(automationId:string,messageId:string) {
   const result=await client.automationDeliveryJob.createMany({data:[{automationId,eventKey:`story:${messageId}`,status:"COMPLETED",dueAt:new Date(),payload:{}}],skipDuplicates:true});

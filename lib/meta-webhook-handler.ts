@@ -2,7 +2,7 @@ import {claimCommentRecipient,isCommentThreadReply} from "@/lib/comment-recipien
 import { stepDelay, normalizeStepDelays, type AutomationStep } from "@/lib/automation-step-delays";
 import { readStoryConfig } from "@/lib/story-automation";
 import { deliveryCandidates, eligibleCommentTimestamp } from "@/lib/automation-backtrack";
-import { claimDmRecipient, claimImmediateComment, claimImmediateStory } from "@/lib/automation-delivery";
+import { claimDmRecipient, claimFinalPayload, claimImmediateComment, claimImmediateStory, releaseFinalPayload } from "@/lib/automation-delivery";
 import { deferAutomationDelivery } from "@/lib/automation-delivery";
 import { handleConversationStarter } from "@/lib/conversation-starters-runtime";
 import {
@@ -2903,6 +2903,14 @@ async function processConfiguredMessageAutomation(params: {
     await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"PROCESSED",errorMessage:"one_dm_per_user"});
     return;
   }
+  // A button callback releases the final payload once per journey. The earlier
+  // history check is read-only; this insert is the atomic guard against a
+  // double tap or duplicate postback racing past it.
+  const finalPayloadClaimFlowId = dmFlowAction?.flowId && !intermediateStep ? dmFlowAction.flowId : null;
+  if (finalPayloadClaimFlowId && !(await claimFinalPayload(automation.id, senderId, finalPayloadClaimFlowId))) {
+    await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"PROCESSED",errorMessage:"duplicate_skipped",processedAt:new Date()});
+    return;
+  }
   const result = await sendInstagramDirectResponse({
     preferQuickReplyForPostback: (needsOpening && automation.listener.openingDmFormat === "QUICK_REPLY") || ((needsOpening || needsFollowRequest) && !fullWidthCallbacksReady),
     token,
@@ -2964,6 +2972,8 @@ async function processConfiguredMessageAutomation(params: {
   });
 
   const sent = result.ok;
+  if (!result.ok && finalPayloadClaimFlowId)
+    await releaseFinalPayload(automation.id, senderId, finalPayloadClaimFlowId, { ...result.metaError, deliveredMessageIds: result.deliveredMessageIds });
   if (conversationTurn)
     await finishAiConversationTurn(conversationTurn, {
       message: inboundText,

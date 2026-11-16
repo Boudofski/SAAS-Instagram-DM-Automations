@@ -1,7 +1,7 @@
 const mockCommentRecipient=vi.hoisted(()=>vi.fn().mockResolvedValue(true));
 vi.mock("@/lib/comment-recipient-claim",async(importOriginal)=>({...await importOriginal<typeof import("@/lib/comment-recipient-claim")>(),claimCommentRecipient:mockCommentRecipient}));
 const mockClaimComment = vi.hoisted(()=>vi.fn().mockResolvedValue(true));
-vi.mock("@/lib/automation-delivery",()=>({claimImmediateComment:mockClaimComment,claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
+vi.mock("@/lib/automation-delivery",()=>({claimImmediateComment:mockClaimComment,claimDmRecipient:vi.fn().mockResolvedValue(true),claimFinalPayload:vi.fn().mockResolvedValue(true),releaseFinalPayload:vi.fn().mockResolvedValue(false),deferAutomationDelivery:vi.fn()}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFindAutomationForCommentWithReason = vi.fn();

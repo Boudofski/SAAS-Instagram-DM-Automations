@@ -30,8 +30,9 @@ function editor(overrides: Partial<CommentEditorProps> = {}) {
 }
 
 describe("comment editor initial state and publication errors", () => {
-  it("starts new comment drafts with a usable AI prompt without changing saved-automation hydration defaults", () => {
-    expect(initialDraft()).toMatchObject({ aiReplyEnabled: true, publicReplyEnabled: false });
+  it("starts new comment drafts with manual localized replies and a ready AI prompt, without changing saved-automation hydration defaults", () => {
+    // Since c7a52c2, new drafts default to three localized manual replies; AI stays opt-in.
+    expect(initialDraft()).toMatchObject({ aiReplyEnabled: false, publicReplyEnabled: false });
     expect(initialDraft().aiReplyInstructions).toContain("Username");
     expect(initialDraft("saved-automation")).toMatchObject({ aiReplyEnabled: false, publicReplyEnabled: false, aiReplyInstructions: "" });
   });
@@ -44,12 +45,13 @@ describe("comment editor initial state and publication errors", () => {
     const fresh = editor();
     expect(fresh).toContain('aria-label="Enable delay" aria-checked="false"');
     expect(fresh).not.toContain("Add delay");
-    const delayed = editor({ data: { ...initialDraft(), deliveryDelaySeconds: 120 } });
+    // Delays render beside the step they precede; a legacy delay maps to the public reply step.
+    const delayed = editor({ data: { ...initialDraft(), publicReplyEnabled: true, deliveryDelaySeconds: 120 } });
     expect(delayed).toContain('aria-label="Enable delay" aria-checked="true"');
     expect(delayed).toContain("2 minutes");
   });
   it("shows no preemptive upgrade message to a free user", () => {
-    const html = editor();
+    const html = editor({ data: { ...initialDraft(), aiReplyEnabled: true } });
     expect(html).not.toContain("AI only available on paid plans.");
     expect(html).not.toContain("Upgrade to Pro to publish AI replies");
     expect(html).toContain("AI auto reply");

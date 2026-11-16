@@ -15,7 +15,8 @@ describe('search recovery editorial release', () => {
    expect(post.sections.length).toBeGreaterThanOrEqual(4);
    const entry = sitemap.find(p => p.url === `https://ap3k.com/blog/${slug}`)!;
    expect(entry).toBeDefined();
-   expect(new Date(entry.lastModified!).toISOString()).toContain('2026-11-09');
+   // Each revision publishes its own real date; the safety guide was expanded on 2026-11-16.
+   expect(new Date(entry.lastModified!).toISOString()).toContain(slug === 'is-it-safe-to-auto-dm-on-instagram' ? '2026-11-16' : '2026-11-09');
   }
  });
  it('makes maintained conversion guides visible in the archive', () => {

@@ -1,6 +1,6 @@
-vi.mock("@/lib/automation-delivery",()=>({claimImmediateStory:vi.fn().mockResolvedValue(true),claimImmediateComment:vi.fn().mockResolvedValue(true),claimDmRecipient:vi.fn().mockResolvedValue(true),deferAutomationDelivery:vi.fn()}));
+vi.mock("@/lib/automation-delivery",()=>({claimImmediateStory:vi.fn().mockResolvedValue(true),claimImmediateComment:vi.fn().mockResolvedValue(true),claimDmRecipient:vi.fn().mockResolvedValue(true),claimFinalPayload:vi.fn().mockResolvedValue(true),releaseFinalPayload:vi.fn().mockResolvedValue(false),deferAutomationDelivery:vi.fn()}));
 import { resumeAutomationDelivery } from "@/lib/meta-webhook-handler";
-import {claimImmediateStory,deferAutomationDelivery} from "@/lib/automation-delivery";
+import {claimFinalPayload,claimImmediateStory,deferAutomationDelivery} from "@/lib/automation-delivery";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -985,6 +985,75 @@ describe("Meta webhook route security", () => {
         errorMessage: "duplicate_skipped",
       }),
     );
+  });
+  it.each([
+    [true, 1],
+    [false, 0],
+  ])("atomically claims the journey payload before a follow-check callback sends (claim won: %s)", async (won, sends) => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    vi.mocked(claimFinalPayload).mockResolvedValueOnce(won);
+    const integration = {
+      userId: "user-1",
+      token: "token-1",
+      instagramId: "ig-business-1",
+      pageId: "ig-business-1",
+      instagramUsername: "ap3k",
+      status: "CONNECTED",
+      reconnectRequired: false,
+    };
+    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    mockFindAutomationById.mockResolvedValue({
+      id: "automation-1",
+      userId: "user-1",
+      active: true,
+      followGateRequired: true,
+      typingIndicator: false,
+      deliveryDelaySeconds: 0,
+      listener: {
+        prompt: "Here is your protected payload",
+        responseFormat: "TEXT",
+        quickReplies: [],
+        ctaButtonTitle: null,
+        ctaLink: null,
+        mediaUrl: null,
+        mediaType: null,
+      },
+      User: { integrations: [integration] },
+    });
+    mockGetInstagramRecipientProfile.mockResolvedValue({
+      username: "prospect",
+      name: "Prospect",
+      profilePictureUrl: undefined,
+      followsBusiness: true,
+    });
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{
+        id: "ig-business-1",
+        messaging: [{
+          sender: { id: "recipient-1" },
+          recipient: { id: "ig-business-1" },
+          timestamp: Date.now(),
+          postback: { title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-1:comment-9" },
+        }],
+      }],
+    });
+    const response = await POST(
+      new NextRequest("https://ap3k.test/api/webhooks/meta", {
+        method: "POST",
+        headers: { "x-hub-signature-256": "sha256=good" },
+        body,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(claimFinalPayload).toHaveBeenCalledWith("automation-1", "recipient-1", "comment-9");
+    expect(mockSendInstagramDirectResponse).toHaveBeenCalledTimes(sends);
+    if (!won)
+      expect(mockUpdateWebhookEvent).toHaveBeenCalledWith(
+        "webhook-event-1",
+        expect.objectContaining({ status: "PROCESSED", errorMessage: "duplicate_skipped" }),
+      );
   });
   it.each(["request", "waiting", "email", "reminder"])(
     "handles the %s engagement stage without leaking the product link",
