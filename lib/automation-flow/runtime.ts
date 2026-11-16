@@ -18,6 +18,7 @@ import { resolveIntegrationSendToken } from "@/lib/send-token";
 import { getInstagramRecipientProfile, sendInstagramDirectResponse } from "@/lib/instagram-dm";
 import { observeAutomationFollow } from "@/lib/automation-tracking";
 import { canSendStaticReply } from "@/actions/usage/queries";
+import { reserveStaticUsage, settleStaticUsageUnit } from "@/lib/usage-reservation";
 import {
   createAutomationEvent,
   createMessageLog,
@@ -449,6 +450,9 @@ export async function processAutomationFlow(
             ? "\n\nReply with one of the options below, or STOP to cancel."
             : "");
       if (!messagingWindowOpen(input.inboundAt)) { await persist("CANCELLED", nodeId, values); return true; }
+      // The read above can pass for several concurrent flows; this reservation is the atomic limit.
+      const reservation = await reserveStaticUsage({ userId: automation.userId, source: "FLOW" });
+      if (!reservation.ok) throw new Error("flow_delivery_limit");
       const result = await sendInstagramDirectResponse({
         token: token.token,
         igBusinessAccountId: integration.instagramId,
@@ -477,6 +481,7 @@ export async function processAutomationFlow(
         status: result.ok ? "SENT" : "FAILED",
         errorMessage: result.ok ? "flow_step_sent" : "flow_step_failed",
       });
+      await settleStaticUsageUnit(reservation.reservationId);
       if (!result.ok) throw new Error("flow_step_failed");
       await trackResponse(automationId, "DM");
       await recordOutboundInboxMessage({

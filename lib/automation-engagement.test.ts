@@ -28,6 +28,17 @@ vi.mock("@/actions/webhook/queries", () => ({
   trackResponse: vi.fn(),
   recordOutboundInboxMessage: vi.fn(),
 }));
+const staticUsage = vi.hoisted(() => ({
+  okResult: { ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } },
+  reserve: vi.fn(async (..._args: unknown[]): Promise<any> => ({ ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } })),
+  settle: vi.fn(async (..._args: unknown[]) => undefined),
+  release: vi.fn(async (..._args: unknown[]) => undefined),
+}));
+vi.mock("@/lib/usage-reservation", () => ({
+  reserveStaticUsage: (...args: unknown[]) => (staticUsage.reserve as any)(...args),
+  settleStaticUsageUnit: (...args: unknown[]) => (staticUsage.settle as any)(...args),
+  releaseStaticUsage: (...args: unknown[]) => (staticUsage.release as any)(...args),
+}));
 vi.mock("@/actions/usage/queries", () => ({ canSendStaticReply: quota }));
 vi.mock("@/lib/instagram-dm", () => ({
   getInstagramRecipientProfile: profile,
@@ -59,6 +70,7 @@ const job = {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  staticUsage.reserve.mockResolvedValue(staticUsage.okResult);
   vi.useFakeTimers();
   vi.setSystemTime(now);
   db.automationEngagementJob.updateMany.mockResolvedValue({ count: 1 });
@@ -196,6 +208,7 @@ describe("durable engagement delivery", () => {
     "replied",
     "human",
     "quota",
+    "reservation",
     "paused",
     "disconnected",
     "claimed",
@@ -212,6 +225,8 @@ describe("durable engagement delivery", () => {
     if (reason === "human")
       db.inboxMessage.findFirst.mockResolvedValue({ id: "manual" });
     if (reason === "quota") quota.mockResolvedValue({ ok: false });
+    // A concurrent send took the last action after the read-only check passed.
+    if (reason === "reservation") staticUsage.reserve.mockResolvedValue({ ok: false, reservationId: null, usage: staticUsage.okResult.usage, reason: "static_reply_limit_reached" });
     if (reason === "paused")
       db.automation.findUnique.mockResolvedValue({ active: false });
     if (reason === "disconnected")

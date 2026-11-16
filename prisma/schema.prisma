@@ -12,6 +12,7 @@ datasource db {
 
 model User {
   commentRecipientClaims CommentRecipientClaim[]
+  usageReservations UsageReservation[]
   usageEmailCheckedAt DateTime?
   preferredLocale String?
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -1076,4 +1077,15 @@ model CommentRecipientClaim {
   automationId String @db.Uuid
   createdAt DateTime @default(now())
   @@id([userId, mediaId, recipientIgId])
+}
+
+/// In-flight capacity for quota-consuming sends; see lib/usage-reservation.ts.
+model UsageReservation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  units     Int
+  source    String
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
 }

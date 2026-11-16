@@ -3,6 +3,7 @@ import { stepDelay, normalizeStepDelays, type AutomationStep } from "@/lib/autom
 import { readStoryConfig } from "@/lib/story-automation";
 import { deliveryCandidates, eligibleCommentTimestamp } from "@/lib/automation-backtrack";
 import { claimDmRecipient, claimImmediateComment, claimImmediateStory } from "@/lib/automation-delivery";
+import { releaseStaticUsage, reserveStaticUsage, settleStaticUsageUnit } from "@/lib/usage-reservation";
 import { deferAutomationDelivery } from "@/lib/automation-delivery";
 import { handleConversationStarter } from "@/lib/conversation-starters-runtime";
 import {
@@ -471,6 +472,10 @@ async function processEntry(
   }
 
   for (const changeItem of changes) {
+    // Units reserved for this comment's public reply and DM. Each send settles
+    // its unit after logging; the finally releases any the journey never used.
+    let commentUsageReservationId: string | null = null;
+    try {
     // -----------------------------------------------------------------------
     // COMMENT EVENT
     // -----------------------------------------------------------------------
@@ -1146,7 +1151,15 @@ async function processEntry(
 
       if (automation.userId && (publicReplyEnabled || privateDmEnabled)) {
         const requiredUnits = Number(publicReplyEnabled) + Number(privateDmEnabled);
-        const usageAllowed = await canSendStaticReply(automation.userId, new Date(), requiredUnits);
+        let usageAllowed = await canSendStaticReply(automation.userId, new Date(), requiredUnits);
+        if (usageAllowed.ok) {
+          // The soft check above is a read; this reservation is the atomic limit.
+          // It covers both sends so a journey never posts "check your DMs" and
+          // then loses its DM to a concurrent webhook at the limit.
+          const reservation = await reserveStaticUsage({ userId: automation.userId, units: requiredUnits, source: "COMMENT" });
+          if (reservation.ok) commentUsageReservationId = reservation.reservationId;
+          else usageAllowed = { ok: false, usage: reservation.usage, reason: reservation.reason };
+        }
         if (!usageAllowed.ok) {
           await createAutomationEvent({
             automationId: automation.id,
@@ -1620,6 +1633,7 @@ async function processEntry(
           status: publicReplySent ? "SENT" : "FAILED",
           errorMessage: publicReplySent ? undefined : publicReplyErrorMessage,
         });
+        await settleStaticUsageUnit(commentUsageReservationId);
         await createAutomationEvent({
           automationId: automation.id,
           eventType: publicReplySent
@@ -1729,7 +1743,10 @@ async function processEntry(
       }
 
       if (automation.userId) {
-        const dmUsageAllowed = await canSendStaticReply(automation.userId);
+        // Re-checking here would count this journey's own reservation against it.
+        const dmUsageAllowed = commentUsageReservationId
+          ? { ok: true as const }
+          : await canSendStaticReply(automation.userId);
         if (!dmUsageAllowed.ok) {
           await createMessageLog({
             automationId: automation.id,
@@ -1972,6 +1989,9 @@ async function processEntry(
         ),
       });
       continue;
+    }
+    } finally {
+      await releaseStaticUsage(commentUsageReservationId);
     }
   }
 
@@ -2899,7 +2919,17 @@ async function processConfiguredMessageAutomation(params: {
     ? await ensureInstagramButtonCallbacks(integration?.id, token)
     : false;
 
+  // Atomic limit for this DM, taken before any recipient claim so a send blocked
+  // at the limit does not consume the person's one-time journey.
+  const dmReservation = await reserveStaticUsage({ userId: automation.userId, source: "DM" });
+  if (!dmReservation.ok) {
+    await createMessageLog({ automationId: automation.id, recipientIgId: senderId, commentId: dmFlowAction?.flowId ?? messageMid, messageType: "DM", status: "SKIPPED", errorMessage: dmReservation.reason });
+    await createAutomationEvent({ automationId: automation.id, eventType: "DM_SKIPPED", igUserId: senderId, keyword: matchedKeyword, meta: { reason: dmReservation.reason, used: dmReservation.usage.staticReplies.used, limit: dmReservation.usage.staticReplies.limit } });
+    await updateWebhookEvent(webhookEventId, { automationId: automation.id, status: "IGNORED", errorMessage: dmReservation.reason, processedAt: new Date() });
+    return;
+  }
   if (automation.oneDmPerUser && !dmFlowAction && !params.emailCompletionId && !(await claimDmRecipient(automation.id, senderId))) {
+    await releaseStaticUsage(dmReservation.reservationId);
     await updateWebhookEvent(webhookEventId,{automationId:automation.id,status:"PROCESSED",errorMessage:"one_dm_per_user"});
     return;
   }
@@ -3008,6 +3038,7 @@ async function processConfiguredMessageAutomation(params: {
     status: sent ? "SENT" : "FAILED",
     errorMessage: sent ? sentMarker : errorMessage,
   });
+  await settleStaticUsageUnit(dmReservation.reservationId);
   await createAutomationEvent({
     automationId: automation.id,
     eventType: sent ? "DM_SENT" : "DM_FAILED",

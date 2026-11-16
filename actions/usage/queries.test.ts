@@ -12,6 +12,7 @@ const mockAutomationEventCreate = vi.fn();
 const mockAutomationEventUpdateMany = vi.fn();
 const mockAutomationEventDeleteMany = vi.fn();
 const mockAiUsageFindUnique = vi.fn();
+const mockReservationAggregate = vi.fn();
 const mockTransaction = vi.fn(async (callback: (tx: any) => unknown) => callback({
   $queryRaw: (...args: any[]) => mockQueryRaw(...args),
   user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
@@ -28,6 +29,7 @@ vi.mock("@/lib/prisma", () => ({
   client: {
     user: { findUnique: (...args: any[]) => mockUserFindUnique(...args) },
     conversationStarterReceipt: { count: vi.fn().mockResolvedValue(0) },
+    usageReservation: { aggregate: (...args: any[]) => mockReservationAggregate(...args) },
     deletedReplyUsage: { count: (...args: any[]) => mockDeletedReplyUsageCount(...args) },
     messageLog: { count: (...args: any[]) => mockMessageLogCount(...args) },
     automationEvent: {
@@ -73,6 +75,7 @@ beforeEach(() => {
   mockAutomationEventUpdateMany.mockResolvedValue({ count: 1 });
   mockAutomationEventDeleteMany.mockResolvedValue({ count: 1 });
   mockAiUsageFindUnique.mockResolvedValue({ automationId: null, channel: "COMMENT" });
+  mockReservationAggregate.mockResolvedValue({ _sum: { units: null } });
 });
 
 describe("usage query helpers", () => {
@@ -125,6 +128,20 @@ describe("usage query helpers", () => {
         },
       }),
     });
+  });
+
+  it("counts in-flight reservations for send decisions only", async () => {
+    mockMessageLogCount.mockResolvedValueOnce(498).mockResolvedValueOnce(0);
+    mockReservationAggregate.mockResolvedValue({ _sum: { units: 2 } });
+    const decision = await canSendStaticReply("user-1", new Date("2026-05-24T12:00:00Z"));
+    expect(decision.ok).toBe(false);
+    expect(decision.usage.staticReplies.used).toBe(500);
+
+    // Dashboards and usage emails report logged outcomes, not sends still in flight.
+    mockMessageLogCount.mockResolvedValueOnce(498).mockResolvedValueOnce(0);
+    const reported = await getUserMonthlyUsage("user-1", new Date("2026-05-24T12:00:00Z"));
+    expect(reported.staticReplies.used).toBe(498);
+    expect(mockReservationAggregate).toHaveBeenCalledTimes(1);
   });
 
   it("blocks static replies when the monthly limit is reached", async () => {

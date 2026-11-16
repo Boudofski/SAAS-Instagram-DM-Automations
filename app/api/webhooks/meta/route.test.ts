@@ -107,6 +107,17 @@ vi.mock("@/lib/send-token", () => ({
   tokenResolutionDiagnostics: () => ({}),
 }));
 
+const staticUsage = vi.hoisted(() => ({
+  okResult: { ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } },
+  reserve: vi.fn(async (..._args: unknown[]): Promise<any> => ({ ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } })),
+  settle: vi.fn(async (..._args: unknown[]) => undefined),
+  release: vi.fn(async (..._args: unknown[]) => undefined),
+}));
+vi.mock("@/lib/usage-reservation", () => ({
+  reserveStaticUsage: (...args: unknown[]) => (staticUsage.reserve as any)(...args),
+  settleStaticUsageUnit: (...args: unknown[]) => (staticUsage.settle as any)(...args),
+  releaseStaticUsage: (...args: unknown[]) => (staticUsage.release as any)(...args),
+}));
 vi.mock("@/actions/usage/queries", () => ({
   canSendStaticReply: (...args: unknown[]) => mockCanSendStaticReply(...args),
   reserveAiReplyQuota: (...args: unknown[]) => mockReserveAiReplyQuota(...args),
@@ -153,6 +164,7 @@ function signatureResult(verified: boolean) {
 describe("Meta webhook route security", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    staticUsage.reserve.mockResolvedValue(staticUsage.okResult);
     mockTakeEmailReply.mockResolvedValue(null);
     mockBeginEmailRequest.mockResolvedValue({ kind: "complete" });
     process.env.META_VERIFY_TOKEN = "verify-token";
@@ -925,6 +937,53 @@ describe("Meta webhook route security", () => {
         errorMessage: "final_dm_payload_sent",
       }),
     );
+  });
+
+  it.each([
+    ["refused", false],
+    ["granted", true],
+  ])("takes an atomic usage reservation before a configured DM (%s)", async (_label, granted) => {
+    mockVerifyMetaSignature.mockReturnValue(signatureResult(true));
+    if (!granted)
+      staticUsage.reserve.mockResolvedValueOnce({ ok: false, reservationId: null, reason: "static_reply_limit_reached", usage: { ...staticUsage.okResult.usage, staticReplies: { used: 500, limit: 500, remaining: 0 } } });
+    const integration = {
+      userId: "user-1",
+      token: "token-1",
+      instagramId: "ig-business-1",
+      pageId: "ig-business-1",
+      instagramUsername: "ap3k",
+      status: "CONNECTED",
+      reconnectRequired: false,
+    };
+    mockFindIntegrationForWebhookAccount.mockResolvedValue(integration);
+    mockFindAutomationById.mockResolvedValue({
+      id: "automation-1",
+      userId: "user-1",
+      active: true,
+      followGateRequired: true,
+      typingIndicator: false,
+      deliveryDelaySeconds: 0,
+      listener: { prompt: "Here is your protected payload", responseFormat: "TEXT", quickReplies: [], ctaButtonTitle: null, ctaLink: null, mediaUrl: null, mediaType: null },
+      User: { integrations: [integration] },
+    });
+    mockGetInstagramRecipientProfile.mockResolvedValue({ username: "prospect", name: "Prospect", profilePictureUrl: undefined, followsBusiness: true });
+    mockResolveIntegrationSendToken.mockReturnValue({ ok: true, token: "token-1" });
+    const body = JSON.stringify({
+      object: "instagram",
+      entry: [{ id: "ig-business-1", messaging: [{ sender: { id: "recipient-1" }, recipient: { id: "ig-business-1" }, timestamp: Date.now(), postback: { title: "I followed ✅", payload: "AP3K_FOLLOW_CHECK:automation-1" } }] }],
+    });
+    const response = await POST(new NextRequest("https://ap3k.test/api/webhooks/meta", { method: "POST", headers: { "x-hub-signature-256": "sha256=good" }, body }));
+
+    expect(response.status).toBe(200);
+    expect(staticUsage.reserve).toHaveBeenCalledWith(expect.objectContaining({ userId: "user-1", source: "DM" }));
+    if (granted) {
+      expect(mockSendInstagramDirectResponse).toHaveBeenCalledTimes(1);
+      expect(staticUsage.settle).toHaveBeenCalledWith("reservation-1");
+      expect(Math.max(...mockCreateMessageLog.mock.invocationCallOrder)).toBeLessThan(staticUsage.settle.mock.invocationCallOrder.at(-1)!);
+    } else {
+      expect(mockSendInstagramDirectResponse).not.toHaveBeenCalled();
+      expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({ messageType: "DM", status: "SKIPPED", errorMessage: "static_reply_limit_reached" }));
+    }
   });
 
   it("does not release the protected payload twice", async () => {

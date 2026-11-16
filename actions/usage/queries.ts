@@ -1,4 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { client } from "@/lib/prisma";
+import { activeUsageReservationSince } from "@/lib/usage-reservation-window";
 import {
   getCurrentUsagePeriod,
   getEffectivePlanLimits,
@@ -9,9 +11,19 @@ import {
   type UsageSummary,
 } from "@/lib/plan-limits";
 
-export async function getUserMonthlyUsage(userId: string, date = new Date()): Promise<UsageSummary> {
+/**
+ * `db` lets the atomic reservation read usage inside its locked transaction.
+ * `includeReservations` counts sends still in flight; only send decisions use
+ * it, so dashboards and usage emails reflect logged outcomes alone.
+ */
+export async function getUserMonthlyUsage(
+  userId: string,
+  date = new Date(),
+  db: Prisma.TransactionClient = client,
+  options: { includeReservations?: boolean } = {},
+): Promise<UsageSummary> {
   const period = getCurrentUsagePeriod(date);
-  const user = await client.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: {
       subscription: {
@@ -42,8 +54,8 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
   const effectiveStart = resetAt && resetAt > period.enforcementStart ? resetAt : period.enforcementStart;
   const effectiveEnd = period.monthEnd;
 
-  const [publicReplyLogs, dmLogs, aiReplies, activeCampaigns, connectedAccounts, starterReplies, deletedReplies] = await Promise.all([
-    client.messageLog.count({
+  const [publicReplyLogs, dmLogs, aiReplies, activeCampaigns, connectedAccounts, starterReplies, deletedReplies, reservations] = await Promise.all([
+    db.messageLog.count({
       where: {
         status: "SENT",
         messageType: "COMMENT_REPLY",
@@ -51,7 +63,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         automation: { userId },
       },
     }),
-    client.messageLog.count({
+    db.messageLog.count({
       where: {
         status: "SENT",
         messageType: "DM",
@@ -59,22 +71,26 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         automation: { userId },
       },
     }),
-    client.aiUsageEvent.count({
+    db.aiUsageEvent.count({
       where: {
         userId,
         createdAt: { gte: effectiveStart, lt: effectiveEnd },
       },
     }),
-    client.automation.count({ where: { userId, active: true, archivedAt: null, OR: [{ integration: { planLocked: false } }, { integrationId: null }] } }),
-    client.integrations.count({ where: { userId, status: { not: "DISCONNECTED" } } }),
-    client.conversationStarterReceipt.count({ where: { status: "SENT", integration: { userId }, createdAt: { gte: effectiveStart, lt: effectiveEnd } } }),
-    client.deletedReplyUsage.count({ where: { userId, createdAt: { gte: effectiveStart, lt: effectiveEnd } } }),
+    db.automation.count({ where: { userId, active: true, archivedAt: null, OR: [{ integration: { planLocked: false } }, { integrationId: null }] } }),
+    db.integrations.count({ where: { userId, status: { not: "DISCONNECTED" } } }),
+    db.conversationStarterReceipt.count({ where: { status: "SENT", integration: { userId }, createdAt: { gte: effectiveStart, lt: effectiveEnd } } }),
+    db.deletedReplyUsage.count({ where: { userId, createdAt: { gte: effectiveStart, lt: effectiveEnd } } }),
+    // Sends in flight hold capacity until their outcome is logged (see lib/usage-reservation.ts).
+    options.includeReservations
+      ? db.usageReservation.aggregate({ where: { userId, createdAt: { gte: activeUsageReservationSince() } }, _sum: { units: true } })
+      : Promise.resolve({ _sum: { units: 0 } }),
   ]);
 
   const [publicReplyEventFallback, dmEventFallback] = await Promise.all([
     publicReplyLogs > 0
       ? Promise.resolve(0)
-      : client.automationEvent.count({
+      : db.automationEvent.count({
           where: {
             eventType: "PUBLIC_REPLY_SENT",
             createdAt: { gte: effectiveStart, lt: effectiveEnd },
@@ -83,7 +99,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         }),
     dmLogs > 0
       ? Promise.resolve(0)
-      : client.automationEvent.count({
+      : db.automationEvent.count({
           where: {
             eventType: "DM_SENT",
             createdAt: { gte: effectiveStart, lt: effectiveEnd },
@@ -92,7 +108,8 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
         }),
   ]);
 
-  const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback + deletedReplies + starterReplies;
+  const reservedReplies = reservations._sum.units ?? 0;
+  const staticReplies = publicReplyLogs + dmLogs + publicReplyEventFallback + dmEventFallback + deletedReplies + starterReplies + reservedReplies;
 
   return {
     plan,
@@ -109,7 +126,7 @@ export async function getUserMonthlyUsage(userId: string, date = new Date()): Pr
 }
 
 export async function canSendStaticReply(userId: string, date = new Date(), units = 1) {
-  const usage = await getUserMonthlyUsage(userId, date);
+  const usage = await getUserMonthlyUsage(userId, date, client, { includeReservations: true });
   const hasCapacity = usage.staticReplies.remaining === null || usage.staticReplies.remaining >= Math.max(1, units);
   return {
     ok: hasCapacity,
