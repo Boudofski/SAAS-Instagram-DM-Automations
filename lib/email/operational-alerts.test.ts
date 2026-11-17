@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ findUnique: vi.fn(), enqueue: vi.fn(), notify: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({ client: { automation: { findUnique: mocks.findUnique } } }));
+const mocks = vi.hoisted(() => ({ findUnique: vi.fn(), enqueue: vi.fn(), notify: vi.fn(), integrations: vi.fn() }));
+vi.mock("@/lib/prisma", () => ({ client: { automation: { findUnique: mocks.findUnique }, integrations: { findMany: mocks.integrations } } }));
 vi.mock("@/lib/email/owner-alerts", () => ({ enqueueOwnerAlert: mocks.enqueue, notifyOwnerAlert: mocks.notify }));
 
-import { classifyOperationalFailure, enqueueOperationalDeliveryAlert } from "./operational-alerts";
+import { classifyOperationalFailure, enqueueOperationalDeliveryAlert, scanOperationalIntegrationAlerts } from "./operational-alerts";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -21,7 +21,7 @@ beforeEach(() => {
 
 describe("operational Instagram alerts", () => {
   it("classifies actionable failures and ignores normal policy outcomes", () => {
-    expect(classifyOperationalFailure({ status: "FAILED", errorMessage: "dm_access_disabled" })).toBe("authorization");
+    expect(classifyOperationalFailure({ status: "FAILED", errorMessage: "dm_access_disabled" })).toBe("permission");
     expect(classifyOperationalFailure({ status: "SKIPPED", errorMessage: "static_reply_limit_reached" })).toBe("quota");
     expect(classifyOperationalFailure({ status: "FAILED", errorMessage: "Meta 429 rate limit" })).toBe("rate_limit");
     expect(classifyOperationalFailure({ status: "FAILED", errorMessage: "upstream unavailable" })).toBe("delivery");
@@ -34,7 +34,7 @@ describe("operational Instagram alerts", () => {
     await enqueueOperationalDeliveryAlert({ automationId: "automation-1", status: "FAILED", messageType: "DM", errorMessage: "dm_access_disabled", occurredAt });
     expect(mocks.enqueue).toHaveBeenCalledWith(expect.objectContaining({
       kind: "system",
-      key: "instagram:authorization:integration-1:2026-10-31T06:00:00.000Z",
+      key: "instagram:permission:integration-1:2026-10-31T06:00:00.000Z",
       userId: "user-1",
       reference: "@creator · Viral Reel",
     }));
@@ -44,4 +44,18 @@ describe("operational Instagram alerts", () => {
     await enqueueOperationalDeliveryAlert({ automationId: "automation-1", status: "SKIPPED", messageType: "DM", errorMessage: "static_reply_limit_reached", occurredAt: new Date("2026-10-31T23:00:00Z") });
     expect(mocks.enqueue.mock.calls[0][0].key).toBe("instagram:quota:integration-1:2026-10");
   });
+});
+
+it("ignores historical subscription errors after a successful subscription", async () => {
+  mocks.integrations.mockResolvedValue([{ id: "ig", status: "CONNECTED", reconnectRequired: false, webhookSubscriptionSubscribed: true, webhookSubscriptionError: "old error" }]);
+  await scanOperationalIntegrationAlerts();
+  expect(mocks.enqueue).not.toHaveBeenCalled();
+});
+it("describes a current subscription failure without claiming every automation stopped", async () => {
+  mocks.integrations.mockResolvedValue([{ id: "ig", status: "CONNECTED", reconnectRequired: false, webhookSubscriptionSubscribed: false, webhookSubscriptionError: "status=400 code=100 subscribed_fields", expiresAt: new Date("2027-01-01"), webhookSubscriptionLastAttemptedAt: new Date(), _count: { automations: 59 } }]);
+  await scanOperationalIntegrationAlerts();
+  const alert = mocks.enqueue.mock.calls[0][0];
+  expect(alert.title).toContain("webhook setup");
+  expect(alert.detail).not.toMatch(/status=|code=|subscribed_fields|59/);
+  expect(alert.integrationIncident.integrationId).toBe("ig");
 });

@@ -1,3 +1,4 @@
+import { currentIntegrationIncident, integrationAlertSelect } from "./integration-alert-state";
 import { createHash } from "node:crypto";
 import { Resend } from "resend";
 import { Prisma, type EmailDelivery } from "@prisma/client";
@@ -8,7 +9,7 @@ import type { EmailTemplateContent } from "./catalog";
 
 type QueueDb = Pick<Prisma.TransactionClient, "emailDelivery">;
 type Payload = { from: string; to: string; replyTo: string; subject: string; html: string; text: string };
-type AlertMetadata = { version: 1; content: EmailTemplateContent; attempts: number; firstAttemptAt?: string; nextAttemptAt?: string; payload?: Payload };
+type AlertMetadata = { integrationIncident?: { integrationId: string; key: string }; version: 1; content: EmailTemplateContent; attempts: number; firstAttemptAt?: string; nextAttemptAt?: string; payload?: Payload };
 const RETRY_DELAYS = [1, 5, 15, 60, 180, 360];
 const MAX_RETRY_AGE = 23 * 60 * 60 * 1000;
 
@@ -26,7 +27,7 @@ export async function enqueueOwnerAlert(alert: OwnerAlert, db: QueueDb = client)
     create: {
       templateId: `owner_${alert.kind}`, category: "owner_alert", recipient: config.recipient,
       userId: alert.userId, subject: content.subject, idempotencyKey, status: "PENDING",
-      metadata: { version: 1, content, attempts: 0 } as unknown as Prisma.InputJsonValue,
+      metadata: { version: 1, content, attempts: 0, ...(alert.integrationIncident ? { integrationIncident: alert.integrationIncident } : {}) } as unknown as Prisma.InputJsonValue,
     },
   });
 }
@@ -45,6 +46,14 @@ export async function deliverOwnerAlert(id: string): Promise<"sent" | "queued" |
   const row = await client.emailDelivery.findUnique({ where: { id } });
   if (!row || row.category !== "owner_alert" || !canAttemptOwnerAlert(row)) return "skipped";
   const previous = row.metadata as unknown as AlertMetadata;
+  if (previous.integrationIncident) {
+    const integration = await client.integrations.findUnique({ where: { id: previous.integrationIncident.integrationId }, select: integrationAlertSelect });
+    const current = integration ? currentIntegrationIncident(integration) : null;
+    if (!current || current.key !== previous.integrationIncident.key) {
+      await client.emailDelivery.updateMany({ where: { id, providerMessageId: null, updatedAt: row.updatedAt }, data: { status: "SKIPPED", errorCode: "incident_resolved", errorMessage: "Connection recovered or incident changed before notification delivery." } });
+      return "skipped";
+    }
+  }
   const suppressed = await client.emailDelivery.findFirst({ where: { recipient: row.recipient, status: { in: ["BOUNCED", "COMPLAINED", "SUPPRESSED"] } }, select: { id: true } });
   if (suppressed) {
     await client.emailDelivery.update({ where: { id }, data: { status: "SKIPPED", errorCode: "owner_recipient_suppressed", errorMessage: "Owner address has a bounce, complaint, or suppression. Review delivery before enabling again." } });

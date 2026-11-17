@@ -17,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
     integrations: {
       findFirst: (...args: any[]) => mockFindIntegrationFirst(...args),
       update: (...args: any[]) => mockUpdateIntegration(...args),
+      updateMany: (...args: any[]) => mockUpdateIntegration(...args),
     },
     automation: {
       updateMany: (...args: any[]) => mockPauseAutomations(...args),
@@ -216,7 +217,7 @@ describe("instagram profile snapshots", () => {
     expect(result.status).toBe(401);
     expect(result.error).toBe("Reconnect Instagram to refresh profile stats.");
     expect(mockUpdateIntegration).toHaveBeenCalledWith({
-      where: { id: "integration-a" },
+      where: { id: "integration-a", reconnectRequired: false },
       data: expect.objectContaining({
         reconnectRequired: true,
         oauthLastError: "instagram_token_expired",
@@ -260,7 +261,7 @@ describe("instagram profile snapshots", () => {
 
     expect(result.error).toBe("Reconnect Instagram to refresh profile stats.");
     expect(mockUpdateIntegration).toHaveBeenCalledWith({
-      where: { id: "integration-a" },
+      where: { id: "integration-a", reconnectRequired: false },
       data: expect.objectContaining({
         reconnectRequired: true,
         oauthLastError: "instagram_token_invalidated",

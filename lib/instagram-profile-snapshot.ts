@@ -284,8 +284,8 @@ async function markIntegrationReconnectRequired(
   source: string,
 ) {
   const now = new Date();
-  await client.integrations.update({
-    where: { id: integrationId },
+  await client.integrations.updateMany({
+    where: { id: integrationId, reconnectRequired: false },
     data: {
       reconnectRequired: true,
       oauthLastError: reason,

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { EmailDelivery } from "@prisma/client";
 import { ownerAlertContent, ownerAlertConfiguration, type OwnerAlert } from "./owner-alert-content";
 
-const mocks = vi.hoisted(() => ({ findUnique: vi.fn(), upsert: vi.fn(), findFirst: vi.fn(), updateMany: vi.fn(), update: vi.fn(), send: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({ client: { emailDelivery: mocks } }));
+const mocks = vi.hoisted(() => ({ findUnique: vi.fn(), upsert: vi.fn(), findFirst: vi.fn(), updateMany: vi.fn(), update: vi.fn(), send: vi.fn(), integration: vi.fn() }));
+vi.mock("@/lib/prisma", () => ({ client: { emailDelivery: mocks, integrations: { findUnique: mocks.integration } } }));
 vi.mock("resend", () => ({ Resend: class { emails = { send: mocks.send }; } }));
 vi.mock("./render", () => ({ renderAp3kEmail: vi.fn(async () => ({ subject: "Owner update", html: "<p>Customer update</p>", text: "Customer update" })) }));
 import { canAttemptOwnerAlert, deliverOwnerAlert, enqueueOwnerAlert, ownerAlertKey } from "./owner-alerts";
@@ -61,4 +61,12 @@ describe("important owner alerts", () => {
     expect(await deliverOwnerAlert("delivery-1")).toBe("queued");
     expect(mocks.updateMany.mock.calls.at(-1)?.[0].data.errorCode).toBe("owner_retry");
   });
+});
+
+it("suppresses a queued connection alert after recovery without sending", async () => {
+  mocks.findUnique.mockResolvedValue(row({ templateId: "owner_system", metadata: { version: 1, attempts: 0, content: ownerAlertContent(alert), integrationIncident: { integrationId: "ig", key: "authorization:old" } } }));
+  mocks.integration.mockResolvedValue({ status: "CONNECTED", reconnectRequired: false, webhookSubscriptionSubscribed: true });
+  expect(await deliverOwnerAlert("delivery-1")).toBe("skipped");
+  expect(mocks.send).not.toHaveBeenCalled();
+  expect(mocks.updateMany.mock.calls[0][0].data.errorCode).toBe("incident_resolved");
 });
