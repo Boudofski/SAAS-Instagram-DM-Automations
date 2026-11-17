@@ -1,3 +1,4 @@
+import { currentIntegrationIncident, integrationAlertSelect } from "./integration-alert-state";
 import { client } from "@/lib/prisma";
 import { dashboardPath } from "@/lib/dashboard";
 import { getApplicationUrl } from "@/lib/app-url";
@@ -165,6 +166,7 @@ export async function notifyInstagramReconnectEmail(input: {
     const integration = await client.integrations.findUnique({
       where: { id: input.integrationId },
       select: {
+        ...integrationAlertSelect,
         id: true,
         userId: true,
         instagramUsername: true,
@@ -173,7 +175,7 @@ export async function notifyInstagramReconnectEmail(input: {
         webhookSubscriptionLastAttemptedAt: true,
       },
     });
-    if (!integration?.userId) return;
+    if (!integration?.userId || !integration.reconnectRequired || integration.status === "DISCONNECTED") return;
 
     const user = await loadUserEmailProfile(integration.userId);
     if (!user) return;
@@ -181,7 +183,7 @@ export async function notifyInstagramReconnectEmail(input: {
     // The token expiry changes after every successful reconnect, giving each
     // authorization incident one stable key while suppressing repeated alerts
     // from profile refreshes and scheduled token checks.
-    const incident = (integration.oauthLastErrorAt ?? integration.webhookSubscriptionLastAttemptedAt ?? integration.expiresAt)?.toISOString() ?? "current-state";
+    const incident = currentIntegrationIncident(integration)!.key;
     await safelySendEvent({
       templateId: "instagram_reconnect",
       user,
@@ -195,13 +197,15 @@ export async function notifyInstagramReconnectEmail(input: {
     const { enqueueOwnerAlert } = await import("@/lib/email/owner-alerts");
     await enqueueOwnerAlert({
       kind: "system",
+      title: `${integration.instagramUsername ? `@${integration.instagramUsername}` : "Instagram"}: reconnect required`,
+      integrationIncident: { integrationId: integration.id, key: incident },
       key: `integration-health:${integration.id}:${incident}`,
       userId: user.id,
       email: user.email,
       name: user.firstname || undefined,
       occurredAt: new Date().toISOString(),
       reference: integration.instagramUsername ? `@${integration.instagramUsername}` : integration.id,
-      detail: `Instagram authorization requires reconnection${integration.instagramUsername ? ` for @${integration.instagramUsername}` : ""}. AP3K sent the customer a reconnect email and paused affected delivery to prevent further failures.`,
+      detail: `Instagram authorization requires reconnection${integration.instagramUsername ? ` for @${integration.instagramUsername}` : ""}. Open the account in AP3K to restore authorization. Check Email Center for the customer notification status.`,
     });
   } catch (error) {
     console.warn("[email-event] reconnect notification skipped", {

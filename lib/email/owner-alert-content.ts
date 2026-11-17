@@ -3,6 +3,8 @@ import type { EmailTemplateContent } from "./catalog";
 export type OwnerAlertKind = "signup" | "payment" | "payment_failed" | "cancellation" | "refund" | "dispute" | "system" | "test";
 export type OwnerAlert = {
   kind: OwnerAlertKind;
+  title?: string;
+  integrationIncident?: { integrationId: string; key: string };
   key: string;
   userId?: string;
   email?: string;
@@ -27,7 +29,7 @@ export function ownerAlertConfiguration() {
   };
 }
 export function ownerAlertContent(alert: OwnerAlert): EmailTemplateContent {
-  const label = OWNER_ALERT_LABELS[alert.kind];
+  const label = alert.kind === "system" && alert.title ? alert.title : OWNER_ALERT_LABELS[alert.kind];
   let amount: string | undefined;
   if (typeof alert.amount === "number" && Number.isFinite(alert.amount) && /^[a-z]{3}$/i.test(alert.currency || "")) {
     const formatter = new Intl.NumberFormat("en-US", { style: "currency", currency: alert.currency!.toUpperCase() });

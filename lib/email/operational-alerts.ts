@@ -1,3 +1,4 @@
+import { currentIntegrationIncident, integrationAlertSelect } from "./integration-alert-state";
 import { client } from "@/lib/prisma";
 import { enqueueOwnerAlert, notifyOwnerAlert } from "@/lib/email/owner-alerts";
 
@@ -9,7 +10,7 @@ type DeliveryFailure = {
   occurredAt?: Date;
 };
 
-type OperationalFailureKind = "authorization" | "quota" | "rate_limit" | "delivery";
+type OperationalFailureKind = "authorization" | "permission" | "quota" | "rate_limit" | "delivery";
 
 const EXPECTED_NON_INCIDENTS = [
   "messaging_window_closed",
@@ -41,8 +42,8 @@ export function classifyOperationalFailure(input: Pick<DeliveryFailure, "status"
   const error = (input.errorMessage || "").trim().toLowerCase();
   if (!error || input.status === "SENT" || EXPECTED_NON_INCIDENTS.some((value) => error.includes(value))) return null;
   if (error.includes("static_reply_limit_reached") || error.includes("quota") || error.includes("usage_limit")) return "quota";
+  if (error.includes("dm_access_disabled") || error.includes("dm_capability_missing")) return "permission";
   if (
-    error.includes("dm_access_disabled") ||
     error.includes("token_missing") ||
     error.includes("token_invalid") ||
     error.includes("authorization") ||
@@ -89,9 +90,9 @@ export async function enqueueOperationalDeliveryAlert(input: DeliveryFailure) {
       ? `${occurredAt.getUTCFullYear()}-${String(occurredAt.getUTCMonth() + 1).padStart(2, "0")}`
       : utcBucket(occurredAt, 6);
     const account = automation.integration?.instagramUsername ? `@${automation.integration.instagramUsername}` : "Instagram account";
-    const reason = (input.errorMessage || "unknown delivery error").replace(/\s+/g, " ").slice(0, 240);
     const guidance: Record<OperationalFailureKind, string> = {
-      authorization: "The Instagram authorization or message permission needs attention. Reconnect the account and verify Meta permissions.",
+      authorization: "Instagram rejected an authorization check for this delivery. Review the current connection status before reconnecting.",
+      permission: "Instagram did not allow AP3K to send this message. Check access to messages for connected tools in Instagram settings and review AP3K’s messaging permissions. This does not necessarily mean the login has expired.",
       quota: "The account reached its AP3K monthly usage allowance. New matching comments or DMs can be skipped until the allowance resets or changes.",
       rate_limit: "Meta is rate-limiting delivery. AP3K will keep pacing queued work, but the account should be monitored.",
       delivery: "An Instagram automation delivery failed unexpectedly. Review the account and recent delivery logs.",
@@ -105,7 +106,8 @@ export async function enqueueOperationalDeliveryAlert(input: DeliveryFailure) {
       name: automation.User ? [automation.User.firstname, automation.User.lastname].filter(Boolean).join(" ") : undefined,
       occurredAt: occurredAt.toISOString(),
       reference: `${account} · ${automation.name || automation.id}`,
-      detail: `${guidance[kind]} Account: ${account}. Automation: ${automation.name || "Untitled automation"}. Channel: ${input.messageType}. Recorded reason: ${reason}`,
+      title: `${account}: ${kind === "permission" ? "message access needs attention" : kind === "quota" ? "monthly limit reached" : "delivery needs review"}`,
+      detail: `${guidance[kind]} Affected automation: ${automation.name || "Untitled automation"}. Review the delivery log for technical details.`,
     });
   } catch (error) {
     console.warn("[operational-alert] delivery alert could not be queued", {
@@ -117,13 +119,12 @@ export async function enqueueOperationalDeliveryAlert(input: DeliveryFailure) {
 }
 
 export async function notifySchedulerFailure(input: { worker: string; error?: unknown }) {
-  const message = input.error instanceof Error ? input.error.message : String(input.error || "Unknown worker error");
   return notifyOwnerAlert({
     kind: "system",
     key: `scheduler:${input.worker}:${utcBucket(new Date(), 1)}`,
     occurredAt: new Date().toISOString(),
     reference: input.worker,
-    detail: `The ${input.worker} scheduler failed and returned a retryable error. Review the production queue and deployment logs. Error: ${message.replace(/\s+/g, " ").slice(0, 240)}`,
+    detail: `The ${input.worker} scheduler failed and returned a retryable error. Review the production queue and deployment logs. Technical details are available in the production logs.`,
   }).catch(() => undefined);
 }
 
@@ -135,15 +136,16 @@ export async function scanOperationalIntegrationAlerts() {
     const integrations = await client.integrations.findMany({
       where: {
         name: "INSTAGRAM",
+        status: { not: "DISCONNECTED" },
         OR: [
           { reconnectRequired: true },
-          { oauthLastError: { not: null } },
-          { webhookSubscriptionError: { not: null } },
+          { webhookSubscriptionSubscribed: false, webhookSubscriptionError: { not: null } },
         ],
       },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: {
+        ...integrationAlertSelect,
         id: true,
         userId: true,
         instagramUsername: true,
@@ -158,19 +160,24 @@ export async function scanOperationalIntegrationAlerts() {
     });
     let queued = 0;
     for (const integration of integrations) {
-      const incidentAt = integration.oauthLastErrorAt ?? integration.webhookSubscriptionLastAttemptedAt;
-      const incident = incidentAt?.toISOString() ?? "current-state";
+      const current = currentIntegrationIncident(integration);
+      if (!current) continue;
+      const incidentAt = current.at;
+      const incident = current.key;
       const account = integration.instagramUsername ? `@${integration.instagramUsername}` : "Instagram account";
-      const reason = integration.oauthLastError || integration.webhookSubscriptionError || (integration.reconnectRequired ? "reconnect_required" : "integration_unhealthy");
       const row = await enqueueOwnerAlert({
         kind: "system",
+        integrationIncident: { integrationId: integration.id, key: incident },
+        title: `${account}: ${current.kind === "authorization" ? "reconnect Instagram" : "webhook setup needs review"}`,
         key: `integration-health:${integration.id}:${incident}`,
         userId: integration.userId ?? undefined,
         email: integration.User?.email,
         name: integration.User ? [integration.User.firstname, integration.User.lastname].filter(Boolean).join(" ") : undefined,
         occurredAt: (incidentAt ?? new Date()).toISOString(),
         reference: account,
-        detail: `${account} has an Instagram connection issue. ${integration._count.automations} active automation${integration._count.automations === 1 ? " is" : "s are"} affected. Recorded reason: ${reason.replace(/\s+/g, " ").slice(0, 240)}. Reconnect the account or review its Meta webhook permissions.`,
+        detail: current.kind === "authorization"
+          ? "The account is marked as requiring reconnection. Open the account in AP3K and reconnect Instagram, then verify a new interaction."
+          : "AP3K could not complete webhook setup with Meta. Review the subscription configuration and permissions in the admin dashboard. This setup error is not proof that the Instagram login has expired or that every automation has stopped.",
       });
       if (row) queued++;
     }
