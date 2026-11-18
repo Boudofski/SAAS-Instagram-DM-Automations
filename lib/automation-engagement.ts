@@ -2,6 +2,7 @@ import { scheduleDeliveryWake } from "@/lib/qstash-delivery-wake";
 import { observeAutomationFollow } from "./automation-tracking";
 import { client } from "@/lib/prisma";
 import { canSendStaticReply } from "@/actions/usage/queries";
+import { reserveStaticUsage, settleStaticUsageUnit } from "@/lib/usage-reservation";
 import {
   createMessageLog,
   recordOutboundInboxMessage,
@@ -183,8 +184,12 @@ async function sendCaptureRetry(automationId:string,integrationId:string,recipie
   const prompt=(kind==="PHONE"?listener?.phoneCaptureRetryMessage||DEFAULT_PHONE_CAPTURE_RETRY:listener?.emailCaptureRetryMessage||DEFAULT_EMAIL_CAPTURE_RETRY).trim();
   const contact=await client.conversation.findUnique({where:{integrationId_recipientIgId:{integrationId,recipientIgId}},select:{recipientUsername:true}});
   const message=personalizeUsername(prompt,contact?.recipientUsername);
+  // Atomic limit; the read above can pass for concurrent sends.
+  const reservation=await reserveStaticUsage({userId:automation.userId,source:"CAPTURE_RETRY"});
+  if(!reservation.ok)return;
   const sent=await sendInstagramDirectResponse({token:token.token,igBusinessAccountId:integration.instagramId,recipientId:recipientIgId,automationId,message,responseFormat:"TEXT"});
   await createMessageLog({automationId,recipientIgId,commentId:flowId,messageType:"DM",status:sent.ok?"SENT":"FAILED",errorMessage:sent.ok?"capture_retry_sent":"capture_retry_failed"});
+  await settleStaticUsageUnit(reservation.reservationId);
   if(sent.ok){await trackResponse(automationId,"DM");await recordOutboundInboxMessage({userId:automation.userId,integrationId,recipientIgId,automationId,content:message,metaMessageId:sent.messageIds[0]});}
 }
 
@@ -471,6 +476,12 @@ export async function processAutomationFollowUps(now = new Date()) {
       )
         continue;
       const message = personalizeUsername(listener.followUpMessage!, profile?.username);
+      // Atomic limit for this follow-up; the earlier read can pass for concurrent sends.
+      const reservation = await reserveStaticUsage({ userId: automation.userId, source: "FOLLOW_UP" });
+      if (!reservation.ok) {
+        await client.automationEngagementJob.update({ where: { id: job.id }, data: { status: "CANCELLED" } });
+        continue;
+      }
       const result = await sendInstagramDirectResponse({
         token: token.token,
         igBusinessAccountId: integration.instagramId,
@@ -489,6 +500,7 @@ export async function processAutomationFollowUps(now = new Date()) {
         status: result.ok ? "SENT" : "FAILED",
         errorMessage: result.ok ? "follow_up_dm_sent" : "follow_up_dm_failed",
       });
+      await settleStaticUsageUnit(reservation.reservationId);
       if (result.ok) {
         sent++;
         await trackResponse(automation.id, "DM");

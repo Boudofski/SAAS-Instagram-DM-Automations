@@ -1,5 +1,6 @@
 import { client } from "@/lib/prisma";
 import { canSendStaticReply } from "@/actions/usage/queries";
+import { releaseStaticUsage, reserveStaticUsage } from "@/lib/usage-reservation";
 import { recordOutboundInboxMessage } from "@/actions/webhook/queries";
 import { messagingWindowOpen } from "@/lib/automation-engagement-settings";
 import { resolveIntegrationSendToken } from "@/lib/send-token";
@@ -28,9 +29,15 @@ export async function handleConversationStarter(input: {
   const session = await client.automationFlowSession.findUnique({ where: { integrationId_recipientIgId: { integrationId: integration.id, recipientIgId: input.recipientIgId } } });
   if (session?.status === "STOPPED" && session.expiresAt > new Date()) return true;
   if (!(await canSendStaticReply(integration.userId)).ok) return true;
+  // Atomic limit, taken before the one-time receipt so a blocked send can still run after an upgrade.
+  const reservation = await reserveStaticUsage({ userId: integration.userId, source: "CONVERSATION_STARTER" });
+  if (!reservation.ok) return true;
   const receiptKey = { integrationId: integration.id, recipientIgId: input.recipientIgId, eventId: input.eventId };
   const receipt = await client.conversationStarterReceipt.createMany({ data: [{ ...receiptKey, status: "PROCESSING" }], skipDuplicates: true });
-  if (!receipt.count) return true;
+  if (!receipt.count) {
+    await releaseStaticUsage(reservation.reservationId);
+    return true;
+  }
   try {
     // A new explicit starter selection supersedes delayed/waiting bot turns.
     await client.automationFlowSession.updateMany({ where: { integrationId: integration.id, recipientIgId: input.recipientIgId, OR: [{ status: { in: ["WAITING", "SCHEDULED"] } }, { status: { startsWith: "PROCESSING:" } }] }, data: { status: "CANCELLED", resumeAt: null } });
@@ -48,6 +55,9 @@ export async function handleConversationStarter(input: {
     await recordOutboundInboxMessage({ integrationId: integration.id, userId: integration.userId, recipientIgId: input.recipientIgId, content: starter.reply, metaMessageId: sent.data.message_id });
   } catch {
     await client.conversationStarterReceipt.updateMany({ where: { ...receiptKey, status: "PROCESSING" }, data: { status: "FAILED" } });
+  } finally {
+    // The receipt now records the outcome (SENT counts as usage), so the hold can go.
+    await releaseStaticUsage(reservation.reservationId);
   }
   return true;
 }
