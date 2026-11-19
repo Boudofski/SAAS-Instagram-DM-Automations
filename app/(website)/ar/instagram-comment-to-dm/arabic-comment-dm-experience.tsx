@@ -516,7 +516,7 @@ export default function ArabicCommentDmExperience() {
         <motion.section className={styles.finalCta} {...reveal}>
           <div className={styles.finalGlow} aria-hidden="true" />
           <span className={styles.finalMark}>
-            <AP3KLogo showText={false} markClassName="h-14 w-14 rounded-2xl" />
+            <AP3KLogo showText={false} iconSize="small" markClassName="h-14 w-14 rounded-2xl" />
           </span>
           <span className={styles.sectionLabel}>جاهز لأول اختبار؟</span>
           <h2>دع تعليقك القادم يبدأ محادثة مفيدة</h2>

@@ -6,7 +6,7 @@ const nextConfig = {
   // Search Console's saved render left streamed metadata in the body and did
   // not recognize the declared canonical. Apply consistently to every client.
   htmlLimitedBots: /.*/,
-  outputFileTracingIncludes: { "/blog/[slug]": ["./lib/content/imported-blog/*.html"] },
+  outputFileTracingIncludes: { "/opengraph-image": ["./public/brand/v2/ap3k-og-logo.png"], "/blog/[slug]": ["./lib/content/imported-blog/*.html"] },
   images: {
     remotePatterns: [
       {

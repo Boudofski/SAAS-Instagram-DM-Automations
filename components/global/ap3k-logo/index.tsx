@@ -1,29 +1,33 @@
+/* The supplied artwork is never recolored, cropped or decorated. */
 import { cn } from "@/lib/utils";
 
 type Props = {
   className?: string;
   markClassName?: string;
   showText?: boolean;
+  /** Use the simplified artwork appropriate to the rendered icon size. */
+  iconSize?: "tiny" | "small" | "full";
 };
 
-export default function AP3KLogo({ className, markClassName, showText = true }: Props) {
+export default function AP3KLogo({ className, markClassName, showText = true, iconSize = "tiny" }: Props) {
+  if (showText) {
+    return (
+      <span role="img" aria-label="AP3K" dir="ltr" className={cn("inline-flex max-w-full shrink-0 items-center", className)}>
+        {/* CSS theme selection avoids a wrong-theme flash and hydration dependency. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/v2/ap3k-horizontal-for-light-bg.svg" alt="" width={1135} height={428} className={cn("block h-9 w-auto max-w-full object-contain dark:hidden", markClassName, "w-auto")} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/v2/ap3k-horizontal-for-dark-bg.svg" alt="" width={1135} height={428} className={cn("hidden h-9 w-auto max-w-full object-contain dark:block", markClassName, "w-auto")} />
+      </span>
+    );
+  }
+  const file = iconSize === "full" ? "ap3k-icon.svg" : iconSize === "small" ? "ap3k-icon-small.svg" : "favicon.svg";
   return (
-    <div className={cn("flex items-center gap-2.5 text-slate-950 dark:text-rf-text", className)}>
-      <div
-        className={cn(
-          "relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[13px] bg-ap3k-gradient shadow-[0_10px_28px_rgba(109,40,217,0.28)] ring-1 ring-white/20",
-          markClassName
-        )}
-      >
-        <svg aria-hidden="true" viewBox="0 0 48 48" fill="none" className="h-full w-full p-[7px]">
-          <path d="M8.5 36 20.7 9.2a3.62 3.62 0 0 1 6.6 0L39.5 36" stroke="currentColor" strokeWidth="4.7" strokeLinecap="round" strokeLinejoin="round" className="text-white" />
-          <path d="M14 27.5h18.6" stroke="currentColor" strokeWidth="4.3" strokeLinecap="round" className="text-white" />
-          <path d="m30.1 23.7 4.9 3.8-4.9 3.8" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" className="text-white" />
-        </svg>
-      </div>
-      {showText && (
-        <span className="text-[1.05em] font-black leading-none tracking-[-0.055em]">{" AP3K "}</span>
-      )}
-    </div>
+    <span role="img" aria-label="AP3K" dir="ltr" className={cn("inline-flex shrink-0 items-center", className)}>
+      <span className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center", markClassName)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/brand/v2/${file}`} alt="" width={512} height={512} className="h-full w-full object-contain" />
+      </span>
+    </span>
   );
 }
