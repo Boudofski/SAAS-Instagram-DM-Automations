@@ -1,4 +1,5 @@
 "use client";
+import AP3KLogo from "@/components/global/ap3k-logo";
 import Link from "next/link";
 import ThemeToggle from "@/components/global/theme-toggle";
 import { usePathname, useRouter } from "next/navigation";
@@ -148,16 +149,9 @@ export function AdminV2Nav({
       <aside
         className={`admin-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0c0f17] px-3 py-5 lg:flex ${collapsed ? "w-[76px]" : "w-[248px]"}`}
       >
-        <Link href="/admin/overview" className="flex items-center gap-3 px-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-sm font-bold text-white">
-            A3
-          </span>
-          {!collapsed && (
-            <div>
-              <p className="text-sm font-bold text-slate-950 dark:text-white">AP3K</p>
-              <p className="text-[11px] text-muted-foreground dark:text-slate-400">Owner workspace</p>
-            </div>
-          )}
+        <Link href="/admin/overview" className={collapsed ? "flex justify-center px-2" : "flex flex-col items-start gap-1 px-2"}>
+          <AP3KLogo showText={!collapsed} />
+          {!collapsed && <p className="text-[11px] text-muted-foreground dark:text-slate-400">Owner workspace</p>}
         </Link>
         <Button
           variant="ghost"

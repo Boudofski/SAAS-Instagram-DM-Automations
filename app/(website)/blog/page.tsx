@@ -167,7 +167,7 @@ export default async function BlogPage(props: Props) {
         <WebsiteNav current="blog" />
         <main className={e.archive}>
           <header className={e.hero}>
-            <AP3KLogo showText={false} markClassName="h-[63px] w-[63px] mx-auto mb-8" />
+            <AP3KLogo showText={false} iconSize="small" markClassName="h-[63px] w-[63px] mx-auto mb-8" />
             <h1>{copy.heading}</h1>
             <p>
               {copy.intro}
