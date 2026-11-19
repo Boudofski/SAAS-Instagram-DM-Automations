@@ -194,7 +194,7 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
           </div>
           <div className={s.choiceCard}>
             <div className={s.brandRow}>
-              <AP3KLogo markClassName="h-10 w-10" />
+              <AP3KLogo variant="wordmark" markClassName="h-10" />
               <span className={s.versus}>vs</span>
               {isManychat ? (
                 <Image
@@ -548,7 +548,7 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
           </div>
         </section>
         <section className={s.finalCta}>
-          <AP3KLogo markClassName="h-10 w-10" />
+          <AP3KLogo variant="icon" iconSize="small" markClassName="h-14 w-14" />
           <h2>Start with one useful conversation.</h2>
           <p>
             Choose a post, deliver what you promised, and test the experience

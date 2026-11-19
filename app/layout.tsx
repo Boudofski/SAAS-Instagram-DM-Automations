@@ -37,6 +37,16 @@ export function generateMetadata(): Metadata {
     title: { default: site.title, template: "%s" },
     description: site.description,
     applicationName: "AP3K",
+    manifest: "/site.webmanifest?v=2",
+    icons: {
+      icon: [
+        { url: "/favicon.svg?v=2", type: "image/svg+xml", sizes: "any" },
+        { url: "/favicon-32.png?v=2", type: "image/png", sizes: "32x32" },
+        { url: "/favicon-16.png?v=2", type: "image/png", sizes: "16x16" },
+      ],
+      shortcut: [{ url: "/favicon.ico?v=2", type: "image/x-icon" }],
+      apple: [{ url: "/apple-touch-icon.png?v=2", type: "image/png", sizes: "180x180" }],
+    },
     alternates: {
       canonical: locale === "en" ? "/" : `/${locale}`,
       languages: localeAlternates(),
@@ -65,6 +75,9 @@ export function generateMetadata(): Metadata {
       card: "summary_large_image",
       title: site.title,
       description: site.description,
+    },
+    other: {
+      "theme-color": "#EEF1F6",
     },
   };
 }
