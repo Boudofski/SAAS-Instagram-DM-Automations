@@ -50,8 +50,8 @@ export default function WebsiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] xl:gap-14">
           <div className="flex min-w-0 flex-col items-start gap-3">
             <AP3KLogo
-              className="text-lg text-slate-950 dark:text-white"
-              markClassName="h-9 w-9 rounded-xl"
+              variant="wordmark"
+              markClassName="h-9"
             />
             <p className="max-w-sm text-sm leading-6 text-slate-500 dark:text-rf-muted">
               {t("footerDescription")}

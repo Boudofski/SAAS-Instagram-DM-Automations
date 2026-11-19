@@ -150,7 +150,11 @@ export function AdminV2Nav({
         className={`admin-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0c0f17] px-3 py-5 lg:flex ${collapsed ? "w-[76px]" : "w-[248px]"}`}
       >
         <Link href="/admin/overview" className={collapsed ? "flex justify-center px-2" : "flex flex-col items-start gap-1 px-2"}>
-          <AP3KLogo showText={!collapsed} />
+          <AP3KLogo
+            variant={collapsed ? "icon" : "wordmark"}
+            iconSize="small"
+            markClassName={collapsed ? "h-10 w-10" : "h-8"}
+          />
           {!collapsed && <p className="text-[11px] text-muted-foreground dark:text-slate-400">Owner workspace</p>}
         </Link>
         <Button

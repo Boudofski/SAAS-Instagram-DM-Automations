@@ -57,6 +57,8 @@ describe("light-mode contrast invariants", () => {
     const src = read("components/global/ap3k-logo/index.tsx");
     expect(src).toContain("ap3k-horizontal-for-light-bg.svg");
     expect(src).toContain("ap3k-horizontal-for-dark-bg.svg");
+    expect(src).toContain("ap3k-wordmark-black.svg");
+    expect(src).toContain("ap3k-wordmark-white-mono.svg");
     expect(src).toContain("dark:hidden");
     expect(src).toContain("dark:block");
   });

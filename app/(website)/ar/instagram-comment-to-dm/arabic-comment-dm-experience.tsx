@@ -92,8 +92,10 @@ export default function ArabicCommentDmExperience() {
         <nav className={styles.nav} aria-label="التنقل الرئيسي">
           <Link href="/" aria-label="الصفحة الرئيسية لـ AP3K">
             <AP3KLogo
+              variant="wordmark"
+              monochrome
               className={styles.logo}
-              markClassName="h-9 w-9 rounded-xl"
+              markClassName="h-8"
             />
           </Link>
           <div className={styles.navLinks}>
@@ -532,8 +534,9 @@ export default function ArabicCommentDmExperience() {
 
       <footer className={styles.footer}>
         <AP3KLogo
+          variant="wordmark"
           className={styles.footerLogo}
-          markClassName="h-8 w-8 rounded-xl"
+          markClassName="h-8"
         />
         <p>© 2026 AP3K LLC. جميع الحقوق محفوظة.</p>
         <div>
