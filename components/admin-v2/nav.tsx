@@ -1,4 +1,5 @@
 "use client";
+import AP3KLogo from "@/components/global/ap3k-logo";
 import Link from "next/link";
 import ThemeToggle from "@/components/global/theme-toggle";
 import { usePathname, useRouter } from "next/navigation";
@@ -148,10 +149,8 @@ export function AdminV2Nav({
       <aside
         className={`admin-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0c0f17] px-3 py-5 lg:flex ${collapsed ? "w-[76px]" : "w-[248px]"}`}
       >
-        <Link href="/admin/overview" className="flex items-center gap-3 px-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-sm font-bold text-white">
-            A3
-          </span>
+        <Link href="/admin/overview" aria-label="AP3K owner workspace" className="flex items-center gap-3 px-2">
+          <AP3KLogo showText={false} />
           {!collapsed && (
             <div>
               <p className="text-sm font-bold text-slate-950 dark:text-white">AP3K</p>
@@ -242,7 +241,7 @@ export function AdminV2Nav({
       </div>
       <Dialog open={mobile} onOpenChange={setMobile}>
         <DialogContent className="admin-dialog inset-y-0 left-0 right-auto top-0 flex h-[100dvh] max-h-[100dvh] w-[min(88vw,320px)] translate-x-0 translate-y-0 flex-col rounded-none border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c0f17] p-5 text-slate-950 dark:text-white">
-          <DialogTitle>AP3K workspace</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><AP3KLogo showText={false} markClassName="h-7 w-7" /> AP3K workspace</DialogTitle>
           <DialogDescription className="sr-only">
             Owner administration navigation
           </DialogDescription>

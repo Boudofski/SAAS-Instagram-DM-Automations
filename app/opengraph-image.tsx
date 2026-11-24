@@ -1,3 +1,4 @@
+import mark from "@/lib/ap3k-mark.json";
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
@@ -23,24 +24,15 @@ export default function OpenGraphImage() {
       >
         <div style={{ display: "flex", flexDirection: "column", width: 720 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-            <div
-              style={{
-                width: 108,
-                height: 108,
-                borderRadius: 34,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "linear-gradient(135deg, #6D28D9, #8B5CF6 46%, #EC4899 74%, #FF6B35)",
-                boxShadow: "0 24px 60px rgba(109,40,217,.35)",
-              }}
-            >
-              <svg width="76" height="76" viewBox="0 0 48 48" fill="none">
-                <path d="M8.5 36 20.7 9.2a3.62 3.62 0 0 1 6.6 0L39.5 36" stroke="white" strokeWidth="4.7" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M14 27.5h18.6" stroke="white" strokeWidth="4.3" strokeLinecap="round" />
-                <path d="m30.1 23.7 4.9 3.8-4.9 3.8" stroke="white" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
+            <svg width="108" height="108" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="quick-reply" x1="0%" y1="90%" x2="100%" y2="10%">
+                  {mark.stops.map(([offset, color]) => <stop key={offset} offset={Number(offset)} stopColor={String(color)} />)}
+                </linearGradient>
+              </defs>
+              <path d={mark.bubble} fill="url(#quick-reply)" />
+              <path d={mark.arrow} fill="#fff" />
+            </svg>
             <div style={{ fontSize: 72, fontWeight: 900, letterSpacing: -5 }}>AP3K</div>
           </div>
           <div style={{ marginTop: 48, fontSize: 58, lineHeight: 1.03, fontWeight: 900, letterSpacing: -3 }}>

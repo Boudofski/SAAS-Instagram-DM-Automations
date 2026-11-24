@@ -14,7 +14,7 @@
 
 ## Logo idea
 
-The AP3K Signal Mark is a custom letter **A** built around a forward arrow. The A identifies the brand; the arrow represents the movement from comment to reply, DM, link and lead.
+The **Quick Reply** mark pairs a round chat bubble with a white reply arrow. It represents AP3K turning an Instagram comment into a direct message. The main mark uses the original violet, purple, pink and coral gradient.
 
 Always write the brand as **AP3K**. Do not use AP3k, Ap3k or ap3k in display copy.
 
@@ -26,7 +26,9 @@ Always write the brand as **AP3K**. Do not use AP3k, Ap3k or ap3k in display cop
 - `public/brand/ap3k-logo-on-light.svg` — horizontal lockup for light backgrounds
 - `public/brand/ap3k-logo-on-dark.svg` — horizontal lockup for dark backgrounds
 - `public/brand/ap3k-social-avatar.png` — social profile image
-- `public/brand/ap3k-favicon.svg` — optically simplified mark for 16–32 px use
+- `public/brand/ap3k-favicon.svg` — browser mark for 16–64 px use
+
+Keep the generated assets in sync by running `node scripts/generate-favicons.mjs` after changing `lib/ap3k-mark.json`.
 
 ### Clear space and minimum size
 
