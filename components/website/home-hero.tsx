@@ -150,21 +150,27 @@ export default function HomeHero() {
             {copy.description.split("AP3K")[0]}<bdi dir="ltr">AP3K</bdi>{copy.description.split("AP3K")[1]}
           </> : copy.description}
         </p>
-        <div className={styles.actions}>
-          <Link className={styles.primary} href={localizePublicPath("/sign-up", locale)}>{copy.cta}</Link>
-        </div>
-        <div className={styles.mobileScene} role="img" aria-label={copy.demoDescription}>
-          <div className={styles.mobilePhoto} aria-hidden="true" />
-          <div className={styles.mobileComment} aria-hidden="true" />
-          <div className={styles.mobileDm} aria-hidden="true" />
-        </div>
-        <div className={styles.trust}>
-          <p>{copy.audience}</p>
-          <Image src="/media/hero/creator-portraits.webp" alt="" width={123} height={36} sizes="123px" className={styles.portraits} />
-        </div>
-        <div className={styles.api}>
-          <Image className={styles.lightArt} src="/media/hero/meta-business-partner-light.png" alt="Meta Business Partner" width={324} height={129} />
-          <Image className={styles.darkArt} src="/media/hero/meta-business-partner-dark.png" alt="Meta Business Partner" width={324} height={129} />
+        <div className={styles.heroProof}>
+          <div className={styles.mobileScene} role="img" aria-label={copy.demoDescription}>
+            <div className={styles.mobileLeftWing} aria-hidden="true">
+              <div className={styles.mobilePhoto} />
+              <div className={styles.mobileComment} />
+            </div>
+            <div className={styles.mobileRightWing} aria-hidden="true">
+              <div className={styles.mobileDm} />
+            </div>
+          </div>
+          <div className={styles.actions}>
+            <Link className={styles.primary} href={localizePublicPath("/sign-up", locale)}>{copy.cta}</Link>
+          </div>
+          <div className={styles.trust}>
+            <p>{copy.audience}</p>
+            <Image src="/media/hero/creator-portraits.webp" alt="" width={123} height={36} sizes="123px" className={styles.portraits} />
+          </div>
+          <div className={styles.api}>
+            <Image className={styles.lightArt} src="/media/hero/meta-business-partner-light.png" alt="Meta Business Partner" width={324} height={129} />
+            <Image className={styles.darkArt} src="/media/hero/meta-business-partner-dark.png" alt="Meta Business Partner" width={324} height={129} />
+          </div>
         </div>
       </div>
     </section>
