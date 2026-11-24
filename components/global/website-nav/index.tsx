@@ -51,7 +51,7 @@ export default function WebsiteNav({ current }: Props) {
       <div className={styles.row}>
         <div className={styles.brand}>
           <Link href={href("/")} aria-label={`AP3K ${t("home")}`} onClick={() => setOpen(false)}>
-            <AP3KLogo className="gap-2 text-xl text-slate-950 dark:text-white" markClassName="h-6 w-6 rounded-lg shadow-none ring-0 [&>svg]:p-1" />
+            <AP3KLogo className="gap-2 text-xl text-slate-950 dark:text-white" markClassName="h-8 w-8" />
           </Link>
           <div className={styles.language}><LanguageSwitcher textOnly /></div>
         </div>
