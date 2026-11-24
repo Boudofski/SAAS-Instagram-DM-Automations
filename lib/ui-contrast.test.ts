@@ -53,14 +53,9 @@ describe("light-mode contrast invariants", () => {
     }
   });
 
-  it("ap3k-logo switches to approved artwork for light and dark backgrounds", () => {
+  it("ap3k-logo uses a light color with a dark-mode guard", () => {
     const src = read("components/global/ap3k-logo/index.tsx");
-    expect(src).toContain("ap3k-horizontal-for-light-bg.svg");
-    expect(src).toContain("ap3k-horizontal-for-dark-bg.svg");
-    expect(src).toContain("ap3k-wordmark-black.svg");
-    expect(src).toContain("ap3k-wordmark-white-mono.svg");
-    expect(src).toContain("dark:hidden");
-    expect(src).toContain("dark:block");
+    expect(src).toContain("text-slate-950 dark:text-rf-text");
   });
 
   it("dashboard page headings do not use exact bare text-white", () => {

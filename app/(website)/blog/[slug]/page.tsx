@@ -292,7 +292,7 @@ export default async function BlogPostPage(props: Props) {
             </section>
             <ArticleShare slug={post.slug} title={post.title} />
             <div className={e.author}>
-              <AP3KLogo showText={false} iconSize="small" markClassName="h-12 w-12 shrink-0 rounded-xl" />
+              <AP3KLogo showText={false} markClassName="h-12 w-12 shrink-0 rounded-xl" />
               <div><strong>AP3K</strong><p>Practical ideas for creators and businesses building better Instagram conversations.</p></div>
             </div>
             </div>

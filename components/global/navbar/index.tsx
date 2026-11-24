@@ -52,7 +52,7 @@ function NavBar({ slug }: Props) {
             <div className="flex h-full min-h-0 w-full flex-col bg-white text-slate-950 backdrop-blur-3xl dark:bg-[#0b1020] dark:text-white">
               <div className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
                 <div className="flex items-center justify-center gap-x-2 p-5">
-                  <AP3KLogo variant="wordmark" markClassName="h-9" />
+                  <AP3KLogo className="text-slate-950 dark:text-white" />
                 </div>
               </div>
 

@@ -62,7 +62,7 @@ export default function DocsShell({ entries, children }: { entries: DocsSearchEn
   return <>
     <a className={styles.skip} href="#docs-content">{tr("Skip to content")}</a>
     <header className={styles.header}>
-      <Link className={styles.brand} href={lp("/docs")} aria-label={tr("AP3K Documentation")}><AP3KLogo variant="wordmark" markClassName="h-7" /><span>{tr("Documentation")}</span></Link>
+      <Link className={styles.brand} href={lp("/docs")} aria-label={tr("AP3K Documentation")}><AP3KLogo className="gap-2 text-lg" markClassName="h-7 w-7 rounded-lg shadow-none ring-0 [&>svg]:p-1" /><span>{tr("Documentation")}</span></Link>
       <button className={styles.headerSearch} aria-label={tr("Search documentation")} onClick={() => setSearch(true)}><Search size={17} /></button>
       <div className={styles.trail}>{current ? <><Link href={lp("/docs")}>{tr(DOCS_GROUPS.find((group) => group.id === current.group)?.title || "Documentation")}</Link><span>/</span><strong>{current.title}</strong></> : <span>{tr("Documentation")}</span>}</div>
       <div className={styles.headerActions}><Link href={lp("/pricing")}>{tr("Pricing")}</Link><Link href={lp("/contact")}>{tr("Contact support")}</Link><Link className={styles.signIn} href={lp("/sign-in")}>{tr("Sign in")}</Link><LanguageSwitcher compact /><ThemeToggle compact /><button className={styles.mobileSearch} aria-label={tr("Search documentation")} onClick={() => setSearch(true)}><Search size={20} /></button><button className={styles.menuButton} aria-label={tr("Open documentation menu")} onClick={() => setMenu(true)}><Menu size={21} /></button></div>

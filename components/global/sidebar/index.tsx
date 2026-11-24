@@ -66,9 +66,9 @@ export default function Sidebar({ slug, drawer = false, onNavigate }: Props) {
           )}
         >
           {expanded ? (
-            <AP3KLogo variant="wordmark" markClassName="h-8" />
+            <AP3KLogo className="text-sm text-slate-950 dark:text-white" />
           ) : (
-            <AP3KLogo variant="icon" iconSize="small" markClassName="h-11 w-11" />
+            <AP3KLogo showText={false} markClassName="h-11 w-11 rounded-2xl" />
           )}
         </div>
         <InstagramAccountSwitcher slug={slug} expanded={expanded} />
