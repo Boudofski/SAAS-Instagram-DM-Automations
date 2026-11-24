@@ -28,6 +28,17 @@ vi.mock("@/lib/send-token", () => ({
   resolveIntegrationSendToken: () => ({ ok: true, token: "test" }),
 }));
 vi.mock("@/lib/instagram-dm", () => ({ sendInstagramDirectResponse: send, getInstagramRecipientProfile: profile }));
+const staticUsage = vi.hoisted(() => ({
+  okResult: { ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } },
+  reserve: vi.fn(async (..._args: unknown[]): Promise<any> => ({ ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } })),
+  settle: vi.fn(async (..._args: unknown[]) => undefined),
+  release: vi.fn(async (..._args: unknown[]) => undefined),
+}));
+vi.mock("@/lib/usage-reservation", () => ({
+  reserveStaticUsage: (...args: unknown[]) => (staticUsage.reserve as any)(...args),
+  settleStaticUsageUnit: (...args: unknown[]) => (staticUsage.settle as any)(...args),
+  releaseStaticUsage: (...args: unknown[]) => (staticUsage.release as any)(...args),
+}));
 vi.mock("@/actions/usage/queries", () => ({ canSendStaticReply: quota }));
 vi.mock("@/actions/webhook/queries", () => ({
   createMessageLog: vi.fn(),
@@ -36,6 +47,7 @@ vi.mock("@/actions/webhook/queries", () => ({
   trackResponse: vi.fn(),
 }));
 import { processAutomationFlow } from "./runtime";
+import { createMessageLog } from "@/actions/webhook/queries";
 import { templateFlow } from "./templates";
 const now = new Date("2026-09-25T08:00:00Z");
 const input = {
@@ -73,6 +85,7 @@ function session() {
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  staticUsage.reserve.mockResolvedValue(staticUsage.okResult);
   vi.useFakeTimers();
   vi.setSystemTime(now);
   db.automationFlowSession.findUnique.mockResolvedValue(null);
@@ -254,6 +267,21 @@ describe("persistent flow delivery", () => {
     db.inboxMessage.findFirst.mockResolvedValue({ id: "manual" });
     await processAutomationFlow({ ...input, automationId: undefined });
     expect(send).not.toHaveBeenCalled();
+  });
+  it("does not send when a concurrent flow took the last action first", async () => {
+    staticUsage.reserve.mockResolvedValue({ ok: false, reservationId: null, usage: staticUsage.okResult.usage, reason: "static_reply_limit_reached" });
+    await processAutomationFlow(input);
+    expect(send).not.toHaveBeenCalled();
+    expect(db.automationFlowSession.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "FAILED" }) }),
+    );
+  });
+  it("settles each step's reservation only after its outcome is logged", async () => {
+    await processAutomationFlow(input);
+    expect(send).toHaveBeenCalled();
+    expect(staticUsage.reserve).toHaveBeenCalledWith(expect.objectContaining({ source: "FLOW" }));
+    expect(staticUsage.settle).toHaveBeenCalledWith("reservation-1");
+    expect(vi.mocked(createMessageLog).mock.invocationCallOrder[0]).toBeLessThan(staticUsage.settle.mock.invocationCallOrder[0]);
   });
   it("does not bypass a exhausted action budget", async () => {
     quota.mockResolvedValue({ ok: false });

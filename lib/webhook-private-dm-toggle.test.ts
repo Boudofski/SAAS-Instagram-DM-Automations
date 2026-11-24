@@ -96,6 +96,17 @@ vi.mock("@/lib/openai", () => ({
 
 const ai = vi.hoisted(()=>({decision:vi.fn(),reserve:vi.fn()}));
 vi.mock("@/lib/ai-reply",()=>({getAiWorkspaceRuntimeConfig:async()=>({aiCommentsEnabled:false}),generateAiCommentDecision:(...args:any[])=>ai.decision(...args),generateAiDmReply:vi.fn()}));
+const staticUsage = vi.hoisted(() => ({
+  okResult: { ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } },
+  reserve: vi.fn(async (..._args: unknown[]): Promise<any> => ({ ok: true as const, reservationId: "reservation-1", usage: { plan: "FREE", periodLabel: "", enforcementStart: new Date(0), staticReplies: { used: 0, limit: 500, remaining: 500 } } })),
+  settle: vi.fn(async (..._args: unknown[]) => undefined),
+  release: vi.fn(async (..._args: unknown[]) => undefined),
+}));
+vi.mock("@/lib/usage-reservation", () => ({
+  reserveStaticUsage: (...args: unknown[]) => (staticUsage.reserve as any)(...args),
+  settleStaticUsageUnit: (...args: unknown[]) => (staticUsage.settle as any)(...args),
+  releaseStaticUsage: (...args: unknown[]) => (staticUsage.release as any)(...args),
+}));
 vi.mock("@/actions/usage/queries", () => ({
   reserveAiReplyQuota:(...args:any[])=>ai.reserve(...args),completeAiReplyReservation:vi.fn(),releaseAiReplyReservation:vi.fn(),
   canSendStaticReply: (...args: any[]) => mockCanSendStaticReply(...args),
@@ -832,6 +843,48 @@ describe("comment webhook private DM toggle", () => {
         errorMessage: "static_reply_limit_reached",
       })
     );
+  });
+
+  it("skips both sends when a concurrent webhook took the last actions after the read passed", async () => {
+    const campaign = automation(true);
+    staticUsage.reserve.mockResolvedValueOnce({
+      ok: false,
+      reservationId: null,
+      reason: "static_reply_limit_reached",
+      usage: { plan: "FREE", planLabel: "Free", periodLabel: "May 2026", enforcementStart: new Date("2026-05-23T00:00:00Z"), staticReplies: { used: 500, limit: 500, remaining: 0, blocked: true } },
+    });
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(staticUsage.reserve).toHaveBeenCalledWith(expect.objectContaining({ units: 2, source: "COMMENT" }));
+    expect(mockSendCommentReply).not.toHaveBeenCalled();
+    expect(mockSendInstagramCommentPrivateReply).not.toHaveBeenCalled();
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({ messageType: "COMMENT_REPLY", status: "SKIPPED", errorMessage: "static_reply_limit_reached" }));
+    expect(mockCreateMessageLog).toHaveBeenCalledWith(expect.objectContaining({ messageType: "DM", status: "SKIPPED", errorMessage: "static_reply_limit_reached" }));
+  });
+
+  it("holds the public reply and DM units for one journey, then releases what is left", async () => {
+    const campaign = automation(true);
+    mockFindAutomationForCommentWithReason.mockResolvedValue({
+      automation: campaign,
+      automations: [campaign],
+      diagnostics: { matchingIntegrationFound: true, matchedAutomationIds: [campaign.id] },
+    });
+
+    await POST(commentRequest());
+
+    expect(staticUsage.reserve).toHaveBeenCalledTimes(1);
+    // The DM must not be re-checked against a total that includes its own reservation.
+    expect(mockCanSendStaticReply).toHaveBeenCalledTimes(1);
+    expect(mockSendInstagramCommentPrivateReply).toHaveBeenCalledOnce();
+    expect(staticUsage.release).toHaveBeenCalledWith("reservation-1");
+    const lastLog = Math.max(...mockCreateMessageLog.mock.invocationCallOrder);
+    expect(lastLog).toBeLessThan(staticUsage.release.mock.invocationCallOrder.at(-1)!);
   });
 });
 
