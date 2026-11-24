@@ -92,10 +92,8 @@ export default function ArabicCommentDmExperience() {
         <nav className={styles.nav} aria-label="التنقل الرئيسي">
           <Link href="/" aria-label="الصفحة الرئيسية لـ AP3K">
             <AP3KLogo
-              variant="wordmark"
-              monochrome
               className={styles.logo}
-              markClassName="h-8"
+              markClassName="h-9 w-9 rounded-xl"
             />
           </Link>
           <div className={styles.navLinks}>
@@ -518,7 +516,7 @@ export default function ArabicCommentDmExperience() {
         <motion.section className={styles.finalCta} {...reveal}>
           <div className={styles.finalGlow} aria-hidden="true" />
           <span className={styles.finalMark}>
-            <AP3KLogo showText={false} iconSize="small" markClassName="h-14 w-14 rounded-2xl" />
+            <AP3KLogo showText={false} markClassName="h-14 w-14 rounded-2xl" />
           </span>
           <span className={styles.sectionLabel}>جاهز لأول اختبار؟</span>
           <h2>دع تعليقك القادم يبدأ محادثة مفيدة</h2>
@@ -534,9 +532,8 @@ export default function ArabicCommentDmExperience() {
 
       <footer className={styles.footer}>
         <AP3KLogo
-          variant="wordmark"
           className={styles.footerLogo}
-          markClassName="h-8"
+          markClassName="h-8 w-8 rounded-xl"
         />
         <p>© 2026 AP3K LLC. جميع الحقوق محفوظة.</p>
         <div>

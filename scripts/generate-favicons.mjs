@@ -1,19 +1,28 @@
-import { copyFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
+import sharp from "sharp";
 
-// Preserve the approved optical variants: never shrink the detailed mark to 16px.
+// Keep every browser/search icon derived from the same opaque vector source.
 const root = new URL("../", import.meta.url);
-for (const [source, target] of [
-  ["favicon.svg", "public/favicon.svg"],
-  ["favicon.svg", "public/brand/ap3k-favicon.svg"],
-  ["favicon.ico", "public/favicon.ico"],
-  ["favicon-16.png", "public/favicon-16.png"],
-  ["favicon-32.png", "public/favicon-32.png"],
-  ["favicon-48.png", "public/favicon-48.png"],
-  ["icon-192.png", "public/icon-192.png"],
-  ["icon-512.png", "public/icon-512.png"],
-  ["icon-512.png", "public/icon.png"],
-  ["maskable-icon-512.png", "public/maskable-icon-512.png"],
-  ["apple-touch-icon.png", "public/apple-touch-icon.png"],
-]) {
-  await copyFile(new URL(`public/brand/v2/${source}`, root), new URL(target, root));
-}
+const source = await readFile(new URL("app/icon.svg", root));
+await sharp(source).resize(512, 512).png().toFile(new URL("app/icon.png", root).pathname);
+await sharp(source).resize(180, 180).png().toFile(new URL("app/apple-icon.png", root).pathname);
+await writeFile(new URL("public/brand/ap3k-favicon.svg", root), source);
+
+// ICO directory entries point to lossless PNG frames, including a larger search icon.
+const sizes = [16, 32, 48, 64, 256];
+const frames = await Promise.all(sizes.map((size) => sharp(source).resize(size, size).png().toBuffer()));
+const directory = Buffer.alloc(6 + sizes.length * 16);
+directory.writeUInt16LE(1, 2);
+directory.writeUInt16LE(sizes.length, 4);
+let offset = directory.length;
+frames.forEach((frame, index) => {
+  const entry = 6 + index * 16;
+  directory[entry] = sizes[index] % 256;
+  directory[entry + 1] = sizes[index] % 256;
+  directory.writeUInt16LE(1, entry + 4);
+  directory.writeUInt16LE(32, entry + 6);
+  directory.writeUInt32LE(frame.length, entry + 8);
+  directory.writeUInt32LE(offset, entry + 12);
+  offset += frame.length;
+});
+await writeFile(new URL("app/favicon.ico", root), Buffer.concat([directory, ...frames]));

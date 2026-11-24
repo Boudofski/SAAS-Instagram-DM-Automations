@@ -55,7 +55,7 @@ export default function AuthLocaleShell({ children }: { children: ReactNode }) {
     >
       <div className="auth-page">
         <header className="auth-header">
-          <Link className="auth-home" href={localizePublicPath("/", locale)} aria-label="AP3K"><AP3KLogo variant="wordmark" markClassName="h-9" /></Link>
+          <Link className="auth-home" href={localizePublicPath("/", locale)} aria-label="AP3K"><AP3KLogo /></Link>
           <LanguageSwitcher />
         </header>
         <div className="auth-layout">

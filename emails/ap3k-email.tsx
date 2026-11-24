@@ -105,9 +105,10 @@ export function Ap3kEmail({ content, appUrl, preferenceUrl, recipientHint }: Ap3
                         <table role="presentation" cellPadding="0" cellSpacing="0">
                           <tbody>
                             <tr>
-                              <td style={{ backgroundColor: "#EEF1F6", padding: "12px", borderRadius: "12px" }}>
-                                <img src={`${appUrl.replace(/\/+$/, "")}/brand/v2/ap3k-email-logo.png`} width="120" height="45" alt="AP3K" style={{ border: 0, display: "block", width: "120px", height: "auto" }} />
+                              <td>
+                                <img src={`${appUrl.replace(/\/+$/, "")}/brand/ap3k-social-avatar.png`} width="42" height="42" alt="AP3K" style={{ border: 0, borderRadius: "13px", display: "block" }} />
                               </td>
+                              <td style={{ color: colors.ink, fontFamily: font, fontSize: "20px", fontWeight: 900, letterSpacing: "-0.6px", paddingLeft: "11px" }}>AP3K</td>
                             </tr>
                           </tbody>
                         </table>
