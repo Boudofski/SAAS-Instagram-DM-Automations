@@ -104,7 +104,7 @@ export default function HomeHero() {
     let frame = 0;
     const update = () => {
       frame = 0;
-      const offset = reducedMotion ? 0 : Math.max(0, Math.min(window.scrollY, 650));
+      const offset = reducedMotion === false ? Math.max(0, Math.min(window.scrollY, 650)) : 0;
       element.style.setProperty("--scroll", String(offset));
     };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
@@ -119,10 +119,10 @@ export default function HomeHero() {
   return (
     <section ref={section} lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${styles.hero} ${locale === "ar" ? arabic.className : inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
       <div className={styles.glow} aria-hidden="true" />
-      <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
-        {wideScene && <ConversationCards side="left" />}
-        {wideScene && <ConversationCards side="right" />}
-      </div>
+      {wideScene && <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
+        <ConversationCards side="left" />
+        <ConversationCards side="right" />
+      </div>}
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
           {locale === "en" ? <div className={styles.keywordMedia}>
@@ -152,6 +152,11 @@ export default function HomeHero() {
         </p>
         <div className={styles.actions}>
           <Link className={styles.primary} href={localizePublicPath("/sign-up", locale)}>{copy.cta}</Link>
+        </div>
+        <div className={styles.mobileScene} role="img" aria-label={copy.demoDescription}>
+          <div className={styles.mobilePhoto} aria-hidden="true" />
+          <div className={styles.mobileComment} aria-hidden="true" />
+          <div className={styles.mobileDm} aria-hidden="true" />
         </div>
         <div className={styles.trust}>
           <p>{copy.audience}</p>
