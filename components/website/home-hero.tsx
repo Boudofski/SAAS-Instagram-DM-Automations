@@ -119,10 +119,10 @@ export default function HomeHero() {
   return (
     <section ref={section} lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${styles.hero} ${locale === "ar" ? arabic.className : inter.className}`} data-playing={playing} aria-labelledby="home-hero-title">
       <div className={styles.glow} aria-hidden="true" />
-      {wideScene && <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
-        <ConversationCards side="left" />
-        <ConversationCards side="right" />
-      </div>}
+      <div className={styles.scene} role="img" aria-label={copy.demoDescription}>
+        {wideScene && <ConversationCards side="left" />}
+        {wideScene && <ConversationCards side="right" />}
+      </div>
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
           {locale === "en" ? <div className={styles.keywordMedia}>
