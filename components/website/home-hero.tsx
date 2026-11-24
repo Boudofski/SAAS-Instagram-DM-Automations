@@ -104,7 +104,7 @@ export default function HomeHero() {
     let frame = 0;
     const update = () => {
       frame = 0;
-      const offset = reducedMotion ? 0 : Math.max(0, Math.min(window.scrollY, 650));
+      const offset = reducedMotion === false ? Math.max(0, Math.min(window.scrollY, 650)) : 0;
       element.style.setProperty("--scroll", String(offset));
     };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
@@ -152,6 +152,11 @@ export default function HomeHero() {
         </p>
         <div className={styles.actions}>
           <Link className={styles.primary} href={localizePublicPath("/sign-up", locale)}>{copy.cta}</Link>
+        </div>
+        <div className={styles.mobileScene} role="img" aria-label={copy.demoDescription}>
+          <div className={styles.mobilePhoto} aria-hidden="true" />
+          <div className={styles.mobileComment} aria-hidden="true" />
+          <div className={styles.mobileDm} aria-hidden="true" />
         </div>
         <div className={styles.trust}>
           <p>{copy.audience}</p>

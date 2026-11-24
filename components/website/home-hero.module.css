@@ -168,25 +168,116 @@
   .scene { display: block; }
   .content { max-width: min(885px, 66vw); }
 }
-@media (max-width: 380px) {
-  .hero { padding-left: 18px; padding-right: 18px; }
-  .title { font-size: 30px; }
-  .primary { font-size: 16px; }
-}
+/* The phone composition uses the same visual story with compressed screenshots.
+   Use CSS backgrounds so desktop and opposite-theme assets aren't requested. */
+.mobileScene { display: none; }
+
 @media (max-width: 767px) {
-  .hero:lang(ar) { padding-top: 20px; }
-  .hero:lang(ar) .keywordAnimation { padding: 6px 0 16px; }
-  .hero:lang(ar) .localizedKeyword {
-    min-height: 76px;
-    justify-content: center;
-    font-size: 18px;
-    line-height: 1.55;
+  .hero, .hero:lang(ar) {
+    padding: 13px clamp(16px, 4.5vw, 30px) 27px;
+    text-align: center;
   }
-  .hero:lang(ar) .title { font-size: clamp(34px, 10.2vw, 43px); }
-  .hero:lang(ar) .description { margin-top: 14px; font-size: 17px; line-height: 1.85; }
+  .content { max-width: 530px; }
+  .keywordAnimation, .hero:lang(ar) .keywordAnimation {
+    justify-content: center;
+    padding: 0 0 11px;
+  }
+  .keywordMedia {
+    width: min(100%, 356px);
+    height: auto;
+    aspect-ratio: 1530 / 364;
+  }
+  .keywordVideo { width: 100%; height: 100%; }
+  .motionLayer { position: absolute; }
+  .localizedKeyword, .hero:lang(ar) .localizedKeyword {
+    justify-content: center;
+    min-height: 64px;
+    font-size: clamp(14px, 4vw, 17px);
+    line-height: 1.6;
+  }
+  .title, .hero:lang(ar) .title {
+    margin-inline: auto;
+    font-size: clamp(29px, 8.3vw, 44px);
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  .title > span, .title strong { line-height: 1.18; }
+  .title strong { margin-block-start: .1em; }
+  .hero:lang(ar) .title > span, .hero:lang(ar) .title strong { line-height: 1.35; }
+  .description, .hero:lang(ar) .description {
+    max-width: 37ch;
+    margin: 13px auto 0;
+    font-size: clamp(14px, 4vw, 17px);
+    line-height: 1.6;
+    text-wrap: balance;
+  }
+  .actions, .hero:lang(ar) .actions { justify-content: center; margin-top: 17px; }
+  .primary { max-width: 100%; font-size: 16px; }
+  .trust, .hero:lang(ar) .trust { align-items: center; gap: 4px; margin-top: 9px; }
+  .trust p { font-size: 14px; line-height: 21px; }
+  .portraits { height: 28px; }
+  .api, .hero:lang(ar) .api { justify-content: center; min-height: 36px; margin: 15px 0 0; }
+  .api img { height: 36px; max-width: 92px; }
+
+  .mobileScene {
+    --mobile-scroll: min(var(--scroll), 340);
+    --mobile-comment: url("/media/hero/mobile-comment-light.webp");
+    --mobile-dm: url("/media/hero/mobile-dm-light.webp");
+    display: block;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    pointer-events: none;
+    width: min(100%, 360px);
+    height: clamp(152px, 43vw, 184px);
+    margin: 9px auto 0;
+    border-radius: 24px;
+    background: radial-gradient(ellipse at 50% 57%, rgba(139, 92, 246, .14), transparent 70%);
+  }
+  :global(.dark) .mobileScene {
+    --mobile-comment: url("/media/hero/mobile-comment-dark.webp");
+    --mobile-dm: url("/media/hero/mobile-dm-dark.webp");
+  }
+  .mobilePhoto, .mobileComment, .mobileDm {
+    position: absolute;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+  }
+  .mobilePhoto {
+    left: 14%;
+    top: 12%;
+    width: 33%;
+    height: 70%;
+    border-radius: 17px;
+    border: 2px solid var(--hero-card);
+    background: center 40% / cover no-repeat url("/media/hero/mobile-photo.webp");
+    box-shadow: 0 8px 18px rgba(22, 10, 45, .18);
+    transform: translate(calc(var(--mobile-scroll) * -.055px), calc(var(--mobile-scroll) * -.04px)) rotate(-13deg);
+  }
+  .mobileComment {
+    z-index: 1;
+    left: 7%;
+    top: 38%;
+    width: 56%;
+    aspect-ratio: 330 / 179;
+    background-image: var(--mobile-comment);
+    transform: translate(calc(var(--mobile-scroll) * -.07px), calc(var(--mobile-scroll) * .04px)) rotate(-4deg);
+  }
+  .mobileDm {
+    right: 0;
+    top: 6%;
+    width: 45%;
+    height: 91%;
+    background-image: var(--mobile-dm);
+    background-size: 100% auto;
+    background-position: right center;
+    transform: translate(calc(var(--mobile-scroll) * .075px), calc(var(--mobile-scroll) * -.03px));
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .card, .primary { transition: none; }
+  .mobileScene { --mobile-scroll: 0; }
   .localizedKeyword strong, .localizedKeyword strong::before { animation: none; }
   .primary:hover { transform: none; }
 }
