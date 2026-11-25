@@ -205,6 +205,7 @@ export default async function DashboardPage(props: Props) {
 }
 
 function AccountStatCard({ label, value, change, subtitle }: { label: string; value: string | number; change?: ChangeSummary; subtitle: React.ReactNode }) {
+  const isUsage = label === "Monthly usage";
   const changeClass =
     change?.tone === "positive"
       ? "text-emerald-600 light:text-emerald-700 dark:text-emerald-300"
@@ -215,9 +216,9 @@ function AccountStatCard({ label, value, change, subtitle }: { label: string; va
   return (
     <div className={`${label === "Posts" ? "hidden sm:block" : ""} min-w-0 border-b border-r border-slate-200 light:border-slate-300 px-3 py-3 transition-colors duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0`}>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{label}</UiText></p>
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
-        <p className="min-w-0 break-words text-xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-2xl"><MetricValue value={value} /></p>
-        <span className={`mb-0.5 shrink-0 text-[11px] font-black ${changeClass}`}><MetricValue value={change?.label ?? "—"} /></span>
+      <div className={`mt-2 flex min-h-[1.5rem] items-baseline gap-x-2 sm:min-h-[1.8rem] ${isUsage ? "[container-type:inline-size]" : "flex-wrap justify-between gap-y-1.5"}`}>
+        <p className={`min-w-0 font-black leading-tight tracking-tight text-slate-950 dark:text-white ${isUsage ? "whitespace-nowrap text-[clamp(12px,8.6cqi,24px)] tabular-nums" : "break-words text-xl sm:text-2xl"}`}><MetricValue value={value} /></p>
+        {!isUsage && <span className={`shrink-0 text-[11px] font-black ${changeClass}`}><MetricValue value={change?.label ?? "—"} /></span>}
       </div>
       <p className="mt-2 hidden text-[11px] leading-tight sm:block text-slate-500 light:text-slate-600 dark:text-slate-400">{subtitle}</p>
     </div>
