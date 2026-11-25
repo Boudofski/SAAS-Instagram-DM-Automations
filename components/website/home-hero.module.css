@@ -170,7 +170,7 @@
 }
 /* The phone composition uses the same visual story with compressed screenshots.
    Use CSS backgrounds so desktop and opposite-theme assets aren't requested. */
-.mobileScene { display: none; }
+.mobileScene, .scrollCue { display: none; }
 .heroProof { display: contents; }
 
 @media (max-width: 767px) {
@@ -179,21 +179,34 @@
        keeps the next section off the first screen without clipping zoomed copy. */
     min-height: calc(100svh - 68px);
     display: grid;
-    align-items: center;
-    padding: 24px clamp(16px, 4.5vw, 30px) 34px;
+    grid-template-rows: 1fr auto;
+    align-items: start;
+    padding: clamp(20px, 5svh, 44px) clamp(16px, 4.5vw, 30px) 14px;
     text-align: center;
   }
-  .content { width: 100%; max-width: 530px; }
+  .content { width: 100%; max-width: 530px; margin-block: 0; }
+  .scrollCue {
+    display: grid;
+    place-items: center;
+    justify-self: center;
+    width: 44px;
+    height: 44px;
+    margin-top: 14px;
+    border-radius: 50%;
+    color: var(--hero-accent);
+    background: color-mix(in srgb, var(--hero-accent) 9%, transparent);
+    border: 1px solid var(--hero-border);
+  }
+  .scrollCue:focus-visible { outline: 2px solid var(--hero-accent); outline-offset: 3px; }
   .keywordAnimation, .hero:lang(ar) .keywordAnimation {
     justify-content: center;
     padding: 0 0 11px;
   }
   .keywordMedia {
     width: min(100%, 356px);
-    height: auto;
-    aspect-ratio: 1530 / 364;
+    height: clamp(58px, 17vw, 70px);
   }
-  .keywordVideo { width: 100%; height: 100%; }
+  .keywordVideo { width: 100%; height: 100%; object-fit: cover; }
   .motionLayer { position: absolute; }
   .localizedKeyword, .hero:lang(ar) .localizedKeyword {
     justify-content: center;
