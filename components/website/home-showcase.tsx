@@ -32,7 +32,12 @@ export default function HomeShowcase({ locale: fixedLocale, autoPlay = true, con
   const leftRotate = useTransform(scrollYProgress, [0, 1], [0, -12]);
   const rightRotate = useTransform(scrollYProgress, [0, 1], [0, 12]);
   const opacity = useTransform(scrollYProgress, [0, 1], [0, 1]);
-  const playing = autoPlay && reduced === false && inView && visible && desktop && !hovered && !focused;
+  const { scrollYProgress: phoneProgress } = useScroll({ target: section, offset: ["start 1", "start 0.76"] });
+  const phoneLeft = useTransform(phoneProgress, [0, 1], [28, 0]);
+  const phoneRight = useTransform(phoneProgress, [0, 1], [-28, 0]);
+  const phoneLift = useTransform(phoneProgress, [0, 1], [18, 0]);
+  const phoneOpacity = useTransform(phoneProgress, [0, 1], [.55, 1]);
+  const playing = autoPlay && reduced === false && inView && visible && (desktop || !contained) && !hovered && !focused;
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 768px)");
@@ -62,13 +67,13 @@ export default function HomeShowcase({ locale: fixedLocale, autoPlay = true, con
   const select = (index: number) => { setActive(index); elapsed.current = 0; setProgress(0); };
   const art = (side: "l" | "r") => <AnimatePresence initial={false}>
     <motion.div key={active} className={styles.art} initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -8 }} transition={{ duration: reduced ? 0 : .3 }}>
-      <Image src={`/media/showcase/${ART[active]}_${side}.webp`} alt="" fill sizes="(min-width: 1280px) 256px, 236px" />
+      <Image src={`/media/showcase/${ART[active]}_${side}.webp`} alt="" fill sizes="(max-width: 767px) 42vw, (min-width: 1280px) 256px, 236px" />
     </motion.div>
   </AnimatePresence>;
 
-  return <section ref={section} className={`${styles.section} ${inter.className} ${contained ? styles.contained : ""}`} aria-labelledby={desktop ? "automatic-heading" : "automatic-heading-mobile"} lang={locale}>
+  return <section ref={section} className={`${styles.section} ${inter.className} ${contained ? styles.contained : styles.home}`} aria-labelledby={!contained || desktop ? "automatic-heading" : "automatic-heading-mobile"} lang={locale}>
     <div className={styles.desktop} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
-      <motion.div aria-hidden="true" className={`${styles.wing} ${styles.left}`} style={reduced ? { rotate: -12 } : { x: leftX, rotate: leftRotate, opacity }}>{art("l")}</motion.div>
+      <motion.div aria-hidden="true" className={`${styles.wing} ${styles.left}`} style={reduced !== false ? (desktop ? { rotate: -12 } : {}) : desktop ? { x: leftX, rotate: leftRotate, opacity } : { x: phoneLeft, y: phoneLift, opacity: phoneOpacity }}>{art("l")}</motion.div>
       <div className={styles.panel}>
         <h2 id="automatic-heading">{copy.automatically}</h2>
         <div className={styles.options}>
@@ -77,9 +82,9 @@ export default function HomeShowcase({ locale: fixedLocale, autoPlay = true, con
           </button>)}
         </div>
       </div>
-      <motion.div aria-hidden="true" className={`${styles.wing} ${styles.right}`} style={reduced ? { rotate: 12 } : { x: rightX, rotate: rightRotate, opacity }}>{art("r")}</motion.div>
+      <motion.div aria-hidden="true" className={`${styles.wing} ${styles.right}`} style={reduced !== false ? (desktop ? { rotate: 12 } : {}) : desktop ? { x: rightX, rotate: rightRotate, opacity } : { x: phoneRight, y: phoneLift, opacity: phoneOpacity }}>{art("r")}</motion.div>
     </div>
-    <div className={styles.mobile}>
+    {contained && <div className={styles.mobile}>
       <h2 id="automatic-heading-mobile">{copy.automatically}</h2>
       <div className={styles.track} tabIndex={0} aria-label={copy.automatically}>
         {ART.map((name, index) => <figure key={name} className={styles.slide}>
@@ -87,6 +92,6 @@ export default function HomeShowcase({ locale: fixedLocale, autoPlay = true, con
           <div className={styles.mobileArt}><Image src={`/media/showcase/${name}_l.webp`} alt={copy.labels[index]} fill sizes="280px" /></div>
         </figure>)}
       </div>
-    </div>
+    </div>}
   </section>;
 }

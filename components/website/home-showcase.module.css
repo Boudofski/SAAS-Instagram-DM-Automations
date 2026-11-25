@@ -42,3 +42,42 @@
 
 /* Fit the swipe cards to narrower embedded sections, without changing the homepage. */
 .contained .slide { flex-basis: min(304px, 100%); }
+
+@media (max-width: 767px) {
+ .home { padding: 16px clamp(14px, 4vw, 26px) 44px; }
+ .home .desktop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  max-width: 520px;
+  padding: 0;
+ }
+ .home .panel {
+  grid-area: 1 / 1 / 2 / -1;
+  min-width: 0;
+  padding: 18px 12px;
+  border-radius: 18px;
+  outline-width: 2px;
+ }
+ .home .panel h2 { margin-bottom: 9px; font-size: 14px; line-height: 20px; }
+ .home .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 8px; }
+ .home .options button {
+  min-height: 44px;
+  padding: 3px 4px;
+  font-size: clamp(12px, 3.5vw, 16px);
+  line-height: 1.25;
+  text-wrap: balance;
+ }
+ .home .options button[aria-pressed="true"] { background: rgba(139,92,246,.10); }
+ .home .left, .home .right {
+  width: auto;
+  height: clamp(154px, 45vw, 218px);
+  margin: 0;
+  border-radius: 16px;
+  outline-width: 2px;
+ }
+ .home .left { grid-area: 2 / 1; }
+ .home .right { grid-area: 2 / 2; }
+ .home .art { inset: 10px; }
+}
