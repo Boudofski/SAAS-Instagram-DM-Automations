@@ -166,7 +166,7 @@ export default async function DashboardPage(props: Props) {
           <p className="text-xs font-bold text-slate-500 light:text-slate-600 dark:text-slate-400"><DashboardPeriodLabel period={period} start={dashboardStats?.period.currentStart} end={dashboardStats?.period.currentEnd} /></p>
         </div>}
         {!instagramConnected && !reconnectRequired && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/25 dark:bg-violet-500/10 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700 dark:text-slate-300"><UiText>Connect Instagram to see your account performance and start collecting leads.</UiText></p><ConnectInstagramButton /></div>}
-        <div className={`grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 ${dashboardProfileStats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
+        <div className={`grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 light:border-slate-300 bg-white shadow-surface dark:border-white/[0.12] dark:bg-[#111320] sm:grid-cols-3 ${dashboardProfileStats.length === 5 ? "xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.45fr)]" : "xl:grid-cols-[repeat(5,minmax(0,1fr))_minmax(0,1.45fr)]"}`}>
           {dashboardProfileStats.map((stat) => (
             <AccountStatCard
               key={stat.label}
@@ -217,7 +217,7 @@ function AccountStatCard({ label, value, change, subtitle }: { label: string; va
     <div className={`${label === "Posts" ? "hidden sm:block" : ""} min-w-0 border-b border-r border-slate-200 light:border-slate-300 px-3 py-3 transition-colors duration-200 hover:bg-slate-50/80 dark:border-white/10 dark:hover:bg-white/[0.035] sm:px-5 sm:py-5 xl:border-b-0 xl:last:border-r-0`}>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 light:text-slate-600 dark:text-slate-400"><UiText>{label}</UiText></p>
       <div className={`mt-2 flex min-h-[1.5rem] items-baseline gap-x-2 sm:min-h-[1.8rem] ${isUsage ? "[container-type:inline-size]" : "flex-wrap justify-between gap-y-1.5"}`}>
-        <p className={`min-w-0 font-black leading-tight tracking-tight text-slate-950 dark:text-white ${isUsage ? "whitespace-nowrap text-[clamp(12px,8.6cqi,24px)] tabular-nums" : "break-words text-xl sm:text-2xl"}`}><MetricValue value={value} /></p>
+        <p className={`min-w-0 font-black leading-tight tracking-tight text-slate-950 dark:text-white ${isUsage ? "whitespace-nowrap text-xl tabular-nums [font-size:clamp(12px,10.7cqi,1.5rem)]" : "break-words text-xl sm:text-2xl"}`}><MetricValue value={value} /></p>
         {!isUsage && <span className={`shrink-0 text-[11px] font-black ${changeClass}`}><MetricValue value={change?.label ?? "—"} /></span>}
       </div>
       <p className="mt-2 hidden text-[11px] leading-tight sm:block text-slate-500 light:text-slate-600 dark:text-slate-400">{subtitle}</p>

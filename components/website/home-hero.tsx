@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useI18n } from "@/providers/i18n-provider";
 import { localizePublicPath } from "@/lib/i18n/config";
 import { HOME_HERO_COPY, KEYWORD_ANIMATION_COPY } from "@/lib/i18n/home-hero";
+import { HOME_SHOWCASE_COPY } from "@/lib/i18n/home-showcase";
 import styles from "./home-hero.module.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -173,6 +174,11 @@ export default function HomeHero() {
           </div>
         </div>
       </div>
+      <a className={styles.scrollCue} href="#automatic-heading" aria-label={HOME_SHOWCASE_COPY[locale].automatically}>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="m5 8 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </a>
     </section>
   );
 }

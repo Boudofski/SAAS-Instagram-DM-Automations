@@ -60,7 +60,7 @@
   border-radius: 18px;
   outline-width: 2px;
  }
- .home .panel h2 { margin-bottom: 9px; font-size: 14px; line-height: 20px; }
+ .home .panel h2 { scroll-margin-top: 110px; margin-bottom: 9px; font-size: 14px; line-height: 20px; }
  .home .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 8px; }
  .home .options button {
   min-height: 44px;
