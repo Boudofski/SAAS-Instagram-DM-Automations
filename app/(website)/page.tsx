@@ -164,7 +164,7 @@ export default async function LandingPage() {
 
           <HomeSetup />
 
-          <section className="mx-auto max-w-3xl px-4 sm:px-8" aria-label="AP3K product demo">
+          <section className="mx-auto max-w-[920px] px-4 sm:px-8" aria-label="AP3K product demo">
             <ProductVideo />
           </section>
 

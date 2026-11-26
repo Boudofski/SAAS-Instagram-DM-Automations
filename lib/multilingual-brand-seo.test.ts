@@ -14,12 +14,10 @@ describe("multilingual AP3K brand signals", () => {
   });
 
   it("connects the organization entity to AP3K's official profiles", () => {
-    expect(COMPANY_SCHEMA.sameAs).toEqual(expect.arrayContaining([
-      "https://www.instagram.com/ap3kautomation",
-      "https://www.facebook.com/ap3kautomation/",
+    expect(COMPANY_SCHEMA.sameAs).toEqual([
       "https://www.linkedin.com/company/ap3kautomation",
-      "https://www.youtube.com/@AP3Kautomation",
-      "https://www.tiktok.com/@ap3kautomation",
-    ]));
+      "https://www.instagram.com/ap3K.autodm",
+      "https://www.youtube.com/@ap3k.autodm",
+    ]);
   });
 });
