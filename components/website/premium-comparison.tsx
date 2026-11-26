@@ -358,7 +358,7 @@ export default function PremiumComparison({ page }: { page: Comparison }) {
           </div>
           <div className={s.video}>
             <iframe
-              src="https://www.youtube-nocookie.com/embed/SSOYGbfwLUQ?rel=0"
+              src="https://www.youtube-nocookie.com/embed/e09JHohNC_s?rel=0"
               title="AP3K tutorial: set up Instagram comment-to-DM automation"
               loading="lazy"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

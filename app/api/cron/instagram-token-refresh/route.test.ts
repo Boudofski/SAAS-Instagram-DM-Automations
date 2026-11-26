@@ -11,8 +11,9 @@ vi.mock("@/lib/prisma", () => ({
   client: {
     integrations: {
       findMany: (...args: any[]) => findManyIntegrations(...args),
-      update: (...args: any[]) => updateIntegration(...args),
+      updateMany: (...args: any[]) => updateIntegration(...args),
     },
+    $transaction: (fn: (tx: unknown) => unknown) => fn({ integrations: { updateMany: updateIntegration }, automation: { updateMany: pauseAutomations } }),
     automation: {
       updateMany: (...args: any[]) => pauseAutomations(...args),
     },
@@ -45,15 +46,32 @@ describe("Instagram token refresh cron", () => {
     expect(findManyIntegrations).not.toHaveBeenCalled();
   });
 
+  it("checks already-expired tokens and skips stale observations after a reconnect", async () => {
+    const expiry = new Date(Date.now() - 60_000);
+    findManyIntegrations.mockResolvedValueOnce([{ id: "expired", expiresAt: expiry }, { id: "reconnected", expiresAt: expiry }]).mockResolvedValueOnce([]);
+    updateIntegration.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+    pauseAutomations.mockResolvedValueOnce({ count: 2 });
+    const response = await GET(new Request("https://ap3k.com/api/cron/instagram-token-refresh", {
+      headers: { authorization: "Bearer cron-secret" },
+    }) as any);
+    expect(await response.json()).toMatchObject({ expiredMarked: 1 });
+    expect(updateIntegration).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: "expired", expiresAt: expiry, reconnectRequired: false }),
+    }));
+    expect(notifyReconnect).toHaveBeenCalledTimes(1);
+    expect(notifyReconnect).toHaveBeenCalledWith({ integrationId: "expired" });
+    expect(pauseAutomations).toHaveBeenCalledTimes(1);
+  });
+
   it("marks invalidated Meta tokens for reconnect and pauses active automations", async () => {
-    findManyIntegrations.mockResolvedValue([
+    findManyIntegrations.mockResolvedValueOnce([]).mockResolvedValueOnce([
       {
         id: "integration-a",
         token: "long-lived-instagram-token-value",
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     ]);
-    updateIntegration.mockResolvedValue({});
+    updateIntegration.mockResolvedValue({ count: 1 });
     pauseAutomations.mockResolvedValue({ count: 2 });
 
     vi.stubGlobal("fetch", vi.fn(async () => ({
@@ -76,7 +94,7 @@ describe("Instagram token refresh cron", () => {
 
     expect(response.status).toBe(207);
     expect(updateIntegration).toHaveBeenCalledWith({
-      where: { id: "integration-a" },
+      where: { id: "integration-a", token: "long-lived-instagram-token-value", status: "CONNECTED", reconnectRequired: false, planLocked: false },
       data: expect.objectContaining({
         reconnectRequired: true,
         oauthLastError: "instagram_token_invalidated",

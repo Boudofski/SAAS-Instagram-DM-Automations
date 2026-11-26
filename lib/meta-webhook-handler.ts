@@ -1919,6 +1919,16 @@ async function processEntry(
         });
       } else {
         const errorMessage = formatPrivateReplyError(dmResult);
+        if (integrationRaw?.id && dmResult.metaError.code === 190) {
+          try {
+            const { requireInstagramReauthorization } = await import("@/lib/instagram-reauthorization");
+            await requireInstagramReauthorization({
+              id: integrationRaw.id, expected: { token }, source: "comment_private_reply",
+            });
+          } catch {
+            console.warn("[webhook] Could not record confirmed Instagram authorization loss", { integrationId: integrationRaw.id });
+          }
+        }
         console.warn(
           `[webhook] DM_FAILED recipientId=${commenterId} automationId=${automation.id} reason=${dmResult.reason} endpoint=${dmResult.endpoint}`,
         );

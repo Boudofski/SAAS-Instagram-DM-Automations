@@ -6,6 +6,7 @@ const mock = vi.hoisted(() => ({
   create: vi.fn(),
   updateMany: vi.fn(),
   profile: vi.fn(),
+  integration: vi.fn(),
 }));
 vi.mock("resend", () => ({
   Resend: class {
@@ -21,6 +22,7 @@ vi.mock("@/lib/prisma", () => ({
       updateMany: mock.updateMany,
     },
     user: { findUnique: mock.profile },
+    integrations: { findUnique: mock.integration },
     emailPreference: { findUnique: vi.fn().mockResolvedValue(null) },
   },
 }));
@@ -114,4 +116,17 @@ it("retains a retryable failure without reporting a successful send", async () =
       }),
     }),
   );
+});
+
+it("does not retry a reconnect email after the Instagram connection is restored", async () => {
+  const pending = row();
+  mock.findUnique.mockResolvedValue({
+    ...pending, metadata: { ...pending.metadata, integrationId: "ig1", reconnectIncident: "authorization:old" },
+  });
+  mock.integration.mockResolvedValue({ status: "CONNECTED", reconnectRequired: false, planLocked: false });
+  await sendAp3kEmail({ ...input, templateId: "instagram_reconnect" });
+  expect(mock.send).not.toHaveBeenCalled();
+  expect(mock.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+    data: { status: "SKIPPED", errorCode: "instagram_reconnect_obsolete" },
+  }));
 });

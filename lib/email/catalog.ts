@@ -2,7 +2,7 @@ import {localizeEmail} from "./localize";
 import type {Locale} from "@/lib/i18n/config";
 import { dashboardEntryPath } from "@/lib/dashboard";
 
-export const AP3K_TUTORIAL_URL = "https://www.youtube.com/watch?v=SSOYGbfwLUQ";
+export const AP3K_TUTORIAL_URL = "https://www.youtube.com/watch?v=e09JHohNC_s";
 
 export const EMAIL_TEMPLATE_IDS = [
   "welcome",
@@ -219,13 +219,14 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplateDefinition> =
     preference: "transactional",
     aiPersonalization: false,
     build: (context, appUrl) => ({
-      subject: `Reconnect ${username(context)} to keep automations running`,
-      preview: "Meta authorization needs to be refreshed before AP3K can continue sending replies.",
-      eyebrow: "CONNECTION REQUIRED",
-      headline: `Reconnect ${username(context)}.`,
-      paragraphs: ["AP3K no longer has the valid Meta authorization required to monitor comments or send messages. Affected automations remain protected until the connection is restored."],
-      bullets: ["Sign in to the correct Facebook and Instagram accounts", "Approve the requested Instagram permissions", "Return to AP3K and run an automation test"],
-      callout: { title: "Your password stays with Meta", text: "Reconnect only through the official Meta window opened from AP3K. Never send passwords or access tokens by email.", tone: "warning" },
+      subject: `Reconnect ${username(context)} in AP3K`,
+      preview: "Reconnect Instagram to restore access for your automations.",
+      eyebrow: "INSTAGRAM CONNECTION",
+      headline: "Reconnect your Instagram account",
+      paragraphs: [
+        `AP3K lost access to ${username(context)}. Open AP3K and reconnect the same Instagram account.`,
+        "Once connected, review your paused automations and test one before turning them back on.",
+      ],
       cta: { label: "Reconnect Instagram", url: context.actionUrl || workspace(appUrl, "/integrations") },
     }),
   },

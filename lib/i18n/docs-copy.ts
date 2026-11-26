@@ -41,7 +41,7 @@ const ar: DocsCatalog = {
   "Create your first automation": "أنشئ أول أتمتة",
   "Follow the complete walkthrough using the AP3K Instagram account.": "اتبع الشرح الكامل باستخدام حساب AP3K على إنستغرام.",
   "Read the step-by-step guide": "اقرأ الدليل خطوة بخطوة",
-  "AP3K in 36 seconds": "تعرّف على AP3K في 36 ثانية",
+  "Watch the AP3K demo": "شاهد العرض التوضيحي لـ AP3K",
   "Advanced integrations": "تكاملات متقدمة",
   "Already comfortable with AP3K? Connect an AI client to supported workspace tools.": "هل تعرف AP3K جيدًا؟ اربط عميل ذكاء اصطناعي بأدوات مساحة العمل المدعومة.",
   "Common questions": "أسئلة شائعة",

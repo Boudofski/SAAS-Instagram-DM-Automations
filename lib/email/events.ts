@@ -190,9 +190,9 @@ export async function notifyInstagramReconnectEmail(input: {
       idempotencyKey: `instagram-reconnect:${integration.id}:${incident}`,
       context: {
         instagramUsername: integration.instagramUsername,
-        actionUrl: workspaceUrl(user.clerkId),
+        actionUrl: workspaceUrl(user.clerkId, "/integrations"),
       },
-      metadata: { integrationId: integration.id },
+      metadata: { integrationId: integration.id, reconnectIncident: incident },
     });
     const { enqueueOwnerAlert } = await import("@/lib/email/owner-alerts");
     await enqueueOwnerAlert({
