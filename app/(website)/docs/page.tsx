@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Clapperboard, MessagesSquare, Workflow, LifeBuoy, Rocket, PlayCircle } from "lucide-react";
+import { ArrowRight, BookOpen, ListOrdered, MessagesSquare, Workflow, ShieldCheck, Rocket, PlayCircle } from "lucide-react";
 import { DOCS_ARTICLES, DOCS_GROUPS } from "@/lib/docs";
 import { TutorialVideo } from "@/components/docs/tutorial-video";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -13,8 +13,8 @@ export function generateMetadata(): Metadata {
   return localizedMetadata({ title: "AP3K Documentation for Instagram Automation", description: "Step-by-step AP3K guides for connecting Instagram, creating comment-to-DM automations, sending messages and troubleshooting delivery.", openGraph: { title: "AP3K Documentation for Instagram Automation", url: "https://ap3k.com/docs" } }, "/docs");
 }
 
-const icons = [Rocket, Clapperboard, PlayCircle, MessagesSquare, Workflow, LifeBuoy];
-const featured = ["getting-started", "post-automation", "story-automation", "chat-automation", "flow-builder", "troubleshoot"];
+const icons = [Rocket, PlayCircle, MessagesSquare, Workflow, ListOrdered, ShieldCheck];
+const featured = ["getting-started", "story-automation", "chat-automation", "flow-builder", "queue", "why"];
 
 export default function DocsPage() {
   const locale = getServerLocale();
