@@ -4,10 +4,9 @@ import { blogPostsForLocale } from "@/lib/localized-blog-archive";
 import ProductVideo from "@/components/website/product-video";
 import { QUICK_DEMO_POSTS } from "@/lib/product-videos";
 import { TutorialVideo } from "@/components/docs/tutorial-video";
-import { ArticleSummary, ArticleShare } from "@/components/website/article-tools";
+import { ArticleShare } from "@/components/website/article-tools";
 import { blogSans, blogSerif } from "@/components/website/blog-fonts";
 import { getImportedArticleHtml } from "@/lib/imported-blog-server";
-import AP3KLogo from "@/components/global/ap3k-logo";
 import e from "@/components/website/blog-editorial.module.css";
 import BlogCover from "@/components/website/blog-cover";
 import { getArticleImage, articleImageUrl } from "@/lib/blog-images";
@@ -22,7 +21,6 @@ import LocalizedCopy from "@/components/i18n/localized-copy";
 import WebsiteFooter from "@/components/global/website-footer";
 import WebsiteNav from "@/components/global/website-nav";
 import TutorialScreenshot from "@/components/website/tutorial-screenshot";
-import TutorialGuides from "@/components/website/tutorial-guides";
 import {
   GrowthSectionSources,
 } from "@/components/website/growth-guide-extras";
@@ -126,7 +124,7 @@ export default async function BlogPostPage(props: Props) {
   const importedHtml = post.importedArchive ? await getImportedArticleHtml(post.slug) : null;
 
   const related = post.related
-    ? publicPosts.filter((item) => post.related?.includes(item.slug))
+    ? publicPosts.filter((item) => item.slug !== post.slug && post.related?.includes(item.slug))
     : publicPosts
         .filter((item) => item.slug !== post.slug)
         .map((item) => ({
@@ -186,7 +184,6 @@ export default async function BlogPostPage(props: Props) {
             <div className="mt-7">
               <BlogCover post={post} priority credit />
             </div>
-            {post.importedArchive && <ArticleSummary slug={post.slug} />}
             <details className={e.mobileContents} open={post.importedArchive || undefined}>
               <summary>Table of contents <span aria-hidden="true" className="ml-auto">⌄</span></summary>
               <ol>
@@ -249,23 +246,7 @@ export default async function BlogPostPage(props: Props) {
                 )}
               </section>
             ))}
-            {post.cover && <TutorialGuides />}
             </>}
-            <div className="mt-10 border-t border-slate-200 pt-5 dark:border-white/10">
-              <span className={s.credit}>
-                Updated{" "}
-                <time dateTime={post.updatedAt}>
-                  {formatDate(post.updatedAt)}
-                </time>
-              </span>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {post.keywords.map((keyword) => (
-                  <span key={keyword} className={s.badge}>
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-            </div>
             <section className={s.cta}>
               <h2>Turn the next comment into a conversation.</h2>
               <p>
@@ -291,10 +272,6 @@ export default async function BlogPostPage(props: Props) {
               </div>
             </section>
             <ArticleShare slug={post.slug} title={post.title} />
-            <div className={e.author}>
-              <AP3KLogo showText={false} markClassName="h-12 w-12 shrink-0 rounded-xl" />
-              <div><strong>AP3K</strong><p>Practical ideas for creators and businesses building better Instagram conversations.</p></div>
-            </div>
             </div>
             <nav className={e.contentsRail} aria-label="On this page"><div><strong>On this page</strong>
               <ol>

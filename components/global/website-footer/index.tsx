@@ -130,9 +130,6 @@ export default function WebsiteFooter() {
                 links: [
                   ["About AP3K", "/about"],
                   ["Contact us", "/contact"],
-                  ["Privacy", "/privacy"],
-                  ["Terms of service", "/terms"],
-                  ["Refund policy", "/refund-policy"],
                 ],
               },
             ].map((group) => (

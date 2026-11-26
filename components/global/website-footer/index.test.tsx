@@ -20,7 +20,9 @@ describe("website footer", () => {
     ]) expect(html).toContain(`href="${href}"`);
 
     expect(html).toContain("support@ap3k.com");
-    expect(html).toContain("refund-policy");
+    for (const policy of ["privacy", "terms", "refund-policy", "cookies", "data-deletion"]) {
+      expect(html.split(`href="/${policy}"`)).toHaveLength(2);
+    }
     expect(html).not.toContain("popularGuides");
 
     for (const [language, href] of [
