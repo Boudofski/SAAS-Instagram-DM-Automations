@@ -20,7 +20,6 @@ import WebsiteNav from "@/components/global/website-nav";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import HomeFeatures from "@/components/website/home-features";
-import HomeScrollProgress from "@/components/website/home-scroll-progress";
 import { getServerLocale } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 
@@ -133,7 +132,6 @@ export default async function LandingPage() {
   return (
     <LocalizedCopy>
       <div className="ap3k-home min-h-screen overflow-hidden bg-[#f7f7fb] text-slate-950 transition-colors dark:bg-[#080911] dark:text-white">
-        <HomeScrollProgress />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -183,16 +181,9 @@ export default async function LandingPage() {
           <section className="relative overflow-hidden bg-[linear-gradient(135deg,#5420ca,#7331e5_50%,#963be5)] px-4 py-20 text-center text-white sm:px-8 lg:py-24">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(244,114,182,0.32),transparent_32rem)]" />
             <FadeIn className="relative mx-auto max-w-4xl">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">
-                Your next comment can become a customer
-              </p>
-              <h2 className="mt-5 text-4xl font-black tracking-[-0.055em] sm:text-6xl">
+              <h2 className="text-4xl font-black tracking-[-0.055em] sm:text-6xl">
                 Start automating Instagram today.
               </h2>
-              <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/78">
-                Create your first automation, test it from another Instagram
-                account, and let AP3K handle the repetitive follow-up.
-              </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <Link
                   href={localizePublicPath("/sign-up", locale)}

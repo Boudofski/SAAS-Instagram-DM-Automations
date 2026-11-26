@@ -121,28 +121,37 @@
 .trust p { font-size: 16px; line-height: 24px; }
 .portraits { display: block; width: auto; height: 36px; max-width: 100%; object-fit: contain; }
 .api { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 10px 14px; margin: 34px 0 28px; min-height: 43px; }
-.api img { height: 43px; width: auto; max-width: 108px; object-fit: contain; }
+.partnerMark {
+  width: 108px;
+  aspect-ratio: 324 / 129;
+  background: center / contain no-repeat url("/media/hero/meta-business-partner-light.png");
+}
+:global(.dark) .partnerMark { background-image: url("/media/hero/meta-business-partner-dark.png"); }
 .scene { display: none; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .wing { position: absolute; top: 90px; width: 388.53px; height: 399.43px; translate: 0 calc(var(--scroll) * 1px); }
 .left { left: -50px; transform: scaleX(-1); }
 .right { right: -50px; }
 .card { position: absolute; overflow: hidden; background: var(--hero-soft); border-style: solid; border-color: var(--hero-card); box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); transform-origin: left top; transition: transform 200ms ease-out, opacity 200ms ease-out; }
-.card img { width: 100%; height: 100%; padding: 8px; object-fit: contain; }
-.darkArt { display: none; }
-:global(.dark) .lightArt { display: none; }
-:global(.dark) .darkArt { display: block; }
+.cardArt {
+  width: 100%;
+  height: 100%;
+  border: 8px solid transparent;
+  background: center / contain no-repeat var(--art-light);
+  background-origin: content-box;
+}
+:global(.dark) .cardArt { background-image: var(--art-dark); }
 .photo { left: 166.31px; top: 0; width: 230.06px; height: 150.06px; border-width: 3.6px; border-radius: 17.79px; transform: rotate(15deg) translateX(calc(var(--scroll) * .84px)) translateY(calc(var(--scroll) * -.6px)); opacity: max(0, calc(1 - var(--scroll) * .0024)); }
-.photo img { transform: rotate(-15deg) scale(2.4) translateX(-18px); }
+.photo .cardArt { transform: rotate(-15deg) scale(2.4) translateX(-18px); }
 .comment { left: 0; top: 115.62px; width: 248.9px; height: 118.02px; border-width: 4.15px; border-radius: 20.51px; transform: translateX(calc(var(--scroll) * .8px)); opacity: max(0, calc(1 - var(--scroll) * .002)); }
-.comment img { transform: scale(1.7); }
+.comment .cardArt { transform: scale(1.7); }
 .dm { left: 170px; top: 199.62px; width: 206.85px; height: 206.85px; border-width: 3.24px; border-radius: 15.99px; transform: rotate(-15deg) translateX(calc(var(--scroll) * .595px)) translateY(calc(var(--scroll) * .425px)); opacity: max(0, calc(1 - var(--scroll) * .0017)); }
-.dm img { transform: rotate(15deg) scale(1.47) translateX(-35px); }
+.dm .cardArt { transform: rotate(15deg) scale(1.47) translateX(-35px); }
 .left .photo { left: 200.31px; height: 230.06px; transform: rotate(15deg) translateX(calc(var(--scroll) * .805px)) translateY(calc(var(--scroll) * -.575px)); opacity: max(0, calc(1 - var(--scroll) * .0023)); }
-.left .photo img { transform: rotate(-15deg) scaleX(-1) scale(1.55) translateX(30px); }
+.left .photo .cardArt { transform: rotate(-15deg) scaleX(-1) scale(1.55) translateX(30px); }
 .left .comment { transform: translateX(calc(var(--scroll) * .76px)); opacity: max(0, calc(1 - var(--scroll) * .0019)); }
-.left .comment img { transform: scaleX(-1) scale(1.65); }
+.left .comment .cardArt { transform: scaleX(-1) scale(1.65); }
 .left .dm { transform: rotate(-15deg) translateX(calc(var(--scroll) * .63px)) translateY(calc(var(--scroll) * .45px)); opacity: max(0, calc(1 - var(--scroll) * .0018)); }
-.left .dm img { transform: rotate(15deg) scaleX(-1) scale(1.1) translateX(20px); }
+.left .dm .cardArt { transform: rotate(15deg) scaleX(-1) scale(1.1) translateX(20px); }
 @media (min-width: 768px) {
   .hero { padding-top: 28px; padding-bottom: 35px; text-align: center; }
   .keywordAnimation { justify-content: center; padding-top: 24px; }
@@ -234,7 +243,7 @@
   .trust p { font-size: 14px; line-height: 21px; }
   .portraits { height: 28px; }
   .api, .hero:lang(ar) .api { justify-content: center; min-height: 36px; margin: 15px 0 0; }
-  .api img { height: 36px; max-width: 92px; }
+  .partnerMark { width: 92px; }
 
   .heroProof {
     display: flow-root;

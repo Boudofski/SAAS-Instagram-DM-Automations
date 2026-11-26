@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 import { Inter, Noto_Sans_Arabic } from "next/font/google";
 import Image from "next/image";
@@ -19,10 +19,10 @@ function ConversationCards({ side }: { side: "left" | "right" }) {
     <div className={`${styles.wing} ${styles[side]}`} aria-hidden="true">
       {(["photo", "comment", "dm"] as const).map(kind => (
         <div key={kind} className={`${styles.card} ${styles[kind]}`}>
-          {(["light", "dark"] as const).map(theme => (
-            <Image key={theme} className={styles[`${theme}Art`]} src={`/media/hero/${side}-${kind}-${theme}.svg`}
-              alt="" width={285} height={282} unoptimized />
-          ))}
+          <div className={styles.cardArt} style={{
+            "--art-light": `url("/media/hero/${side}-${kind}-light.svg")`,
+            "--art-dark": kind === "photo" ? "var(--art-light)" : `url("/media/hero/${side}-${kind}-dark.svg")`,
+          } as CSSProperties} />
         </div>
       ))}
     </div>
@@ -173,8 +173,7 @@ export default function HomeHero() {
             <Image src="/media/hero/creator-portraits.webp" alt="" width={123} height={36} sizes="123px" className={styles.portraits} />
           </div>
           <div className={styles.api}>
-            <Image className={styles.lightArt} src="/media/hero/meta-business-partner-light.png" alt="Meta Business Partner" width={324} height={129} />
-            <Image className={styles.darkArt} src="/media/hero/meta-business-partner-dark.png" alt="Meta Business Partner" width={324} height={129} />
+            <span className={styles.partnerMark} role="img" aria-label="Meta Business Partner" />
           </div>
         </div>
       </div>
