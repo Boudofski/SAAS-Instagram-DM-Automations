@@ -1,211 +1,96 @@
 "use client";
-import { usePublicUi } from "@/components/i18n/use-public-ui";
 
+import { Instagram, Linkedin, Youtube } from "lucide-react";
+import Link from "next/link";
 import AP3KLogo from "@/components/global/ap3k-logo";
 import CookiePreferencesButton from "@/components/global/cookie-preferences-button";
-import { LOCALE_COOKIE, LOCALE_DETAILS, SUPPORTED_LOCALES, localizePublicPath } from "@/lib/i18n/config";
+import { usePublicUi } from "@/components/i18n/use-public-ui";
+import { COMPANY_SOCIAL_PROFILES } from "@/lib/company";
+import { localizePublicPath } from "@/lib/i18n/config";
 import { useI18n } from "@/providers/i18n-provider";
-import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
-import Link from "next/link";
-import { AUTOMATION_GUIDE } from '@/lib/i18n/automation-guide';
 
-function TikTokIcon({ className }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><path d="M16.6 1h-3.7v14.8a3.2 3.2 0 1 1-2.8-3.2V8.9a7 7 0 1 0 6.5 7V8.4a9 9 0 0 0 5.2 1.7V6.4A5.3 5.3 0 0 1 16.6 1Z" /></svg>;
-}
+const socialIcons = { LinkedIn: Linkedin, Instagram, YouTube: Youtube };
 
-const SOCIAL_LINKS = [
-  { label: "TikTok", href: "https://www.tiktok.com/@ap3kautomation", Icon: TikTokIcon },
+const groups = [
   {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/company/ap3kautomation",
-    Icon: Linkedin,
+    title: "Product",
+    links: [
+      ["Instagram automation", "/instagram-dm-automation"],
+      ["Comment to DM", "/instagram-comment-to-dm"],
+      ["Pricing", "/pricing"],
+      ["All solutions", "/solutions"],
+    ],
   },
   {
-    label: "Facebook",
-    href: "https://www.facebook.com/ap3kautomation/",
-    Icon: Facebook,
+    title: "Resources",
+    links: [
+      ["Documentation", "/docs"],
+      ["Video tutorial", "/tutorials/instagram-comment-to-dm"],
+      ["Blog", "/blog"],
+      ["All comparisons", "/compare"],
+    ],
   },
   {
-    label: "YouTube",
-    href: "https://www.youtube.com/@AP3Kautomation",
-    Icon: Youtube,
-  },
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/ap3kautomation",
-    Icon: Instagram,
+    title: "AP3K",
+    links: [
+      ["About AP3K", "/about"],
+      ["Contact us", "/contact"],
+    ],
   },
 ] as const;
 
 export default function WebsiteFooter() {
-  const { locale, t, setLocale } = useI18n();
+  const { locale, t } = useI18n();
   const tr = usePublicUi();
   const href = (path: string) => localizePublicPath(path, locale);
-  const linkClass =
-    "max-w-full [overflow-wrap:anywhere] text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white";
+  const linkClass = "rounded-sm text-slate-600 hover:text-slate-950 hover:underline hover:underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500 dark:text-slate-400 dark:hover:text-white";
 
   return (
-    <footer className="relative z-10 border-t border-slate-200 bg-white/60 px-4 py-10 backdrop-blur dark:border-white/10 dark:bg-[#080911] sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-[1320px]">
-        <div className="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] xl:gap-14">
-          <div className="flex min-w-0 flex-col items-start gap-3">
-            <AP3KLogo
-              className="text-lg text-slate-950 dark:text-white"
-              markClassName="h-9 w-9 rounded-xl"
-            />
-            <p className="max-w-sm text-sm leading-6 text-slate-500 dark:text-rf-muted">
-              {t("footerDescription")}
-            </p>
-            <Link href={href('/instagram-automation-guide')} className={`${linkClass} text-sm underline underline-offset-4`}>{AUTOMATION_GUIDE[locale].title}</Link>
-            <div
-              className="mt-2 flex max-w-full items-center gap-1"
-              aria-label="AP3K social media"
-            >
-              {SOCIAL_LINKS.map(({ label, href: socialHref, Icon }) => (
-                <a
-                  key={label}
-                  href={socialHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`AP3K on ${label}`}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-slate-500 transition-colors hover:bg-violet-50 hover:text-violet-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 dark:text-slate-400 dark:hover:bg-violet-400/10 dark:hover:text-violet-300"
-                >
-                  <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                </a>
-              ))}
-            </div>
+    <footer className="relative z-10 border-t border-slate-200 bg-white px-5 py-9 dark:border-white/10 dark:bg-[#080911] sm:px-8 lg:px-12 lg:py-12">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
+          <div className="min-w-0">
+            <AP3KLogo className="text-lg text-slate-950 dark:text-white" markClassName="h-9 w-9 rounded-xl" />
+            <p className="mt-3 max-w-[34ch] text-sm leading-6 text-slate-600 dark:text-slate-400">{t("footerDescription")}</p>
+            <ul className="mt-4 flex flex-wrap gap-2" aria-label="AP3K social media">
+              {COMPANY_SOCIAL_PROFILES.map(({ label, url }) => {
+                const Icon = socialIcons[label];
+                return (
+                  <li key={label}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`AP3K on ${label}`}
+                      className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 dark:border-white/15 dark:text-slate-400 dark:hover:border-violet-400/50 dark:hover:bg-violet-400/10 dark:hover:text-violet-300">
+                      <Icon size={19} aria-hidden="true" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <nav
-            aria-label="Footer"
-            className="grid min-w-0 grid-cols-2 gap-x-6 gap-y-8 text-[13px] leading-5 sm:grid-cols-3 xl:grid-cols-5"
-          >
-            {[
-              {
-                title: "Product",
-                links: [
-                  ["Pricing", "/pricing"],
-                  ["Instagram automation", "/instagram-dm-automation"],
-                  ["Free Instagram automation", "/free-instagram-automation"],
-                  ["Comment to DM", "/instagram-comment-to-dm"],
-                  ["Comment automation", "/instagram-comment-automation"],
-                  ["Login", "/sign-in"],
-                  ["Join for free", "/sign-up"],
-                ],
-              },
-              {
-                title: "Resources",
-                links: [
-                  ["Blog", "/blog"],
-                  ["Documentation", "/docs"],
-                  ["Video tutorial", "/tutorials/instagram-comment-to-dm"],
-                ],
-              },
-              {
-                title: "Solutions",
-                links: [
-                  ["Grow followers", "/solutions/grow-followers"],
-                  ["Increase sales", "/solutions/increase-sales"],
-                  ["Enhance engagement", "/solutions/enhance-engagements"],
-                  ["All solutions", "/solutions"],
-                  ["Creators", "/instagram-automation-for-creators"],
-                  ["Coaches", "/instagram-automation-for-coaches"],
-                  ["Ecommerce", "/instagram-automation-for-ecommerce"],
-                ],
-              },
-              {
-                title: "Compare",
-                links: [
-                  ["ManyChat", "/manychat-alternative"],
-                  ["CreatorFlow", "/compare/creatorflow"],
-                  ["LinkDM", "/compare/linkdm"],
-                  ["Zorcha", "/compare/zorcha"],
-                  ["Linktree", "/compare/linktree"],
-                  ["Beacons", "/compare/beacons-ai"],
-                  ["HighLevel", "/compare/high-level"],
-                  ["All comparisons", "/compare"],
-                ],
-              },
-              {
-                title: "AP3K",
-                links: [
-                  ["About AP3K", "/about"],
-                  ["Contact us", "/contact"],
-                ],
-              },
-            ].map((group) => (
-              <div
-                key={group.title}
-                className="flex min-w-0 flex-col items-start gap-3"
-              >
-                <p className="mb-1 font-bold text-slate-900 dark:text-white">
-                  {tr(group.title)}
-                </p>
-                {group.links.map(([label, path]) => (
-                  <Link key={path} href={href(path)} className={linkClass}>
-                    {tr(label)}
-                  </Link>
-                ))}
-                {group.title === "AP3K" && (
-                  <a
-                    href="mailto:support@ap3k.com"
-                    className={`${linkClass} break-all`}
-                  >
-                    support@ap3k.com
-                  </a>
-                )}
+          <nav aria-label="Footer" className="grid min-w-0 grid-cols-2 gap-x-5 gap-y-6 text-sm leading-5 [overflow-wrap:anywhere] sm:grid-cols-3 lg:gap-x-8">
+            {groups.map(({ title, links }) => (
+              <div key={title} className="min-w-0">
+                <p className="mb-2 font-semibold text-slate-950 dark:text-white">{tr(title)}</p>
+                <ul>
+                  {links.map(([label, path]) => (
+                    <li key={path}><Link href={href(path)} className={`inline-flex min-h-8 items-center py-1.5 ${linkClass}`}>{tr(label)}</Link></li>
+                  ))}
+                </ul>
               </div>
             ))}
           </nav>
         </div>
-        <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-xs dark:border-white/10 xl:flex-row xl:items-center xl:justify-between">
-          <p className="text-slate-600 dark:text-slate-400">
-            {t("footerCopyright")}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <Link href={href("/privacy")} className={linkClass}>
-              {t("privacy")}
-            </Link>
-            <Link href={href("/terms")} className={linkClass}>
-              {t("terms")}
-            </Link>
-            <Link href={href("/cookies")} className={linkClass}>
-              {t("cookies")}
-            </Link>
-            <Link href={href("/refund-policy")} className={linkClass}>
-              {t("refunds")}
-            </Link>
-            <Link href={href("/data-deletion")} className={linkClass}>
-              {t("dataDeletion")}
-            </Link>
+        <div className="mt-7 flex flex-col gap-4 border-t border-slate-200 pt-5 text-xs dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
+          <p className="shrink-0 text-slate-600 dark:text-slate-400">© {new Date().getUTCFullYear()} AP3K LLC.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Link href={href("/privacy")} className={linkClass}>{t("privacy")}</Link>
+            <Link href={href("/terms")} className={linkClass}>{t("terms")}</Link>
+            <Link href={href("/cookies")} className={linkClass}>{t("cookies")}</Link>
+            <Link href={href("/refund-policy")} className={linkClass}>{t("refunds")}</Link>
+            <Link href={href("/data-deletion")} className={linkClass}>{t("dataDeletion")}</Link>
             <CookiePreferencesButton className={linkClass} />
           </div>
         </div>
-        <nav
-          aria-label="Languages"
-          className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs"
-        >
-          {SUPPORTED_LOCALES.map((language) => (
-            <Link
-              key={language}
-              href={localizePublicPath("/", language)}
-              onClick={() => {
-                const secure = window.location.protocol === "https:" ? "; Secure" : "";
-                document.cookie = `${LOCALE_COOKIE}=${language}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
-                setLocale(language);
-              }}
-              hrefLang={LOCALE_DETAILS[language].htmlLang}
-              lang={LOCALE_DETAILS[language].htmlLang}
-              aria-current={language === locale ? "page" : undefined}
-              className={language === locale
-                ? "font-semibold text-slate-900 dark:text-white"
-                : linkClass}
-            >
-              {LOCALE_DETAILS[language].nativeName}
-            </Link>
-          ))}
-        </nav>
       </div>
     </footer>
   );
 }
-

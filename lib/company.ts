@@ -14,6 +14,12 @@ export const COMPANY = {
   detailsUpdated: "2026-09-16",
 } as const;
 
+export const COMPANY_SOCIAL_PROFILES = [
+  { label: "LinkedIn", url: "https://www.linkedin.com/company/ap3kautomation" },
+  { label: "Instagram", url: "https://www.instagram.com/ap3K.autodm" },
+  { label: "YouTube", url: "https://www.youtube.com/@ap3k.autodm" },
+] as const;
+
 export const COMPANY_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -21,13 +27,7 @@ export const COMPANY_SCHEMA = {
   name: COMPANY.brand,
   legalName: COMPANY.legalName,
   url: "https://ap3k.com",
-  sameAs: [
-    "https://www.instagram.com/ap3kautomation",
-    "https://www.facebook.com/ap3kautomation/",
-    "https://www.linkedin.com/company/ap3kautomation",
-    "https://www.youtube.com/@AP3Kautomation",
-    "https://www.tiktok.com/@ap3kautomation",
-  ],
+  sameAs: COMPANY_SOCIAL_PROFILES.map(({ url }) => url),
   foundingDate: COMPANY.formationDate,
   email: COMPANY.supportEmail,
   logo: {
