@@ -152,6 +152,22 @@ export async function sendAp3kEmail(input: {
           return { ok: true, status: "duplicate", deliveryId: existing.id };
         }
       }
+      if (input.templateId === "instagram_reconnect" && typeof stored.integrationId === "string") {
+        const { currentIntegrationIncident, integrationAlertSelect } = await import("./integration-alert-state");
+        const integration = await client.integrations.findUnique({
+          where: { id: stored.integrationId },
+          select: { ...integrationAlertSelect, planLocked: true },
+        });
+        const incident = integration ? currentIntegrationIncident(integration) : null;
+        if (!integration || integration.planLocked || incident?.kind !== "authorization" ||
+          (typeof stored.reconnectIncident === "string" && stored.reconnectIncident !== incident.key)) {
+          await client.emailDelivery.updateMany({
+            where: { id: existing.id, providerMessageId: null },
+            data: { status: "SKIPPED", errorCode: "instagram_reconnect_obsolete" },
+          });
+          return { ok: true, status: "duplicate", deliveryId: existing.id };
+        }
+      }
       return deliverStoredServiceEmail(existing);
     }
     return {

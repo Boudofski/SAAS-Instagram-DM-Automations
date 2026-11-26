@@ -1,6 +1,7 @@
 import { AP3K_PRICING } from "@/lib/billing-plans";
 import HomeSetup from "@/components/website/home-setup";
 import HomeShowcase from "@/components/website/home-showcase";
+import ProductVideo from "@/components/website/product-video";
 import HomeHero from "@/components/website/home-hero";
 import LocalizedCopy from "@/components/i18n/server-localized-copy";
 import { HOME_FAQ } from "@/lib/i18n/home-faq";
@@ -164,6 +165,10 @@ export default async function LandingPage() {
           <HomeShowcase />
 
           <HomeSetup />
+
+          <section className="mx-auto max-w-3xl px-4 sm:px-8" aria-label="AP3K product demo">
+            <ProductVideo />
+          </section>
 
           <HomeFeatures />
 

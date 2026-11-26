@@ -41,6 +41,7 @@ export default function HomeHero() {
   const [pageVisible, setPageVisible] = useState(true);
   const [motionReady, setMotionReady] = useState(false);
   const [wideScene, setWideScene] = useState(false);
+  const [desktopKeyword, setDesktopKeyword] = useState(false);
   const [keywordScene, setKeywordScene] = useState(0);
   const playing = motionReady && reducedMotion === false && inView && pageVisible;
 
@@ -48,10 +49,12 @@ export default function HomeHero() {
     // Load decorative desktop art only when it can be displayed. Rendering the
     // hidden cards on phones made browsers download more than 1 MB of SVGs.
     const media = window.matchMedia("(min-width: 1280px)");
-    const update = () => setWideScene(media.matches);
+    const keywordMedia = window.matchMedia("(min-width: 768px)");
+    const update = () => { setWideScene(media.matches); setDesktopKeyword(keywordMedia.matches); };
     update();
     media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
+    keywordMedia.addEventListener("change", update);
+    return () => { media.removeEventListener("change", update); keywordMedia.removeEventListener("change", update); };
   }, []);
 
   useEffect(() => {
@@ -86,18 +89,18 @@ export default function HomeHero() {
   useEffect(() => {
     const element = video.current;
     if (!element) return;
-    if (playing) void element.play().catch(() => setVideoReady(false));
+    if (playing && desktopKeyword) void element.play().catch(() => setVideoReady(false));
     else element.pause();
-  }, [playing, locale]);
+  }, [playing, locale, desktopKeyword]);
 
   useEffect(() => {
-    if (!playing || locale === "en") return;
+    if (!playing || (locale === "en" && desktopKeyword)) return;
     const timer = window.setInterval(
       () => setKeywordScene((current) => (current + 1) % keywordCopy.keywords.length),
       2800,
     );
     return () => window.clearInterval(timer);
-  }, [keywordCopy.keywords.length, playing, locale]);
+  }, [keywordCopy.keywords.length, playing, locale, desktopKeyword]);
 
   useEffect(() => {
     const element = section.current;
@@ -132,15 +135,16 @@ export default function HomeHero() {
               src="/media/hero/comment-water-drop-poster.webp" alt="" width={1530} height={364} priority unoptimized />
             <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
               width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
-              src={motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
+              src={desktopKeyword && motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}
               onPlaying={() => setVideoReady(true)} onEmptied={() => setVideoReady(false)}
               onError={() => setVideoReady(false)} data-ready={videoReady && playing} />
-          </div> : <div className={styles.localizedKeyword} dir={locale === "ar" ? "rtl" : "ltr"}>
+          </div> : null}
+          <div className={`${styles.localizedKeyword} ${locale === "en" ? styles.phoneKeyword : ""}`} dir={locale === "ar" ? "rtl" : "ltr"}>
             <span>{keywordCopy.prefix}{" "}
               <strong key={`${locale}-${keywordScene}`}><bdi>{keywordCopy.keywords[keywordScene]}</bdi></strong>
               {" "}{keywordCopy.suffix}
             </span>
-          </div>}
+          </div>
         </div>
         <h1 id="home-hero-title" className={styles.title}>
           <span>{copy.titleTop}{" "}</span>

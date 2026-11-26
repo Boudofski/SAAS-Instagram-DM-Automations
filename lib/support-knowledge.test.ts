@@ -16,7 +16,7 @@ describe("grounded support", () => {
     const knowledge = supportKnowledgeFor("How do I add link buttons and watch the tutorial?");
     expect(knowledge).toContain("a current example product screenshot");
     expect(knowledge).toContain("plus the AP3K setup tutorial video");
-    expect(knowledge).toContain("SSOYGbfwLUQ");
+    expect(knowledge).toContain("e09JHohNC_s");
     expect(knowledge).toContain("expand Watch the AP3K setup tutorial");
   });
   it("keeps every attached documentation destination real and internal", () => {

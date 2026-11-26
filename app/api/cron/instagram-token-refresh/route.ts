@@ -1,11 +1,11 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { client } from "@/lib/prisma";
-import { INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON } from "@/lib/instagram-authorization";
-import { notifyInstagramReconnectEmail } from "@/lib/email/events";
+import { requireInstagramReauthorization } from "@/lib/instagram-reauthorization";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const REFRESH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const INSTAGRAM_REFRESH_URL = "https://graph.instagram.com/refresh_access_token";
@@ -35,12 +35,29 @@ export async function GET(request: NextRequest) {
   const refreshBefore = new Date(now.getTime() + REFRESH_WINDOW_MS);
 
   try {
+    const expired = await client.integrations.findMany({
+      where: {
+        name: "INSTAGRAM", status: "CONNECTED", reconnectRequired: false, planLocked: false,
+        expiresAt: { lte: now },
+      },
+      select: { id: true, expiresAt: true },
+      orderBy: { expiresAt: "asc" },
+      take: 12,
+    });
+    let expiredMarked = 0;
+    for (const item of expired) {
+      if (Date.now() - now.getTime() > 25_000) break;
+      if (item.expiresAt && await requireInstagramReauthorization({
+        id: item.id, expected: { expiresAt: item.expiresAt }, source: "token_expiry",
+      })) expiredMarked++;
+    }
     const integrations = await client.integrations.findMany({
       where: {
         name: "INSTAGRAM",
         igAccountSource: "instagram_login",
         status: "CONNECTED",
         reconnectRequired: false,
+        planLocked: false,
         expiresAt: {
           gt: now,
           lte: refreshBefore,
@@ -51,13 +68,15 @@ export async function GET(request: NextRequest) {
         token: true,
         expiresAt: true,
       },
-      take: 200,
+      orderBy: { expiresAt: "asc" },
+      take: 25,
     });
 
     let refreshed = 0;
     let failed = 0;
 
     for (const integration of integrations) {
+      if (Date.now() - now.getTime() > 44_000) break;
       const token = integration.token.trim();
       if (!token) continue;
 
@@ -69,32 +88,18 @@ export async function GET(request: NextRequest) {
         const response = await fetch(url, {
           method: "GET",
           cache: "no-store",
+          signal: AbortSignal.timeout(5_000),
         });
         const payload = (await response.json().catch(() => ({}))) as RefreshResponse;
 
         if (!response.ok || !payload.access_token || !payload.expires_in) {
           failed += 1;
           if (payload.error?.code === 190) {
-            await client.integrations.update({
-              where: { id: integration.id },
-              data: {
-                reconnectRequired: true,
-                oauthLastError: "instagram_token_invalidated",
-                oauthLastErrorAt: new Date(),
-                oauthLastErrorSource: "token_refresh",
-                lastAdminNote: "instagram_token_invalidated",
-                lastAdminActionAt: new Date(),
-              },
-            }).catch(() => undefined);
-            await client.automation.updateMany({
-              where: { integrationId: integration.id, active: true, archivedAt: null },
-              data: {
-                active: false,
-                needsReview: true,
-                reviewReason: INSTAGRAM_AUTH_EXPIRED_REVIEW_REASON,
-              },
-            }).catch(() => undefined);
-            await notifyInstagramReconnectEmail({ integrationId: integration.id });
+            await requireInstagramReauthorization({
+              id: integration.id,
+              expected: { token: integration.token },
+              source: "token_refresh",
+            });
           }
           console.warn("[cron] Instagram token refresh rejected", {
             integrationId: integration.id,
@@ -106,8 +111,8 @@ export async function GET(request: NextRequest) {
         }
 
         const expiresAt = new Date(Date.now() + payload.expires_in * 1000);
-        await client.integrations.update({
-          where: { id: integration.id },
+        const updated = await client.integrations.updateMany({
+          where: { id: integration.id, token: integration.token, status: "CONNECTED", reconnectRequired: false },
           data: {
             token: payload.access_token,
             expiresAt,
@@ -116,12 +121,12 @@ export async function GET(request: NextRequest) {
             oauthLastErrorSource: null,
           },
         });
-        refreshed += 1;
+        refreshed += updated.count;
       } catch (error) {
         failed += 1;
         console.warn("[cron] Instagram token refresh failed", {
           integrationId: integration.id,
-          message: error instanceof Error ? error.message : "Unknown refresh error",
+          errorType: error instanceof Error ? error.name : "UnknownError",
         });
       }
     }
@@ -129,6 +134,7 @@ export async function GET(request: NextRequest) {
     console.info("[cron] Instagram token refresh completed", {
       eligible: integrations.length,
       refreshed,
+      expiredMarked,
       failed,
     });
 
@@ -137,6 +143,7 @@ export async function GET(request: NextRequest) {
         ok: failed === 0,
         eligible: integrations.length,
         refreshed,
+        expiredMarked,
         failed,
         checkedAt: new Date().toISOString(),
       },

@@ -8,7 +8,7 @@ describe("AP3K email render contract", () => {
 
     expect(renderer).toContain("toPlainText(html)");
     expect(renderer).toContain("createElement(Ap3kEmail");
-    expect(component).toContain("/brand/ap3k-social-avatar.png");
+    expect(component).toContain("/brand/ap3k-email-mark.png");
     expect(component).toContain("copy.preferences");
     expect(component).toContain("copy.help");
     expect(component).toContain("copy.footer");

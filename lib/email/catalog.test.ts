@@ -18,7 +18,7 @@ describe("AP3K email catalog", () => {
       expect(content.headline.trim().length).toBeGreaterThan(5);
       expect(content.paragraphs.every(Boolean)).toBe(true);
       for (const cta of [content.cta, content.secondaryCta].filter(Boolean)) {
-        expect(cta?.url).toMatch(/^https:\/\/(ap3k\.com\/|www\.youtube\.com\/watch\?v=SSOYGbfwLUQ$)/);
+        expect(cta?.url).toMatch(/^https:\/\/(ap3k\.com\/|www\.youtube\.com\/watch\?v=e09JHohNC_s$)/);
       }
     }
   });
