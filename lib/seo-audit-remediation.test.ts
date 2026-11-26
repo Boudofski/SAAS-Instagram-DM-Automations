@@ -48,6 +48,11 @@ describe('evidence-based SEO remediation', () => {
       }
     }
   });
+  it('uses the free-plan comparison metadata on the indexed ManyChat article', () => {
+    const post = BLOG_POSTS.find(p => p.slug === 'best-manychat-alternative-for-instagram-dm-automation')!;
+    expect(post.seoTitle).toBe('Free ManyChat Alternative for Instagram | AP3K');
+    expect(post.sections.some(section => section.links?.some(link => link.href === '/tutorials/instagram-comment-to-dm'))).toBe(true);
+  });
   it('includes an English-only identity page with a reciprocal canonical', () => {
     const pages = buildSitemap();
     expect(pages.filter(p => new URL(p.url).pathname.endsWith('/about'))).toHaveLength(1);
