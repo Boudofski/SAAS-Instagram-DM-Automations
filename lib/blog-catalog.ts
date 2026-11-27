@@ -634,7 +634,7 @@ export const LEGACY_BLOG_POSTS: BlogPost[] = [
 ];
 
 const importedSlugs = new Set(importedPosts.map(post => post.slug));
-export const BLOG_POSTS: BlogPost[] = [...WORKFLOW_POSTS, ...SEO_COMPARISON_POSTS, ...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug))].map(post => ({ ...post, author: "AP3K" }));
+export const BLOG_POSTS: BlogPost[] = [...SEO_COMPARISON_POSTS, ...importedPosts as BlogPost[], ...LEGACY_BLOG_POSTS.filter(post => !importedSlugs.has(post.slug)), ...WORKFLOW_POSTS].map(post => ({ ...post, author: "AP3K" }));
 
 export function getBlogPost(slug: string) {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;
