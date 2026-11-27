@@ -1,13 +1,20 @@
+import workflowResources from "./content/workflows/resources.json";
+
 export type SeoResource = {
   slug: string;
   eyebrow: string;
   title: string;
   description: string;
   updatedAt?: string;
+  visual?: string[];
+  paid?: boolean;
+  tutorial?: boolean;
+  cta?: string;
   sections: { title: string; intro?: string; items: string[] }[];
 };
 
 export const SEO_RESOURCES: SeoResource[] = [
+  ...workflowResources,
   {
     slug: "instagram-comment-to-dm-launch-kit",
     eyebrow: "One post. One keyword. One useful link.",

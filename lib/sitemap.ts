@@ -147,7 +147,7 @@ export function buildSitemap(
   const resourcePages: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/resources`,
-      lastModified: new Date("2026-09-29T00:00:00Z"),
+      lastModified: new Date("2026-11-27T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
@@ -167,7 +167,7 @@ export function buildSitemap(
 
   const localizedPages: MetadataRoute.Sitemap = [
     ...staticPages,
-    {url: `${baseUrl}/tutorials/instagram-comment-to-dm`, lastModified: new Date("2026-10-02T00:00:00Z"), changeFrequency: "monthly" as const, priority: 0.8},
+    {url: `${baseUrl}/tutorials/instagram-comment-to-dm`, lastModified: new Date("2026-11-26T00:00:00Z"), changeFrequency: "monthly" as const, priority: 0.8},
     ...[
       "/compare",
       "/solutions",

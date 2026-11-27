@@ -1,0 +1,117 @@
+[
+  {
+    "slug": "instagram-automation-offer-sunset",
+    "title": "Retire an Instagram Automation When an Offer Ends",
+    "description": "Close an Instagram comment-to-DM campaign without sending visitors from older Reels to expired links, dead checkouts or misleading offers.",
+    "track": "Operations",
+    "intro": "A brand ends a bundle discount but its original Reel continues to get keyword comments. Removing the promotion from the homepage does not retire the automation. Inventory the caption, DM, destination, and any scheduled follow-up together.",
+    "stages": [
+      {
+        "heading": "Choose a clear sunset state",
+        "body": "Decide whether to pause the automation or update it with a truthful current alternative. Update the caption where possible. Keep the original promise explicit so late visitors understand the offer ended."
+      },
+      {
+        "heading": "Run an old-post test",
+        "body": "Use a fresh test comment after the cutover. Verify that the old offer is not sent and that any previously delivered URL explains the closure. Check corresponding reminders or pinned comments separately."
+      },
+      {
+        "heading": "Define the archival record",
+        "body": "Save the retired offer, closing date, destination, and what replaced it. In the next review, distinguish late interest from purchase intent under the original offer."
+      }
+    ],
+    "caution": "An ended offer should not redirect silently into a different price or subscription.",
+    "resource": "instagram-dm-offer-state-worksheet"
+  },
+  {
+    "slug": "instagram-automation-shift-handoff",
+    "title": "Hand Off AP3K Campaigns Between Support Shifts",
+    "description": "Write an Instagram automation handoff that tells teammates when to pause a campaign, where to check failures and who handles exceptions.",
+    "track": "Operations",
+    "intro": "A weekend team can see delivery activity but does not know which automation was temporarily paused Friday. A shift handoff should tell the next operator what to check and what they are authorised to change.",
+    "stages": [
+      {
+        "heading": "Record campaign status and an owner",
+        "body": "Include the account, post, selected trigger, campaign state, date of the last successful test, and the person responsible for offers. Keep the current destination in a shared record rather than in chat screenshots."
+      },
+      {
+        "heading": "Use a real exception example",
+        "body": "For a sold-out product, note whether the automation is paused or directs to confirmed alternatives. If a DM failed, note the visible failure category and any prior action without sharing credentials."
+      },
+      {
+        "heading": "Close each issue with evidence",
+        "body": "A test from a second account and a working destination give the incoming shift evidence. Mark the issue resolved only when the agreed acceptance check is met."
+      }
+    ],
+    "caution": "A workspace account count is not the number of available staff seats or permission levels.",
+    "resource": "instagram-dm-campaign-ownership-worksheet"
+  },
+  {
+    "slug": "instagram-dm-set-up-qa-fixtures",
+    "title": "Create QA Test Accounts for Instagram Comment-to-DM",
+    "description": "Build repeatable test interactions for an Instagram campaign and check what happens with matching comments, misses and duplicate attempts.",
+    "track": "Operations",
+    "intro": "An operator tests a new automation with the same profile used in every prior campaign. That profile may have a previous DM thread or prior qualifying comment, giving a misleading result. Build a repeatable set of intentional cases.",
+    "stages": [
+      {
+        "heading": "Choose valid QA scenarios",
+        "body": "Use authorised profiles, one positive comment, one unrelated comment, and a repeat interaction only when deduplication is part of what you are checking. Do not invent accounts or generate artificial engagement."
+      },
+      {
+        "heading": "Write the expected result first",
+        "body": "Record whether a public reply, DM, and valid destination should appear. On the receiving account, check inbox and requests, then follow every user-facing button. Mark unexpected behaviour separately by step."
+      },
+      {
+        "heading": "Keep tests out of business reporting",
+        "body": "Tag your QA links and avoid treating test purchases or opt-ins as sales. Repeat the case when the token refreshes, trigger changes, or offer closes."
+      }
+    ],
+    "caution": "Testing the editor preview is useful for copy and layout but is not proof of Instagram delivery.",
+    "resource": "instagram-dm-incident-triage-card"
+  },
+  {
+    "slug": "instagram-dm-inbox-human-escalation",
+    "title": "Handoff Instagram DMs to a Human When the Link Is Not Enough",
+    "description": "Decide when an Instagram DM needs a human response. Define which requests should leave the automated delivery path and who picks them up.",
+    "track": "Operations",
+    "intro": "A booking Reel promises availability, but some recipients need help with accessibility or a reschedule. A useful automation can deliver the promised information and set expectations for a person to answer the exception.",
+    "stages": [
+      {
+        "heading": "Define exception categories ahead of time",
+        "body": "Name issues that need a person, such as account-specific billing, address changes, or complex requirements. Keep sensitive details off public comments and avoid asking for information the team cannot safely handle."
+      },
+      {
+        "heading": "Make the next action clear",
+        "body": "After delivering the scheduling link, invite a reply for the situations your team actually supports. Give a realistic response window and tell the support team what information is already available."
+      },
+      {
+        "heading": "Measure resolved exceptions",
+        "body": "Sample how many people needed a human and check whether they received a useful response. If repeat exceptions dominate, improve the initial destination or edit the script."
+      }
+    ],
+    "caution": "Do not imply a message has been read or accepted by a support agent until that has happened.",
+    "resource": "instagram-dm-campaign-ownership-worksheet"
+  },
+  {
+    "slug": "instagram-dm-late-clicks-measurement",
+    "title": "Measure Late Clicks From Evergreen Instagram DMs",
+    "description": "Keep launch reporting accurate when people open old Instagram DMs weeks later. Use stable campaign tags and report late traffic separately.",
+    "track": "Measurement",
+    "intro": "An old Reel sends a link every week, and some people return to a saved DM long after they received it. Weekly click totals are useful, but they do not necessarily describe the same group as this week’s sends.",
+    "stages": [
+      {
+        "heading": "Separate calendar totals from message cohorts",
+        "body": "Export or manually record delivery and link totals for each reporting window. If your systems lack a common privacy-safe join key, label the ratio as an activity snapshot rather than an individual conversion rate."
+      },
+      {
+        "heading": "Use a stable campaign tag",
+        "body": "Name the offer and post consistently in your destination tags. Keep historic tags when you fix the page so visits are still attributable to the original campaign. Never include a handle or email in a URL parameter."
+      },
+      {
+        "heading": "Compare matched reporting windows",
+        "body": "A planning example: 120 sends and 40 visits this week do not show that 33 percent of this week’s recipients clicked. Some visits may come from earlier messages or repeat visitors."
+      }
+    ],
+    "caution": "Count unique visits where possible and state what your analytics actually deduplicates.",
+    "resource": "instagram-dm-segment-review-worksheet"
+  }
+]

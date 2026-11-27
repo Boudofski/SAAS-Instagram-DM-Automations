@@ -1,0 +1,75 @@
+[
+  {
+    "slug": "instagram-dm-offer-state-worksheet",
+    "eyebrow": "Campaign planning",
+    "title": "Instagram DM Offer-State Worksheet",
+    "description": "Plan the waitlist, live offer, and closed state for a time-sensitive Instagram campaign.",
+    "updatedAt": "2026-11-27",
+    "visual": ["Before launch", "Offer live", "Offer closed"],
+    "cta": "Build the offer campaign",
+    "sections": [
+      {"title": "Record the transitions", "intro": "Example: a pre-order opens Thursday at 10 a.m. and closes Sunday at 6 p.m. Specify the timezone and who owns each change.", "items": ["Before: promise the release notification and route to a waitlist.", "Live: show current availability and link to the exact product or registration form.", "Closed: explain the deadline passed and only offer a waitlist if it exists."]},
+      {"title": "Rehearse the change", "items": ["Check that an old sent link still lands on a truthful page after closing.", "Test a qualifying comment immediately after the new campaign state goes live.", "Assign one person to update the caption, automation message, and landing page together."]},
+      {"title": "Choose the metric for each state", "items": ["Before: completed opt-ins, not link visits.", "Live: paid orders or confirmed registrations, not DMs sent.", "Closed: late interest, kept separate from original offer orders."]}
+    ]
+  },
+  {
+    "slug": "instagram-dm-link-handoff-checklist",
+    "eyebrow": "Mobile delivery checks",
+    "title": "Instagram DM Link Handoff Checklist",
+    "description": "Catch expired URLs, login walls, and misleading mobile destinations before sending an Instagram DM link.",
+    "updatedAt": "2026-11-27",
+    "visual": ["DM button", "Mobile destination", "Requested action"],
+    "cta": "Test a DM link in AP3K",
+    "sections": [
+      {"title": "Record what the button promises", "intro": "A button labeled Download checklist should open the resource or a page that immediately presents the download.", "items": ["Write the promise, button label, destination host, and person responsible for updating the page.", "Prefer a stable HTTPS page you control over a temporary cloud-storage or file URL.", "Open the destination with no staff account or saved credentials."]},
+      {"title": "Test inside Instagram", "items": ["Use a second account and check both inbox and message requests.", "Tap the link with mobile data and inspect redirects, access prompts, and translated prices if relevant.", "Complete the requested action and check the confirmation page or download."]},
+      {"title": "Document the result", "items": ["Record each checkpoint separately: request received, button opened, and action completed.", "Save the time of the check and identify which campaign can still distribute the old link.", "Recheck the existing DM after changing the landing page or moving a downloadable file."]}
+    ]
+  },
+  {
+    "slug": "instagram-dm-campaign-ownership-worksheet",
+    "eyebrow": "Workspace operations",
+    "title": "Instagram DM Campaign Ownership Worksheet",
+    "description": "Map live posts, scopes, destination links, and change owners across your Instagram automations.",
+    "updatedAt": "2026-11-27",
+    "visual": ["Live post", "Campaign owner", "Change record"],
+    "cta": "Plan workspace capacity",
+    "paid": true,
+    "sections": [
+      {"title": "Make a campaign register", "intro": "Create one row for each live offer, including ads or older content still bringing new requests.", "items": ["Record the Instagram account, media, trigger, destination and campaign owner.", "Name a backup who can review the offer and know where decisions are recorded.", "Identify broad triggers and compare them to post-specific rules before adding another campaign."]},
+      {"title": "Define who makes each change", "items": ["The offer owner confirms inventory, access, and deadlines.", "The operator publishes the rule and records the real-account test.", "Support watches repeat questions and records the first failing stage before changing settings."]},
+      {"title": "Decide when to upgrade", "items": ["Count your connected Instagram accounts and projected successful monthly actions.", "A successful public reply plus a successful DM counts as two automated actions.", "Compare current plan allowances against your workload; account capacity does not imply staff access permissions."]}
+    ]
+  },
+  {
+    "slug": "instagram-dm-incident-triage-card",
+    "eyebrow": "Delivery troubleshooting",
+    "title": "Instagram DM Incident Triage Card",
+    "description": "Identify where the Instagram comment-to-DM journey failed and capture evidence for a targeted fix.",
+    "updatedAt": "2026-11-27",
+    "visual": ["Interaction", "Recorded action", "Recipient inbox"],
+    "cta": "Review the setup walkthrough",
+    "tutorial": true,
+    "sections": [
+      {"title": "Find the first missing checkpoint", "items": ["No recorded interaction: inspect the connected profile and selected post before changing copy.", "Interaction logged but action skipped: check the trigger, action setting, limits, and recorded skip reason.", "DM sent but not visible: verify the recipient, inbox, and requests; a public comment reply does not establish DM delivery."]},
+      {"title": "Change the setting linked to the evidence", "items": ["If authorization is invalid, reconnect the intended profile through AP3K.", "If the keyword or scope is wrong, update only that setting and run a fresh qualifying test.", "Do not resend an ambiguous delivery while checking whether it previously arrived."]},
+      {"title": "Close the incident", "items": ["Retest from another account and open the promised destination on mobile.", "Record whether older comments require a separate, eligible backtrack.", "If asking support, share the campaign name, time, stage, and visible error without account credentials."]}
+    ]
+  },
+  {
+    "slug": "instagram-dm-segment-review-worksheet",
+    "eyebrow": "Campaign measurement",
+    "title": "Instagram DM Segment Review Worksheet",
+    "description": "Compare campaign outcomes across posts or offers using consistent definitions and reporting windows.",
+    "updatedAt": "2026-11-27",
+    "visual": ["Delivered action", "Tracked visit", "Final outcome"],
+    "cta": "Estimate campaign capacity",
+    "paid": true,
+    "sections": [
+      {"title": "Choose two segments you can compare", "intro": "Example: the same booking offer on two posts, each reviewed after one week. Keep test accounts out of the counts.", "items": ["Record the post, campaign tag, date range, timezone, and offer.", "Use the same definition of a sent action, site visit, and booked appointment for both rows.", "Report missing attribution explicitly rather than counting every destination event as an AP3K conversion."]},
+      {"title": "Read the difference", "items": ["More sends with fewer visits may mean the DM promise and destination do not match.", "More visits without bookings may indicate destination friction or weak offer fit.", "Late or repeat clicks can inflate an activity window; compare recipient cohorts only when the data supports it."]},
+      {"title": "Choose the next test", "items": ["Write one hypothesis and one observable result that would support it.", "Keep the offer and reporting window comparable while changing one element.", "Estimate successful actions across all campaigns before deciding whether the current plan has enough capacity."]}
+    ]
+  }
+]

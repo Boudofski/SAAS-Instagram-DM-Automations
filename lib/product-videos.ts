@@ -17,6 +17,5 @@ export const PRODUCT_VIDEOS = {
 // Intentional placements, not a video attached indiscriminately to every post.
 export const QUICK_DEMO_POSTS = new Set([
   "ap3k-workspace-visual-guide",
-  "instagram-comment-to-dm-automation",
   "connect-instagram-to-ap3k",
 ]);
