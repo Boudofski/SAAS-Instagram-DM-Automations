@@ -1,0 +1,117 @@
+[
+  {
+    "slug": "instagram-dm-booking-no-show-measurement",
+    "title": "Measure Bookings and No-Shows From Instagram DM Links",
+    "description": "Track scheduled calls, attended calls, and cancellations to see what the campaign produces.",
+    "track": "Measurement",
+    "intro": "A coach’s Reel generates calendar visits and booked calls, but the team wants to know if anyone attends. The automation can get people to scheduling; the calendar remains the source of truth for attendance.",
+    "stages": [
+      {
+        "heading": "Record the booking outcome correctly",
+        "body": "Use a dedicated scheduling destination or supported campaign tracking. Distinguish a viewed calendar, booked appointment, cancellation, and attended call in your report."
+      },
+      {
+        "heading": "Define a fair reporting window",
+        "body": "If calls booked this week happen next month, report attendance after those dates pass. Keep reschedules tied to one booking so the same person is not counted twice."
+      },
+      {
+        "heading": "Use the diagnosis to choose the next edit",
+        "body": "Few completed bookings after visits suggest form friction or an unclear offer. Many bookings but poor attendance point toward expectations, suitability, or the existing appointment reminder process."
+      }
+    ],
+    "caution": "Do not treat the Instagram DM as a substitute for your calendar’s consent and notification settings.",
+    "resource": "instagram-dm-segment-review-worksheet"
+  },
+  {
+    "slug": "instagram-dm-checkout-attribution-limits",
+    "title": "Why Instagram DM Clicks and Checkout Sales Disagree",
+    "description": "Reconcile campaign activity with store reports without overstating sales credit.",
+    "track": "Measurement",
+    "intro": "A store sees twenty link clicks in one place and nine purchases attributed to Instagram elsewhere. The counts may include repeat taps, visits from old messages, or orders completed on a different device. Compare definitions before changing a working campaign.",
+    "stages": [
+      {
+        "heading": "Map each metric to its source",
+        "body": "Use AP3K activity for recorded actions, destination analytics for tracked visits, and store reports for purchases. Record date range and timezone beside every count."
+      },
+      {
+        "heading": "Run a test through the actual checkout",
+        "body": "Open the destination inside Instagram, proceed to the store, and check whether tags survive product redirects. Use an approved test checkout or stop before payment if working on a live store."
+      },
+      {
+        "heading": "Use numbers with matching units",
+        "body": "For an illustration, ten visits and one purchase would represent a 10 percent visit-to-purchase ratio only when the visit and purchase definitions and attribution window align."
+      }
+    ],
+    "caution": "Untracked orders still exist; do not describe every order as Instagram-driven.",
+    "resource": "instagram-dm-segment-review-worksheet"
+  },
+  {
+    "slug": "instagram-dm-reply-reason-review",
+    "title": "Review Why People Reply After Getting an Instagram DM",
+    "description": "Use a small, anonymized inbox sample to find what the DM or landing page leaves unclear.",
+    "track": "Measurement",
+    "intro": "Your automation delivers a product link successfully but recipients keep asking “Is it available in my size?” A repeat question is evidence that delivery worked but the next step lacked information.",
+    "stages": [
+      {
+        "heading": "Tag only questions that help you decide",
+        "body": "For a small, representative sample, tally size, price, delivery, access, and other. Work from authorized access and avoid exporting personal conversations for a reporting task."
+      },
+      {
+        "heading": "Separate helpful replies from confusion",
+        "body": "A relevant follow-up may be a qualified purchase signal. A question already answered somewhere on the page may indicate poor placement. Record the exact ambiguity without storing identifying details."
+      },
+      {
+        "heading": "Change one component and sample again",
+        "body": "Move the sizing link beside the product button, then compare the mix of questions in the next comparable period. Do not infer higher revenue from a smaller number of replies alone."
+      }
+    ],
+    "caution": "Keep the sample small and anonymized; escalate private issues through the support workflow.",
+    "resource": "instagram-dm-segment-review-worksheet"
+  },
+  {
+    "slug": "instagram-automation-multiple-offer-ownership",
+    "title": "Avoid Overlapping Offers on the Same Instagram Account",
+    "description": "Give each live post, keyword, and destination one clear campaign owner.",
+    "track": "Operations",
+    "intro": "A creator’s product Reel and a support post both ask people to comment HELP. Without a registry, an operator may add an account-wide trigger that overlaps a specific post. Assign each published promise a clear scope and owner.",
+    "stages": [
+      {
+        "heading": "Map the current triggers",
+        "body": "Record the selected media, keyword, destination, and owner for each active campaign. List any broad rule beside the narrower ones so conflicts are visible before publishing."
+      },
+      {
+        "heading": "Use an acceptance check before the new launch",
+        "body": "Run a qualifying test on the older post and the new one. An unrelated post should not take the new route. Correct scopes or replace a confusing keyword rather than assuming conflict priority."
+      },
+      {
+        "heading": "Record changes beside the live caption",
+        "body": "Update the registry when a post changes purpose, is boosted, or is retired. Review it before duplicating a campaign for a new offer."
+      }
+    ],
+    "caution": "Keep the source of truth in the workspace registry, not an old screenshot or caption draft.",
+    "resource": "instagram-dm-campaign-ownership-worksheet"
+  },
+  {
+    "slug": "instagram-dm-diagnostic-decision-log",
+    "title": "Keep an Instagram DM Incident Decision Log",
+    "description": "Record which delivery checks passed so support can reproduce the remaining issue.",
+    "track": "Operations",
+    "intro": "A comment reply appears but the private message does not. Two people reconnect the account, another edits the keyword, and nobody knows which change mattered. A useful incident record tracks observations separately from hypotheses.",
+    "stages": [
+      {
+        "heading": "Write the first failing stage",
+        "body": "Record the post, trigger, time, and what the receiving account actually saw. Identify whether the missing part was the recorded interaction, the DM action, or the destination. Keep usernames and identifiers out of public notes."
+      },
+      {
+        "heading": "Change one cause and rerun",
+        "body": "If permission is missing, follow the documented reconnect path. If the action was skipped, inspect the reason first. Keep a fresh positive test and the acceptance criterion for closing the incident."
+      },
+      {
+        "heading": "Make resuming a separate decision",
+        "body": "When the test works, decide whether historical comments need a supported backtrack or whether the campaign simply resumes. Mark delayed actions with confirmed outcomes rather than resending the same promise blindly."
+      }
+    ],
+    "caution": "Do not re-run an ambiguous delivery just to see if it succeeds; the first message may already have gone out.",
+    "resource": "instagram-dm-incident-triage-card"
+  }
+]

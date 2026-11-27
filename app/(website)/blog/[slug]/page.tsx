@@ -1,3 +1,5 @@
+import WorkflowVisual from "@/components/website/workflow-visual";
+import { WORKFLOW_GUIDES } from "@/lib/content/workflows";
 import { JsonLdScript } from "next-seo";
 import { buildBlogStructuredData } from "@/lib/blog-structured-data";
 import { blogPostsForLocale } from "@/lib/localized-blog-archive";
@@ -137,6 +139,7 @@ export default async function BlogPostPage(props: Props) {
         .sort((a, b) => b.score - a.score)
         .slice(0, 3)
         .map(({ item }) => item);
+  const workflow = WORKFLOW_GUIDES.find(guide => guide.slug === post.slug);
   const products = COMMERCIAL_PAGES.filter((page) =>
     page.tutorials.some((guide) => guide.slug === post.slug),
   );
@@ -182,7 +185,7 @@ export default async function BlogPostPage(props: Props) {
               </div>
             </header>
             <div className="mt-7">
-              <BlogCover post={post} priority credit />
+              {workflow ? <WorkflowVisual labels={workflow.stages.map(stage => stage.heading)} /> : <BlogCover post={post} priority credit />}
             </div>
             <details className={e.mobileContents} open={post.importedArchive || undefined}>
               <summary>Table of contents <span aria-hidden="true" className="ml-auto">⌄</span></summary>
@@ -267,8 +270,12 @@ export default async function BlogPostPage(props: Props) {
                 </p>
               )}
               <div className="flex flex-wrap items-center justify-center gap-5">
-                <Link href="/sign-up" className={s.button}>Join for free</Link>
-                <Link href={localizePublicPath("/pricing", locale)}>Compare plans</Link>
+                <Link href={workflow && ["Operations", "Measurement"].includes(workflow.track) ? "/pricing" : localizePublicPath("/sign-up", locale)} className={s.button}>
+                  {workflow && ["Operations", "Measurement"].includes(workflow.track) ? "Compare capacity and plans" : "Start free"}
+                </Link>
+                <Link href={workflow && ["Operations", "Measurement"].includes(workflow.track) ? "/sign-up" : localizePublicPath("/pricing", locale)}>
+                  {workflow && ["Operations", "Measurement"].includes(workflow.track) ? "Try a free campaign" : "Compare plans"}
+                </Link>
               </div>
             </section>
             <ArticleShare slug={post.slug} title={post.title} />

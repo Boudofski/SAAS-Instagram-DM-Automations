@@ -133,6 +133,7 @@ export default function CommercialLandingPage({
               Comment-to-DM message templates →
             </Link>
             <Link href="/compare">Compare Instagram automation tools →</Link>
+            {page.slug === "instagram-comment-to-dm" && <Link href="/resources/instagram-dm-link-handoff-checklist">Check your DM link before publishing →</Link>}
             {page.slug === "instagram-comment-to-dm" && (
               <Link href="/ar/instagram-comment-to-dm" lang="ar" dir="rtl">
                 الشرح الكامل بالعربية ←

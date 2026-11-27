@@ -27,6 +27,7 @@ const groups = [
       ["Documentation", "/docs"],
       ["Video tutorial", "/tutorials/instagram-comment-to-dm"],
       ["Blog", "/blog"],
+      ["Campaign resources", "/resources"],
       ["All comparisons", "/compare"],
     ],
   },

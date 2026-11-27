@@ -1,0 +1,117 @@
+[
+  {
+    "slug": "instagram-dm-product-bundle-selector",
+    "title": "Help Instagram Buyers Choose the Right Product Bundle",
+    "description": "Send a bundle comparison that answers a choice instead of dropping shoppers on a catalog.",
+    "track": "Campaign",
+    "intro": "A brand sells Starter and Studio bundles under the same Reel. Sending every buyer to a catalog does little to explain the difference. A short comparison can describe who each bundle serves, what is included, and when neither fits.",
+    "stages": [
+      {
+        "heading": "Put the decision before the checkout",
+        "body": "Lead with two columns: what is included and who benefits. State whether upgrades, recurring fees, or compatible accessories affect the real cost. Keep the choice independent of the headline discount."
+      },
+      {
+        "heading": "Use one comparison link first",
+        "body": "Example DM: “Here is the Starter vs Studio comparison from the Reel.” Test both product links on a phone; issue a separate caption and trigger only if different offers must route to different pages."
+      },
+      {
+        "heading": "Compare qualified outcomes",
+        "body": "Track selection and purchase per bundle. A higher volume of Starter clicks can still produce fewer checkouts if the shipping or compatibility details are unclear."
+      }
+    ],
+    "caution": "Never suggest a bundle fits every device or buyer. Confirm what the merchant actually supports.",
+    "resource": "instagram-dm-offer-state-worksheet"
+  },
+  {
+    "slug": "instagram-dm-local-service-area",
+    "title": "Send Service-Area Details After an Instagram Comment",
+    "description": "Qualify local inquiries with a service-area page and a clear next step.",
+    "track": "Campaign",
+    "intro": "A mobile repair business gets calls from outside its service area because its Reels travel further than its technicians. A concise coverage page explains the available neighbourhoods before a visitor attempts to book.",
+    "stages": [
+      {
+        "heading": "Separate eligibility from the booking form",
+        "body": "List locations and exceptions in text, then link to booking for eligible visitors. A map can help but should not be the only source; state what happens near the boundary."
+      },
+      {
+        "heading": "Use a realistic reply",
+        "body": "A visitor who comments AREA should get a service-area link, not scheduling confirmation. If your boundaries depend on a postal code, collect it in your approved form rather than a public comment."
+      },
+      {
+        "heading": "Count valid service inquiries",
+        "body": "Compare visits with eligible bookings. If many people open the page from outside the area, add the primary region to the caption before spending more on promotion."
+      }
+    ],
+    "caution": "Do not publish residential customer addresses as examples.",
+    "resource": "instagram-dm-link-handoff-checklist"
+  },
+  {
+    "slug": "instagram-dm-sponsor-disclosure-links",
+    "title": "Send Sponsored Resources Clearly in Instagram DMs",
+    "description": "Match an Instagram promotion’s disclosure, offer, and destination throughout the journey.",
+    "track": "Campaign",
+    "intro": "A creator publishes a sponsored tutorial with a gear list. The first DM should make it easy to recognise both the relationship and the link destination. Keeping sponsor details consistent matters when a clip is shared without the full caption.",
+    "stages": [
+      {
+        "heading": "State what the visitor gets",
+        "body": "If a sponsor paid or there is an affiliate relationship, use clear disclosure in the appropriate placements and make the DM wording consistent with the promotion. Say whether the link opens a sponsor shop, comparison, or resource."
+      },
+      {
+        "heading": "Audit each destination independently",
+        "body": "Open the link with no login and verify the sponsor, product, terms, and whether the campaign code works. Avoid a redirect that sends international visitors to a different offer with no explanation."
+      },
+      {
+        "heading": "Keep payout reporting separate",
+        "body": "Use the sponsor’s own redemption or attribution report for paid outcomes. Record link visits separately and reconcile reporting windows before describing campaign performance."
+      }
+    ],
+    "caution": "Disclosure requirements can vary; confirm the rules that apply to the campaign.",
+    "resource": "instagram-dm-link-handoff-checklist"
+  },
+  {
+    "slug": "instagram-dm-preorder-cutoff",
+    "title": "Handle Instagram DM Preorders When the Deadline Ends",
+    "description": "Keep preorder messages accurate before the cutoff and after it passes.",
+    "track": "Campaign",
+    "intro": "A limited print edition has a firm Friday cutoff, yet the Reel will still circulate after it closes. Treat the cutoff as a change in the offer rather than a reason to leave an old message promising an order.",
+    "stages": [
+      {
+        "heading": "Publish current status on the destination",
+        "body": "Show the cutoff with timezone, what happens after ordering, and the estimated shipping window. Set an alternate closed-state page or waitlist before launch rather than routing late visitors to an error."
+      },
+      {
+        "heading": "Rehearse the transition",
+        "body": "Test the path on either side of the cutoff. Update or pause the message if it still says “order now,” and check that expired or unavailable variants cannot be purchased."
+      },
+      {
+        "heading": "Separate late interest from orders",
+        "body": "After close, track waitlist submissions separately. Verify orders in the store rather than counting DM link clicks as preorders."
+      }
+    ],
+    "caution": "Do not imply scarcity or an extension that the merchant will not honor.",
+    "resource": "instagram-dm-offer-state-worksheet"
+  },
+  {
+    "slug": "instagram-dm-language-routing-plan",
+    "title": "Plan Bilingual Instagram DM Campaigns Without Guessing Language",
+    "description": "Use separate campaign entry points when Instagram audiences need different languages.",
+    "track": "Operations",
+    "intro": "A creator publishes English and Arabic Reels for the same launch. Trying to infer the language from one-word comments can send people to a mismatched destination. Explicit post selection and a language-matched landing page make the experience predictable.",
+    "stages": [
+      {
+        "heading": "Assign language through the post",
+        "body": "Prepare one caption, trigger, DM, and destination for each language. Name both automations with a language suffix and select their corresponding post so their responsibilities are visible in the workspace."
+      },
+      {
+        "heading": "Test both directions",
+        "body": "Test each campaign from a second account, check the text order on a phone, and confirm that the link presents the right locale and currency. Verify that a keyword posted on the other Reel does not activate the wrong flow."
+      },
+      {
+        "heading": "Review performance per audience",
+        "body": "Compare qualified traffic and final actions by campaign, not merely total sends. If one language underperforms, inspect translation, offer relevance, and destination readiness separately."
+      }
+    ],
+    "caution": "A language-specific post is an explicit campaign choice, not a signal of a commenter’s nationality.",
+    "resource": "instagram-dm-campaign-ownership-worksheet"
+  }
+]

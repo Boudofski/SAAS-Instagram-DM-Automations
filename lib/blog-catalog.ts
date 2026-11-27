@@ -1,3 +1,4 @@
+import { WORKFLOW_POSTS } from "./content/workflows";
 import { PLANNING_2027_POSTS } from "./content/planning-2027";
 import { PRACTICAL_PRODUCT_GUIDES } from "./content/practical-product-guides";
 import { MOBILE_DM_GUIDE } from './content/mobile-dm-guide';
@@ -48,6 +49,7 @@ export type BlogPost = {
 };
 
 export const LEGACY_BLOG_POSTS: BlogPost[] = [
+  ...WORKFLOW_POSTS,
   ...PLANNING_2027_POSTS,
   MOBILE_DM_GUIDE,
   ...PRACTICAL_PRODUCT_GUIDES,

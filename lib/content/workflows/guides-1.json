@@ -1,0 +1,117 @@
+[
+  {
+    "slug": "lead-magnet-delivery-versioning",
+    "title": "Update a Lead Magnet Without Breaking Instagram DM Links",
+    "description": "Keep old Reel links working when you revise a PDF, checklist, or template.",
+    "track": "Delivery",
+    "intro": "You replace a 2026 workbook with a new edition while the original Reel still sends visitors every week. A stable page that always describes the current edition gives you one place to update. An expiring file URL does the opposite: each copy in an old DM becomes another link you cannot repair.",
+    "stages": [
+      {
+        "heading": "Keep the DM endpoint stable",
+        "body": "Use a page you own, such as your workbook landing page. Put the revision date and download button on the page. Leave a dated copy available only if the caption explicitly promised that particular edition."
+      },
+      {
+        "heading": "Open the old DM on mobile",
+        "body": "Open both a previously delivered DM and a newly sent test message from a second account. Confirm they land on the same public page and the download works without your account cookies."
+      },
+      {
+        "heading": "Watch broken destinations first",
+        "body": "Track visits to the landing page separately from successful downloads. Note the cutover date so a fall in downloads can be traced to the new file, a permission setting, or an unclear button."
+      }
+    ],
+    "caution": "A caption promising “the original workbook” still needs that edition. Do not point a specific promise to an unrelated resource.",
+    "resource": "instagram-dm-link-handoff-checklist"
+  },
+  {
+    "slug": "instagram-dm-webinar-waitlist",
+    "title": "Build an Instagram DM Waitlist Before Webinar Registration Opens",
+    "description": "Route early interest to a waitlist and replace the destination when seats open.",
+    "track": "Campaign",
+    "intro": "A speaker announces a webinar on Tuesday, but registration opens Friday. The announcement needs an honest next step: a waitlist with the opening time and a short description. A registration button before the form is available teaches people to ignore the link the next time.",
+    "stages": [
+      {
+        "heading": "Separate early interest from registrations",
+        "body": "Publish a waitlist page that states opening time and timezone. Example caption: “Comment WAITLIST for the signup alert.” The DM should say it opens the waitlist, not that it reserves a webinar seat."
+      },
+      {
+        "heading": "Switch both sides on launch day",
+        "body": "Update the destination and message together or use a stable page that switches states. Run a test just before and just after opening, including a full or closed registration state."
+      },
+      {
+        "heading": "Count registrations on the form",
+        "body": "Report opt-ins, registration visits, and completed registrations separately. Use a campaign tag so people who return directly do not get counted as a second DM conversion."
+      }
+    ],
+    "caution": "If you collect email, state what the alert includes and use the form provider’s consent controls.",
+    "resource": "instagram-dm-offer-state-worksheet"
+  },
+  {
+    "slug": "instagram-dm-sample-pack-delivery",
+    "title": "Deliver a Sample Pack Through Instagram DMs",
+    "description": "Design a mobile sample download that gives interested buyers a useful preview.",
+    "track": "Campaign",
+    "intro": "A producer offers three audio loops from a paid pack. The comment reply should deliver the clips the post described, with a preview page that also states format and licensing. A generic store homepage leaves the recipient hunting for the thing they requested.",
+    "stages": [
+      {
+        "heading": "Describe the free sample precisely",
+        "body": "State the number of files and format. Put a license summary beside the download so a creator knows whether a preview is for evaluation, personal use, or a commercial project."
+      },
+      {
+        "heading": "Check the download on a phone",
+        "body": "Host short previews on the page and show a clear download action. Open the link inside Instagram on a device with no cloud-storage login. If the download is a ZIP, explain how to open it without guessing the operating system."
+      },
+      {
+        "heading": "Use the preview to qualify buyers",
+        "body": "Measure sample downloads and full-pack purchases as separate events. Keep the paid link secondary so people can hear the preview before deciding."
+      }
+    ],
+    "caution": "Never bundle files you do not have permission to distribute.",
+    "resource": "instagram-dm-link-handoff-checklist"
+  },
+  {
+    "slug": "instagram-dm-wholesale-inquiry",
+    "title": "Turn Instagram Comments Into Wholesale Inquiries",
+    "description": "Send retailers to a wholesale information page with clear buyer requirements.",
+    "track": "Campaign",
+    "intro": "A shop gets the same wholesale question on every product Reel. The sales team wants fewer rounds of questions, not a larger pile of DMs. Reply with a short buyer information page before inviting someone to submit a wholesale request.",
+    "stages": [
+      {
+        "heading": "Give retailers the context to self-qualify",
+        "body": "List order minimums if published, regions served, and expected response time. Use a prompt like “Comment WHOLESALE for retailer details,” separate from any consumer discount keyword."
+      },
+      {
+        "heading": "Collect only information your team uses",
+        "body": "Ask for store name, business location, and product interest on your inquiry form. Avoid collecting sensitive information in Instagram chat. Confirm the form acknowledges receipt and explains the next step."
+      },
+      {
+        "heading": "Review applications rather than sends",
+        "body": "Tag the second link on the wholesale page if you can; compare received applications and qualified retailers to the original visits. If most inquiries are out of territory, improve the eligibility copy."
+      }
+    ],
+    "caution": "A DM does not approve the retailer, lock inventory, or quote a price.",
+    "resource": "instagram-dm-offer-state-worksheet"
+  },
+  {
+    "slug": "instagram-dm-event-agenda",
+    "title": "Send an Event Agenda Through Instagram DMs",
+    "description": "Deliver a schedule that stays useful when sessions or rooms change.",
+    "track": "Campaign",
+    "intro": "A community team has a Reel that gets questions about session times. A single agenda page can carry room changes and timezones without rewriting old Instagram messages. The page also needs to be readable in a venue with a slow connection.",
+    "stages": [
+      {
+        "heading": "Use one schedule link for every eligible request",
+        "body": "Point AGENDA to an HTML agenda, with the date and timezone above the first session. Keep a PDF secondary so readers can scan the timetable immediately on a phone."
+      },
+      {
+        "heading": "Prepare a late-change path",
+        "body": "Name someone who updates the agenda, add a visible revision time, and show cancelled sessions rather than silently replacing them. Test the next morning’s schedule before posting a refreshed Reel."
+      },
+      {
+        "heading": "Measure the decisions the agenda helps",
+        "body": "Watch agenda opens and registration link clicks separately. Add a short venue or accessibility link only when it helps attendees choose their next step."
+      }
+    ],
+    "caution": "Don’t promise live schedule updates if the schedule has no accountable editor.",
+    "resource": "instagram-dm-link-handoff-checklist"
+  }
+]

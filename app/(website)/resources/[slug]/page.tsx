@@ -1,3 +1,7 @@
+import WorkflowVisual from "@/components/website/workflow-visual";
+import WorkflowChecklist from "@/components/website/workflow-checklist";
+import ProductVideo from "@/components/website/product-video";
+import { WORKFLOW_GUIDES } from "@/lib/content/workflows";
 import NewsletterForm from "@/components/home/NewsletterForm";
 import { LAUNCH_KIT_PATH } from "@/lib/marketing/content";
 import Breadcrumbs from "@/components/seo/breadcrumbs";
@@ -57,7 +61,8 @@ export default async function ResourcePage(props: Props) {
         <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">{resource.title}</h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{resource.description}</p>
         {`/resources/${resource.slug}` === LAUNCH_KIT_PATH && <NewsletterForm />}
-        <div id="campaign-examples" className="mt-12 scroll-mt-28 space-y-10">
+        {resource.visual && <div className="mt-7"><WorkflowVisual labels={resource.visual} /></div>}
+        {resource.visual ? <WorkflowChecklist title={resource.title} sections={resource.sections} /> : <div id="campaign-examples" className="mt-12 scroll-mt-28 space-y-10">
           {resource.sections.map(section => <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
             <h2 className="text-2xl font-black tracking-tight">{section.title}</h2>
             {section.intro ? <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{section.intro}</p> : null}
@@ -68,14 +73,20 @@ export default async function ResourcePage(props: Props) {
               </li>)}
             </ol>
           </section>)}
-        </div>
+        </div>}
+        {resource.tutorial && <section aria-label="Comment-to-DM setup tutorial"><ProductVideo video="tutorial" /></section>}
+        {resource.visual && <section className="mt-10">
+          <h2 className="text-2xl font-bold">Apply this worksheet</h2>
+          <ul className="mt-3 space-y-3">
+            {WORKFLOW_GUIDES.filter(guide => guide.resource === resource.slug).map(guide => <li key={guide.slug}><Link className="font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300" href={`/blog/${guide.slug}`}>{guide.title}</Link></li>)}
+          </ul>
+        </section>}
         <aside className="mt-12 rounded-3xl bg-gradient-to-r from-violet-700 to-fuchsia-600 p-7 text-white sm:p-9">
           <h2 className="text-2xl font-black">Put the resource into practice.</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80">Build one focused Instagram comment-to-DM automation, test it with a second account, and measure delivery separately from clicks and sales.</p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/sign-up" className="rounded-full bg-white px-5 py-3 text-center text-sm font-black text-violet-700">Build my first campaign</Link>
-            <Link href="/instagram-comment-to-dm" className="rounded-full bg-white px-5 py-3 text-center text-sm font-black text-violet-700">See comment-to-DM automation</Link>
-            <Link href="/blog/instagram-comment-to-dm-automation" className="rounded-full border border-white/30 px-5 py-3 text-center text-sm font-black">Read the complete guide</Link>
+            <Link href={resource.paid ? "/pricing" : resource.tutorial ? "/tutorials/instagram-comment-to-dm" : "/sign-up"} className="rounded-full bg-white px-5 py-3 text-center text-sm font-black text-violet-700">{resource.cta ?? "Build my first campaign"}</Link>
+            <Link href={resource.paid || resource.tutorial ? "/sign-up" : "/pricing"} className="rounded-full border border-white/30 px-5 py-3 text-center text-sm font-black">{resource.paid || resource.tutorial ? "Start free" : "Compare plans"}</Link>
           </div>
         </aside>
       </main>

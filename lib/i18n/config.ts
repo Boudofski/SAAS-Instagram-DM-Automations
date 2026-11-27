@@ -1,3 +1,4 @@
+import workflowPaths from "../content/workflows/paths.json";
 import importedArticleSlugs from "../content/imported-blog/slugs.json";
 import editorialSlugs from "../content/editorial-october-slugs.json";
 import expansionSlugs from "../content/expansion/slugs.json";
@@ -5,6 +6,7 @@ import commercialSlugs from "../content/expansion/commercial-slugs.json";
 import englishArticleSlugs from "../content/comment-dm/slugs.json";
 
 const englishArticles = new Set([
+  ...workflowPaths,
   "/blog/instagram-dm-automation-2027-launch-checklist",
   "/blog/manychat-to-ap3k-migration-checklist-2027",
   "/blog/instagram-comment-to-dm-calendar-2027",
