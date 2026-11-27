@@ -2,7 +2,7 @@
   {
     "slug": "instagram-automation-offer-sunset",
     "title": "Retire an Instagram Automation When an Offer Ends",
-    "description": "Close a campaign without leaving older Reel visitors facing expired links.",
+    "description": "Close an Instagram comment-to-DM campaign without sending visitors from older Reels to expired links, dead checkouts or misleading offers.",
     "track": "Operations",
     "intro": "A brand ends a bundle discount but its original Reel continues to get keyword comments. Removing the promotion from the homepage does not retire the automation. Inventory the caption, DM, destination, and any scheduled follow-up together.",
     "stages": [
@@ -25,7 +25,7 @@
   {
     "slug": "instagram-automation-shift-handoff",
     "title": "Hand Off AP3K Campaigns Between Support Shifts",
-    "description": "Write a short handoff for failures, customer exceptions, and temporary pauses.",
+    "description": "Write an Instagram automation handoff that tells teammates when to pause a campaign, where to check failures and who handles exceptions.",
     "track": "Operations",
     "intro": "A weekend team can see delivery activity but does not know which automation was temporarily paused Friday. A shift handoff should tell the next operator what to check and what they are authorised to change.",
     "stages": [
@@ -48,7 +48,7 @@
   {
     "slug": "instagram-dm-set-up-qa-fixtures",
     "title": "Create QA Test Accounts for Instagram Comment-to-DM",
-    "description": "Build a small repeatable set of test interactions before publishing a campaign.",
+    "description": "Build repeatable test interactions for an Instagram campaign and check what happens with matching comments, misses and duplicate attempts.",
     "track": "Operations",
     "intro": "An operator tests a new automation with the same profile used in every prior campaign. That profile may have a previous DM thread or prior qualifying comment, giving a misleading result. Build a repeatable set of intentional cases.",
     "stages": [
@@ -71,7 +71,7 @@
   {
     "slug": "instagram-dm-inbox-human-escalation",
     "title": "Handoff Instagram DMs to a Human When the Link Is Not Enough",
-    "description": "Plan which Instagram messages need manual help after automated delivery.",
+    "description": "Decide when an Instagram DM needs a human response. Define which requests should leave the automated delivery path and who picks them up.",
     "track": "Operations",
     "intro": "A booking Reel promises availability, but some recipients need help with accessibility or a reschedule. A useful automation can deliver the promised information and set expectations for a person to answer the exception.",
     "stages": [
@@ -94,7 +94,7 @@
   {
     "slug": "instagram-dm-late-clicks-measurement",
     "title": "Measure Late Clicks From Evergreen Instagram DMs",
-    "description": "Keep your attribution straight when old messages bring in traffic weeks later.",
+    "description": "Keep launch reporting accurate when people open old Instagram DMs weeks later. Use stable campaign tags and report late traffic separately.",
     "track": "Measurement",
     "intro": "An old Reel sends a link every week, and some people return to a saved DM long after they received it. Weekly click totals are useful, but they do not necessarily describe the same group as this week’s sends.",
     "stages": [

@@ -43,7 +43,7 @@ describe("public indexing contracts", () => {
       expect(pages.some(item => item.url === `https://ap3k.com${prefix}/blog/page/${totalPages + 1}`)).toBe(false);
     }
     const hub = pages.find(item => item.url === "https://ap3k.com/blog/instagram-comment-to-dm-automation");
-    expect(hub?.lastModified).toEqual(new Date("2026-10-05T00:00:00Z"));
+    expect(hub?.lastModified).toEqual(new Date("2026-11-27T00:00:00Z"));
     const unchanged = pages.find(item => item.url === "https://ap3k.com/blog/comment-to-dm-one-post-vs-all-posts");
     expect(unchanged?.lastModified).toEqual(new Date("2026-09-21T00:00:00Z"));
   });

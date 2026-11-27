@@ -2,7 +2,7 @@
   {
     "slug": "instagram-dm-product-bundle-selector",
     "title": "Help Instagram Buyers Choose the Right Product Bundle",
-    "description": "Send a bundle comparison that answers a choice instead of dropping shoppers on a catalog.",
+    "description": "Send Instagram shoppers a bundle comparison that answers what each option includes, who it serves and what it costs before they reach checkout.",
     "track": "Campaign",
     "intro": "A brand sells Starter and Studio bundles under the same Reel. Sending every buyer to a catalog does little to explain the difference. A short comparison can describe who each bundle serves, what is included, and when neither fits.",
     "stages": [
@@ -25,7 +25,7 @@
   {
     "slug": "instagram-dm-local-service-area",
     "title": "Send Service-Area Details After an Instagram Comment",
-    "description": "Qualify local inquiries with a service-area page and a clear next step.",
+    "description": "Qualify local inquiries from Instagram with a service-area page that answers where you work and what in-area customers should do next.",
     "track": "Campaign",
     "intro": "A mobile repair business gets calls from outside its service area because its Reels travel further than its technicians. A concise coverage page explains the available neighbourhoods before a visitor attempts to book.",
     "stages": [
@@ -48,7 +48,7 @@
   {
     "slug": "instagram-dm-sponsor-disclosure-links",
     "title": "Send Sponsored Resources Clearly in Instagram DMs",
-    "description": "Match an Instagram promotion’s disclosure, offer, and destination throughout the journey.",
+    "description": "Keep affiliate disclosures and offer terms clear across an Instagram post, its automated DM and the destination people open.",
     "track": "Campaign",
     "intro": "A creator publishes a sponsored tutorial with a gear list. The first DM should make it easy to recognise both the relationship and the link destination. Keeping sponsor details consistent matters when a clip is shared without the full caption.",
     "stages": [
@@ -71,7 +71,7 @@
   {
     "slug": "instagram-dm-preorder-cutoff",
     "title": "Handle Instagram DM Preorders When the Deadline Ends",
-    "description": "Keep preorder messages accurate before the cutoff and after it passes.",
+    "description": "Set up Instagram preorder DMs that explain the cutoff, availability and next steps. Plan what people will see after the offer closes.",
     "track": "Campaign",
     "intro": "A limited print edition has a firm Friday cutoff, yet the Reel will still circulate after it closes. Treat the cutoff as a change in the offer rather than a reason to leave an old message promising an order.",
     "stages": [
@@ -94,7 +94,7 @@
   {
     "slug": "instagram-dm-language-routing-plan",
     "title": "Plan Bilingual Instagram DM Campaigns Without Guessing Language",
-    "description": "Use separate campaign entry points when Instagram audiences need different languages.",
+    "description": "Use separate Instagram campaign entry points for different languages, with matching keywords, DM copy and landing pages for each audience.",
     "track": "Operations",
     "intro": "A creator publishes English and Arabic Reels for the same launch. Trying to infer the language from one-word comments can send people to a mismatched destination. Explicit post selection and a language-matched landing page make the experience predictable.",
     "stages": [

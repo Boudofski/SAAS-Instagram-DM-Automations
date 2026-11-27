@@ -2,7 +2,7 @@
   {
     "slug": "instagram-dm-booking-no-show-measurement",
     "title": "Measure Bookings and No-Shows From Instagram DM Links",
-    "description": "Track scheduled calls, attended calls, and cancellations to see what the campaign produces.",
+    "description": "Measure booked and attended calls from Instagram campaigns. Separate scheduled calls, cancellations and no-shows before judging the offer.",
     "track": "Measurement",
     "intro": "A coach’s Reel generates calendar visits and booked calls, but the team wants to know if anyone attends. The automation can get people to scheduling; the calendar remains the source of truth for attendance.",
     "stages": [
@@ -25,7 +25,7 @@
   {
     "slug": "instagram-dm-checkout-attribution-limits",
     "title": "Why Instagram DM Clicks and Checkout Sales Disagree",
-    "description": "Reconcile campaign activity with store reports without overstating sales credit.",
+    "description": "Reconcile Instagram DM campaign activity with store reports using tagged links and order data, without assigning credit for every sale.",
     "track": "Measurement",
     "intro": "A store sees twenty link clicks in one place and nine purchases attributed to Instagram elsewhere. The counts may include repeat taps, visits from old messages, or orders completed on a different device. Compare definitions before changing a working campaign.",
     "stages": [
@@ -48,7 +48,7 @@
   {
     "slug": "instagram-dm-reply-reason-review",
     "title": "Review Why People Reply After Getting an Instagram DM",
-    "description": "Use a small, anonymized inbox sample to find what the DM or landing page leaves unclear.",
+    "description": "Review a small, anonymized Instagram inbox sample to see which questions your automated message or destination page leaves unanswered.",
     "track": "Measurement",
     "intro": "Your automation delivers a product link successfully but recipients keep asking “Is it available in my size?” A repeat question is evidence that delivery worked but the next step lacked information.",
     "stages": [
@@ -71,7 +71,7 @@
   {
     "slug": "instagram-automation-multiple-offer-ownership",
     "title": "Avoid Overlapping Offers on the Same Instagram Account",
-    "description": "Give each live post, keyword, and destination one clear campaign owner.",
+    "description": "Give each live Instagram offer its own owner, post, keyword and destination. Use the same record to manage handoffs and offer changes.",
     "track": "Operations",
     "intro": "A creator’s product Reel and a support post both ask people to comment HELP. Without a registry, an operator may add an account-wide trigger that overlaps a specific post. Assign each published promise a clear scope and owner.",
     "stages": [
@@ -94,7 +94,7 @@
   {
     "slug": "instagram-dm-diagnostic-decision-log",
     "title": "Keep an Instagram DM Incident Decision Log",
-    "description": "Record which delivery checks passed so support can reproduce the remaining issue.",
+    "description": "Record which Instagram delivery checks passed, what failed and which test details support needs to reproduce the remaining issue.",
     "track": "Operations",
     "intro": "A comment reply appears but the private message does not. Two people reconnect the account, another edits the keyword, and nobody knows which change mattered. A useful incident record tracks observations separately from hypotheses.",
     "stages": [
