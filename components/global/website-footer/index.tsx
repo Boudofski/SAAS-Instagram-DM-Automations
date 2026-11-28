@@ -73,7 +73,7 @@ export default function WebsiteFooter() {
                 <p className="mb-2 font-semibold text-slate-950 dark:text-white">{tr(title)}</p>
                 <ul>
                   {links.map(([label, path]) => (
-                    <li key={path}><Link href={href(path)} className={`inline-flex min-h-8 items-center py-1.5 ${linkClass}`}>{tr(label)}</Link></li>
+                    <li key={path}><Link prefetch={false} href={href(path)} className={`inline-flex min-h-8 items-center py-1.5 ${linkClass}`}>{tr(label)}</Link></li>
                   ))}
                 </ul>
               </div>
@@ -83,11 +83,11 @@ export default function WebsiteFooter() {
         <div className="mt-7 flex flex-col gap-4 border-t border-slate-200 pt-5 text-xs dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
           <p className="shrink-0 text-slate-600 dark:text-slate-400">© {new Date().getUTCFullYear()} AP3K LLC.</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Link href={href("/privacy")} className={linkClass}>{t("privacy")}</Link>
-            <Link href={href("/terms")} className={linkClass}>{t("terms")}</Link>
-            <Link href={href("/cookies")} className={linkClass}>{t("cookies")}</Link>
-            <Link href={href("/refund-policy")} className={linkClass}>{t("refunds")}</Link>
-            <Link href={href("/data-deletion")} className={linkClass}>{t("dataDeletion")}</Link>
+            <Link prefetch={false} href={href("/privacy")} className={linkClass}>{t("privacy")}</Link>
+            <Link prefetch={false} href={href("/terms")} className={linkClass}>{t("terms")}</Link>
+            <Link prefetch={false} href={href("/cookies")} className={linkClass}>{t("cookies")}</Link>
+            <Link prefetch={false} href={href("/refund-policy")} className={linkClass}>{t("refunds")}</Link>
+            <Link prefetch={false} href={href("/data-deletion")} className={linkClass}>{t("dataDeletion")}</Link>
             <CookiePreferencesButton className={linkClass} />
           </div>
         </div>

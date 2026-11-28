@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { track } from "@vercel/analytics";
 import { useI18n } from "@/providers/i18n-provider";
-import { stripLocaleFromPath } from "@/lib/i18n/config";
-import { gaMeasurementId, analyticsPage, googleTag } from "@/lib/google-analytics";
+import { gaMeasurementId, analyticsPage, analyticsCtaEvent, googleTag } from "@/lib/google-analytics";
 
 /** Mounted only after analytics consent. Never collect message text, account IDs or URLs. */
 export default function ConversionTracking() {
@@ -18,8 +17,7 @@ export default function ConversionTracking() {
       try { target = new URL(link.getAttribute("href")!, window.location.origin); }
       catch { return; }
       if (target.origin !== window.location.origin) return;
-      const path = stripLocaleFromPath(target.pathname);
-      const name = path === "/sign-up" ? "signup_cta_clicked" : path === "/payment" ? "checkout_cta_clicked" : null;
+      const name = analyticsCtaEvent(window.location.pathname, target.pathname);
       if (!name) return;
       const plan = target.searchParams.get("plan");
       const interval = target.searchParams.get("interval");

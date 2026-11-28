@@ -14,7 +14,8 @@ describe('localized hero animation', () => {
       const html = renderToStaticMarkup(<HomeHero />);
       const copy = KEYWORD_ANIMATION_COPY[locale];
       if (locale === 'en') {
-        expect(html).toContain('comment-water-drop-poster.webp');
+        expect(html).not.toContain('comment-water-drop-poster.webp');
+        expect(html).toContain(copy.prefix);
         expect(html).toContain('<video');
         expect(html).toContain('playsinline');
         return;

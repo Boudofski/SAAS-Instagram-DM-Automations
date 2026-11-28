@@ -1,3 +1,4 @@
+import { docsArticleLocales } from "@/lib/docs/article-languages";
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -221,8 +222,9 @@ describe("complete public localization and search metadata", () => {
       // Paginated archives only advertise languages with that many pages.
       if (!/\/blog\/page\/\d+$/.test(new URL(page.url).pathname)) {
         const pathname = new URL(page.url).pathname;
+        const docSlug = pathname.match(/^(?:\/[a-z]{2})?\/docs\/(.+)$/)?.[1];
         expect(Object.keys(alternatives ?? {})).toHaveLength(
-          localizedLocalesForPath(pathname).length + 1,
+          (docSlug ? docsArticleLocales(docSlug) : localizedLocalesForPath(pathname)).length + 1,
         );
       }
       expect(Object.values(alternatives ?? {})).toContain(page.url);

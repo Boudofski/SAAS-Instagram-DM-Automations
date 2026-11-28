@@ -16,6 +16,7 @@ const ESSENTIAL_GUIDES = [
   ["Instagram automation: setup, limits and testing", "/instagram-automation-guide"],
   ["Set up Instagram comment-to-DM automation", "/blog/instagram-comment-to-dm-automation"],
   ["Browse Instagram automation articles", "/blog"],
+  ["Copy Instagram comment-to-DM message templates", "/docs/post-automation/post-automation-templates"],
   ["Compare Instagram DM automation tools", "/blog/compare-instagram-dm-automation-tools"],
   ["Is Instagram DM automation safe?", "/blog/is-instagram-dm-automation-safe"],
   ["Instagram automation for professional accounts", "/blog/instagram-automation-business-creator-accounts"],
@@ -36,7 +37,7 @@ export default function ResourcesPage() {
           <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">{resource.eyebrow}</p>
           <h2 className="mt-3 text-2xl font-black tracking-tight">{resource.title}</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{resource.description}</p>
-          <span className="mt-6 inline-flex text-sm font-black text-violet-700 dark:text-violet-300">Open worksheet →</span>
+          <span className="mt-6 inline-flex text-sm font-black text-violet-700 dark:text-violet-300">{resource.visual ? "Open worksheet" : resource.slug.endsWith("launch-kit") ? "Open launch kit" : "Open checklist"} →</span>
         </Link>)}
         <Link href="/tools/instagram-comment-to-dm-calculator" className="rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 to-pink-50 p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-orange-500/20 dark:from-orange-500/10 dark:to-pink-500/10">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-orange-600 dark:text-orange-300">Planning calculator</p>
