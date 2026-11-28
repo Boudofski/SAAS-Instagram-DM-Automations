@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyticsPage, analyticsReferrer, analyticsCampaign, googleTag, type GoogleWindow } from "./google-analytics";
+import { analyticsPage, analyticsReferrer, analyticsCampaign, analyticsCtaEvent, googleTag, type GoogleWindow } from "./google-analytics";
 
 describe("analytics data boundaries", () => {
   it("keeps approved campaign labels while rejecting arbitrary identifiers and secrets", () => {
@@ -18,6 +18,13 @@ describe("analytics data boundaries", () => {
     expect(analyticsReferrer("https://google.com/search?q=private")).toBe("https://google.com");
     expect(analyticsReferrer("https://ap3k.com/dashboard/user_secret/inbox")).toBe("https://ap3k.com/dashboard");
     expect(analyticsReferrer("javascript:alert(1)")).toBe("");
+  });
+  it("separates pricing interest from signup and checkout clicks", () => {
+    expect(analyticsCtaEvent("/fr/blog/comparison", "/fr/pricing")).toBe("editorial_pricing_cta_clicked");
+    expect(analyticsCtaEvent("/resources/worksheet", "/pricing")).toBe("editorial_pricing_cta_clicked");
+    expect(analyticsCtaEvent("/dashboard", "/pricing")).toBeNull();
+    expect(analyticsCtaEvent("/blog/article", "/ar/sign-up")).toBe("signup_cta_clicked");
+    expect(analyticsCtaEvent("/pricing", "/payment")).toBe("checkout_cta_clicked");
   });
   it("queues early events and preserves an existing Google tag", () => {
     const win = {} as GoogleWindow;

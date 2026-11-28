@@ -49,7 +49,14 @@ describe("localized growth guides", () => {
         expect(metadata.description).toBe(post.description);
         expect(sitemap().find(item => item.url === url)).toBeTruthy();
         expect(html).toContain(`"inLanguage":"${locale}"`);
-        if (post.slug === "compare-instagram-dm-automation-tools") expect(html).toContain('href="https://chatfuel.com/instagram"');
+        if (post.slug === "compare-instagram-dm-automation-tools") {
+          expect(html).toContain('href="https://chatfuel.com/instagram"');
+          expect(html).toContain("<table");
+          for (const [vendor, fit] of post.sections[0].table?.rows ?? []) {
+            expect(html).toContain(vendor);
+            expect(html).toContain(fit);
+          }
+        }
       }
     }
   });

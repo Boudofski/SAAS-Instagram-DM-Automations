@@ -30,6 +30,7 @@
 .keywordAnimation { display: flex; justify-content: flex-start; padding: 12px 0 20px; }
 .keywordMedia { position: relative; width: min(100%, 378.3px); height: 90px; }
 .localizedKeyword.phoneKeyword { display: none; }
+.posterLayer { background: center / contain no-repeat url("/media/hero/comment-water-drop-poster.webp"); }
 .posterLayer[data-hidden="true"] { visibility: hidden; }
 .motionLayer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .motionLayer[data-ready="true"] { opacity: 1; }

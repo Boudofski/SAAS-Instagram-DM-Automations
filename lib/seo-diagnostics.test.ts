@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { buildSitemap as sitemap } from "@/lib/sitemap";
 import robots from "@/app/robots";
 import { localizedLocalesForPath, localizePublicPath, stripLocaleFromPath } from "@/lib/i18n/config";
+import { docsArticleLocales } from "@/lib/docs/article-languages";
 import { BLOG_POSTS } from './blog';
 import { blogArchiveAlternates, getLocalizedBlogArchive } from './localized-blog-archive';
 import { getBlogPage } from './blog-pagination';
@@ -19,7 +20,7 @@ describe("public indexing contracts", () => {
       const archiveMatch = parsed.pathname.match(/\/blog(?:\/page\/(\d+))?$/);
       const locales = archiveMatch
         ? Object.keys(blogArchiveAlternates(BLOG_POSTS, Number(archiveMatch[1] || '1'))).filter(locale => locale !== 'x-default')
-        : localizedLocalesForPath(path);
+        : path.startsWith("/docs/") ? docsArticleLocales(path.slice("/docs/".length)) : localizedLocalesForPath(path);
       for (const locale of locales) {
         const expected = `https://ap3k.com${localizePublicPath(path, locale as Parameters<typeof localizePublicPath>[1])}`;
         expect(page.alternates?.languages?.[locale as Parameters<typeof localizePublicPath>[1]]).toBe(expected);

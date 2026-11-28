@@ -5,6 +5,7 @@ import { SOLUTIONS } from "@/lib/solutions";
 import { COMPANY } from "@/lib/company";
 import { AP3K_HELP_ARTICLES } from "@/lib/ap3k-help";
 import { DOCS_ARTICLES } from "@/lib/docs";
+import { docsArticleAlternates, docsArticleLocales, docsArticleTranslation } from "@/lib/docs/article-languages";
 import { BLOG_POSTS } from "@/lib/blog";
 import type { BlogPost } from "@/lib/blog";
 import { COMMERCIAL_PAGES } from "@/lib/commercial-pages";
@@ -147,7 +148,7 @@ export function buildSitemap(
   const resourcePages: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/resources`,
-      lastModified: new Date("2026-11-27T00:00:00Z"),
+      lastModified: new Date("2026-11-28T00:00:00Z"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
@@ -165,6 +166,13 @@ export function buildSitemap(
     },
   ];
 
+  const docsPages: MetadataRoute.Sitemap = DOCS_ARTICLES.flatMap(article =>
+    docsArticleLocales(article.slug).map(locale => ({
+      url: `${baseUrl}${localizePublicPath(`/docs/${article.slug}`, locale)}`,
+      lastModified: new Date(`${docsArticleTranslation(article.slug, locale)?.updated ?? article.updated}T00:00:00Z`),
+      alternates: { languages: docsArticleAlternates(article.slug) },
+    })),
+  );
   const localizedPages: MetadataRoute.Sitemap = [
     ...staticPages,
     {url: `${baseUrl}/tutorials/instagram-comment-to-dm`, lastModified: new Date("2026-11-26T00:00:00Z"), changeFrequency: "monthly" as const, priority: 0.8},
@@ -185,7 +193,6 @@ export function buildSitemap(
     ...blogArchivePages,
     ...blogPages,
     ...helpPages,
-    ...DOCS_ARTICLES.map(article => ({ url: `${baseUrl}/docs/${article.slug}`, lastModified: new Date(`${article.updated}T00:00:00Z`), changeFrequency: "monthly" as const, priority: 0.7 })),
     ...resourcePages,
   ].flatMap((page) => {
     const parsed = new URL(page.url);
@@ -240,5 +247,5 @@ export function buildSitemap(
       : page,
   );
 
-  return withArabicAlternate;
+  return [...withArabicAlternate, ...docsPages];
 }

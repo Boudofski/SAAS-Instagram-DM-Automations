@@ -34,6 +34,17 @@ export function analyticsPage(pathname: string) {
   };
 }
 
+export function analyticsCtaEvent(sourcePath: string, destinationPath: string) {
+  const destination = stripLocaleFromPath(destinationPath);
+  if (destination === "/sign-up") return "signup_cta_clicked";
+  if (destination === "/payment") return "checkout_cta_clicked";
+  if (
+    destination === "/pricing" &&
+    ["blog", "resources", "compare"].includes(analyticsPage(sourcePath).group)
+  ) return "editorial_pricing_cta_clicked";
+  return null;
+}
+
 export function analyticsReferrer(value: string) {
   try {
     const url = new URL(value);

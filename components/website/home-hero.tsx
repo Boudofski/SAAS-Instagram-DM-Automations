@@ -130,9 +130,7 @@ export default function HomeHero() {
       <div className={styles.content}>
         <div className={styles.keywordAnimation} aria-hidden="true">
           {locale === "en" ? <div className={styles.keywordMedia}>
-            <Image className={`${styles.keywordVideo} ${styles.posterLayer}`}
-              data-hidden={videoReady && playing}
-              src="/media/hero/comment-water-drop-poster.webp" alt="" width={1530} height={364} priority unoptimized />
+            <div className={`${styles.keywordVideo} ${styles.posterLayer}`} data-hidden={videoReady && playing} />
             <video ref={video} className={`${styles.keywordVideo} ${styles.motionLayer}`}
               width={1530} height={364} muted loop playsInline preload="none" tabIndex={-1}
               src={desktopKeyword && motionReady && reducedMotion === false ? "/media/hero/comment-water-drop.webm" : undefined}

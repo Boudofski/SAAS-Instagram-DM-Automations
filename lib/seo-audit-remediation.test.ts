@@ -61,12 +61,12 @@ describe('evidence-based SEO remediation', () => {
   });
   it('updates collection freshness without changing unrelated article dates', () => {
     const pages = buildSitemap();
-    // The collection tracks its newest article revision (the campaign workflow guides, 2026-11-27).
-    expect(pages.find(p => p.url === 'https://ap3k.com/blog')?.lastModified).toEqual(new Date('2026-11-27T00:00:00Z'));
+    // The collection tracks its newest article revision (the automation tool comparison, 2026-11-28).
+    expect(pages.find(p => p.url === 'https://ap3k.com/blog')?.lastModified).toEqual(new Date('2026-11-28T00:00:00Z'));
     expect(pages.find(p => p.url === 'https://ap3k.com/blog/comment-to-dm-one-post-vs-all-posts')?.lastModified).toEqual(new Date('2026-09-21T00:00:00Z'));
     // A later edit must still move pagination freshness forward.
-    const changed = BLOG_POSTS.map(p => p.slug === 'instagram-comment-to-dm-automation' ? { ...p, updatedAt: '2026-11-28' } : p);
-    expect(buildSitemap(changed).find(p => p.url === 'https://ap3k.com/blog/page/2')?.lastModified).toEqual(new Date('2026-11-28T00:00:00Z'));
+    const changed = BLOG_POSTS.map(p => p.slug === 'instagram-comment-to-dm-automation' ? { ...p, updatedAt: '2026-11-29' } : p);
+    expect(buildSitemap(changed).find(p => p.url === 'https://ap3k.com/blog/page/2')?.lastModified).toEqual(new Date('2026-11-29T00:00:00Z'));
   });
   it('keeps backtracking and Business capacity accurate in all homepage languages', () => {
     for (const locale of SUPPORTED_LOCALES) {
