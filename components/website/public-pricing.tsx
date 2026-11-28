@@ -28,6 +28,7 @@ import {
 import { getPlanLimits } from "@/lib/plan-limits";
 import s from "./public-pricing.module.css";
 import PricingCapacity from "./pricing-capacity";
+import PricingPlanFit from "./pricing-plan-fit";
 import { useUi } from "@/components/i18n/use-ui";
 type Feature = { icon: LucideIcon; text: string };
 const freeGroups: { label: string; features: Feature[] }[] = [
@@ -178,7 +179,8 @@ export default function PublicPricing({
             return (
               <section
                 key={plan.id}
-                className={`${s.card} ${plan.featured ? s.featured : ""}`}
+                id={paidOnly ? undefined : `pricing-plan-${plan.id.toLowerCase()}`}
+                className={`${s.card} scroll-mt-28 ${plan.featured ? s.featured : ""}`}
                 aria-label={`${tr(plan.name)} ${tr("plan")}`}
               >
                 <div className={s.top}>
@@ -330,6 +332,7 @@ export default function PublicPricing({
           One successful public reply or DM is one automated action. A public reply
           followed by a DM uses two actions. Usage resets monthly on every billing interval.
         </p>
+        {!paidOnly && <PricingPlanFit />}
         {!paidOnly && <PricingCapacity />}
         {!paidOnly && (
           <section
