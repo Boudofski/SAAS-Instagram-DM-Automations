@@ -40,7 +40,8 @@ export function analyticsCtaEvent(sourcePath: string, destinationPath: string) {
   if (destination === "/payment") return "checkout_cta_clicked";
   if (
     destination === "/pricing" &&
-    ["blog", "resources", "compare"].includes(analyticsPage(sourcePath).group)
+    (["blog", "resources", "compare"].includes(analyticsPage(sourcePath).group) ||
+      stripLocaleFromPath(sourcePath) === "/tools/instagram-comment-to-dm-calculator")
   ) return "editorial_pricing_cta_clicked";
   return null;
 }

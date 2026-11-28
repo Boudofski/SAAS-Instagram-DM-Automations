@@ -24,6 +24,11 @@ export default function CalculatorPage() {
       <h1 className="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">Instagram Comment-to-DM Funnel Calculator</h1>
       <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">Model the full path from a qualifying comment to a conversion. Keep each rate separate so a delivery problem does not get confused with a weak landing page.</p>
       <div className="mt-12"><CommentDmCalculator /></div>
+      <aside className="mt-6 rounded-2xl border border-violet-200 bg-violet-50 p-5 dark:border-violet-300/25 dark:bg-violet-950/40">
+        <h2 className="font-bold">Will your campaign fit your monthly plan?</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Estimate your automated actions and connected Instagram accounts, then see the lowest AP3K plan that fits those inputs.</p>
+        <Link href="/pricing#plan-fit" className="mt-2 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Find the right plan</Link>
+      </aside>
       <p className="mt-8 text-sm leading-7 text-slate-600 dark:text-slate-300">Need the setup process first? Read the <Link href="/blog/instagram-comment-to-dm-automation" className="font-bold text-violet-700 underline underline-offset-4 dark:text-violet-300">Instagram comment to DM automation guide</Link> or see the <Link href="/instagram-comment-to-dm" className="font-bold text-violet-700 underline underline-offset-4 dark:text-violet-300">AP3K workflow</Link>.</p>
     </main>
     <WebsiteFooter />

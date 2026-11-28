@@ -1,3 +1,4 @@
+import { PLAN_FIT_COPY } from "@/components/website/pricing-plan-fit-copy";
 import PublicPricing from "@/components/website/public-pricing";
 import pricing from "@/components/website/public-pricing.module.css";
 import { Inter } from "next/font/google";
@@ -100,6 +101,7 @@ const FAQ = [
 ] as const;
 
 export default function PricingPage() {
+  const locale = getServerLocale();
   return (
     <LocalizedCopy>
       <div className={`${styles.page} ${pricing.pricingPage} ${inter.variable}`}>
@@ -119,6 +121,7 @@ export default function PricingPage() {
               Turn Instagram comments into conversations. Choose the capacity
               and AI tools that fit your business.
             </p>
+            <a href="#plan-fit" className="mt-3 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">{PLAN_FIT_COPY[locale].jump}</a>
           </header>
           <div className={pricing.container}>
             <PublicPricing />

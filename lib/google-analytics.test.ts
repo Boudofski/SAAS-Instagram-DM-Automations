@@ -22,6 +22,7 @@ describe("analytics data boundaries", () => {
   it("separates pricing interest from signup and checkout clicks", () => {
     expect(analyticsCtaEvent("/fr/blog/comparison", "/fr/pricing")).toBe("editorial_pricing_cta_clicked");
     expect(analyticsCtaEvent("/resources/worksheet", "/pricing")).toBe("editorial_pricing_cta_clicked");
+    expect(analyticsCtaEvent("/tools/instagram-comment-to-dm-calculator", "/pricing")).toBe("editorial_pricing_cta_clicked");
     expect(analyticsCtaEvent("/dashboard", "/pricing")).toBeNull();
     expect(analyticsCtaEvent("/blog/article", "/ar/sign-up")).toBe("signup_cta_clicked");
     expect(analyticsCtaEvent("/pricing", "/payment")).toBe("checkout_cta_clicked");
